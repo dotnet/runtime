@@ -9,7 +9,7 @@ namespace System.Globalization
 {
     internal sealed partial class CultureData
     {
-        private const int CULTURE_INFO_BUFFER_LEN = 50;
+        private const int CULTURE_INFO_BUFFER_LEN = 60;
 
         private static unsafe CultureData JSLoadCultureInfoFromBrowser(string localeName, CultureData culture)
         {

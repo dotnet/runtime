@@ -30,13 +30,13 @@ namespace System.Globalization.Tests
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "dddd، d MMMM yyyy" }; // dddd، d MMMM yyyy g
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "yyyy MMMM d, dddd" };
-            yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "dddd, d MMMM yyyy г." }; // "dddd, d MMMM yyyy 'г'." 
+            yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "dddd, d MMMM yyyy 'г'." };
             yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, "dddd, d MMMM, yyyy" };
             yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, "dddd, d MMMM, yyyy" };
-            yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // "dddd, d MMMM 'de' yyyy"
-            yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // "dddd, d MMMM 'de' yyyy"
+            yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, "dddd, d 'de' MMMM 'de' yyyy" }; // "dddd, d MMMM 'de' yyyy"
+            yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, "dddd, d 'de' MMMM 'de' yyyy" }; // "dddd, d MMMM 'de' yyyy"
             yield return new object[] { new CultureInfo("cs-CZ").DateTimeFormat, "dddd d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("da-DK").DateTimeFormat, "dddd den d. MMMM yyyy" }; // dddd 'den' d. MMMM yyyy
+            yield return new object[] { new CultureInfo("da-DK").DateTimeFormat, "dddd 'den' d. MMMM yyyy" };
             yield return new object[] { new CultureInfo("de-AT").DateTimeFormat, "dddd, d. MMMM yyyy" };
             yield return new object[] { new CultureInfo("de-BE").DateTimeFormat, "dddd, d. MMMM yyyy" };
             yield return new object[] { new CultureInfo("de-CH").DateTimeFormat, "dddd, d. MMMM yyyy" };
@@ -149,9 +149,9 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "dddd, d MMMM yyyy" };
             yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
-            yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
-            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
+            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "dddd, d 'de' MMMM 'de' yyyy" };
+            yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "dddd, d 'de' MMMM 'de' yyyy" };
+            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "dddd, d 'de' MMMM 'de' yyyy" };
             yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, "dddd, d. MMMM yyyy" };
             yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, "yyyy MMMM d, dddd" };
             yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, "dddd d. MMMM yyyy" };
@@ -172,8 +172,8 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("ja-JP").DateTimeFormat, "yyyy年M月d日dddd" };
             yield return new object[] { new CultureInfo("kn-IN").DateTimeFormat, "dddd, MMMM d, yyyy" };
             yield return new object[] { new CultureInfo("ko-KR").DateTimeFormat, "yyyy년 M월 d일 dddd" };
-            yield return new object[] { new CultureInfo("lt-LT").DateTimeFormat, "yyyy m. MMMM d d., dddd" }; // "yyyy 'm'. MMMM d 'd'., dddd"
-            yield return new object[] { new CultureInfo("lv-LV").DateTimeFormat, "dddd, yyyy. gada d. MMMM" }; // "dddd, yyyy. 'gada' d. MMMM"
+            yield return new object[] { new CultureInfo("lt-LT").DateTimeFormat, "yyyy 'm'. MMMM d 'd'., dddd" };
+            yield return new object[] { new CultureInfo("lv-LV").DateTimeFormat, "dddd, yyyy. 'gada' d. MMMM" };
             yield return new object[] { new CultureInfo("ml-IN").DateTimeFormat, "yyyy, MMMM d, dddd" };
             yield return new object[] { new CultureInfo("mr-IN").DateTimeFormat, "dddd, d MMMM, yyyy" };
             yield return new object[] { new CultureInfo("ms-BN").DateTimeFormat, "dddd, d MMMM yyyy" }; // "dd MMMM yyyy"
@@ -185,10 +185,10 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("nl-BE").DateTimeFormat, "dddd d MMMM yyyy" };
             yield return new object[] { new CultureInfo("nl-NL").DateTimeFormat, "dddd d MMMM yyyy" };
             yield return new object[] { new CultureInfo("pl-PL").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("pt-BR").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
-            yield return new object[] { new CultureInfo("pt-PT").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
+            yield return new object[] { new CultureInfo("pt-BR").DateTimeFormat, "dddd, d 'de' MMMM 'de' yyyy" };
+            yield return new object[] { new CultureInfo("pt-PT").DateTimeFormat, "dddd, d 'de' MMMM 'de' yyyy" };
             yield return new object[] { new CultureInfo("ro-RO").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("ru-RU").DateTimeFormat, "dddd, d MMMM yyyy г." }; // "dddd, d MMMM yyyy 'г'."
+            yield return new object[] { new CultureInfo("ru-RU").DateTimeFormat, "dddd, d MMMM yyyy 'г'." };
             yield return new object[] { new CultureInfo("sk-SK").DateTimeFormat, "dddd d. MMMM yyyy" };
             yield return new object[] { new CultureInfo("sl-SI").DateTimeFormat, "dddd, d. MMMM yyyy" }; // "dddd, dd. MMMM yyyy"
             yield return new object[] { new CultureInfo("sr-Cyrl-RS").DateTimeFormat, "dddd, d. MMMM yyyy." }; // "dddd, dd. MMMM yyyy"
@@ -207,7 +207,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("th-TH").DateTimeFormat, "ddddที่ d MMMM g yyyy" };
             yield return new object[] { new CultureInfo("tr-CY").DateTimeFormat, "d MMMM yyyy dddd" };
             yield return new object[] { new CultureInfo("tr-TR").DateTimeFormat, "d MMMM yyyy dddd" };
-            yield return new object[] { new CultureInfo("uk-UA").DateTimeFormat, "dddd, d MMMM yyyy р." }; // "dddd, d MMMM yyyy 'р'."
+            yield return new object[] { new CultureInfo("uk-UA").DateTimeFormat, "dddd, d MMMM yyyy 'р'." };
             yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, "dddd, d MMMM, yyyy" };
             yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, "yyyy年M月d日dddd" };
             yield return new object[] { new CultureInfo("zh-Hans-HK").DateTimeFormat, "yyyy年M月d日dddd" };
