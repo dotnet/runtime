@@ -9672,6 +9672,11 @@ inline bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned sim
                 unreached();
         }
     }
+    else if (OperIsHWIntrinsic())
+    {
+        // TODO-XARCH-AVX512 Use VPBLENDM* and take input directly from K registers if cond is from MoveMaskToVectorSpecial./
+        return HWIntrinsicInfo::ReturnsPerElementMask(AsHWIntrinsic()->GetHWIntrinsicId());
+    }
 #endif // FEATURE_SIMD
 
     return false;

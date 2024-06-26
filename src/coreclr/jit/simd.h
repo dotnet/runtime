@@ -20,7 +20,7 @@ static bool ElementsAreAllBitsSetOrZero(T* array, size_t size)
 {
     for (size_t i = 0; i < size; i++)
     {
-        if (array[i] != T() && array[i] != ~T())
+        if (array[i] != static_cast<T>(0) && array[i] != static_cast<T>(~0))
             return false;
     }
     return true;
