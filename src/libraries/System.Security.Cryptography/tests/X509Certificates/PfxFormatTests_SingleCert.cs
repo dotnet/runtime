@@ -55,12 +55,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 () => new X509Certificate2(pfxBytes, correctPassword, s_importFlags));
 
             AssertMessageContains("no certificates", ex);
+
+            ex = Assert.Throws<CryptographicException>(
+                () => X509CertificateLoader.LoadPkcs12(pfxBytes, correctPassword, s_importFlags));
+
+            AssertMessageContains("no certificates", ex);
         }
 
         protected override void ReadWrongPassword(byte[] pfxBytes, string wrongPassword)
         {
             CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
                 () => new X509Certificate2(pfxBytes, wrongPassword, s_importFlags));
+
+            AssertMessageContains("password", ex);
+            Assert.Equal(ErrorInvalidPasswordHResult, ex.HResult);
+
+            ex = Assert.ThrowsAny<CryptographicException>(
+                () => X509CertificateLoader.LoadPkcs12(pfxBytes, wrongPassword, s_importFlags));
 
             AssertMessageContains("password", ex);
             Assert.Equal(ErrorInvalidPasswordHResult, ex.HResult);
@@ -71,21 +82,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string bestPassword,
             X509KeyStorageFlags importFlags,
             int win32Error,
-            int altWin32Error)
+            int altWin32Error,
+            int secondAltWin32Error)
         {
             CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
                 () => new X509Certificate2(pfxBytes, bestPassword, importFlags));
 
             if (OperatingSystem.IsWindows())
             {
-                if (altWin32Error != 0 && ex.HResult != altWin32Error)
+                if (altWin32Error == 0 || ex.HResult != altWin32Error)
                 {
-                    Assert.Equal(win32Error, ex.HResult);
+                    if (secondAltWin32Error == 0 || ex.HResult != secondAltWin32Error)
+                    {
+                        Assert.Equal(win32Error, ex.HResult);
+                    }
                 }
             }
-            else
+
+            ex = Assert.ThrowsAny<CryptographicException>(
+                () => X509CertificateLoader.LoadPkcs12(pfxBytes, bestPassword, importFlags));
+
+            if (OperatingSystem.IsWindows())
             {
-                Assert.NotNull(ex.InnerException);
+                if (altWin32Error == 0 || ex.HResult != altWin32Error)
+                {
+                    if (secondAltWin32Error == 0 || ex.HResult != secondAltWin32Error)
+                    {
+                        Assert.Equal(win32Error, ex.HResult);
+                    }
+                }
             }
         }
 

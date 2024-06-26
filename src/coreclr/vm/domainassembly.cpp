@@ -550,10 +550,6 @@ void DomainAssembly::FinishLoad()
 
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);
-
-    // Set a bit to indicate that the module has been loaded in some domain, and therefore
-    // typeloads can involve types from this module. (Used for candidate instantiations.)
-    GetModule()->SetIsReadyForTypeLoad();
 }
 
 void DomainAssembly::Activate()

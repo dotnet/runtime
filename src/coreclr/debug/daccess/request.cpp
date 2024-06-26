@@ -1724,7 +1724,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->Address = addr;
     ModuleData->PEAssembly = addr; // Module address in .NET 9+ - correspondingly, SOS-DAC APIs for PE assemblies expect a module address
     COUNT_T metadataSize = 0;
-    if (!pModule->GetPEAssembly()->IsDynamic())
+    if (!pModule->IsReflectionEmit())
     {
         ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedLayout()->GetBase()));
     }
@@ -1732,8 +1732,8 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
     ModuleData->metadataSize = (SIZE_T) metadataSize;
 
-    ModuleData->bIsReflection = pModule->IsReflection();
-    ModuleData->bIsPEFile = !pModule->GetPEAssembly()->IsDynamic();
+    ModuleData->bIsReflection = pModule->IsReflectionEmit();
+    ModuleData->bIsPEFile = !pModule->IsReflectionEmit();
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
     ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
     ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
@@ -2140,7 +2140,7 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _In
         if (!pPEAssembly->GetPath().DacGetUnicode(count, fileName, pNeeded))
             hr = E_FAIL;
     }
-    else if (!pPEAssembly->IsDynamic())
+    else if (!pPEAssembly->IsReflectionEmit())
     {
         StackSString displayName;
         pPEAssembly->GetDisplayName(displayName, 0);
@@ -2194,7 +2194,7 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
     PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // More fields later?
-    if (!pPEAssembly->IsDynamic())
+    if (!pPEAssembly->IsReflectionEmit())
     {
         *base = TO_CDADDR(dac_cast<TADDR>(pPEAssembly->GetLoadedLayout()->GetBase()));
     }
@@ -2709,7 +2709,7 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _In
         else if (name)
             name[count-1] = 0;
     }
-    else if (!pAssembly->GetPEAssembly()->IsDynamic())
+    else if (!pAssembly->GetPEAssembly()->IsReflectionEmit())
     {
         StackSString displayName;
         pAssembly->GetPEAssembly()->GetDisplayName(displayName, 0);

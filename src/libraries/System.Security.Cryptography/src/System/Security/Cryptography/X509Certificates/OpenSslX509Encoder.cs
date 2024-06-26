@@ -80,14 +80,9 @@ namespace System.Security.Cryptography.X509Certificates
                 return X509ContentType.Pkcs7;
             }
 
+            if (X509CertificateLoader.IsPkcs12(rawData))
             {
-                OpenSslPkcs12Reader? pfx;
-
-                if (OpenSslPkcs12Reader.TryRead(rawData, out pfx))
-                {
-                    pfx.Dispose();
-                    return X509ContentType.Pkcs12;
-                }
+                return X509ContentType.Pkcs12;
             }
 
             // Unsupported format.
@@ -147,15 +142,9 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             // X509ContentType.Pkcs12 (aka PFX)
+            if (X509CertificateLoader.IsPkcs12(fileName))
             {
-                OpenSslPkcs12Reader? pkcs12Reader;
-
-                if (OpenSslPkcs12Reader.TryRead(File.ReadAllBytes(fileName), out pkcs12Reader))
-                {
-                    pkcs12Reader.Dispose();
-
-                    return X509ContentType.Pkcs12;
-                }
+                return X509ContentType.Pkcs12;
             }
 
             // Unsupported format.
