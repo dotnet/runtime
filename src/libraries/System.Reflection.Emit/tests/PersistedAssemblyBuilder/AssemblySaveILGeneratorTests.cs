@@ -2707,7 +2707,7 @@ internal class Dummy
             {
                 Assembly coreAssembly = mlc.CoreAssembly!;
                 Type valueTypeType = coreAssembly.GetType("System.ValueType")!;
-                PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly"), coreAssembly);
+                PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyAssemblyWithValueType"), coreAssembly);
                 ModuleBuilder mob = ab.DefineDynamicModule("MyModule");
 
                 TypeBuilder valueTb = mob.DefineType("MyValueType", 0, valueTypeType);
