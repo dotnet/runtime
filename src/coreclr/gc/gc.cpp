@@ -13341,7 +13341,10 @@ void free_list_snapshot::record(snapshot_stage stage, freelist_type type, region
         && (s_counter_full >= 2700)
         && (gc_heap::free_regions[basic_free_region].get_num_free_regions() > 3))
     {
-        heap_segment_prev_free_region(heap_segment_next(heap_segment_next(gc_heap::free_regions[(int)basic_free_region]))) = nullptr;
+        heap_segment_prev_free_region
+            (heap_segment_next
+                (heap_segment_next
+                    (gc_heap::free_regions[(int)basic_free_region].head_free_region))) = nullptr;
         sabotaged = true;
     }
 #endif
