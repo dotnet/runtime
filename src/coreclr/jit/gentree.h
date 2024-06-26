@@ -2634,6 +2634,11 @@ struct GenTreeFieldList : public GenTree
         {
         }
 
+        Use* GetUse()
+        {
+            return use;
+        }
+
         Use& operator*()
         {
             return *use;

@@ -1265,6 +1265,7 @@ protected:
     void        genCall(GenTreeCall* call);
     void        genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void        genDefinePendingCallLabel(GenTreeCall* call);
+    void        genCallPlaceRegArgs(GenTreeCall* call);
     void        genJmpPlaceArgs(GenTree* jmp);
     void        genJmpPlaceVarArgs();
     BasicBlock* genCallFinally(BasicBlock* block);

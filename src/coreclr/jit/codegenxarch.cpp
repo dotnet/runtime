@@ -5938,56 +5938,7 @@ void CodeGen::genCall(GenTreeCall* call)
         }
     }
 
-    // Consume all the arg regs
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        CallArgABIInformation& abiInfo = arg.AbiInfo;
-        GenTree*               argNode = arg.GetLateNode();
-
-        if (abiInfo.GetRegNum() == REG_STK)
-        {
-            continue;
-        }
-
-#ifdef UNIX_AMD64_ABI
-        // Deal with multi register passed struct args.
-        if (argNode->OperGet() == GT_FIELD_LIST)
-        {
-            unsigned regIndex = 0;
-            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
-            {
-                GenTree* putArgRegNode = use.GetNode();
-                assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-                regNumber argReg = abiInfo.GetRegNum(regIndex++);
-
-                genConsumeReg(putArgRegNode);
-
-                // Validate the putArgRegNode has the right type.
-                assert(varTypeUsesFloatReg(putArgRegNode->TypeGet()) == genIsValidFloatReg(argReg));
-                inst_Mov_Extend(putArgRegNode->TypeGet(), /* srcInReg */ false, argReg, putArgRegNode->GetRegNum(),
-                                /* canSkip */ true, emitActualTypeSize(TYP_I_IMPL));
-            }
-        }
-        else
-#endif // UNIX_AMD64_ABI
-        {
-            regNumber argReg = abiInfo.GetRegNum();
-            genConsumeReg(argNode);
-            inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ false, argReg, argNode->GetRegNum(), /* canSkip */ true,
-                            emitActualTypeSize(TYP_I_IMPL));
-        }
-
-        // In the case of a varargs call,
-        // the ABI dictates that if we have floating point args,
-        // we must pass the enregistered arguments in both the
-        // integer and floating point registers so, let's do that.
-        if (compFeatureVarArg() && call->IsVarargs() && varTypeIsFloating(argNode))
-        {
-            regNumber srcReg    = argNode->GetRegNum();
-            regNumber targetReg = compiler->getCallArgIntRegister(argNode->GetRegNum());
-            inst_Mov(TYP_LONG, targetReg, srcReg, /* canSkip */ false, emitActualTypeSize(TYP_I_IMPL));
-        }
-    }
+    genCallPlaceRegArgs(call);
 
 #if defined(TARGET_X86) || defined(UNIX_AMD64_ABI)
     // The call will pop its arguments.

@@ -5878,57 +5878,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCall(GenTreeCall* call)
 {
-    // Consume all the arg regs
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        CallArgABIInformation& abiInfo = arg.AbiInfo;
-        GenTree*               argNode = arg.GetLateNode();
-
-        // GT_RELOAD/GT_COPY use the child node
-        argNode = argNode->gtSkipReloadOrCopy();
-
-        if (abiInfo.GetRegNum() == REG_STK)
-        {
-            continue;
-        }
-
-        // Deal with multi register passed struct args.
-        if (argNode->OperGet() == GT_FIELD_LIST)
-        {
-            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
-            {
-                GenTree* putArgRegNode = use.GetNode();
-                assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-
-                genConsumeReg(putArgRegNode);
-            }
-        }
-        else if (abiInfo.IsSplit())
-        {
-            assert(compFeatureArgSplit());
-
-            GenTreePutArgSplit* splitNode = argNode->AsPutArgSplit();
-            genConsumeArgSplitStruct(splitNode);
-
-            regNumber argReg   = abiInfo.GetRegNum();
-            regNumber allocReg = splitNode->GetRegNumByIdx(0);
-            var_types regType  = splitNode->GetRegType(0);
-
-            // For RISCV64's ABI, the split is only using the A7 and stack for passing arg.
-            assert(argReg == REG_A7);
-            assert(emitter::isGeneralRegister(allocReg));
-            assert(abiInfo.NumRegs == 1);
-
-            inst_Mov(regType, argReg, allocReg, /* canSkip */ true);
-        }
-        else
-        {
-            regNumber argReg = abiInfo.GetRegNum();
-            genConsumeReg(argNode);
-            var_types dstType = emitter::isFloatReg(argReg) ? TYP_DOUBLE : argNode->TypeGet();
-            inst_Mov(dstType, argReg, argNode->GetRegNum(), /* canSkip */ true);
-        }
-    }
+    genCallPlaceRegArgs(call);
 
     // Insert a null check on "this" pointer if asked.
     if (call->NeedsNullCheck())
@@ -6122,14 +6072,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (unsigned j = 0; j < arg.AbiInfo.NumRegs; j++)
+            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
             {
-                regNumber reg = arg.AbiInfo.GetRegNum(j);
-                if ((trashedByEpilog & genRegMask(reg)) != 0)
+                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
                 {
                     JITDUMP("Tail call node:\n");
                     DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(reg));
+                    JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
                     assert(!"Argument to tailcall may be trashed by epilog");
                 }
             }
