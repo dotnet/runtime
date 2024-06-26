@@ -151,6 +151,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework allows empty value of cookie header while net7+ behaves by the specs and prohibit it")]
         public void AddCookieHeader_MissingValue_Throws(string? cookieValue)
         {
             var requestMessage = new HttpRequestMessage(HttpMethod.Get, "http://foo/bar") { Version = UseVersion };
