@@ -491,7 +491,8 @@ namespace Microsoft.Extensions.Caching.Memory
                     {
                         ((MemoryCache)s!).OvercapacityCompaction();
                     }
-                    finally {
+                    finally 
+                    {
                         lockFlag = 0; // Release the lock
                     }
                 }, this);
