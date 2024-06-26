@@ -65,17 +65,28 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				finallyRegions.Add (new RegionProxy (region));
 			}
 
+			// Translate from the Roslyn CFG condition kind to our model.
+			// Roslyn blocks have at most two successors, a fall-through and a conditional successor.
+			// The ConditionKind stored on the block indicates the condition under which the conditional successor (if there is one) is taken.
+
+			// In our model, blocks may have any number of successors. The ConditionKind stored on the branch indicates the condition under
+			// which that branch (not necessarily corresponding to Roslyn's conditional successor) is taken.
+
+			// So if this branch represents Roslyn's conditional successor, we simply translate the WhenTrue/WhenFalse condition.
+			// But if this is the fall-through branch, this branch is taken in the opposite condition to the conditional successor so we invert it.
+			var conditionKind = branch.Source.ConditionKind switch {
+				ControlFlowConditionKind.None => ConditionKind.Unconditional,
+				ControlFlowConditionKind.WhenFalse => branch.IsConditionalSuccessor ? ConditionKind.WhenFalse : ConditionKind.WhenTrue,
+				ControlFlowConditionKind.WhenTrue => branch.IsConditionalSuccessor ? ConditionKind.WhenTrue : ConditionKind.WhenFalse,
+				_ => throw new InvalidOperationException ()
+			};
+
 			// Destination might be null in a 'throw' branch.
 			return new ControlFlowBranch (
 				new BlockProxy (branch.Source),
 				branch.Destination == null ? null : new BlockProxy (branch.Destination),
 				finallyRegions.ToImmutable (),
-				branch.Source.ConditionKind switch {
-					ControlFlowConditionKind.None => ConditionKind.Unconditional,
-					ControlFlowConditionKind.WhenFalse => branch.IsConditionalSuccessor ? ConditionKind.WhenFalse : ConditionKind.WhenTrue,
-					ControlFlowConditionKind.WhenTrue => branch.IsConditionalSuccessor ? ConditionKind.WhenTrue : ConditionKind.WhenFalse,
-					_ => throw new InvalidOperationException ()
-				});
+				conditionKind);
 		}
 
 		// This is implemented by getting predecessors of the underlying Roslyn BasicBlock.
