@@ -1939,7 +1939,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 
     case ELEMENT_TYPE_R4:
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        flags |= STRUCT_FLOAT_FIELD_ONLY_ONE << RETURN_FP_SIZE_SHIFT;
+        flags |= (FpStruct::OnlyOne | (2 << FpStruct::PosSizeShift1st)) << RETURN_FP_SIZE_SHIFT;
 #else
 #ifndef ARM_SOFTFP
         flags |= sizeof(float) << RETURN_FP_SIZE_SHIFT;
@@ -1949,7 +1949,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 
     case ELEMENT_TYPE_R8:
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        flags |= (STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8) << RETURN_FP_SIZE_SHIFT;
+        flags |= (FpStruct::OnlyOne | (3 << FpStruct::PosSizeShift1st)) << RETURN_FP_SIZE_SHIFT;
 #else
 #ifndef ARM_SOFTFP
         flags |= sizeof(double) << RETURN_FP_SIZE_SHIFT;
@@ -2029,7 +2029,8 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
             {
                 assert(!thValueType.IsTypeDesc());
-                flags = (MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType).flags & 0xff) << RETURN_FP_SIZE_SHIFT;
+                FpStructInRegistersInfo info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType);
+                flags |= info.flags << RETURN_FP_SIZE_SHIFT;
                 break;
             }
 #else
