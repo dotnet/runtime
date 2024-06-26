@@ -204,6 +204,11 @@ namespace System.Text.Json.Nodes
 
         internal JsonNode? GetItem(string propertyName)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             if (TryGetPropertyValue(propertyName, out JsonNode? value))
             {
                 return value;
@@ -236,6 +241,11 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
             if (dict.TryGetValue(propertyName, out JsonNode? replacedValue))
