@@ -325,7 +325,7 @@ double YieldProcessorNormalization::AtomicLoad(double *valueRef)
     return VolatileLoadWithoutBarrier(valueRef);
 #else
 #ifdef FEATURE_NATIVEAOT
-    static_assert(sizeof(int64_t) == sizeof(double));
+    static_assert(sizeof(int64_t) == sizeof(double), "");
     int64_t intRes = PalInterlockedCompareExchange64((int64_t*)valueRef, 0, 0);
     return *(double*)(int64_t*)(&intRes);
 #else
@@ -342,7 +342,7 @@ void YieldProcessorNormalization::AtomicStore(double *valueRef, double value)
     *valueRef = value;
 #else
 #ifdef FEATURE_NATIVEAOT
-    static_assert(sizeof(int64_t) == sizeof(double));
+    static_assert(sizeof(int64_t) == sizeof(double), "");
     PalInterlockedExchange64((int64_t *)valueRef, *(int64_t *)(double*)&value);
 #else
     InterlockedExchangeT(valueRef, value);
