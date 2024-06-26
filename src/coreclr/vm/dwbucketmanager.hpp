@@ -642,16 +642,12 @@ void BaseBucketParamsManager::GetModuleTimeStamp(_Out_writes_(maxLength) WCHAR* 
     {
         EX_TRY
         {
-            // We only store the IL timestamp in the native image for the
-            // manifest module.  We should consider fixing this for Orcas.
-            PTR_PEAssembly pFile = pModule->GetAssembly()->GetModule()->GetPEAssembly();
-
             // for dynamic modules use 0 as the time stamp
             ULONG ulTimeStamp = 0;
 
-            if (!pFile->IsDynamic())
+            if (!pModule->IsReflectionEmit())
             {
-                ulTimeStamp = pFile->GetPEImageTimeDateStamp();
+                ulTimeStamp = pModule->GetPEAssembly()->GetPEImageTimeDateStamp();
                 _ASSERTE(ulTimeStamp != 0);
             }
 

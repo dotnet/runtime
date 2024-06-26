@@ -9770,7 +9770,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
 
     DebuggerIPCEvent * pEvent = m_pRCThread->GetIPCEventSendBuffer();
 
-    BOOL fIsReflection = pClassDebuggerModule->GetRuntimeModule()->IsReflection();
+    BOOL fIsReflection = pClassDebuggerModule->GetRuntimeModule()->IsReflectionEmit();
 
     if (fIsLoadEvent == TRUE)
     {
