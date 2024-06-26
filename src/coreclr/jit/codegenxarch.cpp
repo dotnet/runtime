@@ -9197,6 +9197,43 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_S(INS_movzx, EA_2BYTE, REG_EAX, 1, 2);
     theEmitter->emitIns_R_S(INS_cmovo, EA_4BYTE, REG_EAX, 1, 2);
 
+    theEmitter->emitIns_R(INS_pop, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_push, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_pop_hide, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_push_hide, EA_PTRSIZE, REG_EAX);
+
+    theEmitter->emitIns_S(INS_pop, EA_PTRSIZE, 1, 2);
+    theEmitter->emitIns_I(INS_push, EA_PTRSIZE, 50);
+    // TODO-XArch-apx: figure out a way to test emitIns_A, which will require a GenTreeIndir* input.
+
+    theEmitter->emitIns_R(INS_inc, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_AR(INS_inc, EA_2BYTE, REG_EAX, 2);
+    theEmitter->emitIns_S(INS_inc, EA_2BYTE, 1, 2);
+    theEmitter->emitIns_R(INS_dec, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_AR(INS_dec, EA_2BYTE, REG_EAX, 2);
+    theEmitter->emitIns_S(INS_dec, EA_2BYTE, 1, 2);
+
+    theEmitter->emitIns_R(INS_neg, EA_2BYTE, REG_EAX);
+    theEmitter->emitIns_S(INS_neg, EA_2BYTE, 1, 2);
+    theEmitter->emitIns_R(INS_not, EA_2BYTE, REG_EAX);
+    theEmitter->emitIns_S(INS_not, EA_2BYTE, 1, 2);
+
+    // TODO-XArch-apx: xadd does not have RM opcode, made it cannot be encoded with emitIns_R_R.
+    theEmitter->emitIns_AR_R(INS_xadd, EA_4BYTE, REG_EAX, REG_EDX, 2);
+    theEmitter->emitIns_S_R(INS_xadd, EA_2BYTE, REG_EAX, 1, 2);
+
+    theEmitter->emitIns_R_R_I(INS_shld, EA_4BYTE, REG_EAX, REG_ECX, 5);
+    theEmitter->emitIns_R_R_I(INS_shrd, EA_2BYTE, REG_EAX, REG_ECX, 5);
+    // TODO-XArch-apx: S_R_I path only accepts SEE or VEX instructions, 
+    //                 so I assuem shld/shrd will not be taking the first argument from stack.   
+    theEmitter->emitIns_S_R_I(INS_shld, EA_2BYTE, 1, 2, REG_EAX, 5);
+    theEmitter->emitIns_S_R_I(INS_shrd, EA_2BYTE, 1, 2, REG_EAX, 5);
+
+    theEmitter->emitIns_AR_R(INS_cmpxchg, EA_2BYTE, REG_EAX, REG_EDX, 2);
+
+    theEmitter->emitIns_R(INS_seto, EA_1BYTE, REG_EDX);
+
+    theEmitter->emitIns_R(INS_bswap, EA_8BYTE, REG_EDX);
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)

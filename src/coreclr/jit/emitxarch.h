@@ -374,8 +374,6 @@ code_t AddEvexPrefix(const instrDesc* id, code_t code, emitAttr attr);
 // TODO-XARCH-AVX512 come back and check whether we can id `id` directly (no need)
 // to pass emitAttr size
 code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
-// TODO-xarch-apx:
-// try to come up with things like AddX86PrefixIfNeeded
 {
     if (TakesEvexPrefix(id))
     {
@@ -423,6 +421,42 @@ code_t AddX86PrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
     if (TakesRex2Prefix(id))
     {
         return AddRex2Prefix(ins, code);
+    }
+
+    return code;
+}
+
+//------------------------------------------------------------------------
+// AddX86PrefixIfNeededAndNotPresent: Add the correct instruction prefix if required.
+//
+// Arguments:
+//    ins - the instruction being encoded.
+//    code - opcode + prefixes bits at some stage of encoding.
+//    size - operand size
+//
+code_t AddX86PrefixIfNeededAndNotPresent(const instrDesc* id, code_t code, emitAttr size)
+{
+    // TODO-xarch-apx:
+    // consider refactor this part with AddSimdPrefixIfNeeded as a lot of functionality
+    // of these functions are overlapping.
+
+    if (TakesEvexPrefix(id))
+    {
+        return !hasEvexPrefix(code) ? AddEvexPrefix(id, code, size) : code;
+    }
+
+    instruction ins = id->idIns();
+
+    if (TakesVexPrefix(ins))
+    {
+        return !hasVexPrefix(code) ? AddVexPrefix(ins, code, size) : code;
+    }
+
+    // Based on how we labeled REX2 enabled instructions, we can confirm there will not be
+    // overlapping part between REX2 and VEX/EVEX, so order of the checks does not matter.
+    if (TakesRex2Prefix(id))
+    {
+        return !hasRex2Prefix(code) ? AddRex2Prefix(ins, code) : code;
     }
 
     return code;
