@@ -67,18 +67,12 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
 thread_local int g_isManaged = 0;
 
-typedef Assembly MonoAssembly_clr;
-typedef Assembly MonoImage_clr;
 typedef Object MonoObject_clr;
 typedef FieldDesc MonoClassField_clr; // struct MonoClassField;
 typedef MethodTable MonoClass_clr; //struct MonoClass;
-typedef AppDomain MonoDomain_clr; //struct MonoDomain;
 typedef MethodDesc MonoMethod_clr;
-typedef OBJECTREF MonoObjectRef_clr;
 typedef TypeHandle MonoType_clr;
-typedef ArrayBase MonoArray_clr;
 typedef Thread MonoThread_clr;
-typedef MethodDesc MonoMethodSignature_clr;
 
 static inline MonoType_clr MonoType_clr_from_MonoType(MonoType* type)
 {
@@ -109,7 +103,7 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_from_mono_type(MonoType *i
 }
 
 // remove once usages in this file are removed
-static MonoClass* mono_class_get_element_class(MonoClass *klass)
+static MonoClass* mono_class_get_element_class(MonoClass *klass) // mono_class_get_name still uses this
 {
     CONTRACTL
     {
@@ -120,47 +114,6 @@ static MonoClass* mono_class_get_element_class(MonoClass *klass)
     CONTRACTL_END;
 
     return (MonoClass*)reinterpret_cast<MonoClass_clr*>(klass)->GetArrayElementTypeHandle().GetMethodTable();
-}
-
-extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_class_get_methods(MonoClass* klass, gpointer *iter)
-{
-    TRACE_API("%p, %p", klass, iter);
-
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(klass != NULL);
-    }
-    CONTRACTL_END;
-
-    if (!iter)
-    {
-        return NULL;
-    }
-
-    MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
-
-    MethodTable::IntroducedMethodIterator* iterator = (MethodTable::IntroducedMethodIterator*)*iter;
-    if (iterator == NULL)
-    {
-        // TODO: Using the option FALSE to iterate methods through a non-canonical type.
-        // Not sure exactly what does this mean
-        iterator = new MethodTable::IntroducedMethodIterator(klass_clr, 0);
-        *iter = iterator;
-    }
-
-    if (!iterator->IsValid())
-    {
-        *iter = NULL;
-        delete iterator;
-        return NULL;
-    }
-
-    auto method = iterator->GetMethodDesc();
-    method->EnsureActive();
-    iterator->Next();
-    return (MonoMethod*)method;
 }
 
 extern "C" EXPORT_API const char* EXPORT_CC mono_class_get_name(MonoClass *klass)
@@ -199,20 +152,6 @@ extern "C" EXPORT_API const char* EXPORT_CC mono_class_get_namespace(MonoClass *
     return namespaze;
 }
 
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_parent(MonoClass *klass)
-{
-    MonoClass_clr* parent = reinterpret_cast<MonoClass_clr*>(klass)->GetParentMethodTable();
-    return (MonoClass*)parent;
-}
-
-extern "C" EXPORT_API MonoProperty* EXPORT_CC mono_class_get_property_from_name(MonoClass *klass, const char *name)
-{
-    // CoreCLR does not have easy support for iterating on properties on a MethodTable.
-    // So instead, we look for the property's "get" method. This will not work for set-only
-    // properties, but is sufficient for our needs for now.
-    return (MonoProperty*)MemberLoader::FindPropertyMethod((MonoClass_clr*)klass, name, PropertyGet);
-}
-
 extern "C" EXPORT_API MonoType* EXPORT_CC mono_class_get_type(MonoClass *klass)
 {
     TypeHandle h(reinterpret_cast<MonoClass_clr*>(klass));
@@ -222,21 +161,6 @@ extern "C" EXPORT_API MonoType* EXPORT_CC mono_class_get_type(MonoClass *klass)
 extern "C" EXPORT_API guint32 EXPORT_CC mono_class_get_type_token(MonoClass *klass)
 {
     return (guint32)reinterpret_cast<MonoClass_clr*>(klass)->GetCl();
-}
-
-extern "C" EXPORT_API void* EXPORT_CC mono_class_get_userdata(MonoClass* klass)
-{
-    TRACE_API("%p", klass);
-
-    CONTRACTL
-    {
-        NOTHROW;
-    GC_NOTRIGGER;
-    PRECONDITION(klass != NULL);
-    }
-    CONTRACTL_END;
-
-    return ((MonoClass_clr*)klass)->m_pUserData;
 }
 
 extern "C" EXPORT_API int EXPORT_CC mono_class_get_userdata_offset()
@@ -273,15 +197,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_class_set_userdata(MonoClass* klass, v
     ((MonoClass_clr*)klass)->m_pUserData = userdata;
 }
 
-typedef void (*MonoDebuggerAttachFunc)(gboolean attached);
-extern "C" EXPORT_API void EXPORT_CC mono_debugger_install_attach_detach_callback (MonoDebuggerAttachFunc func)
-{
-}
-
-extern "C" EXPORT_API void EXPORT_CC mono_debugger_set_generate_debug_info(gboolean enable)
-{
-}
-
 extern "C" EXPORT_API const char* EXPORT_CC mono_field_get_name(MonoClassField *field)
 {
     CONTRACTL
@@ -311,26 +226,11 @@ extern "C" EXPORT_API int EXPORT_CC mono_field_get_offset(MonoClassField *field)
     return result;
 }
 
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_field_get_parent(MonoClassField *field)
-{
-    FieldDesc* fieldDesc = (FieldDesc*)field;
-    return (MonoClass*)fieldDesc->GetApproxEnclosingMethodTable();
-}
-
 static inline OBJECTHANDLE handle_from_uintptr(uintptr_t p)
 {
     // mask off bit that is set for pinned in managed
     p &= (~(uintptr_t)1);
     return (OBJECTHANDLE)p;
-}
-
-static inline uintptr_t handle_to_uintptr(OBJECTHANDLE h, bool pinned)
-{
-    uintptr_t p = (uintptr_t)h;
-    // managed code expects lowest bit set for pinned handles
-    if (pinned)
-        p |= (uintptr_t)1;
-    return p;
 }
 
 // The embedding api has moved to managed, however, there is still a usage by another native embedding api that will need to be moved to managed
@@ -445,6 +345,7 @@ extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_method_get_last_managed()
     return (MonoMethod*)(intptr_t)g_isManaged;
 }
 
+// Still used by: mono_runtime_invoke_with_nested_object
 extern "C" EXPORT_API const char* EXPORT_CC mono_method_get_name(MonoMethod *method)
 {
     return reinterpret_cast<MonoMethod_clr*>(method)->GetName();
@@ -655,43 +556,6 @@ MonoObject* EXPORT_CC mono_runtime_invoke_with_nested_object(MonoMethod *method,
     return nullptr;
 }
 
-extern "C" EXPORT_API guint32 EXPORT_CC mono_signature_get_param_count(MonoMethodSignature *sig)
-{
-    MonoMethodSignature_clr* msig = (MonoMethodSignature_clr*)sig;
-    MetaSig metasig(msig);
-    return metasig.NumFixedArgs();
-}
-
-extern "C" EXPORT_API MonoType* EXPORT_CC mono_signature_get_params(MonoMethodSignature *sig, gpointer *iter)
-{
-    MonoMethodSignature_clr* signature = (MonoMethodSignature_clr*)sig;
-    MetaSig* metasig = (MetaSig*)*iter;
-    if (metasig == NULL)
-    {
-        metasig = new MetaSig(signature);
-        *iter = metasig;
-    }
-
-    CorElementType argType = metasig->NextArg();
-    if (argType == ELEMENT_TYPE_END)
-    {
-        delete metasig;
-        //*iter = NULL; // match mono behavior
-        return NULL;
-    }
-
-    TypeHandle typeHandle = metasig->GetLastTypeHandleThrowing();
-    return (MonoType*)typeHandle.AsPtr();
-}
-
-extern "C" EXPORT_API MonoType* EXPORT_CC mono_signature_get_return_type(MonoMethodSignature *sig)
-{
-    MonoMethodSignature_clr* signature = (MonoMethodSignature_clr*)sig;
-    MetaSig msig(signature);
-    TypeHandle reth = msig.GetRetTypeHandleThrowing();
-    return (MonoType*)reth.AsPtr();
-}
-
 extern "C" EXPORT_API MonoThread* EXPORT_CC mono_thread_attach(MonoDomain *domain)
 {
     MonoThread_clr* currentThread = GetThreadNULLOk();
@@ -824,15 +688,6 @@ retry:
     }
 }
 
-#if defined(HOST_OSX) || defined(HOST_UNIX)
-extern "C" EXPORT_API int EXPORT_CC mono_unity_backtrace_from_context(void* context, void* array[], int count)
-{
-    // Not implemented yet. Returning no frames allows code to continue without
-    // stack trace support.
-    return 0;
-}
-#endif
-
 extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_has_failure (MonoClass * klass)
 {
 #ifndef DACCESS_COMPILE
@@ -847,11 +702,6 @@ extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_has_failure (MonoClass
     // No way to check this without IsInitError missing
     return FALSE;
 #endif
-}
-
-extern "C" EXPORT_API void EXPORT_CC mono_unity_g_free(void* p)
-{
-    free(p);
 }
 
 extern "C" EXPORT_API void EXPORT_CC coreclr_unity_profiler_register(const CLSID* classId, const guint16* profilerDllPathUtf16)
@@ -909,16 +759,6 @@ extern "C" EXPORT_API gboolean EXPORT_CC coreclr_unity_gc_concurrent_mode(gboole
     }
 
     return currentState;
-}
-
-
-extern bool g_chainFatalError;
-
-extern "C" EXPORT_API gboolean EXPORT_CC coreclr_unity_gc_set_chain_fatal_error(gboolean state)
-{
-    bool prev = g_chainFatalError;
-    g_chainFatalError = (bool)state;
-    return prev;
 }
 
 typedef void (__cdecl *OnFatalErrorFunc)(EXCEPTION_POINTERS* pExceptionPointers);
