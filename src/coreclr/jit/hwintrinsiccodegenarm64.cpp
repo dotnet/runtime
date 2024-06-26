@@ -824,10 +824,34 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         assert(!node->IsEmbMaskOp());
                         if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
                         {
-                            GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                            if (isRMW)
+                            {
+                                if (targetReg != op2Reg)
+                                {
+                                    assert(targetReg != op1Reg);
+
+                                    instruction insMov = INS_mov;
+
+                                    if (GetEmitter()->isPredicateRegister(targetReg) &&
+                                        GetEmitter()->isPredicateRegister(op2Reg))
+                                    {
+                                        insMov = INS_sve_mov;
+                                    }
+
+                                    GetEmitter()->emitIns_Mov(insMov, emitTypeSize(node), targetReg, op2Reg,
+                                                              /* canSkip */ true);
+                                }
+
+                                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                            }
+                            else
+                            {
+                                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                            }
                         }
                         else
                         {
+                            assert(!isRMW);
                             // This generates an unpredicated version
                             // Implicitly predicated should be taken care above `intrin.op2->IsEmbMaskOp()`
                             GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
@@ -2184,21 +2208,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, INS_OPTS_SCALABLE_B);
-                break;
-            }
-
-            case NI_Sve_CreateMaskForNextActiveElement:
-            {
-                assert(isRMW);
-                assert(HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id));
-
-                if (targetReg != op2Reg)
-                {
-                    assert(targetReg != op1Reg);
-                    GetEmitter()->emitIns_Mov(INS_sve_mov, emitTypeSize(node), targetReg, op2Reg, /* canSkip */ true);
-                }
-
-                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                 break;
             }
 
