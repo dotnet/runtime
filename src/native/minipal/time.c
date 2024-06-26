@@ -77,7 +77,7 @@ int64_t minipal_hires_ticks()
 
 #endif // !HOST_WINDOWS
 
-void minipal_microsleep(uint32_t usecs, uint32_t* usecsSinceYield)
+void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 {
 #ifdef HOST_WINDOWS
     if (usecs > 1000)
@@ -116,9 +116,9 @@ void minipal_microsleep(uint32_t usecs, uint32_t* usecsSinceYield)
     int64_t ticksPerSecond = minipal_hires_tick_frequency();
     int64_t endTicks = startTicks + (usecs * ticksPerSecond) / 1000000;
 
-    // start with 4 nops/pauses and then double up until we hit the limit
+    // start with 1 nop/pause and then double up until we hit the limit
     // this way we should not overshoot by more than 2x.
-    for (int i = 2; i < 30; i++)
+    for (int i = 0; i < 30; i++)
     {
         for (int j = 0; j < (1 << i); j++)
         {

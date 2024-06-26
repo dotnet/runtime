@@ -3332,12 +3332,12 @@ void ThreadSuspend::SuspendAllThreads()
         if (remaining < prevRemaining || !observeOnly)
         {
             // 5 usec delay, then check for more progress
-            minipal_microsleep(5, &usecsSinceYield);
+            minipal_microdelay(5, &usecsSinceYield);
             observeOnly = true;
         }
         else
         {
-            minipal_microsleep(rehijackDelay, &usecsSinceYield);
+            minipal_microdelay(rehijackDelay, &usecsSinceYield);
             observeOnly = false;
 
             // double up rehijack delay in case we are rehjacking too often

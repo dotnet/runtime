@@ -23,7 +23,7 @@ extern "C"
     //
     // If not NULL, `usecsSinceYield` keeps track of busy-waiting time, so that
     // the containing algorithm could handle cases when busy-waiting time is too high.
-    void minipal_microsleep(uint32_t usecs, uint32_t* usecsSinceYield);
+    void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield);
 
 #ifdef __cplusplus
 }
