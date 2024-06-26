@@ -272,7 +272,7 @@ _RhpGcStressHijack@0  proc public
 
 _RhpGcStressHijack@0  endp
 
-FASTCALL_FUNC RhpHijackForGcStress, 0
+_RhpHijackForGcStress@0  proc public
         push        ebp
         mov         ebp, esp
 
@@ -307,7 +307,7 @@ FASTCALL_FUNC RhpHijackForGcStress, 0
         pop         edx
         pop         ebp
         ret
-FASTCALL_ENDFUNC
+_RhpHijackForGcStress@0  endp
 endif ;; FEATURE_GC_STRESS
 
         end
