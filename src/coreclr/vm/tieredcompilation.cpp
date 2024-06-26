@@ -225,7 +225,7 @@ bool TieredCompilationManager::TrySetCodeEntryPointAndRecordMethodForCallCountin
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
-    _ASSERTE(codeEntryPoint != NULL);
+    _ASSERTE(codeEntryPoint != (PCODE)NULL);
 
     if (!IsTieringDelayActive())
     {
