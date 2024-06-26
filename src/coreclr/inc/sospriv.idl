@@ -519,3 +519,13 @@ interface ISOSDacInterface14 : IUnknown
     HRESULT GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS thread, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
     HRESULT GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
 }
+
+[
+    object,
+    local,
+    uuid(7ed81261-52a9-4a23-a358-c3313dea30a8)
+]
+interface ISOSDacInterface15 : IUnknown
+{
+    HRESULT GetMethodTableSlotMethodDesc(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA_ADDRESS *value);
+}

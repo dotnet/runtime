@@ -425,6 +425,10 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
     {
         // Now get the slot:
         *value = mTable->GetRestoredSlotIfExists(slot);
+        if (*value == 0)
+        {
+            hr = E_NOT_VALID_STATE;
+        }
     }
     else
     {
@@ -436,6 +440,51 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
             if (pMD->GetSlot() == slot)
             {
                 *value = pMD->GetMethodEntryPoint_NoAlloc();
+                if (*value == 0)
+                {
+                    hr = E_NOT_VALID_STATE;
+                }
+                else
+                {
+                    hr = S_OK;
+                }
+            }
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetMethodTableSlotMethodDesc(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA_ADDRESS *value)
+{
+    if (mt == 0 || value == NULL)
+        return E_INVALIDARG;
+
+    SOSDacEnter();
+
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(mt));
+    BOOL bIsFree = FALSE;
+    if (!DacValidateMethodTable(mTable, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else if (slot < mTable->GetNumVtableSlots())
+    {
+        *value = HOST_CDADDR(mTable->GetMethodDescForSlot_NoThrow(slot));
+        hr = S_OK;
+    }
+    else
+    {
+        hr = E_INVALIDARG;
+        MethodTable::IntroducedMethodIterator it(mTable);
+        for (; it.IsValid() && FAILED(hr); it.Next())
+        {
+            MethodDesc* pMD = it.GetMethodDesc();
+            if (pMD->GetSlot() == slot)
+            {
+                *value = HOST_CDADDR(pMD);
                 hr = S_OK;
             }
         }

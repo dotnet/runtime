@@ -3333,6 +3333,27 @@ EXTERN_C const IID IID_ISOSDacInterface13;
 #define ISOSDacInterface13_TraverseLoaderHeap(This,loaderHeapAddr,kind,pCallback)	\
     ( (This)->lpVtbl -> TraverseLoaderHeap(This,loaderHeapAddr,kind,pCallback) )
 
+#define ISOSDacInterface13_GetDomainLoaderAllocator(This,domainAddress,pLoaderAllocator)	\
+    ( (This)->lpVtbl -> GetDomainLoaderAllocator(This,domainAddress,pLoaderAllocator) ) 
+
+#define ISOSDacInterface13_GetLoaderAllocatorHeapNames(This,count,ppNames,pNeeded)	\
+    ( (This)->lpVtbl -> GetLoaderAllocatorHeapNames(This,count,ppNames,pNeeded) ) 
+
+#define ISOSDacInterface13_GetLoaderAllocatorHeaps(This,loaderAllocator,count,pLoaderHeaps,pKinds,pNeeded)	\
+    ( (This)->lpVtbl -> GetLoaderAllocatorHeaps(This,loaderAllocator,count,pLoaderHeaps,pKinds,pNeeded) ) 
+
+#define ISOSDacInterface13_GetHandleTableMemoryRegions(This,ppEnum)	\
+    ( (This)->lpVtbl -> GetHandleTableMemoryRegions(This,ppEnum) ) 
+
+#define ISOSDacInterface13_GetGCBookkeepingMemoryRegions(This,ppEnum)	\
+    ( (This)->lpVtbl -> GetGCBookkeepingMemoryRegions(This,ppEnum) ) 
+
+#define ISOSDacInterface13_GetGCFreeRegions(This,ppEnum)	\
+    ( (This)->lpVtbl -> GetGCFreeRegions(This,ppEnum) ) 
+
+#define ISOSDacInterface13_LockedFlush(This)	\
+    ( (This)->lpVtbl -> LockedFlush(This) ) 
+
 #endif /* COBJMACROS */
 
 
@@ -3454,6 +3475,90 @@ EXTERN_C const IID IID_ISOSDacInterface14;
 
 
 #endif 	/* __ISOSDacInterface14_INTERFACE_DEFINED__ */
+
+
+#ifndef __ISOSDacInterface15_INTERFACE_DEFINED__
+#define __ISOSDacInterface15_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface15 */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSDacInterface15;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("7ed81261-52a9-4a23-a358-c3313dea30a8")
+    ISOSDacInterface15 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetMethodTableSlotMethodDesc( 
+            CLRDATA_ADDRESS mt,
+            unsigned int slot,
+            CLRDATA_ADDRESS *value) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ISOSDacInterface15Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface15 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface15 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface15 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetMethodTableSlotMethodDesc )( 
+            ISOSDacInterface15 * This,
+            CLRDATA_ADDRESS mt,
+            unsigned int slot,
+            CLRDATA_ADDRESS *value);
+        
+        END_INTERFACE
+    } ISOSDacInterface15Vtbl;
+
+    interface ISOSDacInterface15
+    {
+        CONST_VTBL struct ISOSDacInterface15Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface15_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface15_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface15_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface15_GetMethodTableSlotMethodDesc(This,mt,slot,value)	\
+    ( (This)->lpVtbl -> GetMethodTableSlotMethodDesc(This,mt,slot,value) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSDacInterface15_INTERFACE_DEFINED__ */
 
 
 /* Additional Prototypes for ALL interfaces */

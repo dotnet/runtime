@@ -226,6 +226,7 @@ public:
 
     void SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
+#ifndef DACCESS_COMPILE
     PCODE GetInitialEntryPointForCopiedSlot()
     {
         CONTRACTL
@@ -242,6 +243,7 @@ public:
         }
         return GetMethodEntryPoint();
     }
+#endif
 
     inline BOOL HasPrecode()
     {
@@ -1206,6 +1208,7 @@ private:
         return GetTemporaryEntryPoint();
     }
 
+#ifndef DACCESS_COMPILE
     // Gets the entry point stored in the primary storage location for backpatching. Entry point slot backpatch uses this entry
     // point as an oracle to determine if the entry point actually changed and warrants backpatching.
     PCODE GetEntryPointToBackpatch_Locked()
@@ -1218,6 +1221,7 @@ private:
         _ASSERTE(IsVersionableWithVtableSlotBackpatch());
         return GetMethodEntryPoint();
     }
+#endif // DACCESS_COMPILE
 
     // Sets the entry point stored in the primary storage location for backpatching. Entry point slot backpatch uses this entry
     // point as an oracle to determine if the entry point actually changed and warrants backpatching.
@@ -1364,6 +1368,7 @@ public:
     ULONG GetRVA();
 
 public:
+#ifndef DACCESS_COMPILE
     // Returns address of code to call. The address is good for one immediate invocation only.
     // Use GetMultiCallableAddrOfCode() to get address that can be invoked multiple times.
     //
@@ -1377,6 +1382,7 @@ public:
         _ASSERTE(!IsGenericMethodDefinition());
         return GetMethodEntryPoint();
     }
+#endif
 
     // This one is used to implement "ldftn".
     PCODE GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_LDFTN);
@@ -1398,6 +1404,7 @@ public:
     PCODE GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
     PCODE GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
 
+#ifndef DACCESS_COMPILE
     // The current method entrypoint. It is simply the value of the current method slot.
     // GetMethodEntryPoint() should be used to get an opaque method entrypoint, for instance
     // when copying or searching vtables. It should not be used to get address to call.
@@ -1405,8 +1412,18 @@ public:
     // GetSingleCallableAddrOfCode() and GetStableEntryPoint() are aliases with stricter preconditions.
     // Use of these aliases is as appropriate.
     //
+    // Calling this function will allocate an Entrypoint and associate it with the MethodDesc if it
+    // doesn't already exist.
     PCODE GetMethodEntryPoint();
+#endif
 
+    // The current method entrypoint. It is simply the value of the current method slot.
+    // GetMethodEntryPoint() should be used to get an opaque method entrypoint, for instance
+    // when copying or searching vtables. It should not be used to get address to call.
+    //
+    // GetSingleCallableAddrOfCode() and GetStableEntryPoint() are aliases with stricter preconditions.
+    // Use of these aliases is as appropriate.
+    //
     PCODE GetMethodEntryPoint_NoAlloc();
 
     void EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator);

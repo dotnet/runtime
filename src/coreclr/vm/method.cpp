@@ -526,6 +526,7 @@ PCODE MethodDesc::GetMethodEntryPoint_NoAlloc()
     return GetMethodTable()->GetSlot(GetSlot());
 }
 
+#ifndef DACCESS_COMPILE
 PCODE MethodDesc::GetMethodEntryPoint()
 {
     CONTRACTL
@@ -561,6 +562,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
     _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
     return GetMethodTable()->GetRestoredSlot(GetSlot());
 }
+#endif // DACCESS_COMPILE
 
 PTR_PCODE MethodDesc::GetAddrOfSlot()
 {

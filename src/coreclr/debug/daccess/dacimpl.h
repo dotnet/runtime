@@ -1223,6 +1223,9 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS thread, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
 
+    // ISOSDacInterface15
+    virtual HRESULT STDMETHODCALLTYPE GetMethodTableSlotMethodDesc(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA_ADDRESS *value);
+
     //
     // ClrDataAccess.
     //
