@@ -215,6 +215,9 @@ CodeGen::CodeGen(Compiler* theCompiler)
 #endif // DEBUG
 
     regSet.tmpInit();
+#if defined(TARGET_ARM64)
+    predicateOffset = 0;
+#endif
 
 #ifdef LATE_DISASM
     getDisAssembler().disInit(compiler);

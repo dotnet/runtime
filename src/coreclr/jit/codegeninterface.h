@@ -141,7 +141,9 @@ public:
     RegState              intRegState;
     RegState              floatRegState;
     NodeInternalRegisters internalRegisters;
-
+#if defined(TARGET_ARM64)
+    int predicateOffset;
+#endif // TARGET_ARM64
 protected:
     Compiler* compiler;
     bool      m_genAlignLoops;

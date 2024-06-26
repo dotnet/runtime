@@ -7884,7 +7884,36 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
-            fmt      = isVectorRegister(reg1) ? IF_SVE_IE_2A : IF_SVE_ID_2A;
+            if (isPredicateRegister(reg1))
+            {
+                assert(offs == 0);
+                // For predicate, generate based of rsGetRsvdReg()
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+
+                if (varx >= 0)
+                {
+                    // local
+
+                    // add rsvd, fp, #imm
+                    emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                    // str p0, [rsvd, #0, mul vl]
+                    emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);                    
+                }
+                else
+                {
+                    // temp
+
+                    // `base` contains seqNum and offs = 0, so imm contains seqNum
+                    // add rsvd, fp #predicateStartOffset
+                    emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, codeGen->predicateOffset);
+                    // str p0, [rsvd, #imm, mul vl]
+                    emitIns_R_R_I(ins, attr, reg1, rsvdReg, imm);
+                }
+                return;
+            }
+
+            assert(isVectorRegister(reg1));
+            fmt      =  IF_SVE_IE_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8
@@ -8135,7 +8164,40 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
-            fmt      = isVectorRegister(reg1) ? IF_SVE_JH_2A : IF_SVE_JG_2A;
+
+            if (isPredicateRegister(reg1))
+            {
+                assert(offs == 0);
+
+                // For predicate, generate based of rsGetRsvdReg()
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+
+                if (varx >= 0)
+                {
+                    // local
+
+                    // add rsvd, fp, #imm
+                    emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                    // str p0, [rsvd, #0, mul vl]
+                    emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
+                }
+                else
+                {
+                    // temp
+
+                    // `base` contains seqNum and offs = 0, so imm contains seqNum
+                    // add rsvd, fp #predicateStartOffset
+                    emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, codeGen->predicateOffset);
+                    // str p0, [rsvd, #imm, mul vl]
+                    emitIns_R_R_I(ins, attr, reg1, rsvdReg, imm);
+                }
+
+                // TODO: deal with marking the local
+                return;
+            }
+
+            assert(isVectorRegister(reg1));
+            fmt      = IF_SVE_JH_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8

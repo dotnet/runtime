@@ -2708,7 +2708,16 @@ inline
                 tmpDsc = codeGen->regSet.tmpFindNum(varNum, RegSet::TEMP_USAGE_USED);
             }
             assert(tmpDsc != nullptr);
-            varOffset = tmpDsc->tdTempOffs();
+#if defined(TARGET_ARM64)
+            if (varTypeIsMask(tmpDsc->tdTempType()))
+            {
+                varOffset = tmpDsc->tdTempSeqNum();
+            }
+            else
+#endif // TARGET_ARM64
+            {
+                varOffset = tmpDsc->tdTempOffs();
+            }
         }
         else
         {

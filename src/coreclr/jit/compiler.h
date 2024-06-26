@@ -1430,12 +1430,18 @@ private:
     int       tdNum;
     BYTE      tdSize;
     var_types tdType;
+#if defined(TARGET_ARM64)
+    BYTE tdSeqNum;
+#endif // TARGET_ARM64
 
 public:
-    TempDsc(int _tdNum, unsigned _tdSize, var_types _tdType)
+    TempDsc(int _tdNum, unsigned _tdSize, var_types _tdType, unsigned _tdSeqNum)
         : tdNum(_tdNum)
         , tdSize((BYTE)_tdSize)
         , tdType(_tdType)
+#if defined(TARGET_ARM64)
+        , tdSeqNum((BYTE)_tdSeqNum)
+#endif // TARGET_ARM64
     {
 #ifdef DEBUG
         // temps must have a negative number (so they have a different number from all local variables)
@@ -1484,6 +1490,13 @@ public:
     {
         return tdType;
     }
+#ifdef TARGET_ARM64
+    unsigned tdTempSeqNum() const
+    {
+        assert(varTypeIsMask(tdType));
+        return tdSeqNum;
+    }
+#endif
 };
 
 // Specify compiler data that a phase might modify
