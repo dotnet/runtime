@@ -40,7 +40,7 @@ namespace System
         /// <remarks>
         /// The value of this constant is 100.
         /// </remarks>
-        public const long NanosecondsPerTick = 100;
+        public const long NanosecondsPerTick = 100;                                                 //             100
 
         /// <summary>
         /// Represents the number of ticks in 1 microsecond. This field is constant.
@@ -48,7 +48,7 @@ namespace System
         /// <remarks>
         /// The value of this constant is 10.
         /// </remarks>
-        public const long TicksPerMicrosecond = 10;
+        public const long TicksPerMicrosecond = 10;                                                 //              10
 
         /// <summary>
         /// Represents the number of ticks in 1 millisecond. This field is constant.
@@ -57,30 +57,158 @@ namespace System
         /// The value of this constant is 10 thousand; that is, 10,000.
         /// </remarks>
         public const long TicksPerMillisecond = TicksPerMicrosecond * 1000;                         //          10,000
+
+        /// <summary>
+        /// Represents the number of ticks in 1 second. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 10 million; that is, 10,000,000.
+        /// </remarks>
         public const long TicksPerSecond = TicksPerMillisecond * 1000;                              //      10,000,000
+
+        /// <summary>
+        /// Represents the number of ticks in 1 minute. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 600 million; that is, 600,000,000.
+        /// </remarks>
         public const long TicksPerMinute = TicksPerSecond * 60;                                     //     600,000,000
+
+        /// <summary>
+        /// Represents the number of ticks in 1 hour. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 36 billion; that is, 36,000,000,000.
+        /// </remarks>
         public const long TicksPerHour = TicksPerMinute * 60;                                       //  36,000,000,000
+
+        /// <summary>
+        /// Represents the number of ticks in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 864 billion; that is, 864,000,000,000.
+        /// </remarks>
         public const long TicksPerDay = TicksPerHour * 24;                                          // 864,000,000,000
 
-        internal const long MicrosecondsPerMillisecond = TicksPerMillisecond / TicksPerMicrosecond; //           1,000
-        internal const long MicrosecondsPerSecond = TicksPerSecond / TicksPerMicrosecond;           //       1,000,000
-        internal const long MicrosecondsPerMinute = TicksPerMinute / TicksPerMicrosecond;           //      60,000,000
-        internal const long MicrosecondsPerHour = TicksPerHour / TicksPerMicrosecond;               //   3,600,000,000
-        internal const long MicrosecondsPerDay = TicksPerDay / TicksPerMicrosecond;                 //  86,400,000,000
+        /// <summary>
+        /// Represents the number of microseconds in 1 millisecond. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 1 thousand; that is, 1,000.
+        /// </remarks>
+        public const long MicrosecondsPerMillisecond = TicksPerMillisecond / TicksPerMicrosecond;   //           1,000
 
-        internal const long MillisecondsPerSecond = TicksPerSecond / TicksPerMillisecond;           //           1,000
-        internal const long MillisecondsPerMinute = TicksPerMinute / TicksPerMillisecond;           //          60,000
-        internal const long MillisecondsPerHour = TicksPerHour / TicksPerMillisecond;               //       3,600,000
-        internal const long MillisecondsPerDay = TicksPerDay / TicksPerMillisecond;                 //      86,400,000
+        /// <summary>
+        /// Represents the number of microseconds in 1 second. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 1 million; that is, 1,000,000.
+        /// </remarks>
+        public const long MicrosecondsPerSecond = TicksPerSecond / TicksPerMicrosecond;             //       1,000,000
 
-        internal const long SecondsPerMinute = TicksPerMinute / TicksPerSecond;                     //              60
-        internal const long SecondsPerHour = TicksPerHour / TicksPerSecond;                         //           3,600
-        internal const long SecondsPerDay = TicksPerDay / TicksPerSecond;                           //          86,400
+        /// <summary>
+        /// Represents the number of microseconds in 1 minute. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 60 million; that is, 60,000,000.
+        /// </remarks>
+        public const long MicrosecondsPerMinute = TicksPerMinute / TicksPerMicrosecond;             //      60,000,000
 
-        internal const long MinutesPerHour = TicksPerHour / TicksPerMinute;                         //              60
-        internal const long MinutesPerDay = TicksPerDay / TicksPerMinute;                           //           1,440
+        /// <summary>
+        /// Represents the number of microseconds in 1 hour. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 3.6 billion; that is, 3,600,000,000.
+        /// </remarks>
+        public const long MicrosecondsPerHour = TicksPerHour / TicksPerMicrosecond;                 //   3,600,000,000
 
-        internal const long HoursPerDay = TicksPerDay / TicksPerHour;                               //              24
+        /// <summary>
+        /// Represents the number of microseconds in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 86.4 billion; that is, 86,400,000,000.
+        /// </remarks>
+        public const long MicrosecondsPerDay = TicksPerDay / TicksPerMicrosecond;                   //  86,400,000,000
+
+        /// <summary>
+        /// Represents the number of milliseconds in 1 second. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 1 thousand; that is, 1,000.
+        /// </remarks>
+        public const long MillisecondsPerSecond = TicksPerSecond / TicksPerMillisecond;             //           1,000
+
+        /// <summary>
+        /// Represents the number of milliseconds in 1 minute. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 60 thousand; that is, 60,000.
+        /// </remarks>
+        public const long MillisecondsPerMinute = TicksPerMinute / TicksPerMillisecond;             //          60,000
+
+        /// <summary>
+        /// Represents the number of milliseconds in 1 hour. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 3.6 million; that is, 3,600,000.
+        /// </remarks>
+        public const long MillisecondsPerHour = TicksPerHour / TicksPerMillisecond;                 //       3,600,000
+
+        /// <summary>
+        /// Represents the number of milliseconds in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 86.4 million; that is, 86,400,000.
+        /// </remarks>
+        public const long MillisecondsPerDay = TicksPerDay / TicksPerMillisecond;                   //      86,400,000
+
+        /// <summary>
+        /// Represents the number of seconds in 1 minute. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 60.
+        /// </remarks>
+        public const long SecondsPerMinute = TicksPerMinute / TicksPerSecond;                       //              60
+
+        /// <summary>
+        /// Represents the number of seconds in 1 hour. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 3.6 thousand; that is, 3,600.
+        /// </remarks>
+        public const long SecondsPerHour = TicksPerHour / TicksPerSecond;                           //           3,600
+
+        /// <summary>
+        /// Represents the number of seconds in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 86.4 thousand; that is, 86,400.
+        /// </remarks>
+        public const long SecondsPerDay = TicksPerDay / TicksPerSecond;                             //          86,400
+
+        /// <summary>
+        /// Represents the number of minutes in 1 hour. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 60.
+        /// </remarks>
+        public const long MinutesPerHour = TicksPerHour / TicksPerMinute;                           //              60
+
+        /// <summary>
+        /// Represents the number of minutes in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 1440.
+        /// </remarks>
+        public const long MinutesPerDay = TicksPerDay / TicksPerMinute;                             //           1,440
+
+        /// <summary>
+        /// Represents the number of hours in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 24.
+        /// </remarks>
+        public const int HoursPerDay = (int)(TicksPerDay / TicksPerHour);                           //              24
 
         internal const long MinTicks = long.MinValue;                                               // -9,223,372,036,854,775,808
         internal const long MaxTicks = long.MaxValue;                                               // +9,223,372,036,854,775,807

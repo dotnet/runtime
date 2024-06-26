@@ -25,7 +25,6 @@ namespace System.Net.Http
 
         private TaskCompletionSourceWithCancellation<bool>? _initialSettingsReceived;
 
-        private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
 
         // NOTE: These are mutable structs; do not make these readonly.
@@ -132,7 +131,6 @@ namespace System.Net.Http
         public Http2Connection(HttpConnectionPool pool, Stream stream, IPEndPoint? remoteEndPoint)
             : base(pool, remoteEndPoint)
         {
-            _pool = pool;
             _stream = stream;
 
             _incomingBuffer = new ArrayBuffer(initialSize: 0, usePool: true);
@@ -1792,18 +1790,6 @@ namespace System.Net.Http
             LogExceptions(SendWindowUpdateAsync(0, _pendingWindowUpdate));
             _pendingWindowUpdate = 0;
             return true;
-        }
-
-        public override long GetIdleTicks(long nowTicks)
-        {
-            // The pool is holding the lock as part of its scavenging logic.
-            // We must not lock on Http2Connection.SyncObj here as that could lead to lock ordering problems.
-            Debug.Assert(_pool.HasSyncObjLock);
-
-            // There is a race condition here where the connection pool may see this connection as idle right before
-            // we start processing a new request and start its disposal. This is okay as we will either
-            // return false from TryReserveStream, or process pending requests before tearing down the transport.
-            return _streamsInUse == 0 ? base.GetIdleTicks(nowTicks) : 0;
         }
 
         /// <summary>Abort all streams and cause further processing to fail.</summary>

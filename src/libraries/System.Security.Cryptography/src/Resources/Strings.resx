@@ -717,6 +717,12 @@
   <data name="Cryptography_X509_PKCS12_ExportableNotSupported" xml:space="preserve">
     <value>The PKCS#12 Exportable flag is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_X509_PKCS12_LimitExceeded" xml:space="preserve">
+    <value>The PKCS#12/PFX violated the '{0}' limit.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_LimitsReadOnly" xml:space="preserve">
+    <value>This Pkcs12LoaderLimits object has been made read-only and can no longer be modified.</value>
+  </data>
   <data name="Cryptography_X509_PKCS12_PersistKeySetNotSupported" xml:space="preserve">
     <value>The PKCS#12 PersistKeySet flag is not supported on this platform.</value>
   </data>
