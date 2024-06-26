@@ -553,8 +553,12 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
             return EXCEPTION_CONTINUE_SEARCH;
         }
 
-        // Sanity check. The thread should be hijacked by us.
-        _ASSERTE_ALL_BUILDS(pThread->IsHijacked());
+        // Sanity check.
+        if (!pThread->IsHijacked())
+        {
+            _ASSERTE(!"The thread should be hijacked by us.");
+            RhFailFast();
+        }
 
         PCONTEXT interruptedContext = pExPtrs->ContextRecord;
         bool areShadowStacksEnabled = PalAreShadowStacksEnabled();
