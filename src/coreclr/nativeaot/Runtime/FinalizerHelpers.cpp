@@ -55,6 +55,11 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     UInt32_BOOL fResult = PalSetEvent(hFinalizerEvent);
     ASSERT(fResult);
 
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        YieldProcessorNormalization::PerformMeasurement();
+    }
+
     // Run the managed portion of the finalizer. This call will never return.
 
     ProcessFinalizers();
