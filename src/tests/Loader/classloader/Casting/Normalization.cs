@@ -9,7 +9,7 @@ using Xunit;
 public class NormalizationTests
 {
     [Fact]
-    public void IntPtrArrayNormalization()
+    public static void IntPtrArrayNormalization()
     {
         object x0 = new long[1];
         object x1 = new ulong[1]; 
