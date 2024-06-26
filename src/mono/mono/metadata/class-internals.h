@@ -588,8 +588,10 @@ typedef struct {
 	// have both of them to be non-NULL.
 	const char *name;
 	gconstpointer func;
-	gconstpointer wrapper__;
-	gconstpointer trampoline__;
+	// use CAS to write
+	gconstpointer wrapper;
+	// use CAS to write
+	gconstpointer trampoline;
 	MonoMethodSignature *sig;
 	const char *c_symbol;
 	MonoMethod *wrapper_method;

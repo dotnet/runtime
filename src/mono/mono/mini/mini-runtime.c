@@ -654,8 +654,8 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 	MonoMethod *wrapper;
 	gconstpointer addr, trampoline;
 
-	if (callinfo->wrapper__)
-		return callinfo->wrapper__;
+	if (callinfo->wrapper)
+		return callinfo->wrapper;
 
 	wrapper = mono_icall_get_wrapper_method (callinfo);
 
@@ -663,19 +663,19 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 		addr = mono_compile_method_checked (wrapper, error);
 		mono_error_assert_ok (error);
 		mono_memory_barrier ();
-		callinfo->wrapper__ = addr;
-		return addr;
+		mono_atomic_cas_ptr ((volatile gpointer*)&callinfo->wrapper, (gpointer)addr, NULL);
+		return (gconstpointer)mono_atomic_load_ptr((volatile gpointer*)&callinfo->wrapper);
 	} else {
-		if (callinfo->trampoline__)
-			return callinfo->trampoline__;
+		if (callinfo->trampoline)
+			return callinfo->trampoline;
 		trampoline = mono_create_jit_trampoline (wrapper, error);
 		mono_error_assert_ok (error);
 		trampoline = mono_create_ftnptr ((gpointer)trampoline);
 
 		
-		mono_atomic_cas_ptr ((volatile gpointer*)&callinfo->trampoline__, (void*)trampoline, NULL);
+		mono_atomic_cas_ptr ((volatile gpointer*)&callinfo->trampoline, (gpointer)trampoline, NULL);
 
-		return (gconstpointer)mono_atomic_load_ptr ((volatile gpointer*)&callinfo->trampoline__);
+		return (gconstpointer)mono_atomic_load_ptr ((volatile gpointer*)&callinfo->trampoline);
 	}
 }
 
@@ -2853,8 +2853,8 @@ lookup_start:
 	p = mono_create_ftnptr (code);
 
 	if (callinfo) {
-		mono_atomic_cas_ptr ((volatile void*)&callinfo->wrapper__, p, NULL);
-		p = mono_atomic_load_ptr((volatile gpointer*)&callinfo->wrapper__);
+		mono_atomic_cas_ptr ((volatile void*)&callinfo->wrapper, p, NULL);
+		p = mono_atomic_load_ptr((volatile gpointer*)&callinfo->wrapper);
 	}
 
 	return p;

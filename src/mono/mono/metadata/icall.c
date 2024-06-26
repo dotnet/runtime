@@ -7220,7 +7220,8 @@ mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const 
 	// Fill in wrapper ahead of time, to just be func, to avoid
 	// later initializing it to anything else. So therefore, no wrapper.
 	if (avoid_wrapper) {
-		info->wrapper__ = func;
+		// not using CAS, because its idempotent
+		info->wrapper = func;
 	} else {
 		// Leave it alone in case of a race.
 	}
