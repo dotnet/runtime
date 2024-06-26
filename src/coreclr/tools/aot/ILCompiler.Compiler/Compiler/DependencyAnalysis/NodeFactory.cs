@@ -323,6 +323,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new GenericMethodsHashtableEntryNode(method);
             });
 
+            _typesWithGvms = new NodeCache<TypeDesc, TypeWithGenericVirtualMethodsNode>(type =>
+            {
+                return new TypeWithGenericVirtualMethodsNode(type);
+            });
+
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
                 return new TypeGVMEntriesNode(type);
@@ -1056,6 +1061,12 @@ namespace ILCompiler.DependencyAnalysis
         public GenericMethodsHashtableEntryNode GenericMethodsHashtableEntry(MethodDesc method)
         {
             return _genericMethodEntries.GetOrAdd(method);
+        }
+
+        private NodeCache<TypeDesc, TypeWithGenericVirtualMethodsNode> _typesWithGvms;
+        internal TypeWithGenericVirtualMethodsNode TypeWithGenericVirtualMethods(TypeDesc type)
+        {
+            return _typesWithGvms.GetOrAdd(type);
         }
 
         private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;
