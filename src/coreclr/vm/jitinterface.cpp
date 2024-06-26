@@ -6270,12 +6270,10 @@ CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
     else
 #endif
     {
-        TypeHandle mt(CoreLibBinder::GetElementType(ELEMENT_TYPE_I));
-        TypeHandle boxedFields[2] = {mt, VMClsHnd};
-        Instantiation boxedFieldsInst((TypeHandle*)&boxedFields, 2);
-        TypeHandle genericKvp = CoreLibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC);
-        TypeHandle boxedKvp = genericKvp.Instantiate(boxedFieldsInst);
-        result = static_cast<CORINFO_CLASS_HANDLE>(boxedKvp.AsPtr());
+        Instantiation boxedFieldsInst(&VMClsHnd, 1);
+        TypeHandle stackAllocatedBox = CoreLibBinder::GetClass(CLASS__STACKALLOCATEDBOX);
+        TypeHandle stackAllocatedBoxInst = stackAllocatedBox.Instantiate(boxedFieldsInst);
+        result = static_cast<CORINFO_CLASS_HANDLE>(stackAllocatedBoxInst.AsPtr());
     }
 
     EE_TO_JIT_TRANSITION();
