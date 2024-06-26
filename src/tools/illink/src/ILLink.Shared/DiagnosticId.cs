@@ -169,7 +169,7 @@ namespace ILLink.Shared
 		InvalidIsTrimmableValue = 2102,
 		PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDetermined = 2103,
 		AssemblyProducedTrimWarnings = 2104,
-		TypeWasNotFoundInAssemblyNorBaseLibrary = 2105,
+		_unused_TypeWasNotFoundInAssemblyNorBaseLibrary = 2105,
 		DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings = 2106,
 		MethodsAreAssociatedWithStateMachine = 2107,
 		InvalidScopeInUnconditionalSuppressMessage = 2108,
