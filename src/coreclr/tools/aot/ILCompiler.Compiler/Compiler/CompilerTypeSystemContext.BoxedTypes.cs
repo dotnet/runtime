@@ -255,10 +255,10 @@ namespace ILCompiler
 
             public override ModuleDesc Module { get; }
 
-            public override string Name => "Boxed_" + ValueTypeRepresented.Name;
+            public override string Name => ValueTypeRepresented.Name;
 
             public override string Namespace => ValueTypeRepresented.Namespace;
-            public override string DiagnosticName => "Boxed_" + ValueTypeRepresented.DiagnosticName;
+            public override string DiagnosticName => ValueTypeRepresented.DiagnosticName;
             public override string DiagnosticNamespace => ValueTypeRepresented.DiagnosticNamespace;
             public override Instantiation Instantiation => ValueTypeRepresented.Instantiation;
             public override PInvokeStringFormat PInvokeStringFormat => PInvokeStringFormat.AutoClass;
@@ -409,21 +409,9 @@ namespace ILCompiler
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override string Name
-            {
-                get
-                {
-                    return _targetMethod.Name + "_Unbox";
-                }
-            }
+            public override string Name => _targetMethod.Name;
 
-            public override string DiagnosticName
-            {
-                get
-                {
-                    return _targetMethod.DiagnosticName + "_Unbox";
-                }
-            }
+            public override string DiagnosticName => _targetMethod.DiagnosticName;
 
             public override MethodIL EmitIL()
             {
@@ -506,21 +494,9 @@ namespace ILCompiler
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override string Name
-            {
-                get
-                {
-                    return _targetMethod.Name + "_Unbox";
-                }
-            }
+            public override string Name => _targetMethod.Name;
 
-            public override string DiagnosticName
-            {
-                get
-                {
-                    return _targetMethod.DiagnosticName + "_Unbox";
-                }
-            }
+            public override string DiagnosticName => _targetMethod.DiagnosticName;
 
             public override MethodIL EmitIL()
             {
