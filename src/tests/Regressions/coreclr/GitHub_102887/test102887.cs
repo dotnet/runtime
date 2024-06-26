@@ -11,6 +11,10 @@ public class Test102887
     [DllImport("nativetest102887")]
     private static extern void StartDispatchQueueThread(DispatchQueueWork start);
 
+    [DllImport("nativetest102887")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SupportsSendingSignalsToDispatchQueueThread();
+
     static volatile int s_cnt;
     static ManualResetEvent s_workStarted = new ManualResetEvent(false);
 
@@ -26,12 +30,17 @@ public class Test102887
     [Fact]
     public static void TestEntryPoint()
     {
-        StartDispatchQueueThread(RunOnDispatchQueueThread);
-        s_workStarted.WaitOne();
-
-        for (int i = 0; i < 100; i++)
+        // Skip the test if the current OS doesn't support sending signals to the dispatch queue threads
+        if (SupportsSendingSignalsToDispatchQueueThread())
         {
-            GC.Collect(2);
+            Console.WriteLine("Sending signals to dispatch queue thread is supported, testing it now");
+            StartDispatchQueueThread(RunOnDispatchQueueThread);
+            s_workStarted.WaitOne();
+
+            for (int i = 0; i < 100; i++)
+            {
+                GC.Collect(2);
+            }
         }
     }
 }
