@@ -11,7 +11,7 @@ Param(
   [switch]$coverage,
   [string]$testscope,
   [switch]$testnobuild,
-  [ValidateSet("x86","x64","arm","arm64","wasm")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
+  [ValidateSet("x86","x64","arm","arm64","wasm")][string[]][Alias('a')]$arch,
   [switch]$cross = $false,
   [string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
@@ -27,11 +27,19 @@ Param(
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
+function Get-Default-Arch() {
+  if ($env:DOTNET_RUNTIME_DEFAULT_ARCH) {
+    return $env:DOTNET_RUNTIME_DEFAULT_ARCH
+  }
+
+  return [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()
+}
+
 function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -arch (-a)                     Target platform: x86, x64, arm, arm64, or wasm."
   Write-Host "                                 Pass a comma-separated list to build for multiple architectures."
-  Write-Host ("                                 [Default: {0} (Depends on your console's architecture.)]" -f [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())
+  Write-Host ("                                 [Default: {0} (Depends on your console's architecture or the DOTNET_RUNTIME_DEFAULT_ARCH environment variable.)]" -f @(Get-Default-Arch))
   Write-Host "  -binaryLog (-bl)               Output binary log."
   Write-Host "  -configuration (-c)            Build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR subset. It is the same as Debug, except code is"
@@ -141,6 +149,10 @@ if (-not $PSBoundParameters.ContainsKey("subset") -and $properties.Length -gt 0 
 if ($subset -eq 'help') {
   Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary /tl:false"
   exit 0
+}
+
+if (-not $arch) {
+  $arch = Get-Default-Arch
 }
 
 # Lower-case the passed in OS string.
