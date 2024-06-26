@@ -13292,6 +13292,8 @@ void free_list_snapshot::record(heap_segment_snapshot* dst, heap_segment* src)
     dst->mem = src->mem;
 
     dst->gen_num = src->gen_num;
+    // We need a read of s_dummy somewhere in order to avoid fail() being completely
+    // optimized away.
     dst->valid = 1 + static_cast<uint8_t>(free_list_snapshot::s_dummy);
     dst->age_in_free = src->age_in_free;
 }
@@ -13329,7 +13331,7 @@ void free_list_snapshot::record(snapshot_stage stage, freelist_type type, region
          (i < SNAPSHOT_SIZE) && (current != nullptr);
          ++i, current = current->prev_free_region)
     {
-        record(&s_buffer[s_counter].end[SNAPSHOT_SIZE - i - 1], current);
+        record(&s_buffer[s_counter].end[i], current);
     }
 
     // Increment counters.  Keep both for easy debugger inspection.

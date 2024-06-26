@@ -1511,8 +1511,8 @@ const int SNAPSHOT_SIZE = 50;
 class free_list_snapshot
 {
 private:
-    static int* s_nullptr;
-    static int s_dummy;
+    static int* s_nullptr; // always null
+    static int s_dummy; // always zero
 
     static VOLATILE(int32_t) s_lock;
 
