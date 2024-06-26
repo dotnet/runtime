@@ -585,7 +585,7 @@ unsigned interceptor_ICJI::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls
     return temp;
 }
 
-// This is only called for Value classes.  It returns a boolean array
+// This is called for ref and value classes.  It returns a boolean array
 // in representing of 'cls' from a GC perspective.  The class is
 // assumed to be an array of machine words
 // (of length // getClassSize(cls) / sizeof(void*)),
@@ -600,7 +600,15 @@ unsigned interceptor_ICJI::getClassGClayout(CORINFO_CLASS_HANDLE cls,   /* IN */
 {
     mc->cr->AddCall("getClassGClayout");
     unsigned temp = original_ICorJitInfo->getClassGClayout(cls, gcPtrs);
-    unsigned len  = (getClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+    unsigned len = 0;
+    if (isValueClass(cls))
+    {
+        len = (getClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+    }
+    else
+    {
+        len = (getHeapClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+    }
     mc->recGetClassGClayout(cls, gcPtrs, len, temp);
     return temp;
 }
