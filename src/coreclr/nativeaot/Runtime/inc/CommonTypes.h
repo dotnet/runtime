@@ -63,10 +63,6 @@ typedef struct _GUID {
 
 // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
 // Thus they cannot have any parameters or return anything.
-#if defined(HOST_X86) && !defined(HOST_UNIX)
-typedef void __fastcall HijackFunc();
-#else
 typedef void HijackFunc();
-#endif
 
 #endif // __COMMON_TYPES_H__

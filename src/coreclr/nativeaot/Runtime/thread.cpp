@@ -572,8 +572,8 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 
 #ifdef FEATURE_HIJACK
 
-EXTERN_C void FASTCALL RhpGcProbeHijack();
-EXTERN_C void FASTCALL RhpGcStressHijack();
+EXTERN_C void RhpGcProbeHijack();
+EXTERN_C void RhpGcStressHijack();
 
 // static
 bool Thread::IsHijackTarget(void* address)
