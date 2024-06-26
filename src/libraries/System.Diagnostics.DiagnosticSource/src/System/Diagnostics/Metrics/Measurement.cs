@@ -68,6 +68,26 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
+        /// Initializes a new instance of the Measurement using the value and a <see cref="TagList"/>.
+        /// </summary>
+        /// <param name="value">The measurement value.</param>
+        /// <param name="tags">A <see cref="TagList" /> containing key-value pair tags associated with the measurement.</param>
+        public Measurement(T value, in TagList tags)
+        {
+            if (tags.Count > 0)
+            {
+                _tags = new KeyValuePair<string, object?>[tags.Count];
+                tags.CopyTo(_tags.AsSpan());
+            }
+            else
+            {
+                _tags = Instrument.EmptyTags;
+            }
+
+            Value = value;
+        }
+
+        /// <summary>
         /// Gets the measurement tags list.
         /// </summary>
         public ReadOnlySpan<KeyValuePair<string, object?>> Tags => _tags.AsSpan();
