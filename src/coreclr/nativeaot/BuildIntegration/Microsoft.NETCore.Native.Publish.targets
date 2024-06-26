@@ -131,76 +131,21 @@
   <Target Name="_WriteLinkingInstructionsAsMarkdown" AfterTargets="_CopyAotSymbols"
           Condition="'$(NativeLib)' == 'Static' and '$(SkipLinkingInstructions)' != 'true'">
 
-    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-      <_TransformedList Condition="'%(CustomLinkerArg.ExcludeFromStaticInstructions)' != 'true'"
-        Include="$([System.Text.RegularExpressions.Regex]::Replace(
-            $([System.Text.RegularExpressions.Regex]::Replace('$([MSBuild]::Escape(&quot;%(CustomLinkerArg.Identity)&quot;))', '^$(IlcFrameworkNativePath)', '&quot;${IlcFrameworkPath}&quot;')),
-            '^$(IlcSdkPath)', '&quot;${IlcSdkPath}&quot;'))" />
+    <ItemGroup>
+      <FileAsset Include="$(PublishDir)\$(TargetName)$(NativeBinaryExt)" />
+      <FileAsset Include="@(CustomLinkerArg)" Condition="Exists('%(CustomLinkerArg.Identity)') and '%(CustomLinkerArg.ExcludeFromStaticInstructions)' != 'true'" />
+      <LinkOption Include="@(CustomLinkerArg)" Condition="!Exists('%(CustomLinkerArg.Identity)') and '%(CustomLinkerArg.ExcludeFromStaticInstructions)' != 'true'" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
-      <_LinkerArgs>@(_TransformedList -> '    %(Identity)', ' %5C%0D%0A')</_LinkerArgs>
-      <MarkdownContent>
-        <![CDATA[
-# Native AOT static lib linking instructions
-
-Follow these steps to link your code with the statically compiled AOT binaries:
-
-```sh
-# Set some ILCompiler paths for convenience
-IlcSdkPath="$(IlcSdkPath)"
-IlcFrameworkPath="$(IlcFrameworkNativePath)"
-
-# Compile your native code, e.g.
-cc -c glue.c -o glue.o
-
-# Link your glue with AOT static libs
-cc glue.o -o myexe %5C
-    "$(PublishDir)\$(TargetName)$(NativeBinaryExt)" %5C
-$(_LinkerArgs)
-```
-        ]]>
-      </MarkdownContent>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-      <_TransformedList Condition="'%(CustomLinkerArg.ExcludeFromStaticInstructions)' != 'true'"
-        Include="$([System.Text.RegularExpressions.Regex]::Replace(
-            $([System.Text.RegularExpressions.Regex]::Replace('$([MSBuild]::Escape(`%(CustomLinkerArg.Identity)`))', '^&quot;$(IlcFrameworkNativePath.Replace(`\`, `\\`))', '&quot;%IlcFrameworkPath%')),
-            '^&quot;$(IlcSdkPath.Replace(`\`, `\\`))', '&quot;%IlcSdkPath%'))" />
-    </ItemGroup>
-
-    <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
-      <_LinkerArgs>@(_TransformedList -> '    %(Identity)', ' %5E%0D%0A')</_LinkerArgs>
-      <MarkdownContent>
-        <![CDATA[
-# Native AOT static lib linking instructions
-
-Follow these steps to link your code with the statically compiled AOT binaries:
-
-```batch
-:: Set some ILCompiler paths for convenience
-set IlcSdkPath=$(IlcSdkPath)
-set IlcFrameworkPath=$(IlcFrameworkNativePath)
-
-:: Compile your native code, e.g.
-cl.exe -c glue.c /Foglue.o
-
-:: Link your glue with AOT static libs
-cl.exe glue.o /Fe:"myexe.exe" %5E
-    "$(PublishDir)\$(TargetName)$(NativeBinaryExt)" %5E
-$(_LinkerArgs)
-```
-        ]]>
-      </MarkdownContent>
-    </PropertyGroup>
-
-    <!-- Write the markdown content to a file -->
-    <WriteLinesToFile File="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(PublishDir)', 'link-instructions.md'))"
-                      Lines="$(MarkdownContent)"
+    <WriteLinesToFile File="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(PublishDir)', 'sources.txt'))"
+                      Lines="@(FileAsset)"
                       Overwrite="true" />
 
-    <Message Importance="High" Text="Linking instructions written to $([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(PublishDir)', 'link-instructions.md'))." />
+    <WriteLinesToFile File="$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(PublishDir)', 'linkoptions.txt'))"
+                      Lines="@(LinkOption)"
+                      Overwrite="true" />
+
+    <Message Importance="High" Text="Linking helpers 'sources.txt' and 'linkoptions.txt' written to $([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(PublishDir)'))." />
 
   </Target>
 
