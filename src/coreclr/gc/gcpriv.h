@@ -1595,6 +1595,7 @@ float median_of_3 (float a, float b, float c);
 //class definition of the internal class
 class gc_heap
 {
+    friend class free_list_snapshot;
     friend class GCHeap;
 #ifdef FEATURE_PREMORTEM_FINALIZATION
     friend class CFinalize;
