@@ -443,7 +443,7 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
         return nullptr;
     }
 
-    return &t_runtime_thread_locals.alloc_context;
+    return &t_runtime_thread_locals.alloc_context.gc_alloc_context;
 }
 
 void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context_func* fn, void* param)
