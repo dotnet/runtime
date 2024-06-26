@@ -35,7 +35,7 @@ namespace System.Net.Quic;
 /// <description>Allows to close the writing side of the stream as a single operation with the write itself.</description>
 /// </item>
 /// <item>
-/// <term><see cref="CompleteWrites"/></term>
+/// <term><see cref="CompleteWritesAsync"/></term>
 /// <description>Close the writing side of the stream.</description>
 /// </item>
 /// <item>
@@ -147,7 +147,7 @@ public sealed partial class QuicStream
 
     /// <summary>
     /// A <see cref="Task"/> that will get completed once writing side has been closed.
-    /// Which might be by closing the write side via <see cref="CompleteWrites"/>
+    /// Which might be by closing the write side via <see cref="CompleteWritesAsync"/>
     /// or <see cref="WriteAsync(System.ReadOnlyMemory{byte},bool,System.Threading.CancellationToken)"/> with <c>completeWrites: true</c> and getting acknowledgement from the peer for it,
     /// or when <see cref="Abort"/> for <see cref="QuicAbortDirection.Write"/> is called,
     /// or when the peer called <see cref="Abort"/> for <see cref="QuicAbortDirection.Read"/>.
@@ -360,16 +360,13 @@ public sealed partial class QuicStream
     /// <param name="buffer">The region of memory to write data from.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
     /// <param name="completeWrites">Notifies the peer about gracefully closing the write side, i.e.: sends FIN flag with the data.</param>
-    public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
+    public async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
     {
-        if (_disposed == 1)
-        {
-            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(QuicStream))));
-        }
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (!_canWrite)
         {
-            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.net_quic_writing_notallowed)));
+            throw new InvalidOperationException(SR.net_quic_writing_notallowed);
         }
 
         if (NetEventSource.Log.IsEnabled())
@@ -377,34 +374,36 @@ public sealed partial class QuicStream
             NetEventSource.Info(this, $"{this} Stream writing memory of '{buffer.Length}' bytes while {(completeWrites ? "completing" : "not completing")} writes.");
         }
 
-        if (_sendTcs.IsCompleted && cancellationToken.IsCancellationRequested)
+        if (_sendTcs.IsCompleted)
         {
             // Special case exception type for pre-canceled token while we've already transitioned to a final state and don't need to abort write.
             // It must happen before we try to get the value task, since the task source is versioned and each instance must be awaited.
-            return ValueTask.FromCanceled(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         // Concurrent call, this one lost the race.
         if (!_sendTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
         {
-            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"))));
+            throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"));
         }
 
         // No need to call anything since we already have a result, most likely an exception.
         if (valueTask.IsCompleted)
         {
-            return valueTask;
+            await valueTask.ConfigureAwait(false);
+            return;
         }
 
         // For an empty buffer complete immediately, close the writing side of the stream if necessary.
         if (buffer.IsEmpty)
         {
             _sendTcs.TrySetResult();
+            await valueTask.ConfigureAwait(false);
             if (completeWrites)
             {
-                CompleteWrites();
+                await CompleteWritesAsync().ConfigureAwait(false);
             }
-            return valueTask;
+            return;
         }
 
         // We own the lock, abort might happen, but exception will get stored instead.
@@ -440,7 +439,11 @@ public sealed partial class QuicStream
             }
         }
 
-        return valueTask;
+        await valueTask.ConfigureAwait(false);
+        if (completeWrites)
+        {
+            await _sendTcs.GetFinalTask(this).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
@@ -511,6 +514,7 @@ public sealed partial class QuicStream
     /// <remarks>
     /// Corresponds to an empty <see href="https://www.rfc-editor.org/rfc/rfc9000.html#frame-stream">STREAM</see> frame with <c>FIN</c> flag set to <c>true</c>.
     /// </remarks>
+    [Obsolete("Will be removed soon, use CompleteWritesAsync instead.")]
     public void CompleteWrites()
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
@@ -533,6 +537,41 @@ public sealed partial class QuicStream
                 default),
                 "StreamShutdown failed");
         }
+    }
+
+    /// <summary>
+    /// Gracefully completes the writing side of the stream.
+    /// Equivalent to using <see cref="WriteAsync(System.ReadOnlyMemory{byte},bool,System.Threading.CancellationToken)"/> with <c>completeWrites: true</c>.
+    /// </summary>
+    /// <remarks>
+    /// Corresponds to an empty <see href="https://www.rfc-editor.org/rfc/rfc9000.html#frame-stream">STREAM</see> frame with <c>FIN</c> flag set to <c>true</c>.
+    /// </remarks>
+    public ValueTask CompleteWritesAsync()
+    {
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+
+        // Nothing to complete, the writing side is already closed.
+        if (_sendTcs.IsCompleted)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Completing writes.");
+        }
+        unsafe
+        {
+            int status = MsQuicApi.Api.StreamShutdown(
+                _handle,
+                QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL,
+                default);
+            if (StatusFailed(status))
+            {
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(status, message: "StreamShutdown failed")));
+            }
+        }
+        return new ValueTask(_sendTcs.GetFinalTask(this));
     }
 
     private unsafe int HandleEventStartComplete(ref START_COMPLETE_DATA data)
@@ -709,7 +748,7 @@ public sealed partial class QuicStream
     /// <summary>
     /// If the read side is not fully consumed, i.e.: <see cref="ReadsClosed"/> is not completed and/or <see cref="ReadAsync(Memory{byte}, CancellationToken)"/> hasn't returned <c>0</c>,
     /// dispose will abort the read side with provided <see cref="QuicConnectionOptions.DefaultStreamErrorCode"/>.
-    /// If the write side hasn't been closed, it'll be closed gracefully as if <see cref="CompleteWrites"/> was called.
+    /// If the write side hasn't been closed, it'll be closed gracefully as if <see cref="CompleteWritesAsync"/> was called.
     /// Finally, all resources associated with the stream will be released.
     /// </summary>
     /// <returns>A task that represents the asynchronous dispose operation.</returns>

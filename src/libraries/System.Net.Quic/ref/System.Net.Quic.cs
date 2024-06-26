@@ -126,7 +126,9 @@ namespace System.Net.Quic
         public void Abort(System.Net.Quic.QuicAbortDirection abortDirection, long errorCode) { }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        [System.ObsoleteAttribute("Will be removed soon, use CompleteWritesAsync instead.")]
         public void CompleteWrites() { }
+        public System.Threading.Tasks.ValueTask CompleteWritesAsync() { throw null; }
         protected override void Dispose(bool disposing) { }
         public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override int EndRead(System.IAsyncResult asyncResult) { throw null; }

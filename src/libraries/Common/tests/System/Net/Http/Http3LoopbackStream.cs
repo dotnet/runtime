@@ -286,7 +286,7 @@ namespace System.Net.Test.Common
 
             if (isFinal)
             {
-                _stream.CompleteWrites();
+                await _stream.CompleteWritesAsync().ConfigureAwait(false);
             }
         }
 

@@ -445,7 +445,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _stream.CompleteWrites();
+                    await _stream.CompleteWritesAsync().ConfigureAwait(false);
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(bytesWritten);

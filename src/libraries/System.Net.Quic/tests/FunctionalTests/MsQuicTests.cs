@@ -1029,7 +1029,7 @@ namespace System.Net.Quic.Tests
                         }
                     }
 
-                    stream.CompleteWrites();
+                    await stream.CompleteWritesAsync();
                 },
                 async serverConnection =>
                 {
@@ -1046,7 +1046,7 @@ namespace System.Net.Quic.Tests
                     int expectedTotalBytes = writes.SelectMany(x => x).Sum();
                     Assert.Equal(expectedTotalBytes, totalBytes);
 
-                    stream.CompleteWrites();
+                    await stream.CompleteWritesAsync();
                 });
         }
 
@@ -1339,7 +1339,7 @@ namespace System.Net.Quic.Tests
 
                     if (!closeWithData)
                     {
-                        serverStream.CompleteWrites();
+                        await serverStream.CompleteWritesAsync();
                     }
 
                     readLength = await clientStream.ReadAsync(actual);

@@ -320,8 +320,6 @@ namespace System.Net.Quic.Tests
                     await stream.WriteAsync(buffer);
 
                     await clientFunction(stream);
-
-                    stream.CompleteWrites();
                 },
                 serverFunction: async connection =>
                 {
@@ -329,8 +327,6 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(1, await stream.ReadAsync(buffer));
 
                     await serverFunction(stream);
-
-                    stream.CompleteWrites();
                 },
                 iterations,
                 millisecondsTimeout
