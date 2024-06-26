@@ -781,7 +781,6 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
                         retVal = (UINT_PTR)((freeHandleIndex + 1) << 1);
                         break;
                     }
-                    
                     slotsUsed = gc.loaderAllocator->GetSlotsUsed();
 
                     if (slotsUsed > MAX_LOADERALLOCATOR_HANDLE)
