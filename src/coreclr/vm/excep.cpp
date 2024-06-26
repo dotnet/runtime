@@ -3053,7 +3053,7 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
     {
         THROWS;
         GC_TRIGGERS;        // because of IErrorInfo
-        MODE_ANY;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -3069,9 +3069,9 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;        // be consistent with COM interop enabled
-        MODE_ANY;
+        GC_TRIGGERS;
+        NOTHROW;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
