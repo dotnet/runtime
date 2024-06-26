@@ -219,7 +219,7 @@ namespace Mono.Linker
 					}
 
 					// Look for a default implementation last.
-					FindAndAddDefaultInterfaceImplementations (interfaceImpl, interfaceMethod, resolvedInterfaceMethod);
+					FindAndAddDefaultInterfaceImplementations (interfaceImpl, resolvedInterfaceMethod);
 				}
 			}
 		}
@@ -336,7 +336,7 @@ namespace Mono.Linker
 		/// <param name="implOfInterface">
 		/// The InterfaceImplementation on <paramref name="type"/> that points to the DeclaringType of <paramref name="interfaceMethod"/>.
 		/// </param>
-		void FindAndAddDefaultInterfaceImplementations (RuntimeInterfaceImplementation originalInterfaceImpl, MethodReference _, MethodDefinition interfaceMethodDef)
+		void FindAndAddDefaultInterfaceImplementations (RuntimeInterfaceImplementation originalInterfaceImpl, MethodDefinition interfaceMethodDef)
 		{
 			// Go over all interfaces, trying to find a method that is an explicit MethodImpl of the
 			// interface method in question.
@@ -348,9 +348,6 @@ namespace Mono.Linker
 				if (potentialImplInterface is null)
 					continue;
 
-				// We go by MethodDefinition here and may miss the correct implementation by exiting early after finding one.
-				// To correct for this, we'll look for all possible implementations and add them all if the inflatedIntefaceMethodReference is a genericInstance
-				// Otherwise, we're good to stop looking higher in the hierarchy after the first. Note we still need to look at other branches of the hierarchy to find any diamond cases.
 				bool foundImpl = false;
 				foreach (var potentialImplMethod in potentialImplInterface.Methods) {
 					if (potentialImplMethod == interfaceMethodDef &&
