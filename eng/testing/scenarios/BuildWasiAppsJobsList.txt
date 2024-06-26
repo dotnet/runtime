@@ -5,3 +5,4 @@ Wasi.Build.Tests.RuntimeConfigTests
 Wasi.Build.Tests.WasiTemplateTests
 Wasi.Build.Tests.PInvokeTableGeneratorTests
 Wasi.Build.Tests.WasiLibraryModeTests
+Wasi.Build.Tests.NativeAOTTests

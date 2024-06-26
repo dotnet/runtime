@@ -49,3 +49,4 @@ Wasm.Build.Tests.WorkloadTests
 Wasm.Build.Tests.MT.Blazor.SimpleMultiThreadedTests
 Wasm.Build.Tests.TestAppScenarios.WasmSdkDebugLevelTests
 Wasm.Build.Tests.TestAppScenarios.WasmAppBuilderDebugLevelTests
+Wasm.Build.Tests.NativeAOTTests

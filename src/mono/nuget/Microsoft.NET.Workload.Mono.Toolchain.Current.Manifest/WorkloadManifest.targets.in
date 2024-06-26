@@ -1,6 +1,7 @@
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
 <Project>
   <PropertyGroup>
+    <_IsUsingNativeAOT Condition="'$(PublishAot)' == 'true'">true</_IsUsingNativeAOT>
     <_RuntimePackInWorkloadVersionCurrent>${PackageVersion}</_RuntimePackInWorkloadVersionCurrent>
     <_RuntimePackInWorkloadVersion8>${PackageVersionNet8}</_RuntimePackInWorkloadVersion8>
     <_RuntimePackInWorkloadVersion7>${PackageVersionNet7}</_RuntimePackInWorkloadVersion7>
@@ -64,6 +65,26 @@
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == '' and '$(_WasmNativeWorkloadNeeded)' == 'true'">true</UsingBrowserRuntimeWorkload>
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''">$(WasmNativeWorkloadAvailable)</UsingBrowserRuntimeWorkload>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(_IsUsingNativeAOT)' == 'true'">
+    <UseAppHost>false</UseAppHost>
+    <UsingBrowserRuntimeWorkload Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">false</UsingBrowserRuntimeWorkload>
+    <UsingWasiRuntimeWorkload Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">false</UsingWasiRuntimeWorkload>
+    <BrowserWorkloadDisabled>true</BrowserWorkloadDisabled>
+    <OverrideImportRuntimeIlcPackageTarget>false</OverrideImportRuntimeIlcPackageTarget>
+    <WasmExperimentalNativeAOTLLVMILCompilerVersion Condition="'$(WasmExperimentalNativeAOTLLVMILCompilerVersion)' == ''">${WasmExperimentalNativeAOTLLVMILCompilerVersion}</WasmExperimentalNativeAOTLLVMILCompilerVersion>
+    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(_IsUsingNativeAOT)' == 'true' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm')">
+    <KnownILCompilerPack Remove="Microsoft.DotNet.ILCompiler" />
+    <KnownILCompilerPack Include="Microsoft.DotNet.ILCompiler.LLVM"
+                         TargetFramework="${NetCoreAppCurrent}"
+                         ILCompilerPackNamePattern="runtime.**RID**.Microsoft.DotNet.ILCompiler.LLVM"
+                         ILCompilerPackVersion="$(WasmExperimentalNativeAOTLLVMILCompilerVersion)"
+                         ILCompilerRuntimeIdentifiers="wasi-wasm;browser-wasm;win-x64"
+    />
+  </ItemGroup>
 
   <!-- Mono AOT library mode support -->
   <PropertyGroup Condition="'$(PublishAot)' != 'true' and '$(NativeLib)' != ''">
@@ -186,7 +207,7 @@
       <!-- Overrides for wasm threading support -->
       <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
-    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+    <KnownFrameworkReference Update="Microsoft.NETCore.App" Condition="'$(_IsUsingNativeAOT)' != 'true'">
       <TargetingPackVersion Condition="'$(TargetsCurrent)' == 'true'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
     </KnownFrameworkReference>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">

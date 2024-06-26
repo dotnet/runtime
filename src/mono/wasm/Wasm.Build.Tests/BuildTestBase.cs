@@ -166,7 +166,10 @@ namespace Wasm.Build.Tests
             var cmd = new DotNetCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!)
                                     .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
+                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables)
+                                    .WithEnvironmentVariable("COREHOST_TRACE", "1")
+                                    .WithEnvironmentVariable("COREHOST_TRACEFILE", Environment.GetEnvironmentVariable("HELIX_WORKITEM_UPLOAD_ROOT") ?? string.Empty)
+                                    .WithEnvironmentVariable("COREHOST_TRACE_VERBOSITY", "4");
             if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)
                 cmd.WithEnvironmentVariable("WBTOverrideRuntimePack", "true");
 

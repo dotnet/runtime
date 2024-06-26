@@ -134,9 +134,7 @@ namespace Wasm.Build.Tests
                 EnvVars["WasmEnableWebCil"] = "false";
             }
 
-            DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                DotNet += ".exe";
+            DotNet = GetExecutableName(Path.Combine(sdkForWorkloadPath!, "dotnet"));
 
             if (!string.IsNullOrEmpty(EnvironmentVariables.TestLogPath))
             {
@@ -179,5 +177,13 @@ namespace Wasm.Build.Tests
 
         protected static string s_directoryBuildPropsForLocal = File.ReadAllText(Path.Combine(TestDataPath, "Local.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForLocal = File.ReadAllText(Path.Combine(TestDataPath, "Local.Directory.Build.targets"));
+
+        public static string GetExecutableName(string nameOrPath)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                nameOrPath += ".exe";
+
+            return nameOrPath;
+        }
     }
 }
