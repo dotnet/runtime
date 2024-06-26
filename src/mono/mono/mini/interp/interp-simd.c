@@ -28,6 +28,88 @@ interp_v128_i4_all_bits_set (gpointer res)
 	memset (res, 0xff, SIZEOF_V128);
 }
 
+// Vector2 AsVector2(Vector128<float> v1)
+static void
+interp_v128_as_v2 (gpointer res, gpointer v1)
+{
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
+
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
+}
+
+// Vector3 AsVector3(Vector128<float> v1)
+static void
+interp_v128_as_v3 (gpointer res, gpointer v1)
+{
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
+
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
+	res_typed [2] = v1_typed [2];
+}
+
+// Vector128<TTo> As<TFrom, TTo>(Vector128<TFrom> v1)
+static void
+interp_v128_bitcast (gpointer res, gpointer v1)
+{
+	*(v128_i1*)res = *(v128_i1*)v1;
+}
+
+// Vector128<float> AsVector128(Vector2 v1)
+static void
+interp_v128_from_v2 (gpointer res, gpointer v1)
+{
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
+
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
+	res_typed [2] = 0;
+	res_typed [3] = 0;
+}
+
+// Vector128<float> AsVector128Unsafe(Vector2 v1)
+static void
+interp_v128_from_v2_unsafe (gpointer res, gpointer v1)
+{
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
+
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
+	res_typed [2] = 0;
+	res_typed [3] = 0;
+}
+
+// Vector128<float> AsVector128(Vector3 v1)
+static void
+interp_v128_from_v3 (gpointer res, gpointer v1)
+{
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
+
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
+	res_typed [2] = v1_typed [2];
+	res_typed [3] = 0;
+}
+
+// Vector128<float> AsVector128Unsafe(Vector3 v1)
+static void
+interp_v128_from_v3_unsafe (gpointer res, gpointer v1)
+{
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
+
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
+	res_typed [2] = v1_typed [2];
+	res_typed [3] = 0;
+}
+
 // op_Addition
 static void
 interp_v128_i1_op_addition (gpointer res, gpointer v1, gpointer v2)

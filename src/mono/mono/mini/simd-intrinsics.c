@@ -1185,11 +1185,21 @@ static guint16 sri_vector_methods [] = {
 	SN_AsInt16,
 	SN_AsInt32,
 	SN_AsInt64,
+	SN_AsNInt,
+	SN_AsNUInt,
+	SN_AsPlane,
+	SN_AsQuaternion,
 	SN_AsSByte,
 	SN_AsSingle,
 	SN_AsUInt16,
 	SN_AsUInt32,
 	SN_AsUInt64,
+	SN_AsVector,
+	SN_AsVector128,
+	SN_AsVector128Unsafe,
+	SN_AsVector2,
+	SN_AsVector3,
+	SN_AsVector4,
 	SN_BitwiseAnd,
 	SN_BitwiseOr,
 	SN_Ceiling,
@@ -1618,13 +1628,93 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_AsInt16:
 	case SN_AsInt32:
 	case SN_AsInt64:
+	case SN_AsNInt:
+	case SN_AsNUInt:
+	case SN_AsPlane:
+	case SN_AsQuaternion:
 	case SN_AsSByte:
 	case SN_AsSingle:
 	case SN_AsUInt16:
 	case SN_AsUInt32:
-	case SN_AsUInt64: {
+	case SN_AsUInt64:
+	case SN_AsVector: {
 		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
 			return NULL;
+		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+	}
+	case SN_AsVector2: {
+		if (!mini_class_is_simd (cfg, mono_class_from_mono_type_internal (fsig->ret))) {
+			// FIXME: Support Vector2 and Vector3 for WASM and AMD64
+			return NULL;
+		}
+		return emit_simd_ins_for_sig (cfg, klass, OP_XLOWER, 0, arg0_type, fsig, args);
+	}
+	case SN_AsVector3: {
+		if (!mini_class_is_simd (cfg, mono_class_from_mono_type_internal (fsig->ret))) {
+			// FIXME: Support Vector2 and Vector3 for WASM and AMD64
+			return NULL;
+		}
+		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+	}
+	case SN_AsVector4: {
+		if (!COMPILE_LLVM (cfg)) {
+			// FIXME: This can assert for load opcodes needing OP_LOADV_MEMBASE
+			return NULL;
+		}
+		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+	}
+	case SN_AsVector128: {
+		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
+			return NULL;
+
+		MonoClass *input_klass = mono_class_from_mono_type_internal (fsig->params [0]);
+
+		if (!mini_class_is_simd (cfg, input_klass)) {
+			// FIXME: Support Vector2 and Vector3 for WASM and AMD64
+			return NULL;
+		}
+
+		int input_size = mono_class_value_size (input_klass, NULL);
+
+		if ((input_size == 8) && COMPILE_LLVM (cfg))
+			return emit_simd_ins (cfg, klass, OP_XWIDEN, args [0]->dreg, -1);
+
+		if (input_size == 16)
+			return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+		
+		g_assert ((input_size == 8) || (input_size == 12));
+
+		static float r4_0 = 0;
+		MonoInst *zero;
+		int zero_dreg = alloc_freg (cfg);
+		MONO_INST_NEW (cfg, zero, OP_R4CONST);
+		zero->inst_p0 = (void*)&r4_0;
+		zero->dreg = zero_dreg;
+		MONO_ADD_INS (cfg->cbb, zero);
+
+		MonoInst *ins = args [0];
+		if (input_size == 8) {
+			ins = emit_vector_insert_element (cfg, klass, ins, MONO_TYPE_R4, zero, 2, FALSE);
+		}
+		return emit_vector_insert_element (cfg, klass, ins, MONO_TYPE_R4, zero, 3, FALSE);
+	}
+	case SN_AsVector128Unsafe: {
+		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
+			return NULL;
+
+		MonoClass *input_klass = mono_class_from_mono_type_internal (fsig->params [0]);
+
+		if (!mini_class_is_simd (cfg, input_klass)) {
+			// FIXME: Support Vector2 and Vector3 for WASM and AMD64
+			return NULL;
+		}
+
+		int input_size = mono_class_value_size (input_klass, NULL);
+
+		if ((input_size == 8) && COMPILE_LLVM (cfg))
+			return emit_simd_ins (cfg, klass, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
+
+		g_assert (input_size == 12);
 		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
 	}
 	case SN_Ceiling:
