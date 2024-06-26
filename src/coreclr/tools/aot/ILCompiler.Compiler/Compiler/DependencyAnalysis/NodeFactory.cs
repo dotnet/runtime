@@ -45,9 +45,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _target = context.Target;
 
-            InitialInterfaceDispatchStub = _target.Architecture == TargetArchitecture.ARM
-                ? new InitialInterfaceDispatchStubNode()
-                : new AddressTakenExternSymbolNode("RhpInitialDynamicInterfaceDispatch");
+            InitialInterfaceDispatchStub = new AddressTakenExternSymbolNode("RhpInitialDynamicInterfaceDispatch");
 
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
