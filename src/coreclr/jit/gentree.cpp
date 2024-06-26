@@ -29442,6 +29442,57 @@ bool GenTree::IsInvariant() const
     return OperIsConst() || OperIs(GT_LCL_ADDR) || OperIs(GT_FTN_ADDR);
 }
 
+//-------------------------------------------------------------------
+// IsVectorPerElementMask: returns true if this node is a vector constant per-element mask
+// (every element has either all bits set or none of them).
+//
+// Returns:
+//     True if this node is a vector constant per-element mask
+//
+bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const
+{
+#ifdef FEATURE_SIMD
+    if (IsCnsVec())
+    {
+        const GenTreeVecCon* vecCon = AsVecCon();
+        if (vecCon->IsAllBitsSet() || vecCon->IsZero())
+        {
+            return true;
+        }
+
+        int elementCount = vecCon->ElementCount(simdSize, simdBaseType);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u8[0], elementCount);
+            case TYP_SHORT:
+            case TYP_USHORT:
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u16[0], elementCount);
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u32[0], elementCount);
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u64[0], elementCount);
+            default:
+                unreached();
+        }
+    }
+    else if (OperIsHWIntrinsic())
+    {
+        // TODO-XARCH-AVX512 Use VPBLENDM* and take input directly from K registers if cond is from
+        // MoveMaskToVectorSpecial.
+        return HWIntrinsicInfo::ReturnsPerElementMask(AsHWIntrinsic()->GetHWIntrinsicId());
+    }
+#endif // FEATURE_SIMD
+
+    return false;
+}
+
 //------------------------------------------------------------------------
 // IsNeverNegative: returns true if the given tree is known to be never
 //                  negative, i. e. the upper bit will always be zero.
