@@ -54,17 +54,15 @@ namespace System.Net.Security
                     chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
                 }
 
-                if (trust != null)
+                if (trust?._store?.Certificates.Count > 0)
                 {
                     chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                    if (trust._store != null)
-                    {
-                        chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
-                    }
-                    if (trust._trustList != null)
-                    {
-                        chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
-                    }
+                    chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                }
+                if (trust?._trustList?.Count > 0)
+                {
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
                 }
 
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
@@ -77,7 +75,7 @@ namespace System.Net.Security
                     NetEventSource.Error(null, $"Failed to build chain for {target.Subject}");
                 }
 
-                if (!chainStatus && ChainBuildNeedsTrustedRoot && additionalCertificates != null)
+                if (!chainStatus && ChainBuildNeedsTrustedRoot && additionalCertificates?.Count > 0)
                 {
                     // Some platforms like Android may not be able to build the chain unless the chain root is trusted.
                     // We can try to rebuild the chain with making all extra certificates trused.
