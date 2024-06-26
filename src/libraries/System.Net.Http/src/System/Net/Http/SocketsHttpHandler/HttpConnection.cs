@@ -42,7 +42,6 @@ namespace System.Net.Http
         private static readonly ulong s_http10Bytes = BitConverter.ToUInt64("HTTP/1.0"u8);
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64("HTTP/1.1"u8);
 
-        private readonly HttpConnectionPool _pool;
         internal readonly Stream _stream;
         private readonly TransportContext? _transportContext;
 
@@ -78,10 +77,8 @@ namespace System.Net.Http
             IPEndPoint? remoteEndPoint)
             : base(pool, remoteEndPoint)
         {
-            Debug.Assert(pool != null);
             Debug.Assert(stream != null);
 
-            _pool = pool;
             _stream = stream;
 
             _transportContext = transportContext;

@@ -24,6 +24,7 @@ namespace System.Net.Security
         internal static TimeSpan RefreshAfterFailureBackOffInterval => TimeSpan.FromSeconds(5);
 
         private const bool TrimRootCertificate = true;
+        private const bool ChainBuildNeedsTrustedRoot = false;
         internal ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts
         {
             get

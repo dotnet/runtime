@@ -354,6 +354,34 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 }
 
 //-----------------------------------------------------------------------------
+// CountRegsAndStackSlots:
+//   Count how many registers and stack slots are used for passing the
+//   argument.
+//
+// Return Value:
+//   Count of registers plus count of stack slots.
+//
+unsigned ABIPassingInformation::CountRegsAndStackSlots() const
+{
+    unsigned numSlots = 0;
+
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        const ABIPassingSegment& seg = Segment(i);
+        if (seg.IsPassedInRegister())
+        {
+            numSlots++;
+        }
+        else
+        {
+            numSlots += (seg.Size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+        }
+    }
+
+    return numSlots;
+}
+
+//-----------------------------------------------------------------------------
 // FromSegment:
 //   Create ABIPassingInformation from a single segment.
 //

@@ -7529,7 +7529,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
     // which holds the boxed value class, so dereference and unbox.
     if (pFD->IsByValue())
     {
-        _ASSERTE(result != NULL);
+        _ASSERTE(result != (TADDR)NULL);
         PTR_Object obj = *PTR_UNCHECKED_OBJECTREF(result);
         if (obj == NULL)
             return (TADDR)NULL;

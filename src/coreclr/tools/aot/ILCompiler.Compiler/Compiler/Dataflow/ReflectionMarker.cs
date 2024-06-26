@@ -206,15 +206,9 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            if (type.HasStaticConstructor)
-                CheckAndWarnOnReflectionAccess(origin, type.GetStaticConstructor());
-
-            if (!type.IsGenericDefinition && !type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) && Factory.PreinitializationManager.HasLazyStaticConstructor(type))
-            {
-                // Mark the GC static base - it contains a pointer to the class constructor, but also info
-                // about whether the class constructor already executed and it's what is looked at at runtime.
-                _dependencies.Add(Factory.TypeNonGCStaticsSymbol((MetadataType)type), "RunClassConstructor reference");
-            }
+            MethodDesc cctor = type.GetStaticConstructor();
+            if (cctor != null)
+                MarkMethod(origin, cctor, reason);
         }
 
         internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, AccessKind accessKind = AccessKind.Unspecified)
