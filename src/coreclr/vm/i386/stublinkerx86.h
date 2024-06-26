@@ -217,6 +217,8 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet);
 
+        VOID X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigned preservedRegSet);
+
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, int32_t ofs = 0);
         VOID X86EmitIndexRegStore(X86Reg dstreg, int32_t ofs, X86Reg srcreg);
 #if defined(TARGET_AMD64)

@@ -1028,7 +1028,6 @@ public:
         friend class DebuggerMethodInfo;
 
         DebuggerJitInfo* m_pCurrent;
-        Module* m_pLoaderModuleFilter;
         MethodDesc* m_pMethodDescFilter;
     public:
         DJIIterator();
@@ -1036,12 +1035,11 @@ public:
         bool IsAtEnd();
         DebuggerJitInfo * Current();
         void Next(BOOL fFirst = FALSE);
-
     };
 
     // Ensure the DJI cache is completely up to date. (This can be an expensive call, but
     // much less so if pMethodDescFilter is used).
-    void CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module * pModuleFilter, MethodDesc * pMethodDescFilter);
+    void CreateDJIsForNativeBlobs(AppDomain * pAppDomain, MethodDesc * pMethodDescFilter);
 
     // Ensure the DJI cache is up to date for a particular closed method desc
     void CreateDJIsForMethodDesc(MethodDesc * pMethodDesc);
@@ -1049,12 +1047,9 @@ public:
     // Get an iterator for all native blobs (accounts for Generics, Enc, + Prejiiting).
     // Must be stopped when we do this. This could be heavy weight.
     // This will call CreateDJIsForNativeBlobs() to ensure we have all DJIs available.
-    // You may optionally pass pLoaderModuleFilter to restrict the DJIs iterated to
-    // exist only on MethodDescs whose loader module matches the filter (pass NULL not
-    // to filter by loader module).
     // You may optionally pass pMethodDescFilter to restrict the DJIs iterated to only
     // a single generic instantiation.
-    void IterateAllDJIs(AppDomain * pAppDomain, Module * pLoaderModuleFilter, MethodDesc * pMethodDescFilter, DJIIterator * pEnum);
+    void IterateAllDJIs(AppDomain * pAppDomain, MethodDesc * pMethodDescFilter, DJIIterator * pEnum);
 
 private:
     // The linked list of JIT's of this version of the method.   This will ALWAYS

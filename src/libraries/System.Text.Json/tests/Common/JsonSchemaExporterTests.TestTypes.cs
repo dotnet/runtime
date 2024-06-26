@@ -349,7 +349,7 @@ namespace System.Text.Json.Schema.Tests
                         }
                         else
                         {
-                            schemaObj["$anchor"] = anchorName;
+                            schemaObj.Insert(0, "$anchor", anchorName);
                         }
 
                         return schemaObj;
@@ -398,7 +398,7 @@ namespace System.Text.Json.Schema.Tests
                         }
                         else
                         {
-                            schemaObj["$id"] = idUrl;
+                            schemaObj.Insert(0, "$id", idUrl);
                         }
 
                         return schemaObj;
@@ -495,7 +495,7 @@ namespace System.Text.Json.Schema.Tests
 
                         if (descriptionAttribute != null)
                         {
-                            schemaObj["description"] = (JsonNode)descriptionAttribute.Description;
+                            schemaObj.Insert(0, "description", (JsonNode)descriptionAttribute.Description);
                         }
 
                         return schemaObj;

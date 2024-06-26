@@ -6033,7 +6033,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
                                   CLRDATA_ADDRESS* codeStart,
                                   ULONG32* codeOffset)
 {
-    _ASSERTE((codeOffset == NULL) || (address != NULL));
+    _ASSERTE((codeOffset == NULL) || (address != (TADDR)NULL));
 
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.

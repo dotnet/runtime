@@ -136,7 +136,7 @@
     <value>Stream aborted by peer ({0}).</value>
   </data>
   <data name="SystemNetQuic_PlatformNotSupported" xml:space="preserve">
-    <value>System.Net.Quic is not supported on this platform: {0}</value>
+    <value>System.Net.Quic is not supported on this platform: {0} For more information see: https://learn.microsoft.com/dotnet/fundamentals/networking/quic/quic-overview#platform-dependencies</value>
   </data>
   <data name="net_quic_writing_notallowed" xml:space="preserve">
     <value>Writing is not allowed on stream.</value>
@@ -202,7 +202,10 @@
     <value>The server refused the connection.</value>
   </data>
   <data name="net_quic_protocol_error" xml:space="preserve">
-    <value>A QUIC protocol error was encountered</value>
+    <value>A QUIC protocol error was encountered.</value>
+  </data>
+  <data name="net_quic_alpn_in_use" xml:space="preserve">
+    <value>A specified application protocol is already in use.</value>
   </data>
   <data name="net_quic_ver_neg_error" xml:space="preserve">
     <value>A version negotiation error was encountered.</value>

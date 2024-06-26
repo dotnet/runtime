@@ -1789,6 +1789,28 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     assert(!arg->OperIsPutArg());
 
 #if !defined(TARGET_64BIT)
+    if (comp->opts.compUseSoftFP && (type == TYP_DOUBLE))
+    {
+        // Unlike TYP_LONG we do no decomposition for doubles, yet we maintain
+        // it as a primitive type until lowering. So we need to get it into the
+        // right form here.
+
+        unsigned argLclNum = comp->lvaGrabTemp(false DEBUGARG("double arg on softFP"));
+        GenTree* store     = comp->gtNewTempStore(argLclNum, arg);
+        GenTree* low       = comp->gtNewLclFldNode(argLclNum, TYP_INT, 0);
+        GenTree* high      = comp->gtNewLclFldNode(argLclNum, TYP_INT, 4);
+        GenTree* longNode  = new (comp, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, low, high);
+        BlockRange().InsertAfter(arg, store, low, high, longNode);
+
+        *ppArg = arg = longNode;
+        type         = TYP_LONG;
+
+        comp->lvaSetVarDoNotEnregister(argLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+
+        JITDUMP("Created new nodes for double-typed arg on softFP:\n");
+        DISPRANGE(LIR::ReadOnlyRange(store, longNode));
+    }
+
     if (varTypeIsLong(type))
     {
         noway_assert(arg->OperIs(GT_LONG));
@@ -1826,9 +1848,8 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (call->IsVarargs() || comp->opts.compUseSoftFP || callArg->AbiInfo.IsMismatchedArgType())
         {
-            // For vararg call or on armel, reg args should be all integer.
-            // For arg type and arg reg mismatch, reg arg should be integer on riscv64
-            // Insert copies as needed to move float value to integer register.
+            // Insert copies as needed to move float value to integer register
+            // if the ABI requires it.
             GenTree* newNode = LowerFloatArg(ppArg, callArg);
             if (newNode != nullptr)
             {
@@ -1942,18 +1963,6 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
     GenTree*  intArg    = comp->gtNewBitCastNode(intType, arg);
     intArg->SetRegNum(regNum);
 
-#ifdef TARGET_ARM
-    if (floatType == TYP_DOUBLE)
-    {
-        // A special case when we introduce TYP_LONG
-        // during lowering for arm32 softFP to pass double
-        // in int registers.
-        assert(comp->opts.compUseSoftFP);
-
-        regNumber nextReg                  = REG_NEXT(regNum);
-        intArg->AsMultiRegOp()->gtOtherReg = nextReg;
-    }
-#endif
     return intArg;
 }
 #endif
@@ -3448,10 +3457,13 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             call->gtArgs.PushLateBack(targetArg);
 
             // Set up ABI information for this arg.
+            targetArg->NewAbiInfo =
+                ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
+                                                                                       0, TARGET_POINTER_SIZE));
             targetArg->AbiInfo.ArgType = callTarget->TypeGet();
             targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
-            targetArg->AbiInfo.NumRegs = 1;
-            targetArg->AbiInfo.SetByteSize(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE, false, false);
+            targetArg->AbiInfo.NumRegs  = 1;
+            targetArg->AbiInfo.ByteSize = TARGET_POINTER_SIZE;
 
             // Lower the newly added args now that call is updated
             LowerArg(call, targetArg, true /* late */);
@@ -7547,29 +7559,34 @@ PhaseStatus Lowering::DoPhase()
     const bool setSlotNumbers = false;
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    comp->fgLocalVarLiveness();
-    // local var liveness can delete code, which may create empty blocks
-    if (comp->opts.OptimizationEnabled())
+    // Remove dead blocks and compute DFS (we want to remove unreachable blocks
+    // even in MinOpts).
+    comp->fgDfsBlocksAndRemove();
+
+    if (comp->backendRequiresLocalVarLifetimes())
     {
-        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
-        modified |= comp->fgRemoveDeadBlocks();
+        assert(comp->opts.OptimizationEnabled());
+
+        comp->fgLocalVarLiveness();
+        // local var liveness can delete code, which may create empty blocks
+        // Don't churn the flowgraph with aggressive compaction since we've already run block layout
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
+                                                /* doAggressiveCompaction */ false);
 
         if (modified)
         {
+            comp->fgDfsBlocksAndRemove();
             JITDUMP("had to run another liveness pass:\n");
             comp->fgLocalVarLiveness();
         }
-    }
-    else
-    {
-        // If we are not optimizing, remove the dead blocks regardless.
-        comp->fgRemoveDeadBlocks();
+
+        // Recompute local var ref counts again after liveness to reflect
+        // impact of any dead code removal. Note this may leave us with
+        // tracked vars that have zero refs.
+        comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
     }
 
-    // Recompute local var ref counts again after liveness to reflect
-    // impact of any dead code removal. Note this may leave us with
-    // tracked vars that have zero refs.
-    comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+    comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
