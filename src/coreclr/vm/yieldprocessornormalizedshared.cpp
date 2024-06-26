@@ -211,9 +211,7 @@ void YieldProcessorNormalization::PerformMeasurement()
         AtomicStore(&s_establishedNsPerYield, establishedNsPerYield);
     }
 
-#ifndef FEATURE_NATIVEAOT
     FireEtwYieldProcessorMeasurement(GetClrInstanceId(), latestNsPerYield, s_establishedNsPerYield);
-#endif
 
     // Calculate the number of yields required to span the duration of a normalized yield
     unsigned int yieldsPerNormalizedYield = max(1u, (unsigned int)(TargetNsPerNormalizedYield / establishedNsPerYield + 0.5));
@@ -280,8 +278,6 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
 #endif
 }
 
-// EventEnabledYieldProcessorMeasurement and FireEtwYieldProcessorMeasurement aren't available for AOT
-#ifndef FEATURE_NATIVEAOT
 void YieldProcessorNormalization::FireMeasurementEvents()
 {
     CONTRACTL
@@ -315,7 +311,6 @@ void YieldProcessorNormalization::FireMeasurementEvents()
         }
     }
 }
-#endif
 
 double YieldProcessorNormalization::AtomicLoad(double *valueRef)
 {
