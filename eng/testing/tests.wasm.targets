@@ -1,4 +1,3 @@
-
 <Project TreatAsLocalProperty="ArchiveTests">
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
