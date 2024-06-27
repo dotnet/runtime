@@ -37,8 +37,6 @@ struct MethodTableHandle
     public virtual bool IsDynamicStatics(MethodTableHandle methodTable);
     public virtual ushort GetNumMethods(MethodTableHandle methodTable);
     public virtual ushort GetNumInterfaces(MethodTableHandle methodTable);
-    public virtual ushort GetNumVirtuals(MethodTableHandle methodTable);
-    public virtual ushort GetNumVtableSlots(MethodTableHandle methodTable);
 
     // Returns an ECMA-335 TypeDef table token for this type, or for its generic type definition if it is a generic instantiation
     public virtual uint GetTypeDefToken(MethodTableHandle methodTable);
