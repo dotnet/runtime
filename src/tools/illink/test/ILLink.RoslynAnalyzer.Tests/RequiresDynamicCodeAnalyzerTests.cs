@@ -377,6 +377,22 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 		}
 
 		[Fact]
+		public Task MakeGenericTypeWithConstraint ()
+		{
+			const string src = $$"""
+			using System;
+			class C
+			{
+				public void M() => typeof(Gen<>).MakeGenericType(GetObject());
+				static Type GetObject() => typeof(object);
+			}
+			class Gen<T> where T : class { }
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src);
+		}
+
+		[Fact]
 		public Task MakeGenericTypeWithUnknownDefinition ()
 		{
 			const string src = $$"""
@@ -434,6 +450,22 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 			{
 				public void M<T>() => typeof(C).GetMethod(nameof(N)).MakeGenericMethod(typeof(T));
 				public void N<T>() { }
+			}
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src);
+		}
+
+		[Fact]
+		public Task MakeGenericMethodWithConstraint ()
+		{
+			const string src = $$"""
+			using System;
+			class C
+			{
+				public void M() => typeof(C).GetMethod(nameof(N)).MakeGenericMethod(GetObject());
+				public void N<T>() where T : class { }
+				static Type GetObject() => typeof(object);
 			}
 			""";
 

@@ -5167,6 +5167,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> UnzipOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> UnzipOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
+        public static System.Numerics.Vector<byte> VectorTableLookup(System.Numerics.Vector<byte> data, System.Numerics.Vector<byte> indices) { throw null; }
+        public static System.Numerics.Vector<double> VectorTableLookup(System.Numerics.Vector<double> data, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static System.Numerics.Vector<short> VectorTableLookup(System.Numerics.Vector<short> data, System.Numerics.Vector<ushort> indices) { throw null; }
+        public static System.Numerics.Vector<int> VectorTableLookup(System.Numerics.Vector<int> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static System.Numerics.Vector<long> VectorTableLookup(System.Numerics.Vector<long> data, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static System.Numerics.Vector<sbyte> VectorTableLookup(System.Numerics.Vector<sbyte> data, System.Numerics.Vector<byte> indices) { throw null; }
+        public static System.Numerics.Vector<float> VectorTableLookup(System.Numerics.Vector<float> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static System.Numerics.Vector<ushort> VectorTableLookup(System.Numerics.Vector<ushort> data, System.Numerics.Vector<ushort> indices) { throw null; }
+        public static System.Numerics.Vector<uint> VectorTableLookup(System.Numerics.Vector<uint> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static System.Numerics.Vector<ulong> VectorTableLookup(System.Numerics.Vector<ulong> data, System.Numerics.Vector<ulong> indices) { throw null; }
+
         public static System.Numerics.Vector<byte> Xor(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> Xor(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> Xor(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }

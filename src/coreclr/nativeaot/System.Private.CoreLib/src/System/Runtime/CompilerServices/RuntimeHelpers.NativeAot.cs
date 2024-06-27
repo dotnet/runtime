@@ -28,7 +28,7 @@ namespace System.Runtime.CompilerServices
         }
 
 #pragma warning disable IDE0060
-        private static unsafe void* GetSpanDataFrom(
+        private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
             out int count)
