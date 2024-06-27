@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
-    <WasiSdkRoot Condition="'$(WasiSdkRoot)' == ''">$(WASI_SDK_PATH)</WasiSdkRoot>
+    <WASI_SDK_PATH>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
     <WasiSysRoot>$([MSBuild]::NormalizeDirectory($(WasiSdkRoot), 'share', 'wasi-sysroot'))</WasiSysRoot>
     <WasiClang>$(WasiSdkRoot)\bin\clang</WasiClang>
     <WasiClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiClang).exe</WasiClang>
