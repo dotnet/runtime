@@ -4391,6 +4391,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> DotProductBySelectedScalar(System.Numerics.Vector<uint> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte rightIndex) { throw null; }
         public static System.Numerics.Vector<ulong> DotProductBySelectedScalar(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
 
+        public static System.Numerics.Vector<byte> DuplicateSelectedScalarToVector(System.Numerics.Vector<byte> data, [ConstantExpected(Min = 0, Max = (byte)(63))] byte index) { throw null; }
+        public static System.Numerics.Vector<double> DuplicateSelectedScalarToVector(System.Numerics.Vector<double> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw null; }
+        public static System.Numerics.Vector<short> DuplicateSelectedScalarToVector(System.Numerics.Vector<short> data, [ConstantExpected(Min = 0, Max = (byte)(31))] byte index) { throw null; }
+        public static System.Numerics.Vector<int> DuplicateSelectedScalarToVector(System.Numerics.Vector<int> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) { throw null; }
+        public static System.Numerics.Vector<long> DuplicateSelectedScalarToVector(System.Numerics.Vector<long> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw null; }
+        public static System.Numerics.Vector<sbyte> DuplicateSelectedScalarToVector(System.Numerics.Vector<sbyte> data, [ConstantExpected(Min = 0, Max = (byte)(63))] byte index) { throw null; }
+        public static System.Numerics.Vector<float> DuplicateSelectedScalarToVector(System.Numerics.Vector<float> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) { throw null; }
+        public static System.Numerics.Vector<ushort> DuplicateSelectedScalarToVector(System.Numerics.Vector<ushort> data, [ConstantExpected(Min = 0, Max = (byte)(31))] byte index) { throw null; }
+        public static System.Numerics.Vector<uint> DuplicateSelectedScalarToVector(System.Numerics.Vector<uint> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) { throw null; }
+        public static System.Numerics.Vector<ulong> DuplicateSelectedScalarToVector(System.Numerics.Vector<ulong> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw null; }
+
         public static unsafe System.Numerics.Vector<byte> ExtractVector(System.Numerics.Vector<byte> upper, System.Numerics.Vector<byte> lower, [ConstantExpected] byte index) { throw null; }
         public static unsafe System.Numerics.Vector<double> ExtractVector(System.Numerics.Vector<double> upper, System.Numerics.Vector<double> lower, [ConstantExpected] byte index) { throw null; }
         public static unsafe System.Numerics.Vector<short> ExtractVector(System.Numerics.Vector<short> upper, System.Numerics.Vector<short> lower, [ConstantExpected] byte index) { throw null; }
