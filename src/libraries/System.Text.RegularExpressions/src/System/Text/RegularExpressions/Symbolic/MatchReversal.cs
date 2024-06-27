@@ -3,7 +3,7 @@
 
 namespace System.Text.RegularExpressions.Symbolic;
 
-internal sealed class MatchReversal<TSet>(
+internal readonly struct MatchReversal<TSet>(
     MatchReversalKind kind,
     int fixedLength,
     MatchingState<TSet>? adjustedStartState = null)
