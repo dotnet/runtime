@@ -551,157 +551,157 @@ extends:
       # CoreCLR NativeAOT debug build and smoke tests
       # Only when CoreCLR is changed
       #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: Debug
-          platforms:
-          - linux_x64
-          - windows_x64
-          variables:
-          - name: timeoutPerTestInMinutes
-            value: 60
-          - name: timeoutPerTestCollectionInMinutes
-            value: 180
-          jobParameters:
-            timeoutInMinutes: 120
-            nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
-            postBuildSteps:
-              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
-                parameters:
-                  creator: dotnet-bot
-                  testBuildArgs: nativeaot tree nativeaot
-                  liveLibrariesBuildConfig: Release
-                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-                parameters:
-                  testGroup: innerloop
-                  liveLibrariesBuildConfig: Release
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
+      #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+      #     buildConfig: Debug
+      #     platforms:
+      #     - linux_x64
+      #     - windows_x64
+      #     variables:
+      #     - name: timeoutPerTestInMinutes
+      #       value: 60
+      #     - name: timeoutPerTestCollectionInMinutes
+      #       value: 180
+      #     jobParameters:
+      #       timeoutInMinutes: 120
+      #       nameSuffix: NativeAOT
+      #       buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
+      #       postBuildSteps:
+      #         - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+      #           parameters:
+      #             creator: dotnet-bot
+      #             testBuildArgs: nativeaot tree nativeaot
+      #             liveLibrariesBuildConfig: Release
+      #             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+      #       extraVariablesTemplates:
+      #         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+      #           parameters:
+      #             testGroup: innerloop
+      #             liveLibrariesBuildConfig: Release
+      #       condition: >-
+      #         or(
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
 
-      #
-      # CoreCLR NativeAOT checked build and smoke tests
-      # Only when CoreCLR is changed
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: Checked
-          platforms:
-          - windows_x64
-          variables:
-          - name: timeoutPerTestInMinutes
-            value: 60
-          - name: timeoutPerTestCollectionInMinutes
-            value: 180
-          jobParameters:
-            timeoutInMinutes: 180
-            nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+libs.native+libs.sfx -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
-            postBuildSteps:
-              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
-                parameters:
-                  creator: dotnet-bot
-                  testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;" /p:BuildNativeAotFrameworkObjects=true'
-                  liveLibrariesBuildConfig: Release
-                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-                parameters:
-                  testGroup: innerloop
-                  liveLibrariesBuildConfig: Release
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      # #
+      # # CoreCLR NativeAOT checked build and smoke tests
+      # # Only when CoreCLR is changed
+      # #
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
+      #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+      #     buildConfig: Checked
+      #     platforms:
+      #     - windows_x64
+      #     variables:
+      #     - name: timeoutPerTestInMinutes
+      #       value: 60
+      #     - name: timeoutPerTestCollectionInMinutes
+      #       value: 180
+      #     jobParameters:
+      #       timeoutInMinutes: 180
+      #       nameSuffix: NativeAOT
+      #       buildArgs: -s clr.aot+libs.native+libs.sfx -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
+      #       postBuildSteps:
+      #         - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+      #           parameters:
+      #             creator: dotnet-bot
+      #             testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;" /p:BuildNativeAotFrameworkObjects=true'
+      #             liveLibrariesBuildConfig: Release
+      #             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+      #       extraVariablesTemplates:
+      #         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+      #           parameters:
+      #             testGroup: innerloop
+      #             liveLibrariesBuildConfig: Release
+      #       condition: >-
+      #         or(
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
 
-      #
-      # CoreCLR NativeAOT release build and smoke tests
-      # Only when CoreCLR is changed
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: Release
-          platforms:
-          - linux_x64
-          - windows_x64
-          - osx_x64
-          - linux_arm64
-          - windows_arm64
-          - osx_arm64
-          variables:
-          - name: timeoutPerTestInMinutes
-            value: 60
-          - name: timeoutPerTestCollectionInMinutes
-            value: 180
-          jobParameters:
-            testGroup: innerloop
-            timeoutInMinutes: 120
-            nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
-            postBuildSteps:
-              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
-                parameters:
-                  creator: dotnet-bot
-                  testBuildArgs: 'nativeaot tree ";nativeaot;tracing/eventpipe/providervalidation;"'
-                  liveLibrariesBuildConfig: Release
-                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-                parameters:
-                  testGroup: innerloop
-                  liveLibrariesBuildConfig: Release
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      # #
+      # # CoreCLR NativeAOT release build and smoke tests
+      # # Only when CoreCLR is changed
+      # #
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
+      #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+      #     buildConfig: Release
+      #     platforms:
+      #     - linux_x64
+      #     - windows_x64
+      #     - osx_x64
+      #     - linux_arm64
+      #     - windows_arm64
+      #     - osx_arm64
+      #     variables:
+      #     - name: timeoutPerTestInMinutes
+      #       value: 60
+      #     - name: timeoutPerTestCollectionInMinutes
+      #       value: 180
+      #     jobParameters:
+      #       testGroup: innerloop
+      #       timeoutInMinutes: 120
+      #       nameSuffix: NativeAOT
+      #       buildArgs: -s clr.aot+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
+      #       postBuildSteps:
+      #         - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+      #           parameters:
+      #             creator: dotnet-bot
+      #             testBuildArgs: 'nativeaot tree ";nativeaot;tracing/eventpipe/providervalidation;"'
+      #             liveLibrariesBuildConfig: Release
+      #             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+      #       extraVariablesTemplates:
+      #         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+      #           parameters:
+      #             testGroup: innerloop
+      #             liveLibrariesBuildConfig: Release
+      #       condition: >-
+      #         or(
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
 
-      #
-      # CoreCLR NativeAOT release build and libraries tests
-      # Only when CoreCLR or library is changed
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: Release
-          platforms:
-          - windows_arm64
-          - linux_arm64
-          - osx_arm64
-          jobParameters:
-            testGroup: innerloop
-            isSingleFile: true
-            nameSuffix: NativeAOT_Libraries
-            buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true /p:RunAnalyzers=false
-            timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
-            # extra steps, run tests
-            postBuildSteps:
-              - template: /eng/pipelines/libraries/helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      # #
+      # # CoreCLR NativeAOT release build and libraries tests
+      # # Only when CoreCLR or library is changed
+      # #
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
+      #     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      #     buildConfig: Release
+      #     platforms:
+      #     - windows_arm64
+      #     - linux_arm64
+      #     - osx_arm64
+      #     jobParameters:
+      #       testGroup: innerloop
+      #       isSingleFile: true
+      #       nameSuffix: NativeAOT_Libraries
+      #       buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true /p:RunAnalyzers=false
+      #       timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
+      #       # extra steps, run tests
+      #       postBuildSteps:
+      #         - template: /eng/pipelines/libraries/helix.yml
+      #           parameters:
+      #             creator: dotnet-bot
+      #             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+      #       condition: >-
+      #         or(
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
 
       # Build and test clr tools
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -834,25 +834,25 @@ extends:
       #
       # WebAssembly legs
       #
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          scenarios:
-            - WasmTestOnV8
-            - WasmTestOnChrome
-            - WasmTestOnFirefox
+      # - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      #     scenarios:
+      #       - WasmTestOnV8
+      #       - WasmTestOnChrome
+      #       - WasmTestOnFirefox
 
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          scenarios:
-            - WasmTestOnChrome
+      # - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm_win
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      #     scenarios:
+      #       - WasmTestOnChrome
 
       # Library tests with full threading
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -862,110 +862,129 @@ extends:
             #- browser_wasm_win
           jobParameters:
             timeoutInMinutes: 240
-          nameSuffix: _Threading
+          nameSuffix: _Threading_Chrome
           extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           extraHelixArguments: /p:WasmEnableThreads=true
           alwaysRun: ${{ variables.isRollingBuild }}
           shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           scenarios:
             - WasmTestOnChrome
-            - WasmTestOnFirefox
+            # - WasmTestOnFirefox
             #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
-      # EAT Library tests - only run on linux
-      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          nameSuffix: _EAT
-          runAOT: false
-          shouldRunSmokeOnly: false
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:2
-
-      # AOT Library tests
-      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-            - wasi_wasm
-          nameSuffix: _Smoke_AOT
-          runAOT: true
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-      # For Wasm.Build.Tests - runtime pack builds
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
-          nameSuffix: SingleThreaded
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          publishArtifactsForWorkload: true
-          publishWBT: true
-
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
-          nameSuffix: MultiThreaded
-          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          publishArtifactsForWorkload: true
-          publishWBT: false
-
-      # Browser Wasm.Build.Tests
-      - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-      # Wasm Debugger tests
-      - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-      # Wasm runtime tests
-      - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-      # WASI/WASM
-
+            
+      # Library tests with full threading
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
-            - wasi_wasm
-            - wasi_wasm_win
-          nameSuffix: '_Smoke'
-          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          shouldRunSmokeOnly: true
+            - browser_wasm
+            #- browser_wasm_win
+          jobParameters:
+            timeoutInMinutes: 240
+          nameSuffix: _Threading_Firefox
+          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraHelixArguments: /p:WasmEnableThreads=true
           alwaysRun: ${{ variables.isRollingBuild }}
+          shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           scenarios:
-            - WasmTestOnWasmtime
+            # - WasmTestOnChrome
+            - WasmTestOnFirefox
+            #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
-      - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
-        parameters:
-          platforms:
-            - wasi_wasm
-            - wasi_wasm_win
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          alwaysRun: ${{ variables.isRollingBuild }}
+      # # EAT Library tests - only run on linux
+      # - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #     nameSuffix: _EAT
+      #     runAOT: false
+      #     shouldRunSmokeOnly: false
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:2
+
+      # # AOT Library tests
+      # - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #       - browser_wasm_win
+      #       - wasi_wasm
+      #     nameSuffix: _Smoke_AOT
+      #     runAOT: true
+      #     shouldRunSmokeOnly: true
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+
+      # # For Wasm.Build.Tests - runtime pack builds
+      # - template: /eng/pipelines/common/templates/wasm-build-only.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #       - browser_wasm_win
+      #     condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
+      #     nameSuffix: SingleThreaded
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      #     publishArtifactsForWorkload: true
+      #     publishWBT: true
+
+      # - template: /eng/pipelines/common/templates/wasm-build-only.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #       - browser_wasm_win
+      #     condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
+      #     nameSuffix: MultiThreaded
+      #     extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      #     publishArtifactsForWorkload: true
+      #     publishWBT: false
+
+      # # Browser Wasm.Build.Tests
+      # - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #       - browser_wasm_win
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+
+      # # Wasm Debugger tests
+      # - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #       - browser_wasm_win
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+
+      # # Wasm runtime tests
+      # - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+
+      # WASI/WASM
+
+      # - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - wasi_wasm
+      #       - wasi_wasm_win
+      #     nameSuffix: '_Smoke'
+      #     extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      #     shouldRunSmokeOnly: true
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     scenarios:
+      #       - WasmTestOnWasmtime
+
+      # - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - wasi_wasm
+      #       - wasi_wasm_win
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      #     alwaysRun: ${{ variables.isRollingBuild }}
 
       #
       # Android devices
@@ -1031,8 +1050,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
-            # Tracking issue: https://github.com/dotnet/runtime/issues/82637
-            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=false
+            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=true
             timeoutInMinutes: 480
             condition: >-
               or(
