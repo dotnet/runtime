@@ -83,7 +83,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
 
             fpInfo = comp->GetPassFpStructInRegistersInfo(typeHnd);
 
-            if (fpInfo.flags != UseIntCallConv)
+            if (fpInfo.flags != FpStruct::UseIntCallConv)
             {
                 if ((fpInfo.flags & FpStruct::OnlyOne) != 0)
                 {
