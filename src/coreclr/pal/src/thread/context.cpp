@@ -720,26 +720,38 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 *(NEON128*) &fp->vregs[i] = lpContext->V[i];
             }
         }
+
         if (sve)
         {
-            //TODO-SVE: This only handles vector lengths of 128bits.
-
-            _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_SVE) == XSTATE_MASK_SVE);
-
-            uint16_t vq = sve_vq_from_vl(lpContext->Vl);
-
-            // Vector length should not have changed.
-            _ASSERTE(lpContext->Vl == sve->vl);
-
-            //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
-            *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq)) = lpContext->Ffr;
-
-            for (int i = 0; i < 32; i++)
+            // Sve context may be present when SVE registers are not live. If so then
+            // there is no SVE data to restore.
+            if (sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
             {
-                //TODO-SVE: Copy SVE registers once they are >128bits
-                //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
-                //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
-                *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i)) = lpContext->P[i];
+                //TODO-SVE: This only handles vector lengths of 128bits.
+
+                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_SVE) == XSTATE_MASK_SVE);
+
+                uint16_t vq = sve_vq_from_vl(lpContext->Vl);
+
+                // Vector length should not have changed.
+                _ASSERTE(lpContext->Vl == sve->vl);
+
+                //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
+                *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq)) = lpContext->Ffr;
+
+                for (int i = 0; i < 32; i++)
+                {
+                    //TODO-SVE: Copy SVE registers once they are >128bits
+                    //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
+                    //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
+                    *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i)) = lpContext->P[i];
+                }
+            }
+            else
+            {
+                // If this happens that somehow lpContext is filled with SVE state, but the kernel
+                // thinks SVE is not live yet.
+                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_SVE) == 0);
             }
         }
 #endif // TARGET_OSX
@@ -1046,7 +1058,9 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 lpContext->V[i] = *(NEON128*) &fp->vregs[i];
             }
         }
-        if (sve)
+        // Sve context may be present when SVE registers are not live. If so then
+        // there is no SVE data to save.
+        if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
         {
             //TODO-SVE: This only handles vector lengths of 128bits.
 
@@ -1054,7 +1068,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
             uint16_t vq = sve_vq_from_vl(sve->vl);
 
-            _ASSERTE(sve->vl > 0);
+            _ASSERTE((sve->vl > 0) && (sve->vl % 16 == 0));
             lpContext->Vl  = sve->vl;
 
             //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
