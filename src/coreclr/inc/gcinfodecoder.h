@@ -380,7 +380,7 @@ public:
         m_RelPos = (int)(adjPos % BITS_PER_SIZE_T);
 
         // Skipping ahead may go to a position at the edge-exclusive
-        // end of the stream.The location may have no more data.
+        // end of the stream. The location may have no more data.
         // We will not prefetch on word boundary - in case
         // the next word in in an unreadable page.
         if (m_RelPos == 0)
