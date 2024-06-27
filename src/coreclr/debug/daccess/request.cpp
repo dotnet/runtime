@@ -431,7 +431,7 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
         *value = mTable->GetRestoredSlotIfExists(slot);
         if (*value == 0)
         {
-            hr = E_NOT_VALID_STATE;
+            hr = S_FALSE;
         }
     }
     else
@@ -446,7 +446,7 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
                 *value = pMD->GetMethodEntryPointIfExists();
                 if (*value == 0)
                 {
-                    hr = E_NOT_VALID_STATE;
+                    hr = S_FALSE;
                 }
                 else
                 {

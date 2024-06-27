@@ -2671,7 +2671,7 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
 
 #ifdef _DEBUG
     PTR_PCODE pSlot = GetAddrOfSlot();
-    _ASSERTE(*pSlot == (PCODE)NULL);
+    _ASSERTE(*pSlot != (PCODE)NULL);
 #endif
 
     if (RequiresStableEntryPoint())
