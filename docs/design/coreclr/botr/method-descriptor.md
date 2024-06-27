@@ -85,7 +85,9 @@ DWORD MethodDesc::GetAttrs()
 Method Slots
 ------------
 
-Each MethodDesc has a slot, which contains the entry point of the method. The slot and entry point must exist for all methods, even the ones that never run like abstract methods. There are multiple places in the runtime that depend on the 1:1 mapping between entry points and MethodDescs, making this relationship an invariant.
+Each MethodDesc has a slot, which contains the entry point of the method. The slot must exist for all methods, even the ones that never run like abstract methods. There are multiple places in the runtime that depend on the 1:1 mapping between entry points and MethodDescs, making this relationship an invariant.
+
+Each MethodDesc logically has an entry point, but we do not allocate these eagerly at MethodDesc creation time. The invariant is that once the method is identified as a method to run, or is used in virtual overriding, we will allocate the entrypoint.
 
 The slot is either in MethodTable or in MethodDesc itself. The location of the slot is determined by `mdcHasNonVtableSlot` bit on MethodDesc.
 
@@ -185,8 +187,6 @@ The target of the temporary entry point is a PreStub, which is a special kind of
 
 The **stable entry point** is either the native code or the precode. The **native code** is either jitted code or code saved in NGen image. It is common to talk about jitted code when we actually mean native code.
 
-Temporary entry points are never saved into NGen images. All entry points in NGen images are stable entry points that are never changed. It is an important optimization that reduced private working set.
-
 ![Figure 2](images/methoddesc-fig2.png)
 
 Figure 2 Entry Point State Diagram
@@ -208,6 +208,7 @@ The methods to get callable entry points from MethodDesc are:
 
 - `MethodDesc::GetSingleCallableAddrOfCode`
 - `MethodDesc::GetMultiCallableAddrOfCode`
+- `MethodDesc::TryGetMultiCallableAddrOfCode`
 - `MethodDesc::GetSingleCallableAddrOfVirtualizedCode`
 - `MethodDesc::GetMultiCallableAddrOfVirtualizedCode`
 
@@ -220,7 +221,7 @@ The type of precode has to be cheaply computable from the instruction sequence. 
 
 **StubPrecode**
 
-StubPrecode is the basic precode type. It loads MethodDesc into a scratch register and then jumps. It must be implemented for precodes to work. It is used as fallback when no other specialized precode type is available.
+StubPrecode is the basic precode type. It loads MethodDesc into a scratch register<sup>2</sup> and then jumps. It must be implemented for precodes to work. It is used as fallback when no other specialized precode type is available.
 
 All other precodes types are optional optimizations that the platform specific files turn on via HAS\_XXX\_PRECODE defines.
 
@@ -236,7 +237,7 @@ StubPrecode looks like this on x86:
 
 FixupPrecode is used when the final target does not require MethodDesc in scratch register<sup>2</sup>. The FixupPrecode saves a few cycles by avoiding loading MethodDesc into the scratch register.
 
-The most common usage of FixupPrecode is for method fixups in NGen images.
+Most stubs used are the more efficient form, we currently can use this form for everything but interop methods when a specialized form of Precode is not required.
 
 The initial state of the FixupPrecode on x86:
 
@@ -253,67 +254,6 @@ Once it has been patched to point to final target:
 	dword pMethodDesc
 
 <sup>2</sup> Passing MethodDesc in scratch register is sometimes referred to as **MethodDesc Calling Convention**.
-
-**FixupPrecode chunks**
-
-FixupPrecode chunk is a space efficient representation of multiple FixupPrecodes. It mirrors the idea of MethodDescChunk by hoisting the similar MethodDesc pointers from multiple FixupPrecodes to a shared area.
-
-The FixupPrecode chunk saves space and improves code density of the precodes. The code density improvement from FixupPrecode chunks resulted in 1% - 2% gain in big server scenarios on x64.
-
-The FixupPrecode chunks looks like this on x86:
-
-	jmp Target2
-	pop edi // dummy instruction that marks the type of the precode
-	db MethodDescChunkIndex
-	db 2 (PrecodeChunkIndex)
-
-	jmp Target1
-	pop edi
-	db MethodDescChunkIndex
-	db 1 (PrecodeChunkIndex)
-
-	jmp Target0
-	pop edi
-	db MethodDescChunkIndex
-	db 0 (PrecodeChunkIndex)
-
-	dw pMethodDescBase
-
-One FixupPrecode chunk corresponds to one MethodDescChunk. There is no 1:1 mapping between the FixupPrecodes in the chunk and MethodDescs in MethodDescChunk though. Each FixupPrecode has index of the method it belongs to. It allows allocating the FixupPrecode in the chunk only for methods that need it.
-
-**Compact entry points**
-
-Compact entry point is a space efficient implementation of temporary entry points.
-
-Temporary entry points implemented using StubPrecode or FixupPrecode can be patched to point to the actual code. Jitted code can call temporary entry point directly. The temporary entry point can be multicallable entry points in this case.
-
-Compact entry points cannot be patched to point to the actual code. Jitted code cannot call them directly. They are trading off speed for size. Calls to these entry points are indirected via slots in a table (FuncPtrStubs) that are patched to point to the actual entry point eventually. A request for a multicallable entry point allocates a StubPrecode or FixupPrecode on demand in this case.
-
-The raw speed difference is the cost of an indirect call for a compact entry point vs. the cost of one direct call and one direct jump on the given platform. The later used to be faster by a few percent in large server scenario since it can be predicted by the hardware better (2005). It is not always the case on current (2015) hardware.
-
-The compact entry points have been historically implemented on x86 only. Their additional complexity, space vs. speed trade-off and hardware advancements made them unjustified on other platforms.
-
-The compact entry point on x86 looks like this:
-
-	entrypoint0:
-	 mov al,0
-	 jmp short Dispatch
-
-	entrypoint1:
-	 mov al,1
-	 jmp short Dispatch
-
-	entrypoint2:
-	 mov al,2
-	 jmp short Dispatch
-
-	Dispatch:
-	 movzx eax,al
-	 shl eax, 3
-	 add eax, pBaseMD
-	 jmp PreStub
-
-The allocation of temporary entry points always tries to pick the smallest temporary entry point from the available choices. For example, a single compact entry point is bigger than a single StubPrecode on x86. The StubPrecode will be preferred over the compact entry point in this case. The allocation of the precode for a stable entry point will try to reuse an allocated temporary entry point precode if one exists of the matching type.
 
 **ThisPtrRetBufPrecode**
 
