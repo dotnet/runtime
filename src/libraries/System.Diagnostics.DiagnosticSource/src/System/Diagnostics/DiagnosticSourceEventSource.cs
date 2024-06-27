@@ -227,6 +227,8 @@ namespace System.Diagnostics
             "\n" +
             "Microsoft.EntityFrameworkCore/Microsoft.EntityFrameworkCore.AfterExecuteCommand@Activity2Stop:-";
 
+        private const string ParentRatioSamplerPrefix = "ParentRatioSampler(";
+
         /// <summary>
         /// Used to send ad-hoc diagnostics to humans.
         /// </summary>
@@ -771,14 +773,14 @@ namespace System.Diagnostics
                             {
                                 sampleFunc = static (bool hasActivityContext, ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData;
                             }
-                            else if (suffixPart.StartsWith("ParentRatioSampler(".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                            else if (suffixPart.StartsWith(ParentRatioSamplerPrefix.AsSpan(), StringComparison.OrdinalIgnoreCase))
                             {
                                 int endingLocation = suffixPart.IndexOf(')');
                                 if (endingLocation < 0
 #if NETFRAMEWORK || NETSTANDARD
-                                    || !double.TryParse(suffixPart.Slice(19, endingLocation - 19).ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
+                                    || !double.TryParse(suffixPart.Slice(ParentRatioSamplerPrefix.Length, endingLocation - ParentRatioSamplerPrefix.Length).ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
 #else
-                                    || !double.TryParse(suffixPart.Slice(19, endingLocation - 19), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
+                                    || !double.TryParse(suffixPart.Slice(ParentRatioSamplerPrefix.Length, endingLocation - ParentRatioSamplerPrefix.Length), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
 #endif
                                 {
                                     // Invalid format
