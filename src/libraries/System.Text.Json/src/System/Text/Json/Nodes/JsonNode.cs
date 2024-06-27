@@ -14,8 +14,16 @@ namespace System.Text.Json.Nodes
     /// declared as an <see cref="object"/> should be deserialized as a <see cref="JsonNode"/>.
     public abstract partial class JsonNode
     {
+        // Default options instance used when calling built-in JsonNode converters.
+        private protected static readonly JsonSerializerOptions s_defaultOptions = new();
+
         private JsonNode? _parent;
         private JsonNodeOptions? _options;
+
+        /// <summary>
+        /// The underlying JsonElement if the node is backed by a JsonElement.
+        /// </summary>
+        internal virtual JsonElement? UnderlyingElement => null;
 
         /// <summary>
         ///   Options to control the behavior.
@@ -300,11 +308,15 @@ namespace System.Text.Json.Nodes
             {
                 return node2 is null;
             }
+            else if (node2 is null)
+            {
+                return false;
+            }
 
             return node1.DeepEqualsCore(node2);
         }
 
-        internal abstract bool DeepEqualsCore(JsonNode? node);
+        internal abstract bool DeepEqualsCore(JsonNode node);
 
         /// <summary>
         /// Replaces this node with a new value.
@@ -375,7 +387,7 @@ namespace System.Text.Json.Nodes
             }
 
             var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
-            return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
+            return JsonValue.CreateFromTypeInfo(value, jsonTypeInfo, options);
         }
     }
 }

@@ -99,9 +99,7 @@ namespace ILCompiler
 
         private static void CheckTypeCanBeUsedInSignature(TypeDesc type)
         {
-            MetadataType defType = type as MetadataType;
-
-            defType?.ComputeTypeContainsGCPointers();
+            ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type);
         }
     }
 }

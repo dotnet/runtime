@@ -4391,6 +4391,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> DotProductBySelectedScalar(System.Numerics.Vector<uint> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte rightIndex) { throw null; }
         public static System.Numerics.Vector<ulong> DotProductBySelectedScalar(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
 
+        public static unsafe System.Numerics.Vector<byte> ExtractVector(System.Numerics.Vector<byte> upper, System.Numerics.Vector<byte> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<double> ExtractVector(System.Numerics.Vector<double> upper, System.Numerics.Vector<double> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<short> ExtractVector(System.Numerics.Vector<short> upper, System.Numerics.Vector<short> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<int> ExtractVector(System.Numerics.Vector<int> upper, System.Numerics.Vector<int> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<long> ExtractVector(System.Numerics.Vector<long> upper, System.Numerics.Vector<long> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<sbyte> ExtractVector(System.Numerics.Vector<sbyte> upper, System.Numerics.Vector<sbyte> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<float> ExtractVector(System.Numerics.Vector<float> upper, System.Numerics.Vector<float> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> ExtractVector(System.Numerics.Vector<ushort> upper, System.Numerics.Vector<ushort> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> ExtractVector(System.Numerics.Vector<uint> upper, System.Numerics.Vector<uint> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> ExtractVector(System.Numerics.Vector<ulong> upper, System.Numerics.Vector<ulong> lower, [ConstantExpected] byte index) { throw null; }
+
         public static System.Numerics.Vector<double> FusedMultiplyAdd(System.Numerics.Vector<double> addend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> FusedMultiplyAdd(System.Numerics.Vector<float> addend, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> FusedMultiplyAddBySelectedScalar(System.Numerics.Vector<double> addend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, [ConstantExpected] byte rightIndex) { throw null; }
@@ -4554,6 +4565,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> LeadingZeroCount(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> LeadingZeroCount(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<ulong> LeadingZeroCount(System.Numerics.Vector<ulong> value) { throw null; }
+
+        public static System.Numerics.Vector<byte> InsertIntoShiftedVector(System.Numerics.Vector<byte> left, byte right) { throw null; }
+        public static System.Numerics.Vector<double> InsertIntoShiftedVector(System.Numerics.Vector<double> left, double right) { throw null; }
+        public static System.Numerics.Vector<short> InsertIntoShiftedVector(System.Numerics.Vector<short> left, short right) { throw null; }
+        public static System.Numerics.Vector<int> InsertIntoShiftedVector(System.Numerics.Vector<int> left, int right) { throw null; }
+        public static System.Numerics.Vector<long> InsertIntoShiftedVector(System.Numerics.Vector<long> left, long right) { throw null; }
+        public static System.Numerics.Vector<sbyte> InsertIntoShiftedVector(System.Numerics.Vector<sbyte> left, sbyte right) { throw null; }
+        public static System.Numerics.Vector<float> InsertIntoShiftedVector(System.Numerics.Vector<float> left, float right) { throw null; }
+        public static System.Numerics.Vector<ushort> InsertIntoShiftedVector(System.Numerics.Vector<ushort> left, ushort right) { throw null; }
+        public static System.Numerics.Vector<uint> InsertIntoShiftedVector(System.Numerics.Vector<uint> left, uint right) { throw null; }
+        public static System.Numerics.Vector<ulong> InsertIntoShiftedVector(System.Numerics.Vector<ulong> left, ulong right) { throw null; }
 
         public static unsafe System.Numerics.Vector<sbyte> LoadVector(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVector(System.Numerics.Vector<short> mask, short* address) { throw null; }
@@ -4772,6 +4794,15 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<sbyte> Negate(System.Numerics.Vector<sbyte> value) { throw null; }
         public static System.Numerics.Vector<float> Negate(System.Numerics.Vector<float> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> Not(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<short> Not(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> Not(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> Not(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> Not(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> Not(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> Not(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> Not(System.Numerics.Vector<ulong> value) { throw null; }
+
         public static System.Numerics.Vector<byte> Or(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> Or(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> Or(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4805,6 +4836,26 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void PrefetchInt16(System.Numerics.Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
         public static unsafe void PrefetchInt32(System.Numerics.Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
         public static unsafe void PrefetchInt64(System.Numerics.Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+
+        public static System.Numerics.Vector<double> ReciprocalEstimate(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalEstimate(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalExponent(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalExponent(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalSqrtEstimate(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalSqrtEstimate(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalSqrtStep(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalSqrtStep(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalStep(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalStep(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        
+        public static System.Numerics.Vector<byte> ReverseBits(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<short> ReverseBits(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> ReverseBits(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> ReverseBits(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> ReverseBits(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> ReverseBits(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> ReverseBits(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ReverseBits(System.Numerics.Vector<ulong> value) { throw null; }
 
         public static System.Numerics.Vector<byte> ReverseElement(System.Numerics.Vector<byte> value) { throw null; }
         public static System.Numerics.Vector<double> ReverseElement(System.Numerics.Vector<double> value) { throw null; }
@@ -4932,6 +4983,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static ulong SaturatingIncrementByActiveElementCount(ulong value, System.Numerics.Vector<ulong> from) { throw null; }
         public static System.Numerics.Vector<ulong> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<ulong> value, System.Numerics.Vector<ulong> from) { throw null; }
 
+        public static System.Numerics.Vector<double> Scale(System.Numerics.Vector<double> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<float> Scale(System.Numerics.Vector<float> left, System.Numerics.Vector<int> right) { throw null; }
+
         public static System.Numerics.Vector<int> SignExtend16(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend16(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend32(System.Numerics.Vector<long> value) { throw null; }
@@ -4945,6 +4999,20 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<short> SignExtendWideningUpper(System.Numerics.Vector<sbyte> value) { throw null; }
         public static System.Numerics.Vector<int> SignExtendWideningUpper(System.Numerics.Vector<short> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtendWideningUpper(System.Numerics.Vector<int> value) { throw null; }
+
+        public static System.Numerics.Vector<byte> Splice(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> Splice(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> Splice(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> Splice(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> Splice(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> Splice(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> Splice(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> Splice(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> Splice(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> Splice(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<double> Sqrt(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> Sqrt(System.Numerics.Vector<float> value) { throw null; }
 
         public static unsafe void StoreAndZip(System.Numerics.Vector<byte> mask, byte* address, System.Numerics.Vector<byte> data) { throw null; }
         public static unsafe void StoreAndZip(System.Numerics.Vector<byte> mask, byte* address, (System.Numerics.Vector<byte> Value1, System.Numerics.Vector<byte> Value2) data) { throw null; }
@@ -5031,6 +5099,31 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> SubtractSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> SubtractSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
+        public static bool TestAnyTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+
         public static System.Numerics.Vector<byte> TransposeEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<double> TransposeEven(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<short> TransposeEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
@@ -5073,6 +5166,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> UnzipOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> UnzipOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> UnzipOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<byte> VectorTableLookup(System.Numerics.Vector<byte> data, System.Numerics.Vector<byte> indices) { throw null; }
+        public static System.Numerics.Vector<double> VectorTableLookup(System.Numerics.Vector<double> data, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static System.Numerics.Vector<short> VectorTableLookup(System.Numerics.Vector<short> data, System.Numerics.Vector<ushort> indices) { throw null; }
+        public static System.Numerics.Vector<int> VectorTableLookup(System.Numerics.Vector<int> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static System.Numerics.Vector<long> VectorTableLookup(System.Numerics.Vector<long> data, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static System.Numerics.Vector<sbyte> VectorTableLookup(System.Numerics.Vector<sbyte> data, System.Numerics.Vector<byte> indices) { throw null; }
+        public static System.Numerics.Vector<float> VectorTableLookup(System.Numerics.Vector<float> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static System.Numerics.Vector<ushort> VectorTableLookup(System.Numerics.Vector<ushort> data, System.Numerics.Vector<ushort> indices) { throw null; }
+        public static System.Numerics.Vector<uint> VectorTableLookup(System.Numerics.Vector<uint> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static System.Numerics.Vector<ulong> VectorTableLookup(System.Numerics.Vector<ulong> data, System.Numerics.Vector<ulong> indices) { throw null; }
 
         public static System.Numerics.Vector<byte> Xor(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> Xor(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }

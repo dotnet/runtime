@@ -113,13 +113,35 @@ namespace System.Buffers.Text.Tests
             var r = new Random(42);
             for (int i = 0; i < 5; i++)
             {
-                yield return new object[] { "AQ==" + new string(r.GetItems<char>(" \n\t\r", i)), 4 + i, 1 };
+                yield return new object[] { "AQ==" + new string(GetChars(r, i)), 4 + i, 1 };
             }
 
             foreach (string s in new[] { "MTIz", "M TIz", "MT Iz", "MTI z", "MTIz ", "M    TI   z", "M T I Z " })
             {
                 yield return new object[] { s + s + s + s, s.Length * 4, 12 };
             }
+        }
+
+        private static char[] GetChars(Random r, int i)
+        {
+#if NETCOREAPP
+            return r.GetItems<char>(" \n\t\r", i);
+#else
+            byte[] bytes = new byte[i];
+            char[] chars = new char[i];
+            r.NextBytes(bytes);
+            for (int j = 0; j < bytes.Length; j++)
+            {
+                switch (bytes[j] % 4)
+                {
+                    case 0: chars[j] = ' '; break;
+                    case 1: chars[j] = '\n'; break;
+                    case 2: chars[j] = '\t'; break;
+                    case 3: chars[j] = '\r'; break;
+                }
+            }
+            return chars;
+#endif
         }
     }
 }
