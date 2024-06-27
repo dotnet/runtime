@@ -2786,7 +2786,7 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
 #ifdef _DEBUG
     if (!typeHnd.IsTypeDesc())
     {
-        typeHnd.AsMethodTable()->GetAuxiliaryData()->SetIsPublished();
+        typeHnd.AsMethodTable()->GetAuxiliaryDataForWrite()->SetIsPublished();
     }
 #endif
 

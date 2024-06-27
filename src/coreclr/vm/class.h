@@ -1975,7 +1975,6 @@ public:
         PCCOR_SIGNATURE pShortSig,
         DWORD   cShortSig,
         DWORD   dwVtableSlot,
-        LoaderAllocator *pLoaderAllocator,
         AllocMemTracker *pamTracker);
 
     // Generate a short sig for an array accessor

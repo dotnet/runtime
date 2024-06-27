@@ -235,7 +235,7 @@ public:
         }
     }
 
-    void SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
+    void SetTemporaryEntryPoint(AllocMemTracker *pamTracker);
 
 #ifndef DACCESS_COMPILE
     PCODE GetInitialEntryPointForCopiedSlot()
@@ -1453,7 +1453,7 @@ public:
 
     // pamTracker must be NULL for a MethodDesc which cannot be freed by an external AllocMemTracker
     // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
-    void EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
+    void EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker);
 
 #ifndef DACCESS_COMPILE
     void EnsureSlotFilled()

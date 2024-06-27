@@ -218,6 +218,10 @@ HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
     }
     CONTRACTL_END;
 
+    // Assert that the associated type is published. This isn't quite sufficient to cover the case of allocating
+    // this while creating a standalone MethodDesc, but catches most of the cases where lost allocations are easy to have happen.
+    _ASSERTE(pamTracker != NULL || GetMethodTable()->GetAuxiliaryData()->IsPublished());
+
     if (m_codeData != NULL)
         return S_OK;
 
@@ -2665,11 +2669,11 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
 
 #ifndef DACCESS_COMPILE
 //*******************************************************************************
-void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
+void MethodDesc::SetTemporaryEntryPoint(AllocMemTracker *pamTracker)
 {
     WRAPPER_NO_CONTRACT;
 
-    EnsureTemporaryEntryPointCore(pLoaderAllocator, pamTracker);
+    EnsureTemporaryEntryPointCore(pamTracker);
 
 #ifdef _DEBUG
     PTR_PCODE pSlot = GetAddrOfSlot();
@@ -2700,11 +2704,11 @@ void MethodDesc::EnsureTemporaryEntryPoint()
 
     if (GetTemporaryEntryPointIfExists() == (PCODE)NULL)
     {
-        EnsureTemporaryEntryPointCore(GetLoaderAllocator(), NULL);
+        EnsureTemporaryEntryPointCore(NULL);
     }
 }
 
-void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
+void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
 {
     CONTRACTL
     {

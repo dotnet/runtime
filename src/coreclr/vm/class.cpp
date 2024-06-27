@@ -801,7 +801,7 @@ HRESULT EEClass::AddMethodDesc(
                                 COMMA_INDEBUG(NULL)
                                 );
 
-        pNewMD->SetTemporaryEntryPoint(pAllocator, &dummyAmTracker);
+        pNewMD->SetTemporaryEntryPoint(&dummyAmTracker);
 
         // [TODO] if an exception is thrown, asserts will fire in EX_CATCH_HRESULT()
         // during an EnC operation due to the debugger thread not being able to
