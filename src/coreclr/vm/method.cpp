@@ -2821,7 +2821,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     _ASSERTE(requiredType == availableType);
-    _ASSERTE(*pSlot != NULL);
+    _ASSERTE(*pSlot != (PCODE)NULL);
     _ASSERTE(*pSlot == tempEntry);
 #endif
 
