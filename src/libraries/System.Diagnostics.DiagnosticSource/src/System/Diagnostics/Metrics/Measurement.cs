@@ -83,6 +83,8 @@ namespace System.Diagnostics.Metrics
             if (tags is null)
                 return Instrument.EmptyTags;
 
+            KeyValuePair<string, object?>[] result;
+
             // When the input is a collection, we can allocate a correctly sized array and copy directly into it.
             if (tags is ICollection<KeyValuePair<string, object?>> collection)
             {
@@ -91,7 +93,7 @@ namespace System.Diagnostics.Metrics
                 if (items == 0)
                     return Instrument.EmptyTags;
 
-                KeyValuePair<string, object?>[] result = new KeyValuePair<string, object?>[items];
+                result = new KeyValuePair<string, object?>[items];
                 collection.CopyTo(result, 0);
                 return result;
             }
@@ -100,31 +102,28 @@ namespace System.Diagnostics.Metrics
             // We use a pooled array as a buffer to avoid allocating until we know the final size we need.
             // This assumes that there are 32 or fewer tags, which is a reasonable assumption for most cases.
             // In the worst case, we will grow the buffer by renting a larger array.
-            int count = 0;
             KeyValuePair<string, object?>[] array = ArrayPool<KeyValuePair<string, object?>>.Shared.Rent(32);
+            int count = 0;
             int length = array.Length;
 
-            try
+            foreach (KeyValuePair<string, object?> item in tags)
             {
-                foreach (KeyValuePair<string, object?> item in tags)
-                {
-                    if (count == length)
-                        Grow(ref array, ref length);
+                if (count == length)
+                    Grow(ref array, ref length);
 
-                    array[count++] = item;
-                }
-
-                if (count == 0)
-                    return Instrument.EmptyTags;
-
-                KeyValuePair<string, object?>[] result = new KeyValuePair<string, object?>[count];
-                array.AsSpan().Slice(0, count).CopyTo(result.AsSpan());
-                return result;
+                array[count++] = item;
             }
-            finally
-            {
-                ArrayPool<KeyValuePair<string, object?>>.Shared.Return(array);
-            }
+
+            if (count == 0)
+                return Instrument.EmptyTags;
+
+            result = new KeyValuePair<string, object?>[count];
+            array.AsSpan().Slice(0, count).CopyTo(result.AsSpan());
+
+            // Note that we don't include the return of the array inside a finally block per the established guidelines for ArrayPool.
+            // We don't expect the above to throw an exception, but if it does it would be infrequent and the GC will collect the array.
+            ArrayPool<KeyValuePair<string, object?>>.Shared.Return(array);
+            return result;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void Grow(ref KeyValuePair<string, object?>[] array, ref int length)
