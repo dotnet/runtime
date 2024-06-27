@@ -4237,9 +4237,6 @@ build_variance_search_table_inner (MonoClass *klass, MonoVarianceSearchEntry *bu
 		MonoClass **ifaces = m_class_get_interfaces (current);
 		for (guint i = 0; i < c; i++) {
 			MonoClass *iface = ifaces [i];
-			if (!mono_class_has_variant_generic_params (iface))
-				continue;
-
 			// Avoid adding duplicates.
 			if (index_of_class (iface, buf, *buf_count) >= 0)
 				continue;
@@ -4249,23 +4246,21 @@ build_variance_search_table_inner (MonoClass *klass, MonoVarianceSearchEntry *bu
 			g_print ("-> %s\n", iname);
 			g_free (iname);
 			*/
-			g_assert (*buf_count < buf_size);
-			buf[*buf_count].klass = iface;
-			buf[*buf_count].interface_offset = mono_class_interface_offset (klass, iface);
-			(*buf_count) += 1;
-		}
+			if (mono_class_has_variant_generic_params (iface)) {
+				g_assert (*buf_count < buf_size);
+				buf[*buf_count].klass = iface;
+				buf[*buf_count].interface_offset = mono_class_interface_offset (klass, iface);
+				(*buf_count) += 1;
+			}
 
-		for (guint i = 0; i < c; i++)
-			concat_variance_search_table (klass, buf, buf_size, buf_count, ifaces [i]);
+			concat_variance_search_table (klass, buf, buf_size, buf_count, iface);
+		}
 
 		/*
 		g_print ("- %s:\n", cname);
 		g_free (cname);
 		*/
 	}
-
-	if (current->parent)
-		concat_variance_search_table (klass, buf, buf_size, buf_count, current->parent);
 }
 
 static void

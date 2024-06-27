@@ -2003,16 +2003,36 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 	} else if (has_variance) {
 		MonoVarianceSearchEntry *vst;
 		int vst_count;
-		mono_class_get_variance_search_table (klass, &vst, &vst_count);
+		MonoClass *current = klass;
 
-		for (i = 0; i < vst_count; i++) {
-			if (!mono_class_is_variant_compatible (itf, vst [i].klass, FALSE))
-				continue;
+		// Perform two passes per class, then check the base class
+		while (current) {
+			mono_class_get_variance_search_table (current, &vst, &vst_count);
 
-			*non_exact_match = (vst [i].interface_offset != exact_match);
-			return vst [i].interface_offset;
+			// Exact match pass
+			for (i = 0; i < vst_count; i++) {
+				if (itf != vst [i].klass)
+					continue;
+
+				*non_exact_match = FALSE;
+				return vst [i].interface_offset;
+			}
+
+			// Variance pass
+			for (i = 0; i < vst_count; i++) {
+				if (!mono_class_is_variant_compatible (itf, vst [i].klass, FALSE))
+					continue;
+
+				*non_exact_match = (vst [i].interface_offset != exact_match);
+				return vst [i].interface_offset;
+			}
+
+			// Now check base class if present
+			current = current->parent;
 		}
 
+		// If the variance search failed to find a match, fall back on the one from mono_class_interface_offset
+		*non_exact_match = (exact_match < 0);
 		return exact_match;
 	}
 
