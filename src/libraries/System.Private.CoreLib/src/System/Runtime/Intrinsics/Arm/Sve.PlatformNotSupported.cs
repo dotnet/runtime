@@ -1403,6 +1403,69 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> DotProductBySelectedScalar(Vector<ulong> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
 
 
+        ///  Broadcast a scalar value
+
+        /// <summary>
+        /// svuint8_t svdup_lane[_u8](svuint8_t data, uint8_t index)
+        ///   DUP Zresult.B, Zdata.B[index]
+        /// </summary>
+        public static unsafe Vector<byte> DuplicateSelectedScalarToVector(Vector<byte> data, [ConstantExpected(Min = 0, Max = (byte)(63))] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svdup_lane[_f64](svfloat64_t data, uint64_t index)
+        ///   DUP Zresult.D, Zdata.D[index]
+        /// </summary>
+        public static unsafe Vector<double> DuplicateSelectedScalarToVector(Vector<double> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svdup_lane[_s16](svint16_t data, uint16_t index)
+        ///   DUP Zresult.H, Zdata.H[index]
+        /// </summary>
+        public static unsafe Vector<short> DuplicateSelectedScalarToVector(Vector<short> data, [ConstantExpected(Min = 0, Max = (byte)(31))] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svdup_lane[_s32](svint32_t data, uint32_t index)
+        ///   DUP Zresult.S, Zdata.S[index]
+        /// </summary>
+        public static unsafe Vector<int> DuplicateSelectedScalarToVector(Vector<int> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svdup_lane[_s64](svint64_t data, uint64_t index)
+        ///   DUP Zresult.D, Zdata.D[index]
+        /// </summary>
+        public static unsafe Vector<long> DuplicateSelectedScalarToVector(Vector<long> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svdup_lane[_s8](svint8_t data, uint8_t index)
+        ///   DUP Zresult.B, Zdata.B[index]
+        /// </summary>
+        public static unsafe Vector<sbyte> DuplicateSelectedScalarToVector(Vector<sbyte> data, [ConstantExpected(Min = 0, Max = (byte)(63))] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svdup_lane[_f32](svfloat32_t data, uint32_t index)
+        ///   DUP Zresult.S, Zdata.S[index]
+        /// </summary>
+        public static unsafe Vector<float> DuplicateSelectedScalarToVector(Vector<float> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svdup_lane[_u16](svuint16_t data, uint16_t index)
+        ///   DUP Zresult.H, Zdata.H[index]
+        /// </summary>
+        public static unsafe Vector<ushort> DuplicateSelectedScalarToVector(Vector<ushort> data, [ConstantExpected(Min = 0, Max = (byte)(31))] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svdup_lane[_u32](svuint32_t data, uint32_t index)
+        ///   DUP Zresult.S, Zdata.S[index]
+        /// </summary>
+        public static unsafe Vector<uint> DuplicateSelectedScalarToVector(Vector<uint> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svdup_lane[_u64](svuint64_t data, uint64_t index)
+        ///   DUP Zresult.D, Zdata.D[index]
+        /// </summary>
+        public static unsafe Vector<ulong> DuplicateSelectedScalarToVector(Vector<ulong> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
+
+
         /// <summary>
         /// svuint8_t svext[_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)
         ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3

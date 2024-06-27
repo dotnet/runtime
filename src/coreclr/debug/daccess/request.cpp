@@ -3239,7 +3239,6 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
     return hr;
 }
 
-
 HRESULT
 ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException)
 {
@@ -3248,6 +3247,39 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetNestedExceptionData(exception, exceptionObject, nextNestedException);
+        if (FAILED(hr))
+        {
+            hr = GetNestedExceptionDataImpl(exception, exceptionObject, nextNestedException);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            CLRDATA_ADDRESS exceptionObjectLocal;
+            CLRDATA_ADDRESS nextNestedExceptionLocal;
+            HRESULT hrLocal = GetNestedExceptionDataImpl(exception, &exceptionObjectLocal, &nextNestedExceptionLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(*exceptionObject == exceptionObjectLocal);
+            _ASSERTE(*nextNestedException == nextNestedExceptionLocal);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetNestedExceptionDataImpl(exception, exceptionObject, nextNestedException);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException)
+{
 #ifdef FEATURE_EH_FUNCLETS
     ExceptionTrackerBase *pExData = PTR_ExceptionTrackerBase(TO_TADDR(exception));
 #else
@@ -3255,19 +3287,12 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
 #endif // FEATURE_EH_FUNCLETS
 
     if (!pExData)
-    {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
-        *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
-    }
+        return E_INVALIDARG;
 
-    SOSDacLeave();
-    return hr;
+    *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
+    *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
+    return S_OK;
 }
-
 
 HRESULT
 ClrDataAccess::GetDomainLocalModuleData(CLRDATA_ADDRESS addr, struct DacpDomainLocalModuleData *pLocalModuleData)
