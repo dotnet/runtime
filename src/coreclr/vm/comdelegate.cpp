@@ -1395,7 +1395,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // The IL marshaling stub performs the function of the shuffle thunk - it simply omits 'this' in
     // the call to unmanaged code. The stub recovers the unmanaged target from the delegate instance.
 
-    _ASSERTE(pMarshalStub != NULL);
+    _ASSERTE(pMarshalStub != (PCODE)NULL);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Wire up the stubs to the new delegate instance.

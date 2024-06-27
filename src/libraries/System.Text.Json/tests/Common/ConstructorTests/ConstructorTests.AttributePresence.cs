@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task NonPublicCtors_NotSupported(Type type)
         {
             NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
-            Assert.Contains("JsonConstructorAttribute", ex.ToString());
+            Assert.Contains("JsonConstructorAttribute", ex.Message);
         }
 
         [Theory]
@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Tests
             else
             {
                 NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
-                Assert.Contains("JsonConstructorAttribute", ex.ToString());
+                Assert.Contains("JsonConstructorAttribute", ex.Message);
             }
         }
 
@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Tests
             else
             {
                 NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
-                Assert.Contains("JsonConstructorAttribute", ex.ToString());
+                Assert.Contains("JsonConstructorAttribute", ex.Message);
             }
         }
 

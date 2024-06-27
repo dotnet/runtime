@@ -444,7 +444,7 @@ bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit)
     PEAssembly * pPEAssembly = pModule->GetPEAssembly();
 
     // dynamic module.
-    if (pPEAssembly->IsDynamic()) // Ignore dynamic modules
+    if (pPEAssembly->IsReflectionEmit()) // Ignore dynamic modules
     {
         return false;
     }
@@ -534,7 +534,7 @@ MulticoreJitCodeInfo::MulticoreJitCodeInfo(PCODE entryPoint, const MulticoreJitP
     WRAPPER_NO_CONTRACT;
 
     m_entryPointAndTierInfo = PCODEToPINSTR(entryPoint);
-    _ASSERTE(m_entryPointAndTierInfo != NULL);
+    _ASSERTE(m_entryPointAndTierInfo != (TADDR)NULL);
     _ASSERTE((m_entryPointAndTierInfo & (TADDR)TierInfo::Mask) == 0);
 
 #ifdef FEATURE_TIERED_COMPILATION
