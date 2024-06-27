@@ -7585,6 +7585,10 @@ PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
+    // Since this can allocate memory that won't be freed until the LoaderAllocator is release, we need
+    // to make sure that the associated MethodTable is fully allocated and permanent.
+    _ASSERTE(GetAuxiliaryData()->IsPublished());
+
     //
     // Keep in sync with code:MethodTable::GetRestoredSlotMT
     //

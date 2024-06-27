@@ -2783,6 +2783,12 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
     }
     CONTRACTL_END;
 
+#ifdef _DEBUG
+    if (!typeHnd.IsTypeDesc())
+    {
+        typeHnd.AsMethodTable()->GetAuxiliaryData()->SetIsPublished();
+    }
+#endif
 
     if (pTypeKey->IsConstructed())
     {

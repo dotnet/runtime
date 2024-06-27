@@ -2644,6 +2644,8 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     }
     CONTRACTL_END;
 
+    _ASSERTE(GetMethodTable()->GetAuxiliaryData()->IsPublished());
+
     PCODE pEntryPoint = GetTemporaryEntryPointIfExists();
     if (pEntryPoint != (PCODE)NULL)
         return pEntryPoint;
@@ -2691,6 +2693,10 @@ void MethodDesc::EnsureTemporaryEntryPoint()
         MODE_ANY;
     }
     CONTRACTL_END;
+
+    // Since this can allocate memory that won't be freed, we need to make sure that the associated MethodTable
+    // is fully allocated and permanent.
+    _ASSERTE(GetMethodTable()->GetAuxiliaryData()->IsPublished());
 
     if (GetTemporaryEntryPointIfExists() == (PCODE)NULL)
     {

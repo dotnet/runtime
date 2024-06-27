@@ -332,7 +332,9 @@ struct MethodTableAuxiliaryData
         enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
 
         enum_flag_HasApproxParent           = 0x0010,
-        // enum_unused                      = 0x0020,
+#ifdef _DEBUG
+        enum_flag_IsPublished               = 0x0020,
+#endif
         enum_flag_IsNotFullyLoaded          = 0x0040,
         enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
@@ -495,6 +497,24 @@ public:
         m_dwFlags &= ~(MethodTableAuxiliaryData::enum_flag_HasApproxParent);
 
     }
+
+#ifdef _DEBUG
+#ifndef DACCESS_COMPILE
+    void SetIsPublished()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        // Array's parent is always precise
+        m_dwFlags |= (MethodTableAuxiliaryData::enum_flag_IsPublished);
+    }
+#endif
+
+    bool IsPublished() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (VolatileLoad(&m_dwFlags) & enum_flag_IsPublished);
+    }
+#endif // _DEBUG
 
     // The NonVirtualSlots array grows backwards, so this pointer points at just AFTER the first entry in the array
     // To access, use a construct like... GetNonVirtualSlotsArray(pAuxiliaryData)[-(1 + index)]
@@ -1618,6 +1638,9 @@ public:
     //
 
     MethodDesc* GetMethodDescForSlot(DWORD slot);
+
+    // This api produces the same result as GetMethodDescForSlot_NoThrow, but it uses a variation on the
+    // algorithm that does not allocate a temporary entrypoint for the slot if it doesn't exist.
     MethodDesc* GetMethodDescForSlot_NoThrow(DWORD slot);
 
     static MethodDesc*  GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculative = FALSE);
