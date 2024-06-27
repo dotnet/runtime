@@ -186,13 +186,13 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
 // Indicate that the current round of finalizations is complete.
 EXTERN_C void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fcount)
 {
+    FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
+    g_FinalizerDoneEvent.Set();
+
     if (YieldProcessorNormalization::IsMeasurementScheduled())
     {
         YieldProcessorNormalization::PerformMeasurement();
     }
-
-    FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
-    g_FinalizerDoneEvent.Set();
 }
 
 //
