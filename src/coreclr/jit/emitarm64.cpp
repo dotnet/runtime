@@ -7897,7 +7897,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
                     // add rsvd, fp, #imm
                     emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
                     // str p0, [rsvd, #0, mul vl]
-                    emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);                    
+                    emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
                 }
                 else
                 {
@@ -7913,7 +7913,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             }
 
             assert(isVectorRegister(reg1));
-            fmt      =  IF_SVE_IE_2A;
+            fmt = IF_SVE_IE_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8
@@ -8195,7 +8195,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             }
 
             assert(isVectorRegister(reg1));
-            fmt      = IF_SVE_JH_2A;
+            fmt = IF_SVE_JH_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8

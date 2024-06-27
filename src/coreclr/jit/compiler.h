@@ -1431,6 +1431,9 @@ private:
     BYTE      tdSize;
     var_types tdType;
 #if defined(TARGET_ARM64)
+    // Only used for TYP_MASK to track the sequence of predicate
+    // registers temps. We use this to ld/st them from stack
+    // using `ldr pX, [sp, #seqNum mul vl]
     BYTE tdSeqNum;
 #endif // TARGET_ARM64
 
