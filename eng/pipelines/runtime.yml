@@ -527,8 +527,8 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       
-      CoreCLR NativeAOT debug build and smoke tests
-      Only when CoreCLR is changed
+      # CoreCLR NativeAOT debug build and smoke tests
+      # Only when CoreCLR is changed
       
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
