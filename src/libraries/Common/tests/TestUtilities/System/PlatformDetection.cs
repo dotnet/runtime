@@ -323,6 +323,7 @@ namespace System
         }
 
         public static bool SupportsAlpn => s_supportsAlpn.Value;
+        public static bool SupportsBackendAlpn => SupportsAlpn && !IsAndroid;
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
         public static bool SupportsHardLinkCreation => !IsAndroid && !IsLinuxBionic;
 

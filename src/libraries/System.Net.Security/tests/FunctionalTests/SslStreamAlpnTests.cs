@@ -19,7 +19,7 @@ namespace System.Net.Security.Tests
 
     public abstract class SslStreamAlpnTestBase
     {
-        private static bool BackendSupportsAlpn => PlatformDetection.SupportsAlpn;
+        private static bool BackendSupportsAlpn => PlatformDetection.SupportsBackendAlpn;
         private static bool ClientSupportsAlpn => PlatformDetection.SupportsClientAlpn;
         readonly ITestOutputHelper _output;
         public static readonly object[][] Http2Servers = Configuration.Http.Http2Servers;
@@ -133,7 +133,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Alpn_NonMatchingProtocols_Fail()
         {
             (SslStream clientStream, SslStream serverStream) = TestHelper.GetConnectedSslStreams();
