@@ -1909,6 +1909,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     return retNode->AsHWIntrinsic()->Op(2);
                 }
+                else if (op1->IsVectorZero())
+                {
+                    return retNode->AsHWIntrinsic()->Op(3);
+                }
                 break;
             }
 
