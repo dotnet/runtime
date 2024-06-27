@@ -25827,7 +25827,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             uint8_t control = 1;
             cnsNode         = gtNewIconNode(control, TYP_INT);
             GenTree* swap   = gtNewSimdHWIntrinsicNode(type, op1Dup1, op1Dup2, cnsNode, NI_AVX2_Permute2x128,
-                                                     simdBaseJitType, simdSize);
+                                                       simdBaseJitType, simdSize);
 
             // shuffle with both the normal and swapped values
             // Vector256<byte> shuf1 = Avx2.Shuffle(vector, indices);
@@ -26269,7 +26269,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                 uint8_t control = 1; // 0b00000001
                 cnsNode         = gtNewIconNode(control);
                 GenTree* swap   = gtNewSimdHWIntrinsicNode(type, op1, op1Dup1, cnsNode, NI_AVX2_Permute2x128,
-                                                         simdBaseJitType, simdSize);
+                                                           simdBaseJitType, simdSize);
 
                 // if we have non-default shuffle mask
                 if (nonDefaultShuffleMask)
