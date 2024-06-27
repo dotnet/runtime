@@ -53,6 +53,7 @@ namespace Test_refarg_s_cs
 
         [Fact]
         [OuterLoop]
+        [SkipOnCoreClr("WaitForPendingFinalizers() not supported with GCStress", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {
             int exitCode = Test(ref s_aa.mm);

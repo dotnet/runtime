@@ -68,6 +68,7 @@ namespace Test_refarg_f8_cs
         }
 
         [Fact]
+        [SkipOnCoreClr("WaitForPendingFinalizers() not supported with GCStress", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {
             Test(ref s_aa.mm1);

@@ -36,6 +36,7 @@ namespace GCTest_arrres_cs
 
         [Fact]
         [OuterLoop]
+        [SkipOnCoreClr("WaitForPendingFinalizers() not supported with GCStress", RuntimeTestModes.AnyGCStress)]
         public static void TestEntryPoint()
         {
             Test1();

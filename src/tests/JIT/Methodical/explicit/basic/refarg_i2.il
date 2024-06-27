@@ -151,6 +151,11 @@
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string,
+                                                                                                  valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = ( 01 00 36 57 61 69 74 46 6F 72 50 65 6E 64 69 6E   // ..6WaitForPendin
+                                                                                                                                                                          67 46 69 6E 61 6C 69 7A 65 72 73 28 29 20 6E 6F   // gFinalizers() no
+                                                                                                                                                                          74 20 73 75 70 70 6F 72 74 65 64 20 77 69 74 68   // t supported with
+                                                                                                                                                                          20 47 43 53 74 72 65 73 73 C0 00 00 00 00 00 )    //  GCStress......
       .entrypoint
       // Code size       47 (0x2f)
       .maxstack  2
