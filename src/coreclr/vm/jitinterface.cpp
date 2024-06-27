@@ -11670,9 +11670,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
     // class construction.
     pEnclosingMT->EnsureStaticDataAllocated();
 
-    if (!field->IsThreadStatic() &&
-        (pEnclosingMT->IsClassInited() || !pEnclosingMT->HasClassConstructor()) &&
-        IsFdInitOnly(field->GetAttributes()))
+    if (!field->IsThreadStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
     {
         if (field->IsObjRef())
         {
