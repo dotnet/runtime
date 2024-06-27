@@ -7432,7 +7432,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             var count = Vector<long>.Count;
             var arr = new long[count];
-            arr[0] = value[count - 1];
+            arr[0] = value[0];
             return arr;
         }
 

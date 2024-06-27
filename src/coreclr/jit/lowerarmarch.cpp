@@ -3378,14 +3378,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTree* op2 = intrin.op2;
                 GenTree* op3 = intrin.op3;
 
-                // Handle op1
-                if (op1->IsVectorZero())
-                {
-                    // When we are merging with zero, we can specialize
-                    // and avoid instantiating the vector constant.
-                    MakeSrcContained(node, op1);
-                }
-
                 // Handle op2
                 if (op2->OperIsHWIntrinsic())
                 {

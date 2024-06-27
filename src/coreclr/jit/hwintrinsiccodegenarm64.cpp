@@ -539,7 +539,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                             opt);
                             }
                         }
-                        else if (emitter::isVectorRegister(embMaskOp1Reg) && (targetReg == embMaskOp1Reg))
+                        // If we do not know if the mask has all the bits set, then we have to emit the 'sel'.
+                        else if (emitter::isVectorRegister(embMaskOp1Reg) && ((targetReg == embMaskOp1Reg) || !intrin.op1->IsMaskAllBitsSet()))
                         {
                             // target != falseValue, but we do not want to overwrite target with `embMaskOp1Reg`.
                             // We will first do the predicate operation and then do conditionalSelect inactive
