@@ -183,12 +183,10 @@ void YieldProcessorNormalization::PerformMeasurement()
             {
                 AtomicStore(&s_establishedNsPerYield, latestNsPerYield);
             }
-#ifndef FEATURE_NATIVEAOT
             if (i < NsPerYieldMeasurementCount - 1)
             {
                 FireEtwYieldProcessorMeasurement(GetClrInstanceId(), latestNsPerYield, s_establishedNsPerYield);
             }
-#endif
         }
     }
     else

@@ -43,7 +43,7 @@ FORCEINLINE int32_t PalInterlockedExchange(_Inout_ int32_t volatile *pDst, int32
 }
 
 EXTERN_C int64_t _InterlockedExchange64(int64_t volatile *, int64_t);
-#pragma intrinsic(_InterlockedExchange)
+#pragma intrinsic(_InterlockedExchange64)
 FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
 {
     return _InterlockedExchange64(pDst, iValue);
