@@ -1902,7 +1902,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
+            if (!IsValidForShuffle(indices, simdSize, simdBaseType))
             {
                 break;
             }
