@@ -1582,11 +1582,10 @@ namespace System.Globalization
                         _iFirstWeekOfYear = GetFirstWeekOfYear(_sName);
                     }
                     else
-#else
+#endif
                     {
                         _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
                     }
-#endif
                 }
                 return _iFirstWeekOfYear;
             }
