@@ -5872,14 +5872,6 @@ void Compiler::lvaFixVirtualFrameOffsets()
     for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
         temp->tdAdjustTempOffs(delta);
-#if defined(TARGET_ARM64)
-        if (varTypeIsMask(temp->tdTempType()) && temp->tdTempSeqNum() == 0)
-        {
-            // For the first register, store the offset, which we will use to
-            // generate the offsets for subsequent temp mask registers
-            codeGen->predicateOffset = temp->tdTempOffs();
-        }
-#endif
     }
 
     lvaCachedGenericContextArgOffs += delta;

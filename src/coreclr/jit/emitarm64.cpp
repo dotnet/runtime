@@ -7890,25 +7890,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
                 // For predicate, generate based of rsGetRsvdReg()
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
-                if (varx >= 0)
-                {
-                    // local
+                // add rsvd, fp, #imm
+                emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                // str p0, [rsvd, #0, mul vl]
+                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
 
-                    // add rsvd, fp, #imm
-                    emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
-                    // str p0, [rsvd, #0, mul vl]
-                    emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
-                }
-                else
-                {
-                    // temp
-
-                    // `base` contains seqNum and offs = 0, so imm contains seqNum
-                    // add rsvd, fp #predicateStartOffset
-                    emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, codeGen->predicateOffset);
-                    // str p0, [rsvd, #imm, mul vl]
-                    emitIns_R_R_I(ins, attr, reg1, rsvdReg, imm);
-                }
                 return;
             }
 
@@ -8172,25 +8158,11 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
                 // For predicate, generate based of rsGetRsvdReg()
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
-                if (varx >= 0)
-                {
-                    // local
+                // add rsvd, fp, #imm
+                emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                // str p0, [rsvd, #0, mul vl]
+                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
 
-                    // add rsvd, fp, #imm
-                    emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
-                    // str p0, [rsvd, #0, mul vl]
-                    emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
-                }
-                else
-                {
-                    // temp
-
-                    // `base` contains seqNum and offs = 0, so imm contains seqNum
-                    // add rsvd, fp #predicateStartOffset
-                    emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, codeGen->predicateOffset);
-                    // str p0, [rsvd, #seqNum, mul vl]
-                    emitIns_R_R_I(ins, attr, reg1, rsvdReg, imm);
-                }
                 return;
             }
 

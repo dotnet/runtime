@@ -141,12 +141,6 @@ public:
     RegState              intRegState;
     RegState              floatRegState;
     NodeInternalRegisters internalRegisters;
-#if defined(TARGET_ARM64)
-    // This is used to track the stack offset of first *Temp*
-    // predicate register and is then used to produce
-    // the stack address to ld/st it on the stack.
-    int predicateOffset;
-#endif // TARGET_ARM64
 protected:
     Compiler* compiler;
     bool      m_genAlignLoops;

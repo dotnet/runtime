@@ -705,7 +705,7 @@ void RegSet::tmpPreAllocateTemps(var_types type, unsigned count)
         }
 #endif // TARGET_ARM
 
-        TempDsc* temp = new (m_rsCompiler, CMK_Unknown) TempDsc(-((int)tmpCount), size, type, i);
+        TempDsc* temp = new (m_rsCompiler, CMK_Unknown) TempDsc(-((int)tmpCount), size, type);
 
 #ifdef DEBUG
         if (m_rsCompiler->verbose)
