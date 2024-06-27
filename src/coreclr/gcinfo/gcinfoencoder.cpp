@@ -2547,17 +2547,6 @@ void GcInfoEncoder::EliminateRedundantLiveDeadPairs(LifetimeTransition** ppTrans
 //
 BYTE* GcInfoEncoder::Emit()
 {
-    // GcInfoDecoder prefetches one size_t ahead for efficiency of sub-byte reads.
-    // To ensure prefetching is safe even if the stream ends on size_t boundary, add one bit padding.
-    if (m_Info2.GetByteCount() != 0)
-    {
-        m_Info2.Write(0, 1);
-    }
-    else
-    {
-        m_Info1.Write(0, 1);
-    }
-
     size_t cbGcInfoSize = m_Info1.GetByteCount() +
                           m_Info2.GetByteCount();
 
