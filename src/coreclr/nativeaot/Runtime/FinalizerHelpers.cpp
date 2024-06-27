@@ -46,6 +46,11 @@ uint32_t WINAPI FinalizerStart(void* pContext)
 
     g_pFinalizerThread = PTR_Thread(pThread);
 
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        YieldProcessorNormalization::PerformMeasurement();
+    }
+
     // Wait for a finalization request.
     uint32_t uResult = PalWaitForSingleObjectEx(hFinalizerEvent, INFINITE, FALSE);
     ASSERT(uResult == WAIT_OBJECT_0);
@@ -54,11 +59,6 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     // managed finalizer code will immediately start processing the queue when we run it.
     UInt32_BOOL fResult = PalSetEvent(hFinalizerEvent);
     ASSERT(fResult);
-
-    if (YieldProcessorNormalization::IsMeasurementScheduled())
-    {
-        YieldProcessorNormalization::PerformMeasurement();
-    }
 
     // Run the managed portion of the finalizer. This call will never return.
 
@@ -186,6 +186,11 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
 // Indicate that the current round of finalizations is complete.
 EXTERN_C void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fcount)
 {
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        YieldProcessorNormalization::PerformMeasurement();
+    }
+
     FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
     g_FinalizerDoneEvent.Set();
 }
