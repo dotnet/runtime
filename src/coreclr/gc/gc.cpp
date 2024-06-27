@@ -13341,6 +13341,7 @@ void free_list_snapshot::record(snapshot_stage stage, freelist_type type, region
     s_counter_full++;
     s_counter = (s_counter + 1) % NUM_SNAPSHOTS;
 
+#if 0
 #ifndef MULTIPLE_HEAPS
     static bool sabotaged = false;
     if (!sabotaged
@@ -13353,6 +13354,7 @@ void free_list_snapshot::record(snapshot_stage stage, freelist_type type, region
                     (gc_heap::free_regions[(int)basic_free_region].head_free_region))) = nullptr;
         sabotaged = true;
     }
+#endif
 #endif
 
     // Exit, should have no corruption
