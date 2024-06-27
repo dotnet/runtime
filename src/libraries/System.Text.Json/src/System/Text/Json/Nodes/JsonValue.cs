@@ -189,9 +189,7 @@ namespace System.Text.Json.Nodes
                 case JsonValueKind.Array:
                     // Force usage of JsonArray and JsonObject instead of supporting those in an JsonValue.
                     ThrowHelper.ThrowInvalidOperationException_NodeElementCannotBeObjectOrArray();
-
-                    // The above method will throw, but the compiler doesn't know that.
-                    return default;
+                    return null;
 
                 default:
                     return new JsonValueOfElement(element, options);
