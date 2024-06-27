@@ -22421,6 +22421,20 @@ void gc_heap::gc1()
     assert (settings.concurrent == (uint32_t)(bgc_thread_id.IsCurrentThread()));
 #endif //BACKGROUND_GC
 
+#ifdef USE_REGIONS
+#ifndef MULTIPLE_HEAPS
+    {
+      region_free_list* basic_free_regions = &free_regions[(int)basic_free_region];
+      free_list_snapshot::record(gc_start, free_regions_basic, basic_free_regions);
+      basic_free_regions->verify (basic_free_regions->get_num_free_regions() == 0);
+
+      region_free_list* global_decommit_basic_regions = &global_regions_to_decommit[(int)basic_free_region];
+      free_list_snapshot::record(gc_start, global_decommit_basic, global_decommit_basic_regions);
+      global_decommit_basic_regions->verify (global_decommit_basic_regions->get_num_free_regions() == 0);
+    }
+#endif
+#endif
+
     verify_soh_segment_list();
 
     int n = settings.condemned_generation;
@@ -23046,6 +23060,20 @@ void gc_heap::gc1()
         last_gc_before_oom = FALSE;
     }
 #endif //USE_REGIONS
+
+#ifdef USE_REGIONS
+#ifndef MULTIPLE_HEAPS
+    {
+      region_free_list* basic_free_regions = &free_regions[(int)basic_free_region];
+      free_list_snapshot::record(gc_end, free_regions_basic, basic_free_regions);
+      basic_free_regions->verify (basic_free_regions->get_num_free_regions() == 0);
+
+      region_free_list* global_decommit_basic_regions = &global_regions_to_decommit[(int)basic_free_region];
+      free_list_snapshot::record(gc_end, global_decommit_basic, global_decommit_basic_regions);
+      global_decommit_basic_regions->verify (global_decommit_basic_regions->get_num_free_regions() == 0);
+    }
+#endif
+#endif
 }
 
 #ifdef DYNAMIC_HEAP_COUNT

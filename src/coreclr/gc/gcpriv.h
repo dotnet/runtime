@@ -1467,6 +1467,8 @@ enum snapshot_stage
     get_free_region_end = 11,
     return_free_region_start = 12,
     return_free_region_end = 13,
+    gc_start = 14,
+    gc_end = 15,
 };
 
 enum freelist_type
