@@ -695,10 +695,15 @@ namespace System.Net.Security.Tests
         [InlineData(false, true)]
         [InlineData(false, false)]
         [InlineData(true, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName, bool useCallback)
         {
             string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
+            if (PlatformDetection.IsAndroid && !useEmptyName)
+            {
+                // Android does not allow single-word hostnames other than "localhost"
+                targetName = "localhost";
+            }
+
             int count = 0;
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -751,12 +756,16 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ServerUntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
+            if (usePartialChain && OperatingSystem.IsAndroid())
+            {
+                throw new SkipTestException("Android does not support partial chain validation.");
+            }
+
             int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
 
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
@@ -854,8 +863,8 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73862", TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.Android, "It is not possible to add the intermediate certificates to the trust store on Android at runtime.")]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
             // macOS ignores CertificateAuthority
