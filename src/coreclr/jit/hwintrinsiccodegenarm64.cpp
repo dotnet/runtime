@@ -573,6 +573,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 sopt = INS_SCALABLE_OPTS_WIDE;
                                 break;
                             }
+
+                            FALLTHROUGH;
                         }
 
                         default:
