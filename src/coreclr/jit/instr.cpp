@@ -1721,7 +1721,6 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 #if defined(TARGET_XARCH)
         return INS_kmovq_msk;
 #elif defined(TARGET_ARM64)
-        unreached(); // TODO-SVE: This needs testing
         return INS_sve_mov;
 #endif
     }
