@@ -558,7 +558,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                             opt);
                             }
                         }
-                        else if (emitter::isVectorRegister(embMaskOp1Reg) && ((targetReg == embMaskOp1Reg)))
+                        else if (emitter::isVectorRegister(embMaskOp1Reg) && (targetReg == embMaskOp1Reg))
                         {
                             // target != falseValue, but we do not want to overwrite target with `embMaskOp1Reg`.
                             // We will first do the predicate operation and then do conditionalSelect inactive
