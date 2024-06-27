@@ -2994,7 +2994,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
+            if (!IsValidForShuffle(indices, simdSize, simdBaseType))
+            {
+                break;
+            }
+
+            if (!indices->IsVectorConst())
             {
                 assert(sig->numArgs == 2);
 
@@ -3008,43 +3013,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
 
                     retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
-                    break;
-                }
-            }
-
-            size_t elementSize  = genTypeSize(simdBaseType);
-            size_t elementCount = simdSize / elementSize;
-
-            if (simdSize == 32)
-            {
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    // While we could accelerate some functions on hardware with only AVX support
-                    // it's likely not worth it overall given that IsHardwareAccelerated reports false
-                    return nullptr;
-                }
-            }
-            else if (simdSize == 64)
-            {
-                if (varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI))
-                {
-                    // TYP_BYTE, TYP_UBYTE need AVX512VBMI.
-                    break;
-                }
-            }
-            else
-            {
-                assert(simdSize == 16);
-
-                if (varTypeIsSmall(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
-                {
-                    // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
-                    break;
-                }
-
-                if (!indices->IsVectorConst() && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
-                {
-                    // the variable implementation for Vector128 Shuffle always needs SSSE3
                     break;
                 }
             }

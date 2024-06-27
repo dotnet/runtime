@@ -18449,7 +18449,7 @@ unsigned GenTreeVecCon::ElementCount(unsigned simdSize, var_types simdBaseType)
     return simdSize / genTypeSize(simdBaseType);
 }
 
-bool Compiler::IsValidForShuffle(GenTreeVecCon* vecCon, unsigned simdSize, var_types simdBaseType) const
+bool Compiler::IsValidForShuffle(GenTree* indices, unsigned simdSize, var_types simdBaseType) const
 {
 #if defined(TARGET_XARCH)
     size_t elementSize  = genTypeSize(simdBaseType);
@@ -18462,41 +18462,6 @@ bool Compiler::IsValidForShuffle(GenTreeVecCon* vecCon, unsigned simdSize, var_t
             // While we could accelerate some functions on hardware with only AVX support
             // it's likely not worth it overall given that IsHardwareAccelerated reports false
             return false;
-        }
-        else if ((varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
-                 (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
-        {
-            bool crossLane = false;
-
-            for (size_t index = 0; index < elementCount; index++)
-            {
-                uint64_t value = vecCon->GetIntegralVectorConstElement(index, simdBaseType);
-
-                if (value >= elementCount)
-                {
-                    continue;
-                }
-
-                if (index < (elementCount / 2))
-                {
-                    if (value >= (elementCount / 2))
-                    {
-                        crossLane = true;
-                        break;
-                    }
-                }
-                else if (value < (elementCount / 2))
-                {
-                    crossLane = true;
-                    break;
-                }
-            }
-
-            if (crossLane)
-            {
-                // TODO-XARCH-CQ: We should emulate cross-lane shuffling for byte/sbyte and short/ushort
-                return false;
-            }
         }
     }
     else if (simdSize == 64)
@@ -18514,6 +18479,12 @@ bool Compiler::IsValidForShuffle(GenTreeVecCon* vecCon, unsigned simdSize, var_t
         if (varTypeIsSmall(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
         {
             // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
+            return false;
+        }
+
+        if (!indices->IsVectorConst() && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+        {
+            // the variable implementation for Vector128 Shuffle always needs SSSE3
             return false;
         }
     }

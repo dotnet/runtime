@@ -1902,7 +1902,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
+            if (!IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
+            {
+                break;
+            }
+
+            if (!indices->IsVectorConst())
             {
                 assert(sig->numArgs == 2);
 
