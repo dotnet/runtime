@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     file sealed class InterceptsLocationAttribute : Attribute
     {
-        public InterceptsLocationAttribute(string filePath, int line, int column)
+        public InterceptsLocationAttribute(int version, string data)
         {
         }
     }
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IServiceCollection extensions.
         /// <summary>Registers a configuration instance which TOptions will bind against.</summary>
-        [InterceptsLocation(@"src-0.cs", 14, 18)]
+        [InterceptsLocation(1, "1AUVNaC6D+qTs4dq4ZSuesQBAABzcmMtMC5jcw==")]
         public static IServiceCollection Configure<TOptions>(this IServiceCollection services, string? name, IConfiguration config, Action<BinderOptions>? configureOptions) where TOptions : class
         {
             ArgumentNullException.ThrowIfNull(services);

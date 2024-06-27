@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     file sealed class InterceptsLocationAttribute : Attribute
     {
-        public InterceptsLocationAttribute(string filePath, int line, int column)
+        public InterceptsLocationAttribute(int version, string data)
         {
         }
     }
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IConfiguration extensions.
         /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
-        [InterceptsLocation(@"src-0.cs", 10, 20)]
+        [InterceptsLocation(1, "Nm+scB33P1IfZHz8+YKZeBwBAABzcmMtMC5jcw==")]
         public static object? GetValue(this IConfiguration configuration, Type type, string key) => BindingExtensions.GetValueCore(configuration, type, key);
         #endregion IConfiguration extensions.
 

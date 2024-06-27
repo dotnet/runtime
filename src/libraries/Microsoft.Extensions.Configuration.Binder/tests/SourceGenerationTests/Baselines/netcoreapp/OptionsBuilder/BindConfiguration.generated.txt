@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     file sealed class InterceptsLocationAttribute : Attribute
     {
-        public InterceptsLocationAttribute(string filePath, int line, int column)
+        public InterceptsLocationAttribute(int version, string data)
         {
         }
     }
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region OptionsBuilder<TOptions> extensions.
         /// <summary>Registers the dependency injection container to bind <typeparamref name="TOptions"/> against the <see cref="IConfiguration"/> obtained from the DI service provider.</summary>
-        [InterceptsLocation(@"src-0.cs", 12, 24)]
+        [InterceptsLocation(1, "FzkxwRstvs6328ZsAVyIXIMBAABzcmMtMC5jcw==")]
         public static OptionsBuilder<TOptions> BindConfiguration<TOptions>(this OptionsBuilder<TOptions> optionsBuilder, string configSectionPath, Action<BinderOptions>? configureBinder = null) where TOptions : class
         {
             ArgumentNullException.ThrowIfNull(optionsBuilder);

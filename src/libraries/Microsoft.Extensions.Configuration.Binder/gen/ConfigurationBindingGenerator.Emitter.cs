@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
                         file sealed class InterceptsLocationAttribute : Attribute
                         {
-                            public InterceptsLocationAttribute(string filePath, int line, int column)
+                            public InterceptsLocationAttribute(int version, string data)
                             {
                             }
                         }

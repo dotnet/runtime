@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     file sealed class InterceptsLocationAttribute : Attribute
     {
-        public InterceptsLocationAttribute(string filePath, int line, int column)
+        public InterceptsLocationAttribute(int version, string data)
         {
         }
     }
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IConfiguration extensions.
         /// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
-        [InterceptsLocation(@"src-0.cs", 12, 20)]
+        [InterceptsLocation(1, "r20NAPM21/ytDehdyUoqsmsBAABzcmMtMC5jcw==")]
         public static void Bind_ProgramMyClass(this IConfiguration configuration, string key, object? instance)
         {
             if (configuration is null)

@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     file sealed class InterceptsLocationAttribute : Attribute
     {
-        public InterceptsLocationAttribute(string filePath, int line, int column)
+        public InterceptsLocationAttribute(int version, string data)
         {
         }
     }
@@ -34,20 +34,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IConfiguration extensions.
         /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
-        [InterceptsLocation(@"src-0.cs", 13, 18)]
+        [InterceptsLocation(1, "7i/MhbX8O2M2s/0IJpaVDHYBAABzcmMtMC5jcw==")]
         public static T? GetValue<T>(this IConfiguration configuration, string key) => (T?)(BindingExtensions.GetValueCore(configuration, typeof(T), key) ?? default(T));
 
         /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
-        [InterceptsLocation(@"src-0.cs", 16, 24)]
+        [InterceptsLocation(1, "7i/MhbX8O2M2s/0IJpaVDB0CAABzcmMtMC5jcw==")]
         [return: global::System.Diagnostics.CodeAnalysis.NotNullIfNotNull(nameof(defaultValue))]
         public static T? GetValue<T>(this IConfiguration configuration, string key, T defaultValue) => (T?)(BindingExtensions.GetValueCore(configuration, typeof(T), key) ?? defaultValue);
 
         /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
-        [InterceptsLocation(@"src-0.cs", 14, 24)]
+        [InterceptsLocation(1, "7i/MhbX8O2M2s/0IJpaVDKQBAABzcmMtMC5jcw==")]
         public static object? GetValue(this IConfiguration configuration, Type type, string key) => BindingExtensions.GetValueCore(configuration, type, key);
 
         /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
-        [InterceptsLocation(@"src-0.cs", 17, 24)]
+        [InterceptsLocation(1, "7i/MhbX8O2M2s/0IJpaVDF4CAABzcmMtMC5jcw==")]
         [return: global::System.Diagnostics.CodeAnalysis.NotNullIfNotNull(nameof(defaultValue))]
         public static object? GetValue(this IConfiguration configuration, Type type, string key, object? defaultValue) => BindingExtensions.GetValueCore(configuration, type, key) ?? defaultValue;
         #endregion IConfiguration extensions.
