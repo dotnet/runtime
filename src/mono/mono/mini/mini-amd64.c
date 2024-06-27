@@ -876,6 +876,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	cinfo->nargs = n;
 	cinfo->gsharedvt = mini_is_gsharedvt_variable_signature (sig);
 	cinfo->swift_error_index = -1;
+	cinfo->swift_indirect_result_index = -1;
 
 	gr = 0;
 	fr = 0;
@@ -1014,9 +1015,13 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
-			if (klass == swift_self && sig->pinvoke) {
+			if (klass == swift_indirect_result)
+				cinfo->swift_indirect_result_index = i;
+
+			if ((klass == swift_self || klass == swift_indirect_result) && sig->pinvoke) {
 				guint32 size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
 				g_assert (size == 8);
 
@@ -1024,7 +1029,9 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				ainfo->pair_storage [0] = ArgInIReg;
 				ainfo->pair_storage [1] = ArgNone;
 				ainfo->nregs = 1;
-				ainfo->pair_regs [0] = GINT32_TO_UINT8 (AMD64_R13);
+				// The indirect result is RAX on AMD64. However, since RAX is used as a scratch register, 
+				// the R10 register is used instead and before the native call, the value is moved from R10 to RAX.
+				ainfo->pair_regs [0] = (klass == swift_self) ? GINT32_TO_UINT8 (AMD64_R13) : GINT32_TO_UINT8 (AMD64_R10);
 				ainfo->pair_size [0] = size;
 				continue;
 			} else if (klass == swift_error || klass == swift_error_ptr) {
@@ -5645,6 +5652,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			code = amd64_handle_varargs_call (cfg, code, call, TRUE);
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			// Ideally, this would be in mono_arch_emit_prolog, but amd64_handle_varargs_call is required before the move to free RAX.
+			if (mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL) && 
+			    cfg->arch.cinfo->swift_indirect_result_index > -1) {
+				amd64_mov_reg_reg (code, AMD64_RAX, AMD64_R10, 8);
+			}
+#endif
 			amd64_call_reg (code, ins->sreg1);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = GPTRDIFF_TO_INT (code - cfg->native_code);
@@ -8186,6 +8201,14 @@ MONO_RESTORE_WARNING
 		if (cfg->vret_addr && (cfg->vret_addr->opcode != OP_REGVAR))
 			amd64_mov_membase_reg (code, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, cinfo->ret.reg, 8);
 	}
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && 
+	    cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && 
+	    cfg->arch.cinfo->swift_indirect_result_index > -1) {
+		amd64_mov_reg_reg (code, AMD64_R10, AMD64_RAX, 8);
+	}
+#endif
 
 	/* Keep this in sync with emit_load_volatile_arguments */
 	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
