@@ -566,6 +566,7 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [OuterLoop("Uses Task.Delay")]
         [Fact]
         public async Task LoadIntoBufferAsync_Unbuffered_CanBeCanceled()
         {
