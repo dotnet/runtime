@@ -340,10 +340,15 @@ namespace System.Runtime.Caching
                     GCHandleRef<Timer> timerHandleRef = _timerHandleRef;
                     if (timerHandleRef != null && Interlocked.CompareExchange(ref _timerHandleRef, null, timerHandleRef) == timerHandleRef)
                     {
-                        // #64115 and #102666 - It's not safe to dispose timers in our unhandled exception handler. But if we're in the unhandled
-                        // exception handler, then the process is going away. We don't really need to clean up timers. (Interactions of
-                        // processes/AppDomains/Timers/PerfCounters/etc were different in NetFx from which this package is derived.)
-                        if (!_memoryCache.InUnhandledExceptionHandler)
+                        // If inside an unhandled exception handler, Timers may be succeptible to deadlocks. Use a safer approach.
+                        if (_memoryCache.InUnhandledExceptionHandler)
+                        {
+                            // This does not stop/dispose the timer. But the callback on the timer is protected by _disposed, which we have already
+                            // set above.
+                            timerHandleRef.FreeHandle();
+                            Dbg.Trace("MemoryCacheStats", "Freed CacheMemoryTimers");
+                        }
+                        else
                         {
                             timerHandleRef.Dispose();
                             Dbg.Trace("MemoryCacheStats", "Stopped CacheMemoryTimers");
