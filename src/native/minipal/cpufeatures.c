@@ -11,7 +11,7 @@
 #include "cpufeatures.h"
 #include "cpuid.h"
 
-#if HOST_WINDOWS
+#ifdef HOST_WINDOWS
 
 #include <Windows.h>
 
@@ -470,6 +470,68 @@ bool minipal_detect_rosetta(void)
         return true;
     }
 #endif // HOST_AMD64 || HOST_X86
+
+    return false;
+}
+
+bool minipal_detect_qemu(void)
+{
+#if defined(HOST_AMD64) || defined(HOST_X86)
+    // Check for CPU brand indicating emulation
+    unsigned int regs[4];
+    char brand[49];
+
+    // Get the maximum value for extended function CPUID info
+    __cpuid(0x80000000, regs[0], regs[1], regs[2], regs[3]);
+    if (regs[0] < 0x80000004)
+    {
+        return false; // Extended CPUID not supported
+    }
+
+    // Retrieve the CPU brand string
+    for (unsigned int i = 0x80000002; i <= 0x80000004; ++i)
+    {
+        __cpuid(i, regs[0], regs[1], regs[2], regs[3]);
+        memcpy(brand + (i - 0x80000002) * sizeof(regs), regs, sizeof(regs));
+    }
+    brand[sizeof(brand) - 1] = '\0';
+
+    // Check if CPU brand indicates emulation
+    if (strstr(brand, "QEMU") != NULL)
+    {
+        return true;
+    }
+#endif
+
+    // Check for process name of PID 1 indicating emulation
+    char cmdline[256];
+    FILE *cmdline_file = fopen("/proc/1/cmdline", "r");
+    if (cmdline_file != NULL)
+    {
+        fgets(cmdline, sizeof(cmdline), cmdline_file);
+        fclose(cmdline_file);
+
+        if (strstr(cmdline, "qemu-") != NULL)
+        {
+            return true;
+        }
+    }
+
+    // Check for process-level emulation using ps command
+    FILE *ps_output = popen("ps -e -o comm=", "r");
+    if (ps_output != NULL)
+    {
+        char process_name[256];
+        while (fgets(process_name, sizeof(process_name), ps_output) != NULL)
+        {
+            if (strstr(process_name, "qemu") != NULL)
+            {
+                pclose(ps_output);
+                return true;
+            }
+        }
+        pclose(ps_output);
+    }
 
     return false;
 }

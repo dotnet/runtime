@@ -11,3 +11,5 @@ PALEXPORT char* SystemNative_GetUnixRelease(void);
 PALEXPORT int32_t SystemNative_GetUnixVersion(char* version, int* capacity);
 
 PALEXPORT int32_t SystemNative_GetOSArchitecture(void);
+
+PALEXPORT int32_t SystemNative_IsQemuDetected(void);

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/utsname.h>
+#include <minipal/cpufeatures.h>
 #if defined(TARGET_ANDROID)
 #include <sys/system_properties.h>
 #elif defined(TARGET_OSX)
@@ -150,4 +151,9 @@ int32_t SystemNative_GetOSArchitecture(void)
 
     return result;
 #endif
+}
+
+int32_t SystemNative_IsQemuDetected(void)
+{
+    return minipal_detect_qemu() ? 1 : 0;
 }

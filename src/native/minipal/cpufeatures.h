@@ -66,6 +66,7 @@ extern "C"
 
 int minipal_getcpufeatures(void);
 bool minipal_detect_rosetta(void);
+bool minipal_detect_qemu(void);
 
 #ifdef __cplusplus
 }
