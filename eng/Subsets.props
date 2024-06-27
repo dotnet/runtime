@@ -287,13 +287,7 @@
       AdditionalProperties="%(AdditionalProperties);
                             ClrCrossComponentsSubset=true;
                             HostArchitecture=$(BuildArchitecture);
-                            TargetArchitecture=$(TargetArchitecture);
                             HostCrossOS=$(HostOS);
-                            HostOS=$(HostOS);
-                            TargetOS=$(TargetOS);
-                            RuntimeIdentifier=$(RuntimeIdentifier);
-                            NETCoreSdkRuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier);
-                            NETCoreSdkPortableRuntimeIdentifier=$(NETCoreSdkPortableRuntimeIdentifier);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             CrossBuild=false;
