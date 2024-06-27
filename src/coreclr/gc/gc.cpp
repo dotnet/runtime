@@ -23045,6 +23045,21 @@ void gc_heap::gc1()
         update_end_ngc_time();
         update_end_gc_time_per_heap();
         add_to_history_per_heap();
+
+#ifdef USE_REGIONS
+#ifndef MULTIPLE_HEAPS
+    {
+        region_free_list* basic_free_regions = &free_regions[(int)basic_free_region];
+        free_list_snapshot::record(gc_end, free_regions_basic, basic_free_regions);
+        basic_free_regions->verify (basic_free_regions->get_num_free_regions() == 0);
+
+        region_free_list* global_decommit_basic_regions = &global_regions_to_decommit[(int)basic_free_region];
+        free_list_snapshot::record(gc_end, global_decommit_basic, global_decommit_basic_regions);
+        global_decommit_basic_regions->verify (global_decommit_basic_regions->get_num_free_regions() == 0);
+    }
+#endif
+#endif
+
         do_post_gc();
     }
 
@@ -23060,20 +23075,6 @@ void gc_heap::gc1()
         last_gc_before_oom = FALSE;
     }
 #endif //USE_REGIONS
-
-#ifdef USE_REGIONS
-#ifndef MULTIPLE_HEAPS
-    {
-      region_free_list* basic_free_regions = &free_regions[(int)basic_free_region];
-      free_list_snapshot::record(gc_end, free_regions_basic, basic_free_regions);
-      basic_free_regions->verify (basic_free_regions->get_num_free_regions() == 0);
-
-      region_free_list* global_decommit_basic_regions = &global_regions_to_decommit[(int)basic_free_region];
-      free_list_snapshot::record(gc_end, global_decommit_basic, global_decommit_basic_regions);
-      global_decommit_basic_regions->verify (global_decommit_basic_regions->get_num_free_regions() == 0);
-    }
-#endif
-#endif
 }
 
 #ifdef DYNAMIC_HEAP_COUNT
