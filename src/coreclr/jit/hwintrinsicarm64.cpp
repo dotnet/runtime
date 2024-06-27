@@ -1410,6 +1410,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_get_Indices:
         case NI_Vector128_get_Indices:
         {
             assert(sig->numArgs == 0);
