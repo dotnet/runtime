@@ -72,6 +72,7 @@ namespace Mono.Linker
 		protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition> ();
 		protected readonly HashSet<TypeDefinition> types_relevant_to_variant_casting = new HashSet<TypeDefinition> ();
 		readonly HashSet<IMemberDefinition> reflection_used = new ();
+		readonly HashSet<RuntimeInterfaceImplementation> _marked_runtime_interface_implementations = new ();
 
 		public AnnotationStore (LinkContext context)
 		{
@@ -723,5 +724,9 @@ namespace Mono.Linker
 		{
 			return TypeMapInfo.GetRecursiveInterfaces (type);
 		}
+
+		internal bool IsMarked (RuntimeInterfaceImplementation runtimeInterface) => _marked_runtime_interface_implementations.Contains (runtimeInterface);
+
+		internal void Mark (RuntimeInterfaceImplementation runtimeInterface) => _marked_runtime_interface_implementations.Add (runtimeInterface);
 	}
 }

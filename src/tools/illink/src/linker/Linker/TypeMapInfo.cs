@@ -112,9 +112,7 @@ namespace Mono.Linker
 		Dictionary<TypeDefinition, ImmutableArray<RuntimeInterfaceImplementation>> _runtimeInterfaceImpls = new ();
 		protected virtual void MapType (TypeDefinition type)
 		{
-			var runtimeInterfaces = GetRecursiveInterfaceImplementations (type);
-			if (runtimeInterfaces is not null)
-				_runtimeInterfaceImpls[type] = runtimeInterfaces.Value;
+			_runtimeInterfaceImpls[type] = GetRecursiveInterfaceImplementations (type);
 			MapVirtualMethods (type);
 			MapInterfaceMethodsInTypeHierarchy (type);
 
@@ -133,53 +131,48 @@ namespace Mono.Linker
 			return null;
 		}
 
-		ImmutableArray<RuntimeInterfaceImplementation>? GetRecursiveInterfaceImplementations (TypeDefinition originalType)
+
+		ImmutableArray<RuntimeInterfaceImplementation> GetRecursiveInterfaceImplementations (TypeDefinition originalType)
 		{
-			// We'll need at least this many interfaces, so let's preallocate
-			ImmutableArray<RuntimeInterfaceImplementation>.Builder runtimeIfaces = ImmutableArray.CreateBuilder<RuntimeInterfaceImplementation> (originalType.Interfaces.Count);
+			if (_runtimeInterfaceImpls.TryGetValue (originalType, out var runtimeIfaces)) {
+				return runtimeIfaces;
+			}
 
-			List<InterfaceImplementation> interfaces = new List<InterfaceImplementation> (16);
-			AddRecursiveInterfaces (originalType, interfaces);
+			Dictionary<TypeReference, List<InterfaceImplementationChain>> interfaceTypeToImplChainMap = new (new TypeReferenceEqualityComparer (context));
 
-			if (runtimeIfaces.Count == 0)
-				return null;
-			return runtimeIfaces.ToImmutable ();
+			foreach (var explicitIface in originalType.Interfaces) {
+				// Add runtimeIface for this Iface
+				var resolvedInterfaceType = context.TryResolve (explicitIface.InterfaceType);
+				interfaceTypeToImplChainMap.AddToList (explicitIface.InterfaceType, new InterfaceImplementationChain (originalType, [explicitIface]));
 
-			void AddRecursiveInterfaces (TypeReference typeRef, List<InterfaceImplementation> pathToType)
-			{
-				var type = context.TryResolve (typeRef);
-				if (type is null)
-					return;
-				// Get all explicit interfaces of this type
-				foreach (var iface in type.Interfaces) {
-					var interfaceType = iface.InterfaceType.TryInflateFrom (typeRef, context);
-					if (interfaceType is null) {
-						continue;
-					}
-					if (!runtimeIfaces.Any (i => TypeReferenceEqualityComparer.AreEqual (i.InflatedInterfaceType, interfaceType, context))) {
-						pathToType.Add (iface);
-						runtimeIfaces.Add (new RuntimeInterfaceImplementation (originalType, typeRef, pathToType.Append (iface), interfaceType, context));
-						pathToType.RemoveAt (pathToType.Count - 1);
-					}
+				if (resolvedInterfaceType is null) {
+					continue;
 				}
 
-				if (type.BaseType is not null) {
-					var inflatedBaseType = type.BaseType.TryInflateFrom (typeRef, context)!;
-					AddRecursiveInterfaces (inflatedBaseType, []);
-				}
+				var recursiveIFaces = GetRecursiveInterfaceImplementations (resolvedInterfaceType);
 
-				// Recursive interfaces after all direct interfaces to preserve Inherit/Implement tree order
-				foreach (var iface in type.Interfaces) {
-					// If we can't resolve the interface type we can't find recursive interfaces
-					var ifaceDirectlyOnType = iface.InterfaceType.TryInflateFrom (typeRef, context);
-					if (ifaceDirectlyOnType is null) {
-						continue;
+				foreach (var recursiveIface in recursiveIFaces) {
+					var impls = recursiveIface.CreateImplementationChainForImplementingType (originalType, explicitIface, context);
+					foreach (var impl in impls) {
+						interfaceTypeToImplChainMap.AddToList (impl.InterfaceType, impl.Chain);
 					}
-					pathToType.Add (iface);
-					AddRecursiveInterfaces (ifaceDirectlyOnType, pathToType);
-					pathToType.RemoveAt (pathToType.Count - 1);
 				}
 			}
+
+			if (originalType.BaseType is not null && context.TryResolve (originalType.BaseType) is { } baseTypeDef) {
+				var baseTypeIfaces = GetRecursiveInterfaceImplementations (baseTypeDef);
+				foreach (var recursiveIface in baseTypeIfaces) {
+					var impls = recursiveIface.CreateImplementationChainsForDerivedType (originalType.BaseType, context);
+					foreach (var impl in impls) {
+						interfaceTypeToImplChainMap.AddToList (impl.InterfaceType, impl.Chain);
+					}
+				}
+			}
+
+			if (interfaceTypeToImplChainMap.Count == 0)
+				return ImmutableArray<RuntimeInterfaceImplementation>.Empty;
+
+			return interfaceTypeToImplChainMap.Select (kvp => new RuntimeInterfaceImplementation (originalType, kvp.Key, context.Resolve (kvp.Key), kvp.Value)).ToImmutableArray ();
 		}
 
 		void MapInterfaceMethodsInTypeHierarchy (TypeDefinition type)

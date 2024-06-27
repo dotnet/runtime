@@ -27,35 +27,75 @@ namespace Mono.Linker
 		public TypeDefinition Implementor { get; }
 
 		/// <summary>
-		/// The path of .interfaceimpl on <see cref="RuntimeInterfaceImplementation.Implementor"/> or a base type that terminates with <see cref="RuntimeInterfaceImplementation.InflatedInterfaceType"/>.
+		/// All the chains of .interfaceImpls that cause <see cref="Implementor"/> to implement <see cref="InflatedInterfaceType"/>
 		/// </summary>
-		public ImmutableArray<InterfaceImplementation> InterfaceImplementation { get; }
+		public ImmutableArray<InterfaceImplementationChain> InterfaceImplementationChains { get; }
 
 		/// <summary>
-		/// The type that has the InterfaceImplementation - either the <see cref="Implementor"/> or a base type of it.
-		/// </summary>
-		public TypeReference TypeWithInterfaceImplementation { get; }
-
-		/// <summary>
-		/// The type of the interface that is implemented by <see cref="RuntimeInterfaceImplementation.Implementor"/>.
-		/// This type may be different from the corresponding InterfaceImplementation.InterfaceType if it is generic.
-		/// Generic parameters are replaces with generic arguments from the implementing type.
-		/// Because of this, do not use this for comparisons or resolving. Use <see cref="InterfaceTypeDefinition"/> or <see cref="InterfaceImplementation">.Last().InterfaceType instead.
+		/// The inflated interface type reference that is implemented by <see cref="Implementor"/>.
 		/// </summary>
 		public TypeReference InflatedInterfaceType { get; }
 
 		/// <summary>
-		/// The resolved definition of the interface type implemented by <see cref="RuntimeInterfaceImplementation.Implementor"/>.
+		/// The <see cref="TypeDefinition"/> of <see cref="InflatedInterfaceType"/>
 		/// </summary>
 		public TypeDefinition? InterfaceTypeDefinition { get; }
 
-		public RuntimeInterfaceImplementation (TypeDefinition implementor, TypeReference typeWithFirstIfaceImpl, IEnumerable<InterfaceImplementation> interfaceImplementation, TypeReference inflatedInterfaceType, LinkContext resolver)
+		public RuntimeInterfaceImplementation (TypeDefinition implementor, TypeReference interfaceType, TypeDefinition? interfaceTypeDefinition, IEnumerable<InterfaceImplementationChain> interfaceImplementations)
 		{
 			Implementor = implementor;
-			TypeWithInterfaceImplementation = typeWithFirstIfaceImpl;
-			InterfaceImplementation = interfaceImplementation.ToImmutableArray ();
-			InflatedInterfaceType = inflatedInterfaceType;
-			InterfaceTypeDefinition = resolver.Resolve (InterfaceImplementation[InterfaceImplementation.Length - 1].InterfaceType);
+			InterfaceImplementationChains = interfaceImplementations.ToImmutableArray ();
+			InflatedInterfaceType = interfaceType;
+			InterfaceTypeDefinition = interfaceTypeDefinition;
+		}
+
+		public bool IsAnyImplementationMarked (AnnotationStore annotations, ITryResolveMetadata context)
+		{
+			if (annotations.IsMarked (this))
+				return true;
+			foreach (var chain in InterfaceImplementationChains) {
+				if (chain.IsMarked (annotations, context)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// Returns a list of InterfaceImplementationChains for a derived type of <see cref="Implementor"/>.
+		/// </summary>
+		public IEnumerable<(TypeReference InterfaceType, InterfaceImplementationChain Chain)> CreateImplementationChainsForDerivedType (TypeReference baseTypeRef, ITryResolveMetadata context)
+		{
+			// This is only valid for classes
+			Debug.Assert (Implementor.IsClass);
+			Debug.Assert (Implementor == context.TryResolve (baseTypeRef));
+
+			var inflatedInterfaceType = InflatedInterfaceType.TryInflateFrom (baseTypeRef, context);
+			Debug.Assert (inflatedInterfaceType is not null);
+
+			foreach (var impl in InterfaceImplementationChains) {
+				var inflatedImplProvider = impl.TypeWithInterfaceImplementation.TryInflateFrom (baseTypeRef, context);
+				Debug.Assert (inflatedImplProvider is not null);
+
+				yield return (inflatedInterfaceType, new InterfaceImplementationChain (inflatedImplProvider, impl.InterfaceImplementations));
+			}
+		}
+
+		/// <summary>
+		/// Returns a list of InterfaceImplementationChains for a type that has an explicit implementation of <see cref="Implementor"/>.
+		/// </summary>
+		public IEnumerable<(TypeReference InterfaceType, InterfaceImplementationChain Chain)> CreateImplementationChainForImplementingType (TypeDefinition typeThatImplementsImplementor, InterfaceImplementation impl, ITryResolveMetadata context)
+		{
+			Debug.Assert (Implementor.IsInterface);
+			Debug.Assert (typeThatImplementsImplementor.Interfaces.Contains (impl));
+			Debug.Assert (context.TryResolve (impl.InterfaceType) == Implementor);
+
+			var inflatedInterfaceType = InflatedInterfaceType.TryInflateFrom (impl.InterfaceType, context);
+			Debug.Assert (inflatedInterfaceType is not null);
+
+			foreach (var existingImpl in InterfaceImplementationChains) {
+				yield return (inflatedInterfaceType, new InterfaceImplementationChain (typeThatImplementsImplementor, existingImpl.InterfaceImplementations.Insert (0, impl)));
+			}
 		}
 	}
 }

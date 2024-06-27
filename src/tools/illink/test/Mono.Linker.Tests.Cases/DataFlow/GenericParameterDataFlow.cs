@@ -915,7 +915,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Action a = instance.InstanceMethod;
 		}
 
-		class DelegateMethodTypeRequiresFields<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>
+		class DelegateMethodTypeRequiresFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
 		{
 			public static void Method ()
 			{

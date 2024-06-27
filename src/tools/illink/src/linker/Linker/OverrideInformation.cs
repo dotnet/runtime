@@ -30,7 +30,7 @@ namespace Mono.Linker
 		}
 
 		public InterfaceImplementation? MatchingInterfaceImplementation
-			=> RuntimeInterfaceImplementation?.InterfaceImplementation[0];
+			=> RuntimeInterfaceImplementation?.InterfaceImplementationChains[0].InterfaceImplementations[0];
 
 		public TypeDefinition? InterfaceType
 			=> RuntimeInterfaceImplementation?.InterfaceTypeDefinition;

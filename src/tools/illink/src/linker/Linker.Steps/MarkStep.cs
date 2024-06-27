@@ -160,6 +160,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.ReturnTypeMarshalSpec,
 			DependencyKind.DynamicInterfaceCastableImplementation,
 			DependencyKind.XmlDescriptor,
+			DependencyKind.InterfaceImplementationOnType,
 		};
 
 		static readonly DependencyKind[] _methodReasons = new DependencyKind[] {
@@ -711,13 +712,6 @@ namespace Mono.Linker.Steps
 					MarkOverrideForBaseMethod (ov, origin);
 			}
 		}
-
-		/// <summary>
-		/// Returns true if <paramref name="type"/> implements <paramref name="interfaceType"/> and the interface implementation is marked,
-		/// or if any marked interface implementations on <paramref name="type"/> are interfaces that implement <paramref name="interfaceType"/> and that interface implementation is marked
-		/// </summary>
-		bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType)
-			=> IsInterfaceImplementationMarkedRecursively (type, interfaceType, Context);
 
 		/// <summary>
 		/// Returns true if <paramref name="type"/> implements <paramref name="interfaceType"/> and the interface implementation is marked,
@@ -2413,13 +2407,12 @@ namespace Mono.Linker.Steps
 
 		internal bool ShouldMarkRuntimeInterfaceImplementation (RuntimeInterfaceImplementation runtimeInterfaceImplementation)
 		{
-			var type = runtimeInterfaceImplementation.Implementor;
-			var ifaces = runtimeInterfaceImplementation.InterfaceImplementation;
+			var implementinType = runtimeInterfaceImplementation.Implementor;
 			var ifaceType = runtimeInterfaceImplementation.InterfaceTypeDefinition;
-			if (ifaces.All (Annotations.IsMarked))
+			if (Annotations.IsMarked (runtimeInterfaceImplementation))
 				return false;
 
-			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
+			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, implementinType))
 				return true;
 
 			if (ifaceType is null)
@@ -2433,7 +2426,7 @@ namespace Mono.Linker.Steps
 			if (Context.KeepComInterfaces && (ifaceType.IsImport || ifaceType.IsWindowsRuntime))
 				return true;
 
-			return IsFullyPreserved (type);
+			return IsFullyPreserved (implementinType);
 		}
 
 		void MarkGenericParameterProvider (IGenericParameterProvider provider, MessageOrigin origin)
@@ -2519,7 +2512,7 @@ namespace Mono.Linker.Steps
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
 			// We must check all possible ways the interface could be implemented by the type (through all recursive interface implementations, not just the primary one)
-			if (!(IsInterfaceImplementationMarkedRecursively (overrideInformation.RuntimeInterfaceImplementation.Implementor, @base.DeclaringType)))
+			if (!overrideInformation.RuntimeInterfaceImplementation.IsAnyImplementationMarked (Annotations, Context))
 				return false;
 
 			// If the interface method is not marked and the interface doesn't come from a preserved scope, do not mark the implementation method
@@ -2613,7 +2606,7 @@ namespace Mono.Linker.Steps
 					continue;
 				MarkMethodsIf (iface_type!.Methods, m => !m.IsStatic, reason, origin);
 
-				MarkRuntimeInterfaceImplementation (runtimeInterface, new MessageOrigin (Context.Resolve (runtimeInterface.TypeWithInterfaceImplementation)));
+				MarkRuntimeInterfaceImplementation (runtimeInterface, new MessageOrigin (inputType));
 			}
 		}
 
@@ -3748,8 +3741,11 @@ namespace Mono.Linker.Steps
 
 		void MarkRuntimeInterfaceImplementation (RuntimeInterfaceImplementation runtimeInterface, MessageOrigin origin, DependencyInfo? reason = null)
 		{
-			foreach (var iface in runtimeInterface.InterfaceImplementation) {
-				MarkInterfaceImplementation (iface, origin, reason);
+			Annotations.Mark (runtimeInterface);
+			foreach (var iface in runtimeInterface.InterfaceImplementationChains) {
+				MarkType (iface.TypeWithInterfaceImplementation, reason ?? new DependencyInfo (DependencyKind.InterfaceImplementationOnType, origin.Provider), origin);
+				foreach (var impl in iface.InterfaceImplementations)
+					MarkInterfaceImplementation (impl, origin, reason);
 			}
 		}
 

@@ -20,13 +20,13 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Library.I0100), "library.dll", typeof (Library.I010))]
 	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Library.I010), "library.dll", typeof (Library.I01))]
 	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Library.I01), "library.dll", typeof (Library.I0))]
-	[RemovedTypeInAssembly("library.dll", typeof(Library.I00))]
-	[RemovedTypeInAssembly("library.dll", typeof(Library.I000))]
-	[RemovedInterfaceOnTypeInAssembly("library.dll", typeof (Library.MyClass), "library.dll", typeof (Library.I000))]
+	[KeptTypeInAssembly("library.dll", typeof(Library.I00))]
+	[KeptTypeInAssembly("library.dll", typeof(Library.I000))]
+	[KeptInterfaceOnTypeInAssembly("library.dll", typeof (Library.MyClass), "library.dll", typeof (Library.I000))]
 #endif
 	public class RecursiveInterfaceKept
 	{
-		public static void Main()
+		public static void Main ()
 		{
 #if IL_ASSEMBLY_AVAILABLE
 			Library.I0 _ = new Library.MyClass();

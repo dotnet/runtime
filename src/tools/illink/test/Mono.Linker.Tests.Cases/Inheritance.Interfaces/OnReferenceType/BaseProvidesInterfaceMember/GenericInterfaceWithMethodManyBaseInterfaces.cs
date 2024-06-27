@@ -17,10 +17,15 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 			void Method (T arg);
 		}
 
+		[Kept] // Should be able to be removed
+		[KeptInterface (typeof (IFoo<>))]
 		interface IFoo2<T> : IFoo<T>
 		{
 		}
 
+		[Kept] // Should be able to be removed
+		[KeptInterface (typeof (IFoo<>))]
+		[KeptInterface (typeof (IFoo2<>))]
 		interface IFoo3<T> : IFoo2<T>
 		{
 		}
@@ -39,6 +44,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BasePro
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (BaseFoo))]
 		[KeptInterface (typeof (IFoo<object>))]
+		[KeptInterface (typeof (IFoo2<object>))] // Should be removable
+		[KeptInterface (typeof (IFoo3<object>))] // Should be removable
 		class FooWithBase : BaseFoo, IFoo3<object>
 		{
 		}
