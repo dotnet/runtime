@@ -213,7 +213,9 @@ public:
     void SetMethodEntryPoint(PCODE addr);
     BOOL SetStableEntryPointInterlocked(PCODE addr);
 
+#ifndef DACCESS_COMPILE
     PCODE GetTemporaryEntryPoint();
+#endif
 
     PCODE GetTemporaryEntryPointIfExists()
     {
@@ -1196,6 +1198,7 @@ public:
 
 
 private:
+#ifndef DACCESS_COMPILE
     // Gets the prestub entry point to use for backpatching. Entry point slot backpatch uses this entry point as an oracle to
     // determine if the entry point actually changed and warrants backpatching.
     PCODE GetPrestubEntryPointToBackpatch()
@@ -1207,6 +1210,7 @@ private:
         _ASSERTE(IsVersionableWithVtableSlotBackpatch());
         return GetTemporaryEntryPoint();
     }
+#endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
     // Gets the entry point stored in the primary storage location for backpatching. Entry point slot backpatch uses this entry
@@ -1256,11 +1260,13 @@ public:
         BackpatchEntryPointSlots(entryPoint, false /* isPrestubEntryPoint */);
     }
 
+#ifndef DACCESS_COMPILE
     void BackpatchToResetEntryPointSlots()
     {
         WRAPPER_NO_CONTRACT;
         BackpatchEntryPointSlots(GetPrestubEntryPointToBackpatch(), true /* isPrestubEntryPoint */);
     }
+#endif // DACCESS_COMPILE
 
 private:
     void BackpatchEntryPointSlots(PCODE entryPoint, bool isPrestubEntryPoint)

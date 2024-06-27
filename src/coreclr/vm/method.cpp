@@ -2564,6 +2564,7 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
 }
 
 //*******************************************************************************
+#ifndef DACCESS_COMPILE
 PCODE MethodDesc::GetTemporaryEntryPoint()
 {
     CONTRACTL
@@ -2578,7 +2579,6 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     if (pEntryPoint != (PCODE)NULL)
         return pEntryPoint;
 
-#ifndef DACCESS_COMPILE
     EnsureTemporaryEntryPoint(GetLoaderAllocator());
     pEntryPoint = GetTemporaryEntryPointIfExists();
     _ASSERTE(pEntryPoint != (PCODE)NULL);
@@ -2588,9 +2588,9 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     _ASSERTE(PTR_HOST_TO_TADDR(this) == PTR_HOST_TO_TADDR(pMD));
 #endif
 
-#endif
     return pEntryPoint;
 }
+#endif
 
 #ifndef DACCESS_COMPILE
 //*******************************************************************************
