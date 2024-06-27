@@ -104,7 +104,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         // Hardware floating-point calling convention
         if ((floatFields == 1) && (intFields == 0))
         {
-            if (info.flags == UseIntCallConv)
+            if (info.flags == FpStruct::UseIntCallConv)
                 assert(varTypeIsFloating(type)); // standalone floating-point real
             else
                 assert((info.flags & OnlyOne) != 0); // struct containing just one FP real
