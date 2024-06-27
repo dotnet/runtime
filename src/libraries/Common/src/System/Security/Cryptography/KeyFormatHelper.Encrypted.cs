@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -202,7 +203,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                RandomNumberGenerator.Fill(salt);
+                Helpers.RngFill(salt);
 
                 int written = PasswordBasedEncryption.Encrypt(
                     password,

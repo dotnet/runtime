@@ -81,6 +81,36 @@ namespace System.ComponentModel
         }
 
         /// <summary>
+        /// The GetConverterFromRegisteredType method returns a type converter for the type this type
+        /// descriptor is representing.
+        /// </summary>
+        public virtual TypeConverter? GetConverterFromRegisteredType()
+        {
+            if (_parent != null)
+            {
+                return _parent.GetConverterFromRegisteredType();
+            }
+
+            if (RequireRegisteredTypes is null)
+            {
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
+                }
+            }
+            else if (RequireRegisteredTypes == true)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
+            }
+
+            return Forward();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
+            TypeConverter? Forward() => GetConverter();
+        }
+
+        /// <summary>
         /// The GetDefaultEvent method returns the event descriptor for the default
         /// event on the object this type descriptor is representing.
         /// </summary>
@@ -103,10 +133,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// The GetEvents method returns a collection of event descriptors
-        /// for the object this type descriptor is representing. An optional
-        /// attribute array may be provided to filter the collection that is
-        /// returned. If no parent is provided,this will return an empty
-        /// event collection.
+        /// for the object this type descriptor is representing.
         /// </summary>
         public virtual EventDescriptorCollection GetEvents()
         {
@@ -137,11 +164,34 @@ namespace System.ComponentModel
         }
 
         /// <summary>
+        /// Returns a collection of event descriptors
+        /// for the object this type descriptor is representing.
+        /// </summary>
+        public virtual EventDescriptorCollection GetEventsFromRegisteredType()
+        {
+            if (_parent != null)
+            {
+                return _parent.GetEventsFromRegisteredType();
+            }
+
+            if (RequireRegisteredTypes is null)
+            {
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetEventsFromRegisteredType));
+                }
+            }
+            else if (RequireRegisteredTypes == true)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetEventsFromRegisteredType));
+            }
+
+            return GetEvents();
+        }
+
+        /// <summary>
         /// The GetProperties method returns a collection of property descriptors
-        /// for the object this type descriptor is representing. An optional
-        /// attribute array may be provided to filter the collection that is returned.
-        /// If no parent is provided,this will return an empty
-        /// property collection.
+        /// for the object this type descriptor is representing.
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public virtual PropertyDescriptorCollection GetProperties()
@@ -152,6 +202,36 @@ namespace System.ComponentModel
             }
 
             return PropertyDescriptorCollection.Empty;
+        }
+
+        /// <summary>
+        /// The GetProperties method returns a collection of property descriptors
+        /// for the object this type descriptor is representing.
+        /// </summary>
+        public virtual PropertyDescriptorCollection GetPropertiesFromRegisteredType()
+        {
+            if (_parent != null)
+            {
+                return _parent.GetPropertiesFromRegisteredType();
+            }
+
+            if (RequireRegisteredTypes is null)
+            {
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
+                }
+            }
+            else if (RequireRegisteredTypes == true)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
+            }
+
+            return Forward();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
+            PropertyDescriptorCollection Forward() => GetProperties();
         }
 
         /// <summary>
@@ -180,5 +260,30 @@ namespace System.ComponentModel
         /// to use its default type description services.
         /// </summary>
         public virtual object? GetPropertyOwner(PropertyDescriptor? pd) => _parent?.GetPropertyOwner(pd);
+
+        /// <summary>
+        /// Whether types are required to be registered through <see cref="TypeDescriptionProvider.RegisterType{T}"/>.
+        /// </summary>
+        /// <remarks>
+        /// The default value is <see langword="null"/> which means that the type descriptor has not declared whether or not it is compatible registered types.
+        /// A type descriptor needs to implement this to return <see langword="true"/> or <see langword="false"/> if the feature switch
+        /// 'System.ComponentModel.TypeDescriptor.RequireRegisteredTypes' is enabled.
+        /// If <see langword="true"/> is returned, then the type descriptor must also implement
+        /// <see cref="ICustomTypeDescriptor.GetConverterFromRegisteredType()"/>,
+        /// <see cref="ICustomTypeDescriptor.GetEventsFromRegisteredType()"/>, and
+        /// <see cref="ICustomTypeDescriptor.GetPropertiesFromRegisteredType()"/>.
+        /// </remarks>
+        public virtual bool? RequireRegisteredTypes
+        {
+            get
+            {
+                if (_parent != null)
+                {
+                    return _parent.RequireRegisteredTypes;
+                }
+
+                return null;
+            }
+        }
     }
 }

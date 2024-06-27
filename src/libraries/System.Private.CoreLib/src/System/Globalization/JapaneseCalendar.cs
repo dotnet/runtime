@@ -42,7 +42,7 @@ namespace System.Globalization
 
         // Using a field initializer rather than a static constructor so that the whole class can be lazy
         // init.
-        private static volatile EraInfo[]? s_japaneseEraInfo;
+        private static EraInfo[]? s_japaneseEraInfo;
 
         // m_EraInfo must be listed in reverse chronological order.  The most recent era
         // should be the first element.
@@ -67,20 +67,19 @@ namespace System.Globalization
         internal static EraInfo[] GetEraInfo()
         {
             // See if we need to build it
-            return s_japaneseEraInfo ??
-                (s_japaneseEraInfo = GlobalizationMode.UseNls ? NlsGetJapaneseEras() : IcuGetJapaneseEras()) ??
+            return s_japaneseEraInfo ??=
+                (GlobalizationMode.UseNls ? NlsGetJapaneseEras() : IcuGetJapaneseEras()) ??
                 // See if we have to use the built-in eras
-                (s_japaneseEraInfo = new EraInfo[]
-                {
+                [
                     new EraInfo(5, 2019, 5, 1, 2018, 1, GregorianCalendar.MaxYear - 2018, "\x4ee4\x548c", "\x4ee4", "R"),
                     new EraInfo(4, 1989, 1, 8, 1988, 1, 2019 - 1988, "\x5e73\x6210", "\x5e73", "H"),
                     new EraInfo(3, 1926, 12, 25, 1925, 1, 1989 - 1925, "\x662d\x548c", "\x662d", "S"),
                     new EraInfo(2, 1912, 7, 30, 1911, 1, 1926 - 1911, "\x5927\x6b63", "\x5927", "T"),
                     new EraInfo(1, 1868, 1, 1, 1867, 1, 1912 - 1867, "\x660e\x6cbb", "\x660e", "M")
-                });
+                ];
         }
 
-        internal static volatile Calendar? s_defaultInstance;
+        internal static Calendar? s_defaultInstance;
         internal GregorianCalendarHelper _helper;
 
         internal static Calendar GetDefaultInstance() => s_defaultInstance ??= new JapaneseCalendar();

@@ -78,14 +78,5 @@ inline PTR_LoaderHeap AppDomain::GetStubHeap()
     return GetLoaderAllocator()->GetStubHeap();
 }
 
-/* static */
-inline DWORD DomainLocalModule::DynamicEntry::GetOffsetOfDataBlob()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(DWORD(offsetof(NormalDynamicEntry, m_pDataBlob)) == offsetof(NormalDynamicEntry, m_pDataBlob));
-    return (DWORD)offsetof(NormalDynamicEntry, m_pDataBlob);
-}
-
-
 #endif  // _APPDOMAIN_I
 

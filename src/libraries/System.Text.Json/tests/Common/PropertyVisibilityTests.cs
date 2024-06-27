@@ -245,7 +245,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void Ignore_BasePublicPropertyIgnored_ConflictWithDerivedPublicPropertyIgnored()
+        public async Task Ignore_BasePublicPropertyIgnored_ConflictWithDerivedPublicPropertyIgnored()
         {
             var obj = new ClassWithIgnoredPublicPropertyAndNewSlotPublicAndIgnoredToo();
 
@@ -950,7 +950,7 @@ namespace System.Text.Json.Serialization.Tests
         public class DerivedClass_With_IgnoredOverride_And_ConflictingPropertyName : Class_With_VirtualProperty
         {
             [JsonPropertyName("MyProp")]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
 
             [JsonIgnore]
             public override bool MyProp { get; set; }
@@ -970,7 +970,7 @@ namespace System.Text.Json.Serialization.Tests
         public class DerivedClass_With_NewProperty_And_ConflictingPropertyName : Class_With_Property
         {
             [JsonPropertyName("MyProp")]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
 
             [JsonIgnore]
             public new bool MyProp { get; set; }
@@ -985,7 +985,7 @@ namespace System.Text.Json.Serialization.Tests
         public class DerivedClass_With_Ignored_NewProperty_Of_DifferentType_And_ConflictingPropertyName : Class_With_Property
         {
             [JsonPropertyName("MyProp")]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
 
             [JsonIgnore]
             public new int MyProp { get; set; }
@@ -1022,13 +1022,13 @@ namespace System.Text.Json.Serialization.Tests
         public class FurtherDerivedClass_With_ConflictingPropertyName : DerivedClass_WithIgnoredOverride
         {
             [JsonPropertyName("MyProp")]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
         }
 
         public class DerivedClass_WithConflictingPropertyName : Class_With_VirtualProperty
         {
             [JsonPropertyName("MyProp")]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
         }
 
         public class FurtherDerivedClass_With_IgnoredOverride : DerivedClass_WithConflictingPropertyName
@@ -1852,7 +1852,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-            public string MyString { get; set; } = "DefaultString";
+            public string? MyString { get; set; } = "DefaultString";
             public int Int2 { get; set; }
         }
 
@@ -1863,7 +1863,7 @@ namespace System.Text.Json.Serialization.Tests
             public string MyString { get; set; } = "DefaultString";
             public int Int2 { get; set; }
 
-            public ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor(string myString)
+            public ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor(string? myString)
             {
                 if (myString != null)
                 {
@@ -1997,7 +1997,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
             public int Int2 { get; set; }
         }
 
@@ -2005,10 +2005,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-            public string MyString { get; }
+            public string? MyString { get; }
             public int Int2 { get; set; }
 
-            public ClassWithStructProperty_IgnoreConditionNever_Ctor(string myString)
+            public ClassWithStructProperty_IgnoreConditionNever_Ctor(string? myString)
             {
                 MyString = myString;
             }
@@ -2057,10 +2057,10 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassUsingIgnoreWhenWritingDefaultAttribute
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-            public SimpleTestClass Class { get; set; }
+            public SimpleTestClass? Class { get; set; }
 
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-            public Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string> { ["Key"] = "Value" };
+            public Dictionary<string, string>? Dictionary { get; set; } = new Dictionary<string, string> { ["Key"] = "Value" };
         }
 
         [Fact]
@@ -2094,7 +2094,7 @@ namespace System.Text.Json.Serialization.Tests
             public SimpleTestClass Class { get; set; } = new SimpleTestClass { MyInt16 = 18 };
 
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-            public Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string> { ["Key"] = "Value" };
+            public Dictionary<string, string>? Dictionary { get; set; } = new Dictionary<string, string> { ["Key"] = "Value" };
         }
 
         [Fact]
@@ -2175,7 +2175,7 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithReadOnlyStringProperty_IgnoreNever
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-            public string MyString { get; }
+            public string? MyString { get; }
 
             public ClassWithReadOnlyStringProperty_IgnoreNever(string myString) => MyString = myString;
         }
@@ -2198,7 +2198,7 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithReadOnlyStringField_IgnoreNever
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-            public string MyString { get; }
+            public string? MyString { get; }
 
             public ClassWithReadOnlyStringField_IgnoreNever(string myString) => MyString = myString;
         }
@@ -2249,7 +2249,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassWithProps
         {
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
             public int MyInt { get; set; }
             public Point_2D_Struct MyPoint { get; set; }
         }
@@ -2264,7 +2264,7 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithPropsAndIgnoreAttributes
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
             public int MyInt { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
             public Point_2D_Struct MyPoint { get; set; }
@@ -2306,7 +2306,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassWithInitializedProps
         {
-            public string MyString { get; set; } = "Default";
+            public string? MyString { get; set; } = "Default";
             public int MyInt { get; set; } = -1;
             public Point_2D_Struct MyPoint { get; set; } = new Point_2D_Struct(-1, -1);
         }
@@ -2517,7 +2517,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             public string MyString1_IgnoredWhenWritingNull { get; set; }
 
-            public string MyString2_IgnoredWhenWritingNull;
+            public string? MyString2_IgnoredWhenWritingNull;
 
             public int MyInt1;
 
@@ -2527,7 +2527,7 @@ namespace System.Text.Json.Serialization.Tests
 
             public bool? MyNullableBool2_IgnoredWhenWritingNull;
 
-            public PointClass MyPointClass1_IgnoredWhenWritingNull;
+            public PointClass? MyPointClass1_IgnoredWhenWritingNull;
 
             public PointClass MyPointClass2_IgnoredWhenWritingNull { get; set; }
 
@@ -2586,7 +2586,7 @@ namespace System.Text.Json.Serialization.Tests
             public string MyString1_IgnoredWhenWritingNull { get; set; }
 
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-            public string MyString2_IgnoredWhenWritingNull;
+            public string? MyString2_IgnoredWhenWritingNull;
 
             [JsonInclude]
             public int MyInt1;
@@ -2600,7 +2600,7 @@ namespace System.Text.Json.Serialization.Tests
             public bool? MyNullableBool2_IgnoredWhenWritingNull;
 
             [JsonInclude, JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-            public PointClass MyPointClass1_IgnoredWhenWritingNull;
+            public PointClass? MyPointClass1_IgnoredWhenWritingNull;
 
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public PointClass MyPointClass2_IgnoredWhenWritingNull { get; set; }
@@ -2828,7 +2828,7 @@ namespace System.Text.Json.Serialization.Tests
         public class MyClassWithValueTypeInterfaceProperty
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-            public IInterface MyProp { get; set; }
+            public IInterface? MyProp { get; set; }
 
             public interface IInterface { }
             public struct MyStruct : IInterface { }
@@ -3039,7 +3039,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassWithCallbacks
         {
-            public Func<string, bool> Func { get; set; }
+            public Func<string, bool>? Func { get; set; }
 
             public Action<bool> Action { get; set; } = (val) => Console.WriteLine();
         }

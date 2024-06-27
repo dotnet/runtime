@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
-    <DebugType>PdbOnly</DebugType>
-    <NoStandardLib>True</NoStandardLib>
-    <Noconfig>True</Noconfig>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestPriority>1</CLRTestPriority>
     <DefineConstants>$(DefineConstants);OP_MUL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

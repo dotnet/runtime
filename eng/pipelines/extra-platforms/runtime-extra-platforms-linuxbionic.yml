@@ -12,6 +12,7 @@ jobs:
 
 #
 # Build the whole product using Mono for Android Linux with Bionic libc
+# FIXME: disabled test runs https://github.com/dotnet/runtime/issues/100281
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -41,9 +42,9 @@ jobs:
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 480
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)_LinuxBionic
+      # extra steps, run tests # FIXME: see https://github.com/dotnet/runtime/issues/100281
+      # postBuildSteps:
+      #   - template: /eng/pipelines/libraries/helix.yml
+      #     parameters:
+      #       creator: dotnet-bot
+      #       testRunNamePrefixSuffix: Mono_$(_BuildConfig)_LinuxBionic

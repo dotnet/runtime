@@ -117,7 +117,7 @@ struct StubPrecode
     static void (*StubPrecodeCode_End)();
 #endif
 
-    void Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator = NULL, BYTE type = StubPrecode::Type, TADDR target = NULL);
+    void Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator = NULL, BYTE type = StubPrecode::Type, TADDR target = 0);
 
     static void StaticInitialize();
 
@@ -209,7 +209,7 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 struct FixupPrecodeData
 {
     PCODE Target;
-    MethodDesc *MethodDesc;
+    class MethodDesc *MethodDesc;
     PCODE PrecodeFixupThunk;
 };
 

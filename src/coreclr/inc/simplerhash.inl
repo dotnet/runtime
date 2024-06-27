@@ -11,9 +11,9 @@
 inline
 unsigned magicNumberDivide(unsigned numerator, const PrimeInfo &p)
 {
-    unsigned __int64 num = numerator;
-    unsigned __int64 mag = p.magic;
-    unsigned __int64 product = (num * mag) >> (32 + p.shift);
+    uint64_t num = numerator;
+    uint64_t mag = p.magic;
+    uint64_t product = (num * mag) >> (32 + p.shift);
     return (unsigned) product;
 }
 

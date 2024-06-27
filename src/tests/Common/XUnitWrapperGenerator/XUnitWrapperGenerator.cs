@@ -56,7 +56,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 string? testDisplayName = fileOptions.TestDisplayName();
                 if (assemblyPath is not null && testDisplayName is not null)
                 {
-                    return ImmutableArray.Create<ITestInfo>(new OutOfProcessTest(testDisplayName, assemblyPath));
+                    return ImmutableArray.Create<ITestInfo>(new OutOfProcessTest(testDisplayName, assemblyPath, fileOptions.TestBuildMode()));
                 }
             }
 
@@ -832,15 +832,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     Xunit.RuntimeConfiguration skippedConfigurations = 0;
                     Xunit.RuntimeTestModes skippedTestModes = 0;
 
-                    for (int i = 1; i < filterAttribute.AttributeConstructor!.Parameters.Length; i++)
+                    for (int i = 1; i < filterAttribute.ConstructorArguments.Length; i++)
                     {
-                        ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(filterAttribute, i);
+                        ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(filterAttribute.ConstructorArguments[i]);
                     }
 
-                    void ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(AttributeData filterAttribute, int argumentIndex)
+                    void ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(TypedConstant argument)
                     {
-                        int argumentValue = (int)filterAttribute.ConstructorArguments[argumentIndex].Value!;
-                        switch (filterAttribute.AttributeConstructor!.Parameters[argumentIndex].Type.ToDisplayString())
+                        int argumentValue = (int)argument.Value!;
+                        switch (argument.Type!.ToDisplayString())
                         {
                             case "Xunit.TestPlatforms":
                                 skippedTestPlatforms = (Xunit.TestPlatforms)argumentValue;

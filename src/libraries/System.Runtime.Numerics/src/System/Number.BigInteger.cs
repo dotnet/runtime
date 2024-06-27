@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -850,6 +851,9 @@ namespace System
             return spanSuccess;
         }
 
+        private const uint kuBase = 1_000_000_000; // 10^9
+        private const int kcchBase = 9;
+
         private static unsafe string? FormatBigInteger(
             bool targetSpan, BigInteger value,
             string? formatString, ReadOnlySpan<char> formatSpan,
@@ -882,6 +886,7 @@ namespace System
                 }
                 else
                 {
+                    Debug.Assert(formatString != null);
                     charsWritten = 0;
                     spanSuccess = false;
                     return value._sign.ToString(formatString, info);
@@ -889,17 +894,17 @@ namespace System
             }
 
             // First convert to base 10^9.
-            const uint kuBase = 1000000000; // 10^9
-            const int kcchBase = 9;
-
             int cuSrc = value._bits.Length;
-            int cuMax;
-            try
-            {
-                cuMax = checked(cuSrc * 10 / 9 + 2);
-            }
-            catch (OverflowException e) { throw new FormatException(SR.Format_TooLarge, e); }
-            uint[] rguDst = new uint[cuMax];
+            // A quick conservative max length of base 10^9 representation
+            // A uint contributes to no more than 10/9 of 10^9 block, +1 for ceiling of division
+            int cuMax = cuSrc * (kcchBase + 1) / kcchBase + 1;
+            Debug.Assert((long)BigInteger.MaxLength * (kcchBase + 1) / kcchBase + 1 < (long)int.MaxValue); // won't overflow
+
+            uint[]? bufferToReturn = null;
+            Span<uint> base1E9Buffer = cuMax < BigIntegerCalculator.StackAllocThreshold ?
+                stackalloc uint[cuMax] :
+                (bufferToReturn = ArrayPool<uint>.Shared.Rent(cuMax));
+
             int cuDst = 0;
 
             for (int iuSrc = cuSrc; --iuSrc >= 0;)
@@ -907,93 +912,86 @@ namespace System
                 uint uCarry = value._bits[iuSrc];
                 for (int iuDst = 0; iuDst < cuDst; iuDst++)
                 {
-                    Debug.Assert(rguDst[iuDst] < kuBase);
-                    ulong uuRes = NumericsHelpers.MakeUInt64(rguDst[iuDst], uCarry);
-                    rguDst[iuDst] = (uint)(uuRes % kuBase);
-                    uCarry = (uint)(uuRes / kuBase);
+                    Debug.Assert(base1E9Buffer[iuDst] < kuBase);
+
+                    // Use X86Base.DivRem when stable
+                    ulong uuRes = NumericsHelpers.MakeUInt64(base1E9Buffer[iuDst], uCarry);
+                    (ulong quo, ulong rem) = Math.DivRem(uuRes, kuBase);
+                    uCarry = (uint)quo;
+                    base1E9Buffer[iuDst] = (uint)rem;
                 }
                 if (uCarry != 0)
                 {
-                    rguDst[cuDst++] = uCarry % kuBase;
-                    uCarry /= kuBase;
+                    (uCarry, base1E9Buffer[cuDst++]) = Math.DivRem(uCarry, kuBase);
                     if (uCarry != 0)
-                        rguDst[cuDst++] = uCarry;
+                        base1E9Buffer[cuDst++] = uCarry;
                 }
             }
 
-            int cchMax;
-            try
-            {
-                // Each uint contributes at most 9 digits to the decimal representation.
-                cchMax = checked(cuDst * kcchBase);
-            }
-            catch (OverflowException e) { throw new FormatException(SR.Format_TooLarge, e); }
+            ReadOnlySpan<uint> base1E9Value = base1E9Buffer[..cuDst];
 
-            bool decimalFmt = (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R');
-            if (decimalFmt)
+            int valueDigits = (base1E9Value.Length - 1) * kcchBase + FormattingHelpers.CountDigits(base1E9Value[^1]);
+
+            string? strResult;
+
+            if (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R')
             {
-                if (digits > 0 && digits > cchMax)
-                    cchMax = digits;
-                if (value._sign < 0)
+                int strDigits = Math.Max(digits, valueDigits);
+                string? sNegative = value.Sign < 0 ? info.NegativeSign : null;
+                int strLength = strDigits + (sNegative?.Length ?? 0);
+
+                if (targetSpan)
                 {
-                    try
+                    if (destination.Length < strLength)
                     {
-                        // Leave an extra slot for a minus sign.
-                        cchMax = checked(cchMax + info.NegativeSign.Length);
+                        spanSuccess = false;
+                        charsWritten = 0;
                     }
-                    catch (OverflowException e) { throw new FormatException(SR.Format_TooLarge, e); }
+                    else
+                    {
+                        sNegative?.CopyTo(destination);
+                        fixed (char* ptr = &MemoryMarshal.GetReference(destination))
+                        {
+                            BigIntegerToDecChars((Utf16Char*)ptr + strLength, base1E9Value, digits);
+                        }
+                        charsWritten = strLength;
+                        spanSuccess = true;
+                    }
+                    strResult = null;
+                }
+                else
+                {
+                    spanSuccess = false;
+                    charsWritten = 0;
+                    fixed (uint* ptr = base1E9Value)
+                    {
+                        strResult = string.Create(strLength, (digits, ptr: (IntPtr)ptr, base1E9Value.Length, sNegative), static (span, state) =>
+                        {
+                            state.sNegative?.CopyTo(span);
+                            fixed (char* ptr = &MemoryMarshal.GetReference(span))
+                            {
+                                BigIntegerToDecChars((Utf16Char*)ptr + span.Length, new ReadOnlySpan<uint>((void*)state.ptr, state.Length), state.digits);
+                            }
+                        });
+                    }
                 }
             }
-
-            int rgchBufSize;
-
-            try
+            else
             {
-                // We'll pass the rgch buffer to native code, which is going to treat it like a string of digits, so it needs
-                // to be null terminated.  Let's ensure that we can allocate a buffer of that size.
-                rgchBufSize = checked(cchMax + 1);
-            }
-            catch (OverflowException e) { throw new FormatException(SR.Format_TooLarge, e); }
-
-            char[] rgch = new char[rgchBufSize];
-
-            int ichDst = cchMax;
-
-            for (int iuDst = 0; iuDst < cuDst - 1; iuDst++)
-            {
-                uint uDig = rguDst[iuDst];
-                Debug.Assert(uDig < kuBase);
-                for (int cch = kcchBase; --cch >= 0;)
+                byte[]? numberBufferToReturn = null;
+                Span<byte> numberBuffer = valueDigits + 1 <= CharStackBufferSize ?
+                    stackalloc byte[valueDigits + 1] :
+                    (numberBufferToReturn = ArrayPool<byte>.Shared.Rent(valueDigits + 1));
+                fixed (byte* ptr = numberBuffer) // NumberBuffer expects pinned Digits
                 {
-                    rgch[--ichDst] = (char)('0' + uDig % 10);
-                    uDig /= 10;
-                }
-            }
-            for (uint uDig = rguDst[cuDst - 1]; uDig != 0;)
-            {
-                rgch[--ichDst] = (char)('0' + uDig % 10);
-                uDig /= 10;
-            }
+                    scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, ptr, valueDigits + 1);
+                    BigIntegerToDecChars((Utf8Char*)ptr + valueDigits, base1E9Value, valueDigits);
+                    number.Digits[^1] = 0;
+                    number.DigitsCount = valueDigits;
+                    number.Scale = valueDigits;
+                    number.IsNegative = value.Sign < 0;
 
-            if (!decimalFmt)
-            {
-                // sign = true for negative and false for 0 and positive values
-                bool sign = (value._sign < 0);
-                int scale = cchMax - ichDst;
-
-                byte[]? buffer = ArrayPool<byte>.Shared.Rent(rgchBufSize + 1);
-                fixed (byte* ptr = buffer) // NumberBuffer expects pinned Digits
-                {
-                    scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, buffer);
-
-                    for (int i = 0; i < rgch.Length - ichDst; i++)
-                        number.Digits[i] = (byte)rgch[ichDst + i];
-                    number.Digits[rgch.Length - ichDst] = 0;
-                    number.DigitsCount = rgch.Length - ichDst - 1; // The cut-off point to switch (G)eneral from (F)ixed-point to (E)xponential form
-                    number.Scale = scale;
-                    number.IsNegative = sign;
-
-                    scoped var vlb = new ValueListBuilder<Utf16Char>(stackalloc Utf16Char[128]); // arbitrary stack cut-off
+                    scoped var vlb = new ValueListBuilder<Utf16Char>(stackalloc Utf16Char[CharStackBufferSize]); // arbitrary stack cut-off
 
                     if (fmt != 0)
                     {
@@ -1007,59 +1005,44 @@ namespace System
                     if (targetSpan)
                     {
                         spanSuccess = vlb.TryCopyTo(MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten);
-                        vlb.Dispose();
-                        return null;
+                        strResult = null;
                     }
                     else
                     {
                         charsWritten = 0;
                         spanSuccess = false;
-                        string result = MemoryMarshal.Cast<Utf16Char, char>(vlb.AsSpan()).ToString();
-                        vlb.Dispose();
-                        return result;
+                        strResult = MemoryMarshal.Cast<Utf16Char, char>(vlb.AsSpan()).ToString();
+                    }
+
+                    vlb.Dispose();
+                    if (numberBufferToReturn != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(numberBufferToReturn);
                     }
                 }
             }
 
-            // Format Round-trip decimal
-            // This format is supported for integral types only. The number is converted to a string of
-            // decimal digits (0-9), prefixed by a minus sign if the number is negative. The precision
-            // specifier indicates the minimum number of digits desired in the resulting string. If required,
-            // the number is padded with zeros to its left to produce the number of digits given by the
-            // precision specifier.
-            int numDigitsPrinted = cchMax - ichDst;
-            while (digits > 0 && digits > numDigitsPrinted)
+            if (bufferToReturn != null)
             {
-                // pad leading zeros
-                rgch[--ichDst] = '0';
-                digits--;
-            }
-            if (value._sign < 0)
-            {
-                string negativeSign = info.NegativeSign;
-                for (int i = negativeSign.Length - 1; i > -1; i--)
-                    rgch[--ichDst] = negativeSign[i];
+                ArrayPool<uint>.Shared.Return(bufferToReturn);
             }
 
-            int resultLength = cchMax - ichDst;
-            if (!targetSpan)
+            return strResult;
+        }
+
+        private static unsafe TChar* BigIntegerToDecChars<TChar>(TChar* bufferEnd, ReadOnlySpan<uint> base1E9Value, int digits)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(base1E9Value[^1] != 0, "Leading zeros should be trimmed by caller.");
+
+            // The base 10^9 value is in reverse order
+            for (int i = 0; i < base1E9Value.Length - 1; i++)
             {
-                charsWritten = 0;
-                spanSuccess = false;
-                return new string(rgch, ichDst, cchMax - ichDst);
+                bufferEnd = UInt32ToDecChars(bufferEnd, base1E9Value[i], kcchBase);
+                digits -= kcchBase;
             }
-            else if (new ReadOnlySpan<char>(rgch, ichDst, cchMax - ichDst).TryCopyTo(destination))
-            {
-                charsWritten = resultLength;
-                spanSuccess = true;
-                return null;
-            }
-            else
-            {
-                charsWritten = 0;
-                spanSuccess = false;
-                return null;
-            }
+
+            return UInt32ToDecChars(bufferEnd, base1E9Value[^1], digits);
         }
     }
 

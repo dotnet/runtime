@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 
 namespace Microsoft.DotNet.Cli.Build.Framework
@@ -218,7 +219,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// <returns>Result of the command</returns>
         public CommandResult WaitForExit(bool expectedToFail, int timeoutMilliseconds = Timeout.Infinite)
         {
-           ReportExecWaitOnExit();
+            ReportExecWaitOnExit();
 
             int exitCode;
             if (!Process.WaitForExit(timeoutMilliseconds))
@@ -283,18 +284,20 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        public Command CaptureStdOut()
+        public Command CaptureStdOut(Encoding? stdOutEncoding = null)
         {
             ThrowIfRunning();
             Process.StartInfo.RedirectStandardOutput = true;
+            Process.StartInfo.StandardOutputEncoding = stdOutEncoding;
             _stdOutCapture = new StringWriter();
             return this;
         }
 
-        public Command CaptureStdErr()
+        public Command CaptureStdErr(Encoding? stdErrEncoding = null)
         {
             ThrowIfRunning();
             Process.StartInfo.RedirectStandardError = true;
+            Process.StartInfo.StandardErrorEncoding = stdErrEncoding;
             _stdErrCapture = new StringWriter();
             return this;
         }

@@ -26,7 +26,7 @@ public class LibraryInitializerTests : AppTestBase
     [Fact]
     public async Task LoadLibraryInitializer()
     {
-        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer");
+        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer", "App");
         PublishProject("Debug");
 
         var result = await RunSdkStyleAppForPublish(new(Configuration: "Debug", TestScenario: "LibraryInitializerTest"));
@@ -39,7 +39,7 @@ public class LibraryInitializerTests : AppTestBase
     [Fact]
     public async Task AbortStartupOnError()
     {
-        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError");
+        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError", "App");
         PublishProject("Debug");
 
         var result = await RunSdkStyleAppForPublish(new(

@@ -5,7 +5,7 @@ CoreFX can be debugged on unix using both lldb and visual studio code
 
 ## Using lldb and SOS
 
-- Install SOS and lldb. See https://github.com/dotnet/diagnostics/blob/main/documentation/sos.md and https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos for setup instructions.
+- Install SOS and lldb. See https://github.com/dotnet/diagnostics/blob/main/documentation/sos.md and https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-sos for setup instructions.
 - Run the test using msbuild at least once with `/t:Test`.
 
 ## Debugging core dumps with lldb

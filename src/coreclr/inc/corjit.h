@@ -452,7 +452,8 @@ public:
             uint32_t *                 pCountSchemaItems,          // OUT: pointer to the count of schema items in `pSchema` array.
             uint8_t **                 pInstrumentationData,       // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
                                                                    // (pointer will not remain valid after jit completes).
-            PgoSource *                pPgoSource                  // OUT: value describing source of pgo data
+            PgoSource *                pPgoSource,                 // OUT: value describing source of pgo data
+            bool *                     pDynamicPgo                 // OUT: dynamic PGO is enabled (valid even when return value is failure)
             ) = 0;
 
     // Allocate a profile buffer for use in the current process

@@ -285,7 +285,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(16387, stream.Position);
 
                 // We should get an exception like: '!' is invalid after a single JSON value.
-                Assert.Contains("!", ex.ToString());
+                Assert.Contains("!", ex.Message);
             }
         }
 
@@ -306,7 +306,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(16387, stream.Position);
 
                 // We should get an exception like: '!' is invalid after a single JSON value.
-                Assert.Contains("!", ex.ToString());
+                Assert.Contains("!", ex.Message);
             }
         }
 

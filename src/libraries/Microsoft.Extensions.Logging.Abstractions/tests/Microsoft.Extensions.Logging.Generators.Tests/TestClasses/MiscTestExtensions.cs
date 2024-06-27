@@ -57,6 +57,30 @@ public partial class PartialClassWithLoggerField
     public partial void Test();
 }
 
+#if ROSLYN4_8_OR_GREATER
+public partial class ClassWithPrimaryConstructor(ILogger logger)
+{
+    [LoggerMessage(0, LogLevel.Debug, "Test.")]
+    public partial void Test();
+}
+
+public partial class ClassWithPrimaryConstructorInDifferentPartialDeclaration(ILogger logger);
+
+public partial class ClassWithPrimaryConstructorInDifferentPartialDeclaration
+{
+    [LoggerMessage(0, LogLevel.Debug, "Test.")]
+    public partial void Test();
+}
+
+public partial class ClassWithPrimaryConstructorAndField(ILogger logger)
+{
+    private readonly ILogger _logger = logger;
+
+    [LoggerMessage(0, LogLevel.Debug, "Test.")]
+    public partial void Test();
+}
+#endif
+
 // Used to test use outside of a namespace
 internal static partial class NoNamespace
 {

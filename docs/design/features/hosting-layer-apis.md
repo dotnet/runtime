@@ -4,7 +4,7 @@ Functionality for advanced hosting scenarios is exposed on the `hostfxr` and `ho
 
 The `char_t` strings in the below API descriptions are defined based on the platform:
 * Windows     - UTF-16 (2-byte `wchar_t`)
-  * Note that `wchar_t` is defined as a [native type](https://docs.microsoft.com/cpp/build/reference/zc-wchar-t-wchar-t-is-native-type), which is the default in Visual Studio.
+  * Note that `wchar_t` is defined as a [native type](https://learn.microsoft.com/cpp/build/reference/zc-wchar-t-wchar-t-is-native-type), which is the default in Visual Studio.
 * Unix        - UTF-8  (1-byte `char`)
 
 ## Host FXR

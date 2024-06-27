@@ -2,7 +2,7 @@
 
 Provides a set of extension methods for querying data structures that implement `IQueryable<T>`.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.linq.
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.linq.
 
 ## Contribution Bar
 

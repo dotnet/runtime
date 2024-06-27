@@ -1,7 +1,7 @@
 # System.Collections.Immutable
 This is the assembly that surfaces immutable collections such as [`ImmutableArray<T>`](https://learn.microsoft.com/dotnet/api/system.collections.immutable.immutablearray-1) and [`ImmutableDictionary<TKey, TValue>`](https://learn.microsoft.com/dotnet/api/system.collections.immutable.immutabledictionary-2).
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.collections.immutable.
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.collections.immutable.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)

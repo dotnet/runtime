@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Net;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -9,6 +10,7 @@ using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -39,6 +41,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCaching")]
         internal static unsafe partial int SslCtxSetCaching(SafeSslContextHandle ctx, int mode, int cacheSize, int contextIdLength, Span<byte> contextId, delegate* unmanaged<IntPtr, IntPtr, int> neewSessionCallback, delegate* unmanaged<IntPtr, IntPtr, void> removeSessionCallback);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxRemoveSession")]
+        internal static unsafe partial void SslCtxRemoveSession(SafeSslContextHandle ctx, IntPtr session);
+
         internal static bool AddExtraChainCertificates(SafeSslContextHandle ctx, ReadOnlyCollection<X509Certificate2> chain)
         {
             // send pre-computed list of intermediates.
@@ -62,11 +67,16 @@ internal static partial class Interop
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeSslContextHandle : SafeHandle
+    internal sealed class SafeSslContextHandle : SafeHandle, ISafeHandleCachable
     {
         // This is session cache keyed by SNI e.g. TargetHost
         private Dictionary<string, IntPtr>? _sslSessions;
         private GCHandle _gch;
+
+        // SSL_CTX handles are cached, so we need to keep track of the
+        // number of times a handle is being used. Once we decide to dispose the handle,
+        // we set the _rentCount to -1.
+        private volatile int _rentCount;
 
         public SafeSslContextHandle()
             : base(IntPtr.Zero, true)
@@ -81,6 +91,38 @@ namespace Microsoft.Win32.SafeHandles
         public override bool IsInvalid
         {
             get { return handle == IntPtr.Zero; }
+        }
+
+        public bool TryAddRentCount()
+        {
+            int oldCount;
+
+            do
+            {
+                oldCount = _rentCount;
+                if (oldCount < 0)
+                {
+                    // The handle is already disposed.
+                    return false;
+                }
+            } while (Interlocked.CompareExchange(ref _rentCount, oldCount + 1, oldCount) != oldCount);
+
+            return true;
+        }
+
+        public bool TryMarkForDispose()
+        {
+            return Interlocked.CompareExchange(ref _rentCount, -1, 0) == 0;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (Interlocked.Decrement(ref _rentCount) < 0)
+            {
+                // _rentCount is 0 if the handle was never rented (e.g. failure during creation),
+                // and is -1 when evicted from cache.
+                base.Dispose(disposing);
+            }
         }
 
         protected override bool ReleaseHandle()
@@ -142,18 +184,29 @@ namespace Microsoft.Win32.SafeHandles
                 // This will use strdup() so it is safe to pass in raw pointer.
                 Interop.Ssl.SessionSetHostname(session, namePtr);
 
+                IntPtr oldSession = IntPtr.Zero;
+
                 lock (_sslSessions)
                 {
                     if (!_sslSessions.TryAdd(targetName, session))
                     {
-                        if (_sslSessions.Remove(targetName, out IntPtr oldSession))
-                        {
-                            Interop.Ssl.SessionFree(oldSession);
-                        }
-
+                        // session to this target host exists, replace it
+                        _sslSessions.Remove(targetName, out oldSession);
                         bool added = _sslSessions.TryAdd(targetName, session);
                         Debug.Assert(added);
                     }
+                }
+
+                if (oldSession != IntPtr.Zero)
+                {
+                    // remove old session also from the internal OpenSSL cache
+                    // and drop reference count. Since SSL_CTX_remove_session
+                    // will call session_remove_cb, we need to do this outside
+                    // of _sslSessions lock to avoid deadlock with another thread
+                    // which could be holding SSL_CTX lock and trying to acquire
+                    // _sslSessions lock.
+                    Interop.Ssl.SslCtxRemoveSession(this, oldSession);
+                    Interop.Ssl.SessionFree(oldSession);
                 }
 
                 return true;
@@ -162,7 +215,7 @@ namespace Microsoft.Win32.SafeHandles
             return false;
         }
 
-        internal void RemoveSession(IntPtr namePtr)
+        internal void RemoveSession(IntPtr namePtr, IntPtr session)
         {
             Debug.Assert(_sslSessions != null);
 
@@ -171,11 +224,14 @@ namespace Microsoft.Win32.SafeHandles
 
             if (_sslSessions != null && targetName != null)
             {
-                IntPtr oldSession;
-                bool removed;
+                IntPtr oldSession = IntPtr.Zero;
+                bool removed = false;
                 lock (_sslSessions)
                 {
-                    removed = _sslSessions.Remove(targetName, out oldSession);
+                    if (_sslSessions.TryGetValue(targetName, out IntPtr existingSession) && existingSession == session)
+                    {
+                        removed = _sslSessions.Remove(targetName, out oldSession);
+                    }
                 }
 
                 if (removed)
@@ -209,7 +265,6 @@ namespace Microsoft.Win32.SafeHandles
                     // This will increase reference count on the session as needed.
                     // We need to hold lock here to prevent session being deleted before the call is done.
                     Interop.Ssl.SslSetSession(sslHandle, session);
-
                     return true;
                 }
             }

@@ -27,7 +27,7 @@ namespace Microsoft.Apple.Build
         {
             GetTargets(runtimeIdentifier, out targetOS, out targetArchitecture);
 
-            defaultMinOSVersion = (targetOS == "maccatalyst") ? "13.1" : "11.0";
+            defaultMinOSVersion = (targetOS == "maccatalyst") ? "15.0" : "12.2";
             targetAbi = DetermineAbi(targetArchitecture);
 
             AppleSdk sdk = new AppleSdk(targetOS, logger);

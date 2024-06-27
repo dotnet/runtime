@@ -1,0 +1,14 @@
+<Project>
+  <Import Project="..\Directory.Build.targets" />
+  <PropertyGroup>
+
+    <!--
+      The real implementation of this library is built for NetCoreAppMinimum,
+      the NetCoreAppCurrent build has a non-functional copy of BinaryFormatter.
+      The NetCoreAppCurrent build is only included in the shared runtime,
+      and should always lose to the package for unification; so it is pinned
+      at an assembly version that will always lose.
+    -->
+    <AssemblyVersion Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">8.1.0.0</AssemblyVersion>
+  </PropertyGroup>
+</Project>

@@ -3,7 +3,7 @@
 
 internal static partial class Interop
 {
-    // As defined in winerror.h and https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
+    // As defined in winerror.h and https://learn.microsoft.com/windows/win32/debug/system-error-codes
     internal static partial class Errors
     {
         internal const int ERROR_SUCCESS = 0x0;

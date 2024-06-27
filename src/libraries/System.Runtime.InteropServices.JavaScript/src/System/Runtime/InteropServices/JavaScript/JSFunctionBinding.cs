@@ -230,11 +230,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static unsafe void InvokeJSFunctionCurrent(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
 #if FEATURE_WASM_MANAGED_THREADS
-            if (JSProxyContext.ThreadInteropMode == JSHostImplementation.JSThreadInteropMode.NoSyncJSInterop)
-            {
-                throw new PlatformNotSupportedException("Cannot call synchronous JS functions.");
-            }
-            else if (jsFunction.ProxyContext.IsPendingSynchronousCall)
+            if (jsFunction.ProxyContext.IsPendingSynchronousCall && jsFunction.ProxyContext.IsMainThread)
             {
                 throw new PlatformNotSupportedException("Cannot call synchronous JS function from inside a synchronous call to a C# method.");
             }
@@ -260,11 +256,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static unsafe void DispatchJSFunctionSync(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
 #if FEATURE_WASM_MANAGED_THREADS
-            if (JSProxyContext.ThreadInteropMode == JSHostImplementation.JSThreadInteropMode.NoSyncJSInterop)
-            {
-                throw new PlatformNotSupportedException("Cannot call synchronous JS functions.");
-            }
-            else if (jsFunction.ProxyContext.IsPendingSynchronousCall)
+            if (jsFunction.ProxyContext.IsPendingSynchronousCall && jsFunction.ProxyContext.IsMainThread)
             {
                 throw new PlatformNotSupportedException("Cannot call synchronous JS function from inside a synchronous call to a C# method.");
             }
@@ -274,10 +266,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
             // we already know that we are not on the right thread
             // this will be blocking until resolved by that thread
-            // we don't have to disable ThrowOnBlockingWaitOnJSInteropThread, because this is lock in native code
-            // we also don't throw PNSE here, because we know that the target has JS interop installed and that it could not block
+            // we know that the target has JS interop installed and that it could not block
             // so it could take some time, while target is CPU busy, but not forever
-            // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
             Interop.Runtime.InvokeJSFunctionSend(jsFunction.ProxyContext.JSNativeTID, functionHandle, args);
 
             ref JSMarshalerArgument exceptionArg = ref arguments[0];
@@ -317,11 +307,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_MANAGED_THREADS
             else
             {
-                if (JSProxyContext.ThreadInteropMode == JSHostImplementation.JSThreadInteropMode.NoSyncJSInterop)
-                {
-                    throw new PlatformNotSupportedException("Cannot call synchronous JS functions.");
-                }
-                else if (targetContext.IsPendingSynchronousCall)
+                if (targetContext.IsPendingSynchronousCall && targetContext.IsMainThread && !signature.IsDiscardNoWait)
                 {
                     throw new PlatformNotSupportedException("Cannot call synchronous JS function from inside a synchronous call to a C# method.");
                 }
@@ -407,10 +393,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             // we already know that we are not on the right thread
             // this will be blocking until resolved by that thread
-            // we don't have to disable ThrowOnBlockingWaitOnJSInteropThread, because this is lock in native code
-            // we also don't throw PNSE here, because we know that the target has JS interop installed and that it could not block
-            // so it could take some time, while target is CPU busy, but not forever
-            // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
             Interop.Runtime.InvokeJSImportSyncSend(targetContext.JSNativeTID, sig, args);
 
             if (exc.slot.Type != MarshalerType.None)

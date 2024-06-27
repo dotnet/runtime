@@ -95,6 +95,7 @@ public class structarr
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool pass = false;

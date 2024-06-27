@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 
@@ -13,12 +13,12 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Gdi32, EntryPoint = "StartDocW", SetLastError = true)]
         internal static partial int StartDoc(
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hDC, in DOCINFO lpDocInfo);
 
-#if NET7_0_OR_GREATER
+#if NET
         [NativeMarshalling(typeof(Marshaller))]
 #endif
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
@@ -32,7 +32,7 @@ internal static partial class Interop
 
             public DOCINFO() { }
 
-#if NET7_0_OR_GREATER
+#if NET
             [CustomMarshaller(typeof(DOCINFO), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
             public static class Marshaller
             {

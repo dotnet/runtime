@@ -12,11 +12,11 @@
     <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <!-- to see timing and which test aborted the runtime -->
-    <XunitShowProgress>true</XunitShowProgress>
+    <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>
   <!-- Make debugging easier -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
   <ItemGroup>
@@ -32,6 +32,7 @@
     <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" />
     <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\timers.mjs" />
     <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="..\JavaScriptLibrary\JavaScriptLibrary.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" PrivateAssets="all" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />

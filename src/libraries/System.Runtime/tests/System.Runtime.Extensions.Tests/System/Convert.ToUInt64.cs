@@ -136,9 +136,9 @@ namespace System.Tests
         [Fact]
         public void FromStringWithBase()
         {
-            string[] testValues = { null, null, null, null, "ffffffffffffffff", "18446744073709551615", "1777777777777777777777", "1111111111111111111111111111111111111111111111111111111111111111", "0", "0", "0", "0", "9223372036854775807", "9223372036854775808" /*VSWhidbey #526568*/, "9223372036854775809", "9223372036854775810", "9223372036854775811" };
-            int[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2, 10, 10, 10, 10, 10 };
-            ulong[] expectedValues = { 0, 0, 0, 0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MinValue, ulong.MinValue, ulong.MinValue, ulong.MinValue, (ulong)long.MaxValue, (ulong)long.MaxValue + 1 /*VSWhidbey #526568*/, (ulong)long.MaxValue + 2, (ulong)long.MaxValue + 3, (ulong)long.MaxValue + 4 };
+            string[] testValues = { null, null, null, null, "ffffffffffffffff", "18446744073709551615", "1777777777777777777777", "1111111111111111111111111111111111111111111111111111111111111111", "0", "0", "0", "0", "9223372036854775807", "9223372036854775808" /*VSWhidbey #526568*/, "9223372036854775809", "9223372036854775810", "9223372036854775811", "0xffffffffffffffff", "0XFFFFFFFFFFFFFFFF" };
+            int[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2, 10, 10, 10, 10, 10, 16, 16 };
+            ulong[] expectedValues = { 0, 0, 0, 0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MinValue, ulong.MinValue, ulong.MinValue, ulong.MinValue, (ulong)long.MaxValue, (ulong)long.MaxValue + 1 /*VSWhidbey #526568*/, (ulong)long.MaxValue + 2, (ulong)long.MaxValue + 3, (ulong)long.MaxValue + 4, ulong.MaxValue, ulong.MaxValue };
             VerifyFromStringWithBase(Convert.ToUInt64, testValues, testBases, expectedValues);
 
             string[] overflowValues = { "18446744073709551616", "18446744073709551617", "18446744073709551618", "18446744073709551619", "18446744073709551620", "-4294967297", "11111111111111111111111111111111111111111111111111111111111111111", "1FFFFffffFFFFffff", "7777777777777777777777777" };

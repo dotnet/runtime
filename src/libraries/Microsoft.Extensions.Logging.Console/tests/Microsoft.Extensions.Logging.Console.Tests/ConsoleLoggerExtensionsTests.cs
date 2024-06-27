@@ -273,11 +273,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AddJsonConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
+            var newLine = Environment.NewLine.Length is 2 ? "\n" : "\r\n";
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
                 new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
                 new KeyValuePair<string, string>("Console:FormatterOptions:UseUtcTimestamp", "true"),
                 new KeyValuePair<string, string>("Console:FormatterOptions:IncludeScopes", "true"),
                 new KeyValuePair<string, string>("Console:FormatterOptions:JsonWriterOptions:Indented", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:JsonWriterOptions:NewLine", newLine),
             }).Build();
 
             var loggerProvider = new ServiceCollection()
@@ -296,11 +298,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
             Assert.True(formatter.FormatterOptions.IncludeScopes);
             Assert.True(formatter.FormatterOptions.JsonWriterOptions.Indented);
+            Assert.Equal(newLine, formatter.FormatterOptions.JsonWriterOptions.NewLine);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AddJsonConsole_OutsideConfig_TakesProperty()
         {
+            var newLine = Environment.NewLine.Length is 2 ? "\n" : "\r\n";
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
                 new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
                 new KeyValuePair<string, string>("Console:FormatterOptions:UseUtcTimestamp", "true"),
@@ -314,7 +318,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                         o.JsonWriterOptions = new JsonWriterOptions()
                         {
                             Indented = false,
-                            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                            NewLine = newLine
                         };
                     })
                 )
@@ -329,6 +334,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
             Assert.True(formatter.FormatterOptions.IncludeScopes);
             Assert.False(formatter.FormatterOptions.JsonWriterOptions.Indented);
+            Assert.Equal(newLine, formatter.FormatterOptions.JsonWriterOptions.NewLine);
             Assert.Equal(JavaScriptEncoder.UnsafeRelaxedJsonEscaping, formatter.FormatterOptions.JsonWriterOptions.Encoder);
         }
 

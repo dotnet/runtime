@@ -7,7 +7,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import WasmEnableSIMD from "consts:wasmEnableSIMD";
 import WasmEnableExceptionHandling from "consts:wasmEnableExceptionHandling";
 
-import type { RuntimeAPI } from "./types";
+import { GlobalizationMode, type RuntimeAPI } from "./types";
 
 import { Module, exportedRuntimeAPI, loaderHelpers, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
 import { GlobalObjects, RuntimeHelpers } from "./types/internal";
@@ -23,6 +23,10 @@ import { instantiate_asset, instantiate_symbols_asset, instantiate_segmentation_
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_dump_threads } from "./pthreads";
+
+import { threads_c_functions as tcwraps } from "./cwraps";
+import { stringToUTF16, stringToUTF16Ptr, utf16ToString, utf16ToStringLoop } from "./strings";
+import { localHeapViewU16, setI32, setU16_local } from "./memory";
 
 export let runtimeList: RuntimeList;
 
@@ -43,7 +47,18 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
     };
     if (WasmEnableThreads) {
         rh.dumpThreads = mono_wasm_dump_threads;
+        rh.mono_wasm_print_thread_dump = () => tcwraps.mono_wasm_print_thread_dump();
     }
+    if (loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
+        rh.stringToUTF16 = stringToUTF16;
+        rh.stringToUTF16Ptr = stringToUTF16Ptr;
+        rh.utf16ToString = utf16ToString;
+        rh.utf16ToStringLoop = utf16ToStringLoop;
+        rh.localHeapViewU16 = localHeapViewU16;
+        rh.setU16_local = setU16_local;
+        rh.setI32 = setI32;
+    }
+
     Object.assign(runtimeHelpers, rh);
 
     const API = export_api();

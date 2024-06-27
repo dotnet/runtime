@@ -176,7 +176,7 @@ int __cdecl main(int argc, char* argv[])
     // GC expects the size of ObjHeader (extra void*) to be included in the size.
     baseSize = baseSize + sizeof(ObjHeader);
     // Add padding as necessary. GC requires the object size to be at least MIN_OBJECT_SIZE.
-    My_MethodTable.m_MT.m_baseSize = max(baseSize, MIN_OBJECT_SIZE);
+    My_MethodTable.m_MT.m_baseSize = max(baseSize, (uint32_t)MIN_OBJECT_SIZE);
 
     My_MethodTable.m_MT.m_componentSize = 0;    // Array component size
     My_MethodTable.m_MT.m_flags = MTFlag_ContainsPointers;

@@ -70,16 +70,17 @@ void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 //
 void Compiler::unwindReserve()
 {
-#if defined(FEATURE_EH_FUNCLETS)
-    assert(!compGeneratingProlog);
-    assert(!compGeneratingEpilog);
-
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    if (UsesFunclets())
     {
-        unwindReserveFunc(funGetFunc(funcIdx));
+        assert(!compGeneratingProlog);
+        assert(!compGeneratingEpilog);
+
+        assert(compFuncInfoCount > 0);
+        for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+        {
+            unwindReserveFunc(funGetFunc(funcIdx));
+        }
     }
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -91,19 +92,19 @@ void Compiler::unwindReserve()
 //
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 {
-#if defined(FEATURE_EH_FUNCLETS)
-    assert(!compGeneratingProlog);
-    assert(!compGeneratingEpilog);
-
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    if (UsesFunclets())
     {
-        unwindEmitFunc(funGetFunc(funcIdx), pHotCode, pColdCode);
+        assert(!compGeneratingProlog);
+        assert(!compGeneratingEpilog);
+
+        assert(compFuncInfoCount > 0);
+        for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+        {
+            unwindEmitFunc(funGetFunc(funcIdx), pHotCode, pColdCode);
+        }
     }
-#endif // FEATURE_EH_FUNCLETS
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
 //------------------------------------------------------------------------
 // Compiler::unwindReserveFunc: Reserve the unwind information from the VM for a
 // given main function or funclet.
@@ -113,6 +114,7 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 //
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
+    assert(UsesFunclets());
     unwindReserveFuncHelper(func, true);
 
     if (fgFirstColdBlock != nullptr)
@@ -280,5 +282,3 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
     eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, sizeof(UNWIND_INFO),
                       (BYTE*)&unwindInfo, (CorJitFuncKind)func->funKind);
 }
-
-#endif // FEATURE_EH_FUNCLETS

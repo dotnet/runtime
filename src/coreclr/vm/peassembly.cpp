@@ -32,7 +32,7 @@ static void ValidatePEFileMachineType(PEAssembly *pPEAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    if (pPEAssembly->IsDynamic())
+    if (pPEAssembly->IsReflectionEmit())
         return;    // PEFiles for ReflectionEmit assemblies don't cache the machine type.
 
     DWORD peKind;
@@ -74,7 +74,7 @@ void PEAssembly::EnsureLoaded()
     }
     CONTRACT_END;
 
-    if (IsDynamic())
+    if (IsReflectionEmit())
         RETURN;
 
     // Ensure that loaded layout is available.
@@ -208,7 +208,7 @@ PTR_CVOID PEAssembly::GetMetadata(COUNT_T *pSize)
     }
     CONTRACT_END;
 
-    if (IsDynamic()
+    if (IsReflectionEmit()
          || !GetPEImage()->HasNTHeaders()
          || !GetPEImage()->HasCorHeader())
     {
@@ -257,7 +257,7 @@ TADDR PEAssembly::GetIL(RVA il)
     {
         INSTANCE_CHECK;
         PRECONDITION(il != 0);
-        PRECONDITION(!IsDynamic());
+        PRECONDITION(!IsReflectionEmit());
 #ifndef DACCESS_COMPILE
         PRECONDITION(HasLoadedPEImage());
 #endif
@@ -389,7 +389,7 @@ void PEAssembly::OpenMDImport()
 
     if (m_pMDImport != NULL)
         return;
-    if (!IsDynamic()
+    if (!IsReflectionEmit()
         && GetPEImage()->HasNTHeaders()
             && GetPEImage()->HasCorHeader())
     {
@@ -626,7 +626,7 @@ void PEAssembly::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(pdwKind != NULL && pdwMachine != NULL);
-    if (IsDynamic())
+    if (IsReflectionEmit())
     {
         *pdwKind = 0;
         *pdwMachine = 0;
@@ -1054,7 +1054,7 @@ LPCWSTR PEAssembly::GetPathForErrorMessages()
     }
     CONTRACTL_END
 
-    if (!IsDynamic())
+    if (!IsReflectionEmit())
     {
         return m_PEImage->GetPathForErrorMessages();
     }
@@ -1106,7 +1106,7 @@ PTR_AssemblyBinder PEAssembly::GetAssemblyBinder()
         // If we do not have a host assembly, check if we are dealing with
         // a dynamically emitted assembly and if so, use its fallback load context
         // binder reference.
-        if (IsDynamic())
+        if (IsReflectionEmit())
         {
             pBinder = GetFallbackBinder();
         }

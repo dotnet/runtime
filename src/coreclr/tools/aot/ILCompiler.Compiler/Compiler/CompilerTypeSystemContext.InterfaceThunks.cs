@@ -313,7 +313,7 @@ namespace ILCompiler
                         }
                         else
                         {
-                            parameters[0] = Context.GetWellKnownType(WellKnownType.IntPtr);
+                            parameters[0] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
                             for (int i = 0; i < _methodRepresented.Signature.Length; i++)
                                 parameters[i + 1] = _methodRepresented.Signature[i];
                         }

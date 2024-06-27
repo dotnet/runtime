@@ -102,6 +102,12 @@ namespace System.Runtime.CompilerServices
             return sb.ToString();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void LogTraceOperationBegin(Task t, Type stateMachineType)
+        {
+            TplEventSource.Log.TraceOperationBegin(t.Id, "Async: " + stateMachineType.Name, 0);
+        }
+
         internal static Action CreateContinuationWrapper(Action continuation, Action<Action, Task> invokeAction, Task innerTask) =>
             new ContinuationWrapper(continuation, invokeAction, innerTask).Invoke;
 

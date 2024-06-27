@@ -125,7 +125,7 @@ static unsigned long
 prot_flags_for_activate (int activate)
 {
 	unsigned long prot_flags = activate? MONO_MMAP_READ|MONO_MMAP_WRITE: MONO_MMAP_NONE;
-	return prot_flags | MONO_MMAP_PRIVATE | MONO_MMAP_ANON;
+	return prot_flags | MONO_MMAP_PRIVATE | MONO_MMAP_ANON | MONO_MMAP_NOZERO;
 }
 
 static gpointer

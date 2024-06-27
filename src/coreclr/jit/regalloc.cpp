@@ -377,7 +377,7 @@ void Compiler::raMarkStkVars()
         // to the GC, as the frame offsets in these local variables would
         // not be correct.
 
-        if (varDsc->lvIsParam && raIsVarargsStackArg(lclNum))
+        if (varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum))
         {
             if (!varDsc->lvPromoted && !varDsc->lvIsStructField)
             {

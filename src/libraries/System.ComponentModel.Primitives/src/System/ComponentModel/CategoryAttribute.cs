@@ -12,22 +12,22 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public class CategoryAttribute : Attribute
     {
-        private static volatile CategoryAttribute? s_action;
-        private static volatile CategoryAttribute? s_appearance;
-        private static volatile CategoryAttribute? s_asynchronous;
-        private static volatile CategoryAttribute? s_behavior;
-        private static volatile CategoryAttribute? s_data;
-        private static volatile CategoryAttribute? s_design;
-        private static volatile CategoryAttribute? s_dragDrop;
-        private static volatile CategoryAttribute? s_defAttr;
-        private static volatile CategoryAttribute? s_focus;
-        private static volatile CategoryAttribute? s_format;
-        private static volatile CategoryAttribute? s_key;
-        private static volatile CategoryAttribute? s_layout;
-        private static volatile CategoryAttribute? s_mouse;
-        private static volatile CategoryAttribute? s_windowStyle;
+        private static CategoryAttribute? s_action;
+        private static CategoryAttribute? s_appearance;
+        private static CategoryAttribute? s_asynchronous;
+        private static CategoryAttribute? s_behavior;
+        private static CategoryAttribute? s_data;
+        private static CategoryAttribute? s_design;
+        private static CategoryAttribute? s_dragDrop;
+        private static CategoryAttribute? s_defAttr;
+        private static CategoryAttribute? s_focus;
+        private static CategoryAttribute? s_format;
+        private static CategoryAttribute? s_key;
+        private static CategoryAttribute? s_layout;
+        private static CategoryAttribute? s_mouse;
+        private static CategoryAttribute? s_windowStyle;
 
-        private bool _localized;
+        private volatile bool _localized;
 
         private readonly object _locker = new object();
 

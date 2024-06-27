@@ -38,7 +38,7 @@ namespace System
         /// </summary>
         public const float E = 2.71828183f;
 
-        private static float NegativeZero = Int32BitsToSingle(unchecked((int)0x80000000));
+        private static readonly float NegativeZero = Int32BitsToSingle(unchecked((int)0x80000000));
 
         private static unsafe float Int32BitsToSingle(int value)
         {

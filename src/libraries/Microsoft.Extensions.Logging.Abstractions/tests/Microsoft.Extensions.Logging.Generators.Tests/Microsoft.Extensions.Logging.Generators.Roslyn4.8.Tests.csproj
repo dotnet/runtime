@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_8)</RoslynApiVersion>
+    <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER;ROSLYN4_8_OR_GREATER</DefineConstants>
+    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
+    <EmccLinkOptimizationFlag Condition="'$(ContinuousIntegrationBuild)' == 'true'">-O1</EmccLinkOptimizationFlag>
+    <!-- this Roslyn version brings in NS1.x dependencies -->
+    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
+  </ItemGroup>
+
+  <Import Project="Microsoft.Extensions.Logging.Generators.targets" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+  </ItemGroup>
+
+</Project>

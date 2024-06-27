@@ -27,6 +27,7 @@ namespace JitTest_s_ldsfld_mul_signed_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             s_op1 = 0x000000007fffffff;

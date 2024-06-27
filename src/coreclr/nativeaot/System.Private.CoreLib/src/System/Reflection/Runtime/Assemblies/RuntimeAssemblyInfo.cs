@@ -68,7 +68,7 @@ namespace System.Reflection.Runtime.Assemblies
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            return TypeNameParser.GetType(name,
+            return TypeNameResolver.GetType(name,
                 throwOnError: throwOnError,
                 ignoreCase: ignoreCase,
                 topLevelAssembly: this);

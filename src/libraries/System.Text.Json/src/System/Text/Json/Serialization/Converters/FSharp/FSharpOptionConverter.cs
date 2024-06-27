@@ -12,6 +12,7 @@ namespace System.Text.Json.Serialization.Converters
         where TOption : class
     {
         internal override Type? ElementType => typeof(TElement);
+        internal override JsonConverter? NullableElementConverter => _elementConverter;
         // 'None' is encoded using 'null' at runtime and serialized as 'null' in JSON.
         public override bool HandleNull => true;
 

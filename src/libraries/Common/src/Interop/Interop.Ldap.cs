@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 using System.Security.Authentication;
@@ -31,7 +31,7 @@ namespace System.DirectoryServices.Protocols
         public int HighPart => _highPart;
     }
 
-#if NET7_0_OR_GREATER
+#if NET
     [NativeMarshalling(typeof(Marshaller))]
 #endif
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -49,7 +49,7 @@ namespace System.DirectoryServices.Protocols
         public string packageList;
         public int packageListLength;
 
-#if NET7_0_OR_GREATER
+#if NET
         [CustomMarshaller(typeof(SEC_WINNT_AUTH_IDENTITY_EX), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
         internal static class Marshaller
         {
@@ -176,7 +176,7 @@ namespace System.DirectoryServices.Protocols
         public int tv_usec;
     }
 
-#if NET7_0_OR_GREATER
+#if NET
     [NativeMarshalling(typeof(PinningMarshaller))]
 #endif
     [StructLayout(LayoutKind.Sequential)]
@@ -185,7 +185,7 @@ namespace System.DirectoryServices.Protocols
         public int bv_len;
         public IntPtr bv_val = IntPtr.Zero;
 
-#if NET7_0_OR_GREATER
+#if NET
         [CustomMarshaller(typeof(BerVal), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
         internal static unsafe class PinningMarshaller
         {
@@ -207,7 +207,7 @@ namespace System.DirectoryServices.Protocols
         public LdapControl() { }
     }
 
-#if NET7_0_OR_GREATER
+#if NET
     [NativeMarshalling(typeof(Marshaller))]
 #endif
     [StructLayout(LayoutKind.Sequential)]
@@ -217,7 +217,7 @@ namespace System.DirectoryServices.Protocols
         public QUERYFORCONNECTIONInternal query;
         public NOTIFYOFNEWCONNECTIONInternal notify;
         public DEREFERENCECONNECTIONInternal dereference;
-#if NET7_0_OR_GREATER
+#if NET
         public static readonly unsafe int Size = sizeof(Marshaller.MarshalValue.Native);
 
         [CustomMarshaller(typeof(LdapReferralCallback), MarshalMode.ManagedToUnmanagedIn, typeof(MarshalValue))]

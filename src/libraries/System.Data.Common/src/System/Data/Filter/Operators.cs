@@ -37,9 +37,9 @@ namespace System.Data
         internal const int Minus = 16;          // -
         internal const int Multiply = 17;       // *
         internal const int Divide = 18;     // /
-        //internal final static int IntegerDiv = 19;    // \
+        //internal const int IntegerDiv = 19;    // \
         internal const int Modulo = 20;     // %
-        //internal final static int Exponent = 21;    // **
+        //internal const int Exponent = 21;    // **
         /* End of arithmetic operators */
 
         /* Beginning of bitwise operators */

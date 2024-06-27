@@ -46,8 +46,8 @@
     IMPORT $g_GCShadowEnd
 #endif // WRITE_BARRIER_CHECK
 
-    IMPORT JIT_GetSharedNonGCStaticBase_Helper
-    IMPORT JIT_GetSharedGCStaticBase_Helper
+    IMPORT JIT_GetDynamicNonGCStaticBase_Portable
+    IMPORT JIT_GetDynamicGCStaticBase_Portable
 
 #ifdef FEATURE_COMINTEROP
     IMPORT CLRToCOMWorker
@@ -75,6 +75,14 @@
     LEAF_ENTRY GetDataCacheZeroIDReg
         mrs     x0, dczid_el0
         and     x0, x0, 31
+        ret     lr
+    LEAF_END
+
+;; uint64_t GetSveLengthFromOS(void);
+    LEAF_ENTRY GetSveLengthFromOS
+        ;; TODO-SVE: Remove the hardcoded value 128 and uncomment once CI machines are updated to use MASM 14.4 or later
+        ;; rdvl    x0, 1
+        mov     x0, #128
         ret     lr
     LEAF_END
 
@@ -387,7 +395,7 @@ NoFloatingPointRetVal
     LEAF_END
 
 ; ------------------------------------------------------------------
-; GenericComPlusCallStub that erects a ComPlusMethodFrame and calls into the runtime
+; GenericCLRToCOMCallStub that erects a CLRToCOMMethodFrame and calls into the runtime
 ; (CLRToCOMWorker) to dispatch rare cases of the interface call.
 ;
 ; On entry:
@@ -398,14 +406,14 @@ NoFloatingPointRetVal
 ; On exit:
 ;   x0/x1/s0-s3/d0-d3 set to return value of the call as appropriate
 ;
-    NESTED_ENTRY GenericComPlusCallStub
+    NESTED_ENTRY GenericCLRToCOMCallStub
 
         PROLOG_WITH_TRANSITION_BLOCK ASM_ENREGISTERED_RETURNTYPE_MAXSIZE
 
         add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
         mov         x1, x12                         ; pMethodDesc
 
-        ; Call CLRToCOMWorker(TransitionBlock *, ComPlusCallMethodDesc *).
+        ; Call CLRToCOMWorker(TransitionBlock *, CLRToCOMCallMethodDesc *).
         ; This call will set up the rest of the frame (including the vfptr, the GS cookie and
         ; linking to the thread), make the client call and return with correct registers set
         ; (x0/x1/s0-s3/d0-d3 as appropriate).
@@ -1018,58 +1026,34 @@ Fail
 ;
 
 ; ------------------------------------------------------------------
-; void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain
+; void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo *dynamicInfo)
+
+    LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1]
-    tst w2, #1
-    beq CallHelper1
-
+    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
+    tbnz x1, #0, CallHelper1
+    mov x0, x1
     ret lr
 
 CallHelper1
-    ; Tail call JIT_GetSharedNonGCStaticBase_Helper
-    b JIT_GetSharedNonGCStaticBase_Helper
+    ; Tail call JIT_GetDynamicNonGCStaticBase_Portable
+    b JIT_GetDynamicNonGCStaticBase_Portable
     LEAF_END
 
+; void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo *dynamicInfo)
 
-; ------------------------------------------------------------------
-; void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-    ret lr
-    LEAF_END
-
-
-; ------------------------------------------------------------------
-; void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain
+    LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1]
-    tst w2, #1
-    beq CallHelper2
-
-    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
+    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
+    tbnz x1, #0, CallHelper2
+    mov x0, x1
     ret lr
 
 CallHelper2
-    ; Tail call Jit_GetSharedGCStaticBase_Helper
-    b JIT_GetSharedGCStaticBase_Helper
+    ; Tail call JIT_GetDynamicGCStaticBase_Portable
+    b JIT_GetDynamicGCStaticBase_Portable
     LEAF_END
-
-
-; ------------------------------------------------------------------
-; void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
-    ret lr
-    LEAF_END
-
 
 ; ------------------------------------------------------------------
 ; __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
@@ -1173,6 +1157,40 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     LEAF_ENTRY  JIT_DispatchIndirectCall
         br x9
     LEAF_END
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+
+    IMPORT |?ApcActivationCallback@Thread@@CAX_K@Z|
+
+    ; extern "C" void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
+    NESTED_ENTRY ApcActivationCallbackStub
+
+        PROLOG_SAVE_REG_PAIR    fp, lr, #-16!
+        PROLOG_STACK_ALLOC      16                ; stack slot for CONTEXT* and padding
+
+        ;REDIRECTSTUB_SP_OFFSET_CONTEXT is defined in asmconstants.h and is used in GetCONTEXTFromRedirectedStubStackFrame
+        ;If CONTEXT is not saved at 0 offset from SP it must be changed as well.
+        ASSERT REDIRECTSTUB_SP_OFFSET_CONTEXT == 0
+
+        ; Save a copy of the redirect CONTEXT*.
+        ; This is needed for the debugger to unwind the stack.
+        ldr x17, [x0, OFFSETOF__APC_CALLBACK_DATA__ContextRecord]
+        str x17, [sp]
+
+        bl |?ApcActivationCallback@Thread@@CAX_K@Z|
+
+        EPILOG_STACK_FREE       16                ; undo stack slot for CONTEXT* and padding
+        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
+        EPILOG_RETURN
+
+; Put a label here to tell the debugger where the end of this function is.
+    PATCH_LABEL ApcActivationCallbackStubEnd
+    EXPORT ApcActivationCallbackStubEnd
+
+    NESTED_END
+
+#endif ; FEATURE_SPECIAL_USER_MODE_APC
+
 
 ; Must be at very end of file
     END

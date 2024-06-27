@@ -533,8 +533,14 @@ namespace ILCompiler
 
                             if (owningType.HasFinalizer)
                             {
-                                // Finalizer might have observable side effects
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
+                                // We have a finalizer. There's still a small chance it has been nopped out
+                                // with a feature switch. Check for that.
+                                byte[] finalizerMethodILBytes = _ilProvider.GetMethodIL(owningType.GetFinalizer()).GetILBytes();
+                                if (finalizerMethodILBytes.Length != 1 || finalizerMethodILBytes[0] != (byte)ILOpcode.ret)
+                                {
+                                    // Finalizer might have observable side effects
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
+                                }
                             }
 
                             if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(ctor))
@@ -2824,7 +2830,7 @@ namespace ILCompiler
                     builder.EmitZeroPointer();
 
                     // _functionPointer
-                    builder.EmitPointerReloc(factory.CanonicalEntrypoint(_methodPointed));
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
             }
 

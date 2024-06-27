@@ -52,7 +52,7 @@ namespace HttpStress
             if (configuration.UseHttpSys && OperatingSystem.IsWindows())
             {
                 // Use http.sys.  This requires additional manual configuration ahead of time;
-                // see https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/httpsys?view=aspnetcore-2.2#configure-windows-server.
+                // see https://learn.microsoft.com/aspnet/core/fundamentals/servers/httpsys?view=aspnetcore-2.2#configure-windows-server.
                 // In particular, you need to:
                 // 1. Create a self-signed cert and install it into your local personal store, e.g. New-SelfSignedCertificate -DnsName "localhost" -CertStoreLocation "cert:\LocalMachine\My"
                 // 2. Pre-register the URL prefix, e.g. netsh http add urlacl url=https://localhost:5001/ user=Users

@@ -17,6 +17,11 @@ namespace System.Diagnostics
     /// </summary>
     public partial class StackTrace
     {
+        internal static bool IsSupported { get; } = InitializeIsSupported();
+
+        private static bool InitializeIsSupported() =>
+            AppContext.TryGetSwitch("System.Diagnostics.StackTrace.IsSupported", out bool isSupported) ? isSupported : true;
+
         public const int METHODS_TO_SKIP = 0;
 
         private int _numOfFrames;

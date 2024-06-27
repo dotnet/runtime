@@ -167,6 +167,40 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
+        public unsafe void GetNativeVariantForObject_Guid_Success()
+        {
+            var guid = new Guid("0DD3E51B-3162-4D13-B906-030F402C5BA2");
+            var v = new Variant();
+            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
+            try
+            {
+                if (PlatformDetection.IsWindowsNanoServer)
+                {
+                    Assert.Throws<NotSupportedException>(() => Marshal.GetNativeVariantForObject(guid, pNative));
+                }
+                else
+                {
+                    Marshal.GetNativeVariantForObject(guid, pNative);
+
+                    Variant result = Marshal.PtrToStructure<Variant>(pNative);
+                    Assert.Equal(VarEnum.VT_RECORD, (VarEnum)result.vt);
+                    Assert.NotEqual(nint.Zero, result.pRecInfo); // We should have an IRecordInfo instance.
+
+                    var expectedBytes = new ReadOnlySpan<byte>(guid.ToByteArray());
+                    var actualBytes = new ReadOnlySpan<byte>((void*)result.bstrVal, expectedBytes.Length);
+                    Assert.Equal(expectedBytes, actualBytes);
+
+                    object o = Marshal.GetObjectForNativeVariant(pNative);
+                    Assert.Equal(guid, o);
+                }
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(pNative);
+            }
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData(3.14)]
         public unsafe void GetNativeVariantForObject_Double_Success(double obj)

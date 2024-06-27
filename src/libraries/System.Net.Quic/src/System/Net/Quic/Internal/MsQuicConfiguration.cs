@@ -157,16 +157,16 @@ internal static partial class MsQuicConfiguration
         }
 
         settings.IsSet.ConnFlowControlWindow = 1;
-        settings.ConnFlowControlWindow = (uint)(options._initialRecieveWindowSizes?.Connection ?? QuicDefaults.DefaultConnectionMaxData);
+        settings.ConnFlowControlWindow = (uint)(options._initialReceiveWindowSizes?.Connection ?? QuicDefaults.DefaultConnectionMaxData);
 
         settings.IsSet.StreamRecvWindowBidiLocalDefault = 1;
-        settings.StreamRecvWindowBidiLocalDefault = (uint)(options._initialRecieveWindowSizes?.LocallyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+        settings.StreamRecvWindowBidiLocalDefault = (uint)(options._initialReceiveWindowSizes?.LocallyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
         settings.IsSet.StreamRecvWindowBidiRemoteDefault = 1;
-        settings.StreamRecvWindowBidiRemoteDefault = (uint)(options._initialRecieveWindowSizes?.RemotelyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+        settings.StreamRecvWindowBidiRemoteDefault = (uint)(options._initialReceiveWindowSizes?.RemotelyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
         settings.IsSet.StreamRecvWindowUnidiDefault = 1;
-        settings.StreamRecvWindowUnidiDefault = (uint)(options._initialRecieveWindowSizes?.UnidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+        settings.StreamRecvWindowUnidiDefault = (uint)(options._initialReceiveWindowSizes?.UnidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
         if (options.HandshakeTimeout != TimeSpan.Zero)
         {
@@ -199,6 +199,15 @@ internal static partial class MsQuicConfiguration
 
     private static unsafe MsQuicConfigurationSafeHandle CreateInternal(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
     {
+        if (!MsQuicApi.UsesSChannelBackend && certificate is X509Certificate2 cert && intermediates is null)
+        {
+            // MsQuic will not lookup intermediates in local CA store if not explicitly provided,
+            // so we build the cert context to get on feature parity with SslStream. Note that this code
+            // path runs after the MsQuicConfigurationCache check.
+            SslStreamCertificateContext context = SslStreamCertificateContext.Create(cert, additionalCertificates: null, offline: true, trust: null);
+            intermediates = context.IntermediateCertificates;
+        }
+
         QUIC_HANDLE* handle;
 
         using MsQuicBuffers msquicBuffers = new MsQuicBuffers();

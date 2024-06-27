@@ -31,6 +31,7 @@
       Outputs="
       bin/$(Configuration)/AppBundle/dotnet.native.wasm;
       bin/$(Configuration)/AppBundle/dotnet.native.js;
+      bin/$(Configuration)/AppBundle/dotnet.globalization.js;
       bin/$(Configuration)/AppBundle/$(_WasmMainJSFileName);
       ">
     <PropertyGroup>

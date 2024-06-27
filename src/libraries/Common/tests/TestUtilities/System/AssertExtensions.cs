@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NET6_0_OR_GREATER
+#if NET
 using System.Runtime.Intrinsics;
 #endif
 using System.Threading;
@@ -27,7 +27,7 @@ namespace System
         public static void ThrowsOnAot<T>(Action action)
             where T : Exception
         {
-#if NETCOREAPP // Dynamic code is always supported on .NET Framework
+#if NET // Dynamic code is always supported on .NET Framework
             if (!RuntimeFeature.IsDynamicCodeSupported)
             {
                 Assert.Throws<T>(action);
@@ -710,7 +710,7 @@ namespace System
             return (*(ulong*)(&value)) == 0x0000000000000000;
         }
 
-#if NET6_0_OR_GREATER
+#if NET
         static unsafe bool IsNegativeZero(Half value)
         {
             return (*(ushort*)(&value)) == 0x8000;
@@ -780,7 +780,7 @@ namespace System
             }
         }
 
-#if NET6_0_OR_GREATER
+#if NET
         static string ToStringPadded(Half value)
         {
             if (Half.IsNaN(value))
@@ -1036,7 +1036,7 @@ namespace System
             }
         }
 
-#if NET6_0_OR_GREATER
+#if NET
         /// <summary>Verifies that two <see cref="Half"/> values are equal, within the <paramref name="variance"/>.</summary>
         /// <param name="expected">The expected value</param>
         /// <param name="actual">The value to be compared against</param>
@@ -1196,7 +1196,7 @@ namespace System
             throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
         }
 
-#if NET6_0_OR_GREATER
+#if NET
         /// <summary>Verifies that two <see cref="Half"/> values's binary representations are identical.</summary>
         /// <param name="expected">The expected value</param>
         /// <param name="actual">The value to be compared against</param>

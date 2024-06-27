@@ -3,12 +3,26 @@
 
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Tests.Vectors;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public sealed class Vector4Tests
     {
+        /// <summary>Verifies that two <see cref="Vector4" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        internal static void AssertEqual(Vector4 expected, Vector4 actual, Vector4 variance)
+        {
+            AssertExtensions.Equal(expected.X, actual.X, variance.X);
+            AssertExtensions.Equal(expected.Y, actual.Y, variance.Y);
+            AssertExtensions.Equal(expected.Z, actual.Z, variance.Z);
+            AssertExtensions.Equal(expected.W, actual.W, variance.W);
+        }
+
         [Fact]
         public void Vector4MarshalSizeTest()
         {
@@ -786,7 +800,7 @@ namespace System.Numerics.Tests
         {
             Vector4 v = new Vector4(1.0f, 2.0f, 3.0f, 0.0f);
             Quaternion q = new Quaternion();
-            Vector4 expected = v;
+            Vector4 expected = Vector4.Zero;
 
             Vector4 actual = Vector4.Transform(v, q);
             Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Transform did not return the expected value.");
@@ -830,7 +844,7 @@ namespace System.Numerics.Tests
         {
             Vector3 v = new Vector3(1.0f, 2.0f, 3.0f);
             Quaternion q = new Quaternion();
-            Vector4 expected = new Vector4(v, 1.0f);
+            Vector4 expected = Vector4.Zero;
 
             Vector4 actual = Vector4.Transform(v, q);
             Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Transform did not return the expected value.");
@@ -874,7 +888,7 @@ namespace System.Numerics.Tests
         {
             Vector2 v = new Vector2(1.0f, 2.0f);
             Quaternion q = new Quaternion();
-            Vector4 expected = new Vector4(1.0f, 2.0f, 0, 1.0f);
+            Vector4 expected = Vector4.Zero;
 
             Vector4 actual = Vector4.Transform(v, q);
             Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Transform did not return the expected value.");
@@ -1709,5 +1723,21 @@ namespace System.Numerics.Tests
             }
         }
 #pragma warning restore 0169
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        {
+            Vector4 actualResult = Vector4.FusedMultiplyAdd(new Vector4(left), new Vector4(right), new Vector4(addend));
+            AssertEqual(new Vector4(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector4.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
+        {
+            Vector4 actualResult = Vector4.MultiplyAddEstimate(new Vector4(left), new Vector4(right), new Vector4(addend));
+            AssertEqual(new Vector4(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector4.Zero);
+        }
     }
 }

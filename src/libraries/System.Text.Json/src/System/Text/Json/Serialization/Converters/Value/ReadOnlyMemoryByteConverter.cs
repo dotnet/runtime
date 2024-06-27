@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
+
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ReadOnlyMemoryByteConverter : JsonConverter<ReadOnlyMemory<byte>>
@@ -16,5 +19,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WriteBase64StringValue(value.Span);
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.String };
     }
 }

@@ -590,9 +590,6 @@ class EEClassOptionalFields
     // MISC FIELDS
     //
 
-    #define    MODULE_NON_DYNAMIC_STATICS      ((DWORD)-1)
-    DWORD m_cbModuleDynamicID;
-
 #if defined(UNIX_AMD64_ABI)
     // Number of eightBytes in the following arrays
     int m_numberEightBytes;
@@ -903,22 +900,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_NumThreadStaticFields = wNumThreadStaticFields;
-    }
-
-    // Statics are stored in a big chunk inside the module
-
-    inline  DWORD GetModuleDynamicID()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return HasOptionalFields() ? GetOptionalFields()->m_cbModuleDynamicID : MODULE_NON_DYNAMIC_STATICS;
-    }
-
-    inline void SetModuleDynamicID(DWORD cbModuleDynamicID)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_cbModuleDynamicID = cbModuleDynamicID;
     }
 
     /*
@@ -1894,7 +1875,7 @@ public:
 class UMThunkMarshInfo;
 
 #ifdef FEATURE_COMINTEROP
-struct ComPlusCallInfo;
+struct CLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
 class DelegateEEClass : public EEClass
@@ -1912,7 +1893,7 @@ public:
     Volatile<PCODE>                  m_pMarshalStub;
 
 #ifdef FEATURE_COMINTEROP
-    ComPlusCallInfo *m_pComPlusCallInfo;
+    CLRToCOMCallInfo *m_pCLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
     PTR_MethodDesc GetInvokeMethod()
@@ -2003,10 +1984,8 @@ public:
                                       PCCOR_SIGNATURE *ppSig, // Generated signature
                                       DWORD * pcSig,      // Generated signature size
                                       LoaderAllocator *pLoaderAllocator,
-                                      AllocMemTracker *pamTracker
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-                                      ,BOOL fForStubAsIL
-#endif
+                                      AllocMemTracker *pamTracker,
+                                      BOOL fForStubAsIL
     );
 
 

@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
         public byte MyByte { get; set; }
         public sbyte MySByte { get; set; }
         public char MyChar { get; set; }
-        public string MyString { get; set; }
+        public string? MyString { get; set; }
         public decimal MyDecimal { get; set; }
         public bool MyBooleanTrue { get; set; }
         public bool MyBooleanFalse { get; set; }
@@ -30,32 +30,32 @@ namespace System.Text.Json.Serialization.Tests
         public SampleEnumInt64 MyInt64Enum { get; set; }
         public SampleEnumUInt64 MyUInt64Enum { get; set; }
         public SimpleStruct MySimpleStruct { get; set; }
-        public SimpleTestClass MySimpleTestClass { get; set; }
-        public short[] MyInt16Array { get; set; }
-        public int[] MyInt32Array { get; set; }
-        public long[] MyInt64Array { get; set; }
-        public ushort[] MyUInt16Array { get; set; }
-        public uint[] MyUInt32Array { get; set; }
-        public ulong[] MyUInt64Array { get; set; }
-        public byte[] MyByteArray { get; set; }
-        public sbyte[] MySByteArray { get; set; }
-        public char[] MyCharArray { get; set; }
-        public string[] MyStringArray { get; set; }
-        public decimal[] MyDecimalArray { get; set; }
-        public bool[] MyBooleanTrueArray { get; set; }
-        public bool[] MyBooleanFalseArray { get; set; }
-        public float[] MySingleArray { get; set; }
-        public double[] MyDoubleArray { get; set; }
-        public DateTime[] MyDateTimeArray { get; set; }
-        public DateTimeOffset[] MyDateTimeOffsetArray { get; set; }
-        public SampleEnum[] MyEnumArray { get; set; }
-        public List<string> MyStringList { get; set; }
-        public IEnumerable<string> MyStringIEnumerableT { get; set; }
-        public IList<string> MyStringIListT { get; set; }
-        public ICollection<string> MyStringICollectionT { get; set; }
-        public IReadOnlyCollection<string> MyStringIReadOnlyCollectionT { get; set; }
-        public IReadOnlyList<string> MyStringIReadOnlyListT { get; set; }
-        public ISet<string> MyStringISetT { get; set; }
+        public SimpleTestClass? MySimpleTestClass { get; set; }
+        public short[]? MyInt16Array { get; set; }
+        public int[]? MyInt32Array { get; set; }
+        public long[]? MyInt64Array { get; set; }
+        public ushort[]? MyUInt16Array { get; set; }
+        public uint[]? MyUInt32Array { get; set; }
+        public ulong[]? MyUInt64Array { get; set; }
+        public byte[]? MyByteArray { get; set; }
+        public sbyte[]? MySByteArray { get; set; }
+        public char[]? MyCharArray { get; set; }
+        public string[]? MyStringArray { get; set; }
+        public decimal[]? MyDecimalArray { get; set; }
+        public bool[]? MyBooleanTrueArray { get; set; }
+        public bool[]? MyBooleanFalseArray { get; set; }
+        public float[]? MySingleArray { get; set; }
+        public double[]? MyDoubleArray { get; set; }
+        public DateTime[]? MyDateTimeArray { get; set; }
+        public DateTimeOffset[]? MyDateTimeOffsetArray { get; set; }
+        public SampleEnum[]? MyEnumArray { get; set; }
+        public List<string>? MyStringList { get; set; }
+        public IEnumerable<string>? MyStringIEnumerableT { get; set; }
+        public IList<string>? MyStringIListT { get; set; }
+        public ICollection<string>? MyStringICollectionT { get; set; }
+        public IReadOnlyCollection<string>? MyStringIReadOnlyCollectionT { get; set; }
+        public IReadOnlyList<string>? MyStringIReadOnlyListT { get; set; }
+        public ISet<string>? MyStringISetT { get; set; }
 
         public static readonly string s_json = $"{{{s_partialJsonProperties},{s_partialJsonArrays}}}";
         public static readonly string s_json_flipped = $"{{{s_partialJsonArrays},{s_partialJsonProperties}}}";

@@ -22,13 +22,7 @@ BOOL SString::LoadResource(CCompRC::ResourceCategory eCategory, int resourceID)
 
 HRESULT SString::LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, int resourceID)
 {
-    WRAPPER_NO_CONTRACT;
-    return LoadResourceAndReturnHR(NULL, eCategory,resourceID);
-}
-
-HRESULT SString::LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID)
-{
-    CONTRACT(BOOL)
+    CONTRACT(HRESULT)
     {
         INSTANCE_CHECK;
         NOTHROW;
@@ -38,11 +32,7 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::Resourc
     HRESULT hr = E_FAIL;
 
 #ifndef FEATURE_UTILCODE_NO_DEPENDENCIES
-    if (pResourceDLL == NULL)
-    {
-        pResourceDLL = CCompRC::GetDefaultResourceDll();
-    }
-
+    CCompRC* pResourceDLL = CCompRC::GetDefaultResourceDll();
     if (pResourceDLL != NULL)
     {
 

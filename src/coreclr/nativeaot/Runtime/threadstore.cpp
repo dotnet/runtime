@@ -85,8 +85,10 @@ ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
     if (NULL == pNewThreadStore)
         return NULL;
 
+#ifdef FEATURE_HIJACK
     if (!PalRegisterHijackCallback(Thread::HijackCallback))
         return NULL;
+#endif
 
     pNewThreadStore->m_pRuntimeInstance = pRuntimeInstance;
 
@@ -230,7 +232,7 @@ void SpinWait(int iteration, int usecLimit)
     int64_t ticksPerSecond = PalQueryPerformanceFrequency();
     int64_t endTicks = startTicks + (usecLimit * ticksPerSecond) / 1000000;
 
-    int l = min((unsigned)iteration, 30);
+    int l = iteration >= 0 ? min(iteration, 30): 30;
     for (int i = 0; i < l; i++)
     {
         for (int j = 0; j < (1 << i); j++)
@@ -281,10 +283,12 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
             if (!pTargetThread->CacheTransitionFrameForSuspend())
             {
                 remaining++;
+#ifdef FEATURE_HIJACK
                 if (!observeOnly)
                 {
                     pTargetThread->Hijack();
                 }
+#endif // FEATURE_HIJACK
             }
         }
         END_FOREACH_THREAD
@@ -427,13 +431,13 @@ FCIMPL1(void, RhpCancelThreadAbort, void* thread)
 }
 FCIMPLEND
 
-C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
+C_ASSERT(sizeof(Thread) == sizeof(RuntimeThreadLocals));
 
 #ifndef _MSC_VER
-__thread ThreadBuffer tls_CurrentThread;
+__thread RuntimeThreadLocals tls_CurrentThread;
 #endif
 
-EXTERN_C ThreadBuffer* RhpGetThread()
+EXTERN_C RuntimeThreadLocals* RhpGetThread()
 {
     return &tls_CurrentThread;
 }

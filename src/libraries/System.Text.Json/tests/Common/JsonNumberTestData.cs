@@ -20,7 +20,7 @@ namespace System.Text.Json.Tests
         public static List<float> Floats { get; set; }
         public static List<double> Doubles { get; set; }
         public static List<decimal> Decimals { get; set; }
-#if NETCOREAPP
+#if NET
         public static List<Int128> Int128s { get; set; }
         public static List<UInt128> UInt128s { get; set; }
         public static List<Half> Halfs { get; set; }
@@ -37,7 +37,7 @@ namespace System.Text.Json.Tests
         public static List<float?> NullableFloats { get; set; }
         public static List<double?> NullableDoubles { get; set; }
         public static List<decimal?> NullableDecimals { get; set; }
-#if NETCOREAPP
+#if NET
         public static List<Int128?> NullableInt128s { get; set; }
         public static List<UInt128?> NullableUInt128s { get; set; }
         public static List<Half?> NullableHalfs { get; set; }
@@ -247,7 +247,7 @@ namespace System.Text.Json.Tests
             }
             #endregion
 
-#if NETCOREAPP
+#if NET
             #region generate Int128s
             Int128s = new List<Int128>
             {
@@ -381,7 +381,7 @@ namespace System.Text.Json.Tests
             NullableFloats = new List<float?>(Floats.Select(num => (float?)num));
             NullableDoubles = new List<double?>(Doubles.Select(num => (double?)num));
             NullableDecimals = new List<decimal?>(Decimals.Select(num => (decimal?)num));
-#if NETCOREAPP
+#if NET
             NullableInt128s = new List<Int128?>(Int128s.Select(num => (Int128?)num));
             NullableUInt128s = new List<UInt128?>(UInt128s.Select(num => (UInt128?)num));
             NullableHalfs = new List<Half?>(Halfs.Select(num => (Half?)num));

@@ -76,30 +76,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public Task<T> Start()
             {
-                if (JSProxyContext.MainThreadContext.IsCurrentThread())
-                {
-                    // give browser chance to load more threads
-                    // until there at least one thread loaded, it doesn't make sense to `Start`
-                    // because that would also hang, but in a way blocking the UI thread, much worse.
-                    JavaScriptImports.ThreadAvailable().ContinueWith(static (t, o) =>
-                    {
-                        var self = (JSWebWorkerInstance<T>)o!;
-                        if (t.IsCompletedSuccessfully)
-                        {
-                            self._thread.Start();
-                        }
-                        if (t.IsCanceled)
-                        {
-                            throw new OperationCanceledException("Cancelled while waiting for underlying WebWorker to become available.", self._cancellationToken);
-                        }
-                        throw t.Exception!;
-                        // ideally this will execute on UI thread quickly: ExecuteSynchronously
-                    }, this, _cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.FromCurrentSynchronizationContext());
-                }
-                else
-                {
-                    _thread.Start();
-                }
+                _thread.Start();
                 return _taskCompletionSource.Task;
             }
 

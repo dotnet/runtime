@@ -35,8 +35,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			instance.ReturnWithRequirementsAlwaysThrows ();
 
-			UnsupportedReturnType ();
 			UnsupportedReturnTypeAndParameter (null);
+			AnnotationOnUnsupportedReturnType.Test ();
 		}
 
 		static Type NoRequirements ()
@@ -181,14 +181,56 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			throw new NotImplementedException ();
 		}
 
-		[ExpectedWarning ("IL2106", nameof (UnsupportedReturnType))]
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-		static object UnsupportedReturnType () => null;
-
 		[ExpectedWarning ("IL2106", nameof (UnsupportedReturnTypeAndParameter))]
 		[ExpectedWarning ("IL2098", nameof (UnsupportedReturnTypeAndParameter))]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		static object UnsupportedReturnTypeAndParameter ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] object param) => null;
+
+		class AnnotationOnUnsupportedReturnType
+		{
+			class UnsupportedType
+			{
+				[UnexpectedWarning ("IL2082", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+				public UnsupportedType () {
+					RequirePublicFields (this);
+				}
+			}
+
+			static UnsupportedType GetUnsupportedTypeInstance () => null;
+
+			[ExpectedWarning ("IL2106")]
+			// Linker and NativeAot should not produce IL2073
+			// They produce dataflow warnings despite the invalid annotations.
+			[UnexpectedWarning ("IL2073", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101211")]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static UnsupportedType GetWithPublicMethods () {
+				return GetUnsupportedTypeInstance ();
+			}
+
+			[ExpectedWarning ("IL2098")]
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				UnsupportedType unsupportedTypeInstance)
+			{
+			}
+
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void TestMethodReturnValue () {
+				var t = GetWithPublicMethods ();
+				RequirePublicFields (t);
+			}
+
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void TestCtorReturnValue () {
+				var t = new UnsupportedType ();
+				RequirePublicFields (t);
+			}
+
+			public static void Test () {
+				TestMethodReturnValue ();
+				TestCtorReturnValue ();
+			}
+		}
 
 		class TestType
 		{

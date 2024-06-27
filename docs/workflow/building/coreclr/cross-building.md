@@ -142,7 +142,7 @@ If you're building the cross-components in powershell, you'll need to wrap `"-DC
 
 ## Cross-Building using Docker
 
-When it comes to building, Docker offers the most flexibility when it comes to targeting different Linux platforms and other similar Unix-based ones, like FreeBSD. This is thanks to the multiple existing Docker images already configured for doing such cross-platform building, and Docker's ease of use of running out of the box on Windows machines with [WSL](https://docs.microsoft.com/windows/wsl/about) enabled, installed, and up and running, as well as Linux machines.
+When it comes to building, Docker offers the most flexibility when it comes to targeting different Linux platforms and other similar Unix-based ones, like FreeBSD. This is thanks to the multiple existing Docker images already configured for doing such cross-platform building, and Docker's ease of use of running out of the box on Windows machines with [WSL](https://learn.microsoft.com/windows/wsl/about) enabled, installed, and up and running, as well as Linux machines.
 
 ### Cross-Compiling for ARM32 and ARM64 with Docker
 

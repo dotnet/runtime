@@ -337,9 +337,19 @@ namespace Internal.Runtime.TypeLoader
             {
                 IntPtr result = TypeLoaderEnvironment.TryGetDefaultConstructorForType(Type);
 
-
-                if (result == IntPtr.Zero)
+                if (result != IntPtr.Zero)
+                {
+                    if (Type.IsValueType)
+                    {
+                        result = TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(result,
+                            builder.GetRuntimeTypeHandle(Type));
+                    }
+                }
+                else
+                {
                     result = RuntimeAugments.GetFallbackDefaultConstructor();
+                }
+
                 return result;
             }
         }

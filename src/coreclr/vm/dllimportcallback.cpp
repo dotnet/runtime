@@ -166,7 +166,7 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
         marshInfoWriterHolder.GetRW()->LoadTimeInit(pMD);
 
         ExecutableWriterHolder<UMEntryThunk> thunkWriterHolder(pThunk, sizeof(UMEntryThunk));
-        thunkWriterHolder.GetRW()->LoadTimeInit(pThunk, NULL, NULL, pMarshInfo, pMD);
+        thunkWriterHolder.GetRW()->LoadTimeInit(pThunk, (PCODE)NULL, NULL, pMarshInfo, pMD);
 
         // add it to the cache
         CacheElement element;

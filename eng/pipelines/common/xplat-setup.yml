@@ -19,7 +19,7 @@ jobs:
     shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(ne(parameters.shouldContinueOnError, 'forceFalse'), endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
 
     variables:
-      - template: /eng/common/templates/variables/pool-providers.yml
+      - template: /eng/common/${{ coalesce(parameters.jobParameters.templatePath, 'templates') }}/variables/pool-providers.yml
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential
       # warnings and errors into our build timelines that make it hard to track down
@@ -165,22 +165,28 @@ jobs:
         # Official Build Linux Pool
         ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), ne(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64
+          demands: ImageOverride -equals 1es-ubuntu-2204
+          os: linux
 
-        # OSX Build Pool (we don't have on-prem OSX BuildPool).
-        ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+        # OSX Public Build Pool (we don't have on-prem OSX BuildPool).
+        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(variables['System.TeamProject'], 'public')) }}:
           vmImage: 'macos-12'
+
+        # OSX Internal Pool
+        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), ne(variables['System.TeamProject'], 'public')) }}:
+          name: "Azure Pipelines"
+          vmImage: 'macOS-12'
+          os: macOS
 
         # Official Build Windows Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), ne(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals windows.vs2022preview.amd64
+          demands: ImageOverride -equals windows.vs2022.amd64
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals windows.vs2022preview.amd64.open
-
+          demands: ImageOverride -equals windows.vs2022.amd64.open
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
       # macOS hosted pool machines are slower so we need to give a greater timeout than the 60 mins default.

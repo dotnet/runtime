@@ -30,7 +30,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <PropertyGroup>
       <FullRuntimeName>libRuntime.WorkstationGC</FullRuntimeName>
-      <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
+      <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
       <CrossCompileRid />
       <CrossCompileRid Condition="'$(_hostOS)' != '$(_originalTargetOS)' or '$(_hostArchitecture)' != '$(_targetArchitecture)'">$(RuntimeIdentifier)</CrossCompileRid>
@@ -47,9 +47,17 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-arm'">gnueabihf</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm'">androideabi21</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-musl-arm'">musleabihf</CrossCompileAbi>
+    </PropertyGroup>
 
+    <!-- alpine's gcc toolchain needs alpine-linux, see https://github.com/llvm/llvm-project/issues/89146 -->
+    <Exec Command="grep -q ID=alpine &quot;$(SysRoot)/etc/os-release&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(CrossCompileArch)' != '' and '$(SysRoot)' != ''">
+      <Output TaskParameter="ExitCode" PropertyName="_IsAlpineExitCode" />
+    </Exec>
+
+    <PropertyGroup>
       <TargetTriple />
-      <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-$(CrossCompileAbi)</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != '' and '$(_IsAlpineExitCode)' != '0'">$(CrossCompileArch)-linux-$(CrossCompileAbi)</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != '' and '$(_IsAlpineExitCode)' == '0'">$(CrossCompileArch)-alpine-linux-$(CrossCompileAbi)</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
 
       <IlcRPath Condition="'$(IlcRPath)' == '' and '$(_IsApplePlatform)' != 'true'">$ORIGIN</IlcRPath>
@@ -59,14 +67,15 @@ The .NET Foundation licenses this file to you under the MIT license.
       <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">libeventpipe-enabled</EventPipeName>
 
       <LinkStandardCPlusPlusLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' == '' and '$(_IsiOSLikePlatform)' == 'true' and '$(InvariantGlobalization)' != 'true'">true</LinkStandardCPlusPlusLibrary>
+      <VxSortSupportName>libRuntime.VxsortEnabled</VxSortSupportName>
+      <VxSortSupportName Condition="'$(OptimizationPreference)' == 'Size' or '$(IlcDisableVxsort)' == 'true'">libRuntime.VxsortDisabled</VxSortSupportName>
       <StandaloneGCSupportName>libstandalonegc-disabled</StandaloneGCSupportName>
       <StandaloneGCSupportName Condition="'$(IlcStandaloneGCSupport)' == 'true'">libstandalonegc-enabled</StandaloneGCSupportName>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst' and '$(_targetArchitecture)' == 'x64'">13.5</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">14.2</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos')))">11.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">15.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos')))">12.2</AppleMinOSVersion>
 
       <_AppleSdkName Condition="'$(_targetOS)' == 'ios'">iphoneos</_AppleSdkName>
       <_AppleSdkName Condition="'$(_targetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
@@ -86,7 +95,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_targetOS)' == 'osx'">
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == ''">11.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == ''">12.0</AppleMinOSVersion>
       <TargetTriple Condition="'$(_targetArchitecture)' == 'x64'">x86_64-apple-macos$(AppleMinOSVersion)</TargetTriple>
       <TargetTriple Condition="'$(_targetArchitecture)' == 'arm64'">arm64-apple-macos$(AppleMinOSVersion)</TargetTriple>
     </PropertyGroup>
@@ -117,6 +126,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" Include="$(IlcSdkPath)libbootstrapperdll.o" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibFileExt)" />
+      <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibFileExt)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibFileExt)" />
       <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
     </ItemGroup>
@@ -275,12 +285,11 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(_IsApplePlatform)' != 'true'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
 
-    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
-      <Output TaskParameter="ExitCode" PropertyName="_LinkerVersionStringExitCode" />
+    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld'" StandardOutputImportance="Low" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="_LinkerVersionString" />
     </Exec>
 
-    <PropertyGroup Condition="'$(_LinkerVersionStringExitCode)' == '0' and '$(_LinkerVersionString)' != ''">
+    <PropertyGroup Condition="'$(_LinkerVersionString)' != ''">
       <_LinkerVersion>$([System.Text.RegularExpressions.Regex]::Match($(_LinkerVersionString), '[1-9]\d*'))</_LinkerVersion>
     </PropertyGroup>
 

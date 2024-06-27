@@ -4,6 +4,8 @@
 #ifndef HAVE_MINIPAL_TYPES_H
 #define HAVE_MINIPAL_TYPES_H
 
+#include <stdlib.h>
+
 #if defined(TARGET_32BIT) || defined(TARGET_OSX) || defined(TARGET_WINDOWS)
 #define FORMAT_PREFIX "l"
 #else
@@ -20,6 +22,12 @@
 
 #ifndef PRIu64
 #define PRIu64 FORMAT_PREFIX "lu"
+#endif
+
+#ifdef TARGET_WINDOWS
+typedef wchar_t CHAR16_T;
+#else
+typedef unsigned short CHAR16_T;
 #endif
 
 #endif // HAVE_MINIPAL_TYPES_H

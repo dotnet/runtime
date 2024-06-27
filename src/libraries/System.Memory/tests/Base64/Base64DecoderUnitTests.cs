@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -273,6 +272,9 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [InlineData("A", 0, 0)]
+        [InlineData("A===", 0, 0)]
+        [InlineData("A==", 0, 0)]
+        [InlineData("A=", 0, 0)]
         [InlineData("AQ", 0, 0)]
         [InlineData("AQI", 0, 0)]
         [InlineData("AQIDBA", 4, 3)]
@@ -285,16 +287,18 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(expectedWritten, decodedByteCount); // expectedWritten == decodedBytes.Length
-            Assert.True(Base64TestHelper.VerifyDecodingCorrectness(expectedConsumed, decodedBytes.Length, source, decodedBytes));
+            Assert.True(Base64TestHelper.VerifyDecodingCorrectness(expectedConsumed, expectedWritten, source, decodedBytes));
         }
 
         [Theory]
         [InlineData("\u00ecz/T", 0, 0)]                                              // scalar code-path
         [InlineData("z/Ta123\u00ec", 4, 3)]
         [InlineData("\u00ecz/TpH7sqEkerqMweH1uSw==", 0, 0)]                          // Vector128 code-path
-        [InlineData("z/TpH7sqEkerqMweH1uSw\u00ec==", 20, 15)]
-        [InlineData("\u00ecz/TpH7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo==", 0, 0)]  // Vector256 / AVX code-path
+        [InlineData("z/TpH7sqEkerqMweH1uSw\u5948==", 20, 15)]
+        [InlineData("\u5948/TpH7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo==", 0, 0)]  // Vector256 / AVX code-path
         [InlineData("z/TpH7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo\u00ec==", 44, 33)]
+        [InlineData("\u5948z+T/H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789==", 0, 0)]  // Vector512 / Avx512Vbmi code-path
+        [InlineData("z/T+H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789\u5948==", 92, 69)]
         public void BasicDecodingNonAsciiInputInvalid(string inputString, int expectedConsumed, int expectedWritten)
         {
             Span<byte> source = Encoding.UTF8.GetBytes(inputString);
@@ -748,20 +752,6 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(expectedWritten, decodedByteCount);
             Assert.True(Base64TestHelper.VerifyDecodingCorrectness(expectedConsumed, expectedWritten, source, decodedBytes));
-        }
-
-        public static IEnumerable<object[]> BasicDecodingWithExtraWhitespaceShouldBeCountedInConsumedBytes_MemberData()
-        {
-            var r = new Random(42);
-            for (int i = 0; i < 5; i++)
-            {
-                yield return new object[] { "AQ==" + new string(r.GetItems<char>(" \n\t\r", i)), 4 + i, 1 };
-            }
-
-            foreach (string s in new[] { "MTIz", "M TIz", "MT Iz", "MTI z", "MTIz ", "M    TI   z", "M T I Z " })
-            {
-                yield return new object[] { s + s + s + s, s.Length * 4, 12 };
-            }
         }
     }
 }

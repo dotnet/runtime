@@ -33,7 +33,7 @@ public class MiscTests3 : BlazorWasmTestBase
     public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
-        string id = $"blz_dllimp_{config}_{s_unicodeChar}";
+        string id = $"blz_dllimp_{config}_{s_unicodeChars}";
         if (build && publish)
             id += "build_then_publish";
         else if (build)

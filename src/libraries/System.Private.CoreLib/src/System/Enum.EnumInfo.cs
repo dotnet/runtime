@@ -11,7 +11,7 @@ namespace System
 {
     public abstract partial class Enum
     {
-        internal sealed class EnumInfo<TStorage>
+        internal sealed partial class EnumInfo<TStorage>
             where TStorage : struct, INumber<TStorage>
         {
             public readonly bool HasFlagsAttribute;

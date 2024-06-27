@@ -571,7 +571,7 @@ def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_ide
         logging.error("  pip install azure-storage-blob azure-identity")
         logging.error("or (Windows):")
         logging.error("  py -3 -m pip install azure-storage-blob azure-identity")
-        logging.error("See also https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python")
+        logging.error("See also https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-python")
         raise RuntimeError("Missing Azure Storage package.")
 
     # The Azure packages spam all kinds of output to the logging channels.
@@ -585,7 +585,7 @@ def report_azure_error():
     """ Report an Azure error
     """
     logging.error("A problem occurred accessing Azure. Are you properly authenticated using the Azure CLI?")
-    logging.error("Install the Azure CLI from https://docs.microsoft.com/en-us/cli/azure/install-azure-cli.")
+    logging.error("Install the Azure CLI from https://learn.microsoft.com/cli/azure/install-azure-cli.")
     logging.error("Then log in to Azure using `az login`.")
 
 

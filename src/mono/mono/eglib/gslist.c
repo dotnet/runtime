@@ -52,7 +52,8 @@ g_slist_append (GSList *list, gpointer data)
 GSList*
 g_slist_prepend (GSList *list, gpointer data)
 {
-	GSList *head = g_slist_alloc ();
+	// We don't need to zero the allocation using g_slist_alloc since we fully initialize the node
+	GSList *head = g_new (GSList, 1);
 	head->data = data;
 	head->next = list;
 

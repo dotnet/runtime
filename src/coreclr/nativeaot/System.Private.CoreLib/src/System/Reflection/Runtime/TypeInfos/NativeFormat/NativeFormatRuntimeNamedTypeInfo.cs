@@ -164,7 +164,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             {
                 RuntimeTypeInfo? declaringType = null;
                 TypeDefinitionHandle enclosingTypeDefHandle = _typeDefinition.EnclosingType;
-                if (!enclosingTypeDefHandle.IsNull(_reader))
+                if (!enclosingTypeDefHandle.IsNil)
                 {
                     declaringType = enclosingTypeDefHandle.ResolveTypeDefinition(_reader);
                 }
@@ -219,7 +219,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             get
             {
                 Handle baseType = _typeDefinition.BaseType;
-                if (baseType.IsNull(_reader))
+                if (baseType.IsNil)
                     return QTypeDefRefOrSpec.Null;
                 return new QTypeDefRefOrSpec(_reader, baseType);
             }

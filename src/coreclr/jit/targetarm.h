@@ -40,7 +40,6 @@
                                            // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
   #define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
-  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
@@ -91,12 +90,13 @@
   #define RBM_LOW_REGS            (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4|RBM_R5|RBM_R6|RBM_R7)
   #define RBM_HIGH_REGS           (RBM_R8|RBM_R9|RBM_R10|RBM_R11|RBM_R12|RBM_SP|RBM_LR|RBM_PC)
 
-  #define REG_CALLEE_SAVED_ORDER   REG_R4,REG_R5,REG_R6,REG_R7,REG_R8,REG_R9,REG_R10,REG_R11
-  #define RBM_CALLEE_SAVED_ORDER   RBM_R4,RBM_R5,RBM_R6,RBM_R7,RBM_R8,RBM_R9,RBM_R10,RBM_R11
+  #define RBM_CALL_GC_REGS_ORDER   RBM_R4,RBM_R5,RBM_R6,RBM_R7,RBM_R8,RBM_R9,RBM_R10,RBM_R11,RBM_INTRET
+  #define RBM_CALL_GC_REGS         (RBM_R4|RBM_R5|RBM_R6|RBM_R7|RBM_R8|RBM_R9|RBM_R10|RBM_R11|RBM_INTRET)
 
   #define CNT_CALLEE_SAVED        (8)
   #define CNT_CALLEE_TRASH        (6)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
+  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED+1)
 
   #define CNT_CALLEE_SAVED_FLOAT  (16)
   #define CNT_CALLEE_TRASH_FLOAT  (16)
@@ -138,8 +138,8 @@
   // ARM write barrier ABI (see vm\arm\asmhelpers.asm, vm\arm\asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
   //     On entry:
-  //       r0: the destination address (LHS of the assignment)
-  //       r1: the object reference (RHS of the assignment)
+  //       r0: the destination address of the store
+  //       r1: the object reference to be stored
   //     On exit:
   //       r0: trashed
   //       r3: trashed

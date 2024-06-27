@@ -2183,7 +2183,17 @@ GString  *mono_print_ins_index_strbuf       (int i, MonoInst *ins);
 void      mono_print_ins                    (MonoInst *ins);
 void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg);
 void      mono_print_code                   (MonoCompile *cfg, const char *msg);
-const char* mono_inst_name (int op);
+#ifndef DISABLE_LOGGING
+#define M_PRI_INST "%s"
+const char * mono_inst_name(int opcode);
+#else
+#define M_PRI_INST "%d"
+static inline int
+mono_inst_name(int opcode)
+{
+        return opcode;
+}
+#endif
 int       mono_op_to_op_imm                 (int opcode);
 int       mono_op_imm_to_op                 (int opcode);
 int       mono_load_membase_to_load_mem     (int opcode);
@@ -3022,5 +3032,11 @@ MonoMemoryManager* mini_get_default_mem_manager (void);
 
 MONO_COMPONENT_API int
 mono_wasm_get_debug_level (void);
+
+MonoMethod*
+mini_inflate_unsafe_accessor_wrapper (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error);
+
+MonoMethod *
+mini_replace_generated_method (MonoMethod *method, MonoError *error);
 
 #endif /* __MONO_MINI_H__ */

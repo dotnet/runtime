@@ -13,7 +13,10 @@
 //    lvaCount - The number of local variables
 //
 SsaRenameState::SsaRenameState(CompAllocator alloc, unsigned lvaCount)
-    : m_alloc(alloc), m_lvaCount(lvaCount), m_stacks(nullptr), m_stackListTail(nullptr)
+    : m_alloc(alloc)
+    , m_lvaCount(lvaCount)
+    , m_stacks(nullptr)
+    , m_stackListTail(nullptr)
 {
 }
 

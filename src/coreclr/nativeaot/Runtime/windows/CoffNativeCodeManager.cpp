@@ -29,7 +29,6 @@
 #define CONTRACTL_END
 #define NOTHROW
 #define GC_NOTRIGGER
-#define HOST_NOCALLS
 
 #include "../../inc/gcdecoder.cpp"
 #include "../../inc/gc_unwind_x86.h"
@@ -153,7 +152,7 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
     PTR_uint32_t xdata = dac_cast<PTR_uint32_t>(pRuntimeFunction->UnwindData + moduleBase);
     int size = 4;
 
-    // See https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling
+    // See https://learn.microsoft.com/cpp/build/arm64-exception-handling
     int unwindWords = xdata[0] >> 27;
     int epilogScopes = (xdata[0] >> 22) & 0x1f;
 
@@ -416,7 +415,13 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
         codeOffset
     );
 
-    return decoder.IsInterruptible();
+    if (decoder.IsInterruptible())
+        return true;
+
+    if (decoder.IsInterruptibleSafePoint())
+        return true;
+
+    return false;
 #else
     // Extract the necessary information from the info block header
     hdrInfo info;
@@ -435,8 +440,10 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
 
+    bool executionAborted = ((CoffNativeMethodInfo *)pMethodInfo)->executionAborted;
+
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
-    if (((CoffNativeMethodInfo *)pMethodInfo)->executionAborted)
+    if (executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
 
     if (IsFilter(pMethodInfo))
@@ -446,14 +453,9 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::ActiveStackFrame);
 
 #ifdef USE_GC_INFO_DECODER
-    if (!isActiveStackFrame)
+    if (!isActiveStackFrame && !executionAborted)
     {
-        // If we are not in the active method, we are currently pointing
-        // to the return address. That may not be reachable after a call (if call does not return)
-        // or reachable via a jump and thus have a different live set.
-        // Therefore we simply adjust the offset to inside of call instruction.
-        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
-        // revisit the GcInfoEncoder/Decoder
+        // the reasons for this adjustment are explained in EECodeManager::EnumGcRefs
         codeOffset--;
     }
 
@@ -461,7 +463,25 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
         codeOffset
-        );
+    );
+
+    if (isActiveStackFrame)
+    {
+        // CONSIDER: We can optimize this by remembering the need to adjust in IsSafePoint and propagating into here.
+        //           Or, better yet, maybe we should change the decoder to not require this adjustment.
+        //           The scenario that adjustment tries to handle (fallthrough into BB with random liveness)
+        //           does not seem possible.
+        if (!decoder.HasInterruptibleRanges())
+        {
+            decoder = GcInfoDecoder(
+                GCInfoToken(gcInfo),
+                GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+                codeOffset - 1
+            );
+
+            assert(decoder.IsInterruptibleSafePoint());
+        }
+    }
 
     if (!decoder.EnumerateLiveSlots(
         pRegisterSet,

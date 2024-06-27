@@ -1039,7 +1039,6 @@ namespace System.Text.Json.Serialization.Tests
                                 Info = "1"
                             }
                         }
-
                     }
                 }
             };
@@ -1088,7 +1087,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             public string Info { get; set; }
 
-            public IEnumerable<TestNode> List { get; set; }
+            public IEnumerable<TestNode>? List { get; set; }
 
             public override void AssertEqualTo(TestNode other)
             {
@@ -1119,7 +1118,7 @@ namespace System.Text.Json.Serialization.Tests
 
         class TestLeaf : TestNode
         {
-            public string Test { get; set; }
+            public string? Test { get; set; }
 
             public override void AssertEqualTo(TestNode other)
             {

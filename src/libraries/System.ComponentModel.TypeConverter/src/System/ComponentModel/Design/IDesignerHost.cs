@@ -12,7 +12,10 @@ namespace System.ComponentModel.Design
     public interface IDesignerHost : IServiceContainer
     {
         [FeatureSwitchDefinition("System.ComponentModel.Design.IDesignerHost.IsSupported")]
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+#pragma warning disable IL4000
         internal static bool IsSupported => AppContext.TryGetSwitch("System.ComponentModel.Design.IDesignerHost.IsSupported", out bool isSupported) ? isSupported : true;
+#pragma warning restore IL4000
 
         /// <summary>
         /// Gets or sets a value indicating whether the designer host

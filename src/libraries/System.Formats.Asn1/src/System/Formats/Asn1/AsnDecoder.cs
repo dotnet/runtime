@@ -206,6 +206,86 @@ namespace System.Formats.Asn1
             return ret;
         }
 
+        /// <summary>
+        ///   Decodes the data in <paramref name="source"/> as a length value under the specified
+        ///   encoding rules.
+        /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the number of bytes from the beginning of <paramref name="source"/>
+        ///   that contributed to the length.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   The decoded value of the length, or <see langword="null"/> if the
+        ///   encoded length represents the indefinite length.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not a known <see cref="AsnEncodingRules"/> value.
+        /// </exception>
+        /// <exception cref="AsnContentException">
+        ///   <paramref name="source"/> does not decode as a length under the specified encoding rules.
+        /// </exception>
+        /// <remarks>
+        ///   This method only processes the length portion of an ASN.1/BER Tag-Length-Value triplet,
+        ///   so <paramref name="source"/> needs to have already sliced off the encoded tag.
+        /// </remarks>
+        public static int? DecodeLength(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int bytesConsumed)
+        {
+            CheckEncodingRules(ruleSet);
+
+            // Use locals for the outs to hide the intermediate calculations from an out to a field.
+            int? ret = ReadLength(source, ruleSet, out int read);
+            bytesConsumed = read;
+            return ret;
+        }
+
+        /// <summary>
+        ///   Attempts to decode the data in <paramref name="source"/> as a length value under the specified
+        ///   encoding rules.
+        /// </summary>
+        /// <param name="source">The buffer containing encoded data.</param>
+        /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
+        /// <param name="decodedLength">
+        ///   When this method returns, the decoded value of the length, or <see langword="null"/> if the
+        ///   encoded length represents the indefinite length.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <param name="bytesConsumed">
+        ///   When this method returns, the number of bytes from the beginning of <paramref name="source"/>
+        ///   that contributed to the length.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the buffer represents a valid length under the specified encoding rules;
+        ///   otherwise, <see langword="false"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not a known <see cref="AsnEncodingRules"/> value.
+        /// </exception>
+        /// <remarks>
+        ///   This method only processes the length portion of an ASN.1/BER Tag-Length-Value triplet,
+        ///   so <paramref name="source"/> needs to have already sliced off the encoded tag.
+        /// </remarks>
+        public static bool TryDecodeLength(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int? decodedLength,
+            out int bytesConsumed)
+        {
+            CheckEncodingRules(ruleSet);
+
+            // Use locals for the outs to hide the intermediate calculations from an out to a field.
+            bool ret = TryReadLength(source, ruleSet, out int? decoded, out int read);
+            bytesConsumed = read;
+            decodedLength = decoded;
+            return ret;
+        }
+
         private static bool TryReadLength(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,

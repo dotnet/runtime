@@ -58,7 +58,7 @@ class ConditionalBranchInstructionFormat : public InstructionFormat
         // Encoding 0|1|0|1|0|1|0|0|imm19|0|cond
         // cond = Bits3-0(variation)
         // imm19 = bits19-0(fixedUpReference/4), will be SignExtended
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
@@ -148,14 +148,14 @@ class BranchInstructionFormat : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
             if (IsIndirect(variationCode))
             {
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
-                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+                int64_t dataOffset = pDataBuffer - pOutBufferRW;
 
                 if (dataOffset < -1048576 || dataOffset > 1048572)
                     COMPlusThrow(kNotSupportedException);
@@ -177,13 +177,13 @@ class BranchInstructionFormat : public InstructionFormat
                 }
 
 
-                *((__int64*)pDataBuffer) = fixedUpReference + (__int64)pOutBufferRX;
+                *((int64_t*)pDataBuffer) = fixedUpReference + (int64_t)pOutBufferRX;
             }
             else
             {
 
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
-                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+                int64_t dataOffset = pDataBuffer - pOutBufferRW;
 
                 if (dataOffset < -1048576 || dataOffset > 1048572)
                     COMPlusThrow(kNotSupportedException);
@@ -202,9 +202,9 @@ class BranchInstructionFormat : public InstructionFormat
                     *((DWORD*)(pOutBufferRW+4)) = 0xD61F0200; // br x16
                 }
 
-                if (!ClrSafeInt<__int64>::addition(fixedUpReference, (__int64)pOutBufferRX, fixedUpReference))
+                if (!ClrSafeInt<int64_t>::addition(fixedUpReference, (int64_t)pOutBufferRX, fixedUpReference))
                     COMPlusThrowArithmetic();
-                *((__int64*)pDataBuffer) = fixedUpReference;
+                *((int64_t*)pDataBuffer) = fixedUpReference;
             }
         }
 
@@ -239,7 +239,7 @@ class LoadFromLabelInstructionFormat : public InstructionFormat
             return fExternal;
         }
 
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
             // VariationCode is used to indicate the register the label is going to be loaded
@@ -277,8 +277,7 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
                                     DWORD threadId,
-                                    int funCallDepth,
-                                    HostCallPreference hostCallPreference)
+                                    int funCallDepth)
 {
     T_CONTEXT context;
     T_KNONVOLATILE_CONTEXT_POINTERS nonVolContextPtrs;
@@ -296,7 +295,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     context.X27 = unwoundstate->captureX19_X29[8] = baseState->captureX19_X29[8];
     context.X28 = unwoundstate->captureX19_X29[9] = baseState->captureX19_X29[9];
     context.Fp  = unwoundstate->captureX19_X29[10] = baseState->captureX19_X29[10];
-    context.Lr = NULL; // Filled by the unwinder
+    context.Lr = 0; // Filled by the unwinder
 
     context.Sp = baseState->captureSp;
     context.Pc = baseState->captureIp;
@@ -317,7 +316,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     nonVolContextPtrs.X27 = &unwoundstate->captureX19_X29[8];
     nonVolContextPtrs.X28 = &unwoundstate->captureX19_X29[9];
     nonVolContextPtrs.Fp  = &unwoundstate->captureX19_X29[10];
-    nonVolContextPtrs.Lr = NULL; // Filled by the unwinder
+    nonVolContextPtrs.Lr = 0; // Filled by the unwinder
 
 #endif // DACCESS_COMPILE
 
@@ -357,20 +356,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         {
             // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
             // Use it now to see if we've unwound to managed code yet.
-            BOOL fFailedReaderLock = FALSE;
-            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);
-            if (fFailedReaderLock)
-            {
-                // We don't know if we would have been able to find a JIT
-                // manager, because we couldn't enter the reader lock without
-                // yielding (and our caller doesn't want us to yield).  So abort
-                // now.
-
-                // Invalidate the lazyState we're returning, so the caller knows
-                // we aborted before we could fully unwind
-                unwoundstate->_isValid = false;
-                return;
-            }
+            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc);
 
             if (fIsManagedCode)
                 break;
@@ -478,7 +464,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         pRD->pCurrentContext->X27 = (DWORD64)(pUnwoundState->captureX19_X29[8]);
         pRD->pCurrentContext->X28 = (DWORD64)(pUnwoundState->captureX19_X29[9]);
         pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureX19_X29[10]);
-        pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
+        pRD->pCurrentContext->Lr = 0; // Unwind again to get Caller's PC
 
         pRD->pCurrentContextPointers->X19 = &pRD->pCurrentContext->X19;
         pRD->pCurrentContextPointers->X20 = &pRD->pCurrentContext->X20;
@@ -517,7 +503,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->X27 = (DWORD64)(m_MachState.unwoundX19_X29[8]);
     pRD->pCurrentContext->X28 = (DWORD64)(m_MachState.unwoundX19_X29[9]);
     pRD->pCurrentContext->Fp = (DWORD64)(m_MachState.unwoundX19_X29[10]);
-    pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Lr = 0; // Unwind again to get Caller's PC
 #else // __APPLE__
     pRD->pCurrentContext->X19 = *m_MachState.ptrX19_X29[0];
     pRD->pCurrentContext->X20 = *m_MachState.ptrX19_X29[1];
@@ -530,7 +516,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->X27 = *m_MachState.ptrX19_X29[8];
     pRD->pCurrentContext->X28 = *m_MachState.ptrX19_X29[9];
     pRD->pCurrentContext->Fp  = *m_MachState.ptrX19_X29[10];
-    pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Lr = 0; // Unwind again to get Caller's PC
 #endif // __APPLE__
 
 #if !defined(DACCESS_COMPILE)
@@ -545,7 +531,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContextPointers->X27 = m_MachState.ptrX19_X29[8];
     pRD->pCurrentContextPointers->X28 = m_MachState.ptrX19_X29[9];
     pRD->pCurrentContextPointers->Fp = m_MachState.ptrX19_X29[10];
-    pRD->pCurrentContextPointers->Lr = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContextPointers->Lr = 0; // Unwind again to get Caller's PC
 #endif
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
@@ -684,7 +670,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
-        HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -910,6 +895,7 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
+            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
         }

@@ -21,7 +21,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> RemoteServersAndReadModes()
         {
-            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.GetRemoteServers())
             {
                 for (int i = 0; i < 8; i++)
                 {
@@ -228,9 +228,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-#if NETCOREAPP
+#if NET
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         public async Task BrowserHttpHandler_Streaming()
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
@@ -287,7 +287,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         public async Task BrowserHttpHandler_StreamingRequest()
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
@@ -330,7 +330,7 @@ namespace System.Net.Http.Functional.Tests
 
         // Duplicate of PostAsync_ThrowFromContentCopy_RequestFails using remote server
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task BrowserHttpHandler_StreamingRequest_ThrowFromContentCopy_RequestFails(bool syncFailure)
@@ -368,7 +368,7 @@ namespace System.Net.Http.Functional.Tests
             };
 
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         [MemberData(nameof(CancelRequestReadFunctions))]
         public async Task BrowserHttpHandler_StreamingRequest_CancelRequest(bool cancelAsync, Func<Task<int>> readFunc)
         {
@@ -438,7 +438,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         public async Task BrowserHttpHandler_StreamingResponse()
         {
             var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
@@ -477,6 +477,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(TransferType.ContentLength, TransferError.ContentLengthTooLarge)]
         [InlineData(TransferType.Chunked, TransferError.MissingChunkTerminator)]
         [InlineData(TransferType.Chunked, TransferError.ChunkSizeTooLarge)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task ReadAsStreamAsync_InvalidServerResponse_ThrowsIOException(
             TransferType transferType,
             TransferError transferError)

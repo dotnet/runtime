@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "fx_ver.h"
 #include "fx_muxer.h"
+#include "fx_resolver.h"
 #include "error_codes.h"
 #include "runtime_config.h"
 #include "sdk_info.h"
@@ -113,7 +114,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main(const int argc, const pal::char_t* 
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//   Non-Windows - UTF-8  (pal::char_t is 1 byte char)
 //
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk(
     const pal::char_t* exe_dir,
@@ -233,7 +234,7 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//   Non-Windows - UTF-8  (pal::char_t is 1 byte char)
 //
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
     const pal::char_t* exe_dir,
@@ -316,7 +317,7 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_get_available_sdks_result_fn)(
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//   Non-Windows - UTF-8  (pal::char_t is 1 byte char)
 //
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_available_sdks(
     const pal::char_t* exe_dir,
@@ -491,7 +492,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//   Non-Windows - UTF-8  (pal::char_t is 1 byte char)
 //
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_native_search_directories(const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size)
 {
@@ -569,6 +570,126 @@ namespace
 
         return StatusCode::Success;
     }
+}
+
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_frameworks_for_runtime_config(
+    const char_t* runtime_config_path,
+    /*opt*/ const hostfxr_initialize_parameters* parameters,
+    /*opt*/ hostfxr_resolve_frameworks_result_fn callback,
+    /*opt*/ void* result_context)
+{
+    trace_hostfxr_entry_point(_X("hostfxr_resolve_frameworks_for_runtime_config"));
+    if (trace::is_enabled())
+    {
+        trace::info(_X("  runtime_config_path=%s"), runtime_config_path == nullptr ? _X("<nullptr>") : runtime_config_path);
+        if (parameters == nullptr)
+        {
+            trace::info(_X("  parameters=<nullptr>"));
+        }
+        else
+        {
+            trace::info(
+                _X("  parameters={")
+                _X("    host_path=%s\n")
+                _X("    dotnet_root=%s\n")
+                _X("  }"),
+                parameters->host_path == nullptr ? _X("<nullptr>") : parameters->host_path,
+                parameters->dotnet_root == nullptr ? _X("<nullptr>") : parameters->dotnet_root);
+        }
+    }
+
+    if (runtime_config_path == nullptr)
+    {
+        trace::error(_X("hostfxr_resolve_frameworks_for_runtime_config received an invalid argument: runtime_config_path should not be null."));
+        return StatusCode::InvalidArgFailure;
+    }
+
+    pal::string_t runtime_config = runtime_config_path;
+    if (runtime_config.empty() || !pal::realpath(&runtime_config))
+    {
+        trace::error(_X("The specified runtimeconfig.json [%s] does not exist"), runtime_config.c_str());
+        return StatusCode::InvalidConfigFile;
+    }
+
+    host_startup_info_t host_info{};
+    int rc = populate_startup_info(parameters, host_info);
+    if (rc != StatusCode::Success)
+        return rc;
+
+    fx_definition_vector_t fx_definitions;
+    auto app = new fx_definition_t();
+    fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
+
+    const runtime_config_t::settings_t override_settings;
+    app->parse_runtime_config(runtime_config, _X(""), override_settings);
+
+    const runtime_config_t app_config = app->get_runtime_config();
+
+    // Resolve frameworks for framework-dependent apps.
+    // Self-contained apps assume the framework is next to the app, so we just treat it as success.
+    fx_resolver_t::resolution_failure_info failure_info;
+    rc = app_config.get_is_framework_dependent()
+        ? fx_resolver_t::resolve_frameworks(host_info.dotnet_root, override_settings, app_config, fx_definitions, failure_info)
+        : StatusCode::Success;
+
+    if (callback)
+    {
+        std::vector<hostfxr_framework_result> resolved;
+        std::vector<hostfxr_framework_result> unresolved;
+
+        pal::string_t config_dir;
+        if (app_config.get_is_framework_dependent())
+        {
+            for (const auto& fx : fx_definitions)
+            {
+                // Skip the app itself
+                if (fx.get() == app)
+                    continue;
+
+                resolved.push_back({ sizeof(hostfxr_framework_result), fx->get_name().c_str(), fx->get_requested_version().c_str(), fx->get_found_version().c_str(), fx->get_dir().c_str() });
+            }
+
+            switch ((StatusCode)rc)
+            {
+                case StatusCode::FrameworkMissingFailure:
+                    unresolved.push_back({ sizeof(hostfxr_framework_result), failure_info.missing.get_fx_name().c_str(), failure_info.missing.get_fx_version().c_str(), nullptr, nullptr });
+                    break;
+                case StatusCode::FrameworkCompatFailure:
+                    unresolved.push_back({ sizeof(hostfxr_framework_result), failure_info.incompatible_lower.get_fx_name().c_str(), failure_info.incompatible_lower.get_fx_version().c_str(), nullptr, nullptr });
+                    unresolved.push_back({ sizeof(hostfxr_framework_result), failure_info.incompatible_higher.get_fx_name().c_str(), failure_info.incompatible_higher.get_fx_version().c_str(), nullptr, nullptr });
+                    break;
+                case StatusCode::InvalidConfigFile:
+                    assert(failure_info.invalid_config != nullptr);
+                    unresolved.push_back({ sizeof(hostfxr_framework_result), failure_info.invalid_config->get_name().c_str(), failure_info.invalid_config->get_requested_version().c_str(), failure_info.invalid_config->get_found_version().c_str(), failure_info.invalid_config->get_dir().c_str() });
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
+        {
+            // For self-contained apps, add all the included frameworks as resolved frameworks assumed to be next to the config
+            config_dir = get_directory(runtime_config);
+            remove_trailing_dir_separator(&config_dir);
+            for (const fx_reference_t& fx : app_config.get_included_frameworks())
+            {
+                resolved.push_back({ sizeof(hostfxr_framework_result), fx.get_fx_name().c_str(), fx.get_fx_version().c_str(), fx.get_fx_version().c_str(), config_dir.c_str() });
+            }
+        }
+
+        const hostfxr_resolve_frameworks_result result
+        {
+            sizeof(result),
+            resolved.size(),
+            resolved.empty() ? nullptr : resolved.data(),
+            unresolved.size(),
+            unresolved.empty() ? nullptr : unresolved.data()
+        };
+
+        callback(&result, result_context);
+    }
+
+    return rc;
 }
 
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_initialize_for_dotnet_command_line(

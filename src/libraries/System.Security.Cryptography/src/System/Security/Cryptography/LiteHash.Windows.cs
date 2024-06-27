@@ -92,6 +92,12 @@ namespace System.Security.Cryptography
             }
         }
 
+        private LiteKmac(SafeBCryptHashHandle hashHandle, int finishFlags)
+        {
+            _hashHandle = hashHandle;
+            _finishFlags = finishFlags;
+        }
+
         public int HashSizeInBytes
         {
             get
@@ -145,6 +151,12 @@ namespace System.Security.Cryptography
             return destination.Length;
         }
 
+        public LiteKmac Clone()
+        {
+            SafeBCryptHashHandle clone = Interop.BCrypt.BCryptDuplicateHash(_hashHandle);
+            return new LiteKmac(clone, _finishFlags);
+        }
+
         public void Dispose()
         {
             _hashHandle.Dispose();
@@ -159,10 +171,11 @@ namespace System.Security.Cryptography
         }
     }
 
-    internal struct LiteXof : ILiteHash
+    internal readonly struct LiteXof : ILiteHash
     {
+        private const int BCRYPT_HASH_DONT_RESET_FLAG = 0x00000001;
         private readonly nuint _algorithm;
-        private SafeBCryptHashHandle _hashHandle;
+        private readonly SafeBCryptHashHandle _hashHandle;
 
         internal LiteXof(string algorithm)
         {
@@ -173,58 +186,6 @@ namespace System.Security.Cryptography
                 _ => throw FailThrow(algorithm),
             };
 
-            Reset();
-
-            static Exception FailThrow(string algorithm)
-            {
-                Debug.Fail($"Unexpected hash algorithm name '{algorithm}'.");
-                return new CryptographicException();
-            }
-        }
-
-        public readonly int HashSizeInBytes
-        {
-            get
-            {
-                Debug.Fail("Unexpectedly asked for the hash size of a XOF.");
-                throw new CryptographicException();
-            }
-        }
-
-        public readonly void Append(ReadOnlySpan<byte> data)
-        {
-            if (data.IsEmpty)
-            {
-                return;
-            }
-
-            NTSTATUS ntStatus = Interop.BCrypt.BCryptHashData(_hashHandle, data, data.Length, dwFlags: 0);
-
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-            {
-                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
-            }
-        }
-
-        public readonly unsafe int Finalize(Span<byte> destination)
-        {
-            fixed (byte* pDestination = &Helpers.GetNonNullPinnableReference(destination))
-            {
-                NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hashHandle, pDestination, destination.Length, dwFlags: 0);
-
-                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                {
-                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
-                }
-
-                return destination.Length;
-            }
-        }
-
-        [MemberNotNull(nameof(_hashHandle))]
-        public void Reset()
-        {
-            _hashHandle?.Dispose();
             SafeBCryptHashHandle hashHandle;
 
             NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(
@@ -243,9 +204,62 @@ namespace System.Security.Cryptography
             }
 
             _hashHandle = hashHandle;
+
+            static Exception FailThrow(string algorithm)
+            {
+                Debug.Fail($"Unexpected hash algorithm name '{algorithm}'.");
+                return new CryptographicException();
+            }
         }
 
-        public readonly unsafe void Current(Span<byte> destination)
+        private LiteXof(SafeBCryptHashHandle hashHandle, nuint algorithm)
+        {
+            _algorithm = algorithm;
+            _hashHandle = hashHandle;
+        }
+
+        public int HashSizeInBytes
+        {
+            get
+            {
+                Debug.Fail("Unexpectedly asked for the hash size of a XOF.");
+                throw new CryptographicException();
+            }
+        }
+
+        public void Append(ReadOnlySpan<byte> data)
+        {
+            if (data.IsEmpty)
+            {
+                return;
+            }
+
+            NTSTATUS ntStatus = Interop.BCrypt.BCryptHashData(_hashHandle, data, data.Length, dwFlags: 0);
+
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            {
+                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+            }
+        }
+
+        public unsafe int Finalize(Span<byte> destination)
+        {
+            fixed (byte* pDestination = &Helpers.GetNonNullPinnableReference(destination))
+            {
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hashHandle, pDestination, destination.Length, dwFlags: 0);
+
+                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
+                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                }
+
+                return destination.Length;
+            }
+        }
+
+        public void Reset() => Finalize(Span<byte>.Empty);
+
+        public unsafe void Current(Span<byte> destination)
         {
             using (SafeBCryptHashHandle tmpHash = Interop.BCrypt.BCryptDuplicateHash(_hashHandle))
             fixed (byte* pDestination = &Helpers.GetNonNullPinnableReference(destination))
@@ -259,7 +273,26 @@ namespace System.Security.Cryptography
             }
         }
 
-        public readonly void Dispose()
+        public LiteXof Clone()
+        {
+            SafeBCryptHashHandle clone = Interop.BCrypt.BCryptDuplicateHash(_hashHandle);
+            return new LiteXof(clone, _algorithm);
+        }
+
+        public unsafe void Read(Span<byte> destination)
+        {
+            fixed (byte* pDestination = &Helpers.GetNonNullPinnableReference(destination))
+            {
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hashHandle, pDestination, destination.Length, dwFlags: BCRYPT_HASH_DONT_RESET_FLAG);
+
+                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
+                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                }
+            }
+        }
+
+        public void Dispose()
         {
             _hashHandle.Dispose();
         }

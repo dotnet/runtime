@@ -85,6 +85,7 @@ void SpinLock::Init(LOCK_TYPE type, bool RequireCoopGC)
 #endif
 }
 
+#ifndef DACCESS_COMPILE
 #ifdef _DEBUG
 BOOL SpinLock::OwnedByCurrentThread()
 {
@@ -398,5 +399,6 @@ void SpinLockProfiler::DumpStatics()
 }
 
 #endif  // _DEBUG
+#endif // !DACCESS_COMPILE
 
 // End of file: spinlock.cpp

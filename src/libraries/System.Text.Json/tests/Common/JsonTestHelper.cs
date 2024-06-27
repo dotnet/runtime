@@ -15,7 +15,7 @@ namespace System.Text.Json
 {
     internal static partial class JsonTestHelper
     {
-#if NETCOREAPP
+#if NET
         public const string DoubleFormatString = null;
         public const string SingleFormatString = null;
 #else
@@ -23,7 +23,7 @@ namespace System.Text.Json
         public const string SingleFormatString = "G9";
 #endif
 
-#if NETCOREAPP
+#if NET
         public static Half NextHalf(Random random)
         {
             double mantissa = (random.NextDouble() * 2.0) - 1.0;

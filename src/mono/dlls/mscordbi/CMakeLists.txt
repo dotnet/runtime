@@ -110,7 +110,6 @@ if (CLR_CMAKE_HOST_UNIX)
   add_subdirectory(${CLR_DIR}/pal pal)
 
   include_directories(${CLR_DIR}/pal/inc/rt/cpp)
-  add_compile_options(-nostdinc)
 endif (CLR_CMAKE_HOST_UNIX)
 
 if (CLR_CMAKE_HOST_UNIX)

@@ -40,7 +40,7 @@ namespace DataContracts
     struct TargetNInt
     {
         public long Value;
-        // Add a full set of operators to support arithmetic as well as casting to/from TargetPointer 
+        // Add a full set of operators to support arithmetic as well as casting to/from TargetPointer
     }
 
     struct TargetNUInt
@@ -72,99 +72,43 @@ namespace DataContracts
         public FieldType Type;
     }
 
-    interface IAlgorithmContract
-    {
-        void Init();
-    }
-
     interface IContract
     {
         string Name { get; }
         uint Version { get; }
     }
-        class Target
+
+    sealed class Target
     {
         // Users of the data contract may adjust this number to force re-reading of all data
         public int CurrentEpoch = 0;
 
-        sbyte ReadInt8(TargetPointer pointer);
-        byte ReadUInt8(TargetPointer pointer);
-        short ReadInt16(TargetPointer pointer);
-        ushort ReadUInt16(TargetPointer pointer);
-        int ReadInt32(TargetPointer pointer);
-        uint ReadUInt32(TargetPointer pointer);
-        long ReadInt64(TargetPointer pointer);
-        ulong ReadUInt64(TargetPointer pointer);
-        TargetPointer ReadTargetPointer(TargetPointer pointer);
-        TargetNInt ReadNInt(TargetPointer pointer);
-        TargetNUInt ReadNUint(TargetPointer pointer);
+        public T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
+        TargetPointer ReadPointer(ulong address);
+
         byte[] ReadByteArray(TargetPointer pointer, ulong size);
         void FillByteArray(TargetPointer pointer, byte[] array, ulong size);
-
-        bool TryReadInt8(TargetPointer pointer, out sbyte value);
-        bool TryReadUInt8(TargetPointer pointer, out byte value);
-        bool TryReadInt16(TargetPointer pointer, out short value);
-        bool TryReadUInt16(TargetPointer pointer, out ushort value);
-        bool TryReadInt32(TargetPointer pointer, out int value);
-        bool TryReadUInt32(TargetPointer pointer, out uint value);
-        bool TryReadInt64(TargetPointer pointer, out long value);
-        bool TryReadUInt64(TargetPointer pointer, out ulong value);
-        bool TryReadTargetPointer(TargetPointer pointer, out TargetPointer value);
-        bool TryReadNInt(TargetPointer pointer, out TargetNInt value);
-        bool TryReadNUInt(TargetPointer pointer, out TargetNUInt value);
-        bool TryReadByteArray(TargetPointer pointer, ulong size, out byte[] value);
-        bool TryFillByteArray(TargetPointer pointer, byte[] array, ulong size);
 
         // If pointer is 0, then the return value will be 0
         TargetPointer GetTargetPointerForField(TargetPointer pointer, FieldLayout fieldLayout);
 
-        sbyte ReadGlobalInt8(string globalName);
-        byte ReadGlobalUInt8(string globalName);
-        short ReadGlobalInt16(string globalName);
-        ushort ReadGlobalUInt16(string globalName);
-        int ReadGlobalInt32(string globalName);
-        uint ReadGlobalUInt32(string globalName);
-        long ReadGlobalInt64(string globalName);
-        ulong ReadGlobalUInt64(string globalName);
-        TargetPointer ReadGlobalTargetPointer(string globalName);
+        T ReadGlobal<T>(string globalName) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
+        TargetPointer ReadGlobalPointer(string globalName);
 
-        bool TryReadGlobalInt8(string globalName, out sbyte value);
-        bool TryReadGlobalUInt8(string globalName, out byte value);
-        bool TryReadGlobalInt16(string globalName, out short value);
-        bool TryReadGlobalUInt16(string globalName, out ushort value);
-        bool TryReadGlobalInt32(string globalName, out int value);
-        bool TryReadGlobalUInt32(string globalName, out uint value);
-        bool TryReadGlobalInt64(string globalName, out long value);
-        bool TryReadGlobalUInt64(string globalName, out ulong value);
-        bool TryReadGlobalTargetPointer(string globalName, out TargetPointer value);
+        Contracts.Registry Contracts { get; }
+    }
 
-        Contracts Contract { get; }
-
-        partial class Contracts
+    // Types defined by contracts live here
+    namespace Contracts
+    {
+        class Registry
         {
-            FieldLayout GetFieldLayout(string typeName, string fieldName);
-            bool TryGetFieldLayout(string typeName, string fieldName, out FieldLayout layout);
-            int GetTypeSize(string typeName);
-            bool TryGetTypeSize(string typeName, out int size);
-
-            object GetContract(string contractName);
-            bool TryGetContract(string contractName, out object contract);
-
             // Every contract that is defined has a field here. As an example this document defines a MethodTableContract
             // If the contract is not supported by the runtime in use, then the implementation of the contract will be the base type which
             // is defined to throw if it is ever used.
 
             // List of contracts will be inserted here by source generator
             MethodTableContract MethodTableContract;
-        }
-    }
-
-    // Types defined by contracts live here
-    namespace ContractDefinitions
-    {
-        class CompositeContract
-        {
-            List<Tuple<string, uint>> Subcontracts;
         }
 
         class DataStructureContract
@@ -173,8 +117,8 @@ namespace DataContracts
             List<Tuple<string, FieldLayout>> FieldData;
         }
 
-        // Insert Algorithmic Contract definitions here
-        class MethodTableContract
+        // Insert contract definitions here
+        interface MethodTableContract : IContract
         {
             public virtual int DynamicTypeID(TargetPointer methodTablePointer) { throw new NotImplementedException(); }
             public virtual int BaseSize(TargetPointer methodTablePointer) { throw new NotImplementedException(); }
@@ -207,7 +151,7 @@ namespace DataContracts
         }
 
         [DataContractAlgorithm(1)]
-        class MethodTableContract_1 : ContractDefinitions.MethodTableContract, IAlgorithmContract
+        readonly struct MethodTableContract_1 : Contracts.MethodTableContract
         {
             DataContracts.Target Target;
             readonly uint ContractVersion;
@@ -219,7 +163,7 @@ namespace DataContracts
 
         // This is used for version 2 and 3 of the contract, where the dynamic type id is no longer present, and baseSize has a new limitation in that it can only be a value up to 0x1FFFFFFF in v3
         [DataContractAlgorithm(2, 3)]
-        class MethodTableContract_2 : ContractDefinitions.MethodTableContract, IAlgorithmContract
+        readonly struct MethodTableContract_2 : Contracts.MethodTableContract
         {
             DataContracts.Target Target;
             readonly uint ContractVersion;

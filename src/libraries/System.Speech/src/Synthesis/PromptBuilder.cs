@@ -991,7 +991,7 @@ namespace System.Speech.Synthesis
         private List<Element> _elements = new();
 
         // Resource loader for the prompt builder
-        private static ResourceLoader s_resourceLoader = new();
+        private static readonly ResourceLoader s_resourceLoader = new();
 
         private const string _xmlnsDefault = @"http://www.w3.org/2001/10/synthesis";
 

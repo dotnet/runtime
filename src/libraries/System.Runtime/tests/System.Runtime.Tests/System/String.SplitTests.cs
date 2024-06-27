@@ -141,6 +141,7 @@ namespace System.Tests
             Assert.Equal(expected, Value.Split(',', Options));
             Assert.Equal(expected, Value.Split(',', Count, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }));
+            Assert.Equal(expected, Value.Split((ReadOnlySpan<char>)new[] { ',' }));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count, Options));
@@ -516,6 +517,7 @@ namespace System.Tests
             {
                 Assert.Equal(expected, value.Split(separator));
                 Assert.Equal(expected, value.Split(new[] { separator }));
+                Assert.Equal(expected, value.Split((ReadOnlySpan<char>)new[] { separator }));
                 Assert.Equal(expected, value.Split(separator.ToString()));
             }
 

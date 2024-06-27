@@ -168,7 +168,7 @@ def build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_director
 
             # Build jit-analyze only, and build it as a self-contained app (not framework-dependent).
             # What target RID are we building? It depends on where we're going to run this code.
-            # The RID catalog is here: https://docs.microsoft.com/en-us/dotnet/core/rid-catalog.
+            # The RID catalog is here: https://learn.microsoft.com/dotnet/core/rid-catalog.
             #   Windows x64 => win-x64
             #   Windows x86 => win-x86
             #   Windows arm64 => win-arm64

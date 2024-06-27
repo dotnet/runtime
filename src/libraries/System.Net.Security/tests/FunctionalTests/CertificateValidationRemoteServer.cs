@@ -196,6 +196,11 @@ namespace System.Net.Security.Tests
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
 
+            if (PlatformDetection.IsWindows && testName != null)
+            {
+                TestHelper.CleanupCertificates(testName);
+            }
+
             CertificateAuthority.BuildPrivatePki(
                 PkiOptions.EndEntityRevocationViaOcsp | PkiOptions.CrlEverywhere,
                 out RevocationResponder responder,

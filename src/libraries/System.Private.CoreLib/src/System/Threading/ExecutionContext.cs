@@ -20,7 +20,7 @@ namespace System.Threading
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
         internal static readonly ExecutionContext Default = new ExecutionContext();
-        private static volatile ExecutionContext? s_defaultFlowSuppressed;
+        private static ExecutionContext? s_defaultFlowSuppressed;
 
         private readonly IAsyncLocalValueMap? m_localValues;
         private readonly IAsyncLocal[]? m_localChangeNotifications;

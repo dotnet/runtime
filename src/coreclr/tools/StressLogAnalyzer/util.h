@@ -12,7 +12,6 @@ typedef void* CRITSEC_COOKIE;
 
 #define STRESS_LOG_ANALYZER
 
-#include <malloc.h>
 #include "staticcontract.h"
 
 // This macro is used to standardize the wide character string literals between UNIX and Windows.

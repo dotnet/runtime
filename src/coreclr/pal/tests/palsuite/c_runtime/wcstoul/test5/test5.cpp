@@ -32,9 +32,9 @@ PALTEST(c_runtime_wcstoul_test5_paltest_wcstoul_test5, "c_runtime/wcstoul/test5/
     errno = 0;
     l = wcstoul(overstr, &end, 10);
 
-    if (l != _UI32_MAX)
+    if (l != UINT32_MAX)
     {
-        Fail("ERROR: Expected wcstoul to return %u, got %u\n", _UI32_MAX, l);
+        Fail("ERROR: Expected wcstoul to return %u, got %u\n", UINT32_MAX, l);
     }
     if (end != overstr + 10)
     {
@@ -49,9 +49,9 @@ PALTEST(c_runtime_wcstoul_test5_paltest_wcstoul_test5, "c_runtime/wcstoul/test5/
     errno = 0;
     l = wcstoul(understr, &end, 10);
 
-    if (l != _UI32_MAX)
+    if (l != UINT32_MAX)
     {
-        Fail("ERROR: Expected wcstoul to return %u, got %u\n", _UI32_MAX, l);
+        Fail("ERROR: Expected wcstoul to return %u, got %u\n", UINT32_MAX, l);
     }
     if (end != understr + 2)
     {

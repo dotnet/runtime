@@ -5,14 +5,14 @@ namespace System.Runtime.InteropServices
 {
     /// <summary>
     /// Any method marked with <see cref="UnmanagedCallersOnlyAttribute" /> can be directly called from
-    /// native code. The function token can be loaded to a local variable using the <see href="https://docs.microsoft.com/dotnet/csharp/language-reference/operators/pointer-related-operators#address-of-operator-">address-of</see> operator
+    /// native code. The function token can be loaded to a local variable using the <see href="https://learn.microsoft.com/dotnet/csharp/language-reference/operators/pointer-related-operators#address-of-operator-">address-of</see> operator
     /// in C# and passed as a callback to a native method.
     /// </summary>
     /// <remarks>
     /// Methods marked with this attribute have the following restrictions:
     ///   * Method must be marked "static".
     ///   * Must not be called from managed code.
-    ///   * Must only have <see href="https://docs.microsoft.com/dotnet/framework/interop/blittable-and-non-blittable-types">blittable</see> arguments.
+    ///   * Must only have <see href="https://learn.microsoft.com/dotnet/framework/interop/blittable-and-non-blittable-types">blittable</see> arguments.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public sealed class UnmanagedCallersOnlyAttribute : Attribute

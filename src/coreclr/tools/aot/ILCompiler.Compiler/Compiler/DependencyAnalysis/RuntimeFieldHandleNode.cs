@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix)
-              .Append("__RuntimeFieldHandle_")
+              .Append("__RuntimeFieldHandle_"u8)
               .Append(nameMangler.GetMangledFieldName(_targetField));
         }
         public int Offset => 0;
@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
         }
 
-        private static Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RFHSignature_");
+        private static readonly Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RFHSignature_");
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

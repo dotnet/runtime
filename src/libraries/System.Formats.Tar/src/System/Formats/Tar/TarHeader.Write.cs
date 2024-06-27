@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,6 +16,9 @@ namespace System.Formats.Tar
     // Writes header attributes of a tar archive entry.
     internal sealed partial class TarHeader
     {
+        private const long Octal12ByteFieldMaxValue = (1L << (3 * 11)) - 1; // Max value of 11 octal digits.
+        private const int Octal8ByteFieldMaxValue = (1 << (3 * 7)) - 1;     // Max value of 7 octal digits.
+
         private static ReadOnlySpan<byte> UstarMagicBytes => "ustar\0"u8;
         private static ReadOnlySpan<byte> UstarVersionBytes => "00"u8;
 
@@ -606,35 +610,22 @@ namespace System.Formats.Tar
 
             if (_mode > 0)
             {
-                checksum += FormatOctal(_mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
+                checksum += FormatNumeric(_mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
             }
 
             if (_uid > 0)
             {
-                checksum += FormatOctal(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
+                checksum += FormatNumeric(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
             }
 
             if (_gid > 0)
             {
-                checksum += FormatOctal(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
+                checksum += FormatNumeric(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
             }
 
             if (_size > 0)
             {
-                if (_size <= TarHelpers.MaxSizeLength)
-                {
-                    checksum += FormatOctal(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
-                }
-                else if (_format is not TarEntryFormat.Pax)
-                {
-                    throw new ArgumentException(SR.Format(SR.TarSizeFieldTooLargeForEntryFormat, _format));
-                }
-                else
-                {
-                    // No writing, just verifications
-                    Debug.Assert(_typeFlag is not TarEntryType.ExtendedAttributes and not TarEntryType.GlobalExtendedAttributes);
-                    Debug.Assert(Convert.ToInt64(ExtendedAttributes[PaxEaSize]) > TarHelpers.MaxSizeLength);
-                }
+                checksum += FormatNumeric(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             }
 
             checksum += WriteAsTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
@@ -739,12 +730,12 @@ namespace System.Formats.Tar
 
             if (_devMajor > 0)
             {
-                checksum += FormatOctal(_devMajor, buffer.Slice(FieldLocations.DevMajor, FieldLengths.DevMajor));
+                checksum += FormatNumeric(_devMajor, buffer.Slice(FieldLocations.DevMajor, FieldLengths.DevMajor));
             }
 
             if (_devMinor > 0)
             {
-                checksum += FormatOctal(_devMinor, buffer.Slice(FieldLocations.DevMinor, FieldLengths.DevMinor));
+                checksum += FormatNumeric(_devMinor, buffer.Slice(FieldLocations.DevMinor, FieldLengths.DevMinor));
             }
 
             return checksum;
@@ -916,13 +907,49 @@ namespace System.Formats.Tar
                 ExtendedAttributes[PaxEaLinkName] = _linkName;
             }
 
-            if (_size > TarHelpers.MaxSizeLength)
+            if (_size > Octal12ByteFieldMaxValue)
             {
                 ExtendedAttributes[PaxEaSize] = _size.ToString();
             }
             else
             {
                 ExtendedAttributes.Remove(PaxEaSize);
+            }
+
+            if (_uid > Octal8ByteFieldMaxValue)
+            {
+                ExtendedAttributes[PaxEaUid] = _uid.ToString();
+            }
+            else
+            {
+                ExtendedAttributes.Remove(PaxEaUid);
+            }
+
+            if (_gid > Octal8ByteFieldMaxValue)
+            {
+                ExtendedAttributes[PaxEaGid] = _gid.ToString();
+            }
+            else
+            {
+                ExtendedAttributes.Remove(PaxEaGid);
+            }
+
+            if (_devMajor > Octal8ByteFieldMaxValue)
+            {
+                ExtendedAttributes[PaxEaDevMajor] = _devMajor.ToString();
+            }
+            else
+            {
+                ExtendedAttributes.Remove(PaxEaDevMajor);
+            }
+
+            if (_devMinor > Octal8ByteFieldMaxValue)
+            {
+                ExtendedAttributes[PaxEaDevMinor] = _devMinor.ToString();
+            }
+            else
+            {
+                ExtendedAttributes.Remove(PaxEaDevMinor);
             }
 
             // Sets the specified string to the dictionary if it's longer than the specified max byte length; otherwise, remove it.
@@ -1022,6 +1049,56 @@ namespace System.Formats.Tar
             return checksum;
         }
 
+        private int FormatNumeric(int value, Span<byte> destination)
+        {
+            Debug.Assert(destination.Length == 8, "8 byte field expected.");
+
+            bool isOctalRange = value >= 0 && value <= Octal8ByteFieldMaxValue;
+
+            if (isOctalRange || _format == TarEntryFormat.Pax)
+            {
+                return FormatOctal(value, destination);
+            }
+            else if (_format == TarEntryFormat.Gnu)
+            {
+                // GNU format: store negative numbers in big endian format with leading '0xff' byte.
+                //             store positive numbers in big endian format with leading '0x80' byte.
+                long destinationValue = value;
+                destinationValue |= 1L << 63;
+                BinaryPrimitives.WriteInt64BigEndian(destination, destinationValue);
+                return Checksum(destination);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Format(SR.TarFieldTooLargeForEntryFormat, _format));
+            }
+        }
+
+        private int FormatNumeric(long value, Span<byte> destination)
+        {
+            Debug.Assert(destination.Length == 12, "12 byte field expected.");
+            const int Offset = 4; // 4 bytes before the long.
+
+            bool isOctalRange = value >= 0 && value <= Octal12ByteFieldMaxValue;
+
+            if (isOctalRange || _format == TarEntryFormat.Pax)
+            {
+                return FormatOctal(value, destination);
+            }
+            else if (_format == TarEntryFormat.Gnu)
+            {
+                // GNU format: store negative numbers in big endian format with leading '0xff' byte.
+                //             store positive numbers in big endian format with leading '0x80' byte.
+                BinaryPrimitives.WriteUInt32BigEndian(destination, value < 0 ? 0xffffffff : 0x80000000);
+                BinaryPrimitives.WriteInt64BigEndian(destination.Slice(Offset), value);
+                return Checksum(destination);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Format(SR.TarFieldTooLargeForEntryFormat, _format));
+            }
+        }
+
         // Writes the specified decimal number as a right-aligned octal number and returns its checksum.
         private static int FormatOctal(long value, Span<byte> destination)
         {
@@ -1040,11 +1117,11 @@ namespace System.Formats.Tar
             return WriteRightAlignedBytesAndGetChecksum(digits.Slice(i), destination);
         }
 
-        // Writes the specified DateTimeOffset's Unix time seconds as a right-aligned octal number, and returns its checksum.
-        private static int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination)
+        // Writes the specified DateTimeOffset's Unix time seconds, and returns its checksum.
+        private int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination)
         {
             long unixTimeSeconds = timestamp.ToUnixTimeSeconds();
-            return FormatOctal(unixTimeSeconds, destination);
+            return FormatNumeric(unixTimeSeconds, destination);
         }
 
         // Writes the specified text as an UTF8 string aligned to the left, and returns its checksum.

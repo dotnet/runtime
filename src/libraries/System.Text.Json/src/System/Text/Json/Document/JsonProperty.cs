@@ -18,10 +18,9 @@ namespace System.Text.Json
         public JsonElement Value { get; }
         private string? _name { get; }
 
-        internal JsonProperty(JsonElement value, string? name = null)
+        internal JsonProperty(JsonElement value)
         {
             Value = value;
-            _name = name;
         }
 
         /// <summary>
@@ -93,6 +92,10 @@ namespace System.Text.Json
         {
             return Value.TextEqualsHelper(utf8Text, isPropertyName: true, shouldUnescape: false);
         }
+
+        // TODO make public https://github.com/dotnet/runtime/issues/77666
+        internal bool NameIsEscaped => Value.ValueIsEscapedHelper(isPropertyName: true);
+        internal ReadOnlySpan<byte> NameSpan => Value.GetPropertyNameRaw();
 
         /// <summary>
         ///   Write the property into the provided writer as a named JSON object property.

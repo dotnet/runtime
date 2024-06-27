@@ -209,7 +209,7 @@ bool comhost_test::typelib(const pal::string_t &comhost_path, int count)
     for (int i = 1; i < count + 1; i++)
     {
         // The path format for a non-default embedded TLB is 'C:\file\path\to.exe\\2' where '2' is the resource name of the tlb to load.
-        // See https://docs.microsoft.com/windows/win32/api/oleauto/nf-oleauto-loadtypelib#remarks for documentation on the path format.
+        // See https://learn.microsoft.com/windows/win32/api/oleauto/nf-oleauto-loadtypelib#remarks for documentation on the path format.
         pal::stringstream_t tlb_path;
         tlb_path << comhost_path << '\\' << i;
         hr = load_typelib(tlb_path.str());

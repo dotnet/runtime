@@ -44,7 +44,7 @@ namespace System.Drawing
             // also updating the runtime.
 
             // This method converts Color to an OLE_COLOR.
-            // https://docs.microsoft.com/openspecs/office_file_formats/ms-oforms/4b8f4be0-3fff-4e42-9fc1-b9fd00251e8e
+            // https://learn.microsoft.com/openspecs/office_file_formats/ms-oforms/4b8f4be0-3fff-4e42-9fc1-b9fd00251e8e
 
             if (c.IsKnownColor && c.IsSystemColor)
             {

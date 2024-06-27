@@ -20,7 +20,7 @@ import { mono_log_debug } from "./logging";
 export function mono_wasm_bind_cs_function (method: MonoMethod, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
     const fullyQualifiedName = `[${assemblyName}] ${namespaceName}.${shortClassName}:${methodName}`;
     const mark = startMeasure();
-    mono_log_debug(`Binding [JSExport] ${namespaceName}.${shortClassName}:${methodName} from ${assemblyName} assembly`);
+    mono_log_debug(() => `Binding [JSExport] ${namespaceName}.${shortClassName}:${methodName} from ${assemblyName} assembly`);
     const version = get_signature_version(signature);
     mono_assert(version === 2, () => `Signature version ${version} mismatch.`);
 

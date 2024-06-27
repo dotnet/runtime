@@ -4,6 +4,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -126,6 +128,9 @@ namespace System.Text.Json.Serialization.Converters
                 WriteCore(writer, value);
             }
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
+            GetSchemaForNumericType(JsonSchemaType.Integer, numberHandling);
 
         // UInt128.TryParse(ROS<byte>) is not available on .NET 7, only UInt128.TryParse(ROS<char>).
         private static bool TryParse(

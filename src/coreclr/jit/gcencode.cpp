@@ -62,8 +62,6 @@ ReturnKind GCInfo::getReturnKind()
     }
 }
 
-#if !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
-
 // gcMarkFilterVarsPinned - Walk all lifetimes and make it so that anything
 //     live in a filter is marked as pinned (often by splitting the lifetime
 //     so that *only* the filter region is pinned).  This should only be
@@ -86,6 +84,7 @@ ReturnKind GCInfo::getReturnKind()
 //
 void GCInfo::gcMarkFilterVarsPinned()
 {
+    assert(compiler->UsesFunclets());
     assert(compiler->ehAnyFunclets());
 
     for (EHblkDsc* const HBtab : EHClauses(compiler))
@@ -134,7 +133,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                         //     (2) a regular one for after the filter
                         // and then adjust the original lifetime to end before
                         // the filter.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                         if (compiler->verbose)
@@ -177,7 +175,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                         // somewhere inside it, so we only create 1 new lifetime,
                         // and then adjust the original lifetime to end before
                         // the filter.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                         if (compiler->verbose)
@@ -216,7 +213,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                         // lifetime for the part inside the filter and adjust
                         // the start of the original lifetime to be the end
                         // of the filter
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                         if (compiler->verbose)
                         {
@@ -259,7 +255,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                     {
                         // The variable lifetime is completely within the filter,
                         // so just add the pinned flag.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                         if (compiler->verbose)
                         {
@@ -297,6 +292,8 @@ void GCInfo::gcMarkFilterVarsPinned()
 
 void GCInfo::gcInsertVarPtrDscSplit(varPtrDsc* desc, varPtrDsc* begin)
 {
+    assert(compiler->UsesFunclets());
+
 #ifndef JIT32_GCENCODER
     (void)begin;
     desc->vpdNext = gcVarPtrList;
@@ -335,6 +332,8 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
     const GCtype gcType = (desc->vpdVarNum & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
     const bool   isPin  = (desc->vpdVarNum & pinned_OFFSET_FLAG) != 0;
 
+    assert(compiler->UsesFunclets());
+
     printf("[%08X] %s%s var at [%s", dspPtr(desc), GCtypeStr(gcType), isPin ? "pinned-ptr" : "",
            compiler->isFramePointerUsed() ? STR_FPBASE : STR_SPBASE);
 
@@ -351,8 +350,6 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
 }
 
 #endif // DEBUG
-
-#endif // !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
 
 #ifdef JIT32_GCENCODER
 
@@ -433,12 +430,13 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
 
     EnterCriticalSection(&logFileLock);
 
-    fprintf(logFile, "InfoHdr( %2d, %2d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d,"
-                     " %1d, %2d, %2d,"
-                     " %2d, %2d, %2d, %2d, %2d, %2d), \n",
+    fprintf(logFile,
+            "InfoHdr( %2d, %2d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d,"
+            " %1d, %2d, %2d,"
+            " %2d, %2d, %2d, %2d, %2d, %2d), \n",
             state->prologSize, state->epilogSize, state->epilogCount, state->epilogAtEnd, state->ediSaved,
             state->esiSaved, state->ebxSaved, state->ebpSaved, state->ebpFrame, state->interruptible,
             state->doubleAlign, state->security, state->handlers, state->localloc, state->editNcontinue, state->varargs,
@@ -1462,7 +1460,6 @@ size_t GCInfo::gcInfoBlockHdrSave(
 #endif
 
     /* Write the method size first (using between 1 and 5 bytes) */
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (compiler->verbose)
@@ -1564,9 +1561,9 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->syncStartOffset = INVALID_SYNC_OFFSET;
     header->syncEndOffset   = INVALID_SYNC_OFFSET;
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
     // JIT is responsible for synchronization on funclet-based EH model that x86/Linux uses.
-    if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
+    if (!compiler->UsesFunclets() && compiler->info.compFlags & CORINFO_FLG_SYNCH)
     {
         assert(compiler->syncStartEmitCookie != nullptr);
         header->syncStartOffset = compiler->GetEmitter()->emitCodeOffset(compiler->syncStartEmitCookie, 0);
@@ -1817,7 +1814,7 @@ static int (*zeroFunc)() = zeroFN;
  */
 
 typedef unsigned pasMaskType;
-#define BITS_IN_pasMask (BITS_PER_BYTE * sizeof(pasMaskType))
+#define BITS_IN_pasMask     (BITS_PER_BYTE * sizeof(pasMaskType))
 #define HIGHEST_pasMask_BIT (((pasMaskType)0x1) << (BITS_IN_pasMask - 1))
 
 //-----------------------------------------------------------------------------
@@ -1850,8 +1847,8 @@ public:
     // Use these in the case where there actually are more ptrs than pasArgMask
     unsigned pasEnumGCoffsCount();
 #define pasENUM_START ((unsigned)-1)
-#define pasENUM_LAST ((unsigned)-2)
-#define pasENUM_END ((unsigned)-3)
+#define pasENUM_LAST  ((unsigned)-2)
+#define pasENUM_END   ((unsigned)-3)
     unsigned pasEnumGCoffs(unsigned iter, unsigned* offs);
 
 protected:
@@ -2319,8 +2316,8 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
     if (header.varPtrTableSize != 0)
     {
-#if !defined(FEATURE_EH_FUNCLETS)
-        if (keepThisAlive)
+#if defined(FEATURE_EH_WINDOWS_X86)
+        if (!compiler->UsesFunclets() && keepThisAlive)
         {
             // Encoding of untracked variables does not support reporting
             // "this". So report it as a tracked variable with a liveness
@@ -2331,7 +2328,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
             unsigned varOffs = compiler->lvaTable[compiler->info.compThisArg].GetStackOffset();
 
             /* For negative stack offsets we must reset the low bits,
-                * take abs and then set them back */
+             * take abs and then set them back */
 
             varOffs = abs(static_cast<int>(varOffs));
             varOffs |= this_OFFSET_FLAG;
@@ -2344,7 +2341,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
             dest += (sz & mask);
             totalSize += sz;
         }
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
         /* We'll use a delta encoding for the lifetime offsets */
 
@@ -2587,9 +2584,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     assert((codeDelta & 0x7) == codeDelta);
                     *dest++ = 0xB0 | (BYTE)codeDelta;
-#ifndef UNIX_X86_ABI
-                    assert(!compiler->isFramePointerUsed());
-#endif
+                    assert(compiler->UsesFunclets() || !compiler->isFramePointerUsed());
 
                     /* Remember the new 'last' offset */
 
@@ -2879,7 +2874,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
         if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaTable[compiler->info.compThisArg].lvRegister)
         {
-            unsigned thisRegMask   = genRegMask(compiler->lvaTable[compiler->info.compThisArg].GetRegNum());
+            unsigned thisRegMask   = (unsigned)genRegMask(compiler->lvaTable[compiler->info.compThisArg].GetRegNum());
             unsigned thisPtrRegEnc = gceEncodeCalleeSavedRegs(thisRegMask) << 4;
 
             if (thisPtrRegEnc)
@@ -3285,7 +3280,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     assert(regMask || argMask || callArgCnt || pasStk.pasCurDepth());
 
-// Emit IPtrMask if needed
+                    // Emit IPtrMask if needed
 
 #define CHK_NON_INTRPT_ESP_IPtrMask                                                                                    \
                                                                                                                        \
@@ -3571,7 +3566,7 @@ size_t GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* 
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf       = printf;
+    gcDump.gcPrintf = printf;
 #endif
 
     printf("Method info block:\n");
@@ -3590,7 +3585,7 @@ size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf       = printf;
+    gcDump.gcPrintf = printf;
 #endif
 
     return gcDump.DumpGCTable(table, header, methodSize, verifyGCTables);
@@ -3608,7 +3603,7 @@ void GCInfo::gcFindPtrsInFrame(const void* infoBlock, const void* codeBlock, uns
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf       = printf;
+    gcDump.gcPrintf = printf;
 #endif
 
     gcDump.DumpPtrsInFrame((PTR_CBYTE)infoBlock, (const BYTE*)codeBlock, offs, verifyGCTables);
@@ -3646,7 +3641,8 @@ class GcInfoEncoderWithLogging
 
 public:
     GcInfoEncoderWithLogging(GcInfoEncoder* gcInfoEncoder, bool verbose)
-        : m_gcInfoEncoder(gcInfoEncoder), m_doLogging(verbose INDEBUG(|| JitConfig.JitGCInfoLogging() != 0))
+        : m_gcInfoEncoder(gcInfoEncoder)
+        , m_doLogging(verbose INDEBUG(|| JitConfig.JitGCInfoLogging() != 0))
     {
     }
 
@@ -3960,7 +3956,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         gcInfoEncoderWithLog->SetPrologSize(prologSize);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
 #ifdef TARGET_AMD64
@@ -3978,8 +3973,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         gcInfoEncoderWithLog->SetWantsReportOnlyLeaf();
     }
 #endif // TARGET_AMD64
-
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef TARGET_ARMARCH
     if (compiler->codeGen->GetHasTailCalls())
@@ -4018,39 +4011,52 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 //
 // Encoder should be either GcInfoEncoder or GcInfoEncoderWithLogging
 //
-struct InterruptibleRangeReporter
+class InterruptibleRangeReporter
 {
-    unsigned prevStart;
-    Encoder* gcInfoEncoderWithLog;
+    unsigned m_uninterruptibleEnd;
+    Encoder* m_gcInfoEncoder;
 
-    InterruptibleRangeReporter(unsigned _prevStart, Encoder* _gcInfo)
-        : prevStart(_prevStart), gcInfoEncoderWithLog(_gcInfo)
+public:
+    InterruptibleRangeReporter(unsigned prologSize, Encoder* gcInfo)
+        : m_uninterruptibleEnd(prologSize)
+        , m_gcInfoEncoder(gcInfo)
     {
     }
 
-    // This callback is called for each insGroup marked with
-    // IGF_NOGCINTERRUPT (currently just prologs and epilogs).
+    // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
     // Report everything between the previous region and the current
     // region as interruptible.
 
-    bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize)
+    bool operator()(
+        unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInPrologOrEpilog)
     {
-        if (igOffs < prevStart)
+        if (igOffs < m_uninterruptibleEnd)
         {
-            // We're still in the main method prolog, which has already
-            // had it's interruptible range reported.
+            // We're still in the main method prolog, which we know is not interruptible.
             assert(igFuncIdx == 0);
-            assert(igOffs + igSize <= prevStart);
+            assert(igOffs + igSize <= m_uninterruptibleEnd);
             return true;
         }
 
-        assert(igOffs >= prevStart);
-        if (igOffs > prevStart)
+        assert(igOffs >= m_uninterruptibleEnd);
+        if (igOffs > m_uninterruptibleEnd)
         {
-            gcInfoEncoderWithLog->DefineInterruptibleRange(prevStart, igOffs - prevStart);
+            // Once the first instruction in IG executes, we cannot have GC.
+            // But it is ok to have GC while the IP is on the first instruction, unless we are in prolog/epilog.
+            unsigned interruptibleEnd = igOffs;
+            if (!isInPrologOrEpilog)
+            {
+                interruptibleEnd += firstInstrSize;
+            }
+            m_gcInfoEncoder->DefineInterruptibleRange(m_uninterruptibleEnd, interruptibleEnd - m_uninterruptibleEnd);
         }
-        prevStart = igOffs + igSize;
+        m_uninterruptibleEnd = igOffs + igSize;
         return true;
+    }
+
+    unsigned UninterruptibleEnd()
+    {
+        return m_uninterruptibleEnd;
     }
 };
 
@@ -4059,9 +4065,14 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
+    // TODO: Decide on whether we should enable this optimization for all
+    // targets: https://github.com/dotnet/runtime/issues/103917
+#ifdef TARGET_XARCH
     const bool noTrackedGCSlots =
-        (compiler->opts.MinOpts() && !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
-         !JitConfig.JitMinOptsTrackGCrefs());
+        compiler->opts.MinOpts() && !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+#else
+    const bool noTrackedGCSlots = false;
+#endif
 
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
@@ -4109,7 +4120,6 @@ void GCInfo::gcMakeRegPtrTable(
                 // pointers" section of the GC info even if lvTracked==true
 
                 // Has this argument been fully enregistered?
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
                 if (!varDsc->lvOnFrame)
                 {
@@ -4138,7 +4148,6 @@ void GCInfo::gcMakeRegPtrTable(
             }
 
             // If we haven't continued to the next variable, we should report this as an untracked local.
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             GcSlotFlags flags = GC_SLOT_UNTRACKED;
 
@@ -4404,17 +4413,16 @@ void GCInfo::gcMakeRegPtrTable(
         {
             assert(prologSize <= codeSize);
 
-            // Now exempt any other region marked as IGF_NOGCINTERRUPT
-            // Currently just prologs and epilogs.
+            // Now exempt any region marked as IGF_NOGCINTERRUPT
 
             InterruptibleRangeReporter reporter(prologSize, gcInfoEncoderWithLog);
             compiler->GetEmitter()->emitGenNoGCLst(reporter);
-            prologSize = reporter.prevStart;
+            unsigned uninterruptibleEnd = reporter.UninterruptibleEnd();
 
             // Report any remainder
-            if (prologSize < codeSize)
+            if (uninterruptibleEnd < codeSize)
             {
-                gcInfoEncoderWithLog->DefineInterruptibleRange(prologSize, codeSize - prologSize);
+                gcInfoEncoderWithLog->DefineInterruptibleRange(uninterruptibleEnd, codeSize - uninterruptibleEnd);
             }
         }
     }
@@ -4479,8 +4487,8 @@ void GCInfo::gcMakeRegPtrTable(
             assert(call->u1.cdArgMask == 0 && call->cdArgCnt == 0);
 
             // Other than that, we just have to deal with the regmasks.
-            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALLEE_SAVED;
-            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALLEE_SAVED;
+            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALL_GC_REGS.GetIntRegSet();
+            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALL_GC_REGS.GetIntRegSet();
 
             assert((gcrefRegMask & byrefRegMask) == 0);
 
@@ -4566,9 +4574,11 @@ void GCInfo::gcMakeRegPtrTable(
                 {
                     // This is a true call site.
 
-                    regMaskSmall gcrefRegMask = genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallGCrefRegs);
+                    regMaskSmall gcrefRegMask =
+                        genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallGCrefRegs).GetIntRegSet();
 
-                    regMaskSmall byrefRegMask = genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallByrefRegs);
+                    regMaskSmall byrefRegMask =
+                        genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallByrefRegs).GetIntRegSet();
 
                     assert((gcrefRegMask & byrefRegMask) == 0);
 
@@ -4628,7 +4638,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
     while (regMask)
     {
         // Get hold of the next register bit.
-        regMaskTP tmpMask = genFindLowestBit(regMask);
+        regMaskSmall tmpMask = genFindLowestBit(regMask);
         assert(tmpMask);
 
         // Remember the new state of this register.
@@ -4675,7 +4685,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
         }
 
         // Turn the bit we've just generated off and continue.
-        regMask -= tmpMask; // EAX,ECX,EDX,EBX,---,EBP,ESI,EDI
+        regMask ^= tmpMask; // EAX,ECX,EDX,EBX,---,EBP,ESI,EDI
     }
 }
 
@@ -4698,8 +4708,8 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
     // unused by alignment
     C_ASSERT((OFFSET_MASK + 1) <= sizeof(int));
 
-#if defined(DEBUG) && defined(JIT32_GCENCODER) && !defined(FEATURE_EH_FUNCLETS)
-    if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
+#if defined(DEBUG) && defined(JIT32_GCENCODER) && defined(FEATURE_EH_WINDOWS_X86)
+    if (!compiler->UsesFunclets() && mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
         // Tracked variables can't be pinned, and the encoding takes
         // advantage of that by using the same bit for 'pinned' and 'this'
@@ -4793,7 +4803,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtr
 
     StackSlotIdKey sskey(genStackPtr->rpdPtrArg, false,
                          GcSlotFlags(genStackPtr->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE));
-    GcSlotId varSlotId;
+    GcSlotId       varSlotId;
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
         if (!m_stackSlotMap->Lookup(sskey, &varSlotId))
@@ -4841,8 +4851,8 @@ void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
 
         StackSlotIdKey sskey(genRegPtrTemp->rpdPtrArg, false,
                              genRegPtrTemp->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE);
-        GcSlotId varSlotId;
-        bool     b = m_stackSlotMap->Lookup(sskey, &varSlotId);
+        GcSlotId       varSlotId;
+        bool           b = m_stackSlotMap->Lookup(sskey, &varSlotId);
         assert(b); // Should have been added in the first pass.
         // Live until the call.
         gcInfoEncoderWithLog->SetSlotState(instrOffset, varSlotId, GC_SLOT_DEAD);

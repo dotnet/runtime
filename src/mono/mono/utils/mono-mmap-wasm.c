@@ -22,6 +22,9 @@
 #include "mono-proclib.h"
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/options.h>
+
+#include "mono-wasm-pagemgr.h"
 
 #define BEGIN_CRITICAL_SECTION do { \
 	MonoThreadInfo *__info = mono_thread_info_current_unchecked (); \
@@ -34,6 +37,9 @@
 int
 mono_pagesize (void)
 {
+	if (mono_opt_wasm_mmap)
+		return MWPM_PAGE_SIZE;
+
 	static int saved_pagesize = 0;
 
 	if (saved_pagesize)
@@ -108,7 +114,16 @@ valloc_impl (void *addr, size_t size, int flags, MonoMemAccountType type)
 	mflags |= MAP_PRIVATE;
 
 	BEGIN_CRITICAL_SECTION;
-	ptr = mmap (addr, size, prot, mflags, -1, 0);
+	if (mono_opt_wasm_mmap) {
+		// FIXME: Make this work if the requested address range is free
+		if ((flags & MONO_MMAP_FIXED) && addr)
+			return NULL;
+
+		ptr = mwpm_alloc_range (size, (flags & MONO_MMAP_NOZERO) == 0);
+		if (!ptr)
+			return NULL;
+	} else
+		ptr = mmap (addr, size, prot, mflags, -1, 0);
 	END_CRITICAL_SECTION;
 
 	if (ptr == MAP_FAILED)
@@ -142,6 +157,10 @@ typedef struct {
 void*
 mono_valloc_aligned (size_t size, size_t alignment, int flags, MonoMemAccountType type)
 {
+	// We don't need padding if the alignment is compatible with the page size
+	if (mono_opt_wasm_mmap && ((MWPM_PAGE_SIZE % alignment) == 0))
+		return valloc_impl (NULL, size, flags, type);
+
 	/* Allocate twice the memory to be able to put the block on an aligned address */
 	char *mem = (char *) valloc_impl (NULL, size + alignment, flags, type);
 	char *aligned;
@@ -175,13 +194,22 @@ mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 		 * mono_valloc_align (), free the original mapping.
 		 */
 		BEGIN_CRITICAL_SECTION;
-		munmap (info->addr, info->size);
+		if (mono_opt_wasm_mmap)
+			mwpm_free_range (info->addr, info->size);
+		else
+			munmap (info->addr, info->size);
 		END_CRITICAL_SECTION;
 		g_free (info);
 		g_hash_table_remove (valloc_hash, addr);
 	} else {
+		// FIXME: We could be trying to unmap part of an aligned mapping, in which case the
+		//  hash lookup failed because addr isn't exactly the start of the mapping.
+		// Ideally if the custom page manager is enabled, we won't have done aligned alloc.
 		BEGIN_CRITICAL_SECTION;
-		munmap (addr, length);
+		if (mono_opt_wasm_mmap)
+			mwpm_free_range (addr, length);
+		else
+			munmap (addr, length);
 		END_CRITICAL_SECTION;
 	}
 

@@ -118,6 +118,17 @@ namespace System.Text.Json
             return _parsedData.GetJsonTokenType(index);
         }
 
+        internal bool ValueIsEscaped(int index, bool isPropertyName)
+        {
+            CheckNotDisposed();
+
+            int matchIndex = isPropertyName ? index - DbRow.Size : index;
+            DbRow row = _parsedData.Get(matchIndex);
+            Debug.Assert(!isPropertyName || row.TokenType is JsonTokenType.PropertyName);
+
+            return row.HasComplexChildren;
+        }
+
         internal int GetArrayLength(int index)
         {
             CheckNotDisposed();
@@ -361,6 +372,16 @@ namespace System.Text.Json
         {
             // The property name is one row before the property value
             return GetString(index - DbRow.Size, JsonTokenType.PropertyName)!;
+        }
+
+        internal ReadOnlySpan<byte> GetPropertyNameRaw(int index)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index - DbRow.Size);
+            Debug.Assert(row.TokenType is JsonTokenType.PropertyName);
+
+            return _utf8Json.Span.Slice(row.Location, row.SizeOrLength);
         }
 
         internal bool TryGetValue(int index, [NotNullWhen(true)] out byte[]? value)

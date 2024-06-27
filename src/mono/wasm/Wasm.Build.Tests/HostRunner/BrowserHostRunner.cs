@@ -17,11 +17,11 @@ public class BrowserHostRunner : IHostRunner
         {
             if (s_binaryPathArg is null)
             {
-                if (!string.IsNullOrEmpty(EnvironmentVariables.BrowserPathForTests))
+                if (!string.IsNullOrEmpty(EnvironmentVariables.ChromePathForTests))
                 {
-                    if (!File.Exists(EnvironmentVariables.BrowserPathForTests))
-                        throw new Exception($"Cannot find BROWSER_PATH_FOR_TESTS={EnvironmentVariables.BrowserPathForTests}");
-                    s_binaryPathArg = $" --browser-path=\"{EnvironmentVariables.BrowserPathForTests}\"";
+                    if (!File.Exists(EnvironmentVariables.ChromePathForTests))
+                        throw new Exception($"Cannot find CHROME_PATH_FOR_TESTS={EnvironmentVariables.ChromePathForTests}");
+                    s_binaryPathArg = $" --browser-path=\"{EnvironmentVariables.ChromePathForTests}\"";
                 }
                 else
                 {

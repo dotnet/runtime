@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Generics
@@ -36,7 +37,10 @@ namespace Mono.Linker.Tests.Cases.Generics
 
 			[Kept]
 			[KeptMember (".ctor()")]
-			class WithConstraint<T> where T : new()
+			class WithConstraint<
+				[KeptGenericParamAttributes (GenericParameterAttributes.DefaultConstructorConstraint)]
+				T
+			> where T : new()
 			{
 			}
 
@@ -70,7 +74,10 @@ namespace Mono.Linker.Tests.Cases.Generics
 
 			[Kept]
 			[KeptMember (".ctor()")]
-			class WithConstraint<T> where T : struct
+			class WithConstraint<
+				[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+				T
+			> where T : struct
 			{
 			}
 
@@ -104,7 +111,11 @@ namespace Mono.Linker.Tests.Cases.Generics
 
 			[Kept]
 			[KeptMember (".ctor()")]
-			class WithConstraint<[KeptAttributeAttribute (typeof (IsUnmanagedAttribute))] T> where T : unmanaged
+			class WithConstraint<
+				[KeptAttributeAttribute (typeof (IsUnmanagedAttribute))]
+				[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+				T
+			> where T : unmanaged
 			{
 			}
 

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
-    [OuterLoop("These tests exercise timeout properties which take a lot of time.")]
+    [OuterLoop("These tests exercise timeout properties which take a lot of time.", ~TestPlatforms.Browser)]
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class TimeoutTests
     {

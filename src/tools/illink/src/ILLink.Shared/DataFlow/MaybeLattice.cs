@@ -9,7 +9,7 @@ namespace ILLink.Shared.DataFlow
 {
 	// Wrapper for Nullable<T> which implements IEquatable so that this may
 	// be used as a lattice value. Nullable types can't satisfy interface constraints;
-	// see for example https://docs.microsoft.com/dotnet/csharp/misc/cs0313.
+	// see for example https://learn.microsoft.com/dotnet/csharp/misc/cs0313.
 	public struct Maybe<T> : IEquatable<Maybe<T>>, IDeepCopyValue<Maybe<T>>
 		where T : struct, IEquatable<T>
 	{

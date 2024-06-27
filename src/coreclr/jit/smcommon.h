@@ -44,6 +44,6 @@ struct SMState
 //
 
 #define MAX_CODE_SEQUENCE_LENGTH 7
-#define CODE_SEQUENCE_END ((SM_OPCODE)(SM_COUNT + 1))
+#define CODE_SEQUENCE_END        ((SM_OPCODE)(SM_COUNT + 1))
 
 #endif /* __sm_common_h__ */

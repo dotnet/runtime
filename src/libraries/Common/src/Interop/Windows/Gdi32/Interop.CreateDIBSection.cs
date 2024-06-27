@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 
@@ -13,7 +13,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Gdi32, SetLastError = true)]
         internal static partial IntPtr CreateDIBSection(
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hdc, ref BITMAPINFO_FLAT bmi, int iUsage, ref IntPtr ppvBits, IntPtr hSection, int dwOffset);

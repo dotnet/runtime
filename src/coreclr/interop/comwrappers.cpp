@@ -736,7 +736,9 @@ HRESULT ManagedObjectWrapper::QueryInterface(
                     return E_NOINTERFACE;
 
                 default:
+#if !defined(__clang__) || (__clang_major__ > 13) // Workaround bug in old clang
                     _ASSERTE(false && "Unknown result value");
+#endif
                     FALLTHROUGH;
                 case TryInvokeICustomQueryInterfaceResult::FailedToInvoke:
                     // Set the 'lacks' flag since our attempt to use ICustomQueryInterface

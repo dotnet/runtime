@@ -35,11 +35,11 @@ namespace ILCompiler.DependencyAnalysis
     
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("SignaturePointer_");
+            sb.Append("SignaturePointer_"u8);
             Target.AppendMangledName(nameMangler, sb);
             if (_import.CallingMethod != null)
             {
-                sb.Append(" @ ");
+                sb.Append(" @ "u8);
                 sb.Append(nameMangler.GetMangledMethodName(_import.CallingMethod));
             }
         }

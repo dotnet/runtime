@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace System.Diagnostics.Metrics
 {
@@ -27,25 +28,42 @@ namespace System.Diagnostics.Metrics
         internal readonly DiagLinkedList<ListenerSubscription> _subscriptions = new DiagLinkedList<ListenerSubscription>();
 
         /// <summary>
-        /// Protected constructor to initialize the common instrument properties like the meter, name, description, and unit.
-        /// All classes extending Instrument need to call this constructor when constructing object of the extended class.
+        /// Constructs a new instance of <see cref="Instrument"/>.
         /// </summary>
-        /// <param name="meter">The meter that created the instrument.</param>
-        /// <param name="name">The instrument name. cannot be null.</param>
-        /// <param name="unit">Optional instrument unit of measurements.</param>
-        /// <param name="description">Optional instrument description.</param>
-        protected Instrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, null) { }
+        /// <param name="meter">The meter that created the instrument. Cannot be null.</param>
+        /// <param name="name">The instrument name. Cannot be null.</param>
+        protected Instrument(Meter meter, string name)
+            : this(meter, name, unit: null, description: null, tags: null)
+        {
+        }
 
         /// <summary>
-        /// Protected constructor to initialize the common instrument properties like the meter, name, description, and unit.
-        /// All classes extending Instrument need to call this constructor when constructing object of the extended class.
+        /// Constructs a new instance of <see cref="Instrument"/>.
         /// </summary>
-        /// <param name="meter">The meter that created the instrument.</param>
-        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="meter">The meter that created the instrument. Cannot be null.</param>
+        /// <param name="name">The instrument name. Cannot be null.</param>
+        /// <param name="unit">Optional instrument unit of measurements.</param>
+        /// <param name="description">Optional instrument description.</param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected Instrument(Meter meter, string name, string? unit, string? description)
+            : this(meter, name, unit, description, tags: null)
+        {
+        }
+
+        /// <summary>
+        /// Constructs a new instance of <see cref="Instrument"/>.
+        /// </summary>
+        /// <param name="meter">The meter that created the instrument. Cannot be null.</param>
+        /// <param name="name">The instrument name. Cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
         /// <param name="tags">Optional instrument tags.</param>
-        protected Instrument(Meter meter, string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags)
+        protected Instrument(
+            Meter meter,
+            string name,
+            string? unit = default,
+            string? description = default,
+            IEnumerable<KeyValuePair<string, object?>>? tags = default)
         {
             Meter = meter ?? throw new ArgumentNullException(nameof(meter));
             Name = name ?? throw new ArgumentNullException(nameof(name));

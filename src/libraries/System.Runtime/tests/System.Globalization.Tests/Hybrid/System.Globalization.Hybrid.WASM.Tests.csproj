@@ -6,6 +6,13 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <!-- This doesn't run on V8 because https://github.com/dotnet/runtime/pull/101671 -->
+    <Scenario>WasmTestOnChrome</Scenario>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\CompareInfo\CompareInfoTestsBase.cs" />
     <Compile Include="..\System\Globalization\TextInfoTests.cs" />

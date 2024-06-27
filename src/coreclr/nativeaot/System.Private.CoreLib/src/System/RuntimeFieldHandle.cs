@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -48,12 +46,6 @@ namespace System
             return declaringType1.Equals(declaringType2) && fieldName1 == fieldName2;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int _rotl(int value, int shift)
-        {
-            return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-        }
-
         public override int GetHashCode()
         {
             if (_value == IntPtr.Zero)
@@ -64,7 +56,7 @@ namespace System
             RuntimeAugments.TypeLoaderCallbacks.GetRuntimeFieldHandleComponents(this, out declaringType, out fieldName);
 
             int hashcode = declaringType.GetHashCode();
-            return (hashcode + _rotl(hashcode, 13)) ^ fieldName.GetHashCode();
+            return (hashcode + int.RotateLeft(hashcode, 13)) ^ fieldName.GetHashCode();
         }
 
         public static RuntimeFieldHandle FromIntPtr(IntPtr value) => new RuntimeFieldHandle(value);

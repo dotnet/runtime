@@ -31,6 +31,7 @@ public class Form1
     }
 
     [Fact]
+    [OuterLoop]
     public static void TestEntryPoint()
     {
         Form1 f = new Form1();

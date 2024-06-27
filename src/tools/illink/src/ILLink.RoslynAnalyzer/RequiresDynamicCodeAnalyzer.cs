@@ -5,8 +5,11 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 using ILLink.Shared;
+using ILLink.Shared.TrimAnalysis;
+using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -37,6 +40,87 @@ namespace ILLink.RoslynAnalyzer
 
 		internal override bool IsAnalyzerEnabled (AnalyzerOptions options) =>
 			options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableAotAnalyzer);
+
+		internal override bool IsIntrinsicallyHandled (IMethodSymbol calledMethod, MultiValue instance, ImmutableArray<MultiValue> arguments) {
+			MethodProxy method = new (calledMethod);
+			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
+
+			switch (intrinsicId) {
+			case IntrinsicId.Type_MakeGenericType: {
+					if (!instance.IsEmpty ()) {
+						foreach (var value in instance.AsEnumerable ()) {
+							if (value is SystemTypeValue typeValue) {
+								if (!IsKnownInstantiation (arguments[0])
+									&& !IsConstrainedToBeReferenceTypes(typeValue.RepresentedType.GetGenericParameters())) {
+									return false;
+								}
+							} else {
+								return false;
+							}
+						}
+					}
+					return true;
+				}
+			case IntrinsicId.MethodInfo_MakeGenericMethod: {
+					if (!instance.IsEmpty ()) {
+						foreach (var methodValue in instance.AsEnumerable ()) {
+							if (methodValue is SystemReflectionMethodBaseValue methodBaseValue) {
+								if (!IsKnownInstantiation (arguments[0])
+									&& !IsConstrainedToBeReferenceTypes(methodBaseValue.RepresentedMethod.GetGenericParameters())) {
+									return false;
+								}
+							} else {
+								return false;
+							}
+						}
+					}
+					return true;
+				}
+			}
+
+			return false;
+
+			static bool IsKnownInstantiation(MultiValue genericParametersArray) {
+				var typesValue = genericParametersArray.AsSingleValue ();
+				if (typesValue is NullValue) {
+					// This will fail at runtime but no warning needed
+					return true;
+				}
+
+				// Is this an array we model?
+				if (typesValue is not ArrayValue array) {
+					return false;
+				}
+
+				int? size = array.Size.AsConstInt ();
+				if (size == null) {
+					return false;
+				}
+
+				for (int i = 0; i < size.Value; i++) {
+					// Go over each element of the array. If the value is unknown, bail.
+					if (!array.TryGetValueByIndex (i, out MultiValue value)) {
+						return false;
+					}
+
+					var singleValue = value.AsSingleValue ();
+
+					if (singleValue is not SystemTypeValue and not GenericParameterValue and not NullableSystemTypeValue) {
+						return false;
+					}
+				}
+
+				return true;
+			}
+
+			static bool IsConstrainedToBeReferenceTypes(ImmutableArray<GenericParameterProxy> parameters)
+			{
+				foreach (GenericParameterProxy param in parameters)
+					if (!param.TypeParameterSymbol.HasReferenceTypeConstraint)
+						return false;
+				return true;
+			}
+		}
 
 		private protected override bool IsRequiresCheck (IPropertySymbol propertySymbol, Compilation compilation) {
 			var runtimeFeaturesType = compilation.GetTypeByMetadataName ("System.Runtime.CompilerServices.RuntimeFeature");

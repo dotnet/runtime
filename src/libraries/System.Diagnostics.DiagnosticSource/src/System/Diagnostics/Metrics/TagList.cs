@@ -43,7 +43,7 @@ namespace System.Diagnostics
         /// Initializes a new instance of the TagList structure using the specified <paramref name="tagList" />.
         /// </summary>
         /// <param name="tagList">A span of tags to initialize the list with.</param>
-        public TagList(ReadOnlySpan<KeyValuePair<string, object?>> tagList) : this()
+        public TagList(params ReadOnlySpan<KeyValuePair<string, object?>> tagList) : this()
         {
             _tagsCount = tagList.Length;
             switch (_tagsCount)

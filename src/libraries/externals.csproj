@@ -27,6 +27,8 @@
   <ItemGroup>
     <HostFxrFile Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)" />
     <HostPolicyFile Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy$(LibSuffix)" />
+    <_HostSymbols Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)$(SymbolsSuffix)" />
+    <_HostSymbols Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy$(LibSuffix)$(SymbolsSuffix)" />
     <DotnetExe Include="$(DotNetHostBinDir)dotnet$(ExeSuffix)" />
   </ItemGroup>
 
@@ -82,9 +84,14 @@
     <ItemGroup>
       <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)')" />
       <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)')" />
+      <RuntimeFiles Include="@(_HostSymbols)" Condition="Exists('@(_HostSymbols)')" IsNative="true" />
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
+      <!-- Include cDAC reader library
+           TODO: [cdac] Remove once cdacreader is added to shipping shared framework -->
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\*cdacreader*" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\*cdacreader*" />
     </ItemGroup>
     <!-- If the build has native sanitizers, copy over the non-sanitized diagnostic binaries so they can be loaded by a debugger -->
     <ItemGroup Condition="'$(EnableNativeSanitizers)' != ''">
@@ -113,9 +120,9 @@
           AfterTargets="AfterResolveReferences"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
     <ItemGroup>
-      <!-- copy the host files to make the desktop samples work -->
       <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)') and '$(TargetsMobile)' != 'true'"/>
       <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)') and '$(TargetsMobile)' != 'true'" />
+      <RuntimeFiles Include="@(_HostSymbols)" IsNative="true" Condition="Exists('@(_HostSymbols)') and '$(TargetsMobile)' != 'true'" />
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
       <!-- Setup runtime pack native. -->
       <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"

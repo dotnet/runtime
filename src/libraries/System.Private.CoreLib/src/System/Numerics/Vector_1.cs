@@ -52,7 +52,7 @@ namespace System.Numerics
         /// <param name="values">The array from which the vector is created.</param>
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector128{T}.Count" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector{T}.Count" />.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(T[] values)
         {
@@ -71,7 +71,7 @@ namespace System.Numerics
         /// <param name="index">The index in <paramref name="values" /> at which to being reading elements.</param>
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector128{T}.Count" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector{T}.Count" />.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(T[] values, int index)
         {
@@ -124,7 +124,6 @@ namespace System.Numerics
         /// <param name="values">The span from which the vector is created.</param>
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector{T}.Count" />.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(Span<T> values) : this((ReadOnlySpan<T>)values)
         {
         }
@@ -134,12 +133,7 @@ namespace System.Numerics
         public static Vector<T> AllBitsSet
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                T scalar = Scalar<T>.AllBitsSet;
-                return new Vector<T>(scalar);
-            }
+            get => Vector.Create(Scalar<T>.AllBitsSet);
         }
 
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
@@ -148,7 +142,6 @@ namespace System.Numerics
         public static unsafe int Count
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
@@ -202,12 +195,7 @@ namespace System.Numerics
         public static Vector<T> One
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                T scalar = Scalar<T>.One;
-                return new Vector<T>(scalar);
-            }
+            get => Vector.Create(Scalar<T>.One);
         }
 
         /// <summary>Gets a new <see cref="Vector{T}" /> with all elements initialized to zero.</summary>
@@ -215,7 +203,6 @@ namespace System.Numerics
         public static Vector<T> Zero
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
@@ -223,13 +210,7 @@ namespace System.Numerics
             }
         }
 
-        internal string DisplayString
-        {
-            get
-            {
-                return IsSupported ? ToString() : SR.NotSupported_Type;
-            }
-        }
+        internal string DisplayString => IsSupported ? ToString() : SR.NotSupported_Type;
 
         /// <summary>Gets the element at the specified index.</summary>
         /// <param name="index">The index of the element to get.</param>
@@ -239,11 +220,7 @@ namespace System.Numerics
         public T this[int index]
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return this.GetElement(index);
-            }
+            get => this.GetElement(index);
         }
 
         /// <summary>Adds two vectors to compute their sum.</summary>
@@ -395,7 +372,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Byte}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<byte>(Vector<T> value) => value.As<T, byte>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Double}" />.</summary>
@@ -403,7 +379,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Double}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<double>(Vector<T> value) => value.As<T, double>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int16}" />.</summary>
@@ -411,7 +386,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int16}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<short>(Vector<T> value) => value.As<T, short>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int32}" />.</summary>
@@ -419,7 +393,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int32}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<int>(Vector<T> value) => value.As<T, int>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int64}" />.</summary>
@@ -427,7 +400,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int64}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<long>(Vector<T> value) => value.As<T, long>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{IntPtr}" />.</summary>
@@ -435,7 +407,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{IntPtr}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<nint>(Vector<T> value) => value.As<T, nint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UIntPtr}" />.</summary>
@@ -444,7 +415,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<nuint>(Vector<T> value) => value.As<T, nuint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{SByte}" />.</summary>
@@ -453,7 +423,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<sbyte>(Vector<T> value) => value.As<T, sbyte>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Single}" />.</summary>
@@ -461,7 +430,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Single}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<float>(Vector<T> value) => value.As<T, float>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt16}" />.</summary>
@@ -470,7 +438,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<ushort>(Vector<T> value) => value.As<T, ushort>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt32}" />.</summary>
@@ -479,7 +446,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<uint>(Vector<T> value) => value.As<T, uint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt64}" />.</summary>
@@ -488,7 +454,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<ulong>(Vector<T> value) => value.As<T, ulong>();
 
         /// <summary>Compares two vectors to determine if any elements are not equal.</summary>
@@ -496,18 +461,7 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
         /// <returns><c>true</c> if any elements in <paramref name="left" /> was not equal to the corresponding element in <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(Vector<T> left, Vector<T> right)
-        {
-            for (int index = 0; index < Count; index++)
-            {
-                if (!Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        public static bool operator !=(Vector<T> left, Vector<T> right) => !(left == right);
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
@@ -552,26 +506,13 @@ namespace System.Numerics
         /// <param name="factor">The scalar to multiply with <paramref name="value" />.</param>
         /// <returns>The product of <paramref name="value" /> and <paramref name="factor" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator *(Vector<T> value, T factor)
-        {
-            Unsafe.SkipInit(out Vector<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T element = Scalar<T>.Multiply(value.GetElementUnsafe(index), factor);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector<T> operator *(Vector<T> value, T factor) => value * Vector.Create(factor);
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <param name="factor">The scalar to multiply with <paramref name="value" />.</param>
         /// <param name="value">The vector to multiply with <paramref name="factor" />.</param>
         /// <returns>The product of <paramref name="factor" /> and <paramref name="value" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator *(T factor, Vector<T> value) => value * factor;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
@@ -637,7 +578,6 @@ namespace System.Numerics
         /// <param name="value">The vector to negate.</param>
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="value" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator -(Vector<T> value) => Zero - value;
 
         /// <summary>Returns a given vector unchanged.</summary>
@@ -645,7 +585,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /></returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator +(Vector<T> value)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
@@ -745,7 +684,6 @@ namespace System.Numerics
         /// <summary>Returns a boolean indicating whether the given Object is equal to this vector instance.</summary>
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this vector; False otherwise.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector<T> other) && Equals(other);
 
         /// <summary>Returns a boolean indicating whether the given vector is equal to this vector instance.</summary>

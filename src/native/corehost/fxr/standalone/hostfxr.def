@@ -13,6 +13,7 @@ EXPORTS
     hostfxr_set_error_writer
     hostfxr_initialize_for_dotnet_command_line
     hostfxr_initialize_for_runtime_config
+    hostfxr_resolve_frameworks_for_runtime_config
     hostfxr_run_app
     hostfxr_get_runtime_delegate
     hostfxr_get_runtime_property_value

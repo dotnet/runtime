@@ -86,9 +86,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- when building from source we need to use the current version of MetadataLoadContext as the toolset version, but source-build imports
-         another props file which overrides the SystemReflectionMetadataLoadContextVersion from Version.props so we can't set it there -->
+    <!-- when building from source we need to use the current version of various packages as the toolset version, but source-build imports
+         another props file which overrides the versions from Version.props so we can't set it there -->
     <SystemReflectionMetadataLoadContextToolsetVersion Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(SystemReflectionMetadataLoadContextVersion)</SystemReflectionMetadataLoadContextToolsetVersion>
+    <SystemTextJsonToolsetVersion Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(SystemTextJsonVersion)</SystemTextJsonToolsetVersion>
   </PropertyGroup>
 
   <Target Name="ValidateTargetOSLowercase"

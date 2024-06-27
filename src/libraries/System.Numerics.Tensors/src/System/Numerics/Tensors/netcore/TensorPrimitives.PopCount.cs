@@ -13,6 +13,20 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
+        /// <summary>Computes the population count of all elements in the specified tensor.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The sum of the number of bits set in each element in <paramref name="x"/>.</returns>
+        public static long PopCount<T>(ReadOnlySpan<T> x) where T : IBinaryInteger<T>
+        {
+            long count = 0;
+            for (int i = 0; i < x.Length; i++)
+            {
+                count += long.CreateTruncating(T.PopCount(x[i]));
+            }
+
+            return count;
+        }
+
         /// <summary>Computes the element-wise population count of numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
@@ -38,20 +52,40 @@ namespace System.Numerics.Tensors
                 // This relies on 64-bit shifts for sizeof(T) == 8, and such shifts aren't accelerated on today's hardware.
                 // Alternative approaches, such as doing two 32-bit operations and combining them were observed to not
                 // provide any meaningfuls speedup over scalar. So for now, we don't vectorize when sizeof(T) == 8.
-                sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4;
+                (sizeof(T) is 1 or 2 or 4) || (AdvSimd.IsSupported && sizeof(T) == 8);
 
             public static T Invoke(T x) => T.PopCount(x);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x)
             {
-                if (sizeof(T) == 1)
+                if (AdvSimd.IsSupported)
                 {
-                    if (AdvSimd.IsSupported)
+                    Vector128<byte> cnt = AdvSimd.PopCount(x.AsByte());
+
+                    if (sizeof(T) == 1)
                     {
-                        return AdvSimd.PopCount(x.AsByte()).As<byte, T>();
+                        return cnt.As<byte, T>();
                     }
 
+                    if (sizeof(T) == 2)
+                    {
+                        return AdvSimd.AddPairwiseWidening(cnt).As<ushort, T>();
+                    }
+
+                    if (sizeof(T) == 4)
+                    {
+                        return AdvSimd.AddPairwiseWidening(AdvSimd.AddPairwiseWidening(cnt)).As<uint, T>();
+                    }
+
+                    if (sizeof(T) == 8)
+                    {
+                        return AdvSimd.AddPairwiseWidening(AdvSimd.AddPairwiseWidening(AdvSimd.AddPairwiseWidening(cnt))).As<ulong, T>();
+                    }
+                }
+
+                if (sizeof(T) == 1)
+                {
                     if (PackedSimd.IsSupported)
                     {
                         return PackedSimd.PopCount(x.AsByte()).As<byte, T>();

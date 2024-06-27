@@ -131,9 +131,9 @@ namespace System.Tests
         [Fact]
         public void FromStringWithBase()
         {
-            string[] testValues = { null, null, null, null, "10", "100", "1011", "ff", "0xff", "77", "11", "11111111" };
-            int[] testBases = { 10, 2, 8, 16, 10, 10, 2, 16, 16, 8, 2, 2 };
-            byte[] expectedValues = { 0, 0, 0, 0, 10, 100, 11, 255, 255, 63, 3, 255 };
+            string[] testValues = { null, null, null, null, "10", "100", "1011", "ff", "0xff", "77", "11", "11111111", "0XFF" };
+            int[] testBases = { 10, 2, 8, 16, 10, 10, 2, 16, 16, 8, 2, 2, 16 };
+            byte[] expectedValues = { 0, 0, 0, 0, 10, 100, 11, 255, 255, 63, 3, 255, 255 };
             VerifyFromStringWithBase(Convert.ToByte, testValues, testBases, expectedValues);
 
             string[] overflowValues = { "256", "111111111", "ffffe", "7777777", "-1" };

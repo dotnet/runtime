@@ -228,11 +228,10 @@ namespace System
                             int endPos = line.IndexOf('"', pos);
                             if (endPos <= pos) continue;
 
-                            // Got we need.  Now extract it.
-                            string path = line.Substring(pos, endPos - pos);
+                            // Got what we need.  Now extract it.
                             return relativeToHome ?
-                                Path.Combine(homeDir, path) :
-                                path;
+                                Path.Join(homeDir, line.AsSpan(pos, endPos - pos)) :
+                                line.Substring(pos, endPos - pos);
                         }
                     }
                 }

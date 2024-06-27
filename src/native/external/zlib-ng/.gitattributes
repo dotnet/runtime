@@ -1,0 +1,8 @@
+* text=auto
+*.abi text eol=lf
+*.c text
+*.h text
+*.sh text eol=lf
+crc32_braid_tbl.h hooks-max-size=1000000
+Makefile text
+configure text eol=lf

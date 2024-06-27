@@ -39,6 +39,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		protected partial TrimmingCustomizations? CustomizeTrimming (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
 			=> null;
 
+		protected partial void AddDumpDependenciesOptions (TestCaseLinkerOptions caseDefinedOptions, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder, TestCaseMetadataProvider metadataProvider)
+		{
+		}
+
 		static partial void AddOutputDirectory (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder)
 		{
 			builder.AddOutputDirectory (sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileNameWithoutExtension + ".obj"));

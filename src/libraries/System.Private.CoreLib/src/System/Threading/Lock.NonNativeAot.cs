@@ -9,12 +9,18 @@ namespace System.Threading
     public sealed partial class Lock
     {
         private static readonly short s_maxSpinCount = DetermineMaxSpinCount();
-        private static readonly short s_minSpinCount = DetermineMinSpinCount();
+        private static readonly short s_minSpinCountForAdaptiveSpin = DetermineMinSpinCountForAdaptiveSpin();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Lock"/> class.
         /// </summary>
         public Lock() => _spinCount = s_maxSpinCount;
+
+        internal ulong OwningOSThreadId => _owningThreadId;
+
+#pragma warning disable CA1822 // can be marked as static - varies between runtimes
+        internal int OwningManagedThreadId => 0;
+#pragma warning restore CA1822
 
         private static TryLockResult LazyInitializeOrEnter() => TryLockResult.Spin;
         private static bool IsSingleProcessor => Environment.IsSingleProcessor;

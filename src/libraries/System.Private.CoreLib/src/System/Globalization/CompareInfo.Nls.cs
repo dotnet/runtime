@@ -150,7 +150,7 @@ namespace System.Globalization
                 // Note in calls to LCMapStringEx below, the input buffer is specified in wchars (and wchar count),
                 // but the output buffer is specified in bytes (and byte count). This is because when generating
                 // sort keys, LCMapStringEx treats the output buffer as containing opaque binary data.
-                // See https://docs.microsoft.com/en-us/windows/desktop/api/winnls/nf-winnls-lcmapstringex.
+                // See https://learn.microsoft.com/windows/desktop/api/winnls/nf-winnls-lcmapstringex.
 
                 byte[]? borrowedArr = null;
                 Span<byte> span = sortKeyLength <= 512 ?

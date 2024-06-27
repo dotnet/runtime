@@ -6,7 +6,7 @@ For events that happen very frequently (for example, if it happens every few mil
 
 When dealing with large number of events, knowing the measure per event is not very useful either. Most of the time all we need is just some statistics out of it. So we could crank the statistics within the process itself and then write an event once in a while to report the statistics, that's what `EventCounter` will do for us. Let's take a look at an example how to do this in `Microsoft.Diagnostics.Tracing.EventSource`.
 
-In the sequel, we assume you are familiar with the basic `EventSource` usage, if you don't, please refer to [Vance's excellent blog](https://docs.microsoft.com/en-us/archive/blogs/vancem/introduction-tutorial-logging-etw-events-in-c-system-diagnostics-tracing-eventsource) on that.
+In the sequel, we assume you are familiar with the basic `EventSource` usage, if you don't, please refer to [Vance's excellent blog](https://learn.microsoft.com/archive/blogs/vancem/introduction-tutorial-logging-etw-events-in-c-system-diagnostics-tracing-eventsource) on that.
 
 Without further ado, here is an example on how to use the `EventCounter`
 

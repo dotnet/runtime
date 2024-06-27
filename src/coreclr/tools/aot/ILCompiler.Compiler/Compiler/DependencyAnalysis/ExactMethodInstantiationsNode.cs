@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__exact_method_instantiations");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__exact_method_instantiations"u8);
         }
 
         int INodeWithSize.Size => _size.Value;
@@ -58,7 +58,8 @@ namespace ILCompiler.DependencyAnalysis
                 // Get the method pointer vertex
 
                 bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
-                IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
+                // TODO-SIZE: we need address taken entrypoint only if this was a target of a delegate
+                IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(method, getUnboxingStub);
                 Vertex methodPointer = nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(methodEntryPointNode));
 
                 // Get native layout vertices for the declaring type
@@ -112,7 +113,8 @@ namespace ILCompiler.DependencyAnalysis
 
             // Method entry point dependency
             bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
-            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
+            // TODO-SIZE: we need address taken entrypoint only if this was a target of a delegate
+            IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(method, getUnboxingStub);
             dependencies.Add(new DependencyListEntry(methodEntryPointNode, "Exact method instantiation entry"));
 
             // Get native layout dependencies for the declaring type

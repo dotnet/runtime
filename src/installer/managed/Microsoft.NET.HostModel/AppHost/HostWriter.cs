@@ -32,13 +32,15 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <param name="windowsGraphicalUserInterface">Specify whether to set the subsystem to GUI. Only valid for PE apphosts.</param>
         /// <param name="assemblyToCopyResourcesFrom">Path to the intermediate assembly, used for copying resources to PE apphosts.</param>
         /// <param name="enableMacOSCodeSign">Sign the app binary using codesign with an anonymous certificate.</param>
+        /// <param name="disableCetCompat">Remove CET Shadow Stack compatibility flag if set</param>
         public static void CreateAppHost(
             string appHostSourceFilePath,
             string appHostDestinationFilePath,
             string appBinaryFilePath,
             bool windowsGraphicalUserInterface = false,
             string assemblyToCopyResourcesFrom = null,
-            bool enableMacOSCodeSign = false)
+            bool enableMacOSCodeSign = false,
+            bool disableCetCompat = false)
         {
             var bytesToWrite = Encoding.UTF8.GetBytes(appBinaryFilePath);
             if (bytesToWrite.Length > 1024)
@@ -48,7 +50,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
             bool appHostIsPEImage = false;
 
-            void RewriteAppHost(MemoryMappedViewAccessor accessor)
+            void RewriteAppHost(MemoryMappedFile mappedFile, MemoryMappedViewAccessor accessor)
             {
                 // Re-write the destination apphost with the proper contents.
                 BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, bytesToWrite);
@@ -63,6 +65,11 @@ namespace Microsoft.NET.HostModel.AppHost
                     }
 
                     PEUtils.SetWindowsGraphicalUserInterfaceBit(accessor);
+                }
+
+                if (disableCetCompat && appHostIsPEImage)
+                {
+                    PEUtils.RemoveCetCompatBit(mappedFile, accessor);
                 }
             }
 
@@ -85,7 +92,7 @@ namespace Microsoft.NET.HostModel.AppHost
                         long sourceAppHostLength = appHostSourceStream.Length;
 
                         // Transform the host file in-memory.
-                        RewriteAppHost(memoryMappedViewAccessor);
+                        RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
 
                         // Save the transformed host.
                         using (FileStream fileStream = new FileStream(appHostDestinationFilePath, FileMode.Create))

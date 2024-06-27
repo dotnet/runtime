@@ -16,6 +16,7 @@
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Reflection.Emit" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
     <Reference Include="System.Reflection.Primitives" />

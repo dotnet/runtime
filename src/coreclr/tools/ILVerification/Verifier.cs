@@ -34,7 +34,7 @@ namespace ILVerify
             _verifierOptions = verifierOptions ?? new VerifierOptions();
         }
 
-        public void SetSystemModuleName(AssemblyName name)
+        public void SetSystemModuleName(AssemblyNameInfo name)
         {
             PEReader peReader = _typeSystemContext._resolver.ResolveAssembly(name);
             if (peReader is null)

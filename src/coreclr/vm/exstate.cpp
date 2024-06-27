@@ -23,7 +23,7 @@ OBJECTHANDLE ThreadExceptionState::GetThrowableAsHandle()
         return m_pCurrentTracker->m_hThrowable;
     }
 
-    return NULL;
+    return (OBJECTHANDLE)NULL;
 #else // FEATURE_EH_FUNCLETS
     return m_currentExInfo.m_hThrowable;
 #endif // FEATURE_EH_FUNCLETS
@@ -155,7 +155,7 @@ void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowab
         }
         else
         {
-            AppDomain* pDomain = GetMyThread()->GetDomain();
+            AppDomain* pDomain = AppDomain::GetCurrentDomain();
             PREFIX_ASSUME(pDomain != NULL);
             hNewThrowable = pDomain->CreateHandle(throwable);
         }

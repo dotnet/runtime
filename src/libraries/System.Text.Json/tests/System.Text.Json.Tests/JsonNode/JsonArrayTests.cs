@@ -13,6 +13,25 @@ namespace System.Text.Json.Nodes.Tests
     public static class JsonArrayTests
     {
         [Fact]
+        public static void ParamsContructors()
+        {
+            JsonArray expectedArray = [41, 42, 43];
+            JsonNodeOptions options = new JsonNodeOptions { PropertyNameCaseInsensitive = true };
+
+            Verify(new JsonArray(new JsonNode[] { 41, 42, 43 }), null);
+            Verify(new JsonArray((ReadOnlySpan<JsonNode>)new JsonNode[] { 41, 42, 43 }), null);
+            Verify(new JsonArray(options, new JsonNode[] { 41, 42, 43 }), options);
+            Verify(new JsonArray(options, (ReadOnlySpan<JsonNode>)new JsonNode[] { 41, 42, 43 }), options);
+
+            void Verify(JsonArray jsonArray, JsonNodeOptions? expectedOptions)
+            {
+                Assert.Equal(expectedArray.Count, jsonArray.Count);
+                JsonNodeTests.AssertDeepEqual(expectedArray, jsonArray);
+                Assert.Equal(expectedOptions, jsonArray.Options);
+            }
+        }
+
+        [Fact]
         public static void FromElement()
         {
             using (JsonDocument document = JsonDocument.Parse("[42]"))
@@ -34,7 +53,7 @@ namespace System.Text.Json.Nodes.Tests
         public static void FromElement_WrongNodeTypeThrows(string json)
         {
             using (JsonDocument document = JsonDocument.Parse(json))
-            Assert.Throws<InvalidOperationException>(() => JsonArray.Create(document.RootElement));
+                Assert.Throws<InvalidOperationException>(() => JsonArray.Create(document.RootElement));
         }
 
         [Fact]

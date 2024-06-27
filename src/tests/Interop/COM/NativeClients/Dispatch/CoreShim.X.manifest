@@ -11,6 +11,11 @@
   <comClass
     clsid="{0F8ACD0C-ECE0-4F2A-BD1B-6BFCA93A0726}"
     threadingModel="Both" />
+
+  <!-- DispatchCoerceTesting -->
+  <comClass
+    clsid="{661F9962-3477-416B-BE40-4CBA3190A562}"
+    threadingModel="Both" />
 </file>
 
 </assembly>

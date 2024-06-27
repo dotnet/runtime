@@ -26,26 +26,26 @@ namespace System.Text.Json.Serialization.Tests
         public DateTimeOffset? MyDateTimeOffset { get; set; }
         public Guid? MyGuid { get; set; }
         public SampleEnum? MyEnum { get; set; }
-        public short?[] MyInt16Array { get; set; }
-        public int?[] MyInt32Array { get; set; }
-        public long?[] MyInt64Array { get; set; }
-        public ushort?[] MyUInt16Array { get; set; }
-        public uint?[] MyUInt32Array { get; set; }
-        public ulong?[] MyUInt64Array { get; set; }
-        public byte?[] MyByteArray { get; set; }
-        public sbyte?[] MySByteArray { get; set; }
-        public char?[] MyCharArray { get; set; }
-        public decimal?[] MyDecimalArray { get; set; }
-        public bool?[] MyBooleanTrueArray { get; set; }
-        public bool?[] MyBooleanFalseArray { get; set; }
-        public float?[] MySingleArray { get; set; }
-        public double?[] MyDoubleArray { get; set; }
-        public DateTime?[] MyDateTimeArray { get; set; }
-        public DateTimeOffset?[] MyDateTimeOffsetArray { get; set; }
-        public Guid?[] MyGuidArray { get; set; }
-        public SampleEnum?[] MyEnumArray { get; set; }
-        public Dictionary<string, string> MyStringToStringDict { get; set; }
-        public List<int?> MyListOfNullInt { get; set; }
+        public short?[]? MyInt16Array { get; set; }
+        public int?[]? MyInt32Array { get; set; }
+        public long?[]? MyInt64Array { get; set; }
+        public ushort?[]? MyUInt16Array { get; set; }
+        public uint?[]? MyUInt32Array { get; set; }
+        public ulong?[]? MyUInt64Array { get; set; }
+        public byte?[]? MyByteArray { get; set; }
+        public sbyte?[]? MySByteArray { get; set; }
+        public char?[]? MyCharArray { get; set; }
+        public decimal?[]? MyDecimalArray { get; set; }
+        public bool?[]? MyBooleanTrueArray { get; set; }
+        public bool?[]? MyBooleanFalseArray { get; set; }
+        public float?[]? MySingleArray { get; set; }
+        public double?[]? MyDoubleArray { get; set; }
+        public DateTime?[]? MyDateTimeArray { get; set; }
+        public DateTimeOffset?[]? MyDateTimeOffsetArray { get; set; }
+        public Guid?[]? MyGuidArray { get; set; }
+        public SampleEnum?[]? MyEnumArray { get; set; }
+        public Dictionary<string, string>? MyStringToStringDict { get; set; }
+        public List<int?>? MyListOfNullInt { get; set; }
     }
 
     public class SimpleTestClassWithNulls : SimpleBaseClassWithNullables, ITestClass

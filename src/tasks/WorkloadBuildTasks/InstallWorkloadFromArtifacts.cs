@@ -292,8 +292,13 @@ namespace Microsoft.Workload.Build.Tasks
             string packagePreleaseVersion = bandVersionRegex().Match(version).Groups[1].Value;
             string bandPreleaseVersion = bandVersionRegex().Match(bandVersion).Groups[1].Value;
 
-            if (packagePreleaseVersion != bandPreleaseVersion && packagePreleaseVersion != "-dev" && packagePreleaseVersion != "-ci")
+            if (!string.IsNullOrEmpty(bandPreleaseVersion) &&
+                packagePreleaseVersion != bandPreleaseVersion &&
+                packagePreleaseVersion != "-dev" &&
+                packagePreleaseVersion != "-ci")
+            {
                 bandVersion = bandVersion.Replace (bandPreleaseVersion, packagePreleaseVersion);
+            }
 
             PackageReference pkgRef = new(Name: $"{name}.Manifest-{bandVersion}",
                                           Version: version,

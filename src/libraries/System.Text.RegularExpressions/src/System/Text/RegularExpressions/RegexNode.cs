@@ -1426,10 +1426,8 @@ namespace System.Text.RegularExpressions
         /// A tuple of data about the literal: only one of the Char/String/SetChars fields is relevant.
         /// The Negated value indicates whether the Char/SetChars should be considered exclusionary.
         /// </returns>
-        public StartingLiteralData? FindStartingLiteral(int maxSetCharacters = 5) // 5 is max efficiently optimized by IndexOfAny today
+        public StartingLiteralData? FindStartingLiteral()
         {
-            Debug.Assert(maxSetCharacters is >= 0 and <= 128, $"{nameof(maxSetCharacters)} == {maxSetCharacters} should be small enough to be stack allocated.");
-
             if (FindStartingLiteralNode() is RegexNode node)
             {
                 switch (node.Kind)
@@ -1441,23 +1439,18 @@ namespace System.Text.RegularExpressions
                         return new StartingLiteralData(range: (node.Ch, node.Ch), negated: true);
 
                     case RegexNodeKind.Set or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy:
-                        Span<char> setChars = stackalloc char[maxSetCharacters];
-                        int numChars;
-                        if ((numChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0)
-                        {
-                            setChars = setChars.Slice(0, numChars);
-                            return new StartingLiteralData(setChars: setChars.ToString(), negated: RegexCharClass.IsNegated(node.Str!));
-                        }
-
-                        if (RegexCharClass.TryGetSingleRange(node.Str!, out char lowInclusive, out char highInclusive))
+                        if (RegexCharClass.TryGetSingleRange(node.Str!, out char lowInclusive, out char highInclusive) &&
+                            (highInclusive - lowInclusive) > 1) // prefer IndexOfAny for 1 or 2 elements as an optimization
                         {
                             Debug.Assert(lowInclusive < highInclusive);
                             return new StartingLiteralData(range: (lowInclusive, highInclusive), negated: RegexCharClass.IsNegated(node.Str!));
                         }
 
-                        if (RegexCharClass.TryGetAsciiSetChars(node.Str!, out char[]? asciiChars))
+                        Span<char> setChars = stackalloc char[128];
+                        int numChars;
+                        if ((numChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0)
                         {
-                            return new StartingLiteralData(asciiChars: asciiChars, negated: RegexCharClass.IsNegated(node.Str!));
+                            return new StartingLiteralData(setChars: setChars.Slice(0, numChars).ToString(), negated: RegexCharClass.IsNegated(node.Str!));
                         }
                         break;
 
@@ -1475,7 +1468,6 @@ namespace System.Text.RegularExpressions
             public readonly (char LowInclusive, char HighInclusive) Range;
             public readonly string? String;
             public readonly string? SetChars;
-            public readonly char[]? AsciiChars;
             public readonly bool Negated;
 
             public StartingLiteralData((char LowInclusive, char HighInclusive) range, bool negated)
@@ -1494,13 +1486,6 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(setChars is not null);
                 SetChars = setChars;
-                Negated = negated;
-            }
-
-            public StartingLiteralData(char[]? asciiChars, bool negated)
-            {
-                Debug.Assert(asciiChars is not null);
-                AsciiChars = asciiChars;
                 Negated = negated;
             }
         }
@@ -1717,7 +1702,10 @@ namespace System.Text.RegularExpressions
                             break;
 
                         // Coalescing a loop with a subsequent string
-                        case RegexNodeKind.Oneloop or RegexNodeKind.Onelazy when nextNode.Kind == RegexNodeKind.Multi && currentNode.Ch == nextNode.Str![0]:
+                        case RegexNodeKind.Oneloop or RegexNodeKind.Onelazy when
+                                nextNode.Kind == RegexNodeKind.Multi &&
+                                (nextNode.Options & RegexOptions.RightToLeft) == 0 && // RTL multi nodes don't have their text reversed, and it's not worth the code to optimize further
+                                currentNode.Ch == nextNode.Str![0]:
                             {
                                 // Determine how many of the multi's characters can be combined.
                                 // We already checked for the first, so we know it's at least one.

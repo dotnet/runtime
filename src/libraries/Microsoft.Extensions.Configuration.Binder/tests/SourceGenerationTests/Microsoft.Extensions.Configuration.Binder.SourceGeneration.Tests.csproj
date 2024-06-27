@@ -8,6 +8,9 @@
     <NoWarn>$(NoWarn);SYSLIB1103,SYSLIB1104</NoWarn>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+
+    <!-- Avoid conflict with Microsoft.Extensions.Configuration.Binder (via InternalsVisibleTo) -->
+    <SkipIncludeNullableAttributes>true</SkipIncludeNullableAttributes>
   </PropertyGroup>
 
   <PropertyGroup>

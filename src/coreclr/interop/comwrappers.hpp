@@ -231,7 +231,7 @@ public:
 };
 
 // Class used to hold COM objects (i.e. IUnknown base class)
-// This class mimics the semantics of ATL::CComPtr<T> (https://docs.microsoft.com/cpp/atl/reference/ccomptr-class).
+// This class mimics the semantics of ATL::CComPtr<T> (https://learn.microsoft.com/cpp/atl/reference/ccomptr-class).
 template<typename T>
 struct ComHolder
 {

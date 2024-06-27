@@ -4,8 +4,8 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr } from "./marshal";
+import { marshal_exception_to_cs, bind_arg_marshal_to_cs, marshal_task_to_cs } from "./marshal-to-cs";
+import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr, get_arg } from "./marshal";
 import { forceThreadMemoryViewRefresh } from "./memory";
 import { JSFunctionSignature, JSMarshalerArguments, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType, VoidPtrNull } from "./types/internal";
 import { VoidPtr } from "./types/emscripten";
@@ -28,7 +28,6 @@ export function mono_wasm_bind_js_import_ST (signature: JSFunctionSignature): Vo
         bind_js_import(signature);
         return VoidPtrNull;
     } catch (ex: any) {
-        Module.err(ex.toString());
         return stringToUTF16Ptr(normalize_exception(ex));
     }
 }
@@ -45,9 +44,25 @@ export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, ar
         try {
             bound_fn = bind_js_import(signature);
         } catch (ex: any) {
-            Module.err(ex.toString());
-            marshal_exception_to_cs(<any>args, ex);
-            return;
+            // propagate the exception back to caller, which could be on different thread. Handle both sync and async signatures.
+            try {
+                const res_sig = get_sig(signature, 1);
+                const res_type = get_signature_type(res_sig);
+                if (res_type === MarshalerType.Task) {
+                    const res = get_arg(args, 1);
+                    marshal_task_to_cs(res, Promise.reject(ex));
+                } else {
+                    marshal_exception_to_cs(<any>args, ex);
+                    if (monoThreadInfo.isUI) {
+                        const done_semaphore = get_sync_done_semaphore_ptr(args);
+                        tcwraps.mono_threads_wasm_sync_run_in_target_thread_done(done_semaphore);
+                    }
+                }
+                return;
+            } catch (ex: any) {
+                loaderHelpers.mono_exit(1, ex);
+                return;
+            }
         }
     }
     mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
@@ -74,7 +89,7 @@ function bind_js_import (signature: JSFunctionSignature): Function {
     const js_module_name = get_signature_module_name(signature)!;
     const function_handle = get_signature_handle(signature);
 
-    mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name} module`);
+    mono_log_debug(() => `Binding [JSImport] ${js_function_name} from ${js_module_name} module`);
 
     const fn = mono_wasm_lookup_js_import(js_function_name, js_module_name);
     const args_count = get_signature_argument_count(signature);
@@ -354,7 +369,7 @@ export function mono_wasm_invoke_js_function_impl (bound_function_js_handle: JSH
 
 export function mono_wasm_set_module_imports (module_name: string, moduleImports: any) {
     importedModules.set(module_name, moduleImports);
-    mono_log_debug(`added module imports '${module_name}'`);
+    mono_log_debug(() => `added module imports '${module_name}'`);
 }
 
 function mono_wasm_lookup_js_import (function_name: string, js_module_name: string | null): Function {
@@ -431,7 +446,7 @@ export function dynamic_import (module_name: string, module_url: string): Promis
     let promise = importedModulesPromises.get(module_name);
     const newPromise = !promise;
     if (newPromise) {
-        mono_log_debug(`importing ES6 module '${module_name}' from '${module_url}'`);
+        mono_log_debug(() => `importing ES6 module '${module_name}' from '${module_url}'`);
         promise = import(/*! webpackIgnore: true */module_url);
         importedModulesPromises.set(module_name, promise);
     }
@@ -440,7 +455,7 @@ export function dynamic_import (module_name: string, module_url: string): Promis
         const module = await promise;
         if (newPromise) {
             importedModules.set(module_name, module);
-            mono_log_debug(`imported ES6 module '${module_name}' from '${module_url}'`);
+            mono_log_debug(() => `imported ES6 module '${module_name}' from '${module_url}'`);
         }
         return module;
     });

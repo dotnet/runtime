@@ -43,10 +43,6 @@ DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 
 LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect)
 {
-#ifdef FAILPOINTS_ENABLED
-    if (RFS_HashStack ())
-        return NULL;
-#endif
     return VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
 }
 

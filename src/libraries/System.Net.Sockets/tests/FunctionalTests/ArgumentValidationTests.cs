@@ -1157,5 +1157,16 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentNullException>(() => Socket.CancelConnectAsync(null));
         }
+
+        // MacOS And FreeBSD do not support setting don't-fragment (DF) bit on dual mode socket
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]
+        public void CanSetDontFragment_OnIPV6Address_DualModeSocket()
+        {
+            using Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+            socket.DualMode = true;
+            socket.DontFragment = true;
+            Assert.True(socket.DontFragment);
+        }
     }
 }

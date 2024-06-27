@@ -11,7 +11,7 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <CLSCompliant>false</CLSCompliant>
-    <NoWarn>$(NoWarn);CS0436;CS0649</NoWarn>
+    <NoWarn>$(NoWarn);CS0436;CS0649;CA1872</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>

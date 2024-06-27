@@ -10,6 +10,7 @@ public class BouncingBall
 {
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         double coef;

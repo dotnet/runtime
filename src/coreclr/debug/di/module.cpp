@@ -526,9 +526,9 @@ void CordbModule::RefreshMetaData()
         // So far we've only got a reader for in-memory-writable metadata (MDInternalRW implementation)
         // We could make a reader for MDInternalRO, but no need yet. This also ensures we don't encroach into common
         // scenario where we can map a file on disk.
-        TADDR remoteMDInternalRWAddr = NULL;
+        TADDR remoteMDInternalRWAddr = (TADDR)NULL;
         GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr);
-        if (remoteMDInternalRWAddr != NULL)
+        if (remoteMDInternalRWAddr != (TADDR)NULL)
         {
             // we should only be doing this once to initialize, we don't support reopen with this technique
             _ASSERTE(m_pIMImport == NULL);
@@ -800,7 +800,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
         // fallback to IL image if the debugger doesn't have the image loaded already.
         // Its possible that the debugger would still load the NGEN image sometime in the future and we will miss a sharing
         // opportunity. Its an acceptable loss from an imperfect heuristic.
-        if (NULL == WszGetModuleHandle(szFullPathName))
+        if (NULL == GetModuleHandle(szFullPathName))
 #endif
         {
             szFullPathName = NULL;
@@ -926,7 +926,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         _ASSERTE(dwFileHigh == 0);
 
-        HandleHolder hMap = WszCreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL);
+        HandleHolder hMap = CreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL);
         if (hMap == NULL)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't create mapping of file \"%s\" (GLE=%x)\n", pszFullPathName, GetLastError()));
@@ -4125,7 +4125,7 @@ HRESULT CordbNativeCode::GetAddress(CORDB_ADDRESS * pStart)
     // Since we don't do code-pitching, the address points directly to the code.
     *pStart = (m_rgCodeRegions[kHot].pAddress);
 
-    if (*pStart == NULL)
+    if (*pStart == (CORDB_ADDRESS)NULL)
     {
         return CORDBG_E_CODE_NOT_AVAILABLE;
     }
@@ -4661,7 +4661,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
     return -1;
 
 #elif defined(TARGET_AMD64)
-    BYTE rex = NULL;
+    BYTE rex = 0;
     BYTE prefix = *ip;
     BOOL fContainsPrefix = FALSE;
 
@@ -4743,7 +4743,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
     BYTE rex_x = 0;
     BYTE rex_r = 0;
 
-    if (rex != NULL)
+    if (rex != 0)
     {
         rex_b = (rex & 0x1);       // high bit to modrm r/m field or SIB base field or OPCODE reg field    -- Hmm, when which?
         rex_x = (rex & 0x2) >> 1;  // high bit to sib index field
@@ -4757,7 +4757,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
     {
                  BYTE modrm = *ip++;
 
-                 _ASSERT(modrm != NULL);
+                 _ASSERT(modrm != 0);
 
                  BYTE mod = (modrm & 0xC0) >> 6;
                  BYTE reg = (modrm & 0x38) >> 3;
@@ -4788,7 +4788,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
                          // Get values from the SIB byte
                          //
                          BYTE sib   = *ip;
-                         _ASSERT(sib != NULL);
+                         _ASSERT(sib != 0);
 
                          BYTE base  = (sib & 0x07);
                          base  |= (rex_b << 3);
@@ -5238,7 +5238,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
                                                         CORDB_ADDRESS startAddress)
 {
     INTERNAL_SYNC_API_ENTRY(GetProcess());
-    _ASSERTE(startAddress != NULL);
+    _ASSERTE(startAddress != (CORDB_ADDRESS)NULL);
     _ASSERTE(methodDesc != VMPTR_MethodDesc::NullPtr());
 
     CordbNativeCode * pNativeCode = NULL;

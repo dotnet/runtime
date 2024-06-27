@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // The MIT License(MIT)
@@ -31,13 +31,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Mono.Linker.Tests.Extensions
 {
 	public class NPath : IEquatable<NPath>, IComparable
 	{
-		private static readonly StringComparison PathStringComparison = IsLinux () ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+		private static readonly StringComparison PathStringComparison = RuntimeInformation.IsOSPlatform (OSPlatform.Windows) ?
+			StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
 		private readonly string[] _elements;
 		private readonly bool _isRelative;
@@ -803,11 +805,6 @@ namespace Mono.Linker.Tests.Extensions
 		static bool AlwaysTrue (NPath p)
 		{
 			return true;
-		}
-
-		private static bool IsLinux ()
-		{
-			return Directory.Exists ("/proc");
 		}
 	}
 

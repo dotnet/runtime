@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 using System.Text;
@@ -45,7 +45,7 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WinHttpAddRequestHeaders(
             SafeWinHttpHandle requestHandle,
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(SimpleStringBufferMarshaller))] StringBuilder headers,
 #else
 #pragma warning disable CA1838 // Uses pooled StringBuilder
@@ -55,7 +55,7 @@ internal static partial class Interop
             uint headersLength,
             uint modifiers);
 
-#if NET7_0_OR_GREATER
+#if NET
         [CustomMarshaller(typeof(StringBuilder), MarshalMode.ManagedToUnmanagedIn, typeof(SimpleStringBufferMarshaller))]
         private static unsafe class SimpleStringBufferMarshaller
         {

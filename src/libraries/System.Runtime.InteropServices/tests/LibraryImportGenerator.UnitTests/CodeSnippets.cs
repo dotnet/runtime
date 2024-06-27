@@ -532,6 +532,15 @@ namespace LibraryImportGenerator.UnitTests
             }
             """;
 
+        public static string ExplicitThis => $$"""
+            using System.Runtime.InteropServices;
+            static partial class StringNativeExtensions
+            {
+                [LibraryImport("DoesNotExist")]
+                public static partial void Method(this int t);
+            }
+            """;
+
         public static string BasicParametersAndModifiers<T>(string preDeclaration = "") => BasicParametersAndModifiers(typeof(T).ToString(), preDeclaration);
 
         /// <summary>

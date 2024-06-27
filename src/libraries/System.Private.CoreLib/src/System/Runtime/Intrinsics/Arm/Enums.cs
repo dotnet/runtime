@@ -92,4 +92,67 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         All  = 31                 // All available (implicitly a multiple of two).
     }
+
+    public enum SvePrefetchType : byte
+    {
+        /// <summary>
+        /// PLDL1KEEP
+        /// </summary>
+        LoadL1Temporal = 0,
+
+        /// <summary>
+        /// PLDL1STRM
+        /// </summary>
+        LoadL1NonTemporal = 1,
+
+        /// <summary>
+        /// PLDL2KEEP
+        /// </summary>
+        LoadL2Temporal = 2,
+
+        /// <summary>
+        /// PLDL2STRM
+        /// </summary>
+        LoadL2NonTemporal = 3,
+
+        /// <summary>
+        /// PLDL3KEEP
+        /// </summary>
+        LoadL3Temporal = 4,
+
+        /// <summary>
+        /// PLDL3STRM
+        /// </summary>
+        LoadL3NonTemporal = 5,
+
+        /// <summary>
+        /// PSTL1KEEP
+        /// </summary>
+        StoreL1Temporal = 8,
+
+        /// <summary>
+        /// PSTL1STRM
+        /// </summary>
+        StoreL1NonTemporal = 9,
+
+        /// <summary>
+        /// PSTL2KEEP
+        /// </summary>
+        StoreL2Temporal = 10,
+
+        /// <summary>
+        /// PSTL2STRM
+        /// </summary>
+        StoreL2NonTemporal = 11,
+
+        /// <summary>
+        /// PSTL3KEEP
+        /// </summary>
+        StoreL3Temporal = 12,
+
+        /// <summary>
+        /// PSTL3STRM
+        /// </summary>
+        StoreL3NonTemporal = 13
+    };
 }

@@ -151,7 +151,7 @@ public:
     // ------------------------------------------------------------
 
     BOOL IsSystem() const;
-    BOOL IsDynamic() const;
+    BOOL IsReflectionEmit() const;
 
     // ------------------------------------------------------------
     // Metadata access
@@ -260,7 +260,7 @@ public:
 
     BOOL IsLoaded()
     {
-        return IsDynamic() || HasLoadedPEImage();
+        return IsReflectionEmit() || HasLoadedPEImage();
     }
 
     BOOL IsPtrInPEImage(PTR_CVOID data);

@@ -74,7 +74,7 @@ class StatefulParser {
             result = this.tryAppendBuffer(new Uint8Array(buf));
         }
         if (result.success) {
-            mono_log_debug("protocol-socket: got result", result);
+            mono_log_debug(() => `protocol-socket: got result ${result}`);
             this.setState(result.newState);
             if (result.command) {
                 const command = result.command;
@@ -177,14 +177,14 @@ class ProtocolSocketImpl implements ProtocolSocket {
 
     onMessage (this: ProtocolSocketImpl, ev: MessageEvent<ArrayBuffer | Blob | string>): void {
         const data = ev.data;
-        mono_log_debug("protocol socket received message", ev.data);
+        mono_log_debug(() => `protocol socket received message ${ev.data}`);
         if (typeof data === "object" && data instanceof ArrayBuffer) {
             this.onArrayBuffer(data);
         } else if (typeof data === "object" && data instanceof Blob) {
             data.arrayBuffer().then(this.onArrayBuffer.bind(this));
         } else if (typeof data === "string") {
             // otherwise it's string, ignore it.
-            mono_log_debug("protocol socket received string message; ignoring it", ev.data);
+            mono_log_debug(() => `protocol socket received string message; ignoring it ${ev.data}`);
         } else {
             assertNever(data);
         }
@@ -195,15 +195,15 @@ class ProtocolSocketImpl implements ProtocolSocket {
     }
 
     onArrayBuffer (this: ProtocolSocketImpl, buf: ArrayBuffer) {
-        mono_log_debug("protocol-socket: parsing array buffer", buf);
+        mono_log_debug(() => `protocol-socket: parsing array buffer ${buf}`);
         this.statefulParser.receiveBuffer(buf);
     }
 
     // called by the stateful parser when it has a complete command
     emitCommandCallback (this: this, command: BinaryProtocolCommand): void {
-        mono_log_debug("protocol-socket: queueing command", command);
+        mono_log_debug(() => `protocol-socket: queueing command ${command}`);
         queueMicrotask(() => {
-            mono_log_debug("dispatching protocol event with command", command);
+            mono_log_debug(() => `dispatching protocol event with command ${command}`);
             this.dispatchProtocolCommandEvent(command);
         });
     }

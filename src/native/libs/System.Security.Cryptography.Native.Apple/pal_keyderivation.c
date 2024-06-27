@@ -35,7 +35,7 @@ int32_t AppleCryptoNative_Pbkdf2(PAL_HashAlgorithm prfAlgorithm,
                                  int32_t saltLen,
                                  int32_t iterations,
                                  uint8_t* derivedKey,
-                                 uint32_t derivedKeyLen,
+                                 int32_t derivedKeyLen,
                                  int32_t* errorCode)
 {
     if (errorCode != NULL)
@@ -73,8 +73,8 @@ int32_t AppleCryptoNative_Pbkdf2(PAL_HashAlgorithm prfAlgorithm,
         return -2;
     }
 
-    CCStatus result = CCKeyDerivationPBKDF(kCCPBKDF2, password, passwordLen, salt,
-        saltLen, prf,  iterations, derivedKey, derivedKeyLen);
+    CCStatus result = CCKeyDerivationPBKDF(kCCPBKDF2, password, (size_t)passwordLen, salt,
+        (size_t)saltLen, prf, (uint32_t)iterations, derivedKey, (size_t)derivedKeyLen);
     *errorCode = result;
     return result == kCCSuccess ? 1 : 0;
 }

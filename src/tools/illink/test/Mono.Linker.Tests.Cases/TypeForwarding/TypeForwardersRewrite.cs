@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	{
 		static void Main ()
 		{
-#if NETCOREAPP
+#if NET
 			Test (null);
 #endif
 			Test2 (null);
@@ -56,7 +56,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 		[KeptMember ("Invoke()")]
 		delegate C D ();
 
-#if NETCOREAPP
+#if NET
 		[Kept]
 		static void Test (delegate*<C, S*> arg)
 		{

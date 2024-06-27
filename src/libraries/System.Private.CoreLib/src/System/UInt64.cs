@@ -44,6 +44,12 @@ namespace System
         /// <summary>Represents the number zero (0).</summary>
         private const ulong Zero = 0;
 
+        /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
+        /// <param name="left">The first number to multiply.</param>
+        /// <param name="right">The second number to multiply.</param>
+        /// <returns>The number containing the product of the specified numbers.</returns>
+        public static UInt128 BigMul(ulong left, ulong right) => Math.BigMul(left, right);
+
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
         // Returns a value less than zero if this  object
@@ -738,6 +744,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static ulong INumberBase<ulong>.MinMagnitudeNumber(ulong x, ulong y) => Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static ulong INumberBase<ulong>.MultiplyAddEstimate(ulong left, ulong right, ulong addend) => (left * right) + addend;
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

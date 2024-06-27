@@ -1064,6 +1064,11 @@ ds_ipc_free (DiagnosticsIpc *ipc)
 	ep_rt_object_free (ipc);
 }
 
+void
+ds_ipc_reset (DiagnosticsIpc *ipc)
+{
+}
+
 int32_t
 ds_ipc_poll (
 	DiagnosticsIpcPollHandle *poll_handles_data,

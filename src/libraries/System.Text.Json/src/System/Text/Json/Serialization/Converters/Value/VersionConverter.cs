@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class VersionConverter : JsonPrimitiveConverter<Version?>
     {
-#if NETCOREAPP
+#if NET
         private const int MinimumVersionLength = 3; // 0.0
 
         private const int MaximumVersionLength = 43; // 2147483647.2147483647.2147483647.2147483647
@@ -34,7 +36,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             Debug.Assert(reader.TokenType is JsonTokenType.PropertyName or JsonTokenType.String);
 
-#if NETCOREAPP
+#if NET
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumVersionLength, MaximumEscapedVersionLength))
             {
                 ThrowHelper.ThrowFormatException(DataType.Version);
@@ -84,7 +86,7 @@ namespace System.Text.Json.Serialization.Converters
                 return;
             }
 
-#if NETCOREAPP
+#if NET
 #if NET8_0_OR_GREATER
             Span<byte> span = stackalloc byte[MaximumVersionLength];
 #else
@@ -110,7 +112,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowArgumentNullException(nameof(value));
             }
 
-#if NETCOREAPP
+#if NET
 #if NET8_0_OR_GREATER
             Span<byte> span = stackalloc byte[MaximumVersionLength];
 #else
@@ -123,5 +125,13 @@ namespace System.Text.Json.Serialization.Converters
             writer.WritePropertyName(value.ToString());
 #endif
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) =>
+            new()
+            {
+                Type = JsonSchemaType.String,
+                Comment = "Represents a version string.",
+                Pattern = @"^\d+(\.\d+){1,3}$",
+            };
     }
 }

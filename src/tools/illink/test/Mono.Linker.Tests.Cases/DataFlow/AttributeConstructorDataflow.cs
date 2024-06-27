@@ -8,8 +8,7 @@ using Mono.Linker.Tests.Cases.DataFlow;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 [assembly: KeptAttributeAttribute (typeof (AttributeConstructorDataflow.KeepsPublicPropertiesAttribute))]
-// https://github.com/dotnet/linker/issues/2273
-[assembly: ExpectedWarning ("IL2026", "--ClassWithKeptPublicProperties--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+[assembly: ExpectedWarning ("IL2026", "--ClassWithKeptPublicProperties--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2273")]
 [assembly: AttributeConstructorDataflow.KeepsPublicProperties (typeof (AttributeConstructorDataflow.ClassWithKeptPublicProperties))]
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -26,8 +25,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods")]
 		[KeepsPublicFields (null, null)]
 		[TypeArray (new Type[] { typeof (AttributeConstructorDataflow) })]
-		// https://github.com/dotnet/linker/issues/2273
-		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2273")]
 		public static void Main ()
 		{
 			typeof (AttributeConstructorDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorAttribute));

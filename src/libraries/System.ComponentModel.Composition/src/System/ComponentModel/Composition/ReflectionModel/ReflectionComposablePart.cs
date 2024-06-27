@@ -87,6 +87,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 {
                     lock (_lock)
                     {
+                        value = _importsCache;
                         if (value == null)
                         {
                             value = new Dictionary<ImportDefinition, ImportingItem>();

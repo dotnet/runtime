@@ -37,6 +37,9 @@ namespace BasicEventSourceTests
                     eventSource.Name != "Microsoft-Windows-DotNETRuntime" &&
                     eventSource.Name != "System.Runtime" &&
 
+                    // event source from xunit runner
+                    eventSource.Name != "xUnit.TestEventSource" &&
+
                     // These event sources show up when hosted in the VS test runner
                     eventSource.Name != "System.Net.Sockets" &&
                     eventSource.Name != "Private.InternalDiagnostics.System.Net.Sockets" &&

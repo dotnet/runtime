@@ -157,6 +157,27 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
     if (TransitionBlock::IsArgumentRegisterOffset(argOffset))
     {
         pArg = (LPBYTE)&pData->argumentRegisters + (argOffset - TransitionBlock::GetOffsetOfArgumentRegisters());
+        ArgLocDesc* pArgLocDesc = m_argIterator.GetArgLocDescForStructInRegs();
+
+        if (pArgLocDesc)
+        {
+            if (pArgLocDesc->m_cFloatReg == 1)
+            {
+                _ASSERTE(!(pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_FIRST));
+                _ASSERTE(pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND);
+
+                UINT32 bufferPos = m_bufferPos;
+                UINT64* dst  = (UINT64*)&pData->buffer[bufferPos];
+                m_bufferPos += 16;
+
+                *dst = *(UINT64*)pArg;
+                *(double*)(dst + 1) = pData->floatArgumentRegisters.f[pArgLocDesc->m_idxFloatReg];
+
+                return (LPBYTE)&pData->buffer[bufferPos];
+            }
+
+            _ASSERTE(pArgLocDesc->m_cFloatReg == 0);
+        }
     }
     else
     {

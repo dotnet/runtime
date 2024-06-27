@@ -20,13 +20,13 @@ namespace ILLink.RoslynAnalyzer
 		public const string RequiresAssemblyFilesAttributeFullyQualifiedName = "System.Diagnostics.CodeAnalysis." + RequiresAssemblyFilesAttribute;
 
 		static readonly DiagnosticDescriptor s_locationRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.AvoidAssemblyLocationInSingleFile,
-			helpLinkUri: "https://docs.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3000");
+			helpLinkUri: "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3000");
 
 		static readonly DiagnosticDescriptor s_getFilesRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.AvoidAssemblyGetFilesInSingleFile,
-			helpLinkUri: "https://docs.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3001");
+			helpLinkUri: "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3001");
 
 		static readonly DiagnosticDescriptor s_requiresAssemblyFilesRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresAssemblyFiles,
-			helpLinkUri: "https://docs.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3002");
+			helpLinkUri: "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3002");
 
 		static readonly DiagnosticDescriptor s_requiresAssemblyFilesAttributeMismatch = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresAssemblyFilesAttributeMismatch);
 

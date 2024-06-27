@@ -72,11 +72,6 @@ namespace ILCompiler.DependencyAnalysis
                             dependencies.Add(factory.VirtualMethodUse(slotDefiningMethod), "Virtually callable reflectable method");
                     }
                 }
-
-                if (!_method.IsAbstract)
-                {
-                    dependencies.Add(factory.MethodEntrypoint(_method), "Body of a reflectable method");
-                }
             }
 
             return dependencies;

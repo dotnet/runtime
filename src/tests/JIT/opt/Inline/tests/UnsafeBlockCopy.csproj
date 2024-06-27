@@ -5,8 +5,6 @@
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
-    <NoStandardLib>True</NoStandardLib>
-    <Noconfig>True</Noconfig>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>

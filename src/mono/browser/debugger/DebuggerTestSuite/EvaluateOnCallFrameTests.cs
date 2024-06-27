@@ -216,7 +216,7 @@ namespace DebuggerTests
                    ($"local_dt.Date.Year * 10", TNumber(10)));
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("")]
         [InlineData("this.")]
         public async Task InheritedAndPrivateMembersInAClass(string prefix)

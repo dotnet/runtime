@@ -703,10 +703,18 @@ namespace ILCompiler
             }
 
             public override bool CanReferenceConstructedMethodTable(TypeDesc type)
-                => _constructedMethodTables.Contains(type);
+            {
+                Debug.Assert(type.NormalizeInstantiation() == type);
+                Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
+                return _constructedMethodTables.Contains(type);
+            }
 
             public override bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)
-                => _constructedMethodTables.Contains(type) || _canonConstructedMethodTables.Contains(type);
+            {
+                Debug.Assert(type.NormalizeInstantiation() == type);
+                Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
+                return _constructedMethodTables.Contains(type) || _canonConstructedMethodTables.Contains(type);
+            }
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
             {

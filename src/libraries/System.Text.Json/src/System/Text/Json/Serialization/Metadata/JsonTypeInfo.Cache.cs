@@ -22,34 +22,57 @@ namespace System.Text.Json.Serialization.Metadata
         // followed by a byte representing the length.
         private const int PropertyNameKeyLength = 7;
 
-        // The limit to how many constructor parameter names from the JSON are cached in _parameterRefsSorted before using _parameterCache.
-        private const int ParameterNameCountCacheThreshold = 32;
-
         // The limit to how many property names from the JSON are cached in _propertyRefsSorted before using PropertyCache.
         private const int PropertyNameCountCacheThreshold = 64;
 
         // The number of parameters the deserialization constructor has. If this is not equal to ParameterCache.Count, this means
         // that not all parameters are bound to object properties, and an exception will be thrown if deserialization is attempted.
-        internal int ParameterCount { get; private set; }
+        internal int ParameterCount { get; private protected set; }
 
-        // All of the serializable parameters on a POCO constructor keyed on parameter name.
-        // Only parameters which bind to properties are cached.
-        internal JsonPropertyDictionary<JsonParameterInfo>? ParameterCache { get; private set; }
+        // All of the serializable parameters on a POCO constructor
+        internal ReadOnlySpan<JsonParameterInfo> ParameterCache
+        {
+            get
+            {
+                Debug.Assert(IsConfigured && _parameterCache is not null);
+                return _parameterCache;
+            }
+        }
+
         internal bool UsesParameterizedConstructor
         {
             get
             {
                 Debug.Assert(IsConfigured);
-                return ParameterCache != null;
+                return _parameterCache != null;
             }
         }
 
-        // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
-        internal JsonPropertyDictionary<JsonPropertyInfo>? PropertyCache { get; private set; }
+        private JsonParameterInfo[]? _parameterCache;
 
-        // Fast cache of constructor parameters by first JSON ordering; may not contain all parameters. Accessed before ParameterCache.
-        // Use an array (instead of List<T>) for highest performance.
-        private volatile ParameterRef[]? _parameterRefsSorted;
+        // All of the serializable properties on a POCO (minus the extension property).
+        internal ReadOnlySpan<JsonPropertyInfo> PropertyCache
+        {
+            get
+            {
+                Debug.Assert(IsConfigured && _propertyCache is not null);
+                return _propertyCache;
+            }
+        }
+
+        private JsonPropertyInfo[]? _propertyCache;
+
+        // All of the serializable properties on a POCO (minus the extension property) keyed on property name.
+        internal Dictionary<string, JsonPropertyInfo> PropertyIndex
+        {
+            get
+            {
+                Debug.Assert(IsConfigured && _propertyIndex is not null);
+                return _propertyIndex;
+            }
+        }
+
+        private Dictionary<string, JsonPropertyInfo>? _propertyIndex;
 
         // Fast cache of properties by first JSON ordering; may not contain all properties. Accessed before PropertyCache.
         // Use an array (instead of List<T>) for highest performance.
@@ -157,14 +180,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             // No cached item was found. Try the main dictionary which has all of the properties.
-#if DEBUG
-            if (PropertyCache == null)
-            {
-                Debug.Fail($"Property cache is null. {GetPropertyDebugInfo(propertyName)}");
-            }
-#endif
-
-            if (PropertyCache!.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
+            if (PropertyIndex.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
             {
                 Debug.Assert(info != null, "PropertyCache contains null JsonPropertyInfo");
 
@@ -172,15 +188,6 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
                     {
-#if DEBUG
-                        ulong recomputedKey = GetKey(info.NameAsUtf8Bytes.AsSpan());
-                        if (key != recomputedKey)
-                        {
-                            string propertyNameStr = JsonHelpers.Utf8GetString(propertyName);
-                            Debug.Fail($"key {key} [propertyName={propertyNameStr}] does not match re-computed value {recomputedKey} for the same sequence (case-insensitive). {info.GetDebugInfo()}");
-                        }
-#endif
-
                         // Use the existing byte[] reference instead of creating another one.
                         utf8PropertyName = info.NameAsUtf8Bytes!;
                     }
@@ -192,14 +199,6 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
-#if DEBUG
-                    ulong recomputedKey = GetKey(info.NameAsUtf8Bytes.AsSpan());
-                    if (key != recomputedKey)
-                    {
-                        string propertyNameStr = JsonHelpers.Utf8GetString(propertyName);
-                        Debug.Fail($"key {key} [propertyName={propertyNameStr}] does not match re-computed value {recomputedKey} for the same sequence (case-sensitive). {info.GetDebugInfo()}");
-                    }
-#endif
                     utf8PropertyName = info.NameAsUtf8Bytes;
                 }
             }
@@ -243,140 +242,6 @@ namespace System.Text.Json.Serialization.Metadata
             return info;
         }
 
-        // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal JsonParameterInfo? GetParameter(
-            ReadOnlySpan<byte> propertyName,
-            ref ReadStackFrame frame,
-            out byte[] utf8PropertyName)
-        {
-            ParameterRef parameterRef;
-
-            ulong key = GetKey(propertyName);
-
-            // Keep a local copy of the cache in case it changes by another thread.
-            ParameterRef[]? localParameterRefsSorted = _parameterRefsSorted;
-
-            // If there is an existing cache, then use it.
-            if (localParameterRefsSorted != null)
-            {
-                // Start with the current parameter index, and then go forwards\backwards.
-                int parameterIndex = frame.CtorArgumentState!.ParameterIndex;
-
-                int count = localParameterRefsSorted.Length;
-                int iForward = Math.Min(parameterIndex, count);
-                int iBackward = iForward - 1;
-
-                while (true)
-                {
-                    if (iForward < count)
-                    {
-                        parameterRef = localParameterRefsSorted[iForward];
-                        if (IsParameterRefEqual(parameterRef, propertyName, key))
-                        {
-                            utf8PropertyName = parameterRef.NameFromJson;
-                            return parameterRef.Info;
-                        }
-
-                        ++iForward;
-
-                        if (iBackward >= 0)
-                        {
-                            parameterRef = localParameterRefsSorted[iBackward];
-                            if (IsParameterRefEqual(parameterRef, propertyName, key))
-                            {
-                                utf8PropertyName = parameterRef.NameFromJson;
-                                return parameterRef.Info;
-                            }
-
-                            --iBackward;
-                        }
-                    }
-                    else if (iBackward >= 0)
-                    {
-                        parameterRef = localParameterRefsSorted[iBackward];
-                        if (IsParameterRefEqual(parameterRef, propertyName, key))
-                        {
-                            utf8PropertyName = parameterRef.NameFromJson;
-                            return parameterRef.Info;
-                        }
-
-                        --iBackward;
-                    }
-                    else
-                    {
-                        // Property was not found.
-                        break;
-                    }
-                }
-            }
-
-            // No cached item was found. Try the main dictionary which has all of the parameters.
-            Debug.Assert(ParameterCache != null);
-
-            if (ParameterCache.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonParameterInfo? info))
-            {
-                Debug.Assert(info != null);
-
-                if (Options.PropertyNameCaseInsensitive)
-                {
-                    if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
-                    {
-                        Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()));
-
-                        // Use the existing byte[] reference instead of creating another one.
-                        utf8PropertyName = info.NameAsUtf8Bytes!;
-                    }
-                    else
-                    {
-                        // Make a copy of the original Span.
-                        utf8PropertyName = propertyName.ToArray();
-                    }
-                }
-                else
-                {
-                    Debug.Assert(key == GetKey(info.NameAsUtf8Bytes!.AsSpan()));
-                    utf8PropertyName = info.NameAsUtf8Bytes!;
-                }
-            }
-            else
-            {
-                Debug.Assert(info == null);
-
-                // Make a copy of the original Span.
-                utf8PropertyName = propertyName.ToArray();
-            }
-
-            // Check if we should add this to the cache.
-            // Only cache up to a threshold length and then just use the dictionary when an item is not found in the cache.
-            int cacheCount = 0;
-            if (localParameterRefsSorted != null)
-            {
-                cacheCount = localParameterRefsSorted.Length;
-            }
-
-            // Do a quick check for the stable (after warm-up) case.
-            if (cacheCount < ParameterNameCountCacheThreshold)
-            {
-                // Do a slower check for the warm-up case.
-                if (frame.CtorArgumentState!.ParameterRefCache != null)
-                {
-                    cacheCount += frame.CtorArgumentState.ParameterRefCache.Count;
-                }
-
-                // Check again to append the cache up to the threshold.
-                if (cacheCount < ParameterNameCountCacheThreshold)
-                {
-                    frame.CtorArgumentState.ParameterRefCache ??= new List<ParameterRef>();
-
-                    parameterRef = new ParameterRef(key, info!, utf8PropertyName);
-                    frame.CtorArgumentState.ParameterRefCache.Add(parameterRef);
-                }
-            }
-
-            return info;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key)
         {
@@ -385,22 +250,6 @@ namespace System.Text.Json.Serialization.Metadata
                 // We compare the whole name, although we could skip the first 7 bytes (but it's not any faster)
                 if (propertyName.Length <= PropertyNameKeyLength ||
                     propertyName.SequenceEqual(propertyRef.NameFromJson))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsParameterRefEqual(in ParameterRef parameterRef, ReadOnlySpan<byte> parameterName, ulong key)
-        {
-            if (key == parameterRef.Key)
-            {
-                // We compare the whole name, although we could skip the first 7 bytes (but it's not any faster)
-                if (parameterName.Length <= PropertyNameKeyLength ||
-                    parameterName.SequenceEqual(parameterRef.NameFromJson))
                 {
                     return true;
                 }
@@ -501,42 +350,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             frame.PropertyRefCache = null;
-        }
-
-        internal void UpdateSortedParameterCache(ref ReadStackFrame frame)
-        {
-            Debug.Assert(frame.CtorArgumentState!.ParameterRefCache != null);
-
-            // frame.PropertyRefCache is only read\written by a single thread -- the thread performing
-            // the deserialization for a given object instance.
-
-            List<ParameterRef> listToAppend = frame.CtorArgumentState.ParameterRefCache;
-
-            // _parameterRefsSorted can be accessed by multiple threads, so replace the reference when
-            // appending to it. No lock() is necessary.
-
-            if (_parameterRefsSorted != null)
-            {
-                List<ParameterRef> replacementList = new List<ParameterRef>(_parameterRefsSorted);
-                Debug.Assert(replacementList.Count <= ParameterNameCountCacheThreshold);
-
-                // Verify replacementList will not become too large.
-                while (replacementList.Count + listToAppend.Count > ParameterNameCountCacheThreshold)
-                {
-                    // This code path is rare; keep it simple by using RemoveAt() instead of RemoveRange() which requires calculating index\count.
-                    listToAppend.RemoveAt(listToAppend.Count - 1);
-                }
-
-                // Add the new items; duplicates are possible but that is tolerated during property lookup.
-                replacementList.AddRange(listToAppend);
-                _parameterRefsSorted = replacementList.ToArray();
-            }
-            else
-            {
-                _parameterRefsSorted = listToAppend.ToArray();
-            }
-
-            frame.CtorArgumentState.ParameterRefCache = null;
         }
     }
 }

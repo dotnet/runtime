@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -83,6 +84,7 @@ namespace System.Text.RegularExpressions
             bool dfa = (options & RegexOptions.NonBacktracking) != 0;
             bool compiled = (options & RegexOptions.Compiled) != 0 && !dfa; // for now, we never generate code for NonBacktracking, so treat it as non-compiled
             bool interpreter = !compiled && !dfa;
+            bool usesRfoTryFind = !compiled;
 
             // For interpreter, we want to employ optimizations, but we don't want to make construction significantly
             // more expensive; someone who wants to pay to do more work can specify Compiled.  So for the interpreter
@@ -94,7 +96,7 @@ namespace System.Text.RegularExpressions
                 if (RegexPrefixAnalyzer.FindFirstCharClass(root) is string charClass)
                 {
                     // See if the set is limited to holding only a few characters.
-                    Span<char> scratch = stackalloc char[5]; // max efficiently optimized by IndexOfAny today
+                    Span<char> scratch = stackalloc char[5]; // max efficiently optimized by IndexOfAny today without SearchValues, which isn't used for RTL
                     int scratchCount;
                     char[]? chars = null;
                     if (!RegexCharClass.IsNegated(charClass) &&
@@ -140,12 +142,18 @@ namespace System.Text.RegularExpressions
             // We're now left-to-right only and looking for multiple prefixes and/or sets.
 
             // If there are multiple leading strings, we can search for any of them.
-            if (compiled)
+            if (!interpreter) // this works in the interpreter, but we avoid it due to additional cost during construction
             {
                 if (RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: true) is { Length: > 1 } caseInsensitivePrefixes)
                 {
                     LeadingPrefixes = caseInsensitivePrefixes;
                     FindMode = FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight;
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
+                    if (usesRfoTryFind)
+                    {
+                        LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.OrdinalIgnoreCase);
+                    }
+#endif
                     return;
                 }
 
@@ -156,6 +164,12 @@ namespace System.Text.RegularExpressions
                 //{
                 //    LeadingPrefixes = caseSensitivePrefixes;
                 //    FindMode = FindNextStartingPositionMode.LeadingStrings_LeftToRight;
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
+                //    if (usesRfoTryFind)
+                //    {
+                //        LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.Ordinal);
+                //    }
+#endif
                 //    return;
                 //}
             }
@@ -275,10 +289,14 @@ namespace System.Text.RegularExpressions
         /// <remarks>The case-insensitivity of the 0th entry will always match the mode selected, but subsequent entries may not.</remarks>
         public List<FixedDistanceSet>? FixedDistanceSets { get; }
 
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
+        /// <summary>When in leading strings mode, gets the search values to use for searching the input.</summary>
+        public SearchValues<string>? LeadingStrings { get; }
+#endif
+
         /// <summary>Data about a character class at a fixed offset from the start of any match to a pattern.</summary>
         public struct FixedDistanceSet(char[]? chars, string set, int distance)
         {
-
             /// <summary>The character class description.</summary>
             public string Set = set;
             /// <summary>Whether the <see cref="Set"/> is negated.</summary>
@@ -606,12 +624,22 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LeadingSet_LeftToRight:
                     {
                         FixedDistanceSet primarySet = FixedDistanceSets![0];
-                        char[]? chars = primarySet.Chars;
 
                         ReadOnlySpan<char> span = textSpan.Slice(pos);
+                        char[]? chars = primarySet.Chars;
                         if (chars is { Length: <= 5 }) // 5 == currently the max length efficiently handled by IndexOfAny{Except} without SearchValues
                         {
                             int i = primarySet.Negated ? span.IndexOfAnyExcept(chars) : span.IndexOfAny(chars);
+                            if (i >= 0)
+                            {
+                                pos += i;
+                                return true;
+                            }
+                        }
+                        else if (primarySet.Range is not null)
+                        {
+                            (char low, char high) = primarySet.Range.GetValueOrDefault();
+                            int i = primarySet.Negated ? span.IndexOfAnyExceptInRange(low, high) : span.IndexOfAnyInRange(low, high);
                             if (i >= 0)
                             {
                                 pos += i;
@@ -666,6 +694,28 @@ namespace System.Text.RegularExpressions
                         pos = textSpan.Length;
                         return false;
                     }
+
+                // There are multiple possible strings at the beginning. Search for one.
+                case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
+                case FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight:
+                {
+                    if (LeadingStrings is not SearchValues<string> searchValues)
+                    {
+                        // This should be exceedingly rare and only happen if a Compiled regex selected this
+                        // option but then failed to compile (e.g. due to too deep stacks) and fell back to the interpreter.
+                        return true;
+                    }
+
+                    int i = textSpan.Slice(pos).IndexOfAny(searchValues);
+                    if (i >= 0)
+                    {
+                        pos += i;
+                        return true;
+                    }
+
+                    pos = textSpan.Length;
+                    return false;
+                }
 
                 // There are one or more sets at fixed offsets from the start of the pattern.
 
@@ -790,12 +840,6 @@ namespace System.Text.RegularExpressions
                         pos = textSpan.Length;
                         return false;
                     }
-
-                // Not supported in the interpreter, but we could end up here for patterns so complex the compiler gave up on them.
-
-                case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
-                case FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight:
-                    return true;
 
                 // Nothing special to look for.  Just return true indicating this is a valid position to try to match.
 

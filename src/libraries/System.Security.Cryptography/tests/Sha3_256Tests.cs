@@ -15,9 +15,9 @@ namespace System.Security.Cryptography.Tests
         {
             public static bool IsSupported => SHA3_256.IsSupported;
             public static int HashSizeInBytes => SHA3_256.HashSizeInBytes;
+            public static HashAlgorithm Create() => SHA3_256.Create();
         }
 
-        protected override HashAlgorithm Create() => SHA3_256.Create();
         protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.SHA3_256;
 
         protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)

@@ -123,6 +123,26 @@ namespace System.Security.Cryptography
             return hashValue;
         }
 
+        internal bool TryGetHashAndReset(
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            if (destination.Length < _hash.HashSize / 8)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            _hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            byte[] actual = _hash.Hash;
+            _hash.Initialize();
+
+            Debug.Assert(actual.Length * 8 == _hash.HashSize);
+            actual.AsSpan().CopyTo(destination);
+            bytesWritten = actual.Length;
+            return true;
+        }
+
         /// <summary>
         /// Release all resources used by the current instance of the
         /// <see cref="IncrementalHash"/> class.

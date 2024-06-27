@@ -16,6 +16,14 @@ inline LOADERALLOCATORREF LoaderAllocator::GetExposedObject()
 }
 #endif
 
+inline bool LoaderAllocator::IsExposedObjectLive()
+{
+    LIMITED_METHOD_CONTRACT;
+    if (m_hLoaderAllocatorObjectHandle == 0)
+        return false;
+    return !ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle);
+}
+
 inline void GlobalLoaderAllocator::Init(BaseDomain *pDomain)
 {
     LoaderAllocator::Init(pDomain, m_ExecutableHeapInstance);

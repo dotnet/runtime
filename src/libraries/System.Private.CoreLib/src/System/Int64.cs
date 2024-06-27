@@ -47,6 +47,12 @@ namespace System
         /// <summary>Represents the number negative one (-1).</summary>
         private const long NegativeOne = -1;
 
+        /// <summary>Produces the full product of two 64-bit numbers.</summary>
+        /// <param name="left">The first number to multiply.</param>
+        /// <param name="right">The second number to multiply.</param>
+        /// <returns>The number containing the product of the specified numbers.</returns>
+        public static Int128 BigMul(long left, long right) => Math.BigMul(left, right);
+
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
         // Returns a value less than zero if this  object
@@ -907,6 +913,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static long INumberBase<long>.MinMagnitudeNumber(long x, long y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static long INumberBase<long>.MultiplyAddEstimate(long left, long right, long addend) => (long)((left * right) + addend);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

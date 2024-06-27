@@ -34,5 +34,5 @@ PALEXPORT int32_t AppleCryptoNative_Pbkdf2(PAL_HashAlgorithm prfAlgorithm,
                                            int32_t saltLen,
                                            int32_t iterations,
                                            uint8_t* derivedKey,
-                                           uint32_t derivedKeyLen,
+                                           int32_t derivedKeyLen,
                                            int32_t* errorCode);

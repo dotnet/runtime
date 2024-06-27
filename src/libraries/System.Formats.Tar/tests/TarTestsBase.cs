@@ -311,6 +311,9 @@ namespace System.Formats.Tar.Tests
 
         protected void SetCommonProperties(TarEntry entry, bool isDirectory = false)
         {
+            // The octal format limits the range.
+            bool formatIsOctalOnly = entry.Format is not TarEntryFormat.Pax and not TarEntryFormat.Gnu;
+
             // Length (Data is checked outside this method)
             Assert.Equal(0, entry.Length);
 
@@ -329,7 +332,14 @@ namespace System.Formats.Tar.Tests
             DateTimeOffset approxNow = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(6));
             Assert.True(entry.ModificationTime > approxNow);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => entry.ModificationTime = DateTime.MinValue); // Minimum allowed is UnixEpoch, not MinValue
+            if (formatIsOctalOnly)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => entry.ModificationTime = DateTime.MinValue); // Minimum allowed is UnixEpoch, not MinValue
+            }
+            else
+            {
+                entry.ModificationTime = DateTimeOffset.MinValue;
+            }
             entry.ModificationTime = TestModificationTime;
 
             // Name

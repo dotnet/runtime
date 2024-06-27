@@ -30,11 +30,11 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void GetHostEntry_InvalidHost_LogsError()
+        public async Task GetHostEntry_InvalidHost_LogsError()
         {
             try
             {
-                RemoteExecutor.Invoke(static () =>
+                await RemoteExecutor.Invoke(static () =>
                 {
                     using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
                     {
@@ -65,7 +65,7 @@ namespace System.Net.NameResolution.Tests
                             Assert.NotNull(ev.Payload[2]);
                         }
                     }
-                }).Dispose();
+                }).DisposeAsync();
             }
             catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
             {
@@ -74,11 +74,11 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void GetHostEntryAsync_InvalidHost_LogsError()
+        public async Task GetHostEntryAsync_InvalidHost_LogsError()
         {
             try
             {
-                RemoteExecutor.Invoke(static async () =>
+                await RemoteExecutor.Invoke(static async () =>
                 {
                     using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
                     {
@@ -110,7 +110,7 @@ namespace System.Net.NameResolution.Tests
                             Assert.NotNull(ev.Payload[2]);
                         }
                     }
-                }).Dispose();
+                }).DisposeAsync();
             }
             catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
             {
@@ -132,11 +132,11 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void GetHostEntry_ValidName_NoErrors()
+        public async Task GetHostEntry_ValidName_NoErrors()
         {
             try
             {
-                RemoteExecutor.Invoke(static () =>
+                await RemoteExecutor.Invoke(static () =>
                 {
                     using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Verbose))
                     {
@@ -162,7 +162,7 @@ namespace System.Net.NameResolution.Tests
                         // No errors or warning for successful query.
                         Assert.True(events.Count(ev => (int)ev.Level > (int)EventLevel.Informational) == 0);
                     }
-                }).Dispose();
+                }).DisposeAsync();
             }
             catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
             {

@@ -61,7 +61,7 @@ public:
     void Encode(unsigned value);
     void Encode(signed value, BOOL isSigned);
     void Add(unsigned value, unsigned length);
-    void Add64(unsigned __int64 value, unsigned length);
+    void Add64(uint64_t value, unsigned length);
     void Done();
     unsigned Contents(BYTE** contents);
     unsigned Length();

@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.ServiceProcess
 {
     public readonly struct SessionChangeDescription
-#if NETCOREAPP
+#if NET
         : IEquatable<SessionChangeDescription>
 #endif
     {

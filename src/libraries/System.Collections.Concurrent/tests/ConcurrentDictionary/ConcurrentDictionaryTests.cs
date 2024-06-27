@@ -1088,7 +1088,198 @@ namespace System.Collections.Concurrent.Tests
                 }));
         }
 
+        // TODO: Revise this test when EqualityComparer<string>.Default implements IAlternateEqualityComparer<ReadOnlySpan<char>, string>
+        [Fact]
+        public void GetAlternateLookup_FailsForDefaultComparer()
+        {
+            Assert.False(new ConcurrentDictionary<string, string>().TryGetAlternateLookup<ReadOnlySpan<char>>(out _));
+        }
+
+        [Fact]
+        public void GetAlternateLookup_FailsWhenIncompatible()
+        {
+            var dictionary = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+
+            dictionary.GetAlternateLookup<ReadOnlySpan<char>>();
+            Assert.True(dictionary.TryGetAlternateLookup<ReadOnlySpan<char>>(out _));
+
+            Assert.Throws<InvalidOperationException>(() => dictionary.GetAlternateLookup<ReadOnlySpan<byte>>());
+            Assert.Throws<InvalidOperationException>(() => dictionary.GetAlternateLookup<string>());
+            Assert.Throws<InvalidOperationException>(() => dictionary.GetAlternateLookup<int>());
+
+            Assert.False(dictionary.TryGetAlternateLookup<ReadOnlySpan<byte>>(out _));
+            Assert.False(dictionary.TryGetAlternateLookup<string>(out _));
+            Assert.False(dictionary.TryGetAlternateLookup<int>(out _));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        public void GetAlternateLookup_OperationsMatchUnderlyingDictionary(int mode)
+        {
+            // Test with a variety of comparers to ensure that the alternate lookup is consistent with the underlying dictionary
+            ConcurrentDictionary<string, int> dictionary = new(mode switch
+            {
+                0 => StringComparer.Ordinal,
+                1 => StringComparer.OrdinalIgnoreCase,
+                2 => StringComparer.InvariantCulture,
+                3 => StringComparer.InvariantCultureIgnoreCase,
+                4 => StringComparer.CurrentCulture,
+                5 => StringComparer.CurrentCultureIgnoreCase,
+                _ => throw new ArgumentOutOfRangeException(nameof(mode))
+            });
+            ConcurrentDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> lookup = dictionary.GetAlternateLookup<ReadOnlySpan<char>>();
+            Assert.Same(dictionary, lookup.Dictionary);
+            Assert.Same(lookup.Dictionary, lookup.Dictionary);
+
+            string actualKey;
+            int value;
+
+            // Add to the dictionary and validate that the lookup reflects the changes
+            dictionary["123"] = 123;
+            Assert.True(lookup.ContainsKey("123".AsSpan()));
+            Assert.True(lookup.TryGetValue("123".AsSpan(), out value));
+            Assert.Equal(123, value);
+            Assert.Equal(123, lookup["123".AsSpan()]);
+            Assert.False(lookup.TryAdd("123".AsSpan(), 321));
+            Assert.True(lookup.TryRemove("123".AsSpan(), out value));
+            Assert.Equal(123, value);
+            Assert.False(dictionary.ContainsKey("123"));
+            Assert.Throws<KeyNotFoundException>(() => lookup["123".AsSpan()]);
+
+            // Add via the lookup and validate that the dictionary reflects the changes
+            Assert.True(lookup.TryAdd("123".AsSpan(), 123));
+            Assert.True(dictionary.ContainsKey("123"));
+            lookup.TryGetValue("123".AsSpan(), out value);
+            Assert.Equal(123, value);
+            Assert.False(lookup.TryRemove("321".AsSpan(), out actualKey, out value));
+            Assert.Null(actualKey);
+            Assert.Equal(0, value);
+            Assert.True(lookup.TryRemove("123".AsSpan(), out actualKey, out value));
+            Assert.Equal("123", actualKey);
+            Assert.Equal(123, value);
+
+            // Ensure that case-sensitivity of the comparer is respected
+            lookup["a".AsSpan()] = 42;
+            if (dictionary.Comparer.Equals(StringComparer.Ordinal) ||
+                dictionary.Comparer.Equals(StringComparer.InvariantCulture) ||
+                dictionary.Comparer.Equals(StringComparer.CurrentCulture))
+            {
+                Assert.True(lookup.TryGetValue("a".AsSpan(), out actualKey, out value));
+                Assert.Equal("a", actualKey);
+                Assert.Equal(42, value);
+                Assert.True(lookup.TryAdd("A".AsSpan(), 42));
+                Assert.True(lookup.TryRemove("a".AsSpan(), out value));
+                Assert.Equal(42, value);
+                Assert.False(lookup.TryRemove("a".AsSpan(), out value));
+                Assert.Equal(0, value);
+                Assert.True(lookup.TryRemove("A".AsSpan(), out value));
+                Assert.Equal(42, value);
+            }
+            else
+            {
+                Assert.True(lookup.TryGetValue("A".AsSpan(), out actualKey, out value));
+                Assert.Equal("a", actualKey);
+                Assert.Equal(42, value);
+                Assert.False(lookup.TryAdd("A".AsSpan(), 42));
+                Assert.True(lookup.TryRemove("A".AsSpan(), out value));
+                Assert.Equal(42, value);
+                Assert.False(lookup.TryRemove("a".AsSpan(), out value));
+                Assert.Equal(0, value);
+                Assert.False(lookup.TryRemove("A".AsSpan(), out value));
+                Assert.Equal(0, value);
+            }
+
+            // Validate overwrites
+            lookup["a".AsSpan()] = 42;
+            Assert.Equal(42, dictionary["a"]);
+            lookup["a".AsSpan()] = 43;
+            Assert.True(lookup.TryRemove("a".AsSpan(), out actualKey, out value));
+            Assert.Equal("a", actualKey);
+            Assert.Equal(43, value);
+
+            // Test adding multiple entries via the lookup
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.Equal(i, dictionary.Count);
+                Assert.True(lookup.TryAdd(i.ToString().AsSpan(), i));
+                Assert.False(lookup.TryAdd(i.ToString().AsSpan(), i));
+            }
+
+            Assert.Equal(10, dictionary.Count);
+
+            // Test that the lookup and the dictionary agree on what's in and not in
+            for (int i = -1; i <= 10; i++)
+            {
+                Assert.Equal(dictionary.TryGetValue(i.ToString(), out int dv), lookup.TryGetValue(i.ToString().AsSpan(), out int lv));
+                Assert.Equal(dv, lv);
+            }
+
+            // Test removing multiple entries via the lookup
+            for (int i = 9; i >= 0; i--)
+            {
+                Assert.True(lookup.TryRemove(i.ToString().AsSpan(), out actualKey, out value));
+                Assert.Equal(i.ToString(), actualKey);
+                Assert.Equal(i, value);
+                Assert.False(lookup.TryRemove(i.ToString().AsSpan(), out actualKey, out value));
+                Assert.Null(actualKey);
+                Assert.Equal(0, value);
+                Assert.Equal(i, dictionary.Count);
+            }
+        }
+
+        [Fact]
+        public void Dictionary_NotCorruptedByThrowingComparer()
+        {
+            ConcurrentDictionary<string, string> dict = new(new CreateThrowsComparer());
+
+            Assert.Equal(0, dict.Count);
+
+            Assert.Throws<FormatException>(() => dict.GetAlternateLookup<ReadOnlySpan<char>>().TryAdd("123".AsSpan(), "123"));
+            Assert.Equal(0, dict.Count);
+
+            Assert.True(dict.TryAdd("123", "123"));
+            Assert.Equal(1, dict.Count);
+        }
+
+        [Fact]
+        public void Dictionary_NotCorruptedByNullReturningComparer()
+        {
+            ConcurrentDictionary<string, string> dict = new(new NullReturningComparer());
+
+            Assert.Equal(0, dict.Count);
+
+            Assert.ThrowsAny<ArgumentException>(() => dict.GetAlternateLookup<ReadOnlySpan<char>>().TryAdd("123".AsSpan(), "123"));
+            Assert.Equal(0, dict.Count);
+
+            Assert.True(dict.TryAdd("123", "123"));
+            Assert.Equal(1, dict.Count);
+        }
+
         #region Helper Classes and Methods
+        private sealed class CreateThrowsComparer : IEqualityComparer<string>, IAlternateEqualityComparer<ReadOnlySpan<char>, string>
+        {
+            public bool Equals(string? x, string? y) => EqualityComparer<string>.Default.Equals(x, y);
+            public int GetHashCode(string obj) => EqualityComparer<string>.Default.GetHashCode(obj);
+
+            public bool Equals(ReadOnlySpan<char> span, string target) => span.SequenceEqual(target);
+            public int GetHashCode(ReadOnlySpan<char> span) => string.GetHashCode(span);
+            public string Create(ReadOnlySpan<char> span) => throw new FormatException();
+        }
+
+        private sealed class NullReturningComparer : IEqualityComparer<string>, IAlternateEqualityComparer<ReadOnlySpan<char>, string>
+        {
+            public bool Equals(string? x, string? y) => EqualityComparer<string>.Default.Equals(x, y);
+            public int GetHashCode(string obj) => EqualityComparer<string>.Default.GetHashCode(obj);
+
+            public bool Equals(ReadOnlySpan<char> span, string target) => span.SequenceEqual(target);
+            public int GetHashCode(ReadOnlySpan<char> span) => string.GetHashCode(span);
+            public string Create(ReadOnlySpan<char> span) => null!;
+        }
 
         private class ThreadData
         {

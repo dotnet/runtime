@@ -738,9 +738,9 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
 }
 
 //-------------------------------------------------------------------------------
-// impMarkContiguousSIMDFieldStores: Try to identify if there are contiguous
-// assignments from SIMD field to memory. If there are, then mark the related
-// lclvar so that it won't be promoted.
+// impMarkContiguousSIMDFieldStores: Try to identify if there are contiguous stores
+// from SIMD field to memory. If there are, then mark the related lclvar so that it
+// won't be promoted.
 //
 // Arguments:
 //      stmt - GenTree*. Input statement node.

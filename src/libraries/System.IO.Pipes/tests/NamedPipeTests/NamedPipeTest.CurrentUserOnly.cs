@@ -131,7 +131,7 @@ namespace System.IO.Pipes.Tests
                 }));
             }
 
-            Task.WaitAll(tasks.ToArray());
+            Task.WaitAll(tasks);
         }
 
         [Theory]

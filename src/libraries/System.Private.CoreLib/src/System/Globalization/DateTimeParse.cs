@@ -2710,7 +2710,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
             if (raw.fraction > 0)
             {
-                if (!time.TryAddTicks((long)Math.Round(raw.fraction * Calendar.TicksPerSecond), out time))
+                if (!time.TryAddTicks((long)Math.Round(raw.fraction * TimeSpan.TicksPerSecond), out time))
                 {
                     result.SetBadDateTimeFailure();
                     TPTraceExit("0100 (time.TryAddTicks)", dps);
@@ -2897,7 +2897,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             resultTicks -= result.timeZoneOffset.Ticks;
             if (resultTicks < 0)
             {
-                resultTicks += Calendar.TicksPerDay;
+                resultTicks += TimeSpan.TicksPerDay;
             }
 
             if (resultTicks < DateTime.MinTicks || resultTicks > DateTime.MaxTicks)
@@ -2922,7 +2922,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             // Convert to local ticks
             TimeZoneInfo tz = TimeZoneInfo.Local;
             bool isAmbiguousLocalDst = false;
-            if (resultTicks < Calendar.TicksPerDay)
+            if (resultTicks < TimeSpan.TicksPerDay)
             {
                 //
                 // This is time of day.
@@ -2935,7 +2935,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
                 if (resultTicks < 0)
                 {
-                    resultTicks += Calendar.TicksPerDay;
+                    resultTicks += TimeSpan.TicksPerDay;
                 }
             }
             else
@@ -3071,7 +3071,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
 
-            if (!time.TryAddTicks((long)Math.Round(partSecond * Calendar.TicksPerSecond), out time))
+            if (!time.TryAddTicks((long)Math.Round(partSecond * TimeSpan.TicksPerSecond), out time))
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -3179,6 +3179,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         private static bool ParseFractionExact(ref __DTString str, int maxDigitLen, scoped ref double result)
         {
+            Debug.Assert(maxDigitLen <= DateTimeFormat.MaxSecondsFractionDigits);
             if (!str.GetNextDigit())
             {
                 str.Index--;
@@ -3197,7 +3198,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 result = result * 10 + str.GetDigit();
             }
 
-            result /= TimeSpanParse.Pow10(digitLen);
+            result /= TimeSpanParse.Pow10UpToMaxFractionDigits(digitLen);
             return digitLen == maxDigitLen;
         }
 
@@ -4738,7 +4739,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
             if (result.fraction > 0)
             {
-                if (!result.parsedDate.TryAddTicks((long)Math.Round(result.fraction * Calendar.TicksPerSecond), out result.parsedDate))
+                if (!result.parsedDate.TryAddTicks((long)Math.Round(result.fraction * TimeSpan.TicksPerSecond), out result.parsedDate))
                 {
                     result.SetBadDateTimeFailure();
                     return false;
@@ -5083,7 +5084,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
 
-            if (!dateTime.TryAddTicks((long)Math.Round(fraction * Calendar.TicksPerSecond), out result.parsedDate))
+            if (!dateTime.TryAddTicks((long)Math.Round(fraction * TimeSpan.TicksPerSecond), out result.parsedDate))
             {
                 result.SetBadDateTimeFailure();
                 return false;

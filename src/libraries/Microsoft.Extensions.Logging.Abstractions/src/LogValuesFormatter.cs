@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Logging
 #endif
         }
 
-        public string OriginalFormat { get; private set; }
+        public string OriginalFormat { get; }
         public List<string> ValueNames => _valueNames;
 
         private static int FindBraceIndex(string format, char brace, int startIndex, int endIndex)

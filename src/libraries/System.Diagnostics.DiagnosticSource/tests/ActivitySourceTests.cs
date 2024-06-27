@@ -23,11 +23,20 @@ namespace System.Diagnostics.Tests
                 Assert.Equal("Source1", as1.Name);
                 Assert.Equal(String.Empty, as1.Version);
                 Assert.False(as1.HasListeners());
+                Assert.Null(as1.Tags);
 
                 using ActivitySource as2 =  new ActivitySource("Source2", "1.1.1.2");
                 Assert.Equal("Source2", as2.Name);
                 Assert.Equal("1.1.1.2", as2.Version);
                 Assert.False(as2.HasListeners());
+                Assert.Null(as2.Tags);
+
+                using ActivitySource as3 =  new ActivitySource("Source3", "1.1.1.3", new TagList { { "key3", "value3" }, { "key2", "value2" }, { "key1", "value1" } });
+                Assert.Equal("Source3", as3.Name);
+                Assert.Equal("1.1.1.3", as3.Version);
+                Assert.False(as3.HasListeners());
+                // Ensure the tags are sorted by key.
+                Assert.Equal(new TagList  { { "key1", "value1" }, { "key2", "value2" }, { "key3", "value3" } }, as3.Tags);
             }).Dispose();
         }
 

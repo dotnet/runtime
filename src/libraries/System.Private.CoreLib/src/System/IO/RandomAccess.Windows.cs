@@ -57,7 +57,7 @@ namespace System.IO
                 int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                 return errorCode switch
                 {
-                    // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfile#synchronization-and-file-position:
+                    // https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-readfile#synchronization-and-file-position:
                     // "If lpOverlapped is not NULL, then when a synchronous read operation reaches the end of a file,
                     // ReadFile returns FALSE and GetLastError returns ERROR_HANDLE_EOF"
                     Interop.Errors.ERROR_HANDLE_EOF => numBytesRead,
@@ -279,7 +279,7 @@ namespace System.IO
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
+                Debug.Assert(vts._memoryHandle.Pointer != null || buffer.IsEmpty);
 
                 // Queue an async ReadFile operation.
                 if (Interop.Kernel32.ReadFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
@@ -372,7 +372,7 @@ namespace System.IO
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
+                Debug.Assert(vts._memoryHandle.Pointer != null || buffer.IsEmpty);
 
                 // Queue an async WriteFile operation.
                 if (Interop.Kernel32.WriteFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
@@ -447,7 +447,7 @@ namespace System.IO
             }
         }
 
-        // From https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfilescatter:
+        // From https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-readfilescatter:
         // "The file handle must be created with [...] the FILE_FLAG_OVERLAPPED and FILE_FLAG_NO_BUFFERING flags."
         private static bool CanUseScatterGatherWindowsAPIs(SafeFileHandle handle)
             => handle.IsAsync && ((handle.GetFileOptions() & SafeFileHandle.NoBuffering) != 0);
@@ -738,7 +738,7 @@ namespace System.IO
                 result->OffsetHigh = (int)(fileOffset >> 32);
             }
 
-            // From https://docs.microsoft.com/en-us/windows/win32/api/ioapiset/nf-ioapiset-getoverlappedresult:
+            // From https://learn.microsoft.com/windows/win32/api/ioapiset/nf-ioapiset-getoverlappedresult:
             // "If the hEvent member of the OVERLAPPED structure is NULL, the system uses the state of the hFile handle to signal when the operation has been completed.
             // Use of file, named pipe, or communications-device handles for this purpose is discouraged.
             // It is safer to use an event object because of the confusion that can occur when multiple simultaneous overlapped operations
@@ -788,7 +788,7 @@ namespace System.IO
             }
         }
 
-        // From https://docs.microsoft.com/en-us/windows/win32/fileio/file-buffering:
+        // From https://learn.microsoft.com/windows/win32/fileio/file-buffering:
         // "File access sizes, including the optional file offset in the OVERLAPPED structure,
         // if specified, must be for a number of bytes that is an integer multiple of the volume sector size."
         // So if buffer and physical sector size is 4096 and the file size is 4097:

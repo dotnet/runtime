@@ -45,8 +45,6 @@
 // if someone changes the frame size.  You are expected to keep this hard coded constant
 // up to date so that changes in the frame size trigger errors at compile time if the code is not altered
 
-void generate_noref_copy (unsigned nbytes, StubLinkerCPU* sl);
-
 #ifdef FEATURE_EH_FUNCLETS
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * regs)
 {
@@ -146,7 +144,6 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -170,7 +167,6 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -218,7 +214,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         PRECONDITION(m_MachState.isValid());               // InsureInit has been called
         SUPPORTS_DAC;
     }
@@ -398,7 +393,6 @@ void ExternalMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFlo
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -418,7 +412,6 @@ void StubDispatchFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -475,7 +468,6 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -533,7 +525,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
-        HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -622,7 +613,6 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -701,7 +691,6 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -760,7 +749,6 @@ void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -781,7 +769,6 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -921,18 +908,6 @@ Stub *GenerateInitPInvokeFrameHelper()
     // A single process-wide stub that will never unload
     RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
 }
-
-
-extern "C" VOID STDCALL StubRareEnableWorker(Thread *pThread)
-{
-    WRAPPER_NO_CONTRACT;
-
-    //printf("RareEnable\n");
-    pThread->RareEnablePreemptiveGC();
-}
-
-
-
 
 // Disable when calling into managed code from a place that fails via Exceptions
 extern "C" VOID STDCALL StubRareDisableTHROWWorker(Thread *pThread)

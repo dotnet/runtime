@@ -76,7 +76,7 @@ TYPE LookupMap<TYPE>::GetElement(DWORD rid, TADDR* pFlags)
     SUPPORTS_DAC;
 
     PTR_TADDR pElement = GetElementPtr(rid);
-    return (pElement != NULL) ? GetValueAt(pElement, pFlags, supportedFlags) : NULL;
+    return (pElement != NULL) ? GetValueAt(pElement, pFlags, supportedFlags) : (TYPE)(TADDR)0;
 }
 
 // Stores an association in a map that has been previously grown to
@@ -117,7 +117,7 @@ BOOL LookupMap<TYPE>::TrySetElement(DWORD rid, TYPE value, TADDR flags)
     _ASSERTE(oldValue == NULL || (oldValue == value && oldFlags == flags));
 #endif
     // Avoid unnecessary writes - do not overwrite existing value
-    if (*pElement == NULL)
+    if (*pElement == 0)
     {
         SetValueAt(pElement, value, flags);
     }
@@ -146,10 +146,10 @@ void LookupMap<TYPE>::AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TA
     // Once set, the values in LookupMap should be immutable.
     TADDR oldFlags;
     TYPE oldValue = GetValueAt(pElement, &oldFlags, supportedFlags);
-    _ASSERTE(oldValue == NULL || (oldValue == value && oldFlags == flags));
+    _ASSERTE(oldValue == (TYPE)NULL || (oldValue == value && oldFlags == flags));
 #endif
     // Avoid unnecessary writes - do not overwrite existing value
-    if (*pElement == NULL)
+    if (*pElement == 0)
     {
         SetValueAt(pElement, value, flags);
     }
@@ -259,7 +259,7 @@ inline PTR_Assembly Module::GetAssembly() const
     return m_pAssembly;
 }
 
-inline MethodDesc *Module::LookupMethodDef(mdMethodDef token)
+inline PTR_MethodDesc Module::LookupMethodDef(mdMethodDef token)
 {
     CONTRACTL
     {
@@ -272,6 +272,22 @@ inline MethodDesc *Module::LookupMethodDef(mdMethodDef token)
 
     _ASSERTE(TypeFromToken(token) == mdtMethodDef);
     return m_MethodDefToDescMap.GetElement(RidFromToken(token));
+}
+
+inline PTR_ILCodeVersioningState Module::LookupILCodeVersioningState(mdMethodDef token)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END
+
+    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+    _ASSERTE(TypeFromToken(token) == mdtMethodDef);
+    return m_ILCodeVersioningStateMap.GetElement(RidFromToken(token));
 }
 
 inline MethodDesc *Module::LookupMemberRefAsMethod(mdMemberRef token)
@@ -320,14 +336,6 @@ inline mdAssemblyRef Module::FindAssemblyRef(Assembly *targetAssembly)
 }
 
 #endif //DACCESS_COMPILE
-
-FORCEINLINE PTR_DomainLocalModule Module::GetDomainLocalModule()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    return m_ModuleID;
-}
 
 #include "nibblestream.h"
 
@@ -457,13 +465,6 @@ BOOL Module::FixupDelayListAux(TADDR pFixupList,
     } // Done with all entries in this table
 
     return TRUE;
-}
-
-inline MethodTable* Module::GetDynamicClassMT(DWORD dynamicClassID)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(m_cDynamicEntries > dynamicClassID);
-    return VolatileLoadWithoutBarrier(&m_pDynamicStaticsInfo)[dynamicClassID].pEnclosingMT;
 }
 
 #ifdef FEATURE_CODE_VERSIONING

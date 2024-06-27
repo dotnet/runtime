@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 
 namespace Mono.Linker
@@ -15,6 +16,16 @@ namespace Mono.Linker
 				me[key] = valueList;
 			}
 			valueList.Add (value);
+		}
+
+		public static U GetOrAdd<T, U> (this Dictionary<T, U> dict, T key, Func<T, U> createValue) where T : notnull
+		{
+			if (dict.TryGetValue (key, out var value)) {
+				return value;
+			}
+			U val = createValue (key);
+			dict.Add (key, val);
+			return val;
 		}
 	}
 }

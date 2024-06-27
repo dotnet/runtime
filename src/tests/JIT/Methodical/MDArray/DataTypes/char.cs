@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@char;
+
 public struct VT
 {
     public char[,] char2darr;
@@ -27,6 +29,7 @@ public class charMDArrTest
     static char[][, ,] ja2 = new char[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

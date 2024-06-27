@@ -584,7 +584,7 @@ namespace System.Collections.Immutable.Tests
             list = ImmutableList.Create("a");
             Assert.Equal(1, list.Count);
 
-            list = ImmutableList.Create("a", "b");
+            list = ImmutableList.Create(new[] { "a", "b" });
             Assert.Equal(2, list.Count);
 
             list = ImmutableList.Create((ReadOnlySpan<string>)new[] { "a", "b" });
@@ -628,6 +628,7 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.RemoveRange(4, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.RemoveRange(0, 4));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.RemoveRange(2, 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.RemoveRange(2, int.MaxValue));
             Assert.Equal(list, list.RemoveRange(3, 0));
         }
 
@@ -793,7 +794,7 @@ namespace System.Collections.Immutable.Tests
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
-#if NETCOREAPP
+#if NET
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void UsableWithCollectibleAssemblies()
         {

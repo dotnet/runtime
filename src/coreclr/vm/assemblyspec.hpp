@@ -193,8 +193,6 @@ class AssemblySpec  : public BaseAssemblySpec
     static void InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* assemblyName, _Out_ ASSEMBLYNAMEREF* assemblyNameRef);
 
   public:
-    void MatchPublicKeys(Assembly *pAssembly);
-
     AppDomain *GetAppDomain()
     {
         LIMITED_METHOD_CONTRACT;

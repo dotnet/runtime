@@ -2,7 +2,7 @@
 
 `Microsoft.Extensions.Logging` is combined with a core logging abstraction under `Microsoft.Extensions.Logging.Abstractions`. This abstraction is available in our basic built-in implementations like console, event log, and debug (Debug.WriteLine). Also note, there is no dedicated built-in solution for file-based logging.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/logging.
+Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/logging.
 
 ## Examples
 
@@ -60,7 +60,7 @@ public class LoggingSample2
 }
 ```
 
-To reach a balance between performance and usability we added the compile-time logging source generator feature in .NET 6, to learn more about it and learn how to use a source generator to create log messages check out [this documentation](https://learn.microsoft.com/en-us/dotnet/core/extensions/logger-message-generator).
+To reach a balance between performance and usability we added the compile-time logging source generator feature in .NET 6, to learn more about it and learn how to use a source generator to create log messages check out [this documentation](https://learn.microsoft.com/dotnet/core/extensions/logger-message-generator).
 
 ###  Baggage and Tags for `ActivityTrackingOptions`
 

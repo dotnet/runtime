@@ -58,6 +58,8 @@
 
 #endif
 
+#include "configure.h"
+
 // When running on a platform that is not supported in RID fallback graph (because it was unknown
 // at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
 // consuming the native assets.
@@ -159,9 +161,9 @@ namespace pal
 
     inline FILE* file_open(const string_t& path, const char_t* mode) { return ::_wfsopen(path.c_str(), mode, _SH_DENYNO); }
 
-    inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfwprintf(f, format, vl); ::fputwc(_X('\n'), f); }
-    inline void err_fputs(const char_t* message) { ::fputws(message, stderr); ::fputwc(_X('\n'), stderr); }
-    inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputwc(_X('\n'), stdout); }
+    void file_vprintf(FILE* f, const char_t* format, va_list vl);
+    void err_print_line(const char_t* message);
+    void out_vprint_line(const char_t* format, va_list vl);
 
     inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
@@ -188,7 +190,7 @@ namespace pal
     inline bool munmap(void* addr, size_t length) { return UnmapViewOfFile(addr) != 0; }
     inline int get_pid() { return GetCurrentProcessId(); }
     inline void sleep(uint32_t milliseconds) { Sleep(milliseconds); }
-#else
+#else // _WIN32
 #ifdef EXPORT_SHARED_API
 #define SHARED_API extern "C" __attribute__((__visibility__("default")))
 #else
@@ -226,8 +228,8 @@ namespace pal
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline FILE* file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfprintf(f, format, vl); ::fputc('\n', f); }
-    inline void err_fputs(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
-    inline void out_vprintf(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
+    inline void err_print_line(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
+    inline void out_vprint_line(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::vsnprintf(nullptr, 0, format, vl); }
 
@@ -254,7 +256,7 @@ namespace pal
     inline bool munmap(void* addr, size_t length) { return ::munmap(addr, length) == 0; }
     inline int get_pid() { return getpid(); }
     inline void sleep(uint32_t milliseconds) { usleep(milliseconds * 1000); }
-#endif
+#endif // _WIN32
 
     inline int snwprintf(char_t* buffer, size_t count, const char_t* format, ...)
     {
@@ -346,8 +348,6 @@ namespace pal
     bool is_emulating_x64();
 
     bool are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2);
-
-    void initialize_createdump();
 }
 
 #endif // PAL_H

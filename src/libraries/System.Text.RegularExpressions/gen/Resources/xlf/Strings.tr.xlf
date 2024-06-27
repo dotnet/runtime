@@ -192,9 +192,9 @@
         <target state="translated">Normal ifade altyapısı bir deseni bir giriş dizesiyle eşleştirmeye çalışırken zaman aşımına uğradı. Bu durum, çok büyük girişler veya iç içe niceleyiciler, geri başvurular ve diğer faktörler nedeniyle oluşan aşırı geri izleme gibi birçok nedenle oluşabilir.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
-        <target state="translated">GeneratedRegexAttribute yöntemi kısmi ve parametresiz olmalı, genel amaçlı veya soyut olmamalı ve Normal İfade döndürmelidir.</target>
+      <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
+        <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
+        <target state="new">GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">

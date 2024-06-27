@@ -102,6 +102,11 @@ inline void SwapGuid(GUID *pGuid)
 #define ALIGN_ACCESS    ((1<<LOG2_PTRSIZE)-1)
 #endif
 
+#ifdef HOST_RISCV64
+#define LOG2_PTRSIZE	3
+#define ALIGN_ACCESS    ((1<<LOG2_PTRSIZE)-1)
+#endif
+
 #if defined(ALIGN_ACCESS) && !defined(_MSC_VER)
 #ifdef __cplusplus
 extern "C++" {

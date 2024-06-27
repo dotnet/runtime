@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <CMakeProjectReference Include="MiscTypes/CMakeLists.txt" />
+    <ProjectReference Include="../NETServer/NETServer.csproj" />
+  </ItemGroup>
+</Project>

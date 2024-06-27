@@ -188,7 +188,7 @@ bool StackingAllocator::AllocNewBlockForBytes(unsigned n)
         // request is larger than MaxBlockSize then allocate exactly that
         // amount.
         unsigned lower = MinBlockSize;
-        size_t allocSize = sizeof(StackBlock) + max(n, min(max(n * 4, lower), MaxBlockSize));
+        size_t allocSize = sizeof(StackBlock) + max(n, min(max(n * 4, lower), (unsigned)MaxBlockSize));
 
         // Allocate the block.
         // <TODO>@todo: Is it worth implementing a non-thread safe standard heap for
@@ -399,7 +399,7 @@ void * __cdecl operator new[](size_t n, StackingAllocator * alloc)
     return retval;
 }
 
-void * __cdecl operator new(size_t n, StackingAllocator * alloc, const NoThrow&) throw()
+void * __cdecl operator new(size_t n, StackingAllocator * alloc, const std::nothrow_t&) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FAULT;
@@ -412,7 +412,7 @@ void * __cdecl operator new(size_t n, StackingAllocator * alloc, const NoThrow&)
     return alloc->UnsafeAllocNoThrow((unsigned)n);
 }
 
-void * __cdecl operator new[](size_t n, StackingAllocator * alloc, const NoThrow&) throw()
+void * __cdecl operator new[](size_t n, StackingAllocator * alloc, const std::nothrow_t&) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FAULT;

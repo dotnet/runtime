@@ -98,7 +98,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void DisableDynamicWindowScaling_HighBandwidthDelayProduct_WindowRemainsConstant()
+        public async Task DisableDynamicWindowScaling_HighBandwidthDelayProduct_WindowRemainsConstant()
         {
             static async Task RunTest()
             {
@@ -113,12 +113,12 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(DefaultInitialWindowSize, maxCredit);
             }
 
-            RemoteExecutor.Invoke(RunTest).Dispose();
+            await RemoteExecutor.Invoke(RunTest).DisposeAsync();
         }
 
         [OuterLoop("Runs long")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void MaxStreamWindowSize_WhenSet_WindowDoesNotScaleAboveMaximum()
+        public async Task MaxStreamWindowSize_WhenSet_WindowDoesNotScaleAboveMaximum()
         {
             const int MaxWindow = 654321;
 
@@ -136,12 +136,12 @@ namespace System.Net.Http.Functional.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_MAXSTREAMWINDOWSIZE"] = MaxWindow.ToString();
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
         [OuterLoop("Runs long")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void StreamWindowScaleThresholdMultiplier_HighValue_WindowScalesSlower()
+        public async Task StreamWindowScaleThresholdMultiplier_HighValue_WindowScalesSlower()
         {
             static async Task RunTest()
             {
@@ -157,12 +157,12 @@ namespace System.Net.Http.Functional.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_STREAMWINDOWSCALETHRESHOLDMULTIPLIER"] = "10000"; // Extreme value
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
         [OuterLoop("Runs long")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void StreamWindowScaleThresholdMultiplier_LowValue_WindowScalesFaster()
+        public async Task StreamWindowScaleThresholdMultiplier_LowValue_WindowScalesFaster()
         {
             static async Task RunTest()
             {
@@ -178,7 +178,7 @@ namespace System.Net.Http.Functional.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_FLOWCONTROL_STREAMWINDOWSCALETHRESHOLDMULTIPLIER"] = "0.00001"; // Extreme value
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
         [OuterLoop("Runs long")]

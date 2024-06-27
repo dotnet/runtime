@@ -73,6 +73,8 @@
     <Compile Include="PersistedAssemblyBuilder\AssemblySavePropertyBuilderTests.cs" />
     <Compile Include="PersistedAssemblyBuilder\AssemblySaveTools.cs" />
     <Compile Include="PersistedAssemblyBuilder\AssemblySaveTypeBuilderTests.cs" />
+    <Compile Include="PortablePdb\ILGeneratorScopesAndSequencePointsTests.cs" />
+    <Compile Include="PortablePdb\PortablePdbStandalonePdbTest.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAddOtherMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAttributes.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderCanRead.cs" />

@@ -167,10 +167,10 @@ dwarf_get (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t *val)
   assert (!DWARF_IS_FP_LOC (loc));
 
   if (DWARF_IS_REG_LOC (loc))
-    return (*c->as->acc.access_reg) (c->as, DWARF_GET_LOC (loc), val,
+    return (*c->as->acc.access_reg) (c->as, DWARF_GET_REG_LOC (loc), val,
                                      0, c->as_arg);
   else
-    return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), val,
+    return (*c->as->acc.access_mem) (c->as, DWARF_GET_MEM_LOC (loc), val,
                                      0, c->as_arg);
 }
 

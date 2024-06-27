@@ -70,6 +70,7 @@ namespace JitTest_han3_ref_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             Column c1 = new Column(17, 17);

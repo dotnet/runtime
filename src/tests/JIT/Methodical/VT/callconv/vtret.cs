@@ -16,6 +16,7 @@ namespace MS_vtret_cs
         private static VT sub(VT me, VT what) { me._m_n -= what._m_n; return me; }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             VT vt = new VT(100);

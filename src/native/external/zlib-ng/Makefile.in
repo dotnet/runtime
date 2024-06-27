@@ -1,0 +1,395 @@
+# Makefile for zlib
+# Copyright (C) 1995-2016 Jean-loup Gailly, Mark Adler
+# For conditions of distribution and use, see copyright notice in zlib.h
+
+# To compile and test, type:
+#    ./configure; make test
+# Normally configure builds both a static and a shared library.
+# If you want to build just a static library, use: ./configure --static
+
+# To install /usr/local/lib/libz.* and /usr/local/include/zlib.h, type:
+#    make install
+# To install in $HOME instead of /usr/local, use:
+#    make install prefix=$HOME
+
+CC=cc
+
+CFLAGS=-O
+#CFLAGS=-O -DMAX_WBITS=14 -DMAX_MEM_LEVEL=7
+#CFLAGS=-g -DZLIB_DEBUG
+#CFLAGS=-O3 -Wall -Wwrite-strings -Wpointer-arith -Wconversion \
+#           -Wstrict-prototypes -Wmissing-prototypes
+
+SFLAGS=-O
+LDFLAGS=-L.
+LIBNAME1=libz-ng
+LIBNAME2=zlib-ng
+SUFFIX=-ng
+TEST_LIBS=$(LIBNAME1).a
+LDSHARED=$(CC)
+LDSHAREDFLAGS=-shared
+
+VER=2.1.6
+VER1=2
+
+STATICLIB=$(LIBNAME1).a
+SHAREDLIB=$(LIBNAME1).so
+SHAREDLIBV=$(LIBNAME1).so.$(VER)
+SHAREDLIBM=$(LIBNAME1).so.$(VER1)
+IMPORTLIB=
+SHAREDTARGET=$(LIBNAME1).so.$(VER)
+PKGFILE=$(LIBNAME2).pc
+
+LIBS=$(STATICLIB) $(SHAREDTARGET)
+
+AR=ar
+ARFLAGS=rc
+DEFFILE=
+RC=
+RCFLAGS=
+RCOBJS=
+STRIP=
+RANLIB=ranlib
+LDCONFIG=ldconfig
+LDSHAREDLIBC=
+EXE=
+
+SRCDIR=.
+INCLUDES=-I$(SRCDIR)
+
+BUILDDIR=.
+
+ARCHDIR=arch/generic
+ARCH_STATIC_OBJS=
+ARCH_SHARED_OBJS=
+
+prefix = /usr/local
+exec_prefix = ${prefix}
+bindir = ${exec_prefix}/bin
+libdir = ${exec_prefix}/lib
+sharedlibdir = ${libdir}
+includedir = ${prefix}/include
+mandir = ${prefix}/share/man
+man3dir = ${mandir}/man3
+pkgconfigdir = ${libdir}/pkgconfig
+
+OBJZ = \
+	adler32.o \
+	adler32_fold.o \
+	chunkset.o \
+	compare256.o \
+	compress.o \
+	cpu_features.o \
+	crc32_braid.o \
+	crc32_braid_comb.o \
+	crc32_fold.o \
+	deflate.o \
+	deflate_fast.o \
+	deflate_huff.o \
+	deflate_medium.o \
+	deflate_quick.o \
+	deflate_rle.o \
+	deflate_slow.o \
+	deflate_stored.o \
+	functable.o \
+	infback.o \
+	inflate.o \
+	inftrees.o \
+	insert_string.o \
+	insert_string_roll.o \
+	slide_hash.o \
+	trees.o \
+	uncompr.o \
+	zutil.o \
+	$(ARCH_STATIC_OBJS)
+
+OBJG = \
+	gzlib.o \
+	gzread.o \
+	gzwrite.o
+
+TESTOBJG =
+OBJC = $(OBJZ) $(OBJG)
+
+PIC_OBJZ = \
+	adler32.lo \
+	adler32_fold.lo \
+	chunkset.lo \
+	compare256.lo \
+	compress.lo \
+	cpu_features.lo \
+	crc32_braid.lo \
+	crc32_braid_comb.lo \
+	crc32_fold.lo \
+	deflate.lo \
+	deflate_fast.lo \
+	deflate_huff.lo \
+	deflate_medium.lo \
+	deflate_quick.lo \
+	deflate_rle.lo \
+	deflate_slow.lo \
+	deflate_stored.lo \
+	functable.lo \
+	infback.lo \
+	inflate.lo \
+	inftrees.lo \
+	insert_string.lo \
+	insert_string_roll.lo \
+	slide_hash.lo \
+	trees.lo \
+	uncompr.lo \
+	zutil.lo \
+	$(ARCH_SHARED_OBJS)
+
+PIC_OBJG = \
+	gzlib.lo \
+	gzread.lo \
+	gzwrite.lo
+
+PIC_TESTOBJG =
+PIC_OBJC = $(PIC_OBJZ) $(PIC_OBJG)
+
+OBJS = $(OBJC)
+
+PIC_OBJS = $(PIC_OBJC)
+
+all: static shared
+
+static: example$(EXE) minigzip$(EXE) makefixed$(EXE) maketrees$(EXE) makecrct$(EXE)
+
+shared: examplesh$(EXE) minigzipsh$(EXE)
+
+check: test
+
+.SECONDARY:
+
+$(ARCHDIR)/%.o: $(SRCDIR)/$(ARCHDIR)/%.c
+	$(MAKE) -C $(ARCHDIR) $(notdir $@)
+
+$(ARCHDIR)/%.lo: $(SRCDIR)/$(ARCHDIR)/%.c
+	$(MAKE) -C $(ARCHDIR) $(notdir $@)
+
+%.o: $(ARCHDIR)/%.o
+	-cp $< $@
+
+%.lo: $(ARCHDIR)/%.lo
+	-cp $< $@
+
+test: all
+	$(MAKE) -C test
+
+infcover.o: $(SRCDIR)/test/infcover.c zlib$(SUFFIX).h zconf$(SUFFIX).h zlib_name_mangling$(SUFFIX).h
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $(SRCDIR)/test/infcover.c
+
+infcover$(EXE): infcover.o $(STATICLIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ infcover.o $(STATICLIB)
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
+
+cover: infcover$(EXE)
+	rm -f *.gcda
+	./infcover
+	gcov inf*.c
+
+$(STATICLIB): $(OBJS)
+	$(AR) $(ARFLAGS) $@ $(OBJS)
+	-@ ($(RANLIB) $@ || true) >/dev/null 2>&1
+
+example.o:
+	$(CC) $(CFLAGS) -DWITH_GZFILEOP $(INCLUDES) -c -o $@ $(SRCDIR)/test/example.c
+
+minigzip.o:
+	$(CC) $(CFLAGS) -DWITH_GZFILEOP $(INCLUDES) -c -o $@ $(SRCDIR)/test/minigzip.c
+
+makefixed.o:
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $(SRCDIR)/tools/makefixed.c
+
+maketrees.o:
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $(SRCDIR)/tools/maketrees.c
+
+makecrct.o:
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $(SRCDIR)/tools/makecrct.c
+
+zlibrc.o: $(SRCDIR)/win32/zlib$(SUFFIX)1.rc
+	$(RC) $(RCFLAGS) -o $@ $(SRCDIR)/win32/zlib$(SUFFIX)1.rc
+
+.SUFFIXES: .lo
+
+%.o: $(SRCDIR)/%.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+
+%.lo: $(SRCDIR)/%.c
+	$(CC) $(SFLAGS) -DPIC $(INCLUDES) -c -o $@ $<
+
+gzlib.o: $(SRCDIR)/gzlib.c
+	$(CC) $(CFLAGS) -DWITH_GZFILEOP $(INCLUDES) -c -o $@ $<
+
+gzlib.lo: $(SRCDIR)/gzlib.c
+	$(CC) $(SFLAGS) -DPIC -DWITH_GZFILEOP $(INCLUDES) -c -o $@ $<
+
+gzread.o: gzread.c
+	$(CC) $(CFLAGS) -DWITH_GZFILEOP $(INCLUDES) -c -o $@ $<
+
+gzread.lo: gzread.c
+	$(CC) $(SFLAGS) -DPIC -DWITH_GZFILEOP $(INCLUDES) -c -o $@ $<
+
+gzwrite.o: $(SRCDIR)/gzwrite.c
+	$(CC) $(CFLAGS) -DWITH_GZFILEOP $(INCLUDES) -c -o $@ $<
+
+gzwrite.lo: $(SRCDIR)/gzwrite.c
+	$(CC) $(SFLAGS) -DPIC -DWITH_GZFILEOP $(INCLUDES) -c -o $@ $<
+
+$(SHAREDTARGET): $(PIC_OBJS) $(DEFFILE) $(RCOBJS)
+ifneq ($(SHAREDTARGET),)
+	$(LDSHARED) $(CFLAGS) $(LDSHAREDFLAGS) $(LDFLAGS) -o $@ $(DEFFILE) $(PIC_OBJS) $(RCOBJS) $(LDSHAREDLIBC)
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
+ifneq ($(SHAREDLIB),$(SHAREDTARGET))
+	rm -f $(SHAREDLIB) $(SHAREDLIBM)
+	ln -s $@ $(SHAREDLIB)
+	ln -s $@ $(SHAREDLIBM)
+endif
+endif
+
+example$(EXE): example.o $(TESTOBJG) $(STATICLIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ example.o $(TESTOBJG) $(TEST_LIBS) $(LDSHAREDLIBC)
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
+
+minigzip$(EXE): minigzip.o $(TESTOBJG) $(STATICLIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ minigzip.o $(TESTOBJG) $(TEST_LIBS) $(LDSHAREDLIBC)
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
+
+minigzipsh$(EXE): minigzip.o $(PIC_TESTOBJG) $(SHAREDTARGET)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ minigzip.o $(PIC_TESTOBJG) $(SHAREDLIB) $(LDSHAREDLIBC)
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
+
+
+examplesh$(EXE): example.o $(PIC_TESTOBJG) $(SHAREDTARGET)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ example.o $(PIC_TESTOBJG) $(SHAREDLIB) $(LDSHAREDLIBC)
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
+
+makefixed$(EXE): makefixed.o $(STATICLIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ makefixed.o $(TEST_LIBS) $(LDSHAREDLIBC)
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
+
+maketrees$(EXE): maketrees.o $(STATICLIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ maketrees.o $(TEST_LIBS) $(LDSHAREDLIBC)
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
+
+makecrct$(EXE): makecrct.o $(STATICLIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ makecrct.o $(TEST_LIBS) $(LDSHAREDLIBC)
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
+
+install-shared: $(SHAREDTARGET)
+ifneq ($(SHAREDTARGET),)
+	-@if [ ! -d $(DESTDIR)$(sharedlibdir) ]; then mkdir -p $(DESTDIR)$(sharedlibdir); fi
+	rm -f $(DESTDIR)$(sharedlibdir)/$(SHAREDTARGET)
+	cp $(SHAREDTARGET) $(DESTDIR)$(sharedlibdir)
+	chmod 755 $(DESTDIR)$(sharedlibdir)/$(SHAREDTARGET)
+ifneq ($(SHAREDLIB),$(SHAREDTARGET))
+	rm -f $(DESTDIR)$(sharedlibdir)/$(SHAREDLIB) $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBM)
+	ln -s $(SHAREDLIBV) $(DESTDIR)$(sharedlibdir)/$(SHAREDLIB)
+	ln -s $(SHAREDLIBV) $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBM)
+	($(LDCONFIG) || true)  >/dev/null 2>&1
+# ldconfig is for Linux
+endif
+ifneq ($(IMPORTLIB),)
+	cp $(IMPORTLIB) $(DESTDIR)$(sharedlibdir)
+	chmod 644 $(DESTDIR)$(sharedlibdir)/$(IMPORTLIB)
+endif
+endif
+
+install-static: $(STATICLIB)
+	-@if [ ! -d $(DESTDIR)$(libdir)       ]; then mkdir -p $(DESTDIR)$(libdir); fi
+	rm -f $(DESTDIR)$(libdir)/$(STATICLIB)
+	cp $(STATICLIB) $(DESTDIR)$(libdir)
+	chmod 644 $(DESTDIR)$(libdir)/$(STATICLIB)
+	-@($(RANLIB) $(DESTDIR)$(libdir)/$(STATICLIB) || true) >/dev/null 2>&1
+# The ranlib in install-static is needed on NeXTSTEP which checks file times
+
+install-libs: install-shared install-static
+	-@if [ ! -d $(DESTDIR)$(man3dir)      ]; then mkdir -p $(DESTDIR)$(man3dir); fi
+	-@if [ ! -d $(DESTDIR)$(pkgconfigdir) ]; then mkdir -p $(DESTDIR)$(pkgconfigdir); fi
+	rm -f $(DESTDIR)$(pkgconfigdir)/$(PKGFILE)
+	cp $(PKGFILE) $(DESTDIR)$(pkgconfigdir)
+	chmod 644 $(DESTDIR)$(pkgconfigdir)/$(PKGFILE)
+
+install: install-libs
+	-@if [ ! -d $(DESTDIR)$(includedir)   ]; then mkdir -p $(DESTDIR)$(includedir); fi
+	rm -f $(DESTDIR)$(includedir)/zlib$(SUFFIX).h $(DESTDIR)$(includedir)/zconf$(SUFFIX).h $(DESTDIR)$(includedir)/zlib_name_mangling$(SUFFIX).h
+	cp zlib$(SUFFIX).h $(DESTDIR)$(includedir)/zlib$(SUFFIX).h
+	cp zconf$(SUFFIX).h $(DESTDIR)$(includedir)/zconf$(SUFFIX).h
+	cp zlib_name_mangling$(SUFFIX).h $(DESTDIR)$(includedir)/zlib_name_mangling$(SUFFIX).h
+	chmod 644 $(DESTDIR)$(includedir)/zlib$(SUFFIX).h $(DESTDIR)$(includedir)/zconf$(SUFFIX).h $(DESTDIR)$(includedir)/zlib_name_mangling$(SUFFIX).h
+
+uninstall-static:
+	cd $(DESTDIR)$(libdir) && rm -f $(STATICLIB)
+
+uninstall-shared:
+ifneq ($(SHAREDLIB),)
+	cd $(DESTDIR)$(sharedlibdir) && rm -f $(SHAREDLIBV) $(SHAREDLIB) $(SHAREDLIBM)
+endif
+ifneq ($(IMPORTLIB),)
+	cd $(DESTDIR)$(sharedlibdir) && rm -f $(IMPORTLIB)
+endif
+
+uninstall: uninstall-static uninstall-shared
+	cd $(DESTDIR)$(includedir) && rm -f zlib$(SUFFIX).h zconf$(SUFFIX).h zlib_name_mangling$(SUFFIX).h
+	cd $(DESTDIR)$(pkgconfigdir) && rm -f $(PKGFILE)
+
+mostlyclean: clean
+clean:
+	@if [ -f $(ARCHDIR)/Makefile ]; then $(MAKE) -C $(ARCHDIR) clean; fi
+	@if [ -f test/Makefile ]; then $(MAKE) -C test clean; fi
+	rm -f *.o *.lo *~ \
+	   example$(EXE) minigzip$(EXE) minigzipsh$(EXE) \
+	   infcover makefixed$(EXE) maketrees$(EXE) makecrct$(EXE) \
+	   $(STATICLIB) $(IMPORTLIB) $(SHAREDLIB) $(SHAREDLIBV) $(SHAREDLIBM) \
+	   foo.gz so_locations \
+	   _match.s maketree
+	rm -rf objs
+	rm -f *.gcda *.gcno *.gcov
+	rm -f a.out a.exe
+	rm -f *._h
+	rm -rf btmp1 btmp2 pkgtmp1 pkgtmp2
+
+maintainer-clean: distclean
+distclean: clean
+	@if [ -f $(ARCHDIR)/Makefile ]; then $(MAKE) -C $(ARCHDIR) distclean; fi
+	@if [ -f test/Makefile ]; then $(MAKE) -C test distclean; fi
+	rm -f $(PKGFILE) configure.log zconf.h zconf.h.cmakein zlib$(SUFFIX).h zlib_name_mangling$(SUFFIX).h *.pc gzread.c
+	-@rm -f .DS_Store
+# Reset Makefile if building inside source tree
+	@if [ -f Makefile.in ]; then \
+	printf 'all:\n\t-@echo "Please use ./configure first.  Thank you."\n' > Makefile ; \
+	printf '\ndistclean:\n\t$(MAKE) -f Makefile.in distclean\n' >> Makefile ; \
+	touch -r $(SRCDIR)/Makefile.in Makefile ; fi
+# Reset zconf.h and zconf.h.cmakein if building inside source tree
+	@if [ -f zconf.h.in ]; then \
+	cp -p $(SRCDIR)/zconf.h.in zconf.h ; \
+	grep -v '^#cmakedefine' $(SRCDIR)/zconf.h.in > zconf.h.cmakein &&\
+	touch -r $(SRCDIR)/zconf.h.in zconf.h.cmakein ; fi
+# Cleanup these files if building outside source tree
+	@if [ ! -f README.md ]; then rm -f Makefile; fi
+# Remove arch and test directory if building outside source tree
+	@if [ ! -f $(ARCHDIR)/Makefile.in ]; then rm -rf arch; fi
+	@if [ ! -f test/Makefile.in ]; then rm -rf test; fi
+
+tags:
+	etags $(SRCDIR)/*.[ch]

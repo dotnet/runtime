@@ -55,7 +55,7 @@ namespace System.Xml.Xsl
         /// </summary>
         private const int NoSourceMagicNumber = 0xfeefee;
 
-        public static SourceLineInfo NoSource = new SourceLineInfo(string.Empty, NoSourceMagicNumber, 0, NoSourceMagicNumber, 0);
+        public static readonly SourceLineInfo NoSource = new SourceLineInfo(string.Empty, NoSourceMagicNumber, 0, NoSourceMagicNumber, 0);
 
         public bool IsNoSource
         {

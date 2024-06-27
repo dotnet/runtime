@@ -30,7 +30,8 @@ class ClassLayout
     // Array of CorInfoGCType (as BYTE) that describes the GC layout of the class.
     // For small classes the array is stored inline, avoiding an extra allocation
     // and the pointer size overhead.
-    union {
+    union
+    {
         BYTE* m_gcPtrs;
         BYTE  m_gcPtrsArray[sizeof(BYTE*)];
     };
@@ -69,7 +70,7 @@ class ClassLayout
     ClassLayout(CORINFO_CLASS_HANDLE classHandle,
                 bool                 isValueClass,
                 unsigned             size,
-                var_types type DEBUGARG(const char* className) DEBUGARG(const char* shortClassName))
+                var_types type       DEBUGARG(const char* className) DEBUGARG(const char* shortClassName))
         : m_classHandle(classHandle)
         , m_size(size)
         , m_isValueClass(isValueClass)
@@ -184,7 +185,7 @@ public:
         return m_gcPtrCount != 0;
     }
 
-    bool HasGCByRef() const;
+    bool IsStackOnly(Compiler* comp) const;
 
     bool IsGCPtr(unsigned slot) const
     {

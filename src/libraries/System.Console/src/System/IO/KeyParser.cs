@@ -8,7 +8,7 @@ namespace System.IO;
 
 internal static class KeyParser
 {
-    private const char Escape = '\u001B';
+    private const char Escape = '\e';
     private const char Delete = '\u007F';
     private const char VtSequenceEndTag = '~';
     private const char ModifierSeparator = ';';
@@ -62,14 +62,15 @@ internal static class KeyParser
             return false;
         }
 
-        Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo> terminfoDb = terminalFormatStrings.KeyFormatToConsoleKey; // the most important source of truth
+        Dictionary<string, ConsoleKeyInfo>.AlternateLookup<ReadOnlySpan<char>> terminfoDb = // the most important source of truth
+            terminalFormatStrings.KeyFormatToConsoleKey.GetAlternateLookup<string, ConsoleKeyInfo, ReadOnlySpan<char>>();
         ConsoleModifiers modifiers = ConsoleModifiers.None;
         ConsoleKey key;
 
         // Is it a three character sequence? (examples: '^[[H' (Home), '^[OP' (F1))
         if (input[1] == 'O' || char.IsAsciiLetter(input[2]) || input.Length == MinimalSequenceLength)
         {
-            if (!terminfoDb.TryGetValue(buffer.AsMemory(startIndex, MinimalSequenceLength), out parsed))
+            if (!terminfoDb.TryGetValue(buffer.AsSpan(startIndex, MinimalSequenceLength), out parsed))
             {
                 // All terminals which use "^[O{letter}" escape sequences don't define conflicting mappings.
                 // Example: ^[OH either means Home or simply is not used by given terminal.
@@ -103,7 +104,7 @@ internal static class KeyParser
         // Is it a four character sequence used by Linux Console or PuTTy configured to emulate it? (examples: '^[[[A' (F1), '^[[[B' (F2))
         if (input[1] == '[' && input[2] == '[' && char.IsBetween(input[3], 'A', 'E'))
         {
-            if (!terminfoDb.TryGetValue(buffer.AsMemory(startIndex, 4), out parsed))
+            if (!terminfoDb.TryGetValue(buffer.AsSpan(startIndex, 4), out parsed))
             {
                 parsed = new ConsoleKeyInfo(default, ConsoleKey.F1 + input[3] - 'A', false, false, false);
             }
@@ -128,7 +129,7 @@ internal static class KeyParser
         {
             // it's a VT Sequence like ^[[11~ or rxvt like ^[[11^
             int sequenceLength = SequencePrefixLength + digitCount + 1;
-            if (!terminfoDb.TryGetValue(buffer.AsMemory(startIndex, sequenceLength), out parsed))
+            if (!terminfoDb.TryGetValue(buffer.AsSpan(startIndex, sequenceLength), out parsed))
             {
                 key = MapEscapeSequenceNumber(byte.Parse(input.Slice(SequencePrefixLength, digitCount)));
                 if (key == default)

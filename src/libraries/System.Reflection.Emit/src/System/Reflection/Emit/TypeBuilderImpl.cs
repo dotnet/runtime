@@ -321,8 +321,6 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.ArgumentException_BadMethodImplBody);
             }
             Type baseType = methodInfoDeclaration.DeclaringType!;
-            ValidateBaseType(baseType, methodInfoDeclaration.Name);
-            ValidateImplementedMethod(methodInfoBody, methodInfoDeclaration);
             _methodOverrides ??= new();
 
             if (_methodOverrides.TryGetValue(baseType, out List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>? im))
@@ -339,24 +337,6 @@ namespace System.Reflection.Emit
                 im = new List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>();
                 im.Add((methodInfoDeclaration, methodInfoBody));
                 _methodOverrides.Add(baseType, im);
-            }
-        }
-
-        private void ValidateBaseType(Type baseType, string methodName)
-        {
-            if (baseType.IsInterface)
-            {
-                if (!IsInterfaceImplemented(baseType))
-                {
-                    throw ArgumentExceptionInvalidMethodOverride(methodName);
-                }
-
-                return;
-            }
-
-            if (!baseType.IsAssignableFrom(_typeParent))
-            {
-                throw ArgumentExceptionInvalidMethodOverride(methodName);
             }
         }
 
@@ -389,47 +369,6 @@ namespace System.Reflection.Emit
 
         private ArgumentException ArgumentExceptionInvalidMethodOverride(string methodName) =>
             new ArgumentException(SR.Format(SR.Argument_InvalidMethodOverride, FullName, methodName), "methodInfoBody");
-
-        private void ValidateImplementedMethod(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
-        {
-            if ((methodInfoBody.IsVirtual || methodInfoBody.IsStatic) &&
-                (methodInfoDeclaration.IsAbstract || methodInfoDeclaration.IsVirtual) &&
-                methodInfoDeclaration.ReturnType.IsAssignableFrom(methodInfoBody.ReturnType))
-            {
-                ParameterInfo[] bodyParameters = methodInfoBody.GetParameters();
-                ParameterInfo[] declarationParameters = methodInfoDeclaration.GetParameters();
-                if (bodyParameters.Length == declarationParameters.Length)
-                {
-                    for (int i = 0; i < bodyParameters.Length; i++)
-                    {
-                        Type? bodyType = bodyParameters[i].ParameterType;
-                        Type? declType = declarationParameters[i].ParameterType;
-
-                        if (bodyType.IsArray != declType.IsArray ||
-                            bodyType.IsByRef != declType.IsByRef ||
-                            bodyType.IsPointer != declType.IsPointer)
-                        {
-                            throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
-                        }
-
-                        if (bodyType.HasElementType || declType.HasElementType)
-                        {
-                            bodyType = bodyType.GetElementType();
-                            declType = declType.GetElementType();
-                        }
-
-                        if (bodyType == null || !bodyType.Equals(declType))
-                        {
-                            throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
-                        }
-                    }
-
-                    return;
-                }
-            }
-
-            throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
-        }
 
         protected override TypeBuilder DefineNestedTypeCore(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
@@ -706,6 +645,7 @@ namespace System.Reflection.Emit
         protected override bool IsByRefImpl() => false;
         protected override bool IsPointerImpl() => false;
         protected override bool IsPrimitiveImpl() => false;
+        protected override bool IsValueTypeImpl() => IsSubclassOf(_module.GetTypeFromCoreAssembly(CoreTypeId.ValueType));
         protected override bool HasElementTypeImpl() => false;
         protected override TypeAttributes GetAttributeFlagsImpl() => _attributes;
         protected override bool IsCOMObjectImpl()

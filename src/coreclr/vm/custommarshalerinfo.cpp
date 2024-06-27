@@ -25,7 +25,7 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
 : m_NativeSize(0)
 , m_hndManagedType(hndManagedType)
 , m_pLoaderAllocator(pLoaderAllocator)
-, m_hndCustomMarshaler(NULL)
+, m_hndCustomMarshaler{}
 , m_pMarshalNativeToManagedMD(NULL)
 , m_pMarshalManagedToNativeMD(NULL)
 , m_pCleanUpNativeDataMD(NULL)
@@ -139,7 +139,7 @@ CustomMarshalerInfo::~CustomMarshalerInfo()
         // been collected already.
         m_pLoaderAllocator->FreeHandle(m_hndCustomMarshaler);
     }
-    m_hndCustomMarshaler = NULL;
+    m_hndCustomMarshaler = 0;
 }
 
 
@@ -639,7 +639,7 @@ CustomMarshalerInfo *SharedCustomMarshalerHelper::GetCustomMarshalerInfo()
     CONTRACTL_END;
 
     // Retrieve the marshalling data for the current app domain.
-    EEMarshalingData *pMarshalingData = GetThread()->GetDomain()->GetLoaderAllocator()->GetMarshalingData();
+    EEMarshalingData *pMarshalingData = AppDomain::GetCurrentDomain()->GetLoaderAllocator()->GetMarshalingData();
 
     // Retrieve the custom marshaling information for the current shared custom
     // marshaling helper.

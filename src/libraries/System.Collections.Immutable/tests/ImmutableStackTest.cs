@@ -241,7 +241,7 @@ namespace System.Collections.Immutable.Tests
             Assert.False(stack.IsEmpty);
             Assert.Equal(new[] { 1 }, stack);
 
-            stack = ImmutableStack.Create(1, 2);
+            stack = ImmutableStack.Create(new[] { 1, 2 });
             Assert.False(stack.IsEmpty);
             Assert.Equal(new[] { 2, 1 }, stack);
 

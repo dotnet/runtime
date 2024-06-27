@@ -1,6 +1,6 @@
 # Activity User Guide
 
-**This doc is being obsoleted by: https://docs.microsoft.com/dotnet/core/diagnostics/distributed-tracing
+**This doc is being obsoleted by: https://learn.microsoft.com/dotnet/core/diagnostics/distributed-tracing
 Future doc changes should be done in the official docs, not here.
 There is still some information here that is not present in the official docs (yet) so I am preserving it as-is.**
 

@@ -42,41 +42,11 @@ namespace Mono.Linker.Steps
 
 	public class OutputStep : BaseStep
 	{
-		private Dictionary<ushort, TargetArchitecture>? architectureMap;
-
-		private enum NativeOSOverride
-		{
-			Apple = 0x4644,
-			FreeBSD = 0xadc4,
-			Linux = 0x7b79,
-			NetBSD = 0x1993,
-			Default = 0
-		}
-
 		readonly List<string> assembliesWritten;
 
 		public OutputStep ()
 		{
 			assembliesWritten = new List<string> ();
-		}
-
-		TargetArchitecture CalculateArchitecture (TargetArchitecture readyToRunArch)
-		{
-			if (architectureMap == null) {
-				architectureMap = new Dictionary<ushort, TargetArchitecture> ();
-				foreach (var os in Enum.GetValues (typeof (NativeOSOverride))) {
-					ushort osVal = (ushort) (NativeOSOverride) os;
-					foreach (var arch in Enum.GetValues (typeof (TargetArchitecture))) {
-						ushort archVal = (ushort) (TargetArchitecture) arch;
-						architectureMap.Add ((ushort) (archVal ^ osVal), (TargetArchitecture) arch);
-					}
-				}
-			}
-
-			if (architectureMap.TryGetValue ((ushort) readyToRunArch, out TargetArchitecture pureILArch)) {
-				return pureILArch;
-			}
-			throw new BadImageFormatException ("unrecognized module attributes");
 		}
 
 		protected override bool ConditionToProcess ()
@@ -125,7 +95,7 @@ namespace Mono.Linker.Steps
 				if (module.IsCrossgened ()) {
 					module.Attributes |= ModuleAttributes.ILOnly;
 					module.Attributes ^= ModuleAttributes.ILLibrary;
-					module.Architecture = CalculateArchitecture (module.Architecture);
+					module.Architecture = TargetArchitecture.I386; // I386+ILOnly which ultimately translates to AnyCPU
 				}
 			}
 
@@ -219,6 +189,7 @@ namespace Mono.Linker.Steps
 				return parameters;
 
 			parameters.WriteSymbols = true;
+			parameters.SymbolWriterProvider = new CustomSymbolWriterProvider (Context.PreserveSymbolPaths);
 			return parameters;
 		}
 

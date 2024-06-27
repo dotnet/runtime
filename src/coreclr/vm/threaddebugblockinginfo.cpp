@@ -72,9 +72,37 @@ VOID ThreadDebugBlockingInfo::VisitBlockingItems(DebugBlockingItemVisitor visito
 // Holder constructor pushes a blocking item on the blocking info stack
 #ifndef DACCESS_COMPILE
 DebugBlockingItemHolder::DebugBlockingItemHolder(Thread *pThread, DebugBlockingItem *pItem) :
-m_pThread(pThread)
+    m_pThread(pThread), m_ppFirstBlockingInfo(nullptr)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    m_ppFirstBlockingInfo = (ThreadBlockingInfo**)&t_ThreadStatics.ThreadBlockingInfo_First;
+#ifdef _DEBUG
+    // Try to verify the address of the thread-local slot for the managed ThreadBlockingInfo.t_first matches the address of the native thread static
+    EX_TRY
+    {
+        FieldDesc *pFD = CoreLibBinder::GetField(FIELD__THREAD_BLOCKING_INFO__FIRST);
+        _ASSERTE(m_ppFirstBlockingInfo == (ThreadBlockingInfo **)Thread::GetStaticFieldAddress(pFD));
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(RethrowTerminalExceptions);
+#endif
+
+    // Push info for the managed ThreadBlockingInfo
+    m_blockingInfo.objectPtr = pItem->pMonitor;
+    m_blockingInfo.objectKind = (ThreadBlockingInfo::ObjectKind)pItem->type;
+    m_blockingInfo.timeoutMs = (INT32)pItem->dwTimeout;
+    m_blockingInfo.next = *m_ppFirstBlockingInfo;
+    *m_ppFirstBlockingInfo = &m_blockingInfo;
+
     pThread->DebugBlockingInfo.PushBlockingItem(pItem);
 }
 #endif //DACCESS_COMPILE
@@ -84,6 +112,11 @@ m_pThread(pThread)
 DebugBlockingItemHolder::~DebugBlockingItemHolder()
 {
     LIMITED_METHOD_CONTRACT;
+
     m_pThread->DebugBlockingInfo.PopBlockingItem();
+
+    // Pop info for the managed ThreadBlockingInfo
+    _ASSERTE(*m_ppFirstBlockingInfo == &m_blockingInfo);
+    *m_ppFirstBlockingInfo = m_blockingInfo.next;
 }
 #endif //DACCESS_COMPILE

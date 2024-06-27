@@ -58,6 +58,11 @@ namespace ILCompiler
                     // 16-byte alignment for __m256.
                     alignment = new LayoutInt(16);
                 }
+                else if (defType.Context.Target.Architecture == TargetArchitecture.LoongArch64)
+                {
+                    // TODO-LoongArch64: Update alignment to proper value when implement LoongArch64 intrinsic.
+                    alignment = new LayoutInt(16);
+                }
                 else if (defType.Context.Target.Architecture == TargetArchitecture.RiscV64)
                 {
                     // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
@@ -84,6 +89,11 @@ namespace ILCompiler
                 {
                     // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
                     // 16-byte alignment for __m256.
+                    alignment = new LayoutInt(16);
+                }
+                else if (defType.Context.Target.Architecture == TargetArchitecture.LoongArch64)
+                {
+                    // TODO-LoongArch64: Update alignment to proper value when implement LoongArch64 intrinsic.
                     alignment = new LayoutInt(16);
                 }
                 else if (defType.Context.Target.Architecture == TargetArchitecture.RiscV64)

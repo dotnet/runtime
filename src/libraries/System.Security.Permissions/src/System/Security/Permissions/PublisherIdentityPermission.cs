@@ -5,7 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Security.Permissions
 {
-#if NETCOREAPP
+#if NET
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed partial class PublisherIdentityPermission : CodeAccessPermission

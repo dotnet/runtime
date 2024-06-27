@@ -402,6 +402,7 @@ namespace System.Reflection
             {
                 if (sigElementType.IsValueType)
                 {
+                    Debug.Assert(!sigElementType.IsNullableOfT, "A true boxed Nullable<T> should never be here.");
                     // Make a copy to prevent the boxed instance from being directly modified by the method.
                     arg = RuntimeType.AllocateValueType(sigElementType, arg);
                 }

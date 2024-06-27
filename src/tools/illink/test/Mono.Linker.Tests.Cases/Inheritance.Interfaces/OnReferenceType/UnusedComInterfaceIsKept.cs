@@ -21,6 +21,9 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 		[Guid ("D7BB1889-3AB7-4681-A115-60CA9158FECA")]
 		interface IBar
 		{
+			// Trimming may remove members from COM interfaces
+			// even when keeping the COM-related attributes.
+			// https://github.com/dotnet/runtime/issues/101128
 			void Bar ();
 		}
 

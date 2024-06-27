@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using System.Net.WebSockets.Compression;
@@ -288,7 +289,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                return new ValueTask(Task.FromException(exc));
+                return ValueTask.FromException(exc);
             }
 
             bool endOfMessage = messageFlags.HasFlag(WebSocketMessageFlags.EndOfMessage);
@@ -466,10 +467,10 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                return new ValueTask(Task.FromException(
+                return ValueTask.FromException(
                     exc is OperationCanceledException ? exc :
                     _state == WebSocketState.Aborted ? CreateOperationCanceledException(exc) :
-                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc)));
+                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc));
             }
             finally
             {
@@ -493,7 +494,7 @@ namespace System.Net.WebSockets
                     await _stream.FlushAsync().ConfigureAwait(false);
                 }
             }
-            catch (Exception exc) when (!(exc is OperationCanceledException))
+            catch (Exception exc) when (exc is not OperationCanceledException)
             {
                 throw _state == WebSocketState.Aborted ?
                     CreateOperationCanceledException(exc) :
@@ -518,7 +519,7 @@ namespace System.Net.WebSockets
                     await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
-            catch (Exception exc) when (!(exc is OperationCanceledException))
+            catch (Exception exc) when (exc is not OperationCanceledException)
             {
                 throw _state == WebSocketState.Aborted ?
                     CreateOperationCanceledException(exc, cancellationToken) :
@@ -649,19 +650,13 @@ namespace System.Net.WebSockets
             else if (payload.Length <= ushort.MaxValue)
             {
                 sendBuffer[1] = 126;
-                sendBuffer[2] = (byte)(payload.Length / 256);
-                sendBuffer[3] = unchecked((byte)payload.Length);
+                BinaryPrimitives.WriteUInt16BigEndian(sendBuffer.AsSpan(2), (ushort)payload.Length);
                 maskOffset = 2 + sizeof(ushort); // additional 2 bytes for 16-bit length
             }
             else
             {
                 sendBuffer[1] = 127;
-                int length = payload.Length;
-                for (int i = 9; i >= 2; i--)
-                {
-                    sendBuffer[i] = unchecked((byte)length);
-                    length /= 256;
-                }
+                BinaryPrimitives.WriteUInt64BigEndian(sendBuffer.AsSpan(2), (ulong)payload.Length);
                 maskOffset = 2 + sizeof(ulong); // additional 8 bytes for 64-bit length
             }
 
@@ -976,7 +971,7 @@ namespace System.Net.WebSockets
                     ApplyMask(_receiveBuffer.Span.Slice(_receiveBufferOffset, (int)header.PayloadLength), header.Mask, 0);
                 }
 
-                closeStatus = (WebSocketCloseStatus)(_receiveBuffer.Span[_receiveBufferOffset] << 8 | _receiveBuffer.Span[_receiveBufferOffset + 1]);
+                closeStatus = (WebSocketCloseStatus)BinaryPrimitives.ReadUInt16BigEndian(_receiveBuffer.Span.Slice(_receiveBufferOffset));
                 if (!IsValidCloseStatus(closeStatus))
                 {
                     await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted).ConfigureAwait(false);
@@ -1158,17 +1153,13 @@ namespace System.Net.WebSockets
             if (header.PayloadLength == 126)
             {
                 Debug.Assert(_receiveBufferCount >= 2, "Expected to have two bytes for the payload length.");
-                header.PayloadLength = (receiveBufferSpan[_receiveBufferOffset] << 8) | receiveBufferSpan[_receiveBufferOffset + 1];
+                header.PayloadLength = BinaryPrimitives.ReadUInt16BigEndian(receiveBufferSpan.Slice(_receiveBufferOffset));
                 ConsumeFromBuffer(2);
             }
             else if (header.PayloadLength == 127)
             {
                 Debug.Assert(_receiveBufferCount >= 8, "Expected to have eight bytes for the payload length.");
-                header.PayloadLength = 0;
-                for (int i = 0; i < 8; i++)
-                {
-                    header.PayloadLength = (header.PayloadLength << 8) | receiveBufferSpan[_receiveBufferOffset + i];
-                }
+                header.PayloadLength = BinaryPrimitives.ReadInt64BigEndian(receiveBufferSpan.Slice(_receiveBufferOffset));
                 ConsumeFromBuffer(8);
             }
 
@@ -1363,9 +1354,7 @@ namespace System.Net.WebSockets
                     Debug.Assert(count - 2 == encodedLength, $"{nameof(s_textEncoding.GetByteCount)} and {nameof(s_textEncoding.GetBytes)} encoded count didn't match");
                 }
 
-                ushort closeStatusValue = (ushort)closeStatus;
-                buffer[0] = (byte)(closeStatusValue >> 8);
-                buffer[1] = (byte)(closeStatusValue & 0xFF);
+                BinaryPrimitives.WriteUInt16BigEndian(buffer, (ushort)closeStatus);
 
                 await SendFrameAsync(MessageOpcode.Close, endOfMessage: true, disableCompression: true, new Memory<byte>(buffer, 0, count), cancellationToken).ConfigureAwait(false);
             }

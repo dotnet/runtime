@@ -234,7 +234,7 @@ enum insOpts: unsigned
 
     INS_OPTS_EVEX_er_rz = 3,        // Round towards zero
 
-    // Two-bits: 0b0001_1100
+    // Three-bits: 0b0001_1100
     INS_OPTS_EVEX_aaa_MASK = 0x1C,  // mask for EVEX.aaa related features
 
     INS_OPTS_EVEX_em_k1 = 1 << 2,   // Embedded mask uses K1
@@ -254,7 +254,7 @@ enum insOpts: unsigned
     // One-bit:  0b0010_0000
     INS_OPTS_EVEX_z_MASK = 0x20,    // mask for EVEX.z related features
 
-    INS_OPTS_EVEX_em_zero,          // Embedded mask merges with zero
+    INS_OPTS_EVEX_em_zero = 1 << 5, // Embedded mask merges with zero
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -379,13 +379,6 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_IMM_BITMASK,         // Variants with an immediate that is a bitmask
 
     INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
-
-    // Removable once REG_V0 and REG_P0 are distinct
-    INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)
-    INS_SCALABLE_OPTS_UNPREDICATED_WIDE, // Variants without a predicate and wide elements (eg asr)
-    INS_SCALABLE_OPTS_TO_PREDICATE,      // Variants moving to a predicate from a vector (e.g. pmov)
-    INS_SCALABLE_OPTS_TO_VECTOR,         // Variants moving to a vector from a predicate (e.g. pmov)
-    INS_SCALABLE_OPTS_BROADCAST,         // Used to distinguish mov from cpy, where mov is an alias for both
 };
 
 // Maps directly to the pattern used in SVE instructions such as cntb.

@@ -44,7 +44,7 @@ internal sealed partial class DtcProxyShimFactory
     internal DtcProxyShimFactory(EventWaitHandle notificationEventHandle)
         => _eventHandle = notificationEventHandle;
 
-    // https://docs.microsoft.com/previous-versions/windows/desktop/ms678898(v=vs.85)
+    // https://learn.microsoft.com/previous-versions/windows/desktop/ms678898(v=vs.85)
     [LibraryImport(Interop.Libraries.Xolehlp, StringMarshalling = StringMarshalling.Utf16)]
     [RequiresUnreferencedCode(TransactionManager.DistributedTransactionTrimmingWarning)]
     private static unsafe partial int DtcGetTransactionManagerExW(

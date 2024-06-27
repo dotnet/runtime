@@ -160,25 +160,28 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
     ldr R2, [r0, #(CONTEXT_Cpsr)]
     msr APSR, r2
 
-    // Ideally, we would like to use `ldmia r0, {r0-r12, sp, lr, pc}` here,
-    // but clang 3.6 and later, as per ARM recommendation, disallows using
-    // Sp in the register list, and Pc and Lr simultaneously.
-    // So we are going to use the IPC register r12 to copy Sp, Lr and Pc
-    // which should be ok -- TODO: Is this really ok?
+    ldr r1, [r0, #(CONTEXT_Sp)]
+    ldr r2, [r0, #(CONTEXT_Pc)]
+    str r2, [r1, #-4]
+    ldr r2, [r0, #(CONTEXT_R12)]
+    str r2, [r1, #-8]
     add r12, r0, CONTEXT_R0
     ldm r12, {r0-r11}
-    ldr sp, [r12, #(CONTEXT_Sp - (CONTEXT_R0))]
     ldr lr, [r12, #(CONTEXT_Lr - (CONTEXT_R0))]
-    ldr pc, [r12, #(CONTEXT_Pc - (CONTEXT_R0))]
+    ldr r12, [r12, #(CONTEXT_Sp - (CONTEXT_R0))]
+    sub r12, r12, #8
+    mov sp, r12
+    pop {r12, pc}
 
 LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
 
     ldr r2, [r0, #(CONTEXT_Cpsr)]
     msr APSR, r2
 
-    ldr sp, [r0, #(CONTEXT_Sp)]
     ldr lr, [r0, #(CONTEXT_Lr)]
-    ldr pc, [r0, #(CONTEXT_Pc)]
+    ldr r2, [r0, #(CONTEXT_Pc)]
+    ldr sp, [r0, #(CONTEXT_Sp)]
+    bx r2
 
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
     ldr r2, [r0, #(CONTEXT_ContextFlags)]

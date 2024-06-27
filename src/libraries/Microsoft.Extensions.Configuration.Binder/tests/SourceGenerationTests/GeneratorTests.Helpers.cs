@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ExpectedDiagnostics expectedDiags = ExpectedDiagnostics.None)
         {
             string environmentSubFolder =
-#if NETCOREAPP
+#if NET
     "netcoreapp"
 #else
     "net462"
@@ -138,7 +138,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 string source = string.Join(Environment.NewLine, lines).TrimEnd(Environment.NewLine.ToCharArray()) + Environment.NewLine;
                 path = Path.Combine($"{repoRootDir}\\src\\libraries\\Microsoft.Extensions.Configuration.Binder\\tests\\SourceGenerationTests\\", path);
 
-#if NETCOREAPP
+#if NET
                 await File.WriteAllTextAsync(path, source);
 #else
                 File.WriteAllText(path, source);

@@ -202,7 +202,7 @@ namespace System.Reflection
 
                 if (declaringType.IsGenericType || declaringType.IsArray)
                 {
-                    int tkDeclaringType = ModuleHandle.GetMetadataImport(this).GetParentToken(metadataToken);
+                    int tkDeclaringType = MetadataImport.GetParentToken(metadataToken);
                     declaringType = (RuntimeType)ResolveType(tkDeclaringType, genericTypeArguments, genericMethodArguments);
                 }
 
@@ -353,7 +353,7 @@ namespace System.Reflection
         #region Internal Members
         internal RuntimeType RuntimeType => m_runtimeType ??= ModuleHandle.GetModuleType(this);
 
-        internal MetadataImport MetadataImport => ModuleHandle.GetMetadataImport(this);
+        internal MetadataImport MetadataImport => new MetadataImport(this);
         #endregion
 
         #region ICustomAttributeProvider Members
@@ -403,7 +403,7 @@ namespace System.Reflection
         {
             ArgumentException.ThrowIfNullOrEmpty(className);
 
-            return TypeNameParser.GetType(className, topLevelAssembly: Assembly,
+            return TypeNameResolver.GetType(className, topLevelAssembly: Assembly,
                 throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 

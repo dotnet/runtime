@@ -306,8 +306,10 @@ protected:
     BYTE                m_PrecodeHeapInstance[sizeof(CodeFragmentHeap)];
     BYTE                m_FixupPrecodeHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_NewStubPrecodeHeapInstance[sizeof(LoaderHeap)];
+    BYTE                m_StaticsHeapInstance[sizeof(LoaderHeap)];
     PTR_LoaderHeap      m_pLowFrequencyHeap;
     PTR_LoaderHeap      m_pHighFrequencyHeap;
+    PTR_LoaderHeap      m_pStaticsHeap;
     PTR_LoaderHeap      m_pStubHeap; // stubs for PInvoke, remoting, etc
     PTR_CodeFragmentHeap m_pPrecodeHeap;
     PTR_LoaderHeap      m_pExecutableHeap;
@@ -349,6 +351,8 @@ protected:
     Volatile<PgoManager *> m_pgoManager;
 #endif // FEATURE_PGO
 
+    SArray<TLSIndex> m_tlsIndices;
+
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
     BYTE *GetCodeHeapInitialBlock(const BYTE * loAddr, const BYTE * hiAddr, DWORD minimumSize, DWORD *pSize);
@@ -388,6 +392,12 @@ protected:
 #endif
 
     PTR_VirtualCallStubManager m_pVirtualCallStubManager;
+
+public:
+    SArray<TLSIndex>& GetTLSIndexList()
+    {
+        return m_tlsIndices;
+    }
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
@@ -582,6 +592,12 @@ public:
         return m_pHighFrequencyHeap;
     }
 
+    PTR_LoaderHeap GetStaticsHeap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pStaticsHeap;
+    }
+
     PTR_LoaderHeap GetStubHeap()
     {
         LIMITED_METHOD_CONTRACT;
@@ -631,8 +647,10 @@ public:
     }
 
     LOADERALLOCATORREF GetExposedObject();
+    bool IsExposedObjectLive();
 
 #ifndef DACCESS_COMPILE
+    bool InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAllocator(OBJECTREF value, Object** pField);
     LOADERHANDLE AllocateHandle(OBJECTREF value);
 
     void SetHandleValue(LOADERHANDLE handle, OBJECTREF value);
@@ -641,6 +659,7 @@ public:
 
     // The default implementation is a no-op. Only collectible loader allocators implement this method.
     virtual void RegisterHandleForCleanup(OBJECTHANDLE /* objHandle */) { }
+    virtual void RegisterHandleForCleanupLocked(OBJECTHANDLE /* objHandle */) { }
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE /* objHandle */) { }
     virtual void CleanupHandles() { }
 
@@ -730,6 +749,8 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_nGCCount;
     }
+    void AllocateBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cbMem);
+    void AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cSlots, MethodTable* pMTWithStaticBoxes);
 
     static BOOL Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 
@@ -896,6 +917,7 @@ public:
 
 #if !defined(DACCESS_COMPILE)
     virtual void RegisterHandleForCleanup(OBJECTHANDLE objHandle);
+    virtual void RegisterHandleForCleanupLocked(OBJECTHANDLE objHandle);
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE objHandle);
     virtual void CleanupHandles();
     CustomAssemblyBinder* GetBinder()
@@ -940,6 +962,41 @@ public:
 };
 
 typedef VPTR(AssemblyLoaderAllocator) PTR_AssemblyLoaderAllocator;
+
+#ifndef DACCESS_COMPILE
+class LOADERHANDLEHolder
+{
+    LOADERHANDLE _handle;
+    LoaderAllocator* _pLoaderAllocator;
+
+public:
+
+    LOADERHANDLEHolder(LOADERHANDLE handle, LoaderAllocator* pLoaderAllocator)
+    {
+        _handle = handle;
+        _pLoaderAllocator = pLoaderAllocator;
+        _ASSERTE(_pLoaderAllocator != NULL);
+    }
+
+    LOADERHANDLEHolder(const LOADERHANDLEHolder&) = delete;
+
+    LOADERHANDLE GetValue() const
+    {
+        return _handle;
+    }
+
+    void SuppressRelease()
+    {
+        _pLoaderAllocator = NULL;
+    }
+
+    ~LOADERHANDLEHolder()
+    {
+        if (_pLoaderAllocator != NULL)
+            _pLoaderAllocator->FreeHandle(_handle);
+    }
+};
+#endif
 
 #include "loaderallocator.inl"
 

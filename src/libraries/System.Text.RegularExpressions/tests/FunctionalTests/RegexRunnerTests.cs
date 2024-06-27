@@ -50,7 +50,7 @@ namespace System.Text.RegularExpressions.Tests
             MethodInfo getTextMethod = typeof(Match).GetMethod("get_Text", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.Null(getTextMethod.Invoke(runmatch, []));
             Assert.Equal(string.Empty, runmatch.Value);
-#if NET7_0_OR_GREATER
+#if NET
             Assert.True(runmatch.ValueSpan == ReadOnlySpan<char>.Empty);
 #endif
         }

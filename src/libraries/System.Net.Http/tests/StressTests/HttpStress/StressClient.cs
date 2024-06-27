@@ -57,6 +57,8 @@ namespace HttpStress
                     return new SocketsHttpHandler()
                     {
                         PooledConnectionLifetime = _config.ConnectionLifetime.GetValueOrDefault(Timeout.InfiniteTimeSpan),
+                        EnableMultipleHttp2Connections = true,
+                        EnableMultipleHttp3Connections = true,
                         SslOptions = new SslClientAuthenticationOptions
                         {
                             RemoteCertificateValidationCallback = delegate { return true; }

@@ -505,7 +505,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 
     Thread *    pThread    = vmThread.GetDacPtr();
     Frame *     pFrame     = pThread->GetFrame();
-    AppDomain * pAppDomain = pThread->GetDomain(INDEBUG(TRUE));
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
     // This used to be only true for Enter-Managed chains.
     // Since we don't have chains anymore, this can always be false.
@@ -589,7 +589,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
             }
             else
             {
-                frameData.stubFrame.funcMetadataToken = (pMD == NULL ? NULL : pMD->GetMemberDef());
+                frameData.stubFrame.funcMetadataToken = (pMD == NULL ? mdTokenNil : pMD->GetMemberDef());
                 frameData.stubFrame.vmDomainAssembly.SetHostPtr(pDomainAssembly);
                 frameData.stubFrame.vmMethodDesc.SetHostPtr(pMD);
             }
@@ -832,7 +832,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         }
         else
         {
-            pFrameData->v.exactGenericArgsToken = NULL;
+            pFrameData->v.exactGenericArgsToken = (GENERICS_TYPE_TOKEN)NULL;
             pFrameData->v.dwExactGenericArgsTokenIndex = (DWORD)ICorDebugInfo::MAX_ILNUM;
         }
 
@@ -1249,7 +1249,7 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
 
 PTR_CONTEXT DacDbiInterfaceImpl::RetrieveHijackedContext(REGDISPLAY * pRD)
 {
-    CORDB_ADDRESS ContextPointerAddr = NULL;
+    CORDB_ADDRESS ContextPointerAddr = (CORDB_ADDRESS)NULL;
 
     TADDR controlPC = PCODEToPINSTR(GetControlPC(pRD));
 

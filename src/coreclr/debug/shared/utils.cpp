@@ -41,12 +41,12 @@ CORDB_ADDRESS IsEventDebuggerNotification(
     _ASSERTE(pRecord != NULL);
 
     // Must specify a CLR instance.
-    _ASSERTE(pClrBaseAddress != NULL);
+    _ASSERTE(pClrBaseAddress != (CORDB_ADDRESS)NULL);
 
     // If it's not even our exception code, then it's not ours.
     if (pRecord->ExceptionCode != CLRDBG_NOTIFICATION_EXCEPTION_CODE)
     {
-        return NULL;
+        return (CORDB_ADDRESS)NULL;
     }
 
     //
@@ -57,7 +57,7 @@ CORDB_ADDRESS IsEventDebuggerNotification(
     //
     if (pRecord->NumberParameters != 3)
     {
-        return NULL;
+        return (CORDB_ADDRESS)NULL;
     }
 
     // 1st argument should always be the cookie.
@@ -66,7 +66,7 @@ CORDB_ADDRESS IsEventDebuggerNotification(
     DWORD cookie = (DWORD) pRecord->ExceptionInformation[0];
     if (cookie != CLRDBG_EXCEPTION_DATA_CHECKSUM)
     {
-        return NULL;
+        return (CORDB_ADDRESS)NULL;
     }
 
     // TODO: We don't do this check in case of non-windows debugging now, because we don't support
@@ -79,7 +79,7 @@ CORDB_ADDRESS IsEventDebuggerNotification(
     CORDB_ADDRESS pTargetBase = GetExceptionInfoAsAddress(pRecord, 1);
     if (pTargetBase != pClrBaseAddress)
     {
-        return NULL;
+        return (CORDB_ADDRESS)NULL;
     }
 #endif
 

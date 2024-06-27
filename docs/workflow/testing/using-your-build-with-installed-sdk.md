@@ -30,7 +30,7 @@ This guide focuses on the first of the bullet points described above. For the ot
 
 ### Acquire the latest development .NET SDK
 
-The [installer repo](https://github.com/dotnet/installer) has downloads to all nightly builds for all the currently supported platforms. Find the one that matches your machine and download it.
+The [sdk repo](https://github.com/dotnet/sdk#installing-the-sdk) has downloads to all nightly builds for all the currently supported platforms. Find the one that matches your machine and download it.
 
 To setup the nightly SDK, you can either install it to your machine or use a portable build. If you downloaded the _installer_, then just follow the usual installation instructions, and you're done.
 

@@ -42,7 +42,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				// Analyzer doesn't implement constant propagation and branch removal, so it reaches this code
 				// NativeAOT behavioral difference:
 				//   https://github.com/dotnet/runtime/issues/85161
-				[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+				[ExpectedWarning ("IL2026", Tool.Analyzer | Tool.NativeAot, "")]
 				void LocalWithWarning ()
 				{
 					// No warning
@@ -64,7 +64,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// Analyzer doesn't implement constant propagation and branch removal, so it reaches this code
 			// NativeAOT behavioral difference:
 			//   https://github.com/dotnet/runtime/issues/85161
-			[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", Tool.Analyzer | Tool.NativeAot, "")]
 			void LocalWithWarning ()
 			{
 				Requires ();

@@ -1,11 +1,16 @@
-﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
+﻿using System.Reflection;
+
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Generics
 {
 	public class VariantCasting
 	{
 		[Kept]
-		interface IVariant<out T> { }
+		interface IVariant<
+			[KeptGenericParamAttributes (GenericParameterAttributes.Covariant)]
+			out T
+		> { }
 
 		[Kept]
 		interface IFoo { }

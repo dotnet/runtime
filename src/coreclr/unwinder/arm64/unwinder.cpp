@@ -794,7 +794,7 @@ RtlpExpandCompactToFull (
         // or registers to lave left.
         //
 
-        for (intreg = 0; intreg < ((fnent_pdata->RegI / 2) * 2); intreg += 2) {
+        for (intreg = 0; intreg < (ULONG)((fnent_pdata->RegI / 2) * 2); intreg += 2) {
             if (!sav_predec_done) {
                 DBG_OP("save_regp_x\t(%s, %s, %i)\n", int_reg_names[intreg], int_reg_names[intreg + 1], -savsz * 8);
                 emit_save_regp_x(&op_buffer, intreg, -savsz * 8);
@@ -1484,7 +1484,7 @@ Return Value:
             Fpcr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
             SourceAddress = VfpStateAddress + FIELD_OFFSET(KARM64_VFP_STATE, Fpsr);
             Fpsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
-            if (Fpcr != -1 && Fpsr != -1) {
+            if (Fpcr != (ULONG)-1 && Fpsr != (ULONG)-1) {
 
                 ContextRecord->Fpcr = Fpcr;
                 ContextRecord->Fpsr = Fpsr;

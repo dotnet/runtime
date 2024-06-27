@@ -2,7 +2,7 @@
 
 `Microsoft.Extensions.Options.DataAnnotations` provides additional DataAnnotations specific functionality related to Options..
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/options.
+Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/options.
 
 ## Example
 

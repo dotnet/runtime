@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.SymbolStore;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -25,6 +26,7 @@ namespace System.Reflection.Emit
         private readonly Guid _moduleVersionId;
         private Dictionary<string, ModuleReferenceHandle>? _moduleReferences;
         private List<CustomAttributeWrapper>? _customAttributes;
+        private Dictionary<SymbolDocumentWriter, DocumentHandle> _docHandles = new();
         private int _nextTypeDefRowId = 1;
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
@@ -34,8 +36,12 @@ namespace System.Reflection.Emit
         private bool _coreTypesFullyPopulated;
         private bool _hasGlobalBeenCreated;
         private Type?[]? _coreTypes;
-        private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
-                                                       typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
+        private MetadataBuilder _pdbBuilder = new();
+        // The order of the types should match with the CoreTypeId enum values order.
+        private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte),
+                                                       typeof(byte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
+                                                       typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string),
+                                                       typeof(nint), typeof(nuint), typeof(TypedReference), typeof(ValueType) };
 
         internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder, PersistedAssemblyBuilder assemblyBuilder)
         {
@@ -108,7 +114,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        internal void AppendMetadata(MethodBodyStreamEncoder methodBodyEncoder, BlobBuilder fieldDataBuilder)
+        internal void AppendMetadata(MethodBodyStreamEncoder methodBodyEncoder, BlobBuilder fieldDataBuilder, out MetadataBuilder pdbBuilder)
         {
             // Add module metadata
             ModuleDefinitionHandle moduleHandle = _metadataBuilder.AddModule(
@@ -190,6 +196,8 @@ namespace System.Reflection.Emit
             {
                 AddGenericTypeParametersAndConstraintsCustomAttributes(param._parentHandle, param);
             }
+
+            pdbBuilder = _pdbBuilder;
         }
 
         private void WriteInterfaceImplementations(TypeBuilderImpl typeBuilder, TypeDefinitionHandle typeHandle)
@@ -339,7 +347,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
+        private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams,
+            MethodBodyStreamEncoder methodBodyEncoder)
         {
             foreach (MethodBuilderImpl method in methods)
             {
@@ -348,9 +357,10 @@ namespace System.Reflection.Emit
                 if (il != null)
                 {
                     FillMemberReferences(il);
-                    StandaloneSignatureHandle signature = il.Locals.Count == 0 ? default :
+                    StandaloneSignatureHandle signature = il.LocalCount == 0 ? default :
                         _metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetLocalSignature(il.Locals, this)));
                     offset = AddMethodBody(method, il, signature, methodBodyEncoder);
+                    AddSymbolInfo(il, signature, method._handle);
                 }
 
                 MethodDefinitionHandle handle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), offset, _nextParameterRowId);
@@ -398,6 +408,202 @@ namespace System.Reflection.Emit
                 }
             }
         }
+
+        private void AddSymbolInfo(ILGeneratorImpl il, StandaloneSignatureHandle localSignatureHandle, MethodDefinitionHandle methodHandle)
+        {
+            if (il.DocumentToSequencePoints.Count == 0)
+            {
+                // empty sequence point
+                _pdbBuilder.AddMethodDebugInformation(default, default);
+            }
+            else
+            {
+                Dictionary<SymbolDocumentWriter, List<SequencePoint>>.Enumerator enumerator = il.DocumentToSequencePoints.GetEnumerator();
+                if (il.DocumentToSequencePoints.Count > 1)
+                {
+                    // sequence points spans multiple docs
+                    _pdbBuilder.AddMethodDebugInformation(default, PopulateMultiDocSequencePointsBlob(enumerator, localSignatureHandle));
+                }
+                else // single document sequence point
+                {
+                    int previousNonHiddenStartLine = -1;
+                    int previousNonHiddenStartColumn = -1;
+                    enumerator.MoveNext();
+                    BlobBuilder spBlobBuilder = new BlobBuilder();
+                    spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(localSignatureHandle));
+                    PopulateSequencePointsBlob(spBlobBuilder, enumerator.Current.Value, ref previousNonHiddenStartLine, ref previousNonHiddenStartColumn);
+                    _pdbBuilder.AddMethodDebugInformation(GetDocument(enumerator.Current.Key), _pdbBuilder.GetOrAddBlob(spBlobBuilder));
+                }
+            }
+
+            Scope scope = il.Scope;
+            scope._endOffset = il.ILOffset; // Outer most scope covers the entire method body, so haven't closed by the user.
+
+            AddLocalScope(methodHandle, parentImport: default, MetadataTokens.LocalVariableHandle(_pdbBuilder.GetRowCount(TableIndex.LocalVariable) + 1), scope);
+        }
+
+        private BlobHandle PopulateMultiDocSequencePointsBlob(Dictionary<SymbolDocumentWriter, List<SequencePoint>>.Enumerator enumerator, StandaloneSignatureHandle localSignature)
+        {
+            BlobBuilder spBlobBuilder = new BlobBuilder();
+            int previousNonHiddenStartLine = -1;
+            int previousNonHiddenStartColumn = -1;
+            enumerator.MoveNext();
+            KeyValuePair<SymbolDocumentWriter, List<SequencePoint>> pair = enumerator.Current;
+
+            // header:
+            spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(localSignature));
+            spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(GetDocument(pair.Key)));
+
+            // First sequence point record
+            PopulateSequencePointsBlob(spBlobBuilder, pair.Value, ref previousNonHiddenStartLine, ref previousNonHiddenStartColumn);
+
+            while (enumerator.MoveNext())
+            {
+                pair = enumerator.Current;
+                spBlobBuilder.WriteCompressedInteger(0);
+                spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(GetDocument(pair.Key)));
+                PopulateSequencePointsBlob(spBlobBuilder, pair.Value, ref previousNonHiddenStartLine, ref previousNonHiddenStartColumn);
+            }
+
+            return _pdbBuilder.GetOrAddBlob(spBlobBuilder);
+        }
+
+        private static void PopulateSequencePointsBlob(BlobBuilder spBlobBuilder, List<SequencePoint> sequencePoints, ref int previousNonHiddenStartLine, ref int previousNonHiddenStartColumn)
+        {
+            for (int i = 0; i < sequencePoints.Count; i++)
+            {
+                // IL offset delta:
+                if (i > 0)
+                {
+                    spBlobBuilder.WriteCompressedInteger(sequencePoints[i].Offset - sequencePoints[i - 1].Offset);
+                }
+                else
+                {
+                    spBlobBuilder.WriteCompressedInteger(sequencePoints[i].Offset);
+                }
+
+                if (sequencePoints[i].IsHidden)
+                {
+                    spBlobBuilder.WriteUInt16(0);
+                    continue;
+                }
+
+                // Delta Lines & Columns:
+                SerializeDeltaLinesAndColumns(spBlobBuilder, sequencePoints[i]);
+
+                // delta Start Lines & Columns:
+                if (previousNonHiddenStartLine < 0)
+                {
+                    Debug.Assert(previousNonHiddenStartColumn < 0);
+                    spBlobBuilder.WriteCompressedInteger(sequencePoints[i].StartLine);
+                    spBlobBuilder.WriteCompressedInteger(sequencePoints[i].StartColumn);
+                }
+                else
+                {
+                    spBlobBuilder.WriteCompressedSignedInteger(sequencePoints[i].StartLine - previousNonHiddenStartLine);
+                    spBlobBuilder.WriteCompressedSignedInteger(sequencePoints[i].StartColumn - previousNonHiddenStartColumn);
+                }
+
+                previousNonHiddenStartLine = sequencePoints[i].StartLine;
+                previousNonHiddenStartColumn = sequencePoints[i].StartColumn;
+            }
+        }
+
+        private void AddLocalScope(MethodDefinitionHandle methodHandle, ImportScopeHandle parentImport, LocalVariableHandle firstLocalVariableHandle, Scope scope)
+        {
+            parentImport = GetImportScopeHandle(scope._importNamespaces, parentImport);
+            firstLocalVariableHandle = GetLocalVariableHandle(scope._locals, firstLocalVariableHandle);
+            _pdbBuilder.AddLocalScope(methodHandle, parentImport, firstLocalVariableHandle,
+                constantList: MetadataTokens.LocalConstantHandle(1), scope._startOffset, scope._endOffset - scope._startOffset);
+
+            if (scope._children != null)
+            {
+                foreach (Scope childScope in scope._children)
+                {
+                    AddLocalScope(methodHandle, parentImport, MetadataTokens.LocalVariableHandle(_pdbBuilder.GetRowCount(TableIndex.LocalVariable) + 1), childScope);
+                }
+            }
+        }
+
+        private LocalVariableHandle GetLocalVariableHandle(List<LocalBuilder>? locals, LocalVariableHandle firstLocalHandleOfLastScope)
+        {
+            if (locals != null)
+            {
+                bool firstLocalSet = false;
+                foreach (LocalBuilderImpl local in locals)
+                {
+                    if (!string.IsNullOrEmpty(local.Name))
+                    {
+                        LocalVariableHandle localHandle = _pdbBuilder.AddLocalVariable(LocalVariableAttributes.None, local.LocalIndex,
+                                                          local.Name == null ? _pdbBuilder.GetOrAddString(string.Empty) : _pdbBuilder.GetOrAddString(local.Name));
+                        if (!firstLocalSet)
+                        {
+                            firstLocalHandleOfLastScope = localHandle;
+                            firstLocalSet = true;
+                        }
+                    }
+                }
+            }
+
+            return firstLocalHandleOfLastScope;
+        }
+
+        private ImportScopeHandle GetImportScopeHandle(List<string>? importNamespaces, ImportScopeHandle parent)
+        {
+            if (importNamespaces == null)
+            {
+                return default;
+            }
+
+            BlobBuilder importBlob = new BlobBuilder();
+
+            foreach (string importNs in importNamespaces)
+            {
+                importBlob.WriteByte((byte)ImportDefinitionKind.ImportNamespace);
+                importBlob.WriteCompressedInteger(MetadataTokens.GetHeapOffset(_pdbBuilder.GetOrAddBlobUTF8(importNs)));
+            }
+
+            return _pdbBuilder.AddImportScope(parent, _pdbBuilder.GetOrAddBlob(importBlob));
+        }
+
+        private static void SerializeDeltaLinesAndColumns(BlobBuilder spBuilder, SequencePoint sequencePoint)
+        {
+            int deltaLines = sequencePoint.EndLine - sequencePoint.StartLine;
+            int deltaColumns = sequencePoint.EndColumn - sequencePoint.StartColumn;
+
+            // only hidden sequence points have zero width
+            Debug.Assert(deltaLines != 0 || deltaColumns != 0 || sequencePoint.IsHidden);
+
+            spBuilder.WriteCompressedInteger(deltaLines);
+
+            if (deltaLines == 0)
+            {
+                spBuilder.WriteCompressedInteger(deltaColumns);
+            }
+            else
+            {
+                Debug.Assert(deltaLines > 0);
+                spBuilder.WriteCompressedSignedInteger(deltaColumns);
+            }
+        }
+
+        private DocumentHandle GetDocument(SymbolDocumentWriter docWriter)
+        {
+            if (!_docHandles.TryGetValue(docWriter, out DocumentHandle handle))
+            {
+                handle = AddDocument(docWriter.URL, docWriter.Language, docWriter.HashAlgorithm, docWriter.Hash);
+                _docHandles.Add(docWriter, handle);
+            }
+
+            return handle;
+        }
+
+        private DocumentHandle AddDocument(string url, Guid language, Guid hashAlgorithm, byte[]? hash) =>
+            _pdbBuilder.AddDocument(
+                name: _pdbBuilder.GetOrAddDocumentName(url),
+                hashAlgorithm: hashAlgorithm == default ? default : _pdbBuilder.GetOrAddGuid(hashAlgorithm),
+                hash: hash == null ? default : _metadataBuilder.GetOrAddBlob(hash),
+                language: language == default ? default : _pdbBuilder.GetOrAddGuid(language));
 
         private void FillMemberReferences(ILGeneratorImpl il)
         {
@@ -485,29 +691,27 @@ namespace System.Reflection.Emit
         {
             if (!_typeReferences.TryGetValue(type, out var typeHandle))
             {
-                if (type.IsArray || type.IsGenericParameter || (type.IsGenericType && !type.IsGenericTypeDefinition))
+                if (type.HasElementType || type.IsGenericParameter ||
+                    (type.IsGenericType && !type.IsGenericTypeDefinition))
                 {
                     typeHandle = AddTypeSpecification(type);
                 }
                 else
                 {
-                    typeHandle = AddTypeReference(type, GetResolutionScopeHandle(type));
+                    if (type.IsNested)
+                    {
+                        typeHandle = AddTypeReference(GetTypeReferenceOrSpecificationHandle(type.DeclaringType!), null, type.Name);
+                    }
+                    else
+                    {
+                        typeHandle = AddTypeReference(GetAssemblyReference(type.Assembly), type.Namespace, type.Name);
+                    }
                 }
 
                 _typeReferences.Add(type, typeHandle);
             }
 
             return typeHandle;
-        }
-
-        private EntityHandle GetResolutionScopeHandle(Type type)
-        {
-            if (type.IsNested)
-            {
-                return GetTypeReferenceOrSpecificationHandle(type.DeclaringType!);
-            }
-
-            return GetAssemblyReference(type.Assembly);
         }
 
         private TypeSpecificationHandle AddTypeSpecification(Type type) =>
@@ -740,11 +944,11 @@ namespace System.Reflection.Emit
                 bodyOffset: offset,
                 parameterList: MetadataTokens.ParameterHandle(parameterToken));
 
-        private TypeReferenceHandle AddTypeReference(Type type, EntityHandle resolutionScope) =>
+        private TypeReferenceHandle AddTypeReference(EntityHandle resolutionScope, string? ns, string name) =>
             _metadataBuilder.AddTypeReference(
                 resolutionScope: resolutionScope,
-                @namespace: (type.Namespace == null) ? default : _metadataBuilder.GetOrAddString(type.Namespace),
-                name: _metadataBuilder.GetOrAddString(type.Name));
+                @namespace: (ns == null) ? default : _metadataBuilder.GetOrAddString(ns),
+                name: _metadataBuilder.GetOrAddString(name));
 
         private MemberReferenceHandle AddMemberReference(string memberName, EntityHandle parent, BlobBuilder signature) =>
             _metadataBuilder.AddMemberReference(
@@ -891,9 +1095,21 @@ namespace System.Reflection.Emit
             return GetMemberReferenceHandle(member);
         }
 
-        private static bool IsConstructedFromTypeBuilder(Type type) => type.IsConstructedGenericType &&
-            (type.GetGenericTypeDefinition() is TypeBuilderImpl ||
-             ContainsTypeBuilder(type.GetGenericArguments()));
+        private static bool IsConstructedFromTypeBuilder(Type type)
+        {
+            if (type.IsConstructedGenericType)
+            {
+                return type.GetGenericTypeDefinition() is TypeBuilderImpl || ContainsTypeBuilder(type.GetGenericArguments());
+            }
+
+            Type? elementType = type.GetElementType();
+            if (elementType is not null)
+            {
+                return (elementType is TypeBuilderImpl) || IsConstructedFromTypeBuilder(elementType);
+            }
+
+            return false;
+        }
 
         internal static bool ContainsTypeBuilder(Type[] genericArguments)
         {
@@ -1158,5 +1374,10 @@ namespace System.Reflection.Emit
                 CallingConvention.FastCall => SignatureCallingConvention.FastCall,
                 _ => SignatureCallingConvention.Default,
             };
+
+        protected override ISymbolDocumentWriter DefineDocumentCore(string url, Guid language = default)
+        {
+            return new SymbolDocumentWriter(url, language);
+        }
     }
 }

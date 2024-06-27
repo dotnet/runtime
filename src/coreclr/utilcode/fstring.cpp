@@ -65,7 +65,7 @@ HRESULT Unicode_Utf8_Length(_In_z_ LPCWSTR pString, _Out_ bool * pAllAscii, _Out
     }
     else // use WideCharToMultiByte to calculate result length
     {
-        * pLength = WszWideCharToMultiByte(CP_UTF8, 0, pString, -1, NULL, 0, NULL, NULL);
+        * pLength = WideCharToMultiByte(CP_UTF8, 0, pString, -1, NULL, 0, NULL, NULL);
 
         if (*pLength == 0)
         {
@@ -131,7 +131,7 @@ HRESULT Unicode_Utf8(_In_z_ LPCWSTR pString, bool allAscii, _Out_writes_bytes_(l
     }
     else
     {
-        length = WszWideCharToMultiByte(CP_UTF8, 0, pString, -1, pBuffer, (int) length + 1, NULL, NULL);
+        length = WideCharToMultiByte(CP_UTF8, 0, pString, -1, pBuffer, (int) length + 1, NULL, NULL);
 
         if (length == 0)
         {
@@ -185,7 +185,7 @@ HRESULT Utf8_Unicode_Length(_In_z_ LPCSTR pString, _Out_ bool * pAllAscii, _Out_
     }
     else
     {
-        * pLength = WszMultiByteToWideChar(CP_UTF8, 0, pString, -1, NULL, 0);
+        * pLength = MultiByteToWideChar(CP_UTF8, 0, pString, -1, NULL, 0);
 
         if (* pLength == 0)
         {
@@ -252,7 +252,7 @@ HRESULT Utf8_Unicode(_In_z_ LPCSTR pString, bool allAscii, _Out_writes_bytes_(le
     }
     else
     {
-        length = WszMultiByteToWideChar(CP_UTF8, 0, pString, -1, pBuffer, (int) length + 1);
+        length = MultiByteToWideChar(CP_UTF8, 0, pString, -1, pBuffer, (int) length + 1);
 
         if (length == 0)
         {

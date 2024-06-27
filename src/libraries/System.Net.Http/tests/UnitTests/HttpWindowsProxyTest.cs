@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.WinHttpHandlerUnitTests;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
@@ -32,9 +33,9 @@ namespace System.Net.Http.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(ProxyParsingData))]
-        public void HttpProxy_WindowsProxy_Manual_Loaded(string rawProxyString, string rawInsecureUri, string rawSecureUri)
+        public async Task HttpProxy_WindowsProxy_Manual_Loaded(string rawProxyString, string rawInsecureUri, string rawSecureUri)
         {
-            RemoteExecutor.Invoke((proxyString, insecureProxy, secureProxy) =>
+            await RemoteExecutor.Invoke((proxyString, insecureProxy, secureProxy) =>
             {
                 FakeRegistry.Reset();
 
@@ -54,14 +55,14 @@ namespace System.Net.Http.Tests
                 Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooHttps)));
                 Assert.Equal(!string.IsNullOrEmpty(insecureProxy) ? new Uri(insecureProxy) : null, p.GetProxy(new Uri(fooWs)));
                 Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooWss)));
-            }, rawProxyString, rawInsecureUri ?? string.Empty, rawSecureUri ?? string.Empty).Dispose();
+            }, rawProxyString, rawInsecureUri ?? string.Empty, rawSecureUri ?? string.Empty).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(ProxyParsingData))]
-        public void HttpProxy_WindowsProxy_PAC_Loaded(string rawProxyString, string rawInsecureUri, string rawSecureUri)
+        public async Task HttpProxy_WindowsProxy_PAC_Loaded(string rawProxyString, string rawInsecureUri, string rawSecureUri)
         {
-            RemoteExecutor.Invoke((proxyString, insecureProxy, secureProxy) =>
+            await RemoteExecutor.Invoke((proxyString, insecureProxy, secureProxy) =>
             {
                 TestControl.ResetAll();
 
@@ -87,7 +88,7 @@ namespace System.Net.Http.Tests
                 Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooHttps)));
                 Assert.Equal(!string.IsNullOrEmpty(insecureProxy) ? new Uri(insecureProxy) : null, p.GetProxy(new Uri(fooWs)));
                 Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooWss)));
-            }, rawProxyString, rawInsecureUri ?? string.Empty, rawSecureUri ?? string.Empty).Dispose();
+            }, rawProxyString, rawInsecureUri ?? string.Empty, rawSecureUri ?? string.Empty).DisposeAsync();
         }
 
         public static TheoryData<string, string, string> ProxyParsingData =>
@@ -117,9 +118,9 @@ namespace System.Net.Http.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("localhost:1234", "http://localhost:1234/")]
         [InlineData("123.123.123.123", "http://123.123.123.123/")]
-        public void HttpProxy_WindowsProxy_Loaded(string rawProxyString, string expectedUri)
+        public async Task HttpProxy_WindowsProxy_Loaded(string rawProxyString, string expectedUri)
         {
-            RemoteExecutor.Invoke((proxyString, expectedString) =>
+            await RemoteExecutor.Invoke((proxyString, expectedString) =>
             {
                 IWebProxy p;
 
@@ -132,7 +133,7 @@ namespace System.Net.Http.Tests
                 Assert.NotNull(p);
                 Assert.Equal(expectedString, p.GetProxy(new Uri(fooHttp)).ToString());
                 Assert.Equal(expectedString, p.GetProxy(new Uri(fooHttps)).ToString());
-            }, rawProxyString, expectedUri).Dispose();
+            }, rawProxyString, expectedUri).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -153,9 +154,9 @@ namespace System.Net.Http.Tests
         [InlineData("http://[2607:f8B0:4005:80A::200E]/", true)]
         [InlineData("http://b\u00e9b\u00e9.eu/", true)]
         [InlineData("http://www.b\u00e9b\u00e9.eu/", true)]
-        public void HttpProxy_Local_Bypassed(string name, bool shouldBypass)
+        public async Task HttpProxy_Local_Bypassed(string name, bool shouldBypass)
         {
-            RemoteExecutor.Invoke((url, expected) =>
+            await RemoteExecutor.Invoke((url, expected) =>
             {
                 bool expectedResult = Boolean.Parse(expected);
                 IWebProxy p;
@@ -169,7 +170,7 @@ namespace System.Net.Http.Tests
 
                 Uri u = new Uri(url);
                 Assert.Equal(expectedResult, p.GetProxy(u) == null);
-           }, name, shouldBypass.ToString()).Dispose();
+           }, name, shouldBypass.ToString()).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -178,9 +179,9 @@ namespace System.Net.Http.Tests
         [InlineData(" ; ;  ", 0)]
         [InlineData("http://127.0.0.1/", 1)]
         [InlineData("[::]", 1)]
-        public void HttpProxy_Local_Parsing(string bypass, int count)
+        public async Task HttpProxy_Local_Parsing(string bypass, int count)
         {
-            RemoteExecutor.Invoke((bypassValue, expected) =>
+            await RemoteExecutor.Invoke((bypassValue, expected) =>
             {
                 int expectedCount = Convert.ToInt32(expected);
                 IWebProxy p;
@@ -203,7 +204,7 @@ namespace System.Net.Http.Tests
                 {
                     Assert.Null(sp.BypassList);
                 }
-           }, bypass, count.ToString()).Dispose();
+           }, bypass, count.ToString()).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -212,9 +213,9 @@ namespace System.Net.Http.Tests
         [InlineData("http://;")]
         [InlineData("http=;")]
         [InlineData("  ;  ")]
-        public void HttpProxy_InvalidWindowsProxy_Null(string rawProxyString)
+        public async Task HttpProxy_InvalidWindowsProxy_Null(string rawProxyString)
         {
-            RemoteExecutor.Invoke((proxyString) =>
+            await RemoteExecutor.Invoke((proxyString) =>
             {
                 IWebProxy p;
 
@@ -231,14 +232,14 @@ namespace System.Net.Http.Tests
                 Assert.Null(p.GetProxy(new Uri(fooHttps)));
                 Assert.Null(p.GetProxy(new Uri(fooWs)));
                 Assert.Null(p.GetProxy(new Uri(fooWss)));
-            }, rawProxyString).Dispose();
+            }, rawProxyString).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpProxy_Multi_Data))]
-        public void HttpProxy_Multi_Success(bool manualConfig, string proxyConfig, string url, string expected)
+        public async Task HttpProxy_Multi_Success(bool manualConfig, string proxyConfig, string url, string expected)
         {
-            RemoteExecutor.Invoke((manualConfigValue, proxyConfigValue, urlValue, expectedValue) =>
+            await RemoteExecutor.Invoke((manualConfigValue, proxyConfigValue, urlValue, expectedValue) =>
             {
                 bool manual = bool.Parse(manualConfigValue);
                 Uri requestUri = new Uri(urlValue);
@@ -276,7 +277,7 @@ namespace System.Net.Http.Tests
                 }
 
                 Assert.False(multi.ReadNext(out _, out _));
-            }, manualConfig.ToString(), proxyConfig, url, expected).Dispose();
+            }, manualConfig.ToString(), proxyConfig, url, expected).DisposeAsync();
         }
 
         public static IEnumerable<object[]> HttpProxy_Multi_Data()
@@ -294,11 +295,11 @@ namespace System.Net.Http.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        public void HttpProxy_Multi_ConcurrentUse_Success(bool manualConfig)
+        public async Task HttpProxy_Multi_ConcurrentUse_Success(bool manualConfig)
         {
             const string MultiProxyConfig = "http://proxy-a.com http://proxy-b.com http://proxy-c.com";
 
-            RemoteExecutor.Invoke(manualValue =>
+            await RemoteExecutor.Invoke(manualValue =>
             {
                 bool manual = bool.Parse(manualValue);
 
@@ -364,7 +365,7 @@ namespace System.Net.Http.Tests
                 Assert.True(multiC.ReadNext(out Uri proxyC, out _));
                 Assert.Equal(firstProxy, proxyC);
                 Assert.False(multiC.ReadNext(out proxyC, out _));
-            }, manualConfig.ToString()).Dispose();
+            }, manualConfig.ToString()).DisposeAsync();
         }
     }
 }

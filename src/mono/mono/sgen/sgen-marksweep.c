@@ -33,6 +33,7 @@
 #include "mono/sgen/sgen-client.h"
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-proclib.h"
+#include "mono/utils/options.h"
 
 static int ms_block_size;
 
@@ -2133,11 +2134,14 @@ major_free_swept_blocks (size_t section_reserve)
 {
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Sweeping must have finished before freeing blocks");
 
-#if defined(HOST_WIN32) || defined(HOST_ORBIS) || defined (HOST_WASM)
+#if defined(HOST_WIN32) || defined(HOST_ORBIS)
 		/*
 		 * sgen_free_os_memory () asserts in mono_vfree () because windows doesn't like freeing the middle of
 		 * a VirtualAlloc ()-ed block.
 		 */
+		return;
+#elif defined(HOST_WASM)
+	if (!mono_opt_wasm_mmap)
 		return;
 #endif
 

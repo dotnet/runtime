@@ -22,11 +22,11 @@ namespace System.Security.Cryptography.Pkcs
 
         public X509Certificate2? Certificate { get; set; }
         public AsymmetricAlgorithm? PrivateKey { get; set; }
-        public X509Certificate2Collection Certificates { get; private set; } = new X509Certificate2Collection();
+        public X509Certificate2Collection Certificates { get; } = new X509Certificate2Collection();
         public Oid DigestAlgorithm { get; set; }
         public X509IncludeOption IncludeOption { get; set; }
-        public CryptographicAttributeObjectCollection SignedAttributes { get; private set; } = new CryptographicAttributeObjectCollection();
-        public CryptographicAttributeObjectCollection UnsignedAttributes { get; private set; } = new CryptographicAttributeObjectCollection();
+        public CryptographicAttributeObjectCollection SignedAttributes { get; } = new CryptographicAttributeObjectCollection();
+        public CryptographicAttributeObjectCollection UnsignedAttributes { get; } = new CryptographicAttributeObjectCollection();
 
         /// <summary>
         /// Gets or sets the RSA signature padding to use.
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-#if NETCOREAPP
+#if NET
         [Obsolete(Obsoletions.CmsSignerCspParamsCtorMessage, DiagnosticId = Obsoletions.CmsSignerCspParamsCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         [EditorBrowsable(EditorBrowsableState.Never)]

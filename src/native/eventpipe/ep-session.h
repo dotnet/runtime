@@ -53,7 +53,7 @@ struct _EventPipeSession_Internal {
 	// irrelevant.
 	EventPipeSerializationFormat format;
 	// For determininig if a particular session needs rundown events.
-	bool rundown_requested;
+	uint64_t rundown_keyword;
 	// Note - access to this field is NOT synchronized
 	// This functionality is a workaround because we couldn't safely enable/disable the session where we wanted to due to lock-leveling.
 	// we expect to remove it in the future once that limitation is resolved other scenarios are discouraged from using this given that
@@ -79,7 +79,7 @@ EP_DEFINE_GETTER(EventPipeSession *, session, uint32_t, index)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeSessionProviderList *, providers)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeBufferManager *, buffer_manager)
 EP_DEFINE_GETTER_REF(EventPipeSession *, session, volatile uint32_t *, rundown_enabled)
-EP_DEFINE_GETTER(EventPipeSession *, session, bool, rundown_requested)
+EP_DEFINE_GETTER(EventPipeSession *, session, uint64_t, rundown_keyword)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_time)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_timestamp)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeFile *, file)
@@ -92,7 +92,7 @@ ep_session_alloc (
 	IpcStream *stream,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	bool stackwalk_requested,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,

@@ -5,7 +5,7 @@ using System;
 using System.ComponentModel;
 using System.Security.Cryptography;
 
-#if !NETCOREAPP3_1_OR_GREATER
+#if !NET
 using System.Diagnostics;
 using System.Runtime.Serialization;
 #endif
@@ -25,7 +25,7 @@ namespace Internal.Cryptography
                 hr = (hr & 0x0000FFFF) | unchecked((int)0x80070000);
             }
 
-#if NETCOREAPP3_1_OR_GREATER
+#if NET
             return new CryptographicException(message)
             {
                 HResult = hr
@@ -40,7 +40,7 @@ namespace Internal.Cryptography
 #endif
         }
 
-#if !NETCOREAPP3_1_OR_GREATER
+#if !NET
         [Serializable]
         private sealed class WindowsCryptographicException : CryptographicException
         {

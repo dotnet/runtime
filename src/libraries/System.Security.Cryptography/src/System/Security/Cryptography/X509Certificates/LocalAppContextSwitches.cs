@@ -7,7 +7,7 @@ namespace System
 {
     internal static partial class LocalAppContextSwitches
     {
-        internal const long DefaultPkcs12UnspecifiedPasswordIterationLimit = 600_000;
+        internal const int DefaultPkcs12UnspecifiedPasswordIterationLimit = 600_000;
 
         internal static long Pkcs12UnspecifiedPasswordIterationLimit { get; } = InitializePkcs12UnspecifiedPasswordIterationLimit();
 

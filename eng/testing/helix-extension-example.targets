@@ -1,5 +1,5 @@
 <Project>
-  <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and '$(Scenario)' == 'WasmTestOnBrowser'">
+  <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and '$(Scenario)' == 'WasmTestOnChrome'">
     <HelixExtensionTargets>$(HelixExtensionTargets);_AddHelixCrypoItems</HelixExtensionTargets>
     <_CryptoProjectName>System.Security.Cryptography.Tests</_CryptoProjectName>
   </PropertyGroup>

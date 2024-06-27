@@ -85,8 +85,9 @@ namespace System.Net.NetworkInformation
             List<SystemNetworkInterface> interfaceList = new List<SystemNetworkInterface>();
 
             Interop.IpHlpApi.GetAdaptersAddressesFlags flags =
-                Interop.IpHlpApi.GetAdaptersAddressesFlags.IncludeGateways
-                | Interop.IpHlpApi.GetAdaptersAddressesFlags.IncludeWins;
+                Interop.IpHlpApi.GetAdaptersAddressesFlags.IncludeGateways |
+                Interop.IpHlpApi.GetAdaptersAddressesFlags.IncludeWins |
+                Interop.IpHlpApi.GetAdaptersAddressesFlags.IncludeAllInterfaces;
 
             // Figure out the right buffer size for the adapter information.
             uint result = Interop.IpHlpApi.GetAdaptersAddresses(

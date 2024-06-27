@@ -20,6 +20,7 @@
 #include "vars.hpp"
 #include "variant.h"
 #include "string.h"
+
 #include "field.h"
 
 // The following values are used to represent underlying
@@ -284,6 +285,37 @@ int COMVariant::GetEnumFlags(TypeHandle th)
             _ASSERTE(!"UNknown Type");
             return 0;
     }
+}
+
+extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::ObjectHandleOnStack obj)
+{
+    QCALL_CONTRACT;
+
+    uint32_t ret = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    OBJECTREF srcObj = obj.Get();
+    ret = ConvertSystemColorToOleColor(&srcObj);
+
+    END_QCALL;
+
+    return ret;
+}
+
+extern "C" void QCALLTYPE Variant_ConvertOleColorToSystemColor(QCall::ObjectHandleOnStack objRet, uint32_t oleColor, MethodTable* pMT)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    SYSTEMCOLOR systemColor{};
+    ConvertOleColorToSystemColor(oleColor, &systemColor);
+    objRet.Set(pMT->Box(&systemColor));
+
+    END_QCALL;
 }
 
 #endif // FEATURE_COMINTEROP

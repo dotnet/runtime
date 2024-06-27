@@ -308,16 +308,12 @@ void gc_heap::fire_etw_allocation_event (size_t allocation_amount,
                                          uint8_t* object_address,
                                          size_t object_size)
 {
-#ifdef FEATURE_NATIVEAOT
-    FIRE_EVENT(GCAllocationTick_V1, (uint32_t)allocation_amount, (uint32_t)gen_to_oh (gen_number));
-#else
     FIRE_EVENT(GCAllocationTick_V4,
                 allocation_amount,
                 (uint32_t)gen_to_oh (gen_number),
                 heap_number,
                 object_address,
                 object_size);
-#endif //FEATURE_NATIVEAOT
 }
 
 void gc_heap::fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject)

@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-#if !NETCOREAPP
+#if !NET
 		[ExpectBodyModified]
 #else
 		[ExpectedInstructionSequence (new[] {
@@ -50,7 +50,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-#if !NETCOREAPP
+#if !NET
 		[ExpectBodyModified]
 #else
 		[ExpectedInstructionSequence (new[] {

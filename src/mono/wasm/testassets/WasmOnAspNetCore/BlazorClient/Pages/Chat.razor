@@ -1,0 +1,34 @@
+﻿@page "/"
+@inject NavigationManager NavigationManager
+
+<h1>Chat Room</h1>
+@code {
+    private SignalRTest signalRTest = new();
+
+    // remove when https://github.com/dotnet/runtime/issues/96546 is fixed
+    // log that rendering is about to start in case we hit the issue before OnAfterRender is called
+    protected override bool ShouldRender()
+    {
+        bool shouldRender = base.ShouldRender();
+        TestOutput.WriteLine($"ShouldRender = {shouldRender}");
+        return shouldRender;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            TestOutput.WriteLine($"SignalRTest is started on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+            try
+            {
+                int result = await signalRTest.Run(NavigationManager.BaseUri, NavigationManager.Uri);
+                TestOutput.WriteLine($"SignalRTest finished with code {result}. WASM EXIT {result}");
+            }
+            catch (Exception ex)
+            {
+                TestOutput.WriteLine($"SignalRTest failed with exception {ex}. WASM EXIT -1");
+            }
+        }
+        base.OnAfterRenderAsync(firstRender);
+    }
+}

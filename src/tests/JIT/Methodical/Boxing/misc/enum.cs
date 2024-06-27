@@ -37,6 +37,7 @@ namespace BoxTest_enum_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             new Test().Fibonacci(20, ToPrintOrNotToPrint.Print);

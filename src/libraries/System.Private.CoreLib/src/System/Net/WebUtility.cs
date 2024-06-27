@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Net
@@ -19,15 +21,10 @@ namespace System.Net
         [return: NotNullIfNotNull(nameof(value))]
         public static string? HtmlEncode(string? value)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                return value;
-            }
-
             ReadOnlySpan<char> valueSpan = value.AsSpan();
 
             // Don't create ValueStringBuilder if we don't have anything to encode
-            int index = IndexOfHtmlEncodingChars(valueSpan);
+            int index = IndexOfHtmlEncodingChar(valueSpan);
             if (index < 0)
             {
                 return value;
@@ -38,9 +35,9 @@ namespace System.Net
             // characters need to be encoded.
             // For larger string we rent the input string's length plus a fixed
             // conservative amount of chars from the ArrayPool.
-            ValueStringBuilder sb = value.Length < 80 ?
+            ValueStringBuilder sb = valueSpan.Length < 80 ?
                 new ValueStringBuilder(stackalloc char[256]) :
-                new ValueStringBuilder(value.Length + 200);
+                new ValueStringBuilder(valueSpan.Length + 200);
 
             sb.Append(valueSpan.Slice(0, index));
             HtmlEncode(valueSpan.Slice(index), ref sb);
@@ -52,16 +49,10 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(output);
 
-            if (string.IsNullOrEmpty(value))
-            {
-                output.Write(value);
-                return;
-            }
-
             ReadOnlySpan<char> valueSpan = value.AsSpan();
 
             // Don't create ValueStringBuilder if we don't have anything to encode
-            int index = IndexOfHtmlEncodingChars(valueSpan);
+            int index = IndexOfHtmlEncodingChar(valueSpan);
             if (index < 0)
             {
                 output.Write(value);
@@ -73,9 +64,9 @@ namespace System.Net
             // characters need to be encoded.
             // For larger string we rent the input string's length plus a fixed
             // conservative amount of chars from the ArrayPool.
-            ValueStringBuilder sb = value.Length < 80 ?
+            ValueStringBuilder sb = valueSpan.Length < 80 ?
                 new ValueStringBuilder(stackalloc char[256]) :
-                new ValueStringBuilder(value.Length + 200);
+                new ValueStringBuilder(valueSpan.Length + 200);
 
             sb.Append(valueSpan.Slice(0, index));
             HtmlEncode(valueSpan.Slice(index), ref sb);
@@ -163,11 +154,6 @@ namespace System.Net
         [return: NotNullIfNotNull(nameof(value))]
         public static string? HtmlDecode(string? value)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                return value;
-            }
-
             ReadOnlySpan<char> valueSpan = value.AsSpan();
 
             int index = valueSpan.IndexOf('&');
@@ -178,9 +164,9 @@ namespace System.Net
 
             // In the worst case the decoded string has the same length.
             // For small inputs we use stack allocation.
-            ValueStringBuilder sb = value.Length <= 256 ?
+            ValueStringBuilder sb = valueSpan.Length <= 256 ?
                 new ValueStringBuilder(stackalloc char[256]) :
-                new ValueStringBuilder(value.Length);
+                new ValueStringBuilder(valueSpan.Length);
 
             sb.Append(valueSpan.Slice(0, index));
             HtmlDecode(valueSpan.Slice(index), ref sb);
@@ -192,16 +178,10 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(output);
 
-            if (string.IsNullOrEmpty(value))
-            {
-                output.Write(value);
-                return;
-            }
-
             ReadOnlySpan<char> valueSpan = value.AsSpan();
 
             int index = valueSpan.IndexOf('&');
-            if (index == -1)
+            if (index < 0)
             {
                 output.Write(value);
                 return;
@@ -209,9 +189,9 @@ namespace System.Net
 
             // In the worst case the decoded string has the same length.
             // For small inputs we use stack allocation.
-            ValueStringBuilder sb = value.Length <= 256 ?
+            ValueStringBuilder sb = valueSpan.Length <= 256 ?
                 new ValueStringBuilder(stackalloc char[256]) :
-                new ValueStringBuilder(value.Length);
+                new ValueStringBuilder(valueSpan.Length);
 
             sb.Append(valueSpan.Slice(0, index));
             HtmlDecode(valueSpan.Slice(index), ref sb);
@@ -291,28 +271,23 @@ namespace System.Net
             }
         }
 
-        private static int IndexOfHtmlEncodingChars(ReadOnlySpan<char> input)
+        /// <summary>SearchValues with all ASCII chars except &gt;, &lt;, ", ', and &amp;.</summary>
+        private static readonly SearchValues<char> s_htmlAsciiNonEncodingChars =
+            SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\t\n\v\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f !#$%()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u007f");
+
+        private static int IndexOfHtmlEncodingChar(ReadOnlySpan<char> input)
         {
-            for (int i = 0; i < input.Length; i++)
+            for (int i = input.IndexOfAnyExcept(s_htmlAsciiNonEncodingChars); (uint)i < (uint)input.Length; i++)
             {
                 char ch = input[i];
                 if (ch <= '>')
                 {
-                    switch (ch)
+                    if (ch == '<' || ch == '>' || ch == '"' || ch == '\'' || ch == '&')
                     {
-                        case '<':
-                        case '>':
-                        case '"':
-                        case '\'':
-                        case '&':
-                            return i;
+                        return i;
                     }
                 }
-                else if (char.IsBetween(ch, (char)160, (char)255))
-                {
-                    return i;
-                }
-                else if (char.IsSurrogate(ch))
+                else if (char.IsBetween(ch, (char)160, (char)255) || char.IsSurrogate(ch))
                 {
                     return i;
                 }
@@ -323,97 +298,78 @@ namespace System.Net
 
         #endregion
 
-        #region UrlEncode implementation
-
-        private static void GetEncodedBytes(byte[] originalBytes, int offset, int count, byte[] expandedBytes)
-        {
-            int pos = 0;
-            int end = offset + count;
-            Debug.Assert(offset < end && end <= originalBytes.Length);
-            for (int i = offset; i < end; i++)
-            {
-#if DEBUG
-                // Make sure we never overwrite any bytes if originalBytes and
-                // expandedBytes refer to the same array
-                if (originalBytes == expandedBytes)
-                {
-                    Debug.Assert(i >= pos);
-                }
-#endif
-
-                byte b = originalBytes[i];
-                char ch = (char)b;
-                if (IsUrlSafeChar(ch))
-                {
-                    expandedBytes[pos++] = b;
-                }
-                else if (ch == ' ')
-                {
-                    expandedBytes[pos++] = (byte)'+';
-                }
-                else
-                {
-                    expandedBytes[pos++] = (byte)'%';
-                    expandedBytes[pos++] = (byte)HexConverter.ToCharUpper(b >> 4);
-                    expandedBytes[pos++] = (byte)HexConverter.ToCharUpper(b);
-                }
-            }
-        }
-
-        #endregion
-
         #region UrlEncode public methods
 
         [return: NotNullIfNotNull(nameof(value))]
         public static string? UrlEncode(string? value)
         {
-            if (string.IsNullOrEmpty(value))
-                return value;
+            if (value is null)
+            {
+                return null;
+            }
 
-            int safeCount = 0;
-            int spaceCount = 0;
-            for (int i = 0; i < value.Length; i++)
+            // Count the number of Url-safe characters.
+            int unsafeCount = 0;
+            bool hasSpaces = false;
+            for (int i = value.AsSpan().IndexOfAnyExcept(s_safeUrlChars); (uint)i < (uint)value.Length; i++)
             {
                 char ch = value[i];
-                if (IsUrlSafeChar(ch))
+                if (!IsUrlSafe(ch))
                 {
-                    safeCount++;
-                }
-                else if (ch == ' ')
-                {
-                    spaceCount++;
+                    if (ch is ' ')
+                    {
+                        hasSpaces = true;
+                    }
+                    else
+                    {
+                        unsafeCount++;
+                    }
                 }
             }
 
-            int unexpandedCount = safeCount + spaceCount;
-            if (unexpandedCount == value.Length)
+            // If nothing needs to be expanded, we can either return the original string if there aren't
+            // any spaces that need substitution, or if there are just do that simple substitution.
+            if (unsafeCount == 0)
             {
-                if (spaceCount != 0)
-                {
-                    // Only spaces to encode
-                    return value.Replace(' ', '+');
-                }
-
-                // Nothing to expand
-                return value;
+                return hasSpaces ? value.Replace(' ', '+') : value;
             }
 
+            // Allocate the resulting string. Since all safe chars and spaces are ASCII, they UTF8-encode
+            // to themselves, and nothing other than themselves will UTF8 encode to themselves. Thus, the
+            // difference in length between the UTF8 length and the safe length is the number of characters
+            // that will need to be %-encoded, which means an additional two characters per. We can allocate
+            // the new string directly and UTF8-encode directly into its backing buffer, treating the memory
+            // as being for bytes. We can then encode in-place, writing the actual chars into the destination.
+            // The UTF8 encoded is done to the end of the string and the actual char writing to the beginning,
+            // such that we can do it in-place without overwriting data not yet read.
             int byteCount = Encoding.UTF8.GetByteCount(value);
-            int unsafeByteCount = byteCount - unexpandedCount;
-            int byteIndex = unsafeByteCount * 2;
+            int byteIndex = (byteCount - (value.Length - unsafeCount)) * 2;
+            return string.Create(byteCount + byteIndex, (value, byteCount), static (dest, state) =>
+            {
+                Span<byte> utf8Bytes = MemoryMarshal.AsBytes(dest).Slice(dest.Length * 2 - state.byteCount);
 
-            // Instead of allocating one array of length `byteCount` to store
-            // the UTF-8 encoded bytes, and then a second array of length
-            // `3 * byteCount - 2 * unexpandedCount`
-            // to store the URL-encoded UTF-8 bytes, we allocate a single array of
-            // the latter and encode the data in place, saving the first allocation.
-            // We store the UTF-8 bytes to the end of this array, and then URL encode to the
-            // beginning of the array.
-            byte[] newBytes = new byte[byteCount + byteIndex];
-            Encoding.UTF8.GetBytes(value, 0, value.Length, newBytes, byteIndex);
+                Encoding.UTF8.GetBytes(state.value, utf8Bytes);
 
-            GetEncodedBytes(newBytes, byteIndex, byteCount, newBytes);
-            return Encoding.UTF8.GetString(newBytes);
+                int pos = 0;
+                foreach (byte b in utf8Bytes)
+                {
+                    char ch = (char)b;
+                    if (IsUrlSafe(ch))
+                    {
+                        dest[pos++] = ch;
+                    }
+                    else if (ch == ' ')
+                    {
+                        dest[pos++] = '+';
+                    }
+                    else
+                    {
+                        dest[pos++] = '%';
+                        dest[pos++] = HexConverter.ToCharUpper(b >> 4);
+                        dest[pos++] = HexConverter.ToCharUpper(b);
+                    }
+                }
+            });
         }
 
         [return: NotNullIfNotNull(nameof(value))]
@@ -424,32 +380,63 @@ namespace System.Net
                 return null;
             }
 
-            bool foundSpaces = false;
+            ReadOnlySpan<byte> source = value.AsSpan(offset, count);
+
+            // Count the number of Url-unsafe characters.
             int unsafeCount = 0;
-
-            // count them first
-            for (int i = 0; i < count; i++)
+            bool hasSpaces = false;
+            for (int i = source.IndexOfAnyExcept(s_safeUrlBytes); (uint)i < (uint)source.Length; i++)
             {
-                char ch = (char)value![offset + i];
-
-                if (ch == ' ')
-                    foundSpaces = true;
-                else if (!IsUrlSafeChar(ch))
-                    unsafeCount++;
+                byte b = source[i];
+                if (!IsUrlSafe(b))
+                {
+                    if (b == (byte)' ')
+                    {
+                        hasSpaces = true;
+                    }
+                    else
+                    {
+                        unsafeCount++;
+                    }
+                }
             }
 
-            // nothing to expand?
-            if (!foundSpaces && unsafeCount == 0)
+            // If none were found, nothing needs to be %-encoded.
+            byte[] result;
+            if (unsafeCount == 0)
             {
-                var subarray = new byte[count];
-                Buffer.BlockCopy(value!, offset, subarray, 0, count);
-                return subarray;
+                // Copy the input to be the output. Then the only encoding that needs to be done
+                // is replacing spaces if there were any.
+                result = source.ToArray();
+                if (hasSpaces)
+                {
+                    result.AsSpan().Replace((byte)' ', (byte)'+');
+                }
+                return result;
             }
 
-            // expand not 'safe' characters into %XX, spaces to +s
-            byte[] expandedBytes = new byte[count + unsafeCount * 2];
-            GetEncodedBytes(value!, offset, count, expandedBytes);
-            return expandedBytes;
+            // Something needs to be expanded. Create the resulting array and encode into it.
+            int pos = 0;
+            result = new byte[count + (unsafeCount * 2)];
+            foreach (byte b in source)
+            {
+                if (IsUrlSafe(b))
+                {
+                    result[pos++] = b;
+                }
+                else if (b == (byte)' ')
+                {
+                    result[pos++] = (byte)'+';
+                }
+                else
+                {
+                    result[pos++] = (byte)'%';
+                    result[pos++] = (byte)HexConverter.ToCharUpper(b >> 4);
+                    result[pos++] = (byte)HexConverter.ToCharUpper(b);
+                }
+            }
+
+            return result;
         }
 
         #endregion
@@ -582,45 +569,19 @@ namespace System.Net
         #endregion
 
         #region Helper methods
+        /// <summary>Url safe chars as defined by RFC 1738.4, minus '+'</summary>
+        private static readonly SearchValues<char> s_safeUrlChars = SearchValues.Create(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.!*()");
+
+        /// <summary>Url safe bytes as defined by RFC 1738.4, minus '+'</summary>
+        private static readonly SearchValues<byte> s_safeUrlBytes = SearchValues.Create(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.!*()"u8);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsUrlSafeChar(char ch)
-        {
-            // Set of safe chars, from RFC 1738.4 minus '+'
-            /*
-            if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9')
-                return true;
+        private static bool IsUrlSafe(char ch) => s_safeUrlChars.Contains(ch);
 
-            switch (ch)
-            {
-                case '-':
-                case '_':
-                case '.':
-                case '!':
-                case '*':
-                case '(':
-                case ')':
-                    return true;
-            }
-
-            return false;
-            */
-            // Optimized version of the above:
-
-            int code = (int)ch;
-
-            const int safeSpecialCharMask = 0x03FF0000 | // 0..9
-                1 << ((int)'!' - 0x20) | // 0x21
-                1 << ((int)'(' - 0x20) | // 0x28
-                1 << ((int)')' - 0x20) | // 0x29
-                1 << ((int)'*' - 0x20) | // 0x2A
-                1 << ((int)'-' - 0x20) | // 0x2D
-                1 << ((int)'.' - 0x20); // 0x2E
-
-            return char.IsAsciiLetter(ch) ||
-                   ((uint)(code - 0x20) <= (uint)('9' - 0x20) && ((1 << (code - 0x20)) & safeSpecialCharMask) != 0) ||
-                   (code == (int)'_');
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsUrlSafe(byte ch) => s_safeUrlBytes.Contains(ch);
 
         private static bool ValidateUrlEncodingParameters(byte[]? bytes, int offset, int count)
         {

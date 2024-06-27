@@ -4360,7 +4360,7 @@ MetaSig::CompareMethodSigs(
         return FALSE;
     }
 
-    __int8 callConv = *pSig1;
+    int8_t callConv = *pSig1;
 
     pSig1++;
     pSig2++;

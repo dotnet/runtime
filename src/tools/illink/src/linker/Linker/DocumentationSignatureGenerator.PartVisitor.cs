@@ -9,8 +9,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-
-	public sealed partial class DocumentationSignatureGenerator
+	internal sealed partial class DocumentationSignatureGenerator
 	{
 		/// <summary>
 		///  A visitor that generates the part of the documentation comment after the initial type

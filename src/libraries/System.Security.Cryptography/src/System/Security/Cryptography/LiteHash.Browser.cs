@@ -34,6 +34,8 @@ namespace System.Security.Cryptography
         public int Finalize(Span<byte> destination) => throw new UnreachableException();
         public void Current(Span<byte> destination) => throw new UnreachableException();
         public int Reset() => throw new UnreachableException();
+        public LiteXof Clone() => throw new UnreachableException();
+        public void Read(Span<byte> destination) => throw new UnreachableException();
         public void Dispose() => throw new UnreachableException();
 #pragma warning restore IDE0060
 #pragma warning restore CA1822

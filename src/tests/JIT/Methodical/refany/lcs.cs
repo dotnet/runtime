@@ -99,6 +99,7 @@ namespace JitTest_lcs_refany_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             String[] str = new String[RANK] {

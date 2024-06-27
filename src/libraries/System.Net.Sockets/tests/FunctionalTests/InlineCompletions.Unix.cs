@@ -15,13 +15,13 @@ namespace System.Net.Sockets.Tests
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Inline Socket mode is specific to Unix Socket implementation.
-        public void InlineSocketContinuations()
+        public async Task InlineSocketContinuations()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables.Add("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS", "1");
             options.TimeOut = (int)TimeSpan.FromMinutes(20).TotalMilliseconds;
 
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 // Connect/Accept tests
                 await new AcceptEap(null).Accept_ConcurrentAcceptsBeforeConnects_Success(5);
@@ -33,7 +33,7 @@ namespace System.Net.Sockets.Tests
                 await new SendReceive_Eap(null).SendRecv_Stream_TCP_MultipleConcurrentSends(IPAddress.Loopback, useMultipleBuffers: false);
                 await new SendReceive_Eap(null).TcpReceiveSendGetsCanceledByDispose(receiveOrSend: true, ipv6Server: false, dualModeClient: false, owning: true);
                 await new SendReceive_Eap(null).TcpReceiveSendGetsCanceledByDispose(receiveOrSend: false, ipv6Server: false, dualModeClient: false, owning: true);
-            }, options).Dispose();
+            }, options).DisposeAsync();
         }
     }
 }

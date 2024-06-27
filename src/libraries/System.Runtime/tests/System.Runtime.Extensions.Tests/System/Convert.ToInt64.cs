@@ -124,9 +124,9 @@ namespace System.Tests
         [Fact]
         public void FromStringWithBase()
         {
-            string[] testValues = { null, null, null, null, "7FFFFFFFFFFFFFFF", "9223372036854775807", "777777777777777777777", "111111111111111111111111111111111111111111111111111111111111111", "8000000000000000", "-9223372036854775808", "1000000000000000000000", "1000000000000000000000000000000000000000000000000000000000000000" };
-            int[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2 };
-            long[] expectedValues = { 0, 0, 0, 0, long.MaxValue, long.MaxValue, long.MaxValue, long.MaxValue, long.MinValue, long.MinValue, long.MinValue, long.MinValue };
+            string[] testValues = { null, null, null, null, "7FFFFFFFFFFFFFFF", "9223372036854775807", "777777777777777777777", "111111111111111111111111111111111111111111111111111111111111111", "8000000000000000", "-9223372036854775808", "1000000000000000000000", "1000000000000000000000000000000000000000000000000000000000000000", "0x7fffffffffffffff", "0X7FFFFFFFFFFFFFFF" };
+            int[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2, 16, 16 };
+            long[] expectedValues = { 0, 0, 0, 0, long.MaxValue, long.MaxValue, long.MaxValue, long.MaxValue, long.MinValue, long.MinValue, long.MinValue, long.MinValue, long.MaxValue, long.MaxValue };
             VerifyFromStringWithBase(Convert.ToInt64, testValues, testBases, expectedValues);
 
             string[] overflowValues = { "9223372036854775808", "-9223372036854775809", "11111111111111111111111111111111111111111111111111111111111111111", "1FFFFffffFFFFffff", "7777777777777777777777777" };

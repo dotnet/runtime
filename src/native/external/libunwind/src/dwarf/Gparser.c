@@ -666,7 +666,7 @@ hash (unw_word_t ip, unsigned short log_size)
   /* based on (sqrt(5)/2-1)*2^64 */
 # define magic  ((unw_word_t) 0x9e3779b97f4a7c16ULL)
 
-  return ip * magic >> ((sizeof(unw_word_t) * 8) - (log_size + 1));
+  return (unw_hash_index_t) (ip * magic >> ((sizeof(unw_word_t) * 8) - (log_size + 1)));
 }
 
 static inline long
@@ -730,7 +730,7 @@ rs_new (struct dwarf_rs_cache *cache, struct dwarf_cursor * c)
 
   cache->links[head].ip = c->ip;
   cache->links[head].valid = 1;
-  cache->links[head].signal_frame = tdep_cache_frame(c);
+  cache->links[head].signal_frame = tdep_cache_frame(c) ? 1 : 0;
   return cache->buckets + head;
 }
 
@@ -841,7 +841,8 @@ aarch64_get_ra_sign_state(struct dwarf_reg_state *rs)
 static int
 apply_reg_state (struct dwarf_cursor *c, struct dwarf_reg_state *rs)
 {
-  unw_word_t regnum, addr, cfa, ip;
+  unw_regnum_t regnum;
+  unw_word_t addr, cfa, ip;
   unw_word_t prev_ip, prev_cfa;
   unw_addr_space_t as;
   dwarf_loc_t cfa_loc;
@@ -881,7 +882,7 @@ apply_reg_state (struct dwarf_cursor *c, struct dwarf_reg_state *rs)
           cfa = c->cfa;
       else
         {
-          regnum = dwarf_to_unw_regnum (rs->reg.val[DWARF_CFA_REG_COLUMN]);
+          regnum = dwarf_to_unw_regnum ((unw_regnum_t) rs->reg.val[DWARF_CFA_REG_COLUMN]);
           if ((ret = unw_get_reg (dwarf_to_cursor(c), regnum, &cfa)) < 0)
             return ret;
         }
@@ -1015,7 +1016,7 @@ find_reg_state (struct dwarf_cursor *c, dwarf_state_record_t *sr)
       (rs = rs_lookup(cache, c)))
     {
       /* update hint; no locking needed: single-word writes are atomic */
-      unsigned short index = rs - cache->buckets;
+      unsigned short index = (unsigned short) (rs - cache->buckets);
       c->use_prev_instr = ! cache->links[index].signal_frame;
       memcpy (&sr->rs_current, rs, sizeof (*rs));
     }
@@ -1047,7 +1048,7 @@ find_reg_state (struct dwarf_cursor *c, dwarf_state_record_t *sr)
     {
       if (rs)
 	{
-	  index = rs - cache->buckets;
+	  index = (unsigned short) (rs - cache->buckets);
 	  c->hint = cache->links[index].hint;
 	  cache->links[c->prev_rs].hint = index + 1;
 	  c->prev_rs = index;

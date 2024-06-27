@@ -84,6 +84,7 @@ namespace JitTest_lcs_ulong_arrays_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             Console.WriteLine("Test searches for ulongest common subsequence of 4 strings\n\n");

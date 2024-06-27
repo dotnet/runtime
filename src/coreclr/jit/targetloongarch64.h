@@ -47,8 +47,6 @@
                                            // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
   #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
-  #define FEATURE_EH_FUNCLETS      1
-  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
@@ -67,8 +65,12 @@
   #define CODE_ALIGN               4       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement
 
+  #define FIRST_INT_CALLEE_SAVED  REG_S0
+  #define LAST_INT_CALLEE_SAVED   REG_S8
   #define RBM_INT_CALLEE_SAVED    (RBM_S0|RBM_S1|RBM_S2|RBM_S3|RBM_S4|RBM_S5|RBM_S6|RBM_S7|RBM_S8)
   #define RBM_INT_CALLEE_TRASH    (RBM_A0|RBM_A1|RBM_A2|RBM_A3|RBM_A4|RBM_A5|RBM_A6|RBM_A7|RBM_T0|RBM_T1|RBM_T2|RBM_T3|RBM_T4|RBM_T5|RBM_T6|RBM_T7|RBM_T8)
+  #define FIRST_FLT_CALLEE_SAVED  REG_F24
+  #define LAST_FLT_CALLEE_SAVED   REG_F31
   #define RBM_FLT_CALLEE_SAVED    (RBM_F24|RBM_F25|RBM_F26|RBM_F27|RBM_F28|RBM_F29|RBM_F30|RBM_F31)
   #define RBM_FLT_CALLEE_TRASH    (RBM_F0|RBM_F1|RBM_F2|RBM_F3|RBM_F4|RBM_F5|RBM_F6|RBM_F7)
 
@@ -85,7 +87,7 @@
   // REG_VAR_ORDER is: (CALLEE_TRASH & ~CALLEE_TRASH_NOGC), CALLEE_TRASH_NOGC, CALLEE_SAVED
   #define REG_VAR_ORDER            REG_A0,REG_A1,REG_A2,REG_A3,REG_A4,REG_A5,REG_A6,REG_A7, \
                                    REG_T0,REG_T1,REG_T2,REG_T3,REG_T4,REG_T5,REG_T6,REG_T7,REG_T8, \
-                                   REG_CALLEE_SAVED_ORDER
+                                   REG_S0,REG_S1,REG_S2,REG_S3,REG_S4,REG_S5,REG_S6,REG_S7,REG_S8
 
   #define REG_VAR_ORDER_FLT        REG_F12,REG_F13,REG_F14,REG_F15,REG_F16,REG_F17,REG_F18,REG_F19, \
                                    REG_F2,REG_F3,REG_F4,REG_F5,REG_F6,REG_F7,REG_F8,REG_F9,REG_F10, \
@@ -93,12 +95,13 @@
                                    REG_F24,REG_F25,REG_F26,REG_F27,REG_F28,REG_F29,REG_F30,REG_F31, \
                                    REG_F1,REG_F0
 
-  #define REG_CALLEE_SAVED_ORDER   REG_S0,REG_S1,REG_S2,REG_S3,REG_S4,REG_S5,REG_S6,REG_S7,REG_S8
-  #define RBM_CALLEE_SAVED_ORDER   RBM_S0,RBM_S1,RBM_S2,RBM_S3,RBM_S4,RBM_S5,RBM_S6,RBM_S7,RBM_S8
+  #define RBM_CALL_GC_REGS_ORDER   RBM_S0,RBM_S1,RBM_S2,RBM_S3,RBM_S4,RBM_S5,RBM_S6,RBM_S7,RBM_S8,RBM_INTRET,RBM_INTRET_1
+  #define RBM_CALL_GC_REGS         (RBM_S0|RBM_S1|RBM_S2|RBM_S3|RBM_S4|RBM_S5|RBM_S6|RBM_S7|RBM_S8|RBM_INTRET|RBM_INTRET_1)
 
   #define CNT_CALLEE_SAVED        (10)             //s0-s8,fp.
   #define CNT_CALLEE_TRASH        (17)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
+  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED+2)
 
   #define CNT_CALLEE_SAVED_FLOAT  (8)
   #define CNT_CALLEE_TRASH_FLOAT  (24)
@@ -132,8 +135,8 @@
   // LOONGARCH64 write barrier ABI (see vm/loongarch64/asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
   //     On entry:
-  //       t6: the destination address (LHS of the assignment)
-  //       t7: the object reference (RHS of the assignment)
+  //       t6: the destination address of the store
+  //       t7: the object reference to be stored
   //     On exit:
   //       t0: trashed
   //       t1: trashed
@@ -194,14 +197,6 @@
   #define RBM_R2R_INDIRECT_PARAM          RBM_T8
 
   #define REG_INDIRECT_CALL_TARGET_REG    REG_T6
-
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_T0
-  #define RBM_PINVOKE_FRAME        RBM_T0
-  #define REG_PINVOKE_TCB          REG_T1
-  #define RBM_PINVOKE_TCB          RBM_T1
-  #define REG_PINVOKE_SCRATCH      REG_T1
-  #define RBM_PINVOKE_SCRATCH      RBM_T1
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_R0

@@ -58,12 +58,19 @@ namespace System.Net.Test.Common
             public static readonly Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
             public static readonly Uri SecureRemoteEchoServer = new Uri("https://" + SecureHost + "/" + EchoHandler);
             public static readonly Uri Http2RemoteEchoServer = new Uri("https://" + Http2Host + "/" + EchoHandler);
-            public static readonly Uri[] EchoServerList = new Uri[] { RemoteEchoServer, SecureRemoteEchoServer, Http2RemoteEchoServer };
+            public static Uri[] GetEchoServerList()
+            {
+                if (PlatformDetection.IsFirefox)
+                {
+                    // https://github.com/dotnet/runtime/issues/101115
+                    return [RemoteEchoServer];
+                }
+                return [RemoteEchoServer, SecureRemoteEchoServer, Http2RemoteEchoServer];
+            }
 
             public static readonly Uri RemoteVerifyUploadServer = new Uri("http://" + Host + "/" + VerifyUploadHandler);
             public static readonly Uri SecureRemoteVerifyUploadServer = new Uri("https://" + SecureHost + "/" + VerifyUploadHandler);
             public static readonly Uri Http2RemoteVerifyUploadServer = new Uri("https://" + Http2Host + "/" + VerifyUploadHandler);
-            public static readonly Uri[] VerifyUploadServerList = new Uri[] { RemoteVerifyUploadServer, SecureRemoteVerifyUploadServer, Http2RemoteVerifyUploadServer };
 
             public static readonly Uri RemoteEmptyContentServer = new Uri("http://" + Host + "/" + EmptyContentHandler);
             public static readonly Uri RemoteDeflateServer = new Uri("http://" + Host + "/" + DeflateHandler);
@@ -72,7 +79,7 @@ namespace System.Net.Test.Common
             public static readonly Uri Http2RemoteGZipServer = new Uri("https://" + Http2Host + "/" + GZipHandler);
             public static Uri RemoteLoopServer => new Uri("ws://" + RemoteLoopHost + "/" + RemoteLoopHandler);
 
-            public static readonly object[][] EchoServers = EchoServerList.Select(x => new object[] { x }).ToArray();
+            public static readonly object[][] EchoServers = GetEchoServerList().Select(x => new object[] { x }).ToArray();
             public static readonly object[][] VerifyUploadServers = { new object[] { RemoteVerifyUploadServer }, new object[] { SecureRemoteVerifyUploadServer }, new object[] { Http2RemoteVerifyUploadServer } };
             public static readonly object[][] CompressedServers = { new object[] { RemoteDeflateServer }, new object[] { RemoteGZipServer }, new object[] { Http2RemoteDeflateServer }, new object[] { Http2RemoteGZipServer } };
 
@@ -83,9 +90,17 @@ namespace System.Net.Test.Common
             public static readonly RemoteServer RemoteSecureHttp11Server = new RemoteServer(new Uri("https://" + SecureHost + "/"), HttpVersion.Version11);
             public static readonly RemoteServer RemoteHttp2Server = new RemoteServer(new Uri("https://" + Http2Host + "/"), new Version(2, 0));
 
-            public static readonly IEnumerable<RemoteServer> RemoteServers = new RemoteServer[] { RemoteHttp11Server, RemoteSecureHttp11Server, RemoteHttp2Server };
+            public static IEnumerable<RemoteServer> GetRemoteServers()
+            {
+                if (PlatformDetection.IsFirefox)
+                {
+                    // https://github.com/dotnet/runtime/issues/101115
+                    return new RemoteServer[] { RemoteHttp11Server };
+                }
+                return new RemoteServer[] { RemoteHttp11Server, RemoteSecureHttp11Server, RemoteHttp2Server };
+            }
 
-            public static readonly IEnumerable<object[]> RemoteServersMemberData = RemoteServers.Select(s => new object[] { s });
+            public static readonly IEnumerable<object[]> RemoteServersMemberData = GetRemoteServers().Select(s => new object[] { s });
 
             public sealed class RemoteServer
             {

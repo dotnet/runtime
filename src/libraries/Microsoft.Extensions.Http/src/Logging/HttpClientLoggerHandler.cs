@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Http.Logging
             }
         }
 
-#if NET5_0_OR_GREATER
+#if NET
         protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             ThrowHelper.ThrowIfNull(request);

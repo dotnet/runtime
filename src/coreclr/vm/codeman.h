@@ -1358,7 +1358,12 @@ public:
                         
                         // This level is completely empty. Free it, and then null out the pointer to it.
                         pointerToLevelData->Uninstall();
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfree-nonheap-object" // The compiler can't tell that this pointer always comes from a malloc call.
                         free((void*)rawData);
+#pragma GCC diagnostic pop
+#endif
                     }
                 }
 
@@ -2000,9 +2005,6 @@ public:
     // Returns whether currentPC is in managed code. Returns false for jump stubs on WIN64.
     static BOOL IsManagedCode(PCODE currentPC);
 
-    // Special version with profiler hook
-    static BOOL IsManagedCode(PCODE currentPC, HostCallPreference hostCallPreference, BOOL *pfFailedReaderLock);
-
     // Returns true if currentPC is ready to run codegen
     static BOOL IsReadyToRunCode(PCODE currentPC);
 
@@ -2033,7 +2035,7 @@ public:
     class ReaderLockHolder
     {
     public:
-        ReaderLockHolder(HostCallPreference hostCallPreference = AllowHostCalls);
+        ReaderLockHolder();
         ~ReaderLockHolder();
 
         BOOL Acquired();
@@ -2208,9 +2210,9 @@ private:
 #endif
         }
 
-        static const element_t Null() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = NULL; e.m_jumpStub = NULL; return e; }
-        static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_target == NULL; }
-        static const element_t Deleted() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = (PCODE)-1; e.m_jumpStub = NULL; return e; }
+        static const element_t Null() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = 0; e.m_jumpStub = 0; return e; }
+        static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_target == 0; }
+        static const element_t Deleted() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = (PCODE)-1; e.m_jumpStub = 0; return e; }
         static bool IsDeleted(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_target == (PCODE)-1; }
     };
     typedef SHash<JumpStubTraits> JumpStubTable;
@@ -2256,7 +2258,7 @@ inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
 inline CodeHeader * EEJitManager::GetCodeHeaderFromStartAddress(TADDR methodStartAddress)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(methodStartAddress != NULL);
+    _ASSERTE(methodStartAddress != (TADDR)NULL);
     ARM_ONLY(_ASSERTE((methodStartAddress & THUMB_CODE) == 0));
     return dac_cast<PTR_CodeHeader>(methodStartAddress - sizeof(CodeHeader));
 }
@@ -2266,7 +2268,6 @@ inline TADDR EEJitManager::JitTokenToStartAddress(const METHODTOKEN& MethodToken
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -2280,7 +2281,6 @@ inline void EEJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodTo
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
         PRECONDITION(methodRegionInfo != NULL);
     } CONTRACTL_END;

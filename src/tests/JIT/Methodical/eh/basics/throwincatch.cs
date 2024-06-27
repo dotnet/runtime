@@ -29,6 +29,7 @@ namespace hello_throwincatch_basics_cs
         }
 
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             //Start recording

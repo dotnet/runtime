@@ -55,7 +55,7 @@ When you're dealing with languages managed by the CLR, there are two kinds of co
 
 ### When does the JIT make tail calls?
 
-I asked Fei Chen and [Grant Richins](https://docs.microsoft.com/en-us/archive/blogs/grantri/), neighbors down the hall from me who happen to work on the JIT, under what conditions the various JITs will employ the tail call optimization. The full answer is rather detailed. The quick summary is that the JITs try to use the tail call optimization whenever they can, but there are lots of reasons why the tail call optimization can't be used. Some reasons why tail calling is a non-option:
+I asked Fei Chen and [Grant Richins](https://learn.microsoft.com/archive/blogs/grantri/), neighbors down the hall from me who happen to work on the JIT, under what conditions the various JITs will employ the tail call optimization. The full answer is rather detailed. The quick summary is that the JITs try to use the tail call optimization whenever they can, but there are lots of reasons why the tail call optimization can't be used. Some reasons why tail calling is a non-option:
 
 - Caller doesn't return immediately after the call (duh :-))
 - Stack arguments between caller and callee are incompatible in a way that would require shifting things around in the caller's frame before the callee could execute

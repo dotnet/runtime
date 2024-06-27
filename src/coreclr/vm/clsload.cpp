@@ -1932,7 +1932,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
 #endif
             TRIGGERSGC();
 
-            if (pModule->IsReflection())
+            if (pModule->IsReflectionEmit())
             {
                 // Don't try to load types that are not in available table, when this
                 // is an in-memory module.  Raise the type-resolve event instead.
@@ -2151,7 +2151,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                         nameHandle.SetTokenNotToLoad(tokenNotToLoad);
                         typeHnd = pFoundModule->GetClassLoader()->
                             LoadTypeHandleThrowIfFailed(&nameHandle, level,
-                                                        pFoundModule->IsFullModule() ? (static_cast<Module*>(pFoundModule)->IsReflection() ? NULL : static_cast<Module*>(pFoundModule)) : NULL);
+                                                        pFoundModule->IsFullModule() ? (static_cast<Module*>(pFoundModule)->IsReflectionEmit() ? NULL : static_cast<Module*>(pFoundModule)) : NULL);
                     }
                 }
 
@@ -2326,7 +2326,7 @@ ClassLoader::ResolveNameToTypeDefThrowing(
             &pFoundModule,
             &foundExportedType,
             NULL,
-            pSourceModule->IsReflection() ? NULL : pSourceModule,
+            pSourceModule->IsReflectionEmit() ? NULL : pSourceModule,
             loadFlag))
         {
             RETURN FALSE;

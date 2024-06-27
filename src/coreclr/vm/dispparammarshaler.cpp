@@ -101,7 +101,7 @@ void DispParamOleColorMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECT
 
     // Box the System.Drawing.Color value class and give back the boxed object.
     TypeHandle hndColorType =
-        GetThread()->GetDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetColorType();
+        AppDomain::GetCurrentDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetColorType();
 
     *pDestObj = hndColorType.GetMethodTable()->Box(&MngColor);
 }

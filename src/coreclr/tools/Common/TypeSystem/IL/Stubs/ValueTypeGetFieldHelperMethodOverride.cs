@@ -48,10 +48,7 @@ namespace Internal.IL.Stubs
                     TypeDesc int32Type = context.GetWellKnownType(WellKnownType.Int32);
                     TypeDesc eeTypePtrType = context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable").MakePointerType();
 
-                    _signature = new MethodSignature(0, 0, int32Type, new[] {
-                        int32Type,
-                        eeTypePtrType.MakeByRefType()
-                    });
+                    _signature = new MethodSignature(0, 0, int32Type, [ int32Type, eeTypePtrType.MakeByRefType() ]);
                 }
 
                 return _signature;
@@ -63,6 +60,19 @@ namespace Internal.IL.Stubs
             TypeDesc owningType = _owningType.InstantiateAsOpen();
 
             ILEmitter emitter = new ILEmitter();
+
+            if (_owningType is MetadataType mdType)
+            {
+                // Types marked as InlineArray aren't supported by
+                // the built-in Equals() or GetHashCode().
+                if (mdType.IsInlineArray)
+                {
+                    var stream = emitter.NewCodeStream();
+                    MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode");
+                    stream.EmitCallThrowHelper(emitter, thrower);
+                    return emitter.Link(this);
+                }
+            }
 
             TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
             MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of", null);

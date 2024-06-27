@@ -15,7 +15,6 @@ namespace System.Globalization
         private const double MeanSpeedOfSun = MeanTropicalYearInDays / FullCircleOfArc;
         private const double LongitudeSpring = 0.0;
         private const double TwoDegreesAfterSpring = 2.0;
-        private const int SecondsPerDay = 24 * 60 * 60; // 24 hours * 60 minutes * 60 seconds
         private const int DaysInUniformLengthCentury = 36525;
 
         private static readonly long s_startOf1810 = GetNumberOfDays(new DateTime(1810, 1, 1));
@@ -59,12 +58,12 @@ namespace System.Globalization
 
         internal static long GetNumberOfDays(DateTime date)
         {
-            return date.Ticks / Calendar.TicksPerDay;
+            return date.Ticks / TimeSpan.TicksPerDay;
         }
 
         private static int GetGregorianYear(double numberOfDays)
         {
-            return new DateTime(Math.Min((long)(Math.Floor(numberOfDays) * Calendar.TicksPerDay), DateTime.MaxValue.Ticks)).Year;
+            return new DateTime(Math.Min((long)(Math.Floor(numberOfDays) * TimeSpan.TicksPerDay), DateTime.MaxValue.Ticks)).Year;
         }
 
         private enum CorrectionAlgorithm
@@ -148,13 +147,13 @@ namespace System.Globalization
             long january1stOfYear = GetNumberOfDays(new DateTime(gregorianYear, 1, 1));
             double daysSinceStartOf1810 = january1stOfYear - s_startOf1810;
             double x = TwelveHours + daysSinceStartOf1810;
-            return ((Math.Pow(x, 2) / 41048480) - 15) / SecondsPerDay;
+            return ((Math.Pow(x, 2) / 41048480) - 15) / TimeSpan.SecondsPerDay;
         }
 
         private static double EphemerisCorrection1988to2019(int gregorianYear)
         {
             Debug.Assert(1988 <= gregorianYear && gregorianYear <= 2019);
-            return (double)(gregorianYear - 1933) / SecondsPerDay;
+            return (double)(gregorianYear - 1933) / TimeSpan.SecondsPerDay;
         }
 
         private static double EphemerisCorrection1900to1987(int gregorianYear)
@@ -175,14 +174,14 @@ namespace System.Globalization
         {
             Debug.Assert(1700 <= gregorianYear && gregorianYear <= 1799);
             double yearsSince1700 = gregorianYear - 1700;
-            return PolynomialSum(Coefficients1700to1799, yearsSince1700) / SecondsPerDay;
+            return PolynomialSum(Coefficients1700to1799, yearsSince1700) / TimeSpan.SecondsPerDay;
         }
 
         private static double EphemerisCorrection1620to1699(int gregorianYear)
         {
             Debug.Assert(1620 <= gregorianYear && gregorianYear <= 1699);
             double yearsSince1600 = gregorianYear - 1600;
-            return PolynomialSum(Coefficients1620to1699, yearsSince1600) / SecondsPerDay;
+            return PolynomialSum(Coefficients1620to1699, yearsSince1600) / TimeSpan.SecondsPerDay;
         }
 
         // ephemeris-correction: correction to account for the slowing down of the rotation of the earth

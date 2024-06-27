@@ -12,13 +12,11 @@ namespace System
     {
         public static unsafe string SpanToLowerInvariantString(ReadOnlySpan<char> span)
         {
-#pragma warning disable CS8500 // takes address of managed type
-            return string.Create(span.Length, (IntPtr)(&span), static (buffer, spanPtr) =>
+            return string.Create(span.Length, span, static (buffer, span) =>
             {
-                int charsWritten = (*(ReadOnlySpan<char>*)spanPtr).ToLowerInvariant(buffer);
+                int charsWritten = span.ToLowerInvariant(buffer);
                 Debug.Assert(charsWritten == buffer.Length);
             });
-#pragma warning restore CS8500
         }
 
         // http://host/Path/Path/File?Query is the base of
@@ -618,12 +616,10 @@ namespace System
                 return backingString ?? new string(strToClean);
             }
 
-#pragma warning disable CS8500 // takes address of managed type
-            ReadOnlySpan<char> tmpStrToClean = strToClean; // avoid address exposing the span and impacting the other code in the method that uses it
-            return string.Create(tmpStrToClean.Length - charsToRemove, (IntPtr)(&tmpStrToClean), static (buffer, strToCleanPtr) =>
+            return string.Create(strToClean.Length - charsToRemove, strToClean, static (buffer, strToClean) =>
             {
                 int destIndex = 0;
-                foreach (char c in *(ReadOnlySpan<char>*)strToCleanPtr)
+                foreach (char c in strToClean)
                 {
                     if (!IsBidiControlCharacter(c))
                     {
@@ -632,7 +628,6 @@ namespace System
                 }
                 Debug.Assert(buffer.Length == destIndex);
             });
-#pragma warning restore CS8500
         }
     }
 }

@@ -358,7 +358,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int KickOffMethod { get; }
         internal bool IsCompilerGenerated { get; }
         private AsyncScopeDebugInformation[] _asyncScopes { get; set; }
-        private static SignatureTypeProvider _signatureTypeProvider = new();
+        private static readonly SignatureTypeProvider _signatureTypeProvider = new();
 
         public MethodInfo(AssemblyInfo assembly, string methodName, int methodToken, TypeInfo type, MethodAttributes attrs)
         {

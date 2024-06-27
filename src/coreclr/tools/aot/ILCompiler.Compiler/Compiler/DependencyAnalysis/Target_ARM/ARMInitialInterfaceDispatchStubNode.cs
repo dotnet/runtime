@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("_InitialInterfaceDispatchStub");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("_InitialInterfaceDispatchStub"u8);
         }
 
         public override bool IsShareable => false;

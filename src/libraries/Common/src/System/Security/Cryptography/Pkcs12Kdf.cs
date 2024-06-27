@@ -155,7 +155,6 @@ namespace System.Security.Cryptography.Pkcs
                 I = IRented.AsSpan(0, ILen);
             }
 
-            KdfWorkLimiter.RecordIterations(iterationCount);
             IncrementalHash hash = IncrementalHash.CreateHash(hashAlgorithm);
 
             try

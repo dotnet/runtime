@@ -6,11 +6,13 @@ namespace System.Security.Cryptography.Tests
     /// <summary>
     /// Sha384Managed has a copy of the same implementation as SHA384
     /// </summary>
-    public class Sha384ManagedTests : Sha384Tests
+    public class Sha384ManagedTests : Sha384Tests<Sha384ManagedTests.Traits>
     {
-        protected override HashAlgorithm Create()
+        public sealed class Traits : IHashTrait
         {
-            return new SHA384Managed();
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => SHA384.HashSizeInBytes;
+            public static HashAlgorithm Create() => new SHA384Managed();
         }
     }
 }

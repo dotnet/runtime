@@ -264,8 +264,8 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseOutputAsync_ServerInitiated_CanReceive(Uri server)
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersWithSwitch))]
+        public async Task CloseOutputAsync_ServerInitiated_CanReceive(Uri server, bool delayReceiving)
         {
             var expectedCloseStatus = WebSocketCloseStatus.NormalClosure;
             var expectedCloseDescription = ".shutdownafter";
@@ -279,6 +279,10 @@ namespace System.Net.WebSockets.Client.Tests
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
+
+                // let server close the output before we request receiving
+                if (delayReceiving)
+                    await Task.Delay(1000);
 
                 // Should be able to receive the message echoed by the server.
                 var recvBuffer = new byte[100];
@@ -363,7 +367,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        public static IEnumerable<object[]> EchoServersSyncState =>
+        public static IEnumerable<object[]> EchoServersWithSwitch =>
             EchoServers.SelectMany(server => new List<object[]>
             {
                 new object[] { server[0], true },
@@ -371,7 +375,7 @@ namespace System.Net.WebSockets.Client.Tests
             });
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersSyncState))]
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersWithSwitch))]
         public async Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server, bool syncState)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))

@@ -43,6 +43,8 @@
        and tested with this test. Issue https://github.com/dotnet/runtime/issues/48849 is
        tracking investigation on why this test is failing if not skipped. -->
       <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
+      <!-- https://github.com/dotnet/runtime/issues/68714 -->
+      <NativeAotIncompatible>true</NativeAotIncompatible>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">
       <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the trimmer
@@ -51,20 +53,16 @@
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
       <DisabledProperties>BuiltInComInteropSupport</DisabledProperties>
-    </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportFalse.cs">
-      <DisabledProperties>NullabilityInfoContextSupport</DisabledProperties>
-    </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
-      <EnabledProperties>NullabilityInfoContextSupport</EnabledProperties>
+      <!-- Reflection.Emit doesn't work with native AOT -->
+      <NativeAotIncompatible>true</NativeAotIncompatible>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolFalse.cs">
-      <DisabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</DisabledFeatureSwitches>
+      <DisabledProperties>UseWindowsThreadPool</DisabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolTrue.cs">
-      <EnabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</EnabledFeatureSwitches>
+      <EnabledProperties>UseWindowsThreadPool</EnabledProperties>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

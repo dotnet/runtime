@@ -5,9 +5,9 @@ This project hosts various tools and msbuild tasks which are used when trimming 
 ## IL Trimmer
 
 The [IL Trimmer](src/linker/README.md) is the developer's tool that can be used to produce apps that contain only code and assembly dependencies which are necessary to run the app. It's fully integrated into
-.NET SDKs via [ILLink.Tasks](src/ILLink.Tasks/README.md) build task and exposed via `dotnet publish` trimming [settings](https://docs.microsoft.com/en-us/dotnet/core/deploying/trim-self-contained#trim-your-app---cli).
+.NET SDKs via [ILLink.Tasks](src/ILLink.Tasks/README.md) build task and exposed via `dotnet publish` trimming [settings](https://learn.microsoft.com/dotnet/core/deploying/trim-self-contained#trim-your-app---cli).
 
-The trimmer is always enabled for all size sensitive .NET workloads like Blazor WebAssembly, Xamarin or .NET mobile and can be manually enabled for other project types. The default apps trimming setting can be further customized by using a number of [msbuild properties](https://docs.microsoft.com/en-us/dotnet/core/deploying/trimming-options).
+The trimmer is always enabled for all size sensitive .NET workloads like Blazor WebAssembly, Xamarin or .NET mobile and can be manually enabled for other project types. The default apps trimming setting can be further customized by using a number of [msbuild properties](https://learn.microsoft.com/dotnet/core/deploying/trimming-options).
 
 ## Dependencies Analyzer
 

@@ -15,7 +15,7 @@ internal sealed class OletxResourceManager
 
     internal ResourceManagerShim? resourceManagerShim;
     internal Hashtable EnlistmentHashtable;
-    internal static Hashtable VolatileEnlistmentHashtable = new Hashtable();
+    internal static readonly Hashtable VolatileEnlistmentHashtable = new Hashtable();
     internal OletxTransactionManager OletxTransactionManager;
 
     // reenlistList is a simple ArrayList of OletxEnlistment objects that are either in the

@@ -7,7 +7,7 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
-        /// <summary>Computes the element-wise conversion of each number of degrees in the specified tensor to radiansx.</summary>
+        /// <summary>Computes the element-wise conversion of each number of degrees in the specified tensor to radians.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>

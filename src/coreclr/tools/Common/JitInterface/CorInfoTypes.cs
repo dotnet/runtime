@@ -836,6 +836,9 @@ namespace Internal.JitInterface
             // Size of the Frame structure
             public uint size;
 
+            // Size of the Frame structure inside IL stubs that include secret stub arg in the frame
+            public uint sizeWithSecretStubArg;
+
             public uint offsetOfGSCookie;
             public uint offsetOfFrameVptr;
             public uint offsetOfFrameLink;
@@ -843,6 +846,7 @@ namespace Internal.JitInterface
             public uint offsetOfCalleeSavedFP;
             public uint offsetOfCallTarget;
             public uint offsetOfReturnAddress;
+            public uint offsetOfSecretStubArg;
             public uint offsetOfSPAfterProlog;
         }
         public InlinedCallFrameInfo inlinedCallFrameInfo;
@@ -1158,7 +1162,7 @@ namespace Internal.JitInterface
         public uint offsetOfThreadLocalStoragePointer;
         public uint offsetOfMaxThreadStaticBlocks;
         public uint offsetOfThreadStaticBlocks;
-        public uint offsetOfGCDataPointer;
+        public uint offsetOfBaseOfThreadLocalData;
     };
 
 
@@ -1235,6 +1239,7 @@ namespace Internal.JitInterface
     //   bit 5: `1` means the second field's size is 8.
     //
     // Note that bit 0 and 3 cannot both be set.
+    [Flags]
     public enum StructFloatFieldInfoFlags
     {
         STRUCT_NO_FLOAT_FIELD         = 0x0,

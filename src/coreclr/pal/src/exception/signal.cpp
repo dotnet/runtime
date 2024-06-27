@@ -833,7 +833,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
             &winContext,
             contextFlags);
 
-        if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext), /* checkingCurrentThread */ TRUE))
+        if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext)))
         {
             g_inject_activation_context_locvar_offset = (int)((char*)&winContext - (char*)__builtin_frame_address(0));
             int savedErrNo = errno; // Make sure that errno is not modified

@@ -342,7 +342,7 @@ typedef struct {
 	void (*emit_synchronized_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx, MonoGenericContainer *container, MonoMethod *enter_method, MonoMethod *exit_method, MonoMethod *gettypefromhandle_method);
 	void (*emit_unbox_wrapper) (MonoMethodBuilder *mb, MonoMethod *method);
 	void (*emit_array_accessor_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *sig, MonoGenericContext *ctx);
-	void (*emit_unsafe_accessor_wrapper) (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name);
+	void (*emit_unsafe_accessor_wrapper) (MonoMethodBuilder *mb, gboolean inflate_generic_data, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name);
 	void (*emit_generic_array_helper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig);
 	void (*emit_thunk_invoke_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig);
 	void (*emit_create_string_hack) (MonoMethodBuilder *mb, MonoMethodSignature *csig, MonoMethod *res);
@@ -351,6 +351,7 @@ typedef struct {
 	void (*emit_return) (MonoMethodBuilder *mb);
 	void (*emit_vtfixup_ftnptr) (MonoMethodBuilder *mb, MonoMethod *method, int param_count, guint16 type);
 	void (*mb_skip_visibility) (MonoMethodBuilder *mb);
+	void (*mb_inflate_wrapper_data) (MonoMethodBuilder *mb);
 	void (*mb_emit_exception) (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg);
 	void (*mb_emit_exception_for_error) (MonoMethodBuilder *mb, const MonoError *emitted_error);
 	void (*mb_emit_byte) (MonoMethodBuilder *mb, guint8 op);
@@ -744,8 +745,8 @@ GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_error)
 
 typedef struct {
 	gboolean by_reference;
-	int num_lowered_elements;
-	MonoTypeEnum lowered_elements[4];
+	uint32_t num_lowered_elements;
+	MonoType *lowered_elements[4];
 	uint32_t offsets[4];
 } SwiftPhysicalLowering;
 

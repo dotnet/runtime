@@ -6,6 +6,7 @@ namespace System.Collections.Generic
     // Base interface for all generic enumerators, providing a simple approach
     // to iterating over a collection.
     public interface IEnumerator<out T> : IDisposable, IEnumerator
+        where T : allows ref struct
     {
         // Returns the current element of the enumeration. The returned value is
         // undefined before the first call to MoveNext and following a
@@ -16,5 +17,10 @@ namespace System.Collections.Generic
         {
             get;
         }
+
+        // NOTE: An implementation of an enumerator using a ref struct T will
+        // not be able to implement IEnumerator.Current to return that T (as
+        // doing so would require boxing). It should throw a NotSupportedException
+        // from that property implementation.
     }
 }

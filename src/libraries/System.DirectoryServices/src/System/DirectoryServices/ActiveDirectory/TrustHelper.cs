@@ -220,7 +220,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // reconstruct the unmanaged structure to set it back
-                    newInfo = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX)));
+                    newInfo = Marshal.AllocHGlobal(sizeof(Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX));
                     Marshal.StructureToPtr(domainInfo, newInfo, false);
 
                     result = Interop.Advapi32.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, newInfo);
@@ -462,7 +462,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     Marshal.PtrToStructure(info, domainInfo);
 
                     AuthData = new LSA_AUTH_INFORMATION();
-                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
+                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf<FileTime>());
                     Interop.Kernel32.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
@@ -477,7 +477,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     AuthData.AuthInfo = unmanagedPassword;
                     AuthData.AuthInfoLength = password.Length * 2;          // sizeof(WCHAR)
 
-                    unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
+                    unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf<LSA_AUTH_INFORMATION>());
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
                     Interop.Advapi32.TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx = default;
@@ -616,7 +616,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // change the attribute value properly
                     AuthData = new LSA_AUTH_INFORMATION();
-                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
+                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf<FileTime>());
                     Interop.Kernel32.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
@@ -631,7 +631,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     AuthData.AuthInfo = unmanagedPassword;
                     AuthData.AuthInfoLength = password.Length * 2;
 
-                    unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
+                    unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf<LSA_AUTH_INFORMATION>());
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
                     Interop.Advapi32.TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx = default;
@@ -743,7 +743,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // change the attribute value properly
                     AuthData = new LSA_AUTH_INFORMATION();
-                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
+                    fileTime = Marshal.AllocHGlobal(Marshal.SizeOf<FileTime>());
                     Interop.Kernel32.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
@@ -758,7 +758,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     AuthData.AuthInfo = unmanagedPassword;
                     AuthData.AuthInfoLength = password.Length * 2;
 
-                    unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
+                    unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf<LSA_AUTH_INFORMATION>());
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
                     Interop.Advapi32.TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx;

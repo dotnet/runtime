@@ -46,7 +46,7 @@
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessTestsTimeout)' != ''" >$(_XHarnessArgs) &quot;--timeout=$(WasmXHarnessTestsTimeout)&quot;</_XHarnessArgs>
-    <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--max-wasm-stack=134217728</_XHarnessArgs>
+    <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=-W --engine-arg=max-wasm-stack=134217728</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <_InvariantGlobalization Condition="'$(InvariantGlobalization)' == 'true'">--env=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true</_InvariantGlobalization>
@@ -147,6 +147,13 @@
   </Target>
 
   <Target Name="_WasiAddToRunScript" BeforeTargets="GenerateRunScript">
+    <PropertyGroup>
+      <Scenario Condition="'$(Scenario)' == ''">WasmTestOnWasmtime</Scenario>
+    </PropertyGroup>
+    <Error Condition="'$(Scenario)' != 'WasmTestOnWasmtime' and 
+                      '$(Scenario)' != 'BuildWasmApps'"
+                      Text="Only supported scenarios are WasmTestOnWasmtime and BuildWasmApps at the moment. It was $(Scenario)." />
+
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
       <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="export PREPEND_PATH=$(WasmtimeDir)" />
       <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="export RuntimeIdentifier=wasi-wasm" />

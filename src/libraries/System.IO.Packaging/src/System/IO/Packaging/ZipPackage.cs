@@ -383,7 +383,11 @@ namespace System.IO.Packaging
                     break;
                 case CompressionOption.Maximum:
                     {
+#if NET
+                        compressionLevel = CompressionLevel.SmallestSize;
+#else
                         compressionLevel = CompressionLevel.Optimal;
+#endif
                     }
                     break;
                 case CompressionOption.Fast:

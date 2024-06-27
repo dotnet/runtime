@@ -230,7 +230,7 @@ struct MSLAYOUT DacpThreadLocalModuleData
 struct MSLAYOUT DacpModuleData
 {
     CLRDATA_ADDRESS Address = 0;
-    CLRDATA_ADDRESS PEAssembly = 0; // A PEAssembly addr
+    CLRDATA_ADDRESS PEAssembly = 0; // Actually the module address in .NET 9+
     CLRDATA_ADDRESS ilBase = 0;
     CLRDATA_ADDRESS metadataStart = 0;
     ULONG64 metadataSize = 0;
@@ -467,7 +467,7 @@ struct MSLAYOUT DacpAssemblyData
 
     HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr)
     {
-        return Request(sos, addr, NULL);
+        return Request(sos, addr, 0);
     }
 };
 
@@ -577,7 +577,7 @@ struct MSLAYOUT DacpMethodDescData
     {
         return sos->GetMethodDescData(
             addr,
-            NULL,   // IP address
+            0,      // IP address
             this,
             0,      // cRejitData
             NULL,   // rejitData[]
@@ -986,7 +986,7 @@ struct MSLAYOUT DacpGetModuleData
     BOOL IsDynamic = FALSE;
     BOOL IsInMemory = FALSE;
     BOOL IsFileLayout = FALSE;
-    CLRDATA_ADDRESS PEAssembly = 0;
+    CLRDATA_ADDRESS PEAssembly = 0; // Actually the module address in .NET 9+
     CLRDATA_ADDRESS LoadedPEAddress = 0;
     ULONG64 LoadedPESize = 0;
     CLRDATA_ADDRESS InMemoryPdbAddress = 0;

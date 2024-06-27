@@ -80,8 +80,6 @@ int _getwc_nolock( miniFILE* inStream );
 int _ungetc_nolock( char inChar, miniFILE* inStream );
 int _ungetwc_nolock( char16_t inChar, miniFILE* inStream );
 
-errno_t _safecrt_cfltcvt(double *arg, char *buffer, size_t sizeInBytes, int type, int precision, int flags);
-
 void _safecrt_fassign(int flag, void* argument, char * number );
 void _safecrt_wfassign(int flag, void* argument, char16_t * number );
 

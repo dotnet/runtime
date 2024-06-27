@@ -18,11 +18,6 @@
 #include <mach/thread_status.h>
 
 #define MONO_MACH_ARCH_SUPPORTED 1
-#if defined(__arm__)
-typedef _STRUCT_MCONTEXT *mcontext_t;
-#elif defined(__aarch64__)
-typedef _STRUCT_MCONTEXT64 *mcontext_t;
-#endif
 
 int mono_mach_arch_get_mcontext_size (void);
 void mono_mach_arch_thread_states_to_mcontext (thread_state_t state, thread_state_t fpstate, void *context);

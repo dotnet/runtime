@@ -41,10 +41,15 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 return;
             }
-            LogLevel logLevel = logEntry.LogLevel;
-            string category = logEntry.Category;
-            int eventId = logEntry.EventId.Id;
-            Exception? exception = logEntry.Exception;
+
+            // We extract most of the work into a non-generic method to save code size. If this was left in the generic
+            // method, we'd get generic specialization for all TState parameters, but that's unnecessary.
+            WriteInternal(scopeProvider, textWriter, message, logEntry.LogLevel, logEntry.Category, logEntry.EventId.Id, logEntry.Exception);
+        }
+
+        private void WriteInternal(IExternalScopeProvider? scopeProvider, TextWriter textWriter, string message, LogLevel logLevel, string category,
+            int eventId, Exception? exception)
+        {
             // systemd reads messages from standard out line-by-line in a '<pri>message' format.
             // newline characters are treated as message delimiters, so we must replace them.
             // Messages longer than the journal LineMax setting (default: 48KB) are cropped.

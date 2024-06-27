@@ -56,7 +56,7 @@ void ProfileSetFunctionIDInPlatformSpecificHandle(void * pPlatformSpecificHandle
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pPlatformSpecificHandle != NULL);
-    _ASSERTE(functionID != NULL);
+    _ASSERTE(functionID != 0);
 
     PROFILE_PLATFORM_SPECIFIC_DATA * pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA *>(pPlatformSpecificHandle);
     pData->functionId = functionID;

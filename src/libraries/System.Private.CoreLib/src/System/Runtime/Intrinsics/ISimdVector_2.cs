@@ -553,6 +553,19 @@ namespace System.Runtime.Intrinsics
         // New Surface Area
         //
 
+        /// <summary>Checks if any of the vector lanes are equivalent to value.</summary>
+        /// <param name="vector">The Vector.</param>
+        /// <param name="value">The Value to check.</param>
+        /// <returns><c>true</c> if <paramref name="vector" /> has any lanes equivalent to <paramref name="value" /> otherwise, <c>false</c> if none of the lanes are equivalent to <paramref name="value" /> />.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract bool Any(TSelf vector, T value);
+
+        /// <summary>Checks if any of the vector lanes have All Bits set.</summary>
+        /// <param name="vector">The Vector to check.</param>
+        /// <returns><c>true</c> if <paramref name="vector" /> has any lanes with All Bits set otherwise, <c>false</c> if none of the lanes have All Bits set />.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract bool AnyWhereAllBitsSet(TSelf vector);
+
         static abstract int IndexOfLastMatch(TSelf vector);
     }
 }

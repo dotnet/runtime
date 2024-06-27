@@ -2,11 +2,10 @@
   <PropertyGroup>
     <!-- Needed for GCStressIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <NoStandardLib>True</NoStandardLib>
-    <Noconfig>True</Noconfig>
     <Optimize>True</Optimize>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GCStressIncompatible>True</GCStressIncompatible>
+    <OtherFlags>--tailcalls+</OtherFlags>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).fs" />

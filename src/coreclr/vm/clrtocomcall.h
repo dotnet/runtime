@@ -9,8 +9,8 @@
 //
 
 
-#ifndef __COMPLUSCALL_H__
-#define __COMPLUSCALL_H__
+#ifndef __CLRTOCOMCALL_H__
+#define __CLRTOCOMCALL_H__
 
 #ifndef FEATURE_COMINTEROP
 #error FEATURE_COMINTEROP is required for this file
@@ -18,7 +18,7 @@
 
 #include "util.hpp"
 
-class ComPlusCall
+class CLRToCOMCall
 {
     public:
         //---------------------------------------------------------
@@ -29,14 +29,14 @@ class ComPlusCall
         static MethodDesc* GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags);
         static PCODE       GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD);
 
-        static ComPlusCallInfo *PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags);
+        static CLRToCOMCallInfo *PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags);
 
 #ifdef TARGET_X86
         static void Init();
         static LPVOID GetRetThunk(UINT numStackBytes);
 #endif // TARGET_X86
     private:
-        ComPlusCall();     // prevent "new"'s on this class
+        CLRToCOMCall();     // prevent "new"'s on this class
 
 #ifdef TARGET_X86
     struct RetThunkCacheElement
@@ -68,4 +68,4 @@ class ComPlusCall
 #endif // TARGET_X86
 };
 
-#endif // __COMPLUSCALL_H__
+#endif // __CLRTOCOMCALL_H__

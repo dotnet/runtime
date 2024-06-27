@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using DAM = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute;
@@ -131,14 +132,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		static void NullableOfAnnotatedGenericParameterRequiresPublicProperties<[KeptAttributeAttribute (typeof (DAM))][DAM (DAMT.PublicProperties)] T> () where T : struct
+		static void NullableOfAnnotatedGenericParameterRequiresPublicProperties<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			[KeptAttributeAttribute (typeof (DAM))]
+			[DAM (DAMT.PublicProperties)]
+			T
+		> () where T : struct
 		{
 			Nullable.GetUnderlyingType (typeof (Nullable<T>)).RequiresPublicProperties ();
 		}
 
 		[Kept]
 		[ExpectedWarning ("IL2087")]
-		static void NullableOfUnannotatedGenericParameterRequiresPublicProperties<T> () where T : struct
+		static void NullableOfUnannotatedGenericParameterRequiresPublicProperties<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			T
+		> () where T : struct
 		{
 			Nullable.GetUnderlyingType (typeof (Nullable<T>)).RequiresPublicProperties ();
 		}
@@ -240,7 +249,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		static void UnderlyingTypeOfCreatedNullableOfAnnotatedTRequiresPublicProperties<[KeptAttributeAttribute (typeof (DAM))][DAM (DAMT.PublicProperties)] T> () where T : struct
+		static void UnderlyingTypeOfCreatedNullableOfAnnotatedTRequiresPublicProperties<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			[KeptAttributeAttribute (typeof (DAM))]
+			[DAM (DAMT.PublicProperties)]
+			T
+		> () where T : struct
 		{
 			Type t = typeof (Nullable<T>);
 			t = Nullable.GetUnderlyingType (t);
@@ -262,13 +276,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		[ExpectedWarning ("IL2091")]
-		static void NullableOfUnannotatedGenericParamPassedAsGenericParamRequiresPublicFields<T> () where T : struct
+		static void NullableOfUnannotatedGenericParamPassedAsGenericParamRequiresPublicFields<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			T
+		> () where T : struct
 		{
 			RequirePublicFieldsOnGenericParam<Nullable<T>> ();
 		}
 
 		[Kept]
-		static void NullableOfAnnotatedGenericParamPassedAsGenericParamRequiresPublicFields<[KeptAttributeAttribute (typeof (DAM))][DAM (DAMT.PublicFields)] T> () where T : struct
+		static void NullableOfAnnotatedGenericParamPassedAsGenericParamRequiresPublicFields<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			[KeptAttributeAttribute (typeof (DAM))]
+			[DAM (DAMT.PublicFields)] T
+		> () where T : struct
 		{
 			RequirePublicFieldsOnGenericParam<Nullable<T>> ();
 		}

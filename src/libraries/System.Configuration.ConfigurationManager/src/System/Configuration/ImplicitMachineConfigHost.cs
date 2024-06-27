@@ -81,7 +81,7 @@ namespace System.Configuration
         <section name='assemblyBinding' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />
         <section name='satelliteassemblies' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />
         <section name='startup' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />" +
-#if NET7_0_OR_GREATER
+#if NET
 @"        <section name='system.diagnostics' type='System.Diagnostics.SystemDiagnosticsSection, System.Configuration.ConfigurationManager' allowLocation='false' />" +
 #endif
 @"        <section name='system.runtime.remoting' type='System.Configuration.IgnoreSection, System.Configuration.ConfigurationManager' allowLocation='false' />

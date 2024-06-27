@@ -52,13 +52,13 @@ ShimProcess::ShimProcess() :
 
     m_machineInfo.Clear();
 
-    m_markAttachPendingEvent = WszCreateEvent(NULL, TRUE, FALSE, NULL);
+    m_markAttachPendingEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (m_markAttachPendingEvent == NULL)
     {
         ThrowLastError();
     }
 
-    m_terminatingEvent = WszCreateEvent(NULL, TRUE, FALSE, NULL);
+    m_terminatingEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (m_terminatingEvent == NULL)
     {
         ThrowLastError();

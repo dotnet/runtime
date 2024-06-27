@@ -34,10 +34,12 @@
 
   <!-- Directory to provision and use WASI sdk if WASI_SDK_PATH env variable is not set -->
   <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
-    <_ProvisionWasiSdkDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi', 'wasi-sdk'))</_ProvisionWasiSdkDir>
-    <ShouldProvisionWasiSdk Condition="'$(WASI_SDK_PATH)' == '' and !Exists($(_ProvisionWasiSdkDir))">true</ShouldProvisionWasiSdk>
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$(_ProvisionWasiSdkDir)</WASI_SDK_PATH>
+    <!-- force download temmporarily https://github.com/dotnet/runtime/issues/101528
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
+    -->
+    <WASI_SDK_PATH>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
     <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
+    <ShouldProvisionWasiSdk Condition="!Exists($(_ProvisionWasiSdkDir))">true</ShouldProvisionWasiSdk>
   </PropertyGroup>
 
   <PropertyGroup>

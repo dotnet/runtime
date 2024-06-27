@@ -26,7 +26,7 @@ namespace System.Runtime.Caching
         private volatile bool _useInsertBlock;
         private readonly MemoryCache _cache;
         private readonly Counters _perfCounters;
-#if NETCOREAPP
+#if NET
         [UnsupportedOSPlatformGuard("browser")]
         private static bool _countersSupported => !OperatingSystem.IsBrowser();
 #else

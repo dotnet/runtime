@@ -56,13 +56,13 @@ if /i "%__Arch%" == "wasm" (
         set "EMSDK_PATH=!EMSDK_PATH:\=/!"
         if not "!EMSDK_PATH:~-1!" == "/" set "EMSDK_PATH=!EMSDK_PATH!/"
 
-        set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=!EMSDK_PATH!/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+        set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=!EMSDK_PATH!/emscripten/cmake/Modules/Platform/Emscripten.cmake"
         set __UseEmcmake=1
     )
     if /i "%__Os%" == "wasi" (
         if "%WASI_SDK_PATH%" == "" (
             if not exist "%__repoRoot%\src\mono\wasi\wasi-sdk" (
-                echo Error: Should set WASI_SDK_PATH environment variable pointing to emsdk root.
+                echo Error: Should set WASI_SDK_PATH environment variable pointing to WASI SDK root.
                 exit /B 1
             )
 
@@ -107,7 +107,7 @@ if not "%__ConfigureOnly%" == "1" (
 )
 
 if /i "%__UseEmcmake%" == "1" (
-    call "!EMSDK_PATH!/emsdk_env.bat" > nul 2>&1 && emcmake "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
+    call "!EMSDK_PATH!/emsdk_env.cmd" > nul 2>&1 && emcmake "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 ) else (
     "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 )

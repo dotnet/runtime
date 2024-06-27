@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		// The second attribute is added through link attribute XML
 		[RequiresUnreferencedCode ("Message for --MethodWithDuplicateRequiresAttribute--")]
-		[ExpectedWarning ("IL2027", "RequiresUnreferencedCodeAttribute", nameof (MethodWithDuplicateRequiresAttribute), ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2027", "RequiresUnreferencedCodeAttribute", nameof (MethodWithDuplicateRequiresAttribute), Tool.Trimmer, "")]
 		static void MethodWithDuplicateRequiresAttribute ()
 		{
 		}

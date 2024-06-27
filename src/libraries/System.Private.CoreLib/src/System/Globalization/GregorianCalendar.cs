@@ -26,7 +26,7 @@ namespace System.Globalization
 
         internal static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
-        private static volatile Calendar? s_defaultInstance;
+        private static Calendar? s_defaultInstance;
 
         public override DateTime MinSupportedDateTime => DateTime.MinValue;
 
@@ -113,7 +113,7 @@ namespace System.Globalization
         /// </summary>
         private static long DateToTicks(int year, int month, int day)
         {
-            return GetAbsoluteDate(year, month, day) * TicksPerDay;
+            return GetAbsoluteDate(year, month, day) * TimeSpan.TicksPerDay;
         }
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace System.Globalization
             {
                 d = days;
             }
-            long ticks = DateToTicks(y, m, d) + time.Ticks % TicksPerDay;
+            long ticks = DateToTicks(y, m, d) + time.Ticks % TimeSpan.TicksPerDay;
             CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
 
             return new DateTime(ticks);

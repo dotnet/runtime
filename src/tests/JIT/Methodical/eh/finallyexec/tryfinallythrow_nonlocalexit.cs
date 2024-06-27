@@ -55,6 +55,7 @@ namespace hello_tryfinallythrow_nonlocalexit_finallyexec_cs
         }
 
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             //Start recording

@@ -2,9 +2,6 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
   </PropertyGroup>
-  <PropertyGroup>
-    <DebugType />
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="testgenstr.cs" />
   </ItemGroup>

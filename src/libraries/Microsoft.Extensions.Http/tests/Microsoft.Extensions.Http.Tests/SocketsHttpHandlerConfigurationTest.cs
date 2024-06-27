@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if NET5_0_OR_GREATER
+#if NET
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -42,8 +42,39 @@ namespace Microsoft.Extensions.Http
             var defaultPrimaryHandlerChain = messageHandlerFactory.CreateHandler("DefaultPrimaryHandler");
             var socketsHttpHandlerChain = messageHandlerFactory.CreateHandler("SocketsHttpHandler");
 
-            Assert.IsType<HttpClientHandler>(GetPrimaryHandler(defaultPrimaryHandlerChain));
+            Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(defaultPrimaryHandlerChain));
             Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(socketsHttpHandlerChain));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void DefaultPrimaryHandler_RespectsHandlerLifetime()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddHttpClient();
+            serviceCollection.Configure<HttpClientFactoryOptions>(options => options.HandlerLifetime = TimeSpan.FromMinutes(42));
+
+            var services = serviceCollection.BuildServiceProvider();
+            var messageHandlerFactory = services.GetRequiredService<IHttpMessageHandlerFactory>();
+            var defaultPrimaryHandlerChain = messageHandlerFactory.CreateHandler();
+
+            SocketsHttpHandler handler = Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(defaultPrimaryHandlerChain));
+            Assert.Equal(TimeSpan.FromMinutes(42), handler.PooledConnectionLifetime);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void DefaultPrimaryHandler_NamedClient_RespectsHandlerLifetime()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddHttpClient("Configured");
+            serviceCollection.Configure<HttpClientFactoryOptions>("Configured1", options => options.HandlerLifetime = TimeSpan.FromMinutes(42));
+            serviceCollection.Configure<HttpClientFactoryOptions>("Configured2", options => options.HandlerLifetime = TimeSpan.FromMinutes(84));
+
+            var services = serviceCollection.BuildServiceProvider();
+            var messageHandlerFactory = services.GetRequiredService<IHttpMessageHandlerFactory>();
+
+            Assert.Equal(TimeSpan.FromMinutes(42), Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(messageHandlerFactory.CreateHandler("Configured1"))).PooledConnectionLifetime);
+            Assert.Equal(TimeSpan.FromMinutes(84), Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(messageHandlerFactory.CreateHandler("Configured2"))).PooledConnectionLifetime);
+            Assert.Equal(TimeSpan.FromMinutes(2), Assert.IsType<SocketsHttpHandler>(GetPrimaryHandler(messageHandlerFactory.CreateHandler())).PooledConnectionLifetime);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -66,7 +97,7 @@ namespace Microsoft.Extensions.Http
             var unconfiguredHandler = (SocketsHttpHandler)GetPrimaryHandler(unconfiguredHandlerChain);
             var configuredHandler = (SocketsHttpHandler)GetPrimaryHandler(configuredHandlerChain);
 
-            Assert.Equal(Timeout.InfiniteTimeSpan, unconfiguredHandler.PooledConnectionLifetime);
+            Assert.Equal(TimeSpan.FromMinutes(2), unconfiguredHandler.PooledConnectionLifetime);
             Assert.Equal(TimeSpan.FromMinutes(1), configuredHandler.PooledConnectionLifetime);
         }
 

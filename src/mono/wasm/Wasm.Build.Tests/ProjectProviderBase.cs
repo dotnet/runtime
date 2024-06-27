@@ -293,6 +293,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
             Path.Combine(paths.BundleDir, "_framework", "dotnet.native.wasm"),
             Path.Combine(paths.BundleDir, "_framework", "dotnet.native.js"),
+            Path.Combine(paths.BundleDir, "_framework", "dotnet.globalization.js"),
         };
 
         if (buildArgs.AOT)
@@ -316,6 +317,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         dict["dotnet.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.js.map"), true);
         dict["dotnet.runtime.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js"), true);
         dict["dotnet.runtime.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js.map"), true);
+        dict["dotnet.globalization.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.globalization.js"), true);
 
         return dict;
     }
@@ -404,7 +406,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         BootJsonData bootJson = ParseBootData(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
-        string? spcActualFilename = bootJson.resources.assembly.Keys
+        string? spcActualFilename = bootJson.resources.coreAssembly.Keys
                                         .Where(a => Path.GetFileNameWithoutExtension(a) == "System.Private.CoreLib")
                                         .SingleOrDefault();
         if (spcActualFilename is null)
@@ -415,6 +417,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
             .Union(bootJson.resources.jsModuleRuntime.Keys)
             .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
+            .Union(bootJson.resources.jsModuleGlobalization?.Keys ?? Enumerable.Empty<string>())
             .Union(bootJson.resources.wasmSymbols?.Keys ?? Enumerable.Empty<string>())
             .Union(bootJson.resources.wasmNative.Keys)
             .ToArray();

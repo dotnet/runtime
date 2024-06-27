@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Unicode;
 
-#if NETCOREAPP
+#if NET
 using System.Numerics;
 #endif
 
@@ -69,7 +69,7 @@ namespace System.Text.Encodings.Web
                 Span<uint> thisAllowedCharactersBitmap = new Span<uint>(pBitmap, BitmapLengthInDWords);
                 Debug.Assert(definedCharsBitmapAsLittleEndian.Length == thisAllowedCharactersBitmap.Length * sizeof(uint));
 
-#if NETCOREAPP
+#if NET
                 if (Vector.IsHardwareAccelerated && BitConverter.IsLittleEndian)
                 {
                     while (!definedCharsBitmapAsLittleEndian.IsEmpty)

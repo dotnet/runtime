@@ -271,8 +271,8 @@ class StackingAllocatorHolder
 
 void * __cdecl operator new(size_t n, StackingAllocator *alloc);
 void * __cdecl operator new[](size_t n, StackingAllocator *alloc);
-void * __cdecl operator new(size_t n, StackingAllocator *alloc, const NoThrow&) throw();
-void * __cdecl operator new[](size_t n, StackingAllocator *alloc, const NoThrow&) throw();
+void * __cdecl operator new(size_t n, StackingAllocator *alloc, const std::nothrow_t&) noexcept;
+void * __cdecl operator new[](size_t n, StackingAllocator *alloc, const std::nothrow_t&) noexcept;
 
 #ifdef _MSC_VER
 #pragma warning(pop)

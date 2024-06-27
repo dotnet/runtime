@@ -8,8 +8,8 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
-	[ExpectedWarning ("IL2121", "IL2026", ProducedBy = Tool.Trimmer, FileName = "DetectRedundantSuppressionsFromXML.xml", SourceLine = 7)]
-	[ExpectedWarning ("IL2121", "IL2109", ProducedBy = Tool.Trimmer, FileName = "DetectRedundantSuppressionsFromXML.xml", SourceLine = 12)]
+	[ExpectedWarning ("IL2121", "IL2026", Tool.Trimmer, "",  FileName = "DetectRedundantSuppressionsFromXML.xml", SourceLine = 7)]
+	[ExpectedWarning ("IL2121", "IL2109", Tool.Trimmer, "",  FileName = "DetectRedundantSuppressionsFromXML.xml", SourceLine = 12)]
 	[SetupLinkAttributesFile ("DetectRedundantSuppressionsFromXML.xml")]
 	public class DetectRedundantSuppressionsFromXML
 	{

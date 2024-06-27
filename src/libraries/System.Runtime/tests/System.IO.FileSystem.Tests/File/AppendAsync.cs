@@ -28,6 +28,26 @@ namespace System.IO.Tests
         }
     }
 
+    public class File_AppendAllTextAsync_Memory : File_ReadWriteAllTextAsync
+    {
+        protected override bool IsAppend => true;
+
+        protected override Task WriteAsync(string path, string content) => File.AppendAllTextAsync(path, content.AsMemory());
+
+        protected override Task WriteAsync(string path, string content, Encoding encoding) => File.AppendAllTextAsync(path, content.AsMemory(), encoding);
+
+        [Fact]
+        public override Task TaskAlreadyCanceledAsync()
+        {
+            string path = GetTestFilePath();
+            CancellationTokenSource source = new CancellationTokenSource();
+            CancellationToken token = source.Token;
+            source.Cancel();
+            Assert.True(File.AppendAllTextAsync(path, "".AsMemory(), token).IsCanceled);
+            return Assert.ThrowsAsync<TaskCanceledException>(async () => await File.AppendAllTextAsync(path, "".AsMemory(), token));
+        }
+    }
+
     public class File_AppendAllTextAsync_Encoded : File_AppendAllTextAsync
     {
         protected override Task WriteAsync(string path, string content) =>
@@ -48,6 +68,29 @@ namespace System.IO.Tests
             Assert.True(File.AppendAllTextAsync(path, "", Encoding.UTF8, token).IsCanceled);
             return Assert.ThrowsAsync<TaskCanceledException>(
                 async () => await File.AppendAllTextAsync(path, "", Encoding.UTF8, token));
+        }
+    }
+
+    public class File_AppendAllTextAsync_Memory_Encoded : File_AppendAllTextAsync
+    {
+        protected override Task WriteAsync(string path, string content) =>
+            File.AppendAllTextAsync(path, content.AsMemory(), new UTF8Encoding(false));
+
+        [Fact]
+        public Task NullEncodingAsync() => Assert.ThrowsAsync<ArgumentNullException>(
+            "encoding",
+            async () => await File.AppendAllTextAsync(GetTestFilePath(), "Text".AsMemory(), null));
+
+        [Fact]
+        public override Task TaskAlreadyCanceledAsync()
+        {
+            string path = GetTestFilePath();
+            CancellationTokenSource source = new CancellationTokenSource();
+            CancellationToken token = source.Token;
+            source.Cancel();
+            Assert.True(File.AppendAllTextAsync(path, "".AsMemory(), Encoding.UTF8, token).IsCanceled);
+            return Assert.ThrowsAsync<TaskCanceledException>(
+                async () => await File.AppendAllTextAsync(path, "".AsMemory(), Encoding.UTF8, token));
         }
     }
 

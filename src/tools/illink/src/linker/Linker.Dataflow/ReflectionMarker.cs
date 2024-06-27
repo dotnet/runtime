@@ -149,7 +149,7 @@ namespace Mono.Linker.Dataflow
 			if (!_enabled)
 				return;
 
-			_markStep.MarkInterfaceImplementation (interfaceImplementation, null, new DependencyInfo (dependencyKind, origin.Provider));
+			_markStep.MarkInterfaceImplementation (interfaceImplementation, origin, new DependencyInfo (dependencyKind, origin.Provider));
 		}
 
 		internal void MarkConstructorsOnType (in MessageOrigin origin, TypeDefinition type, Func<MethodDefinition, bool>? filter, BindingFlags? bindingFlags = null)

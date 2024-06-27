@@ -6,6 +6,7 @@
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
 #include "pal_x509.h"
+#include "pal_ssl.h"
 #include "openssl.h"
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
@@ -627,8 +628,8 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                 break;
         }
 
-        STACK_OF(GENERAL_NAME)* altNames = (STACK_OF(GENERAL_NAME)*)(
-            X509_get_ext_d2i(x509, forIssuer ? NID_issuer_alt_name : NID_subject_alt_name, NULL, NULL));
+        GENERAL_NAMES* altNames = (GENERAL_NAMES*)
+            X509_get_ext_d2i(x509, forIssuer ? NID_issuer_alt_name : NID_subject_alt_name, NULL, NULL);
 
         if (altNames)
         {
@@ -684,13 +685,13 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                     {
                         BIO* b = BIO_new(BIO_s_mem());
                         ASN1_STRING_print_ex(b, str, ASN1_STRFLGS_UTF8_CONVERT);
-                        sk_GENERAL_NAME_free(altNames);
+                        GENERAL_NAMES_free(altNames);
                         return b;
                     }
                 }
             }
 
-            sk_GENERAL_NAME_free(altNames);
+            GENERAL_NAMES_free(altNames);
         }
     }
 
@@ -964,6 +965,20 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
         return 0;
     }
 
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
+    if (g_libSslUses32BitTime)
+    {
+        if (verifyTime > INT_MAX || verifyTime < INT_MIN)
+        {
+            return 0;
+        }
+
+        // Cast to a signature that takes a 32-bit value for the time.
+        ((void (*)(X509_VERIFY_PARAM*, int32_t))(void*)(X509_VERIFY_PARAM_set_time))(verifyParams, (int32_t)verifyTime);
+        return 1;
+    }
+#endif
+
     X509_VERIFY_PARAM_set_time(verifyParams, verifyTime);
     return 1;
 }
@@ -1182,7 +1197,7 @@ int64_t CryptoNative_OpenSslVersionNumber(void)
     return (int64_t)OpenSSL_version_num();
 }
 
-static void ExDataFree(
+static void ExDataFreeOcspResponse(
     void* parent,
     void* ptr,
     CRYPTO_EX_DATA* ad,
@@ -1207,7 +1222,7 @@ static void ExDataFree(
 
 // In the OpenSSL 1.0.2 headers, the `from` argument is not const (became const in 1.1.0)
 // In the OpenSSL 3 headers, `from_d` changed from (void*) to (void**).
-static int ExDataDup(
+static int ExDataDupOcspResponse(
     CRYPTO_EX_DATA* to,
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
     const CRYPTO_EX_DATA* from,
@@ -1243,6 +1258,52 @@ static int ExDataDup(
 
     // If the dup_func() returns 0 the whole CRYPTO_dup_ex_data() will fail.
     // So, return 1 unless we returned 0 already.
+    return 1;
+}
+
+static void ExDataFreeNoOp(
+    void* parent,
+    void* ptr,
+    CRYPTO_EX_DATA* ad,
+    int idx,
+    long argl,
+    void* argp)
+{
+    (void)parent;
+    (void)ptr;
+    (void)ad;
+    (void)idx;
+    (void)argl;
+    (void)argp;
+
+    // do nothing.
+}
+
+static int ExDataDupNoOp(
+    CRYPTO_EX_DATA* to,
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
+    const CRYPTO_EX_DATA* from,
+#else
+    CRYPTO_EX_DATA* from,
+#endif
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
+    void** from_d,
+#else
+    void* from_d,
+#endif
+    int idx,
+    long argl,
+    void* argp)
+{
+    (void)to;
+    (void)from;
+    (void)from_d;
+    (void)idx;
+    (void)argl;
+    (void)argp;
+
+    // do nothing, this should lead to copy of the pointer being stored in the
+    // destination, we treat the ptr as an opaque blob.
     return 1;
 }
 
@@ -1379,7 +1440,9 @@ static int32_t EnsureOpenSsl10Initialized(void)
     ERR_load_crypto_strings();
 
     // In OpenSSL 1.0.2-, CRYPTO_EX_INDEX_X509 is 10.
-    g_x509_ocsp_index = CRYPTO_get_ex_new_index(10, 0, NULL, NULL, ExDataDup, ExDataFree);
+    g_x509_ocsp_index = CRYPTO_get_ex_new_index(10, 0, NULL, NULL, ExDataDupOcspResponse, ExDataFreeOcspResponse);
+    // In OpenSSL 1.0.2-, CRYPTO_EX_INDEX_SSL_SESSION is 3.
+    g_ssl_sess_cert_index = CRYPTO_get_ex_new_index(3, 0, NULL, NULL, ExDataDupNoOp, ExDataFreeNoOp);
 
 done:
     if (ret != 0)
@@ -1447,7 +1510,9 @@ static int32_t EnsureOpenSsl11Initialized(void)
     atexit(HandleShutdown);
 
     // In OpenSSL 1.1.0+, CRYPTO_EX_INDEX_X509 is 3.
-    g_x509_ocsp_index = CRYPTO_get_ex_new_index(3, 0, NULL, NULL, ExDataDup, ExDataFree);
+    g_x509_ocsp_index = CRYPTO_get_ex_new_index(3, 0, NULL, NULL, ExDataDupOcspResponse, ExDataFreeOcspResponse);
+    // In OpenSSL 1.1.0+, CRYPTO_EX_INDEX_SSL_SESSION is 2.
+    g_ssl_sess_cert_index = CRYPTO_get_ex_new_index(2, 0, NULL, NULL, ExDataDupNoOp, ExDataFreeNoOp);
     return 0;
 }
 
@@ -1466,6 +1531,7 @@ int32_t CryptoNative_OpenSslAvailable(void)
 
 static int32_t g_initStatus = 1;
 int g_x509_ocsp_index = -1;
+int g_ssl_sess_cert_index = -1;
 
 static int32_t EnsureOpenSslInitializedCore(void)
 {
@@ -1496,6 +1562,7 @@ static int32_t EnsureOpenSslInitializedCore(void)
         // On OpenSSL 1.0.2 our expected index is 0.
         // On OpenSSL 1.1.0+ 0 is a reserved value and we expect 1.
         assert(g_x509_ocsp_index != -1);
+        assert(g_ssl_sess_cert_index != -1);
     }
 
     return ret;

@@ -132,7 +132,7 @@ public:
 
     ExceptionTrackerBase(PTR_EXCEPTION_RECORD pExceptionRecord, PTR_CONTEXT pExceptionContext, PTR_ExceptionTrackerBase pPrevNestedInfo) :
         m_pPrevNestedInfo(pPrevNestedInfo),
-        m_hThrowable(NULL),
+        m_hThrowable{},
         m_ptrs({pExceptionRecord, pExceptionContext}),
         m_fDeliveredFirstChanceNotification(FALSE),
         m_ExceptionCode((pExceptionRecord != PTR_NULL) ? pExceptionRecord->ExceptionCode : 0)
@@ -164,7 +164,7 @@ public:
         }
         CONTRACTL_END;
 
-        if (NULL != m_hThrowable)
+        if (0 != m_hThrowable)
         {
             return ObjectFromHandle(m_hThrowable);
         }
@@ -265,7 +265,7 @@ public:
                      PTR_CONTEXT           pContextRecord) :
         ExceptionTrackerBase(pExceptionRecord, pContextRecord, PTR_NULL),
         m_pThread(GetThread()),
-        m_uCatchToCallPC(NULL),
+        m_uCatchToCallPC{},
         m_pSkipToParentFunctionMD(NULL),
 // these members were added for resume frame processing
         m_pClauseForCatchToken(NULL)

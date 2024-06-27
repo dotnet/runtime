@@ -425,7 +425,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26213")]
         [ConditionalFact]
-        [OuterLoop("May require using the network, to download CRLs and intermediates")]
+        [OuterLoop("May require using the network, to download CRLs and intermediates", ~TestPlatforms.Browser)]
         public void TestVerify()
         {
             bool success;
@@ -861,7 +861,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalP256))]
-        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        [OuterLoop("Hardware backed key generation takes several seconds.", ~TestPlatforms.Browser)]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey()
         {
             using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.ECDsaP256))
@@ -882,7 +882,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalRsa))]
-        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        [OuterLoop("Hardware backed key generation takes several seconds.", ~TestPlatforms.Browser)]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_RsaKey()
         {
             using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.Rsa))

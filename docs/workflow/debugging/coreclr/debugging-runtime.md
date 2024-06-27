@@ -113,7 +113,7 @@ Visual Studio Code instructions coming soon!
 
 Under normal circumstances, SOS usually comes shipped with Windbg, so no additional installation is required. However, if this is not the case for you, you want to use another version, or any other circumstance that requires you to install it separately/additionally, here are two links with useful information on how to get it set up:
 
-* The official [Microsoft docs on SOS](https://docs.microsoft.com/dotnet/core/diagnostics/dotnet-sos).
+* The official [Microsoft docs on SOS](https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-sos).
 * The instructions at the [diagnostics repo](https://github.com/dotnet/diagnostics/blob/master/documentation/installing-sos-windows-instructions.md).
 
 For more information on SOS commands click [here](https://github.com/dotnet/diagnostics/blob/master/documentation/sos-debugging-extension-windows.md).
@@ -140,7 +140,7 @@ If for some reason `System.Private.CoreLib.dll` is missing, you can rebuild it w
 
 For Linux and macOS, you have to install SOS by yourself, as opposed to Windows' Windbg. The instructions are very similar however, and you can find them on these two links:
 
-* The official [Microsoft docs on SOS](https://docs.microsoft.com/dotnet/core/diagnostics/dotnet-sos).
+* The official [Microsoft docs on SOS](https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-sos).
 * The instructions at the [diagnostics repo](https://github.com/dotnet/diagnostics/blob/master/documentation/installing-sos-instructions.md).
 
 It might also be the case that you would need the latest changes in SOS, or you're working with a not-officially-supported scenario that actually works. The most common occurrence of this scenario is when using macOS Arm64. In this case, you have to build SOS from the diagnostics repo (linked above). Once you have it done, then simply load it to your `lldb`. More details in the following section.
@@ -227,11 +227,11 @@ Starting with Visual Studio 2022 version 17.5, Visual Studio will validate that 
 
 > Unable to attach to CoreCLR. Signature validation failed for a .NET Runtime Debugger library because the file is unsigned.
 >
-> This error is expected if you are working with non-official releases of .NET (example: daily builds from https://github.com/dotnet/installer). See https://aka.ms/vs/unsigned-dotnet-debugger-lib for more information.
+> This error is expected if you are working with non-official releases of .NET (example: daily builds from https://github.com/dotnet/sdk). See https://aka.ms/vs/unsigned-dotnet-debugger-lib for more information.
 
 If the target process is using a .NET Runtime that is either from a daily build, or one that you built on your own computer, this error will show up. **NOTE**: This error should never happen for official builds of the .NET Runtime from Microsoft. So don’t disable the validation if you expect to be using a .NET Runtime supported by Microsoft.
 
 There are three ways to configure Visual Studio to disable signature validation:
-1.	The [`DOTNET_ROOT` environment variable](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86): if Visual Studio is started from a command prompt where `DOTNET_ROOT` is set, it will ignore unsigned .NET runtime debugger libraries which are under the `DOTNET_ROOT` directory.
+1.	The [`DOTNET_ROOT` environment variable](https://learn.microsoft.com/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86): if Visual Studio is started from a command prompt where `DOTNET_ROOT` is set, it will ignore unsigned .NET runtime debugger libraries which are under the `DOTNET_ROOT` directory.
 2.	The `VSDebugger_ValidateDotnetDebugLibSignatures` environment variable: If you want to temporarily disable signature validation, run `set VSDebugger_ValidateDotnetDebugLibSignatures=0` in a command prompt, and start Visual Studio (devenv.exe) from this command prompt.
 3.	Set the `ValidateDotnetDebugLibSignatures` registry key: To disable signature validation on a more permanent basis, you can set the VS registry key to turn it off. To do so, open a Developer Command Prompt, and run `Common7\IDE\VsRegEdit.exe set local HKCU Debugger\EngineSwitches ValidateDotnetDebugLibSignatures dword 0`

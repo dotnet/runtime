@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Internal.TypeSystem;
@@ -13,12 +13,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 {
     class TypeRefTypeSystemModule : ModuleDesc, IAssemblyDesc
     {
-        AssemblyName _name;
+        AssemblyNameInfo _name;
         List<TypeRefTypeSystemType> _types = new List<TypeRefTypeSystemType>();
         Dictionary<string, TypeRefTypeSystemType> _nonNamespacedTypes = new Dictionary<string, TypeRefTypeSystemType>();
         Dictionary<string, Dictionary<string, TypeRefTypeSystemType>> _namespacedTypes = new Dictionary<string, Dictionary<string, TypeRefTypeSystemType>>();
 
-        public TypeRefTypeSystemModule(TypeSystemContext tsc, AssemblyName name) : base(tsc, null)
+        public TypeRefTypeSystemModule(TypeSystemContext tsc, AssemblyNameInfo name) : base(tsc, null)
         {
             _name = name;
         }
@@ -51,7 +51,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override IEnumerable<MetadataType> GetAllTypes() => _types;
         public override MetadataType GetGlobalModuleType() => throw new NotImplementedException();
-        public AssemblyName GetName() => _name;
+        public AssemblyNameInfo GetName() => _name;
         private TypeRefTypeSystemType GetTypeInternal(string nameSpace, string name)
         {
             Dictionary<string, TypeRefTypeSystemType> nameToTypeDictionary = _nonNamespacedTypes;

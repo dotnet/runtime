@@ -70,3 +70,13 @@ Returns 1 on success, 0 otherwise.
 PALEXPORT int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ store,
                                                                  jobject /*X509Certificate*/ cert,
                                                                  const char* hashString);
+
+/*
+Looks up private key and certificate chain based on the alias in the provided keystore
+*/
+PALEXPORT jobject AndroidCryptoNative_X509StoreGetPrivateKeyEntry(jobject /*KeyStore*/ store, const char* hashString);
+
+/*
+Removes an entry from the keystore for the given alias
+*/
+PALEXPORT int32_t AndroidCryptoNative_X509StoreDeleteEntry(jobject /*KeyStore*/ store, const char* hashString);

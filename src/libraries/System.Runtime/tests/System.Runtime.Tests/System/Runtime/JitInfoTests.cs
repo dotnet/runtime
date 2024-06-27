@@ -13,7 +13,7 @@ namespace System.Runtime.Tests
     {
         private long MakeAndInvokeDynamicSquareMethod(int input)
         {
-            // example ref emit dynamic method from https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods
+            // example ref emit dynamic method from https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods
             Type[] methodArgs = {typeof(int)};
 
             DynamicMethod squareIt = new DynamicMethod(

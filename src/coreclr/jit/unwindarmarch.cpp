@@ -233,19 +233,18 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
         if (shortFormat)
         {
             // D0-D7 : pop {r4-rX,lr} (X=4-7) (opsize 16)
-            pu->AddCode(0xD0 | ((maskInt >> 12) & 0x4) | val);
+            pu->AddCode((BYTE)(0xD0 | ((maskInt >> 12) & 0x4) | val));
         }
         else
         {
             // EC-ED : pop {r0-r7,lr} (opsize 16)
-            pu->AddCode(0xEC | ((maskInt >> 14) & 0x1), (BYTE)maskInt);
+            pu->AddCode((BYTE)(0xEC | ((maskInt >> 14) & 0x1)), (BYTE)maskInt);
         }
     }
     else
     {
-        assert((maskInt &
-                ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 |
-                  RBM_R11 | RBM_R12 | RBM_LR)) == 0);
+        assert((maskInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 |
+                            RBM_R10 | RBM_R11 | RBM_R12 | RBM_LR)) == 0);
 
         bool shortFormat = false;
         BYTE val         = 0;
@@ -273,12 +272,12 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
         if (shortFormat)
         {
             // D8-DF : pop {r4-rX,lr} (X=8-11) (opsize 32)
-            pu->AddCode(0xD8 | ((maskInt >> 12) & 0x4) | val);
+            pu->AddCode((BYTE)(0xD8 | ((maskInt >> 12) & 0x4) | val));
         }
         else
         {
             // 80-BF : pop {r0-r12,lr} (opsize 32)
-            pu->AddCode(0x80 | ((maskInt >> 8) & 0x1F) | ((maskInt >> 9) & 0x20), (BYTE)maskInt);
+            pu->AddCode((BYTE)(0x80 | ((maskInt >> 8) & 0x1F) | ((maskInt >> 9) & 0x20)), (BYTE)maskInt);
         }
     }
 }
@@ -321,9 +320,8 @@ void Compiler::unwindPushPopMaskFloat(regMaskTP maskFloat)
 void Compiler::unwindPushMaskInt(regMaskTP maskInt)
 {
     // Only r0-r12 and lr are supported
-    assert((maskInt &
-            ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 |
-              RBM_R11 | RBM_R12 | RBM_LR)) == 0);
+    assert((maskInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 |
+                        RBM_R10 | RBM_R11 | RBM_R12 | RBM_LR)) == 0);
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -364,9 +362,8 @@ void Compiler::unwindPopMaskInt(regMaskTP maskInt)
 #endif // FEATURE_CFI_SUPPORT
 
     // Only r0-r12 and lr and pc are supported (pc is mapped to lr when encoding)
-    assert((maskInt &
-            ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 |
-              RBM_R11 | RBM_R12 | RBM_LR | RBM_PC)) == 0);
+    assert((maskInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 |
+                        RBM_R10 | RBM_R11 | RBM_R12 | RBM_LR | RBM_PC)) == 0);
 
     bool useOpsize16 = ((maskInt & (RBM_LOW_REGS | RBM_PC)) == maskInt); // Can POP use the 16-bit encoding?
 
@@ -574,7 +571,6 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     }
 #endif // DEBUG
 
-#ifdef FEATURE_EH_FUNCLETS
     // If hot/cold splitting occurred at fgFirstFuncletBB, then the main body is not split.
     const bool splitAtFirstFunclet = (funcHasColdSection && (fgFirstColdBlock == fgFirstFuncletBB));
 
@@ -582,7 +578,6 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     {
         funcHasColdSection = false;
     }
-#endif // FEATURE_EH_FUNCLETS
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -721,8 +716,8 @@ unsigned GetOpcodeSizeFromUnwindHeader(BYTE b1)
     };
 
     BYTE opsize = s_UnwindOpsize[b1];
-    assert(opsize == 2 ||
-           opsize == 4); // We shouldn't get a code with no opsize (the 0xFF end code is handled specially)
+    assert(opsize == 2 || opsize == 4); // We shouldn't get a code with no opsize (the 0xFF end code is handled
+                                        // specially)
     return opsize;
 }
 
@@ -850,7 +845,6 @@ void UnwindPrologCodes::SetFinalSize(int headerBytes, int epilogBytes)
                   &upcMem[upcCodeSlot], prologBytes);
 
         // Note that the three UWC_END padding bytes still exist at the end of the array.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         // Zero out the epilog codes memory, to ensure we've copied the right bytes. Don't zero the padding bytes.
@@ -887,9 +881,9 @@ void UnwindPrologCodes::AppendEpilog(UnwindEpilogInfo* pEpi)
 
     int epiSize = pEpi->Size();
     memcpy_s(&upcMem[upcEpilogSlot], upcMemSize - upcEpilogSlot - 3, pEpi->GetCodes(),
-             epiSize); // -3 to avoid writing to the alignment padding
-    assert(pEpi->GetStartIndex() ==
-           upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy it.
+             epiSize);                                            // -3 to avoid writing to the alignment padding
+    assert(pEpi->GetStartIndex() == upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy
+                                                                  // it.
 
     upcEpilogSlot += epiSize;
     assert(upcEpilogSlot <= upcMemSize - 3);
@@ -1455,7 +1449,7 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
     }
 #endif
 
-// Compute the header
+    // Compute the header
 
 #if defined(TARGET_ARM)
     noway_assert((functionLength & 1) == 0);
@@ -1504,8 +1498,8 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 
     // Start writing the header
 
-    noway_assert(headerFunctionLength <=
-                 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits, we have an internal error
+    noway_assert(headerFunctionLength <= 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits,
+                                                    // we have an internal error
 
     if ((headerEpilogCount > UW_MAX_EPILOG_COUNT) || (headerCodeWords > UW_MAX_CODE_WORDS_COUNT))
     {
@@ -1516,7 +1510,7 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
     DWORD header = headerFunctionLength | (headerVers << 18) | (headerXBit << 20) | (headerEBit << 21) |
                    (headerFBit << 22) | (headerEpilogCount << 23) | (headerCodeWords << 28);
 #elif defined(TARGET_ARM64)
-    DWORD header               = headerFunctionLength | (headerVers << 18) | (headerXBit << 20) | (headerEBit << 21) |
+    DWORD header = headerFunctionLength | (headerVers << 18) | (headerXBit << 20) | (headerEBit << 21) |
                    (headerEpilogCount << 22) | (headerCodeWords << 27);
 #endif // defined(TARGET_ARM64)
 
@@ -1912,7 +1906,6 @@ void UnwindInfo::Split()
     // the actual offsets of the splits since we haven't issued the instructions yet, so store
     // an emitter location instead of an offset, and "finalize" the offset in the unwindEmit() phase,
     // like we do for the function length and epilog offsets.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (uwiComp->verbose)
@@ -2203,7 +2196,7 @@ DWORD DumpRegSetRange(const char* const rtype, DWORD start, DWORD end, DWORD lr)
 DWORD DumpOpsize(DWORD padding, DWORD opsize)
 {
     if (padding > 100) // underflow?
-        padding   = 4;
+        padding = 4;
     DWORD printed = padding;
     for (; padding > 0; padding--)
         printf(" ");
@@ -2231,7 +2224,7 @@ void DumpUnwindInfo(Compiler*         comp,
     // pHeader is not guaranteed to be aligned. We put four 0xFF end codes at the end
     // to provide padding, and round down to get a multiple of 4 bytes in size.
     DWORD UNALIGNED* pdw = (DWORD UNALIGNED*)pHeader;
-    DWORD dw;
+    DWORD            dw;
 
     dw = *pdw++;
 

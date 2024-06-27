@@ -9,5 +9,5 @@ actual [book][FDG].
 To submit new proposals for design guidelines, simply create a PR adding or
 modifying an existing file.
 
-[docs]: https://docs.microsoft.com/en-us/dotnet/standard/design-guidelines/
+[docs]: https://learn.microsoft.com/dotnet/standard/design-guidelines/
 [FDG]: https://amazon.com/dp/0135896460

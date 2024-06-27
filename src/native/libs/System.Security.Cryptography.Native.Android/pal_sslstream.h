@@ -59,6 +59,13 @@ PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_
                                                                          int32_t certsLen);
 
 /*
+Create an SSL context with the specified certificates and private key from KeyChain
+
+Returns NULL on failure
+*/
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithKeyStorePrivateKeyEntry(intptr_t sslStreamProxyHandle, jobject privateKeyEntry);
+
+/*
 Initialize an SSL context
   - isServer      : true if the context should be created in server mode
   - streamReader  : callback for reading data from the connection

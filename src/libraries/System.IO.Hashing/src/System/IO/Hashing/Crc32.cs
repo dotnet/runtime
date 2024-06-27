@@ -169,7 +169,7 @@ namespace System.IO.Hashing
 
         private static uint Update(uint crc, ReadOnlySpan<byte> source)
         {
-#if NET7_0_OR_GREATER
+#if NET
             if (CanBeVectorized(source))
             {
                 return UpdateVectorized(crc, source);
@@ -181,7 +181,7 @@ namespace System.IO.Hashing
 
         private static uint UpdateScalar(uint crc, ReadOnlySpan<byte> source)
         {
-#if NET6_0_OR_GREATER
+#if NET
             // Use ARM intrinsics for CRC if available. This is used for the trailing bytes on the vectorized path
             // and is the primary method if the vectorized path is unavailable.
             if (System.Runtime.Intrinsics.Arm.Crc32.Arm64.IsSupported)

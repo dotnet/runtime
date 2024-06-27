@@ -2,7 +2,7 @@
 
 This assembly exposes the System.Diagnostics.TraceSource class, which provides a set of methods and properties that enable applications to trace the execution of code and associate trace messages with their source.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.tracesource.
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.diagnostics.tracesource.
 
 ## Contribution Bar
 

@@ -1,6 +1,6 @@
 # Serialization
 
-Trimming tools cannot analyze the patterns typically used by reflection-based serializers. Such serializers should be annotated with `RequiresUnreferencedCodeAttribute`, and using them in a trimmed app will likely not work (or will work unpredictably). Trimming tools will produce static analysis [warnings](https://docs.microsoft.com/dotnet/core/deploying/trimming-options#analysis-warnings) for these patterns.
+Trimming tools cannot analyze the patterns typically used by reflection-based serializers. Such serializers should be annotated with `RequiresUnreferencedCodeAttribute`, and using them in a trimmed app will likely not work (or will work unpredictably). Trimming tools will produce static analysis [warnings](https://learn.microsoft.com/dotnet/core/deploying/trimming-options#analysis-warnings) for these patterns.
 
 If possible, avoid using reflection-based serializers with trimming, and prefer solutions based on source generators where the serialized types and all required members are statically referenced.
 
@@ -129,12 +129,12 @@ Most features of reflection-based serializers will not work even with these heur
 - Serializing/deserializing types which are not attributed and don't have attributed members
 - Passing `typeof(MyType)` (directly or indirectly) into serializer constructors or methods
 - "Known type" mechanisms, such as:
-  - [`KnownTypeAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute?view=net-5.0)
-  - [`DataContractSerializer.KnownTypes`](https://docs.microsoft.com/dotnet/api/system.runtime.serialization.datacontractserializer.knowntypes?view=net-5.0)
-  - `extraTypes` argument of the [`XmlSerializer ctor`](https://docs.microsoft.com/dotnet/api/system.xml.serialization.xmlserializer.-ctor?view=net-5.0#System_Xml_Serialization_XmlSerializer__ctor_System_Type_System_Type___)
+  - [`KnownTypeAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute?view=net-5.0)
+  - [`DataContractSerializer.KnownTypes`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.datacontractserializer.knowntypes?view=net-5.0)
+  - `extraTypes` argument of the [`XmlSerializer ctor`](https://learn.microsoft.com/dotnet/api/system.xml.serialization.xmlserializer.-ctor?view=net-5.0#System_Xml_Serialization_XmlSerializer__ctor_System_Type_System_Type___)
 - Serializing types which implement special interfaces
-  - [`ISerializable`](https://docs.microsoft.com/dotnet/api/system.runtime.serialization.iserializable?view=net-5.0)
-  - [`IXmlSerializable`](https://docs.microsoft.com/dotnet/api/system.xml.serialization.ixmlserializable?view=net-5.0)
+  - [`ISerializable`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable?view=net-5.0)
+  - [`IXmlSerializable`](https://learn.microsoft.com/dotnet/api/system.xml.serialization.ixmlserializable?view=net-5.0)
 - Serializer-specific handling of collection types
-  - Types which implement [`ICollection`](https://docs.microsoft.com/dotnet/standard/serialization/examples-of-xml-serialization#serializing-a-class-that-implements-the-icollection-interface)
-  - Deserializing [`collection interfaces`](https://docs.microsoft.com/dotnet/framework/wcf/feature-details/collection-types-in-data-contracts#using-collection-interface-types-and-read-only-collections) into serializer-specific default types
+  - Types which implement [`ICollection`](https://learn.microsoft.com/dotnet/standard/serialization/examples-of-xml-serialization#serializing-a-class-that-implements-the-icollection-interface)
+  - Deserializing [`collection interfaces`](https://learn.microsoft.com/dotnet/framework/wcf/feature-details/collection-types-in-data-contracts#using-collection-interface-types-and-read-only-collections) into serializer-specific default types

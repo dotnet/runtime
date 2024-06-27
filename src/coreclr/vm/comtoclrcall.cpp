@@ -515,7 +515,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     // we have additional checks for thread abort that are performed only when
     // g_TrapReturningThreads is set.
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
-    if (g_TrapReturningThreads.LoadWithoutBarrier())
+    if (g_TrapReturningThreads)
     {
         hr = StubRareDisableHRWorker(pThread);
         if (S_OK != hr)
@@ -1340,13 +1340,11 @@ Stub* ComCall::CreateGenericComCallStub(BOOL isFieldAccess)
 
     CodeLabel* rgRareLabels[] = {
                                   psl->NewCodeLabel(),
-                                  psl->NewCodeLabel(),
                                   psl->NewCodeLabel()
                                 };
 
 
     CodeLabel* rgRejoinLabels[] = {
-                                    psl->NewCodeLabel(),
                                     psl->NewCodeLabel(),
                                     psl->NewCodeLabel()
                                   };

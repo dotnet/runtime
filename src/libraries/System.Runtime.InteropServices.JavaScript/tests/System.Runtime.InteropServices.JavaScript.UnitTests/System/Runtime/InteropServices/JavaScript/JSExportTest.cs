@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public class JSExportAsyncTest : JSInteropTestBase, IAsyncLifetime
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedNotBrowserBackgroundExec))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void SyncJsImportJsExportThrows()
         {
             var ex = Assert.Throws<JSException>(()=>JavaScriptTestHelper.invoke1_Boolean(true, nameof(JavaScriptTestHelper.EchoBoolean)));
@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmBackgroundExecOrSingleThread))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
     public class JSExportTest : JSInteropTestBase, IAsyncLifetime
     {
         [Theory]
@@ -157,7 +157,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalIntPtrCases))]
         public unsafe void JsExportVoidPtr(IntPtr xvalue)
         {
-            JavaScriptTestHelper.AssertWasmBackgroundExec();
             void* value = (void*)xvalue;
             void* res = JavaScriptTestHelper.invoke1_VoidPtr(value, nameof(JavaScriptTestHelper.EchoVoidPtr));
             Assert.True(value == res);
@@ -188,7 +187,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalNullableBooleanCases))]
         public void JsExportNullableBoolean(bool? value)
         {
-            JavaScriptTestHelper.AssertWasmBackgroundExec();
             JsExportTest(value,
                 JavaScriptTestHelper.invoke1_NullableBoolean,
                 nameof(JavaScriptTestHelper.EchoNullableBoolean),
@@ -431,6 +429,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             T res;
             res = invoke(value, echoName);
             Assert.Equal<T>(value, res);
+        }
+
+        [Fact]
+        public async Task InternalsVisibleToDoesntBreak()
+        {
+            Assert.Equal(JavaScriptLibrary.JavaScriptInterop.ValidationMethod(5, 6), await JavaScriptTestHelper.callJavaScriptLibrary(5, 6));
         }
     }
 }

@@ -20,13 +20,13 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// This is useful in scenarios when the caller has no need to rely on an IUnknown instance
         /// that is used when running managed code is not possible (i.e. during a GC). In traditional
-        /// COM scenarios this is common, but scenarios involving <see href="https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetrackertarget">Reference Tracker hosting</see>
+        /// COM scenarios this is common, but scenarios involving <see href="https://learn.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetrackertarget">Reference Tracker hosting</see>
         /// calling of the IUnknown API during a GC is possible.
         /// </remarks>
         CallerDefinedIUnknown = 1,
 
         /// <summary>
-        /// Flag used to indicate the COM interface should implement <see href="https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetrackertarget">IReferenceTrackerTarget</see>.
+        /// Flag used to indicate the COM interface should implement <see href="https://learn.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetrackertarget">IReferenceTrackerTarget</see>.
         /// When this flag is passed, the resulting COM interface will have an internal implementation of IUnknown
         /// and as such none should be supplied by the caller.
         /// </summary>
@@ -42,7 +42,7 @@ namespace System.Runtime.InteropServices
         None = 0,
 
         /// <summary>
-        /// Indicate if the supplied external COM object implements the <see href="https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetracker">IReferenceTracker</see>.
+        /// Indicate if the supplied external COM object implements the <see href="https://learn.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetracker">IReferenceTracker</see>.
         /// </summary>
         TrackerObject = 1,
 

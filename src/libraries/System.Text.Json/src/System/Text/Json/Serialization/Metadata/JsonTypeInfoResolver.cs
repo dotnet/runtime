@@ -30,6 +30,25 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(resolvers));
             }
 
+            return Combine((ReadOnlySpan<IJsonTypeInfoResolver?>)resolvers);
+        }
+
+        /// <summary>
+        /// Combines multiple <see cref="IJsonTypeInfoResolver"/> sources into one.
+        /// </summary>
+        /// <param name="resolvers">Sequence of contract resolvers to be queried for metadata.</param>
+        /// <returns>A <see cref="IJsonTypeInfoResolver"/> combining results from <paramref name="resolvers"/>.</returns>
+        /// <remarks>
+        /// The combined resolver will query each of <paramref name="resolvers"/> in the specified order,
+        /// returning the first result that is non-null. If all <paramref name="resolvers"/> return null,
+        /// then the combined resolver will also return <see langword="null"/>.
+        ///
+        /// Can be used to combine multiple <see cref="JsonSerializerContext"/> sources,
+        /// which typically define contract metadata for small subsets of types.
+        /// It can also be used to fall back to <see cref="DefaultJsonTypeInfoResolver"/> wherever necessary.
+        /// </remarks>
+        public static IJsonTypeInfoResolver Combine(params ReadOnlySpan<IJsonTypeInfoResolver?> resolvers)
+        {
             var resolverChain = new JsonTypeInfoResolverChain();
             foreach (IJsonTypeInfoResolver? resolver in resolvers)
             {

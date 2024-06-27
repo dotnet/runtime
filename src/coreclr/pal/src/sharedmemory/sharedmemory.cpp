@@ -139,7 +139,7 @@ const UINT64 SharedMemoryHelpers::InvalidSharedThreadId = static_cast<UINT64>(-1
 
 void *SharedMemoryHelpers::Alloc(SIZE_T byteCount)
 {
-    void *buffer = InternalMalloc(byteCount);
+    void *buffer = malloc(byteCount != 0 ? byteCount : 1);
     if (buffer == nullptr)
     {
         throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::OutOfMemory));

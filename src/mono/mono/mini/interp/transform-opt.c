@@ -32,7 +32,9 @@ alloc_var_offset (TransformData *td, int local, gint32 *ptos)
 int
 interp_alloc_global_var_offset (TransformData *td, int var)
 {
-	return alloc_var_offset (td, var, &td->total_locals_size);
+	int offset = alloc_var_offset (td, var, &td->total_locals_size);
+	interp_mark_ref_slots_for_var (td, var);
+	return offset;
 }
 
 static void
@@ -464,6 +466,8 @@ interp_alloc_offsets (TransformData *td)
 					add_active_call (td, &ac, td->vars [var].call);
 				} else if (!td->vars [var].global && td->vars [var].offset == -1) {
 					alloc_var_offset (td, var, &current_offset);
+					interp_mark_ref_slots_for_var (td, var);
+
 					if (current_offset > final_total_locals_size)
 						final_total_locals_size = current_offset;
 
@@ -492,6 +496,7 @@ interp_alloc_offsets (TransformData *td)
 		// These are allocated separately at the end of the stack
 		if (td->vars [i].call_args) {
 			td->vars [i].offset += td->param_area_offset;
+			interp_mark_ref_slots_for_var (td, i);
 			final_total_locals_size = MAX (td->vars [i].offset + td->vars [i].size, final_total_locals_size);
 		}
 	}
@@ -2236,6 +2241,7 @@ interp_fold_unop (TransformData *td, InterpInst *ins)
 	td->var_values [sreg].ref_count--;
 	result.def = ins;
 	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
+	result.liveness = td->var_values [dreg].liveness;
 	td->var_values [dreg] = result;
 
 	return ins;
@@ -2473,6 +2479,7 @@ fold_ok:
 	td->var_values [sreg2].ref_count--;
 	result.def = ins;
 	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
+	result.liveness = td->var_values [dreg].liveness;
 	td->var_values [dreg] = result;
 
 	return ins;
@@ -3380,7 +3387,7 @@ can_propagate_var_def (TransformData *td, int var, InterpLivenessPosition cur_li
 static void
 interp_super_instructions (TransformData *td)
 {
-	interp_compute_native_offset_estimates (td);
+	interp_compute_native_offset_estimates (td, FALSE);
 
 	// Add some actual super instructions
 	for (int bb_dfs_index = 0; bb_dfs_index < td->bblocks_count_eh; bb_dfs_index++) {

@@ -18,7 +18,7 @@ using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+    [ConditionalClass(typeof(TestConfiguration), nameof(TestConfiguration.IsBinaryFormatterEnabled))]
     public partial class BinaryFormatterTests : FileCleanupTestBase
     {
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.

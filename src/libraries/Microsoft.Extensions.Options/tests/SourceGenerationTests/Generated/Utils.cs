@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if NETCOREAPP3_1_OR_GREATER
+#if NET
 using System.Linq;
 #endif
 using Microsoft.Extensions.Options;
@@ -15,7 +15,7 @@ internal static class Utils
     {
         Assert.NotNull(vr);
 
-#if NETCOREAPP3_1_OR_GREATER
+#if NET
         var failures = vr.Failures!.ToArray();
 #else
         var failures = vr.FailureMessage!.Split(';');
