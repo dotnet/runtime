@@ -52892,7 +52892,7 @@ int gc_heap::refresh_memory_limit()
     size_t old_heap_hard_limit_poh = heap_hard_limit_oh[poh];
     bool old_hard_limit_config_p = hard_limit_config_p;
 
-    total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted_physical_mem, true);
+    total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted_physical_mem);
 
     bool succeed = true;
 
