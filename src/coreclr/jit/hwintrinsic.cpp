@@ -1800,6 +1800,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op1JitType);
                         break;
 
+                    case NI_Sve_ShiftLeftLogical:
+                    case NI_Sve_ShiftRightArithmetic:
+                    case NI_Sve_ShiftRightLogical:
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        break;
+
                     default:
                         break;
                 }

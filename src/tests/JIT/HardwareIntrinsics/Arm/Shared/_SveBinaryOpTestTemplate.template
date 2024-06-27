@@ -8,6 +8,16 @@
  * directions listed in the file.                                             *
  ******************************************************************************/
 
+// By defining the first operand type as a symbol, we can conditionally compile
+// scenarios depending on if the operand types are the same,
+// avoiding the need for a new template.
+// If the types are the same, the #undef will remove the symbol.
+// If they aren't the same, the #undef won't do anything,
+// and the first operand type symbol will remain defined.
+// We can then conditionally compile on the condition #if !{Op1VectorType}{Op1BaseType}, etc.
+#define {Op1VectorType}{Op1BaseType}
+#undef {Op2VectorType}{Op2BaseType}
+
 using System;
 using System.Linq;
 using System.Numerics;
@@ -169,9 +179,9 @@ namespace JIT.HardwareIntrinsics.Arm
         private static {Op2BaseType}[] _data2 = new {Op2BaseType}[Op2ElementCount];
 
         private {Op1VectorType}<{Op1BaseType}> _mask;
+        private {Op1VectorType}<{Op1BaseType}> _falseFld;
         private {Op1VectorType}<{Op1BaseType}> _fld1;
         private {Op2VectorType}<{Op2BaseType}> _fld2;
-        private {Op2VectorType}<{Op2BaseType}> _falseFld;
 
         private DataTable _dataTable;
 
@@ -182,10 +192,11 @@ namespace JIT.HardwareIntrinsics.Arm
             for (var i = 0; i < Op1ElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueOp1} % 2); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());            
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
@@ -211,6 +222,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public void RunBasicScenario_Load()
         {
+#if !{Op1VectorType}{Op1BaseType}
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
             {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
@@ -222,6 +234,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
+#endif
         }
 
         public void RunReflectionScenario_UnsafeRead()
@@ -293,6 +306,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public void ConditionalSelect_Op2()
         {
+#if !{Op1VectorType}{Op1BaseType}
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op2_mask");
             ConditionalSelectScenario(_mask, _fld1, _fld2, _fld2);
             
@@ -301,6 +315,7 @@ namespace JIT.HardwareIntrinsics.Arm
             
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op2_all");
             ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _fld2);
+#endif
         }
 
         public void ConditionalSelect_FalseOp()
@@ -328,7 +343,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op1BaseType}> op2, {Op1VectorType}<{Op1BaseType}> falseOp)
+        private void ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op2VectorType}<{Op2BaseType}> op2, {Op1VectorType}<{Op1BaseType}> falseOp)
         {
             var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2), falseOp);
 
@@ -357,17 +372,17 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateConditionalSelectResult({Op1VectorType}<{Op1BaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> leftOp, {Op1VectorType}<{Op1BaseType}> rightOp, {Op1VectorType}<{Op1BaseType}> falseOp, void* output, [CallerMemberName] string method = "")
+        private void ValidateConditionalSelectResult({Op1VectorType}<{Op1BaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> leftOp, {Op2VectorType}<{Op2BaseType}> rightOp, {Op1VectorType}<{Op1BaseType}> falseOp, void* output, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] mask = new {Op1BaseType}[Op1ElementCount];
             {Op1BaseType}[] left = new {Op1BaseType}[Op1ElementCount];
-            {Op1BaseType}[] right = new {Op1BaseType}[Op1ElementCount];
+            {Op2BaseType}[] right = new {Op2BaseType}[Op2ElementCount];
             {Op1BaseType}[] falseVal = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] result = new {RetBaseType}[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref mask[0]), maskOp);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref left[0]), leftOp);
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref right[0]), rightOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref right[0]), rightOp);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref falseVal[0]), falseOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref result[0]), ref Unsafe.AsRef<byte>(output), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
