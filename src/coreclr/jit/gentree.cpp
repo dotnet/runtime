@@ -29443,28 +29443,22 @@ bool GenTree::IsInvariant() const
 }
 
 //-------------------------------------------------------------------
-// ElementsAreAllBitsSetOrZero: returns true if this node is a vector constant with
-//                              every element has either all bits set or none of them
-//                              (per-element mask).
+// IsVectorPerElementMask: returns true if this node is a vector constant per-element mask
+//                         (every element has either all bits set or none of them).
 //
 // Arguments:
 //    simdBaseType - the base type of the constant being checked.
 //    simdSize     - the size of the SIMD type of the intrinsic.
 //
 // Returns:
-//     True if this node is a vector constant with every element having either
-//     all bits set or none of them.
+//     True if this node is a vector constant per-element mask.
 //
-bool GenTree::ElementsAreAllBitsSetOrZero(var_types simdBaseType, unsigned simdSize) const
+bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const
 {
 #ifdef FEATURE_SIMD
     if (IsCnsVec())
     {
         const GenTreeVecCon* vecCon = AsVecCon();
-        if (vecCon->IsAllBitsSet() || vecCon->IsZero())
-        {
-            return true;
-        }
 
         int elementCount = vecCon->ElementCount(simdSize, simdBaseType);
 
