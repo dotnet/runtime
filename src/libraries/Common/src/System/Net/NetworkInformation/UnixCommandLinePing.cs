@@ -29,13 +29,13 @@ namespace System.Net.NetworkInformation
             {
                 string pathv4v6 = Path.Combine(folder, s_ipv4v6PingFile);
                 string path = Path.Combine(folder, fileName);
-                if (File.Exists(pathv4v6))
-                {
-                    return pathv4v6;
-                }
                 if (File.Exists(path))
                 {
                     return path;
+                }
+                if (File.Exists(pathv4v6))
+                {
+                    return pathv4v6;
                 }
             }
 
