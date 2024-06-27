@@ -2028,7 +2028,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 			}
 
 			// Now check base class if present
-			current = current->parent;
+			current = m_class_get_parent (current);
 		}
 
 		// If the variance search failed to find a match, fall back on the one from mono_class_interface_offset
