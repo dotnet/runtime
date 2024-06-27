@@ -523,10 +523,9 @@ namespace System.Net.Http.Functional.Tests
                         uri,
                         HttpCompletionOption.ResponseContentRead);
 
-                    var cts = new CancellationTokenSource();
-                    cts.Cancel();
+                    CancellationToken cancellationToken = new CancellationToken(canceled: true);
 
-                    await response.Content.LoadIntoBufferAsync(cts.Token);
+                    await response.Content.LoadIntoBufferAsync(cancellationToken);
                 },
                 async server =>
                 {
@@ -546,10 +545,13 @@ namespace System.Net.Http.Functional.Tests
                         uri,
                         HttpCompletionOption.ResponseHeadersRead);
 
-                    var cts = new CancellationTokenSource();
-                    cts.Cancel();
+                    CancellationToken cancellationToken = new CancellationToken(canceled: true);
 
-                    await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.LoadIntoBufferAsync(cts.Token));
+                    Task task = response.Content.LoadIntoBufferAsync(cancellationToken);
+
+                    var exception = await Assert.ThrowsAsync<TaskCanceledException>(() => task);
+
+                    Assert.Equal(cancellationToken, exception.CancellationToken);
                 },
                 async server =>
                 {
@@ -572,13 +574,19 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    using HttpClient httpClient = CreateHttpClient();
+                    using HttpClient httpClient = base.CreateHttpClient();
 
                     HttpResponseMessage response = await httpClient.GetAsync(
                         uri,
                         HttpCompletionOption.ResponseHeadersRead);
 
-                    await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.LoadIntoBufferAsync(cts.Token));
+                    CancellationToken cancellationToken = cts.Token;
+
+                    Task task = response.Content.LoadIntoBufferAsync(cancellationToken);
+
+                    var exception = await Assert.ThrowsAsync<TaskCanceledException>(() => task);
+
+                    Assert.Equal(cancellationToken, exception.CancellationToken);
                 },
                 async server =>
                 {
