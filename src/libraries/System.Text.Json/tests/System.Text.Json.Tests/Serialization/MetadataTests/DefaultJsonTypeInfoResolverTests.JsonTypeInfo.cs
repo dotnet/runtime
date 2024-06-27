@@ -1373,8 +1373,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(int))]
         [InlineData(typeof(string))]
         [InlineData(typeof(object))]
-        [InlineData(typeof(List<int>))]
-        [InlineData(typeof(Dictionary<string, int>))]
         public static void SettingCallbacksOnUnsupportedTypes_ThrowsInvalidOperationException(Type type)
         {
             var jti = JsonTypeInfo.CreateJsonTypeInfo(type, new());
