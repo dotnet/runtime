@@ -39,8 +39,7 @@ FORCEINLINE PTR_EEClass MethodTable::GetClassWithPossibleAV()
     {
         // pointer to canonical MethodTable.
         TADDR canonicalMethodTable = union_getPointer(addr);
-        // a canonical method table always points at its EEClass, and m_pEEClass has no mask bit, so just return it
-        return PTR_MethodTable(canonicalMethodTable)->m_pEEClass;
+        return PTR_EEClass(PTR_MethodTable(canonicalMethodTable)->m_pCanonMT);
     }
 }
 
