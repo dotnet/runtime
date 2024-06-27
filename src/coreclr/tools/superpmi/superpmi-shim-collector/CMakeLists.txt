@@ -5,7 +5,6 @@ remove_definitions(-D_UNICODE)
 
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
-add_definitions(-DFEATURE_ENABLE_HARDWARE_EXCEPTIONS)
 
 if(CLR_CMAKE_HOST_WIN32)
   #use static crt
