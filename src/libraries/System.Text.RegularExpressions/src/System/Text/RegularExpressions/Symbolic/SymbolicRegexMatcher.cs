@@ -218,9 +218,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 var setIsTooCommon = new Func<RegexFindOptimizations.FixedDistanceSet, bool>((fds) =>
                 {
-                    // _wout($"rn{fds.Range is null}");
-                    // _wout($"cn{fds.Chars is null}");
-                    // _wout($"cc{fds.Chars!.Length}");
                     return fds switch
                     {
                         { Chars: not null } =>
@@ -237,18 +234,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 // In some cases where the findOptimizations are useful, just using the DFA can still be faster.
                 _findOpts = findOptimizations switch
                 {
-                    { FindMode: FindNextStartingPositionMode.FixedDistanceString_LeftToRight } => findOptimizations,
-                    { FindMode: FindNextStartingPositionMode.FixedDistanceSets_LeftToRight } =>
-                        findOptimizations.FixedDistanceSets!.TrueForAll(setIsTooCommon.Invoke)? null : findOptimizations,
-                    { FindMode: FindNextStartingPositionMode.LeadingSet_LeftToRight } => setIsTooCommon(
-                        findOptimizations.FixedDistanceSets![0]) ? null : findOptimizations,
+                    { FindMode: FindNextStartingPositionMode.FixedDistanceSets_LeftToRight } when  findOptimizations.FixedDistanceSets!.TrueForAll(setIsTooCommon.Invoke) => null,
+                    { FindMode: FindNextStartingPositionMode.LeadingSet_LeftToRight } when setIsTooCommon(findOptimizations.FixedDistanceSets![0]) => null,
                     _ => findOptimizations
                 };
-                // _findOpts = findOptimizations;
-                // _findOpts = null;
-                // _wout($"{findOptimizations.FindMode}");
-                // _wout($"{findOptimizations.FixedDistanceSets![0]}");
-                // _wout($"o{_findOpts}");
             }
 
             // Determine the number of initial states. If there's no anchor, only the default previous
@@ -485,6 +474,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 case MatchReversalKind.FixedLength:
                     matchStart = (matchEnd - _optimizedReversalState.FixedLength);
                     break;
+
                 case MatchReversalKind.MatchStart:
                 case MatchReversalKind.PartialFixedLength:
                     int initialLastStart = -1; // invalid sentinel value
@@ -581,6 +571,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         FindEndPositionDeltasNFA<NfaStateHandler, FullInputReader, NoOptimizationsInitialStateHandler,
                             FullNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos,
                             ref initialStatePosCandidate, ref initialStatePosCandidate);
+
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
                 // there is no more input available, then the whole search is done.
                 if (done || pos >= input.Length)
@@ -1856,6 +1847,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 if (currentStateId != initialStateId)
                     return false;
+
                 if (matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
                 {
                     return true;
@@ -1878,6 +1870,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 if (currentStateId != initialStateId)
                     return false;
+
                 if (matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
                 {
                     currentStateId = matcher._dotstarredInitialStates[
@@ -1975,8 +1968,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 where TStateHandler : struct, IStateHandler
             {
                 return flags.IsNullable() || (flags.CanBeNullable() && TStateHandler.IsNullableFor(matcher, in state, matcher.GetPositionKind(positionId)));
-                // cannot be used in NFA mode
-                // return matcher.IsNullableWithContext(state.DfaStateId, positionId);
             }
         }
     }

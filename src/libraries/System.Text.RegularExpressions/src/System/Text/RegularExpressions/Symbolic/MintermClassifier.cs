@@ -27,10 +27,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Conserve memory if pattern is ascii-only</summary>
         private readonly bool _isAsciiOnly;
 
-        // /// <summary>
-        // /// fallback lookup if over 255 minterms
-        // /// this is almost never used
-        // /// </summary>
+        /// <summary>
+        /// Fallback lookup if over 255 minterms. This is rarely used.
+        /// </summary>
         private readonly int[]? _intLookup;
 
         /// <summary>Create a classifier that maps a character to the ID of its associated minterm.</summary>
@@ -116,17 +115,16 @@ namespace System.Text.RegularExpressions.Symbolic
         public bool IsAsciiOnly() => _isAsciiOnly;
 
         /// <summary>
-        /// Quick mapping from char to minterm,
-        /// can be null if there is over 255 minterms
+        /// Gets a quick mapping from char to minterm for the common case when there are &lt;= 255 minterms.
+        /// Null if there are greater than 255 minterms.
         /// </summary>
-        /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte[]? ByteLookup() => _lookup;
 
         /// <summary>
-        /// Int lookup for rare cases
+        /// Gets a mapping from char to minterm for the rare case when there are &gt;= 255 minterms.
+        /// Null in the common case where there are fewer than 255 minterms.
         /// </summary>
-        /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int[]? IntLookup() => _intLookup;
     }
