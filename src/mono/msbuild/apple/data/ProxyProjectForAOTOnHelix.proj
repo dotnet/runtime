@@ -12,6 +12,8 @@
     <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
     <PublishDir>$(OriginalPublishDir)</PublishDir>
+    <!-- Prevent getting DynamicCodeSupport=true default from ILLink targets that are imported with the Sdk.targets -->
+    <DynamicCodeSupport>false</DynamicCodeSupport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
