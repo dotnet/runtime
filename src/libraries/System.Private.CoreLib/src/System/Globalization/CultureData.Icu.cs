@@ -521,11 +521,11 @@ namespace System.Globalization
                 bufferLength = Interop.Globalization.GetLocalesNative(null, 0);
             }
             else
-#else
+#endif
             {
                 bufferLength = Interop.Globalization.GetLocales(null, 0);
             }
-#endif
+
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();
@@ -539,11 +539,11 @@ namespace System.Globalization
                 bufferLength = Interop.Globalization.GetLocalesNative(chars, bufferLength);
             }
             else
-#else
+#endif
             {
                 bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
             }
-#endif
+
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();

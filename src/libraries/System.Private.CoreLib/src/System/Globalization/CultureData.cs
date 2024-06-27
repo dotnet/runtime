@@ -978,9 +978,8 @@ namespace System.Globalization
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                                                                          GlobalizationMode.Hybrid ?
                                                                             GetLocaleInfoNative(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name) :
-#else
-                                                                            IcuGetLanguageDisplayName(cultureName);
 #endif
+                                                                            IcuGetLanguageDisplayName(cultureName);
 
         /// <summary>
         /// English pretty name for this locale (ie: English (United States))
@@ -1557,11 +1556,10 @@ namespace System.Globalization
                         _iFirstDayOfWeek = GetFirstDayOfWeek(_sName);
                     }
                     else
-#else
+#endif
                     {
                         _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
                     }
-#endif
                 }
                 return _iFirstDayOfWeek;
             }

@@ -96,11 +96,10 @@ namespace System.Globalization
                 count = Interop.Globalization.GetCalendarsNative(localeName, calendars, calendars.Length);
             }
             else
-#else
+#endif
             {
                 count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
             }
-#endif
 
             // ensure there is at least 1 calendar returned
             if (count == 0 && calendars.Length > 0)
