@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 
 using X86 = System.Runtime.Intrinsics.X86;
 
+#pragma warning disable CA2252 // X86Base.DivRem that requires opting into preview features is used in a few places
+
 namespace System
 {
     public partial struct Decimal
