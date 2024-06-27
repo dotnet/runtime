@@ -4143,46 +4143,6 @@ PALAPI
 PAL_SetTerminationRequestHandler(
     IN PTERMINATION_REQUEST_HANDLER terminationRequestHandler);
 
-PALIMPORT
-VOID
-PALAPI
-PAL_CatchHardwareExceptionHolderEnter();
-
-PALIMPORT
-VOID
-PALAPI
-PAL_CatchHardwareExceptionHolderExit();
-
-//
-// This holder is used to indicate that a hardware
-// exception should be raised as a C++ exception
-// to better emulate SEH on the xplat platforms.
-//
-class CatchHardwareExceptionHolder
-{
-public:
-    CatchHardwareExceptionHolder()
-    {
-        PAL_CatchHardwareExceptionHolderEnter();
-    }
-
-    ~CatchHardwareExceptionHolder()
-    {
-        PAL_CatchHardwareExceptionHolderExit();
-    }
-
-    static bool IsEnabled();
-};
-
-//
-// NOTE: This is only defined in one PAL test.
-//
-#ifdef FEATURE_ENABLE_HARDWARE_EXCEPTIONS
-#define HardwareExceptionHolder CatchHardwareExceptionHolder __catchHardwareException;
-#else
-#define HardwareExceptionHolder
-#endif // FEATURE_ENABLE_HARDWARE_EXCEPTIONS
-
 class NativeExceptionHolderBase;
 
 PALIMPORT
@@ -4344,7 +4304,6 @@ public:
     };                                                                          \
     try                                                                         \
     {                                                                           \
-        HardwareExceptionHolder                                                 \
         auto __exceptionHolder = NativeExceptionHolderFactory::CreateHolder(&exceptionFilter); \
         __exceptionHolder.Push();                                               \
         tryBlock(__param);                                                      \
@@ -4380,7 +4339,6 @@ public:
     {                                   \
         try                             \
         {                               \
-            HardwareExceptionHolder     \
             tryBlock(__param);          \
         }                               \
         catch (...)                     \
@@ -4396,7 +4354,7 @@ public:
 
 #define PAL_CPP_THROW(type, obj) { throw obj; }
 #define PAL_CPP_RETHROW { throw; }
-#define PAL_CPP_TRY                     try { HardwareExceptionHolder
+#define PAL_CPP_TRY                     try {
 #define PAL_CPP_CATCH_EXCEPTION(ident)  } catch (Exception *ident) {
 #define PAL_CPP_CATCH_EXCEPTION_NOARG   } catch (Exception *) {
 #define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) {

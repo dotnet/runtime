@@ -2614,8 +2614,6 @@ static PCODE PreStubWorker_Preemptive(
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
     {
-        HardwareExceptionHolder;
-
         // Give debugger opportunity to stop here
         ThePreStubPatch();
     }
@@ -2719,8 +2717,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
         {
-            HardwareExceptionHolder;
-
             // Give debugger opportunity to stop here
             ThePreStubPatch();
         }
