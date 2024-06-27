@@ -17,6 +17,17 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     static class Helpers
     {
+        public static Vector<T> InitVector<T>(Func<int, T> f)
+        {
+            var count = Vector<T>.Count;
+            var arr = new T[count];
+            for (var i = 0; i < count; i++)
+            {
+                arr[i] = f(i);
+            }
+            return new Vector<T>(arr);
+        }
+
         public static sbyte CountLeadingSignBits(sbyte op1)
         {
             return (sbyte)(CountLeadingZeroBits((sbyte)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
@@ -4687,9 +4698,9 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        public static float FPRecipStepFused(float op1, float op2) => FusedMultiplySubtract(2, op1, op2);
+        public static float FPReciprocalStepFused(float op1, float op2) => FusedMultiplySubtract(2, op1, op2);
 
-        public static float FPRSqrtStepFused(float op1, float op2) => FusedMultiplySubtract(3, op1, op2) / 2;
+        public static float FPReciprocalSqrtStepFused(float op1, float op2) => FusedMultiplySubtract(3, op1, op2) / 2;
 
         public static double AbsoluteDifference(double op1, double op2) => Math.Abs(op1 - op2);
 
@@ -4731,11 +4742,11 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        public static double FPRecipStepFused(double op1, double op2) => FusedMultiplySubtract(2, op1, op2);
+        public static double FPReciprocalStepFused(double op1, double op2) => FusedMultiplySubtract(2, op1, op2);
 
-        public static double FPRSqrtStepFused(double op1, double op2) => FusedMultiplySubtract(3, op1, op2) / 2;
+        public static double FPReciprocalSqrtStepFused(double op1, double op2) => FusedMultiplySubtract(3, op1, op2) / 2;
 
-        private static uint RecipEstimate(uint a)
+        private static uint ReciprocalEstimate(uint a)
         {
             a = a * 2 + 1;
 
@@ -4745,7 +4756,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return r;
         }
 
-        private static uint RecipSqrtEstimate(uint a)
+        private static uint ReciprocalSqrtEstimate(uint a)
         {
             if (a < 256)
             {
@@ -4769,6 +4780,38 @@ namespace JIT.HardwareIntrinsics.Arm
             return r;
         }
 
+        public static double ReciprocalEstimate(double op1) => Math.ReciprocalEstimate(op1);
+        
+        public static float ReciprocalEstimate(float op1) => MathF.ReciprocalEstimate(op1);
+
+        public static double ReciprocalExponent(double op1)
+        {
+            ulong bits = (ulong)BitConverter.DoubleToUInt64Bits(op1);
+
+            // Invert the exponent
+            bits ^= 0x7FF0000000000000;
+            // Zero the fraction
+            bits &= 0xFFF0000000000000;
+
+            return BitConverter.UInt64BitsToDouble(bits);
+        }
+
+        public static float ReciprocalExponent(float op1)
+        {
+            uint bits = BitConverter.SingleToUInt32Bits(op1);
+
+            // Invert the exponent
+            bits ^= 0x7F800000;
+            // Zero the fraction
+            bits &= 0xFF800000;
+
+            return BitConverter.UInt32BitsToSingle(bits);
+        }
+
+        public static double ReciprocalSqrtEstimate(double op1) => Math.ReciprocalSqrtEstimate(op1);
+        
+        public static float ReciprocalSqrtEstimate(float op1) => MathF.ReciprocalSqrtEstimate(op1);
+
         private static uint ExtractBits(uint val, byte msbPos, byte lsbPos)
         {
             uint andMask = 0;
@@ -4781,7 +4824,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return (val & andMask) >> lsbPos;
         }
 
-        public static uint UnsignedRecipEstimate(uint op1)
+        public static uint UnsignedReciprocalEstimate(uint op1)
         {
             uint result;
 
@@ -4791,14 +4834,14 @@ namespace JIT.HardwareIntrinsics.Arm
             }
             else
             {
-                uint estimate = RecipEstimate(ExtractBits(op1, 31, 23));
+                uint estimate = ReciprocalEstimate(ExtractBits(op1, 31, 23));
                 result = ExtractBits(estimate, 8, 0) << 31;
             }
 
             return result;
         }
 
-        public static uint UnsignedRSqrtEstimate(uint op1)
+        public static uint UnsignedReciprocalSqrtEstimate(uint op1)
         {
             uint result;
 
@@ -4808,7 +4851,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
             else
             {
-                uint estimate = RecipSqrtEstimate(ExtractBits(op1, 31, 23));
+                uint estimate = ReciprocalSqrtEstimate(ExtractBits(op1, 31, 23));
                 result = ExtractBits(estimate, 8, 0) << 31;
             }
 
@@ -7029,6 +7072,266 @@ namespace JIT.HardwareIntrinsics.Arm
                 ret = (ret << 8) + (long)array[offset+(ulong)i];
             }
             return BitConverter.Int64BitsToDouble(ret);
+        }
+
+        public static Byte Splice(Byte[] first, Byte[] second, Byte[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static double Splice(double[] first, double[] second, double[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (Double.IsNaN(maskArray[i]) || maskArray[i] > 0.0d)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static float Splice(float[] first, float[] second, float[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0.0f)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static Int16 Splice(Int16[] first, Int16[] second, Int16[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static Int32 Splice(Int32[] first, Int32[] second, Int32[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static Int64 Splice(Int64[] first, Int64[] second, Int64[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static SByte Splice(SByte[] first, SByte[] second, SByte[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static UInt16 Splice(UInt16[] first, UInt16[] second, UInt16[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static UInt32 Splice(UInt32[] first, UInt32[] second, UInt32[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static ulong Splice(ulong[] first, ulong[] second, ulong[] maskArray, int index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
         }
 
     }

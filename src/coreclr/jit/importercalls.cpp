@@ -3115,15 +3115,15 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #if defined(TARGET_XARCH)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
-                assert((NI_Vector512_WithUpper + 1) == NI_X86Base_BitScanForward);
+                assert((LAST_NI_Vector512 + 1) == FIRST_NI_X86Base);
 
-                if (ni < NI_Vector512_WithUpper)
+                if (ni < LAST_NI_Vector512)
 #elif defined(TARGET_ARM64)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
-                assert((NI_Vector128_WithUpper + 1) == NI_AdvSimd_Abs);
+                assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
 
-                if (ni < NI_Vector128_WithUpper)
+                if (ni < LAST_NI_Vector128)
 #else
 #error Unsupported platform
 #endif

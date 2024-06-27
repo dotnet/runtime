@@ -888,15 +888,8 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
 #if !defined(TARGET_64BIT)
     else if (OperIsMultiRegOp())
     {
-        // A MultiRegOp is a GT_MUL_LONG, GT_PUTARG_REG, or GT_BITCAST.
-        // For the latter two (ARM-only), they only have multiple registers if they produce a long value
-        // (GT_MUL_LONG always produces a long value).
-#ifdef TARGET_ARM
-        return (TypeGet() == TYP_LONG) ? 2 : 1;
-#else
         assert(OperIs(GT_MUL_LONG));
         return 2;
-#endif
     }
 #endif
 #ifdef FEATURE_HW_INTRINSICS
@@ -3316,14 +3309,16 @@ AGAIN:
                 switch (vecCon->TypeGet())
                 {
 #if defined(FEATURE_SIMD)
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     case TYP_MASK:
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[1]);
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[0]);
                         break;
                     }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
+#if defined(TARGET_XARCH)
                     case TYP_SIMD64:
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[15]);
@@ -8966,24 +8961,11 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
 // Return Value:
 //    Returns the newly created PutArgReg node.
 //
-// Notes:
-//    The node is generated as GenTreeMultiRegOp on RyuJIT/armel, GenTreeOp on all the other archs.
-//
 GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg)
 {
     assert(arg != nullptr);
 
-    GenTree* node = nullptr;
-#if defined(TARGET_ARM)
-    // A PUTARG_REG could be a MultiRegOp on arm since we could move a double register to two int registers.
-    node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_PUTARG_REG, type, arg, nullptr);
-    if (type == TYP_LONG)
-    {
-        node->AsMultiRegOp()->gtOtherReg = REG_NEXT(argReg);
-    }
-#else
-    node = gtNewOperNode(GT_PUTARG_REG, type, arg);
-#endif
+    GenTree* node = gtNewOperNode(GT_PUTARG_REG, type, arg);
     node->SetRegNum(argReg);
 
     return node;
@@ -12219,12 +12201,15 @@ void Compiler::gtDispConst(GenTree* tree)
                     break;
                 }
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                 case TYP_MASK:
                 {
                     printf("<0x%08x, 0x%08x>", vecCon->gtSimdVal.u32[0], vecCon->gtSimdVal.u32[1]);
                     break;
                 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
                 default:
                 {
@@ -14293,6 +14278,14 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
     // Here `op` is the non-constant operand, `cons` is the constant operand
     // and `val` is the constant value.
+
+    if (((op->gtFlags & GTF_SIDE_EFFECT) != 0) && tree->OperIsCompare() && ((tree->gtFlags & GTF_RELOP_JMP_USED) != 0))
+    {
+        // TODO-CQ: Some phases currently have an invariant that JTRUE(x)
+        // must have x be a relational operator. As such, we cannot currently
+        // fold such cases and need to preserve the tree as is.
+        return tree;
+    }
 
     switch (oper)
     {

@@ -16,7 +16,6 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public class X509Certificate2 : X509Certificate
     {
-        private volatile byte[]? _lazyRawData;
         private volatile Oid? _lazySignatureAlgorithm;
         private volatile int _lazyVersion;
         private volatile X500DistinguishedName? _lazySubjectName;
@@ -30,7 +29,6 @@ namespace System.Security.Cryptography.X509Certificates
 
         public override void Reset()
         {
-            _lazyRawData = null;
             _lazySignatureAlgorithm = null;
             _lazyVersion = 0;
             _lazySubjectName = null;
@@ -327,15 +325,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// Unlike <see cref="RawData" />, this does not create a fresh copy of the data
         /// every time.
         /// </remarks>
-        public ReadOnlyMemory<byte> RawDataMemory
-        {
-            get
-            {
-                ThrowIfInvalid();
-
-                return _lazyRawData ??= Pal.RawData;
-            }
-        }
+        public ReadOnlyMemory<byte> RawDataMemory => PalRawDataMemory;
 
         public string SerialNumber => GetSerialNumberString();
 
