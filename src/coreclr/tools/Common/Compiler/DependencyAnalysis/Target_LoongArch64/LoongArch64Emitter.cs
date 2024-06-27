@@ -41,17 +41,31 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
         {
             Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_LOONGARCH64_PC);
             // pcalau12i  reg, off-hi-20bits
-            Builder.EmitUInt(0x1a000000u | (uint)regDst);
+            EmitPCALAU12I(regDst);
 
             // addi_d  reg, reg, off-lo-12bits
             Builder.EmitUInt(0x02c00000u | (uint)(((uint)regDst << 5) | (uint)regDst));
         }
 
+        // pcaddi regDst, 0
+        public void EmitPCADDI(Register regDst)
+        {
+            Debug.Assert((uint)regDst > 0 && (uint)regDst < 32);
+            Builder.EmitUInt(0x18000000 | (uint)regDst);
+        }
+
         // pcalau12i regDst, 0
-        public void EmitPC(Register regDst)
+        public void EmitPCALAU12I(Register regDst)
         {
             Debug.Assert((uint)regDst > 0 && (uint)regDst < 32);
             Builder.EmitUInt(0x1a000000 | (uint)regDst);
+        }
+
+        // pcaddu18i regDst, 0
+        public void EmitPCADDU18I(Register regDst)
+        {
+            Debug.Assert((uint)regDst > 0 && (uint)regDst < 32);
+            Builder.EmitUInt(0x1e000000 | (uint)regDst);
         }
 
         // addi.d regDst, regSrc, imm12
@@ -81,7 +95,7 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
         public void EmitRET()
         {
             // jirl R0,R1,0
-            Builder.EmitUInt(0x4c000020);
+            EmitJMP(Register.R1);
         }
 
         public void EmitJMP(Register reg)
@@ -93,8 +107,8 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
         {
             if (symbol.RepresentsIndirectionCell)
             {
-                // pcalau12i R21, 0
-                EmitPC(Register.R21);
+                // pcaddi R21, 0
+                EmitPCADDI(Register.R21);
 
                 EmitLD(Register.R21, Register.R21, 0x10);
 
@@ -102,15 +116,15 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
                 EmitLD(Register.R21, Register.R21, 0);
 
                 // jirl R0,R21,0
-                Builder.EmitUInt(0x4c0002a0);
+                EmitJMP(Register.R21);
 
                 Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64);
             }
             else
             {
-                //Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_LOONGARCH64_PC);
-                Builder.EmitUInt(0xffffffff); // bad code.
-                throw new NotImplementedException();
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR);
+                EmitPCADDU18I(Register.R21); // pcaddu18i R21, 0
+                EmitJMP(Register.R21); // jirl R0, R21, 0
             }
         }
 
@@ -123,7 +137,7 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
 
         public void EmitJE(Register regSrc, ISymbolNode symbol)
         {
-            uint offset = symbol.RepresentsIndirectionCell ? 7u : 2u;
+            uint offset = symbol.RepresentsIndirectionCell ? 7u : 3u;
 
             // BNEZ regSrc, offset
             Builder.EmitUInt((uint)(0x44000000 | (offset << 10) | ((uint)regSrc << 5)));

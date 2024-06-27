@@ -52871,11 +52871,6 @@ int gc_heap::refresh_memory_limit()
 
     GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
 
-
-#ifdef COMMITTED_BYTES_SHADOW
-    decommit_lock.Enter();
-#endif //COMMITTED_BYTES_SHADOW
-
     uint32_t nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 #ifdef MULTIPLE_HEAPS
     uint32_t nhp = n_heaps;
@@ -52928,14 +52923,13 @@ int gc_heap::refresh_memory_limit()
 #ifdef COMMITTED_BYTES_SHADOW
     else
     {
+        decommit_lock.Enter();
         verify_committed_bytes ();
+        decommit_lock.Leave();
     }
 #endif //COMMITTED_BYTES_SHADOW
 
     GCToEEInterface::RestartEE(TRUE);
-#ifdef COMMITTED_BYTES_SHADOW
-    decommit_lock.Leave();
-#endif
 
     return (int)status;
 }

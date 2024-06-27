@@ -647,6 +647,12 @@ namespace System.Security.Cryptography.X509Certificates
                         saveOffset,
                         written);
                 }
+                catch (PlatformNotSupportedException pnse)
+                {
+                    // May be thrown by PBE decryption if the platform does not support the algorithm.
+                    ThrowWithHResult(SR.Cryptography_Pfx_BadPassword, ERROR_INVALID_PASSWORD, pnse);
+                    throw; // This is unreachable because of the throw helper, but the compiler does not know that.
+                }
                 catch (CryptographicException e)
                 {
                     CryptographicOperations.ZeroMemory(

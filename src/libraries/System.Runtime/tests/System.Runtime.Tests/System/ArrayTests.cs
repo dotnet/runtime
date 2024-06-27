@@ -4153,6 +4153,11 @@ namespace System.Tests
             var arr5 = new int[3];
             arr5.SetValue(SByteEnum.MinusTwo, new int[] { 1 });
             Assert.Equal(-2, arr5[1]);
+
+            // Casting enum to underlying type
+            var arr6 = new int[3];
+            arr6.SetValue(Int32Enum.Case3, new int[] { 1 });
+            Assert.Equal(2, arr6[1]);
         }
 
         [Fact]
@@ -4169,6 +4174,10 @@ namespace System.Tests
             // T -> Nullable<T>  T must be exact
             var arr3 = new int?[3];
             Assert.Throws<InvalidCastException>(() => arr3.SetValue((short)42, new int[] { 1 }));
+
+            // Converting enum to same size with wrong signed-ness
+            var arr4 = new uint[3];
+            AssertExtensions.Throws<ArgumentException>(null, () => arr4.SetValue(Int32Enum.Case3, new int[] { 1 }));
         }
 
         [Fact]

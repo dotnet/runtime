@@ -1819,6 +1819,18 @@ FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 }
 FCIMPLEND
 
+FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTable* mt)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(mt->IsTruePrimitive() || mt->IsEnum());
+
+    // MethodTable::GetInternalCorElementType has unnecessary overhead for primitives and enums
+    // Call EEClass::GetInternalCorElementType directly to avoid it
+    return mt->GetClass()->GetInternalCorElementType();
+}
+FCIMPLEND
+
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;

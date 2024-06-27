@@ -3440,6 +3440,7 @@ YvvL0LiXzFyomg==
             "05577F12AE24040408D04E60444B79672302030927C1").HexToByteArray();
 
         internal static readonly byte[] Pkcs12NoPassword100MRounds = Convert.FromBase64String(
+            /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Self-signed cert created specifically for inclusion in public-facing unit tests.")] */
             "MIIDygIBAzCCA4QGCSqGSIb3DQEHAaCCA3UEggNxMIIDbTCCA2kGCSqGSIb3DQEHBqCCA1owggNW" +
             "AgEAMIIDTwYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBCNparJkj/3" +
             "Uk8N7n0KCMeQAgEBMAwGCCqGSIb3DQILBQAwHQYJYIZIAWUDBAEqBBAcqpBrSDFcXYAWVWKcsEi9" +
