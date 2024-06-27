@@ -123,7 +123,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind != JsonTypeInfoKind.Object)
+                if (Kind == JsonTypeInfoKind.None)
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
@@ -153,7 +153,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind != JsonTypeInfoKind.Object)
+                if (Kind == JsonTypeInfoKind.None)
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
@@ -183,7 +183,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind != JsonTypeInfoKind.Object)
+                if (Kind == JsonTypeInfoKind.None)
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
@@ -213,7 +213,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind != JsonTypeInfoKind.Object)
+                if (Kind == JsonTypeInfoKind.None)
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
@@ -1226,7 +1226,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Callbacks currently only supported in object kinds
             // TODO: extend to collections/dictionaries
-            if (Kind == JsonTypeInfoKind.Object)
+            if (Kind != JsonTypeInfoKind.None)
             {
                 if (typeof(IJsonOnSerializing).IsAssignableFrom(Type))
                 {
