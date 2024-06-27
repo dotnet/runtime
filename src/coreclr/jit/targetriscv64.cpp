@@ -82,7 +82,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             {
                 floatFields = 2;
             }
-            else if (info.flags != UseIntCallConv)
+            else if (info.flags != FpStruct::UseIntCallConv)
             {
                 assert((info.flags & (FloatInt | IntFloat)) != 0);
                 floatFields = 1;
