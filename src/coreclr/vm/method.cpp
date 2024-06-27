@@ -2648,7 +2648,7 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     if (pEntryPoint != (PCODE)NULL)
         return pEntryPoint;
 
-    EnsureTemporaryEntryPoint(GetLoaderAllocator());
+    EnsureTemporaryEntryPoint();
     pEntryPoint = GetTemporaryEntryPointIfExists();
     _ASSERTE(pEntryPoint != (PCODE)NULL);
 
@@ -2680,7 +2680,7 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
     }
 }
 
-void MethodDesc::EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator)
+void MethodDesc::EnsureTemporaryEntryPoint()
 {
     CONTRACTL
     {
@@ -2692,7 +2692,7 @@ void MethodDesc::EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator)
 
     if (GetTemporaryEntryPointIfExists() == (PCODE)NULL)
     {
-        EnsureTemporaryEntryPointCore(pLoaderAllocator, NULL);
+        EnsureTemporaryEntryPointCore(GetLoaderAllocator(), NULL);
     }
 }
 

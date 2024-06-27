@@ -643,7 +643,11 @@ public:
 #endif // !FEATURE_COMINTEROP
 
     // Update flags in a thread safe manner.
+#ifndef DACCESS_COMPILE
     WORD InterlockedUpdateFlags(WORD wMask, BOOL fSet);
+    WORD InterlockedUpdateFlags3(WORD wMask, BOOL fSet);
+    BYTE InterlockedUpdateFlags4(BYTE bMask, BOOL fSet);
+#endif
 
     // If the method is in an Edit and Continue (EnC) module, then
     // we DON'T want to backpatch this, ever.  We MUST always call
@@ -662,11 +666,13 @@ public:
         return (m_wFlags & mdfNotInline);
     }
 
+#ifndef DACCESS_COMPILE
     inline void SetNotInline(BOOL set)
     {
         WRAPPER_NO_CONTRACT;
         InterlockedUpdateFlags(mdfNotInline, set);
     }
+#endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
@@ -686,11 +692,13 @@ public:
     //================================================================
     //
 
+#ifndef DACCESS_COMPILE
     inline void ClearFlagsOnUpdate()
     {
         WRAPPER_NO_CONTRACT;
         SetNotInline(FALSE);
     }
+#endif // DACCESS_COMPILE
 
     // Restore the MethodDesc to it's initial, pristine state, so that
     // it can be reused for new code (eg. for EnC, method rental, etc.)
@@ -1441,7 +1449,7 @@ public:
     //
     PCODE GetMethodEntryPointIfExists();
 
-    void EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator);
+    void EnsureTemporaryEntryPoint();
 
     // pamTracker must be NULL for a MethodDesc which cannot be freed by an external AllocMemTracker
     // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
@@ -1451,7 +1459,7 @@ public:
     void EnsureSlotFilled()
     {
         WRAPPER_NO_CONTRACT;
-        EnsureTemporaryEntryPoint(GetLoaderAllocator());
+        EnsureTemporaryEntryPoint();
         
 #ifdef _DEBUG
         PCODE *pSlot = GetAddrOfSlot();
@@ -1807,11 +1815,13 @@ public:
         return (m_wFlags & mdfValueTypeParametersWalked) != 0;
     }
 
+#ifndef DACCESS_COMPILE
     inline void SetValueTypeParametersWalked()
     {
         LIMITED_METHOD_CONTRACT;
         InterlockedUpdateFlags(mdfValueTypeParametersWalked, TRUE);
     }
+#endif // DACCESS_COMPILE
 
     inline BOOL HaveValueTypeParametersBeenLoaded()
     {
@@ -1819,11 +1829,13 @@ public:
         return (m_wFlags & mdfValueTypeParametersLoaded) != 0;
     }
 
+#ifndef DACCESS_COMPILE
     inline void SetValueTypeParametersLoaded()
     {
         LIMITED_METHOD_CONTRACT;
         InterlockedUpdateFlags(mdfValueTypeParametersLoaded, TRUE);
     }
+#endif // DACCESS_COMPILE
 
 #ifdef FEATURE_TYPEEQUIVALENCE
     inline BOOL DoesNotHaveEquivalentValuetypeParameters()
@@ -1832,11 +1844,13 @@ public:
         return (m_wFlags & mdfDoesNotHaveEquivalentValuetypeParameters) != 0;
     }
 
+#ifndef DACCESS_COMPILE
     inline void SetDoesNotHaveEquivalentValuetypeParameters()
     {
         LIMITED_METHOD_CONTRACT;
         InterlockedUpdateFlags(mdfDoesNotHaveEquivalentValuetypeParameters, TRUE);
     }
+#endif // DACCESS_COMPILE
 #endif // FEATURE_TYPEEQUIVALENCE
 
     //
@@ -2189,8 +2203,6 @@ class MethodDescChunk
 
 #ifndef DACCESS_COMPILE
     WORD InterlockedUpdateFlags(WORD wMask, BOOL fSet);
-    WORD InterlockedUpdateFlags3(WORD wMask, BOOL fSet);
-    BYTE InterlockedUpdateFlags4(BYTE bMask, BOOL fSet);
 #endif
 
 public:
