@@ -8188,11 +8188,9 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
                     // `base` contains seqNum and offs = 0, so imm contains seqNum
                     // add rsvd, fp #predicateStartOffset
                     emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, codeGen->predicateOffset);
-                    // str p0, [rsvd, #imm, mul vl]
+                    // str p0, [rsvd, #seqNum, mul vl]
                     emitIns_R_R_I(ins, attr, reg1, rsvdReg, imm);
                 }
-
-                // TODO: deal with marking the local
                 return;
             }
 

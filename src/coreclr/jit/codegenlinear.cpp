@@ -1295,7 +1295,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             emitAttr emitType = emitActualTypeSize(unspillTree->TypeGet());
             // Reload into the register specified by 'tree' which may be a GT_RELOAD.
             regNumber dstReg = tree->GetRegNum();
-            // TODO: Here need to see if this is for GT_MASK, then we need to pass the #imm offset I think
             GetEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType), emitType, dstReg, t->tdTempNum(), 0);
             regSet.tmpRlsTemp(t);
 
