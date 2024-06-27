@@ -54,10 +54,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private byte[] _nullabilityArray;
 
-        /// <summary>
-        /// Used to short-circuit accelerated states in the hot loop
-        /// </summary>
-        private bool[] _canBeAcceleratedArray;
 
         /// <summary>
         /// The transition function for DFA mode.
@@ -301,12 +297,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     ArrayResizeAndVolatilePublish(ref _dfaDelta, newsize << _mintermsLog);
                     ArrayResizeAndVolatilePublish(ref _stateFlagsArray, newsize);
                     ArrayResizeAndVolatilePublish(ref _nullabilityArray, newsize);
-                    ArrayResizeAndVolatilePublish(ref _canBeAcceleratedArray, newsize);
                 }
                 _stateArray[state.Id] = state;
                 _stateFlagsArray[state.Id] = state.BuildStateFlags(isInitialState);
                 _nullabilityArray[state.Id] = state.BuildNullabilityInfo();
-                _canBeAcceleratedArray[state.Id] = _stateFlagsArray[state.Id].IsAccelerated();
             }
 
             return state;

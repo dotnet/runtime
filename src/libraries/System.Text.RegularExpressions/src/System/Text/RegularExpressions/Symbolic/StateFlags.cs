@@ -20,7 +20,6 @@ namespace System.Text.RegularExpressions.Symbolic
         IsNullableFlag = 4,
         CanBeNullableFlag = 8,
         SimulatesBacktrackingFlag = 16,
-        IsAcceleratedFlag = 32,
     }
 
     /// <summary>
@@ -30,11 +29,7 @@ namespace System.Text.RegularExpressions.Symbolic
     {
         internal static bool IsInitial(this StateFlags info) => (info & StateFlags.IsInitialFlag) != StateFlags.None;
         internal static bool IsNullable(this StateFlags info) => (info & StateFlags.IsNullableFlag) != StateFlags.None;
-
         internal static bool CanBeNullable(this StateFlags info) => (info & StateFlags.CanBeNullableFlag) != StateFlags.None;
-
         internal static bool SimulatesBacktracking(this StateFlags info) => (info & StateFlags.SimulatesBacktrackingFlag) != StateFlags.None;
-
-        internal static bool IsAccelerated(this StateFlags info) => (info & (StateFlags.IsAcceleratedFlag | StateFlags.IsInitialFlag)) != StateFlags.None;
     }
 }
