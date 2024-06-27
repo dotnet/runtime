@@ -29,6 +29,8 @@
     </PropertyGroup>
   </Target>
 
+  <Import Project="$(RepositoryEngineeringDir)internal-nativeaot-build.targets" />
+
   <!--
     Hack: temporarily turn on StripSymbols whlie SetupOSSpecificProps runs, then turn it off
     again before LinkNative runs.  The problem is that SetupOSSpecificProps only probes for

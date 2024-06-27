@@ -1,0 +1,40 @@
+<Project>
+  <!--
+    Use init-compiler.sh to locate the compiler toolchain which was resolved for rest of the build.
+    This target is essentially an override hook which is called before `SetupOSSpecificProps` in
+    `Microsoft.NETCore.Native.Unix.targets`. Note that the input is `CppCompilerAndLinker`
+    and the output is `CppLinker`, because from `SetupOSSpecificProps` onwards, we only use `CppLinker`
+    (when alternative compiler, i.e. gcc, is not selected)
+  -->
+  <Target Name="LocateNativeCompiler"
+          Condition="!$(RuntimeIdentifier.StartsWith('win-'))"
+          BeforeTargets="SetupOSSpecificProps">
+    <PropertyGroup>
+      <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+      <SysRoot Condition="'$(CrossBuild)' == 'true'">$(ROOTFS_DIR)</SysRoot>
+    </PropertyGroup>
+
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo &quot;$CC;$LDFLAGS&quot;' 2>/dev/null"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
+    </Exec>
+
+    <Exec Command="&quot;$(CppCompilerAndLinker)&quot; -dumpversion" Condition="'$(_IsApplePlatform)' == 'true'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_AppleClangVersionStringExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_AppleClangVersionString" />
+    </Exec>
+
+    <ItemGroup>
+      <CustomLinkerArg Condition="'$(_IsApplePlatform)' == 'true' and '$(_AppleClangVersionStringExitCode)' == '0' and $([MSBuild]::VersionGreaterThanOrEquals('$(_AppleClangVersionString)', '15.0'))" Include="-ld_classic" />
+      <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and $(CppCompilerAndLinker.Contains('clang')) and '$(_IsApplePlatform)' != 'true'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
+      <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
+      <LinkerFlavor Condition="$(_LDFLAGS.Contains('lld'))">lld</LinkerFlavor>
+    </PropertyGroup>
+  </Target>
+</Project>

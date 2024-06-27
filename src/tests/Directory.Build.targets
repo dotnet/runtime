@@ -566,7 +566,6 @@
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
 
-    <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <BuildNativeAotFrameworkObjects Condition="'$(IlcMultiModule)' == 'true'">true</BuildNativeAotFrameworkObjects>
     <DisableFrameworkLibGeneration Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">true</DisableFrameworkLibGeneration>
     <FrameworkLibPath Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(IlcSdkPath)</FrameworkLibPath>
@@ -578,7 +577,6 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
     <IlcReference Include="$(TargetingPackPath)/*.dll" />
 
     <!-- xunit calls MakeGenericType to check if something is IEquatable -->
@@ -614,25 +612,6 @@
           Condition="'$(_WillCLRTestProjectBuild)' == 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
           DependsOnTargets="ComputeResolvedFilesToPublishList;LinkNative" />
 
-  <Target Name="LocateNativeCompiler"
-          Condition="'$(TestBuildMode)' == 'nativeaot' and '$(HostOS)' != 'windows'"
-          BeforeTargets="SetupOSSpecificProps">
-    <PropertyGroup>
-      <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
-    </PropertyGroup>
-
-    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo &quot;$CC;$LDFLAGS&quot;' 2>/dev/null"
-          EchoOff="true"
-          ConsoleToMsBuild="true"
-          StandardOutputImportance="Low">
-      <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
-    </Exec>
-
-    <PropertyGroup>
-      <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
-      <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
-      <LinkerFlavor Condition="$(_LDFLAGS.Contains('lld'))">lld</LinkerFlavor>
-    </PropertyGroup>
-  </Target>
+  <Import Project="$(RepositoryEngineeringDir)internal-nativeaot-build.targets" />
 
 </Project>
