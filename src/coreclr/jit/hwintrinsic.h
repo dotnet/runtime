@@ -555,8 +555,10 @@ struct HWIntrinsicInfo
         return static_cast<CORINFO_InstructionSet>(result);
     }
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
     static int lookupIval(Compiler* comp, NamedIntrinsic id, var_types simdBaseType);
+#elif defined(TARGET_ARM64)
+    static int lookupIval(NamedIntrinsic id);
 #endif
 
     static bool tryLookupSimdSize(NamedIntrinsic id, unsigned* pSimdSize)
