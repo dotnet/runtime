@@ -59,15 +59,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private bool[] _canBeAcceleratedArray;
 
-#if DEBUG
-        // private readonly Action<string> _wout = st =>
-        // {
-        //     var a_cons = System.Reflection.Assembly.Load("System.Console");
-        //     var t_cons = a_cons.GetType("System.Console")!;
-        //     var wl = t_cons.GetMethod("WriteLine", [typeof(string)]);
-        //     wl!.Invoke(null, [st]);
-        // };
-#endif
         /// <summary>
         /// The transition function for DFA mode.
         /// Each state has a range of consecutive entries for each minterm ID. A range of size 2^L, where L is

@@ -154,7 +154,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Builds the nullability information for the matching statie.
+        /// Builds the nullability information for the matching state.
         /// Nullability for each context is encoded in a bit
         /// 0 means node cannot be nullable
         /// 00001 -> nullable for General
