@@ -958,6 +958,57 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
     return wOldState;
 }
 
+BYTE MethodDesc::InterlockedUpdateFlags4(BYTE bMask, BOOL fSet)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    BYTE    bOldState = m_bFlags4;
+    DWORD   dwMask = bMask;
+
+    // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
+    // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
+    // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
+    // only have four possibilities: the field already lies on a dword boundary or it's 1, 2 or 3 bytes out
+    LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_bFlags4 - (offsetof(MethodDesc, m_bFlags4) & 0x3));
+
+#ifdef _PREFAST_
+#pragma warning(push)
+#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
+#endif // _PREFAST_
+
+#if BIGENDIAN
+    if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 0) {
+#else // !BIGENDIAN
+    if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 3) {
+#endif // !BIGENDIAN
+        dwMask <<= 24;
+    }
+#if BIGENDIAN
+    else if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 1) {
+#else // !BIGENDIAN
+    else if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 2) {
+#endif // !BIGENDIAN
+        dwMask <<= 16;
+    }
+#if BIGENDIAN
+    else if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 2) {
+#else // !BIGENDIAN
+    else if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 1) {
+#endif // !BIGENDIAN
+        dwMask <<= 8;
+    }
+#ifdef _PREFAST_
+#pragma warning(pop)
+#endif
+
+    if (fSet)
+        InterlockedOr(pdwFlags, dwMask);
+    else
+        InterlockedAnd(pdwFlags, ~dwMask);
+
+    return bOldState;
+}
+
 WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2102,7 +2153,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     }
 
     if (RequiresStableEntryPoint() && !HasStableEntryPoint())
-        EnsureSlotFilled();
+        GetOrCreatePrecode();
 
     // We create stable entrypoints for these upfront
     if (IsWrapperStub() || IsEnCAddedMethod())
@@ -2143,6 +2194,10 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     if (IsVersionableWithVtableSlotBackpatch())
     {
         // Caller has to call via slot or allocate funcptr stub
+
+        // But we need to ensure that some entrypoint is allocated and present in the slot, so that
+        // it can be used.
+        EnsureTemporaryEntryPoint();
         return (PCODE)NULL;
     }
 
@@ -2150,11 +2205,24 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     if (MayHavePrecode())
         return GetOrCreatePrecode()->GetEntryPoint();
 
-    //
-    // Embed call to the temporary entrypoint into the code. It will be patched
-    // to point to the actual code later.
-    //
-    return GetTemporaryEntryPoint();
+    _ASSERTE(!RequiresStableEntryPoint());
+
+    if (accessFlags & CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT)
+    {
+        // If this access flag is set, prefer returning NULL over returning the temporary entrypoint
+        // But we need to ensure that some entrypoint is allocated and present in the slot, so that
+        // it can be used.
+        EnsureTemporaryEntryPoint();
+        return (PCODE)NULL;
+    }
+    else
+    {
+        //
+        // Embed call to the temporary entrypoint into the code. It will be patched
+        // to point to the actual code later.
+        //
+        return GetTemporaryEntryPoint();
+    }
 }
 
 //*******************************************************************************
@@ -2401,7 +2469,8 @@ BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
         if (fEstimateForChunk)
             return RequiresStableEntryPointCore(fEstimateForChunk);
         BOOL fRequiresStableEntryPoint = RequiresStableEntryPointCore(FALSE);
-        VolatileStore(&m_bFlags4, (BYTE)(enum_flag4_ComputedRequiresStableEntryPoint | (fRequiresStableEntryPoint ? enum_flag4_RequiresStableEntryPoint : 0)));
+        BYTE requiresStableEntrypointFlags = (BYTE)(enum_flag4_ComputedRequiresStableEntryPoint | (fRequiresStableEntryPoint ? enum_flag4_RequiresStableEntryPoint : 0));
+        InterlockedUpdateFlags4(requiresStableEntrypointFlags, TRUE);
         return fRequiresStableEntryPoint;
     }
 }
@@ -2651,13 +2720,14 @@ void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator
         if (InterlockedCompareExchangeT(&m_codeData->TemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == (PCODE)NULL)
             amt.SuppressRelease(); // We only need to suppress the release if we are working with a MethodDesc which is not newly allocated
 
-        PCODE tempEntryPoint = GetTemporaryEntryPointIfExists();
+        PCODE tempEntryPoint = m_codeData->TemporaryEntryPoint;
         _ASSERTE(tempEntryPoint != (PCODE)NULL);
 
         if (*pSlot == (PCODE)NULL)
         {
             InterlockedCompareExchangeT(pSlot, tempEntryPoint, (PCODE)NULL);
         }
+        InterlockedUpdateFlags4(enum_flag4_TemporaryEntryPointAssigned, TRUE);
     }
 }
 
@@ -2732,38 +2802,21 @@ Precode* MethodDesc::GetOrCreatePrecode()
         return GetPrecode();
     }
 
+    PCODE tempEntry = GetTemporaryEntryPoint();
+
+#ifdef _DEBUG
     PTR_PCODE pSlot = GetAddrOfSlot();
-    PCODE tempEntry = GetTemporaryEntryPointIfExists();
-
     PrecodeType requiredType = GetPrecodeType();
-    PrecodeType availableType = PRECODE_INVALID;
-
-    if (tempEntry != (PCODE)NULL)
-    {
-        availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
-    }
-
-    // Allocate the precode if necessary
-    if (requiredType != availableType)
-    {
-        // If we took this path for dynamic methods, the precode may leak since we may allocate it in domain-neutral loader heap.
-        _ASSERTE(!IsLCGMethod());
-
-        AllocMemTracker amt;
-        Precode* pPrecode = Precode::Allocate(requiredType, this, GetLoaderAllocator(), &amt);
-
-        if (InterlockedCompareExchangeT(pSlot, pPrecode->GetEntryPoint(), tempEntry) == tempEntry)
-            amt.SuppressRelease();
-    }
-    else if (*pSlot == (PCODE)NULL)
-    {
-        InterlockedCompareExchangeT(pSlot, tempEntry, (PCODE)NULL);
-    }
+    PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
+    _ASSERTE(requiredType == availableType);
+    _ASSERTE(*pSlot != NULL);
+    _ASSERTE(*pSlot == tempEntry);
+#endif
 
     // Set the flags atomically
     InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
 
-    return Precode::GetPrecodeFromEntryPoint(*pSlot);
+    return Precode::GetPrecodeFromEntryPoint(tempEntry);
 }
 
 bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk()

@@ -220,10 +220,19 @@ public:
     PCODE GetTemporaryEntryPointIfExists()
     {
         LIMITED_METHOD_CONTRACT;
-        PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
-        if (codeData == NULL)
+        BYTE flags4 = VolatileLoad(&m_bFlags4);
+        if (flags4 & enum_flag4_TemporaryEntryPointAssigned)
+        {
+            PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+            _ASSERTE(codeData != NULL);
+            PCODE temporaryEntryPoint = codeData->TemporaryEntryPoint;
+            _ASSERTE(temporaryEntryPoint != (PCODE)NULL);
+            return temporaryEntryPoint;
+        }
+        else
+        {
             return (PCODE)NULL;
-        return VolatileLoadWithoutBarrier(&codeData->TemporaryEntryPoint);
+        }
     }
 
     void SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
@@ -1443,27 +1452,15 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         EnsureTemporaryEntryPoint(GetLoaderAllocator());
+        
+#ifdef _DEBUG
         PCODE *pSlot = GetAddrOfSlot();
-        if (*pSlot == (PCODE)NULL)
+        _ASSERTE(*pSlot != (PCODE)NULL);
+#endif
+
+        if (RequiresStableEntryPoint() && !HasStableEntryPoint())
         {
-            if (RequiresStableEntryPoint())
-            {
-                GetOrCreatePrecode();
-            }
-            else
-            {
-                *pSlot = GetTemporaryEntryPoint();
-            }
-        }
-        else
-        {
-            if (RequiresStableEntryPoint() && !HasStableEntryPoint())
-            {
-                _ASSERTE(*pSlot == GetTemporaryEntryPoint());
-                // We may be in a race with another thread that will be setting HasStableEntryPoint
-                // Just set it now along with HasPrecode
-                InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
-            }
+            GetOrCreatePrecode();
         }
     }
 #endif // DACCESS_COMPILE
@@ -1690,7 +1687,10 @@ protected:
     enum {
         enum_flag4_ComputedRequiresStableEntryPoint         = 0x01,
         enum_flag4_RequiresStableEntryPoint                 = 0x02,
+        enum_flag4_TemporaryEntryPointAssigned              = 0x04,
     };
+
+    void InterlockedSetFlags4(BYTE mask, BYTE newValue);
     BYTE        m_bFlags4; // Used to hold more flags
 
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
@@ -1800,8 +1800,6 @@ public:
     }
 
     SIZE_T SizeOf();
-
-    WORD InterlockedUpdateFlags3(WORD wMask, BOOL fSet);
 
     inline BOOL HaveValueTypeParametersBeenWalked()
     {
@@ -2191,6 +2189,8 @@ class MethodDescChunk
 
 #ifndef DACCESS_COMPILE
     WORD InterlockedUpdateFlags(WORD wMask, BOOL fSet);
+    WORD InterlockedUpdateFlags3(WORD wMask, BOOL fSet);
+    BYTE InterlockedUpdateFlags4(BYTE bMask, BOOL fSet);
 #endif
 
 public:

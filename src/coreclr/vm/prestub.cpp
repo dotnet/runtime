@@ -2842,8 +2842,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         pCode = GetStubForInteropMethod(this);
 
-        EnsureSlotFilled();
-        GetPrecode()->SetTargetInterlocked(pCode);
+        GetOrCreatePrecode()->SetTargetInterlocked(pCode);
 
         RETURN GetStableEntryPoint();
     }
