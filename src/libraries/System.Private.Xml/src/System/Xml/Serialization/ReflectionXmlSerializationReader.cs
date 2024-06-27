@@ -2117,6 +2117,7 @@ namespace System.Xml.Serialization
 
         public static SetMemberValueDelegate GetSetMemberValueDelegateWithType<TObj, TParam>(MemberInfo memberInfo)
         {
+            Debug.Assert(!typeof(TObj).IsValueType);
             Action<TObj, TParam>? setTypedDelegate = null;
             if (memberInfo is PropertyInfo propInfo)
             {
