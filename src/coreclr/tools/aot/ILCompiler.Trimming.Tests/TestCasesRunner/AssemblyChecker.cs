@@ -12,6 +12,7 @@ using Internal.TypeSystem.Ecma;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Extensions;
 using Xunit;
 using MetadataType = Internal.TypeSystem.MetadataType;
@@ -70,7 +71,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			TrimmedTestCaseResult testResult)
 		{
 			this.originalsResolver = originalsResolver;
-			this.originalsTypeNameResolver = new TypeNameResolver (new TestResolver (), new TestAssemblyNameResolver (originalsResolver));
+			this.originalsTypeNameResolver = new TypeNameResolver (new TestResolver (), new TestAssemblyNameResolver (originalsResolver), PlatformAssemblies.CoreLib);
 			this.originalReaderParameters = originalReaderParameters;
 			this.originalAssembly = original;
 			this.testResult = testResult;

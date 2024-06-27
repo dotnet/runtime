@@ -26,7 +26,6 @@
 
   <ItemGroup>
     <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/TypeNameResolver.cs" />
-    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/PlatformAssemblies.cs" />
     <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/ITryResolve.cs" />
     <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/ModuleDefinitionExtensions.cs" />
     <Compile Include="$(LibrariesProjectRoot)/Common/src/System/Reflection/Metadata/TypeNameHelpers.cs" />
