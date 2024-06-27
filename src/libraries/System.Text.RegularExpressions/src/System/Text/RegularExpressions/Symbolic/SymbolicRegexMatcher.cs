@@ -564,11 +564,13 @@ namespace System.Text.RegularExpressions.Symbolic
                             currentState.DfaStateId, ref endPos, ref initialStatePosCandidate,
                             ref initialStatePosCandidate);
                 else
+                {
                     // nfa fallback check, assume \Z and full nullability for nfa since it's already extremely rare to get here
                     done =
                         FindEndPositionDeltasNFA<NfaStateHandler, FullInputReader, NoOptimizationsInitialStateHandler,
                             FullNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos,
                             ref initialStatePosCandidate, ref initialStatePosCandidate);
+                }
 
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
                 // there is no more input available, then the whole search is done.
@@ -666,99 +668,6 @@ namespace System.Text.RegularExpressions.Symbolic
             // use that length to optimize subsequent matching phases.
             // matchLength = endStateId > 0 ? GetState(endStateId).FixedLength(GetCharKind<TInputReader>(input, endPos)) : -1;
             return endPos;
-        }
-
-        /// <summary>
-        /// Workhorse inner loop for <see cref="FindEndPositionFallback{TInputReader,TFindOptimizationsHandler,TNullabilityHandler}"/>.  Consumes the <paramref name="input"/> character by character,
-        /// starting at <paramref name="posRef"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
-        /// lazily building out the graph as needed.
-        /// </summary>
-        /// <remarks>
-        /// The <typeparamref name="TStateHandler"/> supplies the actual transitioning logic, controlling whether processing is
-        /// performed in DFA mode or in NFA mode.  However, it expects <paramref name="state"/> to be configured to match,
-        /// so for example if <typeparamref name="TStateHandler"/> is a <see cref="DfaStateHandler"/>, it expects the <paramref name="state"/>'s
-        /// <see cref="CurrentState.DfaStateId"/> to be non-negative and its <see cref="CurrentState.NfaState"/> to be null; vice versa for
-        /// <see cref="NfaStateHandler"/>.
-        /// </remarks>
-        /// <returns>
-        /// A positive value if iteration completed because it reached a deadend state or nullable state and the call is an isMatch.
-        /// 0 if iteration completed because we reached an initial state.
-        /// A negative value if iteration completed because we ran out of input or we failed to transition.
-        /// </returns>
-        private bool FindEndPositionDeltas<TStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, int length, RegexRunnerMode mode,
-                ref int posRef, ref CurrentState state, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
-            where TStateHandler : struct, IStateHandler
-            where TInputReader : struct, IInputReader
-            where TFindOptimizationsHandler : struct, IInitialStateHandler
-            where TNullabilityHandler : struct, INullabilityHandler
-        {
-            // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
-            int pos = posRef;
-            int endPos = endPosRef;
-            // int endStateId = endStateIdRef;
-            int initialStatePos = initialStatePosRef;
-            int initialStatePosCandidate = initialStatePosCandidateRef;
-            try
-            {
-                // Loop through each character in the input, transitioning from state to state for each.
-                while (true)
-                {
-                    StateFlags flags = TStateHandler.GetStateFlags(this, in state);
-
-                    // Check if currentState represents an initial state. If it does, call into any possible find optimizations
-                    // to hopefully more quickly find the next possible starting location.
-                    if (flags.IsInitial())
-                    {
-                        if (!TFindOptimizationsHandler.TryFindNextStartingPosition<TInputReader>(this, input, ref state, ref pos))
-                        {
-                            return true;
-                        }
-
-                        initialStatePosCandidate = pos;
-                    }
-
-                    // If the state is a dead end, such that we can't transition anywhere else, end the search.
-                    if (state.DfaStateId == _deadStateId)
-                    {
-                        return true;
-                    }
-
-                    int positionId = TInputReader.GetPositionId(this, input, pos);
-
-                    // If the state is nullable for the next character, meaning it accepts the empty string,
-                    // we found a potential end state.
-                    if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, flags))
-                    {
-                        endPos = pos;
-                        // endStateId = TStateHandler.ExtractNullableCoreStateId(this, in state, input, pos);
-                        initialStatePos = initialStatePosCandidate;
-
-                        // A match is known to exist.  If that's all we need to know, we're done.
-                        if (mode == RegexRunnerMode.ExistenceRequired)
-                        {
-                            return true;
-                        }
-                    }
-
-                    // If there is more input available try to transition with the next character.
-                    if (pos >= length || !TStateHandler.TryTakeTransition(this, ref state, positionId))
-                    {
-                        return false;
-                    }
-
-                    // We successfully transitioned, so update our current input index to match.
-                    pos++;
-                }
-            }
-            finally
-            {
-                // Write back the local copies of the ref values.
-                posRef = pos;
-                endPosRef = endPos;
-                // endStateIdRef = endStateId;
-                initialStatePosRef = initialStatePos;
-                initialStatePosCandidateRef = initialStatePosCandidate;
-            }
         }
 
 
