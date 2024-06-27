@@ -20,7 +20,7 @@ Unlike sync methods, async methods support suspension. Suspension allows async m
 Async methods support the following suspension points:
 
 * Calling another async method. No special instructions need to be provided. If the callee suspends, the caller will suspend as well.
-* Using a library in the .NET corelib to "await" an "INotifyCompletion" type. The signatures of these methods shall be:
+* Using new .NET runtime APIs to "await" an "INotifyCompletion" type. The signatures of these methods shall be:
   ```C#
   // public static async2 Task AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
   public static void modopt([System.Runtime]System.Threading.Tasks.Task) AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
@@ -31,8 +31,8 @@ Async methods support the following suspension points:
 Each of the above methods will have semantics analogous to the current AsyncTaskMethodBuilder.AwaitOnCompleted/AwaitUnsafeOnCompleted methods. After calling this method, in can be presumed that the task has completed.
 
 Async methods have the following restrictions:
-* Usage of the `localloc` and instruction is forbidden
-* The `lodloca` and `ldarga` instructions are redefined to return managed pointers instead of pointers.
+* Usage of the `localloc` instruction is forbidden
+* The `ldloca` and `ldarga` instructions are redefined to return managed pointers instead of pointers.
 * Pinning locals may not be created
 * The `tail` prefix is forbidden
 
@@ -50,7 +50,7 @@ The list of relevant components is augmented to include sync vs. async method ty
 
 Async MethodDef entries implicitly create two member definitions: one explicit, primary definiton, and a second implicit, runtime-generated definition.
 
-The primary, mandatory definition must be present in metadata as a MethodDef. This signature must have a required custom modifier as the last custom modifier before the return type. The custom modifier must fit the following requirements:
+The primary, mandatory definition must be present in metadata as a MethodDef. This signature is required to have a `modopt` (optional modifier) as the last custom modifier before the return type. The custom modifier must fit the following requirements:
 * If the return type is void, the custom modifier must be either `System.Threading.Task` or `System.Threading.ValueTask`.
 * If the return type is not `void`, the modifier must be to either `System.Threading.Task<T>` or `System.Threading.ValueTask<T>`. The return type must be a valid substitution for the type parameter of the custom modifier type.
 
@@ -60,7 +60,7 @@ The second async signature is implicit and runtime-generated and is hereafter re
 
 If the async return type is void, the return type of the Task-equivalent signature is the type of the async custom modifier.
 
-Otherwise, the Task-equivalent return type is the custom modifier type (either Task`1 or ValueTask`1), substituted with the async return type.
+Otherwise, the Task-equivalent return type is the custom modifier type (either ``Task`1`` or ``ValueTask`1``), substituted with the async return type.
 
 ### I.8.10.2 Method inheritance
 
