@@ -292,7 +292,6 @@
                             HostOS=$(HostOS);
                             TargetOS=$(TargetOS);
                             RuntimeIdentifier=$(RuntimeIdentifier);
-                            NETCoreSdkRuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier);
                             NETCoreSdkPortableRuntimeIdentifier=$(NETCoreSdkPortableRuntimeIdentifier);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
