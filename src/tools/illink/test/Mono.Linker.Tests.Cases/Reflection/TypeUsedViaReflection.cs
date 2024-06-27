@@ -522,24 +522,24 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			static void TestRequireTypeWithNonAssemblyQualifiedArrayType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
-						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ArrayElementType[]]"
-					+ "], test");
+						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ArrayElementGenericArgumentType]"
+					+ "][], test");
 			}
 
 			[Kept]
 			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			static void TestRequireTypeWithNonAssemblyQualifiedPointerType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
-						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+PointerElementType*]"
-					+ "], test");
+						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+PointerElementGenericArgumentType]"
+					+ "]*, test");
 			}
 
 			[Kept]
 			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			static void TestRequireTypeWithNonAssemblyQualifiedByRefType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
-						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ByRefElementType&]"
-					+ "], test");
+						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ByRefElementGenericArgumentType]"
+					+ "]&, test");
 			}
 
 			[Kept]
@@ -556,11 +556,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			class Generic<T> {}
 
-			class ArrayElementType {}
+			class ArrayElementGenericArgumentType {}
 
-			class PointerElementType {}
+			class PointerElementGenericArgumentType {}
 
-			class ByRefElementType {}
+			class ByRefElementGenericArgumentType {}
 		}
 	}
 }

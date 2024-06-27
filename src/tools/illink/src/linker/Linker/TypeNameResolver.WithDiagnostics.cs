@@ -58,8 +58,11 @@ namespace Mono.Linker
 				if (typeName.AssemblyName is null)
 					return false;
 
+				if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
+					return IsFullyQualified (typeName.GetElementType ());
+
 				if (typeName.IsConstructedGenericType) {
-					foreach (var typeArgument in typeName.GetGenericArguments()) {
+					foreach (var typeArgument in typeName.GetGenericArguments ()) {
 						if (!IsFullyQualified (typeArgument))
 							return false;
 					}

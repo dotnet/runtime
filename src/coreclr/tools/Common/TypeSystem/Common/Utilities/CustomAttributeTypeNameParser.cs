@@ -66,6 +66,11 @@ namespace Internal.TypeSystem
                     return false;
                 }
 
+                if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
+                {
+                    return IsFullyQualified(typeName.GetElementType());
+                }
+
                 if (typeName.IsConstructedGenericType)
                 {
                     foreach (var typeArgument in typeName.GetGenericArguments())
