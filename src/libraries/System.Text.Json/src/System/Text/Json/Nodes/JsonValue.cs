@@ -185,8 +185,7 @@ namespace System.Text.Json.Nodes
                 case JsonValueKind.Null:
                     return null;
 
-                case JsonValueKind.Object:
-                case JsonValueKind.Array:
+                case JsonValueKind.Object or JsonValueKind.Array:
                     // Force usage of JsonArray and JsonObject instead of supporting those in an JsonValue.
                     ThrowHelper.ThrowInvalidOperationException_NodeElementCannotBeObjectOrArray();
                     return null;
