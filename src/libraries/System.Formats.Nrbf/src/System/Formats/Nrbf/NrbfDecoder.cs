@@ -31,20 +31,33 @@ public static class NrbfDecoder
             return false;
         }
 
-        ReadOnlySpan<int> integers = MemoryMarshal.Cast<byte, int>(bytes.Slice(sizeof(byte), sizeof(int) * 4));
-        int majorVersion = integers[2];
-        int minorVersion = integers[3];
+        // The header consists of:
+        // - a byte that describes the record type (SerializationRecordType.SerializedStreamHeader)
+        // - four 32 bit integers:
+        //   - root Id (every value is valid)
+        //   - header Id (value is ignored)
+        //   - major version, it has to be equal 1.
+        //   - minor version, it has to be equal 0.
+        // For little endian: 0 * * * * * * * * 1 0 0 0 0 0 0 0
+        // For big endian:    0 * * * * * * * * 0 0 0 1 0 0 0 0
 
+        const int PrefixLength = sizeof(byte) + sizeof(int) * 2;
+        int majorVersionByteIndex = PrefixLength;
         if (!BitConverter.IsLittleEndian)
         {
-            majorVersion = BinaryPrimitives.ReverseEndianness(majorVersion);
-            minorVersion = BinaryPrimitives.ReverseEndianness(minorVersion);
+            majorVersionByteIndex += 3;
+        }
+        for (int i = PrefixLength; i < SerializedStreamHeaderRecord.Size; i++)
+        {
+            int expected = i == majorVersionByteIndex ? 1 : 0;
+            if (bytes[i] != expected)
+            {
+                return false;
+            }
         }
 
-        return majorVersion == SerializedStreamHeaderRecord.MajorVersion
-            && minorVersion == SerializedStreamHeaderRecord.MinorVersion;
+        return true;
     }
-
 
     /// <summary>
     /// Checks if given stream starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
