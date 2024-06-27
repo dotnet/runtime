@@ -856,7 +856,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #else
         killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH.GetFloatRegSet(), FloatRegisterType);
 #if defined(TARGET_ARM64)
-        killMask.RemoveRegsetForType(RBM_MSK_CALLEE_TRASH.GetFloatRegSet(), MaskRegisterType);
+        killMask.RemoveRegsetForType(RBM_MSK_CALLEE_TRASH.GetPredicateRegSet(), MaskRegisterType);
 #endif // TARGET_ARM64
 #endif // TARGET_XARCH
     }
