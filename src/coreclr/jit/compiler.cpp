@@ -8298,7 +8298,7 @@ FpStructInRegistersInfo Compiler::GetPassFpStructInRegistersInfo(CORINFO_CLASS_H
 #ifdef TARGET_RISCV64
 #define getInfoFunc getRiscV64PassFpStructInRegistersInfo
 #else
-#define getInfoFunc getLoongArchPassFpStructInRegistersInfo
+#define getInfoFunc getLoongArch64PassFpStructInRegistersInfo
 #endif
 
     FpStructInRegistersInfo ret = info.compCompHnd->getInfoFunc(structHandle);
