@@ -1532,6 +1532,69 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> DotProductBySelectedScalar(Vector<ulong> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) => DotProductBySelectedScalar(addend, left, right, rightIndex);
 
 
+        ///  Broadcast a scalar value
+
+        /// <summary>
+        /// svuint8_t svdup_lane[_u8](svuint8_t data, uint8_t index)
+        ///   DUP Zresult.B, Zdata.B[index]
+        /// </summary>
+        public static unsafe Vector<byte> DuplicateSelectedScalarToVector(Vector<byte> data, [ConstantExpected(Min = 0, Max = (byte)(63))] byte index) => DuplicateSelectedScalarToVector(data, index);
+
+        /// <summary>
+        /// svfloat64_t svdup_lane[_f64](svfloat64_t data, uint64_t index)
+        ///   DUP Zresult.D, Zdata.D[index]
+        /// </summary>
+        public static unsafe Vector<double> DuplicateSelectedScalarToVector(Vector<double> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector(data, index);
+
+        /// <summary>
+        /// svint16_t svdup_lane[_s16](svint16_t data, uint16_t index)
+        ///   DUP Zresult.H, Zdata.H[index]
+        /// </summary>
+        public static unsafe Vector<short> DuplicateSelectedScalarToVector(Vector<short> data, [ConstantExpected(Min = 0, Max = (byte)(31))] byte index) => DuplicateSelectedScalarToVector(data, index);
+
+        /// <summary>
+        /// svint32_t svdup_lane[_s32](svint32_t data, uint32_t index)
+        ///   DUP Zresult.S, Zdata.S[index]
+        /// </summary>
+        public static unsafe Vector<int> DuplicateSelectedScalarToVector(Vector<int> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) => DuplicateSelectedScalarToVector(data, index);
+
+        /// <summary>
+        /// svint64_t svdup_lane[_s64](svint64_t data, uint64_t index)
+        ///   DUP Zresult.D, Zdata.D[index]
+        /// </summary>
+        public static unsafe Vector<long> DuplicateSelectedScalarToVector(Vector<long> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector(data, index);
+
+        /// <summary>
+        /// svint8_t svdup_lane[_s8](svint8_t data, uint8_t index)
+        ///   DUP Zresult.B, Zdata.B[index]
+        /// </summary>
+        public static unsafe Vector<sbyte> DuplicateSelectedScalarToVector(Vector<sbyte> data, [ConstantExpected(Min = 0, Max = (byte)(63))] byte index) => DuplicateSelectedScalarToVector(data, index);
+
+        /// <summary>
+        /// svfloat32_t svdup_lane[_f32](svfloat32_t data, uint32_t index)
+        ///   DUP Zresult.S, Zdata.S[index]
+        /// </summary>
+        public static unsafe Vector<float> DuplicateSelectedScalarToVector(Vector<float> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) => DuplicateSelectedScalarToVector(data, index);
+
+        /// <summary>
+        /// svuint16_t svdup_lane[_u16](svuint16_t data, uint16_t index)
+        ///   DUP Zresult.H, Zdata.H[index]
+        /// </summary>
+        public static unsafe Vector<ushort> DuplicateSelectedScalarToVector(Vector<ushort> data, [ConstantExpected(Min = 0, Max = (byte)(31))] byte index) => DuplicateSelectedScalarToVector(data, index);
+
+        /// <summary>
+        /// svuint32_t svdup_lane[_u32](svuint32_t data, uint32_t index)
+        ///   DUP Zresult.S, Zdata.S[index]
+        /// </summary>
+        public static unsafe Vector<uint> DuplicateSelectedScalarToVector(Vector<uint> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) => DuplicateSelectedScalarToVector(data, index);
+
+        /// <summary>
+        /// svuint64_t svdup_lane[_u64](svuint64_t data, uint64_t index)
+        ///   DUP Zresult.D, Zdata.D[index]
+        /// </summary>
+        public static unsafe Vector<ulong> DuplicateSelectedScalarToVector(Vector<ulong> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) => DuplicateSelectedScalarToVector(data, index);
+
+
         /// <summary>
         /// svuint8_t svext[_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)
         ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3
@@ -6765,6 +6828,69 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UZP2 Presult.D, Pop1.D, Pop2.D
         /// </summary>
         public static unsafe Vector<ulong> UnzipOdd(Vector<ulong> left, Vector<ulong> right) => UnzipOdd(left, right);
+
+
+        ///  Table lookup in single-vector table
+
+        /// <summary>
+        /// svuint8_t svtbl[_u8](svuint8_t data, svuint8_t indices)
+        ///   TBL Zresult.B, {Zdata.B}, Zindices.B
+        /// </summary>
+        public static unsafe Vector<byte> VectorTableLookup(Vector<byte> data, Vector<byte> indices) => VectorTableLookup(data, indices);
+
+        /// <summary>
+        /// svfloat64_t svtbl[_f64](svfloat64_t data, svuint64_t indices)
+        ///   TBL Zresult.D, {Zdata.D}, Zindices.D
+        /// </summary>
+        public static unsafe Vector<double> VectorTableLookup(Vector<double> data, Vector<ulong> indices) => VectorTableLookup(data, indices);
+
+        /// <summary>
+        /// svint16_t svtbl[_s16](svint16_t data, svuint16_t indices)
+        ///   TBL Zresult.H, {Zdata.H}, Zindices.H
+        /// </summary>
+        public static unsafe Vector<short> VectorTableLookup(Vector<short> data, Vector<ushort> indices) => VectorTableLookup(data, indices);
+
+        /// <summary>
+        /// svint32_t svtbl[_s32](svint32_t data, svuint32_t indices)
+        ///   TBL Zresult.S, {Zdata.S}, Zindices.S
+        /// </summary>
+        public static unsafe Vector<int> VectorTableLookup(Vector<int> data, Vector<uint> indices) => VectorTableLookup(data, indices);
+
+        /// <summary>
+        /// svint64_t svtbl[_s64](svint64_t data, svuint64_t indices)
+        ///   TBL Zresult.D, {Zdata.D}, Zindices.D
+        /// </summary>
+        public static unsafe Vector<long> VectorTableLookup(Vector<long> data, Vector<ulong> indices) => VectorTableLookup(data, indices);
+
+        /// <summary>
+        /// svint8_t svtbl[_s8](svint8_t data, svuint8_t indices)
+        ///   TBL Zresult.B, {Zdata.B}, Zindices.B
+        /// </summary>
+        public static unsafe Vector<sbyte> VectorTableLookup(Vector<sbyte> data, Vector<byte> indices) => VectorTableLookup(data, indices);
+
+        /// <summary>
+        /// svfloat32_t svtbl[_f32](svfloat32_t data, svuint32_t indices)
+        ///   TBL Zresult.S, {Zdata.S}, Zindices.S
+        /// </summary>
+        public static unsafe Vector<float> VectorTableLookup(Vector<float> data, Vector<uint> indices) => VectorTableLookup(data, indices);
+
+        /// <summary>
+        /// svuint16_t svtbl[_u16](svuint16_t data, svuint16_t indices)
+        ///   TBL Zresult.H, {Zdata.H}, Zindices.H
+        /// </summary>
+        public static unsafe Vector<ushort> VectorTableLookup(Vector<ushort> data, Vector<ushort> indices) => VectorTableLookup(data, indices);
+
+        /// <summary>
+        /// svuint32_t svtbl[_u32](svuint32_t data, svuint32_t indices)
+        ///   TBL Zresult.S, {Zdata.S}, Zindices.S
+        /// </summary>
+        public static unsafe Vector<uint> VectorTableLookup(Vector<uint> data, Vector<uint> indices) => VectorTableLookup(data, indices);
+
+        /// <summary>
+        /// svuint64_t svtbl[_u64](svuint64_t data, svuint64_t indices)
+        ///   TBL Zresult.D, {Zdata.D}, Zindices.D
+        /// </summary>
+        public static unsafe Vector<ulong> VectorTableLookup(Vector<ulong> data, Vector<ulong> indices) => VectorTableLookup(data, indices);
 
 
         ///  Xor : Bitwise exclusive OR

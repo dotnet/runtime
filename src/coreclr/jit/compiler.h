@@ -4679,6 +4679,7 @@ protected:
                                 unsigned             immNumber,
                                 var_types            simdBaseType,
                                 CorInfoType          simdBaseJitType,
+                                CORINFO_CLASS_HANDLE op1ClsHnd,
                                 CORINFO_CLASS_HANDLE op2ClsHnd,
                                 CORINFO_CLASS_HANDLE op3ClsHnd,
                                 unsigned*            immSimdSize,

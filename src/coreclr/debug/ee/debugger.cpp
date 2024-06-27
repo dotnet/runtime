@@ -2836,7 +2836,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
     }
     CONTRACTL_END;
 
-    _ASSERTE(pNativeCodeStartAddress != NULL);
+    _ASSERTE(pNativeCodeStartAddress != (PCODE)NULL);
 
 #ifdef PROFILING_SUPPORTED
     // At this point, we're pulling in the debugger.
@@ -3004,7 +3004,7 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     _ASSERTE(pcMap != NULL);
     _ASSERTE(prguiILOffset != NULL);
     _ASSERTE(prguiNativeOffset != NULL);
-    _ASSERTE(pNativeCodeStartAddress != NULL);
+    _ASSERTE(pNativeCodeStartAddress != (PCODE)NULL);
 
     // Any caller of GetILToNativeMappingIntoArrays had better call
     // InitializeLazyDataIfNecessary first!
@@ -3760,7 +3760,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
             goto LExit;
         }
 
-        _ASSERTE(pbDest != NULL);
+        _ASSERTE(pbDest != 0);
 
         ::SetIP(pCtx, pbDest);
 
@@ -6572,9 +6572,9 @@ JIT_DEBUG_INFO * Debugger::GetDebuggerLaunchJitInfo(void)
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE((s_DebuggerLaunchJitInfo.lpExceptionAddress != NULL) &&
-             (s_DebuggerLaunchJitInfo.lpExceptionRecord != NULL) &&
-             (s_DebuggerLaunchJitInfo.lpContextRecord != NULL) &&
+    _ASSERTE((s_DebuggerLaunchJitInfo.lpExceptionAddress != 0) &&
+             (s_DebuggerLaunchJitInfo.lpExceptionRecord != 0) &&
+             (s_DebuggerLaunchJitInfo.lpContextRecord != 0) &&
              (((EXCEPTION_RECORD *)(s_DebuggerLaunchJitInfo.lpExceptionRecord))->ExceptionAddress != NULL));
 
     return &s_DebuggerLaunchJitInfo;
@@ -7820,7 +7820,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
     // Implements DebugInterface
     // Call by EE/exception. Must be on managed thread
     _ASSERTE(GetThreadNULLOk() != NULL);
-    _ASSERTE(pMethodAddr != NULL);
+    _ASSERTE(pMethodAddr != (TADDR)NULL);
 
     // Quick check.
     if (!CORDebuggerAttached())
@@ -9770,7 +9770,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
 
     DebuggerIPCEvent * pEvent = m_pRCThread->GetIPCEventSendBuffer();
 
-    BOOL fIsReflection = pClassDebuggerModule->GetRuntimeModule()->IsReflection();
+    BOOL fIsReflection = pClassDebuggerModule->GetRuntimeModule()->IsReflectionEmit();
 
     if (fIsLoadEvent == TRUE)
     {

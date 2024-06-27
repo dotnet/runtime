@@ -1526,8 +1526,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 2, simdBaseType, simdBaseJitType, sigReader.op2ClsHnd,
-                               sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 2, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
+                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 2, &immLowerBound, &immUpperBound);
 
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp2, mustExpand, immLowerBound, immUpperBound,
@@ -1559,8 +1559,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 1, simdBaseType, simdBaseJitType, sigReader.op2ClsHnd,
-                               sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 1, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
+                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1, &immLowerBound, &immUpperBound);
 #else
         immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);

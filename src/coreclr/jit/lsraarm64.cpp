@@ -1371,7 +1371,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             var_types indexedElementOpType;
 
-            if (intrin.numOperands == 3)
+            if (intrin.numOperands == 2)
+            {
+                indexedElementOpType = intrin.op1->TypeGet();
+            }
+            else if (intrin.numOperands == 3)
             {
                 indexedElementOpType = intrin.op2->TypeGet();
             }
@@ -1685,7 +1689,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             assert(!isRMW);
 
-            srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
+            if (intrin.id == NI_Sve_DuplicateSelectedScalarToVector)
+            {
+                srcCount += BuildOperandUses(intrin.op2);
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
+            }
 
             if (intrin.op3 != nullptr)
             {

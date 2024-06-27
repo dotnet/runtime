@@ -22,7 +22,7 @@
     <WasmExtraFilesToDeploy Include="package.json" />
     <WasmExtraFilesToDeploy Include="package-lock.json" />
 
-    <NodeNpmModule Include="ws" Alias="WebSocket" />
+    <NodeNpmModule Include="ws" />
   </ItemGroup>
 
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
