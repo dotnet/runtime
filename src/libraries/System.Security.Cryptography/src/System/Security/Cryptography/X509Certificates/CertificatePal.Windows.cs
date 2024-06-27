@@ -520,7 +520,7 @@ namespace System.Security.Cryptography.X509Certificates
             _certContext = new SafeCertContextHandle(copyFrom._certContext);
         }
 
-        private CertificatePal(SafeCertContextHandle certContext, bool deleteKeyContainer)
+        internal CertificatePal(SafeCertContextHandle certContext, bool deleteKeyContainer)
         {
             if (deleteKeyContainer)
             {

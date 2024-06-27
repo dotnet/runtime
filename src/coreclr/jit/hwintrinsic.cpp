@@ -1526,8 +1526,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 2, simdBaseType, simdBaseJitType, sigReader.op2ClsHnd,
-                               sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 2, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
+                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 2, &immLowerBound, &immUpperBound);
 
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp2, mustExpand, immLowerBound, immUpperBound,
@@ -1559,8 +1559,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 1, simdBaseType, simdBaseJitType, sigReader.op2ClsHnd,
-                               sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 1, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
+                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1, &immLowerBound, &immUpperBound);
 #else
         immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
@@ -1900,27 +1900,40 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         assert(numArgs > 0);
         GenTree* op1 = retNode->AsHWIntrinsic()->Op(1);
-        if (intrinsic == NI_Sve_ConditionalSelect)
-        {
-            if (op1->IsVectorAllBitsSet() || op1->IsMaskAllBitsSet())
-            {
-                return retNode->AsHWIntrinsic()->Op(2);
-            }
-            else if (op1->IsVectorZero())
-            {
-                return retNode->AsHWIntrinsic()->Op(3);
-            }
-        }
-        else if (intrinsic == NI_Sve_GetActiveElementCount)
-        {
-            GenTree* op2 = retNode->AsHWIntrinsic()->Op(2);
 
-            // HWInstrinsic requires a mask for op2
-            if (!varTypeIsMask(op2))
+        switch (intrinsic)
+        {
+            case NI_Sve_ConditionalSelect:
             {
-                retNode->AsHWIntrinsic()->Op(2) =
-                    gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+                if (op1->IsVectorAllBitsSet() || op1->IsMaskAllBitsSet())
+                {
+                    return retNode->AsHWIntrinsic()->Op(2);
+                }
+                else if (op1->IsVectorZero())
+                {
+                    return retNode->AsHWIntrinsic()->Op(3);
+                }
+                break;
             }
+
+            case NI_Sve_GetActiveElementCount:
+            case NI_Sve_TestAnyTrue:
+            case NI_Sve_TestFirstTrue:
+            case NI_Sve_TestLastTrue:
+            {
+                GenTree* op2 = retNode->AsHWIntrinsic()->Op(2);
+
+                // HWInstrinsic requires a mask for op2
+                if (!varTypeIsMask(op2))
+                {
+                    retNode->AsHWIntrinsic()->Op(2) =
+                        gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+                }
+                break;
+            }
+
+            default:
+                break;
         }
 
         if (!varTypeIsMask(op1))

@@ -267,18 +267,24 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             if (strncmp(className + 6, "128", 3) == 0)
             {
-                assert((className[9] == '\0') || (strcmp(className + 9, "`1") == 0));
-                return InstructionSet_Vector128;
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector128;
+                }
             }
             else if (strncmp(className + 6, "256", 3) == 0)
             {
-                assert((className[9] == '\0') || (strcmp(className + 9, "`1") == 0));
-                return InstructionSet_Vector256;
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector256;
+                }
             }
             else if (strncmp(className + 6, "512", 3) == 0)
             {
-                assert((className[9] == '\0') || (strcmp(className + 9, "`1") == 0));
-                return InstructionSet_Vector512;
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector512;
+                }
             }
         }
         else if (strcmp(className, "VL") == 0)

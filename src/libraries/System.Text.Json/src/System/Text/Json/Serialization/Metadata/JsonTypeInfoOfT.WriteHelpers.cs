@@ -305,6 +305,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     ThrowHelper.ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(bufferWriter);
                 }
+
                 state.PipeWriter = bufferWriter;
                 state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
 
