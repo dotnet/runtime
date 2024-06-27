@@ -1462,7 +1462,14 @@ namespace Internal.JitInterface
                     // the method with a method the intrinsic expands into. If it's not the special intrinsic,
                     // method stays unchanged.
                     var methodIL = (MethodIL)HandleToObject((void*)pResolvedToken.tokenScope);
-                    targetMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, methodIL.OwningMethod);
+                    MethodDesc callsiteMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, methodIL.OwningMethod);
+                    if (targetMethod != callsiteMethod)
+                    {
+                        Debug.Assert(!pResult->exactContextNeedsRuntimeLookup);
+                        Debug.Assert(!callsiteMethod.HasInstantiation && !targetMethod.HasInstantiation);
+                        pResult->contextHandle = contextFromType(callsiteMethod.OwningType);
+                        targetMethod = callsiteMethod;
+                    }
 
                     // For multidim array Address method, we pretend the method requires a hidden instantiation argument
                     // (even though it doesn't need one). We'll actually swap the method out for a differnt one with
