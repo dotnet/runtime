@@ -739,10 +739,11 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
                 *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq)) = lpContext->Ffr;
 
-                for (int i = 0; i < 32; i++)
+                //TODO-SVE: Copy SVE registers once they are >128bits
+                //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
+
+                for (int i = 0; i < 16; i++)
                 {
-                    //TODO-SVE: Copy SVE registers once they are >128bits
-                    //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
                     //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
                     *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i)) = lpContext->P[i];
                 }
@@ -1074,10 +1075,11 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
             lpContext->Ffr = *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq));
 
-            for (int i = 0; i < 32; i++)
+            //TODO-SVE: Copy SVE registers once they are >128bits
+            //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
+
+            for (int i = 0; i < 16; i++)
             {
-                //TODO-SVE: Copy SVE registers once they are >128bits
-                //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
                 //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
                 lpContext->P[i] = *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i));
             }
