@@ -346,12 +346,12 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 
             if (op2->IsVectorConst() && comp->IsValidForShuffle(op2->AsVecCon(), simdSize, simdBaseType))
             {
-                bool isUnsafe = intrinsic == NI_Vector128_ShuffleUnsafe;
+                bool isUnsafe = intrinsicId == NI_Vector128_ShuffleUnsafe;
 #if defined(TARGET_XARCH)
                 isUnsafe =
-                    isUnsafe || intrinsic == NI_Vector256_ShuffleUnsafe || intrinsic == NI_Vector512_ShuffleUnsafe;
+                    isUnsafe || intrinsicId == NI_Vector256_ShuffleUnsafe || intrinsicId == NI_Vector512_ShuffleUnsafe;
 #elif defined(TARGET_ARM64)
-                isUnsafe = isUnsafe || intrinsic == NI_Vector64_ShuffleUnsafe;
+                isUnsafe = isUnsafe || intrinsicId == NI_Vector64_ShuffleUnsafe;
 #endif
                 result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
             }
