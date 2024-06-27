@@ -80,12 +80,6 @@ namespace ILCompiler.ObjectWriter
                     _codeRelocType = RelocType.IMAGE_REL_BASED_HIGHLOW;
                     break;
 
-                case TargetArchitecture.LoongArch64:
-                    _targetPointerSize = 8;
-                    _frameRegister = 22; // FP
-                    _codeRelocType = RelocType.IMAGE_REL_BASED_DIR64;
-                    break;
-
                 default:
                     throw new NotSupportedException("Unsupported architecture");
             }

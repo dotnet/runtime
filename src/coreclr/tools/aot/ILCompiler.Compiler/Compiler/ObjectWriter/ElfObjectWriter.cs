@@ -59,7 +59,6 @@ namespace ILCompiler.ObjectWriter
                 TargetArchitecture.X64 => EM_X86_64,
                 TargetArchitecture.ARM => EM_ARM,
                 TargetArchitecture.ARM64 => EM_AARCH64,
-                TargetArchitecture.LoongArch64 => EM_LOONGARCH,
                 _ => throw new NotSupportedException("Unsupported architecture")
             };
             _useInlineRelocationAddends = _machine is EM_386 or EM_ARM;
@@ -359,9 +358,6 @@ namespace ILCompiler.ObjectWriter
                 case EM_AARCH64:
                     EmitRelocationsARM64(sectionIndex, relocationList);
                     break;
-                case EM_LOONGARCH:
-                    EmitRelocationsLoongArch64(sectionIndex, relocationList);
-                    break;
                 default:
                     Debug.Fail("Unsupported architecture");
                     break;
@@ -493,42 +489,6 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
                     BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
                     relocationStream.Write(relocationEntry);
-                }
-            }
-        }
-
-        private void EmitRelocationsLoongArch64(int sectionIndex, List<SymbolicRelocation> relocationList)
-        {
-            if (relocationList.Count > 0)
-            {
-                Span<byte> relocationEntry = stackalloc byte[24];
-                var relocationStream = new MemoryStream(24 * relocationList.Count);
-                _sections[sectionIndex].RelocationStream = relocationStream;
-                foreach (SymbolicRelocation symbolicRelocation in relocationList)
-                {
-                    uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
-                    uint type = symbolicRelocation.Type switch
-                    {
-                        IMAGE_REL_BASED_DIR64 => R_LARCH_64,
-                        IMAGE_REL_BASED_HIGHLOW => R_LARCH_32,
-                        IMAGE_REL_BASED_RELPTR32 => R_LARCH_32_PCREL,
-                        IMAGE_REL_BASED_LOONGARCH64_PC => R_LARCH_PCALA_HI20,
-                        IMAGE_REL_BASED_LOONGARCH64_JIR => R_LARCH_CALL36,
-                        _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
-                    };
-
-                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset);
-                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
-                    BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
-                    relocationStream.Write(relocationEntry);
-
-                    if (symbolicRelocation.Type is IMAGE_REL_BASED_LOONGARCH64_PC)
-                    {
-                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset + 4);
-                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type + 1);
-                        BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
-                        relocationStream.Write(relocationEntry);
-                    }
                 }
             }
         }
@@ -801,12 +761,8 @@ namespace ILCompiler.ObjectWriter
                 SectionHeaderEntrySize = (ushort)ElfSectionHeader.GetSize<TSize>(),
                 SectionHeaderEntryCount = sectionCount < SHN_LORESERVE ? (ushort)sectionCount : (ushort)0u,
                 StringTableIndex = strTabSectionIndex < SHN_LORESERVE ? (ushort)strTabSectionIndex : (ushort)SHN_XINDEX,
-                Flags = _machine switch
-                {
-                    EM_ARM => 0x05000000u, // For ARM32 claim conformance with the EABI specification
-                    EM_LOONGARCH => 0x43u, // For LoongArch ELF psABI specify the ABI version (1) and modifiers (64-bit GPRs, 64-bit FPRs)
-                    _ => 0u
-                },
+                // For ARM32 claim conformance with the EABI specification
+                Flags = _machine is EM_ARM ? 0x05000000u : 0u,
             };
             elfHeader.Write<TSize>(outputFileStream);
 

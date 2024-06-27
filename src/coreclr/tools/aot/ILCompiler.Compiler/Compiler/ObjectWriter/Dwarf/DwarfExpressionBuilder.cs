@@ -161,10 +161,6 @@ namespace ILCompiler.ObjectWriter
                         _ => regNum - (int)RegNumX86.REGNUM_COUNT + 32 // FP registers
                     };
 
-                case TargetArchitecture.LoongArch64:
-                    // Normal registers are directly mapped
-                    return regNum;
-
                 default:
                     throw new NotSupportedException();
             }
