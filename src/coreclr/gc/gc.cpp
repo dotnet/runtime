@@ -33139,7 +33139,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
 #ifdef USE_REGIONS
 #ifndef MULTIPLE_HEAPS
-    free_list_snapshot::record(plan_should_sweep_start, free_regions_basic, &free_regions[(int)basic_free_region]);
+    free_list_snapshot::record(plan_should_sweep_end, free_regions_basic, &free_regions[(int)basic_free_region]);
 #endif
 #endif
 
