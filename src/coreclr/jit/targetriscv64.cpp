@@ -62,7 +62,6 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
     unsigned                intFields = 0, floatFields = 0;
     unsigned                passedSize;
 
-    using namespace FpStruct;
     if (varTypeIsStruct(type))
     {
         passedSize = structLayout->GetSize();
@@ -74,17 +73,17 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         {
             info = comp->GetPassFpStructInRegistersInfo(structLayout->GetClassHandle());
 
-            if ((info.flags & OnlyOne) != 0)
+            if ((info.flags & FpStruct::OnlyOne) != 0)
             {
                 floatFields = 1;
             }
-            else if ((info.flags & BothFloat) != 0)
+            else if ((info.flags & FpStruct::BothFloat) != 0)
             {
                 floatFields = 2;
             }
             else if (info.flags != FpStruct::UseIntCallConv)
             {
-                assert((info.flags & (FloatInt | IntFloat)) != 0);
+                assert((info.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0);
                 floatFields = 1;
                 intFields   = 1;
             }
@@ -107,7 +106,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             if (info.flags == FpStruct::UseIntCallConv)
                 assert(varTypeIsFloating(type)); // standalone floating-point real
             else
-                assert((info.flags & OnlyOne) != 0); // struct containing just one FP real
+                assert((info.flags & FpStruct::OnlyOne) != 0); // struct containing just one FP real
 
             return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
                                                                                           passedSize));
@@ -116,15 +115,15 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         {
             assert(varTypeIsStruct(type));
             assert((floatFields + intFields) == 2);
-            assert(info.flags != UseIntCallConv);
-            assert((info.flags & OnlyOne) == 0);
+            assert(info.flags != FpStruct::UseIntCallConv);
+            assert((info.flags & FpStruct::OnlyOne) == 0);
 
             unsigned firstSize  = (info.SizeShift1st() == 3) ? 8 : 4;
             unsigned secondSize = (info.SizeShift2nd() == 3) ? 8 : 4;
             unsigned offset = max(firstSize, secondSize); // TODO: cover empty fields and custom offsets / alignments
 
-            bool isFirstFloat  = (info.flags & (BothFloat | FloatInt)) != 0;
-            bool isSecondFloat = (info.flags & (BothFloat | IntFloat)) != 0;
+            bool isFirstFloat  = (info.flags & (FpStruct::BothFloat | FpStruct::FloatInt)) != 0;
+            bool isSecondFloat = (info.flags & (FpStruct::BothFloat | FpStruct::IntFloat)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
             regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
