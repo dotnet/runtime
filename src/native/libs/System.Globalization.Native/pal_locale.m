@@ -821,7 +821,7 @@ const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
                 localeName = currentLocale.localeIdentifier;
             }
 
-            return strdup([GetBaseName(preferredLanguage) UTF8String]);
+            return strdup([GetBaseName(localeName) UTF8String]);
         }
     }
 }
