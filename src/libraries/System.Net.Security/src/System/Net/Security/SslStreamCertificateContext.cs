@@ -54,15 +54,11 @@ namespace System.Net.Security
                     chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
                 }
 
-                if (trust?._store?.Certificates.Count > 0)
+                chain.ChainPolicy.CustomTrustStore.AddRange(trust?._store?.Certificates ?? []);
+                chain.ChainPolicy.CustomTrustStore.AddRange(trust?._trustList ?? []);
+                if (chain.ChainPolicy.CustomTrustStore.Count > 0)
                 {
                     chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                    chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
-                }
-                if (trust?._trustList?.Count > 0)
-                {
-                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                    chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
                 }
 
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
