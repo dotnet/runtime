@@ -68,7 +68,7 @@ namespace Mono.Linker
 		int? _targetRuntime;
 
 		readonly AssemblyResolver _resolver;
-		readonly TypeNameResolver _typeNameResolver;
+		TypeNameResolver? _typeNameResolver;
 
 		readonly AnnotationStore _annotations;
 		readonly CustomAttributeSource _customAttributes;
@@ -146,9 +146,8 @@ namespace Mono.Linker
 			get { return _resolver; }
 		}
 
-		internal TypeNameResolver TypeNameResolver {
-			get { return _typeNameResolver; }
-		}
+		internal TypeNameResolver TypeNameResolver
+			=> _typeNameResolver ??= new TypeNameResolver (this, this, this.SystemModuleName);
 
 		public ISymbolReaderProvider SymbolReaderProvider { get; set; }
 
@@ -194,6 +193,8 @@ namespace Mono.Linker
 
 		public SerializationMarker SerializationMarker { get; }
 
+		public string SystemModuleName { get; set; }
+
 		public LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory)
 			: this(pipeline, logger, outputDirectory, new UnintializedContextFactory ())
 		{
@@ -205,7 +206,6 @@ namespace Mono.Linker
 			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
 
 			_resolver = factory.CreateResolver (this);
-			_typeNameResolver = new TypeNameResolver (this, this);
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
 			_customAttributes = new CustomAttributeSource (this);
@@ -252,6 +252,7 @@ namespace Mono.Linker
 			DisableEventSourceSpecialHandling = true;
 
 			Optimizations = new CodeOptimizationsSettings (defaultOptimizations);
+			SystemModuleName = "System.Private.CoreLib";
 		}
 
 		public void SetFeatureValue (string feature, bool value)
@@ -973,7 +974,7 @@ namespace Mono.Linker
 		public TypeDefinition? TryResolve (AssemblyDefinition assembly, string typeNameString)
 		{
 			// It could be cached if it shows up on fast path
-			return _typeNameResolver.TryResolveTypeName (assembly, typeNameString, out TypeReference? typeReference, out _)
+			return TypeNameResolver.TryResolveTypeName (assembly, typeNameString, out TypeReference? typeReference, out _)
 				? TryResolve (typeReference)
 				: null;
 		}

@@ -447,7 +447,7 @@ namespace Mono.Linker.Steps
 					return AllowedAssemblies.AllAssemblies;
 
 				// Corelib XML may contain assembly wildcard to support compiler-injected attribute types
-				if (_resource?.Assembly.Name.Name == PlatformAssemblies.CoreLib)
+				if (_resource?.Assembly.Name.Name == _context.SystemModuleName)
 					return AllowedAssemblies.AllAssemblies;
 
 				return AllowedAssemblies.ContainingAssembly;
