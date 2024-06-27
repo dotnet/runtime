@@ -15292,10 +15292,8 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             // Output the REX prefix
             dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
-            // bswap has a special register encoding form,
-            // instead of using ModR/M byte, the register selection is
-            // embedded into the opcode.
-            dst += emitOutputByte(dst, code | regcode);
+            // If the instruction is prefixed by REX2, then 0x0F has been removed, just need to emit the opcode byte.
+            dst += TakesRex2Prefix(id)? emitOutputByte(dst, code | regcode) : emitOutputWord(dst, code | (regcode << 8));
             break;
         }
 
