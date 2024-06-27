@@ -1,12 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace System.Numerics.Tensors
 {
@@ -26,8 +21,8 @@ namespace System.Numerics.Tensors
 
         bool IsReadOnly { get; }
 
-        new T this[params ReadOnlySpan<nint> indexes] { get; set; }
-        new T this[params ReadOnlySpan<NIndex> indexes] { get; set; }
+        new T this[params scoped ReadOnlySpan<nint> indexes] { get; set; }
+        new T this[params scoped ReadOnlySpan<NIndex> indexes] { get; set; }
         new TSelf this[params scoped ReadOnlySpan<NRange> ranges] { get; set; }
 
         TensorSpan<T> AsTensorSpan();

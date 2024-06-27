@@ -475,12 +475,15 @@ namespace ILCompiler.ObjectWriter
             foreach ((string name, SymbolDefinition definition) in definedSymbols)
             {
                 MachSection section = _sections[definition.SectionIndex];
+                // Sections in our object file should not be altered during native linking as the runtime
+                // depends on the layout generated during compilation. For this reason we mark all symbols
+                // with N_NO_DEAD_STRIP to prevent breaking up sections into subsections during linking.
                 sortedDefinedSymbols.Add(new MachSymbol
                 {
                     Name = name,
                     Section = section,
                     Value = section.VirtualAddress + (ulong)definition.Value,
-                    Descriptor = 0,
+                    Descriptor = N_NO_DEAD_STRIP,
                     Type = N_SECT | N_EXT,
                 });
             }

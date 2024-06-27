@@ -2892,7 +2892,7 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
     DWORD length = gc.nameRef->GetStringLength();
     NewArrayHolder<char> pName(new char[(length + 1) * 2]);
     pName[0] = '\0';
-    length = WszWideCharToMultiByte(CP_UTF8, 0, gc.nameRef->GetBuffer(), length, pName, (length + 1) * 2 - sizeof(char), NULL, NULL);
+    length = WideCharToMultiByte(CP_UTF8, 0, gc.nameRef->GetBuffer(), length, pName, (length + 1) * 2 - sizeof(char), NULL, NULL);
     if (length)
         pName[length / sizeof(char)] = '\0';
 

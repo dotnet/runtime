@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -508,8 +509,8 @@ namespace System.Net.ServerSentEvents.Tests
                 trickle);
 
             List<SseItem<Book>> items = useAsync ?
-                await ReadAllEventsAsync(stream, static (eventType, data) => JsonSerializer.Deserialize<Book>(data)) :
-                ReadAllEvents(stream, static (eventType, data) => JsonSerializer.Deserialize<Book>(data));
+                await ReadAllEventsAsync(stream, static (eventType, data) => JsonSerializer.Deserialize(data, JsonSerializerTestContext.Default.Book)) :
+                ReadAllEvents(stream, static (eventType, data) => JsonSerializer.Deserialize(data, JsonSerializerTestContext.Default.Book));
 
             Assert.Equal(2, items.Count);
             AssertSseItemEqual(new SseItem<Book>(new Book { title = "The Catcher in the Rye", author = "J.D. Salinger", published_year = 1951, genre = "Fiction" }, "message"), items[0]);
@@ -654,7 +655,7 @@ namespace System.Net.ServerSentEvents.Tests
         {
             string[] expected = Enumerable.Range(1, 100).Select(i => string.Concat(Enumerable.Repeat($"{i} ", i))).ToArray();
 
-            using Stream stream = GetStream([..expected.Select(s => $"data: {s}{newline}{newline}").SelectMany(Encoding.UTF8.GetBytes)], trickle);
+            using Stream stream = GetStream([.. expected.Select(s => $"data: {s}{newline}{newline}").SelectMany(Encoding.UTF8.GetBytes)], trickle);
 
             List<SseItem<string>> items = useAsync ?
                 await ReadAllEventsAsync(stream) :
@@ -741,7 +742,7 @@ namespace System.Net.ServerSentEvents.Tests
             {
                 return bytes.SequenceEqual("[DONE]"u8) ?
                     new ChunkOrDone { Done = true } :
-                    new ChunkOrDone { Json = JsonSerializer.Deserialize<JsonElement>(bytes) };
+                    new ChunkOrDone { Json = JsonSerializer.Deserialize(bytes, JsonSerializerTestContext.Default.JsonElement) };
             };
 
             List<SseItem<ChunkOrDone>> items = useAsync ?
@@ -959,5 +960,9 @@ namespace System.Net.ServerSentEvents.Tests
             }
 #endif
         }
+
+        [JsonSerializable(typeof(Book))]
+        [JsonSerializable(typeof(JsonElement))]
+        private sealed partial class JsonSerializerTestContext : JsonSerializerContext;
     }
 }

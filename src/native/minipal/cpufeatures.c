@@ -199,11 +199,11 @@ int minipal_getcpufeatures(void)
                     }
 
                     const int requiredAvxEcxFlags = (1 << 27)                                                   // OSXSAVE
-                                                    | (1 << 28);                                                  // AVX
+                                                  | (1 << 28);                                                  // AVX
 
                     if ((cpuidInfo[CPUID_ECX] & requiredAvxEcxFlags) == requiredAvxEcxFlags)
                     {
-                        if (IsAvxEnabled() && (xmmYmmStateSupport() == 1))                                   // XGETBV == 11
+                        if (IsAvxEnabled() && (xmmYmmStateSupport() == 1))                                      // XGETBV == 11
                         {
                             result |= XArchIntrinsicConstants_Avx;
 
@@ -220,53 +220,27 @@ int minipal_getcpufeatures(void)
                                 {
                                     result |= XArchIntrinsicConstants_Avx2;
 
-                                    if (IsAvx512Enabled() && (avx512StateSupport() == 1))                    // XGETBV XRC0[7:5] == 111
+                                    if (IsAvx512Enabled() && (avx512StateSupport() == 1))                       // XGETBV XRC0[7:5] == 111
                                     {
-                                        if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                            // AVX512F
+                                        if (((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0) &&                        // AVX512F
+                                            ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0) &&                        // AVX512BW
+                                            ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0) &&                        // AVX512CD
+                                            ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0) &&                        // AVX512DQ
+                                            ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0))                          // AVX512VL
                                         {
-                                            result |= XArchIntrinsicConstants_Avx512f;
+                                            // While the AVX-512 ISAs can be individually lit-up, they really
+                                            // need F, BW, CD, DQ, and VL to be fully functional without adding
+                                            // significant complexity into the JIT. Additionally, unlike AVX/AVX2
+                                            // there was never really any hardware that didn't provide all 5 at
+                                            // once, with the notable exception being Knight's Landing which
+                                            // provided a similar but not quite the same feature.
 
-                                            bool isAVX512_VLSupported = false;
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                        // AVX512VL
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx512f_vl;
-                                                isAVX512_VLSupported = true;
-                                            }
-
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0)                        // AVX512BW
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx512bw;
-                                                if (isAVX512_VLSupported)                                       // AVX512BW_VL
-                                                {
-                                                    result |= XArchIntrinsicConstants_Avx512bw_vl;
-                                                }
-                                            }
-
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0)                        // AVX512CD
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx512cd;
-                                                if (isAVX512_VLSupported)                                       // AVX512CD_VL
-                                                {
-                                                    result |= XArchIntrinsicConstants_Avx512cd_vl;
-                                                }
-                                            }
-
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)                        // AVX512DQ
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx512dq;
-                                                if (isAVX512_VLSupported)                                       // AVX512DQ_VL
-                                                {
-                                                    result |= XArchIntrinsicConstants_Avx512dq_vl;
-                                                }
-                                            }
+                                            result |= XArchIntrinsicConstants_Evex;
+                                            result |= XArchIntrinsicConstants_Avx512;
 
                                             if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
                                             {
                                                 result |= XArchIntrinsicConstants_Avx512Vbmi;
-                                                if (isAVX512_VLSupported)                                       // AVX512VBMI_VL
-                                                {
-                                                    result |= XArchIntrinsicConstants_Avx512Vbmi_vl;
-                                                }
                                             }
                                         }
                                     }
@@ -281,19 +255,18 @@ int minipal_getcpufeatures(void)
                                     if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
                                     {
                                         __cpuidex(cpuidInfo, 0x00000024, 0x00000000);
-                                        if((cpuidInfo[CPUID_EBX] & 0xFF) >= 1)                                  // Avx10v1 - CPUID.(EAX=24H, ECX=00H):EBX[7:0] >= 1
+                                        uint8_t avx10Version = (uint8_t)(cpuidInfo[CPUID_EBX] & 0xFF);
+
+                                        if((avx10Version >= 1) &&
+                                           ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0) &&                         // Avx10/V128
+                                           ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0))                           // Avx10/V256
                                         {
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx10v1;
-                                            }
+                                            result |= XArchIntrinsicConstants_Evex;
+                                            result |= XArchIntrinsicConstants_Avx10v1;
 
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx10v1_V256;
-                                            }
+                                            bool isV512Supported = (cpuidInfo[CPUID_EBX] & (1 << 18)) != 0;     // Avx10/V512
 
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0)
+                                            if (isV512Supported)
                                             {
                                                 result |= XArchIntrinsicConstants_Avx10v1_V512;
                                             }

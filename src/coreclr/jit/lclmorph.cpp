@@ -225,10 +225,11 @@ class LocalEqualsLocalAddrAssertions
     AssertionToIndexMap                       m_map;
     uint64_t*                                 m_lclAssertions;
     uint64_t*                                 m_outgoingAssertions;
-    uint64_t                                  m_currentAssertions = 0;
     BitVec                                    m_localsToExpose;
 
 public:
+    uint64_t CurrentAssertions = 0;
+
     LocalEqualsLocalAddrAssertions(Compiler* comp)
         : m_comp(comp)
         , m_assertions(comp->getAllocator(CMK_LocalAddressVisitor))
@@ -285,28 +286,28 @@ public:
     {
         if ((m_assertions.Height() == 0) || (block->bbPreds == nullptr) || m_comp->bbIsHandlerBeg(block))
         {
-            m_currentAssertions = 0;
+            CurrentAssertions = 0;
             return;
         }
 
-        m_currentAssertions = UINT64_MAX;
+        CurrentAssertions = UINT64_MAX;
         for (BasicBlock* pred : block->PredBlocks())
         {
             assert(m_comp->m_dfsTree->Contains(pred));
             if (pred->bbPostorderNum <= block->bbPostorderNum)
             {
-                m_currentAssertions = 0;
+                CurrentAssertions = 0;
                 break;
             }
 
-            m_currentAssertions &= m_outgoingAssertions[pred->bbPostorderNum];
+            CurrentAssertions &= m_outgoingAssertions[pred->bbPostorderNum];
         }
 
 #ifdef DEBUG
-        if (m_currentAssertions != 0)
+        if (CurrentAssertions != 0)
         {
             JITDUMP(FMT_BB " incoming assertions:\n", block->bbNum);
-            uint64_t assertions = m_currentAssertions;
+            uint64_t assertions = CurrentAssertions;
             do
             {
                 uint32_t index = BitOperations::BitScanForward(assertions);
@@ -328,7 +329,7 @@ public:
     //
     void EndBlock(BasicBlock* block)
     {
-        m_outgoingAssertions[block->bbPostorderNum] = m_currentAssertions;
+        m_outgoingAssertions[block->bbPostorderNum] = CurrentAssertions;
     }
 
     //-------------------------------------------------------------------
@@ -389,7 +390,7 @@ public:
             }
         }
 
-        m_currentAssertions |= uint64_t(1) << index;
+        CurrentAssertions |= uint64_t(1) << index;
     }
 
     //-------------------------------------------------------------------
@@ -400,7 +401,7 @@ public:
     //
     void Clear(unsigned dstLclNum)
     {
-        m_currentAssertions &= ~m_lclAssertions[dstLclNum];
+        CurrentAssertions &= ~m_lclAssertions[dstLclNum];
     }
 
     //-----------------------------------------------------------------------------------
@@ -415,7 +416,7 @@ public:
     //
     const LocalEqualsLocalAddrAssertion* GetCurrentAssertion(unsigned lclNum)
     {
-        uint64_t curAssertion = m_currentAssertions & m_lclAssertions[lclNum];
+        uint64_t curAssertion = CurrentAssertions & m_lclAssertions[lclNum];
         assert(genMaxOneBit(curAssertion));
         if (curAssertion == 0)
         {
@@ -797,6 +798,9 @@ public:
             }
             break;
 
+            case GT_QMARK:
+                return HandleQMarkSubTree(use);
+
             default:
                 break;
         }
@@ -1038,6 +1042,81 @@ public:
     }
 
 private:
+    //------------------------------------------------------------------------
+    // HandleQMarkSubTree: Process a sub-tree rooted at a GT_QMARK.
+    //
+    // Arguments:
+    //   use - the use of the qmark
+    //
+    // Returns:
+    //   The walk result.
+    //
+    // Remarks:
+    //   GT_QMARK needs special handling due to the conditional nature of it.
+    //   Particularly when we are optimizing and propagating LCL_ADDRs we need
+    //   to take care that assertions created inside the conditionally executed
+    //   parts are handled appropriately. This function inlines the pre and
+    //   post-order visit logic here to make that handling work.
+    //
+    fgWalkResult HandleQMarkSubTree(GenTree** use)
+    {
+        assert((*use)->OperIs(GT_QMARK));
+        GenTreeQmark* qmark = (*use)->AsQmark();
+
+        // We have to inline the pre/postorder visit here to handle
+        // assertions properly.
+        assert(!qmark->IsReverseOp());
+        if (WalkTree(&qmark->gtOp1, qmark) == Compiler::WALK_ABORT)
+        {
+            return Compiler::WALK_ABORT;
+        }
+
+        if (m_lclAddrAssertions != nullptr)
+        {
+            uint64_t origAssertions = m_lclAddrAssertions->CurrentAssertions;
+
+            if (WalkTree(&qmark->gtOp2->AsOp()->gtOp1, qmark->gtOp2) == Compiler::WALK_ABORT)
+            {
+                return Compiler::WALK_ABORT;
+            }
+
+            uint64_t op1Assertions                 = m_lclAddrAssertions->CurrentAssertions;
+            m_lclAddrAssertions->CurrentAssertions = origAssertions;
+
+            if (WalkTree(&qmark->gtOp2->AsOp()->gtOp2, qmark->gtOp2) == Compiler::WALK_ABORT)
+            {
+                return Compiler::WALK_ABORT;
+            }
+
+            uint64_t op2Assertions                 = m_lclAddrAssertions->CurrentAssertions;
+            m_lclAddrAssertions->CurrentAssertions = op1Assertions & op2Assertions;
+        }
+        else
+        {
+            if ((WalkTree(&qmark->gtOp2->AsOp()->gtOp1, qmark->gtOp2) == Compiler::WALK_ABORT) ||
+                (WalkTree(&qmark->gtOp2->AsOp()->gtOp2, qmark->gtOp2) == Compiler::WALK_ABORT))
+            {
+                return Compiler::WALK_ABORT;
+            }
+        }
+
+        assert(TopValue(0).Node() == qmark->gtGetOp2()->gtGetOp2());
+        assert(TopValue(1).Node() == qmark->gtGetOp2()->gtGetOp1());
+        assert(TopValue(2).Node() == qmark->gtGetOp1());
+
+        EscapeValue(TopValue(0), qmark->gtGetOp2());
+        PopValue();
+
+        EscapeValue(TopValue(0), qmark->gtGetOp2());
+        PopValue();
+
+        EscapeValue(TopValue(0), qmark);
+        PopValue();
+
+        PushValue(use);
+        return Compiler::WALK_SKIP_SUBTREES;
+    }
+
     void PushValue(GenTree** use)
     {
         m_valueStack.Push(use);
@@ -1307,9 +1386,10 @@ private:
                 break;
 
 #ifdef FEATURE_HW_INTRINSICS
-                // We have two cases we want to handle:
-                // 1. Vector2/3/4 and Quaternion where we have 4x float fields
+                // We have three cases we want to handle:
+                // 1. Vector2/3/4 and Quaternion where we have 2-4x float fields
                 // 2. Plane where we have 1x Vector3 and 1x float field
+                // 3. Accesses of halves of larger SIMD types
 
             case IndirTransform::GetElement:
             {
@@ -1321,24 +1401,29 @@ private:
                 {
                     case TYP_FLOAT:
                     {
+                        // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
                         hwiNode            = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
                                                                                  CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
                         break;
                     }
+
                     case TYP_SIMD12:
                     {
+                        // Handle the Vector3 field of case 2
                         assert(genTypeSize(varDsc) == 16);
                         hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
                                                                        CORINFO_TYPE_FLOAT, 16);
                         break;
                     }
+
                     case TYP_SIMD8:
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
                     case TYP_SIMD16:
                     case TYP_SIMD32:
 #endif
                     {
+                        // Handle case 3
                         assert(genTypeSize(elementType) * 2 == genTypeSize(varDsc));
                         if (offset == 0)
                         {
@@ -1374,29 +1459,44 @@ private:
                 {
                     case TYP_FLOAT:
                     {
+                        // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
                         hwiNode =
                             m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
                                                                  CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
                         break;
                     }
+
                     case TYP_SIMD12:
                     {
+                        // Handle the Vector3 field of case 2
                         assert(varDsc->TypeGet() == TYP_SIMD16);
 
-                        // We inverse the operands here and take elementNode as the main value and simdLclNode[3] as the
-                        // new value. This gives us a new TYP_SIMD16 with all elements in the right spots
-                        GenTree* indexNode = m_compiler->gtNewIconNode(3, TYP_INT);
-                        hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
+                        // We effectively inverse the operands here and take elementNode as the main value and
+                        // simdLclNode[3] as the new value. This gives us a new TYP_SIMD16 with all elements in the
+                        // right spots
+
+                        elementNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, elementNode,
+                                                                           NI_Vector128_AsVector128Unsafe,
+                                                                           CORINFO_TYPE_FLOAT, 12);
+
+                        GenTree* indexNode1 = m_compiler->gtNewIconNode(3, TYP_INT);
+                        simdLclNode         = m_compiler->gtNewSimdGetElementNode(TYP_FLOAT, simdLclNode, indexNode1,
+                                                                                  CORINFO_TYPE_FLOAT, 16);
+
+                        GenTree* indexNode2 = m_compiler->gtNewIconNode(3, TYP_INT);
+                        hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode2, simdLclNode,
                                                                        CORINFO_TYPE_FLOAT, 16);
                         break;
                     }
+
                     case TYP_SIMD8:
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
                     case TYP_SIMD16:
                     case TYP_SIMD32:
 #endif
                     {
+                        // Handle case 3
                         assert(genTypeSize(elementType) * 2 == genTypeSize(varDsc));
                         if (offset == 0)
                         {
@@ -1412,6 +1512,7 @@ private:
 
                         break;
                     }
+
                     default:
                         unreached();
                 }
@@ -1541,7 +1642,7 @@ private:
             if (varTypeIsSIMD(varDsc))
             {
                 // We have three cases we want to handle:
-                // 1. Vector2/3/4 and Quaternion where we have 4x float fields
+                // 1. Vector2/3/4 and Quaternion where we have 2-4x float fields
                 // 2. Plane where we have 1x Vector3 and 1x float field
                 // 3. Accesses of halves of larger SIMD types
 
@@ -2115,7 +2216,7 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
 
     struct Store
     {
-        Statement*           Statement;
+        struct Statement*    Statement;
         GenTreeLclVarCommon* Tree;
     };
 

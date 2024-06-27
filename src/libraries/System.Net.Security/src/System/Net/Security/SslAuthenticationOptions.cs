@@ -149,7 +149,7 @@ namespace System.Net.Security
 
         private static SslProtocols FilterOutIncompatibleSslProtocols(SslProtocols protocols)
         {
-            if (protocols.HasFlag(SslProtocols.Tls12) || protocols.HasFlag(SslProtocols.Tls13))
+            if ((protocols & (SslProtocols.Tls12 | SslProtocols.Tls13)) != SslProtocols.None)
             {
 #pragma warning disable 0618
                 // SSL2 is mutually exclusive with >= TLS1.2

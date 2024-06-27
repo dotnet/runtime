@@ -134,6 +134,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.MyString = value0;
             }
+            else if (defaultValueIfNotFound)
+            {
+                var currentValue = instance.MyString;
+                if (currentValue is not null)
+                {
+                    instance.MyString = currentValue;
+                }
+            }
 
             if (configuration["MyInt"] is string value1)
             {
@@ -141,7 +149,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                instance.MyInt = default;
+                instance.MyInt = instance.MyInt;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section2)

@@ -11,20 +11,6 @@
     }
   },
   "results": {
-    "3b1bb0185d74dd310884a85ad1252953dab0747790f5aecd5bf5bb3c1e2b515c": {
-      "signature": "3b1bb0185d74dd310884a85ad1252953dab0747790f5aecd5bf5bb3c1e2b515c",
-      "alternativeSignatures": [],
-      "target": "src/libraries/System.Security.Cryptography/tests/X509Certificates/TestData.cs",
-      "line": 3441,
-      "memberOf": [
-        "default"
-      ],
-      "tool": "credscan",
-      "ruleId": "CSCAN-GENERAL0060",
-      "createdDate": "2024-04-10 20:32:31Z",
-      "expirationDate": "2024-09-28 00:14:56Z",
-      "justification": "This error is baselined with an expiration date of 180 days from 2024-04-11 00:14:56Z"
-    },
     "2e4598005fdee72a4700697760c5f1b199c25d15a7c54de438ce939f125f3710": {
       "signature": "2e4598005fdee72a4700697760c5f1b199c25d15a7c54de438ce939f125f3710",
       "alternativeSignatures": [

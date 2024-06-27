@@ -183,7 +183,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 assert(tree->TypeGet() == TYP_INT);
                 srcCount = 1;
-                BuildUse(tree->gtGetOp1(), RBM_INTRET);
+                BuildUse(tree->gtGetOp1(), RBM_INTRET.GetIntRegSet());
             }
             break;
 
@@ -560,7 +560,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CATCH_ARG:
             srcCount = 0;
             assert(dstCount == 1);
-            BuildDef(tree, RBM_EXCEPTION_OBJECT);
+            BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
         case GT_INDEX_ADDR:
@@ -723,7 +723,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be overridden by epilog sequence.
-            ctrlExprCandidates = (allRegs(TYP_INT) & (RBM_INT_CALLEE_TRASH & ~RBM_GSCOOKIE_TMP));
+            ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH.GetIntRegSet();
+            if (compiler->getNeedsGSSecurityCookie())
+            {
+                ctrlExprCandidates &=
+                    ~(genSingleTypeRegMask(REG_GSCOOKIE_TMP_0) | genSingleTypeRegMask(REG_GSCOOKIE_TMP_1));
+            }
             assert(ctrlExprCandidates != RBM_NONE);
         }
     }
@@ -734,7 +739,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
         SingleTypeRegSet candidates = RBM_NONE;
         if (call->IsFastTailCall())
         {
-            candidates = (allRegs(TYP_INT) & (RBM_INT_CALLEE_TRASH & ~RBM_GSCOOKIE_TMP));
+            candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH.GetIntRegSet();
+            if (compiler->getNeedsGSSecurityCookie())
+            {
+                ctrlExprCandidates &=
+                    ~(genSingleTypeRegMask(REG_GSCOOKIE_TMP_0) | genSingleTypeRegMask(REG_GSCOOKIE_TMP_1));
+            }
             assert(candidates != RBM_NONE);
         }
 
@@ -749,15 +759,15 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         if (varTypeUsesFloatArgReg(registerType))
         {
-            singleDstCandidates = RBM_FLOATRET;
+            singleDstCandidates = RBM_FLOATRET.GetFloatRegSet();
         }
         else if (registerType == TYP_LONG)
         {
-            singleDstCandidates = RBM_LNGRET;
+            singleDstCandidates = RBM_LNGRET.GetIntRegSet();
         }
         else
         {
-            singleDstCandidates = RBM_INTRET;
+            singleDstCandidates = RBM_INTRET.GetIntRegSet();
         }
     }
 
@@ -857,7 +867,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // Don't assign the call target to any of the argument registers because
         // we will use them to also pass floating point arguments as required
         // by LOONGARCH64 ABI.
-        ctrlExprCandidates = allRegs(TYP_INT) & ~(RBM_ARG_REGS);
+        ctrlExprCandidates = allRegs(TYP_INT) & ~(RBM_ARG_REGS.GetIntRegSet());
     }
 
     if (ctrlExpr != nullptr)
@@ -1141,7 +1151,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 // a temporary register to perform the sequence of loads and stores.
                 // We can't use the special Write Barrier registers, so exclude them from the mask
                 SingleTypeRegSet internalIntCandidates =
-                    allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
+                    allRegs(TYP_INT) &
+                    ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF).GetRegSetForType(IntRegisterType);
                 buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
 
                 if (size >= 2 * REGSIZE_BYTES)
@@ -1152,7 +1163,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 }
 
                 // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
-                dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF;
+                dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF.GetIntRegSet();
 
                 // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
                 // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,
@@ -1160,7 +1171,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 if (srcAddrOrFill != nullptr)
                 {
                     assert(!srcAddrOrFill->isContained());
-                    srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF;
+                    srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF.GetIntRegSet();
                 }
             }
             break;

@@ -46,7 +46,7 @@ inline gc_alloc_context* GetThreadAllocContext()
 
     assert(GCHeapUtilities::UseThreadAllocationContexts());
 
-    return & GetThread()->m_alloc_context;
+    return &t_runtime_thread_locals.alloc_context;
 }
 
 // When not using per-thread allocation contexts, we (the EE) need to take care that
@@ -127,7 +127,7 @@ public:
         lock->Release();
     }
 
-    typedef Holder<GlobalAllocLock *, GlobalAllocLock::AcquireLock, GlobalAllocLock::ReleaseLock> Holder;
+    typedef class Holder<GlobalAllocLock *, GlobalAllocLock::AcquireLock, GlobalAllocLock::ReleaseLock> Holder;
 };
 
 typedef GlobalAllocLock::Holder GlobalAllocLockHolder;

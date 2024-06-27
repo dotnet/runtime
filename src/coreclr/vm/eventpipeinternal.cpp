@@ -116,7 +116,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
 
     BEGIN_QCALL;
 
-    _ASSERTE(provHandle != NULL);
+    _ASSERTE(provHandle != (INT_PTR)NULL);
     EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
     pEvent = EventPipeAdapter::AddEvent(pProvider, eventID, keywords, eventVersion, (EventPipeEventLevel)level, /* needStack = */ true, (BYTE *)pMetadata, metadataLength);
     _ASSERTE(pEvent != NULL);
@@ -223,7 +223,7 @@ extern "C" void QCALLTYPE EventPipeInternal_WriteEventData(
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    _ASSERTE(eventHandle != NULL);
+    _ASSERTE(eventHandle != (INT_PTR)NULL);
     EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
     EventPipeAdapter::WriteEvent(pEvent, pEventData, eventDataCount, pActivityId, pRelatedActivityId);
 

@@ -238,7 +238,7 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  float
         currAvailableRegs &= ~endMask;
     } while (currAvailableRegs != RBM_NONE);
 
-    SingleTypeRegSet v0_v31_mask = RBM_V0 | RBM_V31;
+    SingleTypeRegSet v0_v31_mask = SRBM_V0 | SRBM_V31;
     if ((floatCandidates & v0_v31_mask) == v0_v31_mask)
     {
         // Finally, check for round robin case where sequence of last register
@@ -255,48 +255,48 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  float
             {
                 if ((floatCandidates & v0_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V31;
+                    consecutiveResult |= SRBM_V31;
                     overallResult |= v0_v31_mask;
                 }
                 break;
             }
             case 3:
             {
-                SingleTypeRegSet v0_v30_v31_mask = RBM_V0 | RBM_V30 | RBM_V31;
+                SingleTypeRegSet v0_v30_v31_mask = SRBM_V0 | SRBM_V30 | SRBM_V31;
                 if ((floatCandidates & v0_v30_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V30;
+                    consecutiveResult |= SRBM_V30;
                     overallResult |= v0_v30_v31_mask;
                 }
 
-                SingleTypeRegSet v0_v1_v31_mask = RBM_V0 | RBM_V1 | RBM_V31;
+                SingleTypeRegSet v0_v1_v31_mask = SRBM_V0 | SRBM_V1 | SRBM_V31;
                 if ((floatCandidates & v0_v1_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V31;
+                    consecutiveResult |= SRBM_V31;
                     overallResult |= v0_v1_v31_mask;
                 }
                 break;
             }
             case 4:
             {
-                SingleTypeRegSet v0_v29_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                SingleTypeRegSet v0_v29_v30_v31_mask = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
                 if ((floatCandidates & v0_v29_v30_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V29;
+                    consecutiveResult |= SRBM_V29;
                     overallResult |= v0_v29_v30_v31_mask;
                 }
 
-                SingleTypeRegSet v0_v1_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                SingleTypeRegSet v0_v1_v30_v31_mask = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
                 if ((floatCandidates & v0_v1_v30_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V30;
+                    consecutiveResult |= SRBM_V30;
                     overallResult |= v0_v1_v30_v31_mask;
                 }
 
-                SingleTypeRegSet v0_v1_v2_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                SingleTypeRegSet v0_v1_v2_v31_mask = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
                 if ((floatCandidates & v0_v1_v2_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V31;
+                    consecutiveResult |= SRBM_V31;
                     overallResult |= v0_v1_v2_v31_mask;
                 }
                 break;
@@ -333,16 +333,17 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
     SingleTypeRegSet consecutiveResultForBusy = RBM_NONE;
     SingleTypeRegSet unprocessedRegs          = consecutiveCandidates;
     unsigned         regAvailableStartIndex = 0, regAvailableEndIndex = 0;
-    int              maxSpillRegs        = registersNeeded;
-    SingleTypeRegSet registersNeededMask = (1ULL << registersNeeded) - 1;
+    int              maxSpillRegs         = registersNeeded;
+    SingleTypeRegSet registersNeededMask  = (1ULL << registersNeeded) - 1;
+    SingleTypeRegSet availableFloatRegSet = m_AvailableRegs.GetFloatRegSet();
     do
     {
         // From LSB, find the first available register (bit `1`)
         regAvailableStartIndex = BitScanForward(unprocessedRegs);
 
         // For the current range, find how many registers are free vs. busy
-        regMaskTP maskForCurRange        = RBM_NONE;
-        bool      shouldCheckForRounding = false;
+        SingleTypeRegSet maskForCurRange        = RBM_NONE;
+        bool             shouldCheckForRounding = false;
         switch (registersNeeded)
         {
             case 2:
@@ -366,7 +367,7 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
         }
 
         maskForCurRange |= (registersNeededMask << regAvailableStartIndex);
-        maskForCurRange &= m_AvailableRegs;
+        maskForCurRange &= availableFloatRegSet;
 
         if (maskForCurRange != RBM_NONE)
         {
@@ -422,16 +423,14 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
 {
     assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
-    regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
-    assert((freeCandidates.IsEmpty()) || (freeCandidates.getLow() & availableFloatRegs));
-    SingleTypeRegSet floatFreeCandidates = freeCandidates.getLow();
+    SingleTypeRegSet floatFreeCandidates = allCandidates & m_AvailableRegs.GetFloatRegSet();
 
 #ifdef DEBUG
     if (getStressLimitRegs() != LSRA_LIMIT_NONE)
     {
         // For stress, make only alternate registers available so we can stress the selection of free/busy registers.
-        floatFreeCandidates &= (RBM_V0 | RBM_V2 | RBM_V4 | RBM_V6 | RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14 | RBM_V16 |
-                                RBM_V18 | RBM_V20 | RBM_V22 | RBM_V24 | RBM_V26 | RBM_V28 | RBM_V30);
+        floatFreeCandidates &= SRBM_V0 | SRBM_V2 | SRBM_V4 | SRBM_V6 | SRBM_V8 | SRBM_V10 | SRBM_V12 | SRBM_V14 |
+                               SRBM_V16 | SRBM_V18 | SRBM_V20 | SRBM_V22 | SRBM_V24 | SRBM_V26 | SRBM_V28 | SRBM_V30;
     }
 #endif
 
@@ -489,7 +488,8 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
             if (foundCount != 0)
             {
                 assert(firstRegNum != REG_NA);
-                regMaskTP remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1) << (firstRegNum - 1);
+                SingleTypeRegSet remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1)
+                                                     << (firstRegNum - 1);
 
                 if ((overallResult & remainingRegsMask) != RBM_NONE)
                 {
@@ -536,7 +536,7 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
     *busyCandidates = consecutiveResultForBusy;
 
     // Check if we can further check better registers amoung consecutiveResultForBusy.
-    if ((m_AvailableRegs & overallResultForBusy) != RBM_NONE)
+    if ((m_AvailableRegs.GetFloatRegSet() & overallResultForBusy) != RBM_NONE)
     {
         // `overallResultForBusy` contains the mask of entire series that can be the consecutive candidates.
         // If there is an overlap of that with free registers, then try to find a series that will need least
@@ -549,13 +549,13 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
         {
             *busyCandidates = optimalConsecutiveResultForBusy;
         }
-        else if ((m_AvailableRegs & consecutiveResultForBusy) != RBM_NONE)
+        else if ((m_AvailableRegs.GetFloatRegSet() & consecutiveResultForBusy) != RBM_NONE)
         {
             // We did not find free consecutive candidates, however we found some registers among the
             // `allCandidates` that are mix of free and busy. Since `busyCandidates` just has bit set for first
             // register of such series, return the mask that starts with free register, if possible. The busy
             // registers will be spilled during assignment of subsequent RefPosition.
-            *busyCandidates = (m_AvailableRegs.GetRegSetForType(TYP_FLOAT) & consecutiveResultForBusy);
+            *busyCandidates = (m_AvailableRegs.GetFloatRegSet() & consecutiveResultForBusy);
         }
     }
 
@@ -744,7 +744,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
 #ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR_RET:
-            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR);
+            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR.GetIntRegSet());
             // Plus one for error register
             srcCount = BuildReturn(tree) + 1;
             killMask = getKillSetForReturn();
@@ -762,7 +762,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 assert(tree->TypeGet() == TYP_INT);
                 srcCount = 1;
-                BuildUse(tree->gtGetOp1(), RBM_INTRET);
+                BuildUse(tree->gtGetOp1(), RBM_INTRET.GetIntRegSet());
             }
             break;
 
@@ -1266,7 +1266,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CATCH_ARG:
             srcCount = 0;
             assert(dstCount == 1);
-            BuildDef(tree, RBM_EXCEPTION_OBJECT);
+            BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
         case GT_INDEX_ADDR:
@@ -1302,7 +1302,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // and we know REG_SWIFT_ERROR should be busy up to this point, anyway.
             // By forcing LSRA to use REG_SWIFT_ERROR as both the source and destination register,
             // we can ensure the redundant move is elided.
-            BuildDef(tree, RBM_SWIFT_ERROR);
+            BuildDef(tree, RBM_SWIFT_ERROR.GetIntRegSet());
             break;
 #endif // SWIFT_SUPPORT
 
@@ -1440,13 +1440,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_ExtractVector64:
                     case NI_AdvSimd_ExtractVector128:
                     case NI_AdvSimd_StoreSelectedScalar:
-                    case NI_AdvSimd_StoreSelectedScalarVector64x2:
-                    case NI_AdvSimd_StoreSelectedScalarVector64x3:
-                    case NI_AdvSimd_StoreSelectedScalarVector64x4:
                     case NI_AdvSimd_Arm64_StoreSelectedScalar:
-                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
-                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
-                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
+                    case NI_Sve_PrefetchBytes:
+                    case NI_Sve_PrefetchInt16:
+                    case NI_Sve_PrefetchInt32:
+                    case NI_Sve_PrefetchInt64:
+                    case NI_Sve_ExtractVector:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 
@@ -1510,6 +1509,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
     bool tgtPrefOp1        = false;
+    bool tgtPrefOp2        = false;
     bool delayFreeMultiple = false;
     if (intrin.op1 != nullptr)
     {
@@ -1538,6 +1538,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
 
             case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector128_AsVector128Unsafe:
             case NI_Vector128_AsVector3:
             case NI_Vector128_GetLower:
             {
@@ -1563,9 +1564,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
         // we want to preference op1Reg to the target if op1 is not contained.
-        if (isRMW || simdRegToSimdRegMove)
+
+        if ((isRMW || simdRegToSimdRegMove))
         {
-            tgtPrefOp1 = !intrin.op1->isContained();
+            if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
+            {
+                assert(!simdRegToSimdRegMove);
+                // Prefer op2Reg for the masked operation as mask would be the op1Reg
+                tgtPrefOp2 = !intrin.op1->isContained();
+            }
+            else
+            {
+                tgtPrefOp1 = !intrin.op1->isContained();
+            }
         }
 
         if (delayFreeMultiple)
@@ -1583,30 +1594,37 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            SingleTypeRegSet predMask = RBM_ALLMASK;
-            if (intrin.id == NI_Sve_ConditionalSelect)
+            if (!varTypeIsMask(intrin.op1->TypeGet()) && !HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
             {
-                // If this is conditional select, make sure to check the embedded
-                // operation to determine the predicate mask.
-                assert(intrinsicTree->GetOperandCount() == 3);
-                assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
-
-                if (intrin.op2->OperIs(GT_HWINTRINSIC))
+                srcCount += BuildOperandUses(intrin.op1);
+            }
+            else
+            {
+                SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
+                if (intrin.id == NI_Sve_ConditionalSelect)
                 {
-                    GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
-                    const HWIntrinsic   intrinEmb(embOp2Node);
-                    if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                    // If this is conditional select, make sure to check the embedded
+                    // operation to determine the predicate mask.
+                    assert(intrinsicTree->GetOperandCount() == 3);
+                    assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
+
+                    if (intrin.op2->OperIs(GT_HWINTRINSIC))
                     {
-                        predMask = RBM_LOWMASK;
+                        GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
+                        const HWIntrinsic   intrinEmb(embOp2Node);
+                        if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                        {
+                            predMask = RBM_LOWMASK.GetPredicateRegSet();
+                        }
                     }
                 }
-            }
-            else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
-            {
-                predMask = RBM_LOWMASK;
-            }
+                else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
+                {
+                    predMask = RBM_LOWMASK.GetPredicateRegSet();
+                }
 
-            srcCount += BuildOperandUses(intrin.op1, predMask);
+                srcCount += BuildOperandUses(intrin.op1, predMask);
+            }
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
@@ -1639,12 +1657,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             if (isRMW)
             {
                 srcCount += BuildDelayFreeUses(intrin.op2, nullptr);
-                srcCount += BuildDelayFreeUses(intrin.op3, nullptr, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS);
+                srcCount +=
+                    BuildDelayFreeUses(intrin.op3, nullptr, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
             }
             else
             {
                 srcCount += BuildOperandUses(intrin.op2);
-                srcCount += BuildOperandUses(intrin.op3, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS);
+                srcCount += BuildOperandUses(intrin.op3, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
             }
 
             if (intrin.op4 != nullptr)
@@ -1659,7 +1678,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             assert(!isRMW);
 
-            srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS);
+            srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
 
             if (intrin.op3 != nullptr)
             {
@@ -1703,28 +1722,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_StoreSelectedScalar:
-                assert(intrin.op1 != nullptr);
-                assert(intrin.op3 != nullptr);
-                srcCount += BuildOperandUses(intrin.op2);
-                if (!intrin.op3->isContainedIntOrIImmed())
-                {
-                    srcCount += BuildOperandUses(intrin.op3);
-                }
-                assert(dstCount == 0);
-                buildInternalRegisterUses();
-                *pDstCount = 0;
-                break;
-
-            case NI_AdvSimd_StoreSelectedScalarVector64x2:
-            case NI_AdvSimd_StoreSelectedScalarVector64x3:
-            case NI_AdvSimd_StoreSelectedScalarVector64x4:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
             {
                 assert(intrin.op1 != nullptr);
                 assert(intrin.op3 != nullptr);
-                srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
+                srcCount += (intrin.op2->gtType == TYP_STRUCT) ? BuildConsecutiveRegistersForUse(intrin.op2)
+                                                               : BuildOperandUses(intrin.op2);
                 if (!intrin.op3->isContainedIntOrIImmed())
                 {
                     srcCount += BuildOperandUses(intrin.op3);
@@ -1735,18 +1737,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_AdvSimd_StoreVector64x2AndZip:
-            case NI_AdvSimd_StoreVector64x3AndZip:
-            case NI_AdvSimd_StoreVector64x4AndZip:
-            case NI_AdvSimd_Arm64_StoreVector128x2AndZip:
-            case NI_AdvSimd_Arm64_StoreVector128x3AndZip:
-            case NI_AdvSimd_Arm64_StoreVector128x4AndZip:
-            case NI_AdvSimd_StoreVector64x2:
-            case NI_AdvSimd_StoreVector64x3:
-            case NI_AdvSimd_StoreVector64x4:
-            case NI_AdvSimd_Arm64_StoreVector128x2:
-            case NI_AdvSimd_Arm64_StoreVector128x3:
-            case NI_AdvSimd_Arm64_StoreVector128x4:
+            case NI_AdvSimd_Store:
+            case NI_AdvSimd_Arm64_Store:
+            case NI_AdvSimd_StoreVectorAndZip:
+            case NI_AdvSimd_Arm64_StoreVectorAndZip:
             {
                 assert(intrin.op1 != nullptr);
                 srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
@@ -1777,18 +1771,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 FALLTHROUGH;
             }
 
-            case NI_AdvSimd_LoadVector64x2AndUnzip:
-            case NI_AdvSimd_LoadVector64x3AndUnzip:
-            case NI_AdvSimd_LoadVector64x4AndUnzip:
-            case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
-            case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
-            case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
-            case NI_AdvSimd_LoadVector64x2:
-            case NI_AdvSimd_LoadVector64x3:
-            case NI_AdvSimd_LoadVector64x4:
-            case NI_AdvSimd_Arm64_LoadVector128x2:
-            case NI_AdvSimd_Arm64_LoadVector128x3:
-            case NI_AdvSimd_Arm64_LoadVector128x4:
+            case NI_AdvSimd_Load2xVector64AndUnzip:
+            case NI_AdvSimd_Load3xVector64AndUnzip:
+            case NI_AdvSimd_Load4xVector64AndUnzip:
+            case NI_AdvSimd_Arm64_Load2xVector128AndUnzip:
+            case NI_AdvSimd_Arm64_Load3xVector128AndUnzip:
+            case NI_AdvSimd_Arm64_Load4xVector128AndUnzip:
+            case NI_AdvSimd_Load2xVector64:
+            case NI_AdvSimd_Load3xVector64:
+            case NI_AdvSimd_Load4xVector64:
+            case NI_AdvSimd_Arm64_Load2xVector128:
+            case NI_AdvSimd_Arm64_Load3xVector128:
+            case NI_AdvSimd_Arm64_Load4xVector128:
             case NI_AdvSimd_LoadAndReplicateToVector64x2:
             case NI_AdvSimd_LoadAndReplicateToVector64x3:
             case NI_AdvSimd_LoadAndReplicateToVector64x4:
@@ -1965,28 +1959,55 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                                                (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
             }
         }
-        else if (intrin.id == NI_Sve_StoreAndZip)
+        else if (tgtPrefOp2)
         {
-            srcCount += BuildAddrUses(intrin.op2);
-        }
-        else
-        {
-            SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
-
-            if (intrin.op2->gtType == TYP_MASK)
+            if (!intrin.op2->isContained())
             {
-                assert(lowVectorOperandNum != 2);
-                candidates = RBM_ALLMASK;
-            }
-
-            if (forceOp2DelayFree)
-            {
-                srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);
+                assert(tgtPrefUse == nullptr);
+                tgtPrefUse2 = BuildUse(intrin.op2);
+                srcCount++;
             }
             else
             {
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1, candidates)
-                                  : BuildOperandUses(intrin.op2, candidates);
+                srcCount += BuildOperandUses(intrin.op2);
+            }
+        }
+        else
+        {
+            switch (intrin.id)
+            {
+                case NI_Sve_LoadVectorNonTemporal:
+                case NI_Sve_LoadVector128AndReplicateToVector:
+                case NI_Sve_StoreAndZip:
+                case NI_Sve_PrefetchBytes:
+                case NI_Sve_PrefetchInt16:
+                case NI_Sve_PrefetchInt32:
+                case NI_Sve_PrefetchInt64:
+                    assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                    srcCount += BuildAddrUses(intrin.op2);
+                    break;
+
+                default:
+                {
+                    SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
+
+                    if (intrin.op2->gtType == TYP_MASK)
+                    {
+                        assert(lowVectorOperandNum != 2);
+                        candidates = RBM_ALLMASK.GetPredicateRegSet();
+                    }
+
+                    if (forceOp2DelayFree)
+                    {
+                        srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);
+                    }
+                    else
+                    {
+                        srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1, candidates)
+                                          : BuildOperandUses(intrin.op2, candidates);
+                    }
+                }
+                break;
             }
         }
 
@@ -1994,12 +2015,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             SingleTypeRegSet candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
 
-            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1, candidates)
-                              : BuildOperandUses(intrin.op3, candidates);
+            if (isRMW)
+            {
+                srcCount += BuildDelayFreeUses(intrin.op3, (tgtPrefOp2 ? intrin.op2 : intrin.op1), candidates);
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op3, candidates);
+            }
 
             if (intrin.op4 != nullptr)
             {
                 assert(lowVectorOperandNum != 4);
+                assert(!tgtPrefOp2);
                 srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
             }
         }
@@ -2309,12 +2337,12 @@ void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* op
 
     if (baseElementSize == 8)
     {
-        *candidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS;
+        *candidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS.GetFloatRegSet();
     }
     else
     {
         assert(baseElementSize == 4);
-        *candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS;
+        *candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS.GetFloatRegSet();
     }
 
     switch (intrin.id)

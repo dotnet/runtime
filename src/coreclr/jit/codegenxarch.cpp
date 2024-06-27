@@ -232,10 +232,11 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         {
             GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
         }
-        GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
         if (block->HasFlag(BBF_RETLESS_CALL))
         {
+            GetEmitter()->emitIns_J(INS_call, block->GetTarget());
+
             // We have a retless call, and the last instruction generated was a call.
             // If the next block is in a different EH region (or is the end of the code
             // block), then we need to generate a breakpoint here (since it will never
@@ -253,13 +254,14 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 #ifndef JIT32_GCENCODER
             // Because of the way the flowgraph is connected, the liveness info for this one instruction
             // after the call is not (can not be) correct in cases where a variable has a last use in the
-            // handler.  So turn off GC reporting for this single instruction.
+            // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
             GetEmitter()->emitDisableGC();
 #endif // JIT32_GCENCODER
 
-            BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+            GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
             // Now go to where the finally funclet needs to return to.
+            BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
             if (nextBlock->NextIs(finallyContinuation) &&
                 !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
             {
@@ -465,7 +467,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             {
                 if (emitter::isHighSimdReg(targetReg))
                 {
-                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    assert(compiler->canUseEvexEncodingDebugOnly());
                     emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
                                                static_cast<int8_t>(0xFF), INS_OPTS_NONE);
                 }
@@ -492,7 +494,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             {
                 if (emitter::isHighSimdReg(targetReg))
                 {
-                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    assert(compiler->canUseEvexEncodingDebugOnly());
                     emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
                                                static_cast<int8_t>(0xFF), INS_OPTS_NONE);
                 }
@@ -521,7 +523,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             {
                 if (emitter::isHighSimdReg(targetReg))
                 {
-                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    assert(compiler->canUseEvexEncodingDebugOnly());
                     emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
                                                static_cast<int8_t>(0xFF), INS_OPTS_NONE);
                 }
@@ -548,7 +550,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             {
                 if (emitter::isHighSimdReg(targetReg))
                 {
-                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    assert(compiler->canUseEvexEncodingDebugOnly());
                     emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
                                                static_cast<int8_t>(0xFF), INS_OPTS_NONE);
                 }
@@ -667,7 +669,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             {
                 if (emitter::isHighSimdReg(targetReg))
                 {
-                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    assert(compiler->canUseEvexEncodingDebugOnly());
                     emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, EA_16BYTE, targetReg, targetReg, targetReg,
                                                static_cast<int8_t>(0xFF), INS_OPTS_NONE);
                 }
@@ -5654,6 +5656,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX512F_ExtractVector256:
                         case NI_AVX512DQ_ExtractVector128:
                         case NI_AVX512DQ_ExtractVector256:
+                        case NI_AVX10v1_V512_ExtractVector128:
+                        case NI_AVX10v1_V512_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8"
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -5682,6 +5686,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX512F_ConvertToVector256UInt32:
                         case NI_AVX512F_VL_ConvertToVector128UInt32:
                         case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
+                        case NI_AVX10v1_ConvertToVector128UInt32:
+                        case NI_AVX10v1_ConvertToVector128UInt32WithSaturation:
                         {
                             assert(!varTypeIsFloating(baseType));
                             FALLTHROUGH;
@@ -5719,6 +5725,16 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX512BW_VL_ConvertToVector128ByteWithSaturation:
                         case NI_AVX512BW_VL_ConvertToVector128SByte:
                         case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
+                        case NI_AVX10v1_ConvertToVector128Byte:
+                        case NI_AVX10v1_ConvertToVector128ByteWithSaturation:
+                        case NI_AVX10v1_ConvertToVector128Int16:
+                        case NI_AVX10v1_ConvertToVector128Int16WithSaturation:
+                        case NI_AVX10v1_ConvertToVector128Int32:
+                        case NI_AVX10v1_ConvertToVector128Int32WithSaturation:
+                        case NI_AVX10v1_ConvertToVector128SByte:
+                        case NI_AVX10v1_ConvertToVector128SByteWithSaturation:
+                        case NI_AVX10v1_ConvertToVector128UInt16:
+                        case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
                         {
                             // These intrinsics are "ins reg/mem, xmm"
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -5922,56 +5938,7 @@ void CodeGen::genCall(GenTreeCall* call)
         }
     }
 
-    // Consume all the arg regs
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        CallArgABIInformation& abiInfo = arg.AbiInfo;
-        GenTree*               argNode = arg.GetLateNode();
-
-        if (abiInfo.GetRegNum() == REG_STK)
-        {
-            continue;
-        }
-
-#ifdef UNIX_AMD64_ABI
-        // Deal with multi register passed struct args.
-        if (argNode->OperGet() == GT_FIELD_LIST)
-        {
-            unsigned regIndex = 0;
-            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
-            {
-                GenTree* putArgRegNode = use.GetNode();
-                assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-                regNumber argReg = abiInfo.GetRegNum(regIndex++);
-
-                genConsumeReg(putArgRegNode);
-
-                // Validate the putArgRegNode has the right type.
-                assert(varTypeUsesFloatReg(putArgRegNode->TypeGet()) == genIsValidFloatReg(argReg));
-                inst_Mov_Extend(putArgRegNode->TypeGet(), /* srcInReg */ false, argReg, putArgRegNode->GetRegNum(),
-                                /* canSkip */ true, emitActualTypeSize(TYP_I_IMPL));
-            }
-        }
-        else
-#endif // UNIX_AMD64_ABI
-        {
-            regNumber argReg = abiInfo.GetRegNum();
-            genConsumeReg(argNode);
-            inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ false, argReg, argNode->GetRegNum(), /* canSkip */ true,
-                            emitActualTypeSize(TYP_I_IMPL));
-        }
-
-        // In the case of a varargs call,
-        // the ABI dictates that if we have floating point args,
-        // we must pass the enregistered arguments in both the
-        // integer and floating point registers so, let's do that.
-        if (compFeatureVarArg() && call->IsVarargs() && varTypeIsFloating(argNode))
-        {
-            regNumber srcReg    = argNode->GetRegNum();
-            regNumber targetReg = compiler->getCallArgIntRegister(argNode->GetRegNum());
-            inst_Mov(TYP_LONG, targetReg, srcReg, /* canSkip */ false, emitActualTypeSize(TYP_I_IMPL));
-        }
-    }
+    genCallPlaceRegArgs(call);
 
 #if defined(TARGET_X86) || defined(UNIX_AMD64_ABI)
     // The call will pop its arguments.
@@ -6551,7 +6518,7 @@ void CodeGen::genJmpPlaceVarArgs()
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
         for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
-            const ABIPassingSegment& segment = abiInfo.Segments[i];
+            const ABIPassingSegment& segment = abiInfo.Segment(i);
             if (segment.IsPassedOnStack())
             {
                 continue;
@@ -7324,13 +7291,11 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // Also we don't expect to see uint32 -> float/double and uint64 -> float conversions
     // here since they should have been lowered appropriately.
     noway_assert(srcType != TYP_UINT);
-    assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT) ||
-           compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+    assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT) || compiler->canUseEvexEncodingDebugOnly());
 
-    if ((srcType == TYP_ULONG) && varTypeIsFloating(dstType) &&
-        compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    if ((srcType == TYP_ULONG) && varTypeIsFloating(dstType) && compiler->canUseEvexEncoding())
     {
-        assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        assert(compiler->canUseEvexEncodingDebugOnly());
         genConsumeOperands(treeNode->AsOp());
         instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(srcType));
         GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
@@ -7458,13 +7423,12 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     // into a helper call by either front-end or lowering phase, unless we have AVX512F
     // accelerated conversions.
     assert(!varTypeIsUnsigned(dstType) || (dstSize != EA_ATTR(genTypeSize(TYP_LONG))) ||
-           compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+           compiler->canUseEvexEncodingDebugOnly());
 
     // If the dstType is TYP_UINT, we have 32-bits to encode the
     // float number. Any of 33rd or above bits can be the sign bit.
     // To achieve it we pretend as if we are converting it to a long.
-    if (varTypeIsUnsigned(dstType) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))) &&
-        !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    if (varTypeIsUnsigned(dstType) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))) && !compiler->canUseEvexEncoding())
     {
         dstType = TYP_LONG;
     }
@@ -8841,7 +8805,7 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         //  -saved bool for synchronized methods
 
         // slots for ret address + FP + EnC callee-saves
-        int preservedAreaSize = (2 + genCountBits((uint64_t)RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
+        int preservedAreaSize = (2 + genCountBits(RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
 
         if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
         {

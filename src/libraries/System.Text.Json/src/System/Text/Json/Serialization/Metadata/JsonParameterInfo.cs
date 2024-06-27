@@ -123,5 +123,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonNumberHandling? NumberHandling => MatchingProperty.EffectiveNumberHandling;
         internal JsonTypeInfo JsonTypeInfo => MatchingProperty.JsonTypeInfo;
         internal bool ShouldDeserialize => !MatchingProperty.IsIgnored;
+        internal bool IsRequiredParameter => !HasDefaultValue && !IsMemberInitializer;
     }
 }

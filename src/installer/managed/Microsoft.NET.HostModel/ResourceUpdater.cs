@@ -20,15 +20,6 @@ namespace Microsoft.NET.HostModel
         private ResourceData _resourceData;
         private readonly bool leaveOpen;
 
-        ///<summary>
-        /// Determines if the ResourceUpdater is supported by the current operating system.
-        /// Some versions of Windows, such as Nano Server, do not support the needed APIs.
-        /// </summary>
-        public static bool IsSupportedOS()
-        {
-            return true;
-        }
-
         /// <summary>
         /// Create a resource updater for the given PE file.
         /// Resources can be added to this updater, which will queue them for update.

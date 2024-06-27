@@ -693,7 +693,7 @@
     <value>JsonPropertyInfo '{0}' defined in type '{1}' is marked both as required and as an extension data property. This combination is not supported.</value>
   </data>
   <data name="JsonRequiredPropertiesMissing" xml:space="preserve">
-    <value>JSON deserialization for type '{0}' was missing required properties, including the following: {1}</value>
+    <value>JSON deserialization for type '{0}' was missing required properties including: {1}.</value>
   </data>
   <data name="ObjectCreationHandlingPopulateNotSupportedByConverter" xml:space="preserve">
     <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but it doesn't support populating. This can be either because the property type is immutable or it could use a custom converter.</value>
@@ -749,7 +749,10 @@
   <data name="ConstructorParameterDisallowNull" xml:space="preserve">
     <value>The constructor parameter '{0}' on type '{1}' doesn't allow null values. Consider updating its nullability annotation.</value>
   </data>
-  <data name="NullabilityInfoContext_NotSupported" xml:space="preserve">
-    <value>NullabilityInfoContext is not supported in the current application because 'System.Reflection.NullabilityInfoContext.IsSupported' is set to false. Set the MSBuild Property 'NullabilityInfoContextSupport' to true in order to enable it.</value>
+  <data name="JsonSchemaExporter_ReferenceHandlerPreserve_NotSupported" xml:space="preserve">
+    <value>JSON schema generation is not supported for contracts using ReferenceHandler.Preserve.</value>
+  </data>
+  <data name="JsonSchemaExporter_DepthTooLarge" xml:space="preserve">
+    <value>The depth of the generated JSON schema exceeds the JsonSerializerOptions.MaxDepth setting.</value>
   </data>
 </root>

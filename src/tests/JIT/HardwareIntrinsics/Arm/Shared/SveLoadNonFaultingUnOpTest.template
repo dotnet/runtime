@@ -195,7 +195,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadNonFaulting));
 
-            var result = {Isa}.{Method}(default);
+            var result = {Isa}.{Method}({Cast}default);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateZeroResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);

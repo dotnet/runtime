@@ -679,8 +679,9 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
 //    cls       - The class handle
 //    helper    - The helper function
 //    typeIndex - The static block type index. Used only for
-//                CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED or
-//                CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED to cache
+//                CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+//                CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, or
+//                CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2 to cache
 //                the static block in an array at index typeIndex.
 //
 // Return Value:
@@ -696,56 +697,49 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     // We need the return type.
     switch (helper)
     {
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            bNeedClassID = false;
-            FALLTHROUGH;
-
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
+        case CORINFO_HELP_GET_GCSTATIC_BASE:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             // type = TYP_BYREF;
             break;
 
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
-            bNeedClassID = false;
-            FALLTHROUGH;
-
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-        case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
             type = TYP_I_IMPL;
+            break;
+
+        case CORINFO_HELP_INITCLASS:
+            type = TYP_VOID;
             break;
 
         default:
             assert(!"unknown shared statics helper");
             break;
     }
-
-    GenTree* opModuleIDArg;
-    GenTree* opClassIDArg;
-
-    // Get the class ID
-    unsigned clsID;
-    size_t   moduleID;
-    void*    pclsID;
-    void*    pmoduleID;
-
-    clsID = info.compCompHnd->getClassDomainID(cls, &pclsID);
-
-    moduleID = info.compCompHnd->getClassModuleIdForStatics(cls, nullptr, &pmoduleID);
 
     if (!(callFlags & GTF_CALL_HOISTABLE))
     {
@@ -755,37 +749,36 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         }
     }
 
-    if (pmoduleID)
-    {
-        opModuleIDArg = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pmoduleID, GTF_ICON_CIDMID_HDL, true);
-    }
-    else
-    {
-        opModuleIDArg = gtNewIconNode((size_t)moduleID, TYP_I_IMPL);
-    }
-
     GenTreeCall* result;
-    if (bNeedClassID)
-    {
-        if (pclsID)
-        {
-            opClassIDArg = gtNewIndOfIconHandleNode(TYP_INT, (size_t)pclsID, GTF_ICON_CIDMID_HDL, true);
-        }
-        else
-        {
-            opClassIDArg = gtNewIconNode(clsID, TYP_INT);
-        }
 
-        result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
-    }
-    else if ((helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
-             (helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
+    if ((helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
     {
         result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
     }
+    else if (helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE)
+    {
+        result = gtNewHelperCallNode(helper, type,
+                                     gtNewIconNode((size_t)info.compCompHnd->getClassThreadStaticDynamicInfo(cls),
+                                                   TYP_I_IMPL));
+    }
+    else if (helper == CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE || helper == CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE ||
+             helper == CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETPINNED_GCSTATIC_BASE || helper == CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE ||
+             helper == CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR)
+    {
+        result = gtNewHelperCallNode(helper, type,
+                                     gtNewIconNode(info.compCompHnd->getClassStaticDynamicInfo(cls), TYP_I_IMPL));
+    }
     else
     {
-        result = gtNewHelperCallNode(helper, type, opModuleIDArg);
+        result = gtNewHelperCallNode(helper, type, gtNewIconEmbClsHndNode(cls));
     }
 
     if (IsStaticHelperEligibleForExpansion(result))
@@ -5776,6 +5769,39 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
 }
 
 //------------------------------------------------------------------------
+// MayExecuteBlockMultipleTimesPerIteration:
+//   Check if the loop may execute a particular loop block multiple times for
+//   each iteration.
+//
+// Parameters:
+//   block - The basic block
+//
+// Returns:
+//   True if so. May return true even if the true answer is false.
+//
+bool FlowGraphNaturalLoop::MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block)
+{
+    assert(ContainsBlock(block));
+
+    if (ContainsImproperHeader())
+    {
+        // To be more precise we could check if 'block' can reach itself
+        // without going through the header, but this case is rare.
+        return true;
+    }
+
+    for (FlowGraphNaturalLoop* child = GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        if (child->ContainsBlock(block))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // IterConst: Get the constant with which the iterator is modified
 //
 // Returns:
@@ -5978,13 +6004,10 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 //   finger2 - A basic block that might share IDom ancestor with finger1.
 //
 // Returns:
-//   A basic block whose IDom is the dominator for finger1 and finger2, or else
-//   nullptr. This may be called while immediate dominators are being computed,
-//   and if the input values are members of the same loop (each reachable from
-//   the other), then one may not yet have its immediate dominator computed
-//   when we are attempting to find the immediate dominator of the other. So a
-//   nullptr return value means that the the two inputs are in a cycle, not
-//   that they don't have a common dominator ancestor.
+//   A basic block that is the dominator for finger1 and finger2. This can be
+//   called while the dominator tree is still being computed, in which case the
+//   returned result may not be the "latest" such dominator (but will converge
+//   towards it with more iterations over the basic blocks).
 //
 // Remarks:
 //   See "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J.
@@ -5992,23 +6015,19 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 //
 BasicBlock* FlowGraphDominatorTree::IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
 {
+    assert((finger1 != nullptr) && (finger2 != nullptr));
+
     while (finger1 != finger2)
     {
-        if ((finger1 == nullptr) || (finger2 == nullptr))
-        {
-            return nullptr;
-        }
-        while ((finger1 != nullptr) && (finger1->bbPostorderNum < finger2->bbPostorderNum))
+        while (finger1->bbPostorderNum < finger2->bbPostorderNum)
         {
             finger1 = finger1->bbIDom;
+            assert(finger1 != nullptr);
         }
-        if (finger1 == nullptr)
-        {
-            return nullptr;
-        }
-        while ((finger2 != nullptr) && (finger2->bbPostorderNum < finger1->bbPostorderNum))
+        while (finger2->bbPostorderNum < finger1->bbPostorderNum)
         {
             finger2 = finger2->bbIDom;
+            assert(finger2 != nullptr);
         }
     }
     return finger1;
@@ -6110,8 +6129,8 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
     // First compute immediate dominators.
     unsigned numIters = 0;
-    bool     changed  = true;
-    while (changed)
+    bool     changed;
+    do
     {
         changed = false;
 
@@ -6156,7 +6175,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
         }
 
         numIters++;
-    }
+    } while (changed && dfsTree->HasCycle());
 
     // Now build dominator tree.
     DomTreeNode* domTree = new (comp, CMK_DominatorMemory) DomTreeNode[count]{};

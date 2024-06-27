@@ -35,9 +35,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.Runtime.TypeParsing;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ILCompiler.DependencyAnalysisFramework;
 using ILLink.Shared;
@@ -47,6 +44,10 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 using Mono.Linker.Dataflow;
+
+using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
+using TypeName = System.Reflection.Metadata.TypeName;
+using TypeNameParseOptions = System.Reflection.Metadata.TypeNameParseOptions;
 
 namespace Mono.Linker.Steps
 {
@@ -479,7 +480,6 @@ namespace Mono.Linker.Steps
 
 			foreach (var type in Annotations.GetPendingPreserve ()) {
 				marked = true;
-				Debug.Assert (Annotations.IsProcessed (type));
 				ApplyPreserveInfo (type);
 			}
 
@@ -718,33 +718,25 @@ namespace Mono.Linker.Steps
 		/// or if any marked interface implementations on <paramref name="type"/> are interfaces that implement <paramref name="interfaceType"/> and that interface implementation is marked
 		/// </summary>
 		bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType)
+			=> IsInterfaceImplementationMarkedRecursively (type, interfaceType, Context);
+
+		/// <summary>
+		/// Returns true if <paramref name="type"/> implements <paramref name="interfaceType"/> and the interface implementation is marked,
+		/// or if any marked interface implementations on <paramref name="type"/> are interfaces that implement <paramref name="interfaceType"/> and that interface implementation is marked
+		/// </summary>
+		internal static bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType, LinkContext context)
 		{
 			if (type.HasInterfaces) {
 				foreach (var intf in type.Interfaces) {
-					TypeDefinition? resolvedInterface = Context.Resolve (intf.InterfaceType);
+					TypeDefinition? resolvedInterface = context.Resolve (intf.InterfaceType);
 					if (resolvedInterface == null)
 						continue;
-
-					if (Annotations.IsMarked (intf) && RequiresInterfaceRecursively (resolvedInterface, interfaceType))
-						return true;
-				}
-			}
-
-			return false;
-		}
-
-		bool RequiresInterfaceRecursively (TypeDefinition typeToExamine, TypeDefinition interfaceType)
-		{
-			if (typeToExamine == interfaceType)
-				return true;
-
-			if (typeToExamine.HasInterfaces) {
-				foreach (var iface in typeToExamine.Interfaces) {
-					var resolved = Context.TryResolve (iface.InterfaceType);
-					if (resolved == null)
+					if (!context.Annotations.IsMarked (intf))
 						continue;
 
-					if (RequiresInterfaceRecursively (resolved, interfaceType))
+					if (resolvedInterface == interfaceType)
+						return true;
+					if (IsInterfaceImplementationMarkedRecursively (resolvedInterface, interfaceType, context))
 						return true;
 				}
 			}
@@ -2162,12 +2154,6 @@ namespace Mono.Linker.Steps
 
 				if (property.Name == "TargetTypeName") {
 					string targetTypeName = (string) property.Argument.Value;
-					TypeName? typeName = TypeParser.ParseTypeName (targetTypeName);
-					if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
-						AssemblyDefinition? assembly = Context.TryResolve (assemblyQualifiedTypeName.AssemblyName.Name);
-						return assembly == null ? null : Context.TryResolve (assembly, targetTypeName);
-					}
-
 					return Context.TryResolve (asm, targetTypeName);
 				}
 			}
@@ -2744,22 +2730,16 @@ namespace Mono.Linker.Steps
 		{
 			var arguments = instance.GenericArguments;
 
-			var generic_element = GetGenericProviderFromInstance (instance);
-			if (generic_element == null)
-				return;
-
-			var parameters = generic_element.GenericParameters;
-
-			if (arguments.Count != parameters.Count)
-				return;
+			IGenericParameterProvider? generic_element = GetGenericProviderFromInstance (instance);
+			Collection<GenericParameter>? parameters = generic_element?.GenericParameters;
 
 			for (int i = 0; i < arguments.Count; i++) {
 				var argument = arguments[i];
-				var parameter = parameters[i];
+				var parameter = parameters?[i];
 
 				var argumentTypeDef = MarkType (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance), origin);
 
-				if (Annotations.FlowAnnotations.RequiresGenericArgumentDataFlowAnalysis (parameter)) {
+				if (parameter is not null && Annotations.FlowAnnotations.RequiresGenericArgumentDataFlowAnalysis (parameter)) {
 					// The only two implementations of IGenericInstance both derive from MemberReference
 					Debug.Assert (instance is MemberReference);
 
@@ -2773,7 +2753,7 @@ namespace Mono.Linker.Steps
 
 				_dependencyGraph.AddRoot (_nodeFactory.GetTypeIsRelevantToVariantCastingNode (argumentTypeDef), "Generic Argument");
 
-				if (parameter.HasDefaultConstructorConstraint)
+				if (parameter?.HasDefaultConstructorConstraint == true)
 					MarkDefaultConstructor (argumentTypeDef, new DependencyInfo (DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance), origin);
 			}
 		}
@@ -2795,7 +2775,7 @@ namespace Mono.Linker.Steps
 
 			if (Annotations.TryGetPreserve (type, out TypePreserve preserve)) {
 				if (!Annotations.SetAppliedPreserve (type, preserve))
-					throw new InternalErrorException ($"Type {type} already has applied {preserve}.");
+					return;
 
 				var di = new DependencyInfo (DependencyKind.TypePreserve, type);
 
@@ -3197,8 +3177,12 @@ namespace Mono.Linker.Steps
 						Context.Resolve (@base) is MethodDefinition baseDefinition
 						&& baseDefinition.DeclaringType.IsInterface && baseDefinition.IsStatic && method.IsStatic)
 						continue;
+					// Instance methods can have overrides on public implementation methods in IL, but C# will usually only have them for private explicit interface implementations.
+					// It is valid IL for a public method to override an interface method and only be called directly. In this case it would be safe to skip marking the .override method.
+					// However, in most cases, the C# compiler will only generate .override for instance methods when it's a private explicit interface implementations which can only be called through the interface.
+					// We can just take a short cut and mark all the overrides on instance methods. We shouldn't miss out on size savings for code generated by Roslyn.
 					MarkMethod (@base, new DependencyInfo (DependencyKind.MethodImplOverride, method), methodOrigin);
-					MarkExplicitInterfaceImplementation (method, @base);
+					MarkRuntimeInterfaceImplementation (method, @base);
 				}
 			}
 
@@ -3314,22 +3298,21 @@ namespace Mono.Linker.Steps
 			DoAdditionalInstantiatedTypeProcessing (type);
 		}
 
-		void MarkExplicitInterfaceImplementation (MethodDefinition method, MethodReference ov)
+		void MarkRuntimeInterfaceImplementation (MethodDefinition method, MethodReference ov)
 		{
 			if (Context.Resolve (ov) is not MethodDefinition resolvedOverride)
 				return;
+			if (!resolvedOverride.DeclaringType.IsInterface)
+				return;
+			var interfaceToBeImplemented = ov.DeclaringType;
 
-			if (resolvedOverride.DeclaringType.IsInterface) {
-				foreach (var ifaceImpl in method.DeclaringType.Interfaces) {
-					var resolvedInterfaceType = Context.Resolve (ifaceImpl.InterfaceType);
-					if (resolvedInterfaceType == null) {
-						continue;
-					}
-
-					if (resolvedInterfaceType == resolvedOverride.DeclaringType) {
-						MarkInterfaceImplementation (ifaceImpl, new MessageOrigin (method.DeclaringType));
-						return;
-					}
+			var ifaces = Annotations.GetRecursiveInterfaces (method.DeclaringType);
+			if (ifaces is null)
+				return;
+			foreach (var iface in ifaces) {
+				if (TypeReferenceEqualityComparer.AreEqual (iface.InterfaceType, interfaceToBeImplemented, Context)) {
+					MarkInterfaceImplementationList (iface.ImplementationChain, new MessageOrigin (method.DeclaringType));
+					return;
 				}
 			}
 		}

@@ -23,11 +23,6 @@ namespace System.Net.Http
 
             // Indicate that we should use default buffer size by setting size to 0.
             InitializeContent(content, 0);
-
-            if (TryComputeLength(out long contentLength))
-            {
-                Headers.ContentLength = contentLength;
-            }
         }
 
         public StreamContent(Stream content, int bufferSize)
@@ -36,11 +31,6 @@ namespace System.Net.Http
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             InitializeContent(content, bufferSize);
-
-            if (TryComputeLength(out long contentLength))
-            {
-                Headers.ContentLength = contentLength;
-            }
         }
 
         [MemberNotNull(nameof(_content))]

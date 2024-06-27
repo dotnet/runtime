@@ -32,21 +32,6 @@ namespace System.Net.Http.Functional.Tests
             var source = new MockStream(new byte[10], true, true); // Supports seeking.
             var content = new StreamContent(source);
 
-            Assert.Contains("Content-Length", content.Headers.ToString());
-            Assert.Contains(content.Headers, h => h.Key == "Content-Length");
-            Assert.Contains(content.Headers.NonValidated, h => h.Key == "Content-Length");
-            Assert.Equal(source.Length, content.Headers.ContentLength);
-        }
-
-        [Fact]
-        public void ContentLength_SetStreamSupportingSeekingWithBuffering_StreamLengthMatchesHeaderValue()
-        {
-            var source = new MockStream(new byte[10], true, true); // Supports seeking.
-            var content = new StreamContent(source, 5);
-
-            Assert.Contains("Content-Length", content.Headers.ToString());
-            Assert.Contains(content.Headers, h => h.Key == "Content-Length");
-            Assert.Contains(content.Headers.NonValidated, h => h.Key == "Content-Length");
             Assert.Equal(source.Length, content.Headers.ContentLength);
         }
 

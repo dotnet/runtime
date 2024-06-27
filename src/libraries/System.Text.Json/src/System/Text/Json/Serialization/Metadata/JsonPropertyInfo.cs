@@ -356,7 +356,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private bool _isRequired;
+        private protected bool _isRequired;
 
         /// <summary>
         /// Gets the constructor parameter associated with the current property.
@@ -448,7 +448,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (IsRequired)
             {
-                if (!CanDeserialize)
+                if (!CanDeserialize &&
+                    !(AssociatedParameter?.IsRequiredParameter is true &&
+                      Options.RespectRequiredConstructorParameters))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndNotDeserializable(this);
                 }
@@ -729,25 +731,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
         internal abstract object? GetValueAsObject(object obj);
-
-#if DEBUG
-        internal string GetDebugInfo(int indent = 0)
-        {
-            string ind = new string(' ', indent);
-            StringBuilder sb = new();
-
-            sb.AppendLine($"{ind}{{");
-            sb.AppendLine($"{ind}  Name: {Name},");
-            sb.AppendLine($"{ind}  NameAsUtf8.Length: {(NameAsUtf8Bytes?.Length ?? -1)},");
-            sb.AppendLine($"{ind}  IsConfigured: {IsConfigured},");
-            sb.AppendLine($"{ind}  IsIgnored: {IsIgnored},");
-            sb.AppendLine($"{ind}  CanSerialize: {CanSerialize},");
-            sb.AppendLine($"{ind}  CanDeserialize: {CanDeserialize},");
-            sb.AppendLine($"{ind}}}");
-
-            return sb.ToString();
-        }
-#endif
 
         internal bool HasGetter => _untypedGet is not null;
         internal bool HasSetter => _untypedSet is not null;

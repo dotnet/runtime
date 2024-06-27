@@ -18,6 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _GENTREE_H_
 /*****************************************************************************/
 
+#include "abi.h"
 #include "vartype.h"   // For "var_types"
 #include "target.h"    // For "regNumber"
 #include "ssaconfig.h" // For "SsaConfig::RESERVED_SSA_NUM"
@@ -1252,12 +1253,6 @@ public:
         {
             return true;
         }
-#if defined(TARGET_ARM)
-        if (OperIs(GT_PUTARG_REG, GT_BITCAST))
-        {
-            return true;
-        }
-#endif // TARGET_ARM
 #endif // TARGET_64BIT
         return false;
     }
@@ -1724,9 +1719,6 @@ public:
         {
             case GT_INTRINSIC:
             case GT_LEA:
-#if defined(TARGET_ARM)
-            case GT_PUTARG_REG:
-#endif // defined(TARGET_ARM)
 #if defined(TARGET_ARM64)
             case GT_SELECT_NEGCC:
             case GT_SELECT_INCCC:
@@ -1763,8 +1755,11 @@ public:
     inline bool IsFloatPositiveZero() const;
     inline bool IsFloatNegativeZero() const;
     inline bool IsVectorZero() const;
+    inline bool IsVectorNegativeZero(var_types simdBaseType) const;
+    inline bool IsVectorNaN(var_types simdBaseType) const;
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
+    inline bool IsVectorBroadcast(var_types simdBaseType) const;
     inline bool IsMaskAllBitsSet() const;
     inline bool IsVectorConst();
 
@@ -2637,6 +2632,11 @@ struct GenTreeFieldList : public GenTree
         UseIterator(Use* use)
             : use(use)
         {
+        }
+
+        Use* GetUse()
+        {
+            return use;
         }
 
         Use& operator*()
@@ -4477,6 +4477,7 @@ enum class WellKnownArg : unsigned
     DispatchIndirectCallTarget,
     SwiftError,
     SwiftSelf,
+    X86TailCallSpecialArg,
 };
 
 #ifdef DEBUG
@@ -4489,12 +4490,10 @@ struct CallArgABIInformation
         : NumRegs(0)
         , ByteOffset(0)
         , ByteSize(0)
-        , ByteAlignment(0)
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         , StructFloatFieldType()
 #endif
         , ArgType(TYP_UNDEF)
-        , IsBackFilled(false)
         , PassedByRef(false)
 #if FEATURE_ARG_SPLIT
         , m_isSplit(false)
@@ -4520,7 +4519,6 @@ public:
     unsigned NumRegs;
     unsigned ByteOffset;
     unsigned ByteSize;
-    unsigned ByteAlignment;
 #if defined(UNIX_AMD64_ABI)
     // Unix amd64 will split floating point types and integer types in structs
     // between floating point and general purpose registers. Keep track of that
@@ -4538,9 +4536,6 @@ public:
     // that type. Note that if a struct is passed by reference, this will still
     // be the struct type.
     var_types ArgType : 5;
-    // True when the argument fills a register slot skipped due to alignment
-    // requirements of previous arguments.
-    bool IsBackFilled : 1;
     // True iff the argument is passed by reference.
     bool PassedByRef : 1;
 
@@ -4638,17 +4633,10 @@ public:
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 
-    void SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa);
-
     // Get the number of bytes that this argument is occupying on the stack,
     // including padding up to the target pointer size for platforms
     // where a stack argument can't take less.
     unsigned GetStackByteSize() const;
-
-    // Set the register numbers for a multireg argument.
-    // There's nothing to do on x64/Ux because the structDesc has already been used to set the
-    // register numbers.
-    void SetMultiRegNums();
 
     // Return number of stack slots that this argument is taking.
     // This value is not meaningful on Apple arm64 where multiple arguments can
@@ -4668,7 +4656,7 @@ struct NewCallArg
     // The class handle if SignatureType == TYP_STRUCT.
     CORINFO_CLASS_HANDLE SignatureClsHnd = NO_CLASS_HANDLE;
     // The type of well known arg
-    WellKnownArg WellKnownArg = ::WellKnownArg::None;
+    enum class WellKnownArg WellKnownArg = ::WellKnownArg::None;
 
     NewCallArg WellKnown(::WellKnownArg type) const
     {
@@ -4752,6 +4740,7 @@ private:
 
 public:
     CallArgABIInformation AbiInfo;
+    ABIPassingInformation NewAbiInfo;
 
     CallArg(const NewCallArg& arg)
         : CallArg()
@@ -4814,7 +4803,7 @@ class CallArgs
     CallArg* m_head;
     CallArg* m_lateHead;
 
-    unsigned m_nextStackByteOffset;
+    unsigned m_argsStackSize;
 #ifdef UNIX_X86_ABI
     // Number of stack bytes pushed before we start pushing these arguments.
     unsigned m_stkSizeBytes;
@@ -4843,7 +4832,6 @@ class CallArgs
     void      AddedWellKnownArg(WellKnownArg arg);
     void      RemovedWellKnownArg(WellKnownArg arg);
     regNumber GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg);
-    void      SplitArg(CallArg* arg, unsigned numRegs, unsigned numSlots);
     void      SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
 
 public:
@@ -5610,7 +5598,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
@@ -6505,6 +6493,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 #endif
 
+    static bool OperIsBitwiseHWIntrinsic(genTreeOps oper);
+
     bool OperIsMemoryLoad(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
@@ -6518,7 +6508,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertMaskToVector() const
     {
 #if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_AVX512F_ConvertMaskToVector;
+        return GetHWIntrinsicId() == NI_EVEX_ConvertMaskToVector;
 #elif defined(TARGET_ARM64)
         return GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector;
 #else
@@ -6529,7 +6519,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertVectorToMask() const
     {
 #if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_AVX512F_ConvertVectorToMask;
+        return GetHWIntrinsicId() == NI_EVEX_ConvertVectorToMask;
 #elif defined(TARGET_ARM64)
         return GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask;
 #else
@@ -6632,7 +6622,9 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
 
-    genTreeOps HWOperGet() const;
+    genTreeOps HWOperGet(bool* isScalar) const;
+
+    bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
 
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
@@ -6652,10 +6644,13 @@ struct GenTreeVecCon : public GenTree
         simd16_t gtSimd16Val;
 
 #if defined(TARGET_XARCH)
-        simd32_t   gtSimd32Val;
-        simd64_t   gtSimd64Val;
-        simdmask_t gtSimdMaskVal;
+        simd32_t gtSimd32Val;
+        simd64_t gtSimd64Val;
 #endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        simdmask_t gtSimdMaskVal;
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         simd_t gtSimdVal;
     };
@@ -6876,6 +6871,178 @@ struct GenTreeVecCon : public GenTree
 
 #endif // FEATURE_HW_INTRINSICS
 
+    void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType);
+    void EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, GenTreeVecCon* other);
+
+    template <typename TBase>
+    void EvaluateBroadcastInPlace(TBase scalar)
+    {
+        switch (gtType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                simd8_t result = {};
+                BroadcastConstantToSimd<simd8_t, TBase>(&result, scalar);
+                gtSimd8Val = result;
+                break;
+            }
+
+            case TYP_SIMD12:
+            {
+                simd12_t result = {};
+                BroadcastConstantToSimd<simd12_t, TBase>(&result, scalar);
+                gtSimd12Val = result;
+                break;
+            }
+
+            case TYP_SIMD16:
+            {
+                simd16_t result = {};
+                BroadcastConstantToSimd<simd16_t, TBase>(&result, scalar);
+                gtSimd16Val = result;
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                simd32_t result = {};
+                BroadcastConstantToSimd<simd32_t, TBase>(&result, scalar);
+                gtSimd32Val = result;
+                break;
+            }
+
+            case TYP_SIMD64:
+            {
+                simd64_t result = {};
+                BroadcastConstantToSimd<simd64_t, TBase>(&result, scalar);
+                gtSimd64Val = result;
+                break;
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    void EvaluateBroadcastInPlace(var_types baseType, double scalar);
+    void EvaluateBroadcastInPlace(var_types baseType, int64_t scalar);
+
+    void SetElementFloating(var_types simdBaseType, int32_t index, double value)
+    {
+        switch (gtType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                simd8_t result = {};
+                EvaluateWithElementFloating<simd8_t>(simdBaseType, &result, gtSimd8Val, index, value);
+                gtSimd8Val = result;
+                break;
+            }
+
+            case TYP_SIMD12:
+            {
+                simd12_t result = {};
+                EvaluateWithElementFloating<simd12_t>(simdBaseType, &result, gtSimd12Val, index, value);
+                gtSimd12Val = result;
+                break;
+            }
+
+            case TYP_SIMD16:
+            {
+                simd16_t result = {};
+                EvaluateWithElementFloating<simd16_t>(simdBaseType, &result, gtSimd16Val, index, value);
+                gtSimd16Val = result;
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                simd32_t result = {};
+                EvaluateWithElementFloating<simd32_t>(simdBaseType, &result, gtSimd32Val, index, value);
+                gtSimd32Val = result;
+                break;
+            }
+
+            case TYP_SIMD64:
+            {
+                simd64_t result = {};
+                EvaluateWithElementFloating<simd64_t>(simdBaseType, &result, gtSimd64Val, index, value);
+                gtSimd64Val = result;
+                break;
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    void SetElementIntegral(var_types simdBaseType, int32_t index, int64_t value)
+    {
+        switch (gtType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                simd8_t result = {};
+                EvaluateWithElementIntegral<simd8_t>(simdBaseType, &result, gtSimd8Val, index, value);
+                gtSimd8Val = result;
+                break;
+            }
+
+            case TYP_SIMD12:
+            {
+                simd12_t result = {};
+                EvaluateWithElementIntegral<simd12_t>(simdBaseType, &result, gtSimd12Val, index, value);
+                gtSimd12Val = result;
+                break;
+            }
+
+            case TYP_SIMD16:
+            {
+                simd16_t result = {};
+                EvaluateWithElementIntegral<simd16_t>(simdBaseType, &result, gtSimd16Val, index, value);
+                gtSimd16Val = result;
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                simd32_t result = {};
+                EvaluateWithElementIntegral<simd32_t>(simdBaseType, &result, gtSimd32Val, index, value);
+                gtSimd32Val = result;
+                break;
+            }
+
+            case TYP_SIMD64:
+            {
+                simd64_t result = {};
+                EvaluateWithElementIntegral<simd64_t>(simdBaseType, &result, gtSimd64Val, index, value);
+                gtSimd64Val = result;
+                break;
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
     bool IsAllBitsSet() const
     {
         switch (gtType)
@@ -6907,11 +7074,14 @@ struct GenTreeVecCon : public GenTree
                 return gtSimd64Val.IsAllBitsSet();
             }
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             case TYP_MASK:
             {
                 return gtSimdMaskVal.IsAllBitsSet();
             }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             default:
@@ -6920,6 +7090,8 @@ struct GenTreeVecCon : public GenTree
             }
         }
     }
+
+    bool IsBroadcast(var_types simdBaseType) const;
 
     static bool Equals(const GenTreeVecCon* left, const GenTreeVecCon* right)
     {
@@ -6959,11 +7131,14 @@ struct GenTreeVecCon : public GenTree
                 return left->gtSimd64Val == right->gtSimd64Val;
             }
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             case TYP_MASK:
             {
                 return left->gtSimdMaskVal == right->gtSimdMaskVal;
             }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             default:
@@ -6972,6 +7147,10 @@ struct GenTreeVecCon : public GenTree
             }
         }
     }
+
+    bool IsNaN(var_types simdBaseType) const;
+
+    bool IsNegativeZero(var_types simdBaseType) const;
 
     bool IsZero() const
     {
@@ -7004,9 +7183,52 @@ struct GenTreeVecCon : public GenTree
                 return gtSimd64Val.IsZero();
             }
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             case TYP_MASK:
             {
                 return gtSimdMaskVal.IsZero();
+            }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    double GetElementFloating(var_types simdBaseType, int32_t index) const
+    {
+        switch (gtType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                return EvaluateGetElementFloating<simd8_t>(simdBaseType, gtSimd8Val, index);
+            }
+
+            case TYP_SIMD12:
+            {
+                return EvaluateGetElementFloating<simd12_t>(simdBaseType, gtSimd12Val, index);
+            }
+
+            case TYP_SIMD16:
+            {
+                return EvaluateGetElementFloating<simd16_t>(simdBaseType, gtSimd16Val, index);
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                return EvaluateGetElementFloating<simd32_t>(simdBaseType, gtSimd32Val, index);
+            }
+
+            case TYP_SIMD64:
+            {
+                return EvaluateGetElementFloating<simd64_t>(simdBaseType, gtSimd64Val, index);
             }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -7016,6 +7238,104 @@ struct GenTreeVecCon : public GenTree
                 unreached();
             }
         }
+    }
+
+    int64_t GetElementIntegral(var_types simdBaseType, int32_t index) const
+    {
+        switch (gtType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                return EvaluateGetElementIntegral<simd8_t>(simdBaseType, gtSimd8Val, index);
+            }
+
+            case TYP_SIMD12:
+            {
+                return EvaluateGetElementIntegral<simd12_t>(simdBaseType, gtSimd12Val, index);
+            }
+
+            case TYP_SIMD16:
+            {
+                return EvaluateGetElementIntegral<simd16_t>(simdBaseType, gtSimd16Val, index);
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                return EvaluateGetElementIntegral<simd32_t>(simdBaseType, gtSimd32Val, index);
+            }
+
+            case TYP_SIMD64:
+            {
+                return EvaluateGetElementIntegral<simd64_t>(simdBaseType, gtSimd64Val, index);
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    double ToScalarFloating(var_types simdBaseType) const
+    {
+        return GetElementFloating(simdBaseType, 0);
+    }
+
+    int64_t ToScalarIntegral(var_types simdBaseType) const
+    {
+        return GetElementIntegral(simdBaseType, 0);
+    }
+
+    bool IsElementZero(var_types simdBaseType, int32_t index) const
+    {
+        switch (simdBaseType)
+        {
+            case TYP_FLOAT:
+            {
+                return GetElementIntegral(TYP_INT, index) == 0;
+            }
+
+            case TYP_DOUBLE:
+            {
+                return GetElementIntegral(TYP_LONG, index) == 0;
+            }
+
+            default:
+            {
+                return GetElementIntegral(simdBaseType, index) == 0;
+            }
+        }
+    }
+
+    bool IsElementOne(var_types simdBaseType, int32_t index) const
+    {
+        switch (simdBaseType)
+        {
+            case TYP_FLOAT:
+            case TYP_DOUBLE:
+            {
+                return GetElementFloating(simdBaseType, index) == 1;
+            }
+
+            default:
+            {
+                return GetElementIntegral(simdBaseType, index) == 1;
+            }
+        }
+    }
+
+    bool IsScalarZero(var_types simdBaseType) const
+    {
+        return IsElementZero(simdBaseType, 0);
+    }
+
+    bool IsScalarOne(var_types simdBaseType) const
+    {
+        return IsElementOne(simdBaseType, 0);
     }
 
     GenTreeVecCon(var_types type)
@@ -9237,6 +9557,36 @@ inline bool GenTree::IsVectorZero() const
 }
 
 //-------------------------------------------------------------------
+// IsVectorNegativeZero: returns true if this node is a vector constant with all elements negative zero.
+//
+// Arguments:
+//     simdBaseType - the base type of the constant being checked
+//
+// Returns:
+//     True if this node is a vector constant with all elements negative zero
+//
+inline bool GenTree::IsVectorNegativeZero(var_types simdBaseType) const
+{
+    assert(varTypeIsFloating(simdBaseType));
+    return IsCnsVec() && AsVecCon()->IsNegativeZero(simdBaseType);
+}
+
+//-------------------------------------------------------------------
+// IsVectorZero: returns true if this node is a vector constant with all bits zero.
+//
+// Arguments:
+//     simdBaseType - the base type of the constant being checked
+//
+// Returns:
+//     True if this node is a vector constant with all bits zero
+//
+inline bool GenTree::IsVectorNaN(var_types simdBaseType) const
+{
+    assert(varTypeIsFloating(simdBaseType));
+    return IsCnsVec() && AsVecCon()->IsNaN(simdBaseType);
+}
+
+//-------------------------------------------------------------------
 // IsVectorCreate: returns true if this node is the creation of a vector.
 //                 Does not include "Unsafe" method calls.
 //
@@ -9280,6 +9630,24 @@ inline bool GenTree::IsVectorAllBitsSet() const
     if (IsCnsVec())
     {
         return AsVecCon()->IsAllBitsSet();
+    }
+#endif // FEATURE_SIMD
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsVectorBroadcast: returns true if this node is a vector constant with the same value in all elements.
+//
+// Returns:
+//     True if this node is a vector constant with the same value in all elements.
+//
+inline bool GenTree::IsVectorBroadcast(var_types simdBaseType) const
+{
+#ifdef FEATURE_SIMD
+    if (IsCnsVec())
+    {
+        return AsVecCon()->IsBroadcast(simdBaseType);
     }
 #endif // FEATURE_SIMD
 

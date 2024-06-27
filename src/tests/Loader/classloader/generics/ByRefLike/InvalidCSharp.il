@@ -238,6 +238,20 @@
     }
 
     .method public hidebysig
+        instance bool BoxIsinstUnboxAny_Mismatch(!T) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            box !T
+            isinst ByRefLikeType2
+            unbox.any ByRefLikeType2
+        // End sequence
+        pop
+        ldc.i4.0
+        ret
+    }
+
+    .method public hidebysig
         instance bool BoxIsinstBranch(!T) cil managed
     {
         ldarg.1
@@ -436,6 +450,14 @@
 }
 
 .class public sequential ansi sealed beforefieldinit ByRefLikeType
+    extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+}
+
+.class public sequential ansi sealed beforefieldinit ByRefLikeType2
     extends [System.Runtime]System.ValueType
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
@@ -752,6 +774,22 @@
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstUnboxAny(!0)
+        ret
+    }
+
+    .method public hidebysig static
+        bool BoxIsinstUnboxAny_Mismatch() cil managed
+    {
+        .locals init (
+            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+        )
+
+        ldloca.s 0
+        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+        ldloca.s 0
+        ldloc 0
+        ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
+        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstUnboxAny_Mismatch(!0)
         ret
     }
 

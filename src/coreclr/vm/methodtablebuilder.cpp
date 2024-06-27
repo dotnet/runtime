@@ -1673,21 +1673,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
     //
 
     // We decide here if we need a dynamic entry for our statics. We need it here because
-    // the offsets of our fields will depend on this. For the dynamic case (which requires
-    // an extra indirection (indirect depending of methodtable) we'll allocate the slot
-    // in setupmethodtable
-    if (((pAllocator->IsCollectible() ||  pModule->IsReflection() || bmtGenerics->HasInstantiation() || !pModule->IsStaticStoragePrepared(cl)) &&
-        (bmtVT->GetClassCtorSlotIndex() != INVALID_SLOT_INDEX || bmtEnumFields->dwNumStaticFields !=0))
-#ifdef FEATURE_METADATA_UPDATER
-        // Classes in modules that have been edited (would do on class level if there were a
-        // way to tell if the class had been edited) also have dynamic statics as the number
-        // of statics might have changed, so can't use the static module-wide storage
-        || (pModule->IsEditAndContinueEnabled() &&
-                ((EditAndContinueModule*)pModule)->GetApplyChangesCount() > CorDB_DEFAULT_ENC_FUNCTION_VERSION)
-#endif // FEATURE_METADATA_UPDATER
-        )
+    // the offsets of our fields will depend on this.
+    if (bmtEnumFields->dwNumStaticFields != 0)
     {
-        // We will need a dynamic id
+        // We will need static variables
         bmtProp->fDynamicStatics = true;
 
         if (bmtGenerics->HasInstantiation())
@@ -1910,15 +1899,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
             }
 
             pMT->SetupGenericsStaticsInfo(pStaticFieldDescs);
-        }
-        else
-        {
-            // Get an id for the dynamic class. We store it in the class because
-            // no class that is persisted in ngen should have it (ie, if the class is ngened
-            // The id is stored in an optional field so we need to ensure an optional field descriptor has
-            // been allocated for this EEClass instance.
-            EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, pAllocator->GetLowFrequencyHeap());
-            SetModuleDynamicID(GetModule()->AllocateDynamicEntry(pMT));
         }
     }
 
@@ -3858,7 +3838,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
         FieldDesc * pFD;
         DWORD       dwLog2FieldSize = 0;
-        BOOL        bCurrentFieldIsGCPointer = FALSE;
+        BOOL        bCurrentFieldIsObjectRef = FALSE;
         mdToken     dwByValueClassToken = 0;
         MethodTable * pByValueClass = NULL;
         BOOL        fIsByValue = FALSE;
@@ -4030,7 +4010,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
         case ELEMENT_TYPE_OBJECT:
             {
                 dwLog2FieldSize = LOG2_PTRSIZE;
-                bCurrentFieldIsGCPointer = TRUE;
+                bCurrentFieldIsObjectRef = TRUE;
                 FieldDescElementType = ELEMENT_TYPE_CLASS;
 
                 if (!fIsStatic)
@@ -4375,7 +4355,7 @@ IS_VALUETYPE:
                 IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
             else if (IsManagedSequential() && !fIsStatic)
                 IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
-            else if (bCurrentFieldIsGCPointer)
+            else if (bCurrentFieldIsObjectRef)
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED_GC_PTR);
             else
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED);
@@ -4391,7 +4371,7 @@ IS_VALUETYPE:
 
             dwCurrentDeclaredField++;
 
-            if (bCurrentFieldIsGCPointer)
+            if (bCurrentFieldIsObjectRef)
             {
                 bmtFP->NumInstanceGCPointerFields++;
             }
@@ -4469,7 +4449,7 @@ IS_VALUETYPE:
             {
                 bmtFP->NumThreadStaticFieldsOfSize[dwLog2FieldSize]++;
 
-                if (bCurrentFieldIsGCPointer)
+                if (bCurrentFieldIsObjectRef)
                     bmtFP->NumThreadStaticGCPointerFields++;
 
                 if (fIsByValue)
@@ -4479,7 +4459,7 @@ IS_VALUETYPE:
             {
                 bmtFP->NumRegularStaticFieldsOfSize[dwLog2FieldSize]++;
 
-                if (bCurrentFieldIsGCPointer)
+                if (bCurrentFieldIsObjectRef)
                     bmtFP->NumRegularStaticGCPointerFields++;
 
                 if (fIsByValue)
@@ -7903,11 +7883,8 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
 
     // Tell the module to give us the offsets we'll be using and commit space for us
     // if necessary
-    DWORD dwNonGCOffset, dwGCOffset;
-    GetModule()->GetOffsetsForRegularStaticData(bmtInternal->pType->GetTypeDefToken(),
-                                                bmtProp->fDynamicStatics,
-                                                GetNumHandleRegularStatics(), dwCumulativeStaticFieldPos,
-                                                &dwGCOffset, &dwNonGCOffset);
+    uint32_t dwNonGCOffset, dwGCOffset;
+    MethodTable::GetStaticsOffsets(StaticsOffsetType::Normal, bmtProp->fGenericsStatics, &dwGCOffset, &dwNonGCOffset);
 
     // Allocate boxed statics first ("x << LOG2_PTRSIZE" is equivalent to "x * sizeof(void *)")
     dwCumulativeStaticGCFieldPos = bmtFP->NumRegularStaticGCBoxedFields<<LOG2_PTRSIZE;
@@ -7955,17 +7932,9 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
         LOG((LF_CLASSLOADER, LL_INFO1000000, "Offset of %s: %i\n", pCurField->m_debugName, pCurField->GetOffset()));
     }
 
-    if (bmtProp->fDynamicStatics)
-    {
-        _ASSERTE(dwNonGCOffset == 0 ||  // no statics at all
-                 dwNonGCOffset == OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob); // We need space to point to the GC statics
-        bmtProp->dwNonGCRegularStaticFieldBytes = dwCumulativeStaticFieldPos;
-    }
-    else
-    {
-        bmtProp->dwNonGCRegularStaticFieldBytes = 0; // Non dynamics shouldnt be using this
-    }
-    LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Static field bytes needed (0 is normal for non dynamic case)%i\n", bmtProp->dwNonGCRegularStaticFieldBytes));
+    _ASSERTE(dwNonGCOffset == 0 || (dwNonGCOffset == sizeof(TADDR) * 2));
+    bmtProp->dwNonGCRegularStaticFieldBytes = dwCumulativeStaticFieldPos;
+    LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Static field bytes needed %i\n", bmtProp->dwNonGCRegularStaticFieldBytes));
 }
 
 
@@ -8017,12 +7986,9 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
 
     // Tell the module to give us the offsets we'll be using and commit space for us
     // if necessary
-    DWORD dwNonGCOffset, dwGCOffset;
+    uint32_t dwNonGCOffset, dwGCOffset;
 
-    GetModule()->GetOffsetsForThreadStaticData(bmtInternal->pType->GetTypeDefToken(),
-                                               bmtProp->fDynamicStatics,
-                                               GetNumHandleThreadStatics(), dwCumulativeStaticFieldPos,
-                                               &dwGCOffset, &dwNonGCOffset);
+    MethodTable::GetStaticsOffsets(StaticsOffsetType::ThreadLocal, bmtProp->fGenericsStatics, &dwGCOffset, &dwNonGCOffset);
 
     // Allocate boxed statics first ("x << LOG2_PTRSIZE" is equivalent to "x * sizeof(void *)")
     dwCumulativeStaticGCFieldPos = bmtFP->NumThreadStaticGCBoxedFields<<LOG2_PTRSIZE;
@@ -8070,15 +8036,14 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
         LOG((LF_CLASSLOADER, LL_INFO1000000, "Offset of %s: %i\n", pCurField->m_debugName, pCurField->GetOffset()));
     }
 
-    if (bmtProp->fDynamicStatics)
+    if (dwCumulativeStaticFieldPos != 0)
     {
-        _ASSERTE(dwNonGCOffset == 0 ||  // no thread statics at all
-                 dwNonGCOffset == OFFSETOF__ThreadLocalModule__DynamicEntry__m_pDataBlob); // We need space to point to the GC statics
+        _ASSERTE(bmtProp->fDynamicStatics);
         bmtProp->dwNonGCThreadStaticFieldBytes = dwCumulativeStaticFieldPos;
     }
     else
     {
-        bmtProp->dwNonGCThreadStaticFieldBytes = 0; // Non dynamics shouldnt be using this
+        bmtProp->dwNonGCThreadStaticFieldBytes = 0;
     }
     LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: ThreadStatic field bytes needed (0 is normal for non dynamic case)%i\n", bmtProp->dwNonGCThreadStaticFieldBytes));
 }
@@ -10265,6 +10230,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     BOOL isInterface,
     BOOL fDynamicStatics,
     BOOL fHasGenericsStaticsInfo,
+    bool fHasThreadStatics,
     BOOL fHasVirtualStaticMethods
 #ifdef FEATURE_COMINTEROP
         , BOOL fHasDynamicInterfaceMap
@@ -10367,7 +10333,20 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         pMT->SetFlag(MethodTable::enum_flag_HasPerInstInfo);
     }
 
-    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo, static_cast<WORD>(dwNonVirtualSlots), S_SIZE_T(dispatchMapAllocationSize));
+    MethodTableStaticsFlags staticsFlags = MethodTableStaticsFlags::None;
+    if (fDynamicStatics)
+        staticsFlags |= MethodTableStaticsFlags::Present;
+
+    if (fHasGenericsStaticsInfo)
+    {
+        _ASSERTE(fDynamicStatics);
+        staticsFlags |= MethodTableStaticsFlags::Generic;
+    }
+
+    if (fHasThreadStatics)
+        staticsFlags |= MethodTableStaticsFlags::Thread;
+
+    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, staticsFlags, static_cast<WORD>(dwNonVirtualSlots), S_SIZE_T(dispatchMapAllocationSize));
 
     pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
@@ -10463,7 +10442,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     if (fDynamicStatics)
     {
-        pMT->SetDynamicStatics(fHasGenericsStaticsInfo);
+        pMT->SetDynamicStatics();
     }
 
     // the dictionary pointers follow the interface map
@@ -10567,6 +10546,7 @@ MethodTableBuilder::SetupMethodTable2(
                                    IsInterface(),
                                    bmtProp->fDynamicStatics,
                                    bmtProp->fGenericsStatics,
+                                   bmtEnumFields->dwNumThreadStaticFields != 0,
                                    bmtProp->fHasVirtualStaticMethods,
 #ifdef FEATURE_COMINTEROP
                                    fHasDynamicInterfaceMap,
@@ -10656,6 +10636,7 @@ MethodTableBuilder::SetupMethodTable2(
         pMT->SetHasClassConstructor();
         CONSISTENCY_CHECK(pMT->GetClassConstructorSlot() == bmtVT->pCCtor->GetSlotIndex());
     }
+    
     if (bmtVT->pDefaultCtor != NULL)
     {
         pMT->SetHasDefaultConstructor();
@@ -10888,7 +10869,7 @@ MethodTableBuilder::SetupMethodTable2(
 
                 pMD->EnsureTemporaryEntryPointCore(GetLoaderAllocator(), GetMemTracker());
                 PCODE addr = pMD->GetTemporaryEntryPoint();
-                _ASSERTE(addr != NULL);
+                _ASSERTE(addr != (PCODE)NULL);
 
                 if (pMD->HasNonVtableSlot())
                 {

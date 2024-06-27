@@ -365,15 +365,12 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<Guid>());
             Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<StructWithoutReferences>());
             Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<StructWithReferences>());
-
-            // TODO https://github.com/dotnet/runtime/issues/102847:
-            // Enable these tests once IsReferenceOrContainsReferences is fixed to recognize ref fields.
-            // Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithoutReferences>());
-            // Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithReferences>());
-            // Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<Span<char>>());
-            // Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<ReadOnlySpan<char>>());
-            // Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithRef>());
-            // Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithNestedRef>());
+            Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithoutReferences>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithReferences>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<Span<char>>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<ReadOnlySpan<char>>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithRef>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithNestedRef>());
         }
 
         [Fact]
