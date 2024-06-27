@@ -268,6 +268,8 @@ public:
 
         m_pCurrent = m_pBuffer = dac_cast<PTR_size_t>((size_t)dac_cast<TADDR>(pBuffer) & ~((size_t)sizeof(size_t)-1));
         m_RelPos = m_InitialRelPos = (int)((size_t)dac_cast<TADDR>(pBuffer) % sizeof(size_t)) * 8/*BITS_PER_BYTE*/;
+        // There are always some bits in the GC info, at least the header.
+        // It is ok to prefetch.
         m_current = *m_pCurrent >> m_RelPos;
     }
 
@@ -301,10 +303,19 @@ public:
 
         _ASSERTE(numBits > 0 && numBits <= BITS_PER_SIZE_T);
 
+        // "m_RelPos == BITS_PER_SIZE_T" means that m_current
+        // is not yet fetched. Do that now.
+        if(m_RelPos == BITS_PER_SIZE_T)
+        {
+            m_pCurrent++;
+            m_current = *m_pCurrent;
+            m_RelPos = 0;
+        }
+
         size_t result = m_current;
         m_current >>= numBits;
         int newRelPos = m_RelPos + numBits;
-        if(newRelPos >= BITS_PER_SIZE_T)
+        if(newRelPos > BITS_PER_SIZE_T)
         {
             m_pCurrent++;
             m_current = *m_pCurrent;
@@ -324,14 +335,19 @@ public:
     {
         SUPPORTS_DAC;
 
-        size_t result = m_current & 1;
-        m_current >>= 1;
-        if(++m_RelPos == BITS_PER_SIZE_T)
+        // "m_RelPos == BITS_PER_SIZE_T" means that m_current
+        // is not yet fetched. Do that now.
+        if(m_RelPos == BITS_PER_SIZE_T)
         {
             m_pCurrent++;
             m_current = *m_pCurrent;
             m_RelPos = 0;
         }
+
+        m_RelPos++;
+        size_t result = m_current & 1;
+        m_current >>= 1;
+
         return result;
     }
 
@@ -347,6 +363,9 @@ public:
         size_t adjPos = pos + m_InitialRelPos;
         m_pCurrent = m_pBuffer + adjPos / BITS_PER_SIZE_T;
         m_RelPos = (int)(adjPos % BITS_PER_SIZE_T);
+
+        // we always set current position just before reading.
+        // It is ok to prefetch.
         m_current = *m_pCurrent >> m_RelPos;
         _ASSERTE(GetCurrentPos() == pos);
     }
@@ -355,15 +374,25 @@ public:
     {
         SUPPORTS_DAC;
 
-        SetCurrentPos(GetCurrentPos() + numBitsToSkip);
-    }
-
-    __forceinline size_t ReadBitAtPos( size_t pos )
-    {
+        size_t pos = GetCurrentPos() + numBitsToSkip;
         size_t adjPos = pos + m_InitialRelPos;
-        size_t* ptr = m_pBuffer + adjPos / BITS_PER_SIZE_T;
-        int relPos = (int)(adjPos % BITS_PER_SIZE_T);
-        return (*ptr) & (((size_t)1) << relPos);
+        m_pCurrent = m_pBuffer + adjPos / BITS_PER_SIZE_T;
+        m_RelPos = (int)(adjPos % BITS_PER_SIZE_T);
+
+        // Skipping ahead may go to a position beyound the stream.
+        // We will not prefetch on word boundary - in case
+        // the next word in in an unreadable page.
+        if (m_RelPos == 0)
+        {
+            m_pCurrent--;
+            m_RelPos = BITS_PER_SIZE_T;
+        }
+        else
+        {
+            m_current = *m_pCurrent >> m_RelPos;
+        }
+
+        _ASSERTE(GetCurrentPos() == pos);
     }
 
 
