@@ -14,7 +14,6 @@ namespace System.Net.Security.Tests
     public class TransportContextTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task TransportContext_ConnectToServerWithSsl_GetExpectedChannelBindings()
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -49,6 +48,10 @@ namespace System.Net.Security.Tests
             if (OperatingSystem.IsMacOS())
             {
                 Assert.True(cbt2 == null, "ChannelBindingKind.Unique token data is not expected on OSX platform.");
+            }
+            else if (OperatingSystem.IsAndroid())
+            {
+                Assert.True(cbt2 == null, "ChannelBindingKind.Unique token data is not expected on Android platform.");
             }
             else
             {
