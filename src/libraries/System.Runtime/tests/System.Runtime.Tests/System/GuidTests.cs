@@ -20,6 +20,12 @@ namespace System.Tests
             Assert.Equal(new Guid(0, 0, 0, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }), Guid.Empty);
         }
 
+        [Fact]
+        public static void AllBitsSet()
+        {
+            Assert.Equal("ffffffff-ffff-ffff-ffff-ffffffffffff", Guid.AllBitsSet.ToString("", CultureInfo.InvariantCulture));
+        }
+
         public static IEnumerable<object[]> Ctor_ByteArray_TestData()
         {
             yield return new object[] { new byte[16], Guid.Empty };
@@ -120,13 +126,39 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateVersion7()
+        {
+            DateTimeOffset timestamp = DateTimeOffset.UtcNow;
+            ReadOnlySpan<char> unix_ts_ms = timestamp.ToUnixTimeMilliseconds().ToString("x12", CultureInfo.InvariantCulture);
+
+            Guid guid = Guid.CreateVersion7(timestamp);
+            ReadOnlySpan<char> guidString = guid.ToString("", CultureInfo.InvariantCulture);
+
+            Assert.Equal(7, guid.Version);
+            Assert.True((guid.Variant == 0x8) || (guid.Variant == 0x9) || (guid.Variant == 0xA) || (guid.Variant == 0xB));
+
+            Assert.Equal(unix_ts_ms.Slice(0, 8), guidString.Slice(0, 8));
+            Assert.Equal('-', guidString[8]);
+            Assert.Equal(unix_ts_ms.Slice(8), guidString.Slice(9, 4));
+            Assert.Equal('-', guidString[13]);
+            Assert.Equal('7', guidString[14]);
+            Assert.Equal('-', guidString[18]);
+            Assert.True((guidString[19] == '8') || (guidString[19] == '9') || (guidString[19] == 'a') || (guidString[19] == 'b'));
+            Assert.Equal('-', guidString[23]);
+        }
+
+        [Fact]
         public static void NewGuid()
         {
             Guid guid1 = Guid.NewGuid();
             Assert.NotEqual(Guid.Empty, guid1);
+            Assert.Equal(4, guid1.Version);
+            Assert.True((guid1.Variant == 0x8) || (guid1.Variant == 0x9) || (guid1.Variant == 0xA) || (guid1.Variant == 0xB));
 
             Guid guid2 = Guid.NewGuid();
             Assert.NotEqual(guid1, guid2);
+            Assert.Equal(4, guid2.Version);
+            Assert.True((guid2.Variant == 0x8) || (guid2.Variant == 0x9) || (guid2.Variant == 0xA) || (guid2.Variant == 0xB));
         }
 
         [Fact]
