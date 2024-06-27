@@ -2118,12 +2118,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_Compute32BitAddresses:
             case NI_Sve_Compute64BitAddresses:
             {
-                static_assert_no_msg(AreContiguous(NI_Sve_Compute16BitAddresses, NI_Sve_Compute32BitAddresses,
-                                                   NI_Sve_Compute64BitAddresses, NI_Sve_Compute8BitAddresses));
-
                 GetEmitter()->emitInsSve_R_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg,
-                                                 (intrin.id - NI_Sve_Compute16BitAddresses), opt,
-                                                 INS_SCALABLE_OPTS_LSL_N);
+                                                 HWIntrinsicInfo::lookupIval(intrin.id), opt, INS_SCALABLE_OPTS_LSL_N);
                 break;
             }
 

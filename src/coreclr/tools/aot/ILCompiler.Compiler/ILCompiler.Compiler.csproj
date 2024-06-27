@@ -369,7 +369,6 @@
     <Compile Include="Compiler\Dataflow\ArrayValue.cs" />
     <Compile Include="Compiler\Dataflow\AttributeDataFlow.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedCallGraph.cs" />
-    <Compile Include="Compiler\Dataflow\CompilerGeneratedNames.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedState.cs" />
     <Compile Include="Compiler\Dataflow\DiagnosticContext.cs" />
     <Compile Include="Compiler\Dataflow\DiagnosticUtilities.cs" />

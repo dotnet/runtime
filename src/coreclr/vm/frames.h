@@ -487,7 +487,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         TADDR ptr = GetReturnAddressPtr();
-        _ASSERTE(ptr != NULL);
+        _ASSERTE(ptr != (TADDR)NULL);
         *(TADDR*)ptr = val;
     }
 #endif // #ifndef DACCESS_COMPILE

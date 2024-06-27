@@ -4828,7 +4828,7 @@ lDone: ;
 #ifdef _DEBUG
         char buffer[200];
         sprintf_s(buffer, 200, "\nInternal error: Uncaught exception was thrown from IP = %p in UnhandledExceptionFilter_Worker on thread 0x%08x\n",
-                param.ExceptionEIP, ((GetThreadNULLOk() == NULL) ? NULL : GetThread()->GetThreadId()));
+                param.ExceptionEIP, ((GetThreadNULLOk() == NULL) ? 0 : GetThread()->GetThreadId()));
         PrintToStdErrA(buffer);
         _ASSERTE(!"Unexpected exception in UnhandledExceptionFilter_Worker");
 #endif
@@ -7892,8 +7892,8 @@ LONG NotifyOfCHFFilterWrapper(
         if (pThread)
         {
             LOG((LF_EH, LL_INFO1000, ", Thread SP: %p, Exception SP: %p",
-                 pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : NULL,
-                 pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : NULL ));
+                 pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : (TADDR)NULL,
+                 pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : (TADDR)NULL ));
         }
         LOG((LF_EH, LL_INFO1000, "\n"));
         return ret;
@@ -10938,7 +10938,7 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 
         // If the exception has been caught in native code, then alongwith not having address of the handler to be
         // invoked, we also wont have the IL clause for the catch block and resume stack frame will be NULL as well.
-        _ASSERTE((pCurEHTracker->GetCatchToCallPC() == NULL) &&
+        _ASSERTE((pCurEHTracker->GetCatchToCallPC() == 0) &&
             (pCurEHTracker->GetCatchHandlerExceptionClauseToken() == NULL) &&
                  (pCurEHTracker->GetResumeStackFrame().IsNull()));
 
