@@ -30,7 +30,7 @@ FORCEINLINE PTR_EEClass MethodTable::GetClassWithPossibleAV()
 
     TADDR addr = m_pCanonMT;
 #ifdef DACCESS_COMPILE
-    if (addr == NULL)
+    if (addr == 0)
     {
         DacError(E_UNEXPECTED);
     }
@@ -45,7 +45,7 @@ FORCEINLINE PTR_EEClass MethodTable::GetClassWithPossibleAV()
         // pointer to canonical MethodTable.
         TADDR canonicalMethodTable = union_getPointer(addr);
 #ifdef DACCESS_COMPILE
-        if (canonicalMethodTable == NULL)
+        if (canonicalMethodTable == 0)
         {
             DacError(E_UNEXPECTED);
         }
