@@ -348,7 +348,8 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             {
                 bool isUnsafe = intrinsic == NI_Vector128_ShuffleUnsafe;
 #if defined(TARGET_XARCH)
-                isUnsafe = isUnsafe || intrinsic == NI_Vector256_ShuffleUnsafe || intrinsic == NI_Vector512_ShuffleUnsafe;
+                isUnsafe =
+                    isUnsafe || intrinsic == NI_Vector256_ShuffleUnsafe || intrinsic == NI_Vector512_ShuffleUnsafe;
 #elif defined(TARGET_ARM64)
                 isUnsafe = isUnsafe || intrinsic == NI_Vector64_ShuffleUnsafe;
 #endif
