@@ -323,6 +323,17 @@ JS_ENGINES = [NODE_JS]
           WorkingDirectory="$(ArtifactsObjDir)"
           IgnoreStandardErrorWarningFormat="true" />
 
+    <!--
+    Temporary WASI-SDK 22 workaround #2: The version of `wasm-component-ld` that
+    ships with WASI-SDK 22 contains a
+    [bug](https://github.com/bytecodealliance/wasm-component-ld/issues/22) which
+    has been fixed in a v0.5.3 of that utility, so we upgrade it here.
+    -->
+    <Exec Command="curl -L -o https://github.com/bytecodealliance/wasm-component-ld/releases/download/v0.5.4/wasm-component-ld-v0.5.4-x86_64-linux.tar.gz &amp;&amp; tar --strip-components=1 -xzf wasm-component-ld-v0.5.4-x86_64-linux.tar.gz -C $(WASI_SDK_PATH)/wasm-component &amp;&amp; cp $(WASI_SDK_PATH)/wasm-component/wasm-component-ld $(WASI_SDK_PATH)/bin/wasm-component-ld"
+          Condition="'$(HostOS)' != 'windows'"
+          WorkingDirectory="$(ArtifactsObjDir)"
+          IgnoreStandardErrorWarningFormat="true" />
+
     <Exec Command="powershell -NonInteractive -command &quot;&amp; $(WasiLocalPath)\provision.ps1 -WasiSdkUrl $(WasiSdkUrl) -WasiSdkVersion $(WasiSdkVersion) -WasiSdkPath $(WASI_SDK_PATH) -WasiLocalPath $(WasiLocalPath); Exit $LastExitCode &quot;"
           Condition="'$(HostOS)' == 'windows'"
           WorkingDirectory="$(ArtifactsObjDir)"
