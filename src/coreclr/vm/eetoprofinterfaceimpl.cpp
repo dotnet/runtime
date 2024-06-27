@@ -6082,4 +6082,44 @@ HRESULT EEToProfInterfaceImpl::LoadAsNotificationOnly(BOOL *pbNotificationOnly)
     return m_pCallback11->LoadAsNotificationOnly(pbNotificationOnly);
 }
 
+// Helper method for ProfToEEInterfaceImpl::EnumerateGCHeapObjects to properly set callback state flags
+// and avoid performance cost of invoking an ICorProfilerCallback API per GC Heap object.
+HRESULT EEToProfInterfaceImpl::EnumerateGCHeapObjectsCallback(ObjectCallback callback, void* callbackState)
+{
+    CONTRACTL
+    {
+        // Yay!
+        NOTHROW;
+
+        // Yay!
+        GC_TRIGGERS;
+
+        // Yay!
+        MODE_PREEMPTIVE;
+
+        // Yay!
+        CAN_TAKE_LOCK;
+
+        // As EE should be suspended when walking the GC heap,
+        // the Thread store lock is normally held during this call.
+    }
+    CONTRACTL_END;
+
+    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
+                                LL_INFO10,
+                                "**PROF: EnumerateGCHeapObjectsCallback.\n"
+                                ));
+
+    if (callback == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    IGCHeap *hp = GCHeapUtilities::GetGCHeap();
+    unsigned max_generation = hp->GetMaxGeneration();
+    hp->DiagWalkHeapWithACHandling((walk_fn)callback, callbackState, max_generation, TRUE);
+
+    return S_OK;
+}
+
 #endif // PROFILING_SUPPORTED
