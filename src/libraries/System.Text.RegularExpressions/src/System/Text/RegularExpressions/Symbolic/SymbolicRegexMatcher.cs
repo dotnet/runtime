@@ -191,7 +191,6 @@ namespace System.Text.RegularExpressions.Symbolic
             _stateArray = new MatchingState<TSet>[InitialDfaStateCapacity];
             _stateFlagsArray = new StateFlags[InitialDfaStateCapacity];
             _nullabilityArray = new byte[InitialDfaStateCapacity];
-            _canBeAcceleratedArray = new bool[InitialDfaStateCapacity];
             _dfaDelta = new int[InitialDfaStateCapacity << _mintermsLog];
 
             // Initialize a lookup array for the character kinds of each minterm ID. This includes one "special" minterm
@@ -361,7 +360,6 @@ namespace System.Text.RegularExpressions.Symbolic
             return minterms[mintermId];
         }
 
-        /// <summary>TODO: this if-else branch could be called once. it's currently causing overhead on every single step</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private uint GetCharKind<TInputReader>(ReadOnlySpan<char> input, int i)
             where TInputReader : struct, IInputReader => !_pattern._info.ContainsSomeAnchor ?
@@ -871,7 +869,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
 
         /// <summary>
-        /// TODO: this is a separate DFA function that takes advantage of short circuit array lookups
         /// Workhorse inner loop for <see cref="FindEndPositionFallback{TInputReader,TFindOptimizationsHandler,TNullabilityHandler}"/>.  Consumes the <paramref name="input"/> character by character,
         /// starting at <paramref name="posRef"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
         /// lazily building out the graph as needed.
@@ -901,6 +898,7 @@ namespace System.Text.RegularExpressions.Symbolic
             int initialStatePos = initialStatePosRef;
             int initialStatePosCandidate = initialStatePosCandidateRef;
             int deadStateId = _deadStateId;
+            int initialStateId = _initialStateId;
             try
             {
                 // Loop through each character in the input, transitioning from state to state for each.
@@ -910,7 +908,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         return true;
                     }
-                    if ((_stateFlagsArray[state.DfaStateId] & StateFlags.IsAcceleratedFlag) != 0)
+                    if (state.DfaStateId == initialStateId)
                     {
                         if (!TFindOptimizationsHandler.TryFindNextStartingPosition<TInputReader>(this, input, ref state, ref pos))
                         {
@@ -1866,7 +1864,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 byte[] lookup,
                 ReadOnlySpan<char> input, ref int currentStateId, ref int pos, int initialStateId)
                 where TOptimizedInputReader : struct, IOptimizedInputReader
-
             {
                 if (currentStateId != initialStateId)
                     return false;
