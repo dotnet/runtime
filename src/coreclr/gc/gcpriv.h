@@ -1521,7 +1521,8 @@ private:
     static int s_counter_full;
     static int s_counter;
 
-    int index;
+    size_t gc_index;
+    int snapshot_index;
     snapshot_stage stage;
     freelist_type type;
 

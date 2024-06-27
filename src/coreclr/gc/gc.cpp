@@ -13303,7 +13303,10 @@ void free_list_snapshot::record(snapshot_stage stage, freelist_type type, region
     // Enter, should be no contention
     if (Interlocked::CompareExchange(&s_lock, 1, 0) != 0) fail();
 
-    s_buffer[s_counter].index = s_counter_full;
+#ifndef MULTIPLE_HEAPS
+    s_buffer[s_counter].gc_index = VolatileLoadWithoutBarrier (&gc_heap::settings.gc_index);
+#endif
+    s_buffer[s_counter].snapshot_index = s_counter_full;
     s_buffer[s_counter].stage = stage;
     s_buffer[s_counter].type = type;
 
