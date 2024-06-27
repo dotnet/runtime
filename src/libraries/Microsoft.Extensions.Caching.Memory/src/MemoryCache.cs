@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -184,7 +185,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     if (_options.HasSizeLimit)
                     {
                         // Entry could not be added, reset cache size
-                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size + (priorEntry?.Size ?? 0));
+                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size + (priorEntry?.Size).GetValueOrDefault());
                     }
                     entry.SetExpired(EvictionReason.Replaced);
                     entry.InvokeEvictionCallbacks();
@@ -448,8 +449,9 @@ namespace Microsoft.Extensions.Caching.Memory
             for (int i = 0; i < 100; i++)
             {
                 long newSize = sizeRead + entry.Size;
-                if (priorEntry != null && entry.Key == priorEntry.Key)
+                if (priorEntry != null)
                 {
+                    Debug.Assert(entry.Key == priorEntry.Key);
                     newSize -= priorEntry.Size;
                 }
 
