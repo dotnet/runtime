@@ -40,8 +40,8 @@ static int32_t Init(PAL_ZStream* stream)
 {
     z_stream* zStream = (z_stream*)calloc(1, sizeof(z_stream));
 
-	zStream->zalloc = z_custom_calloc;
-	zStream->zfree = z_custom_cfree;
+    zStream->zalloc = z_custom_calloc;
+    zStream->zfree = z_custom_cfree;
 
     stream->internalState = zStream;
 
