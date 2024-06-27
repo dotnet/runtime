@@ -111,7 +111,7 @@ jobs:
           /p:WasmSkipMissingRuntimePackBuild=true
           /p:PreparePackagesForWorkloadInstall=false
           /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
-        timeoutInMinutes: 180
+        timeoutInMinutes: 240
         condition: >-
           or(
             eq(variables['alwaysRunVar'], true),

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -118,14 +118,15 @@ public class ComputeWasmBuildAssets : Task
                 }
 
                 string candidateFileName = candidate.GetMetadata("FileName");
-                if (candidateFileName.StartsWith("dotnet") && candidate.GetMetadata("Extension") == ".js")
+                string extension = candidate.GetMetadata("Extension");
+                if (candidateFileName.StartsWith("dotnet") && (extension == ".js" || extension == ".mjs"))
                 {
                     string newDotnetJSFileName = null;
                     string newDotNetJSFullPath = null;
                     if (candidateFileName != "dotnet" || FingerprintDotNetJs)
                     {
                         var itemHash = FileHasher.GetFileHash(candidate.ItemSpec);
-                        newDotnetJSFileName = $"{candidateFileName}.{DotNetJsVersion}.{itemHash}.js";
+                        newDotnetJSFileName = $"{candidateFileName}.{DotNetJsVersion}.{itemHash}{extension}";
 
                         var originalFileFullPath = Path.GetFullPath(candidate.ItemSpec);
                         var originalFileDirectory = Path.GetDirectoryName(originalFileFullPath);

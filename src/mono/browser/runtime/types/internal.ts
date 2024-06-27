@@ -1,3 +1,4 @@
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -449,7 +450,7 @@ export declare interface EmscriptenModuleInternal {
     FS: any;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
-    asm: any;
+    wasmExports: any;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;

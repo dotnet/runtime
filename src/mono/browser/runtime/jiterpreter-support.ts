@@ -1,3 +1,4 @@
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -185,7 +186,7 @@ export class WasmBuilder {
     }
 
     getExceptionTag (): any {
-        const exceptionTag = (<any>Module)["asm"]["__cpp_exception"];
+        const exceptionTag = (<any>Module)["wasmExports"]["__cpp_exception"];
         if (typeof (exceptionTag) !== "undefined")
             mono_assert(exceptionTag instanceof (<any>WebAssembly).Tag, () => `expected __cpp_exception export from dotnet.wasm to be WebAssembly.Tag but was ${exceptionTag}`);
         return exceptionTag;
@@ -1832,7 +1833,7 @@ export function getMemberOffset (member: JiterpMember) {
 }
 
 export function getRawCwrap (name: string): Function {
-    const result = (<any>Module)["asm"][name];
+    const result = (<any>Module)["wasmExports"][name];
     if (typeof (result) !== "function")
         throw new Error(`raw cwrap ${name} not found`);
     return result;

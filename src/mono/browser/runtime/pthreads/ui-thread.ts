@@ -1,3 +1,4 @@
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -291,6 +292,7 @@ function allocateUnusedWorker (): PThreadWorker {
     const workerNumber = loaderHelpers.workerNextNumber++;
     const worker = new Worker(uri, {
         name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
+        type: "module",
     }) as PThreadWorker;
     getUnusedWorkerPool().push(worker);
     worker.loaded = false;

@@ -22,6 +22,7 @@ public class MiscTests : BlazorWasmTestBase
     [InlineData("Debug", false)]
     [InlineData("Release", true)]
     [InlineData("Release", false)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
     public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
     {
         string id = $"blz_deploy_on_build_{config}_{nativeRelink}_{GetRandomId()}";
