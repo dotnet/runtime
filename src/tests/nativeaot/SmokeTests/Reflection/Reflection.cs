@@ -2207,13 +2207,50 @@ internal static class ReflectionTest
             }
         }
 
+        class ClassWithCctor
+        {
+            static ClassWithCctor() => s_field = 42;
+        }
+
+        class ClassWithCctor<T>
+        {
+            static ClassWithCctor() => s_field = 11;
+        }
+
+        class DynamicClassWithCctor<T>
+        {
+            static DynamicClassWithCctor() => s_field = 1000;
+        }
+
+        class Atom { }
+
         private static bool s_cctorRan;
+        private static int s_field;
 
         public static void Run()
         {
             RuntimeHelpers.RunClassConstructor(typeof(TypeWithNoStaticFieldsButACCtor).TypeHandle);
             if (!s_cctorRan)
                 throw new Exception();
+
+            RunTheCctor(typeof(ClassWithCctor));
+            if (s_field != 42)
+                throw new Exception();
+
+            RunTheCctor(typeof(ClassWithCctor<Atom>));
+            if (s_field != 11)
+                throw new Exception();
+
+            RunTheCctor(typeof(DynamicClassWithCctor<>).MakeGenericType(GetAtom()));
+            if (s_field != 1000)
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void RunTheCctor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type t)
+                => RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
         }
     }
 

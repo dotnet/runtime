@@ -5000,6 +5000,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<int> SignExtendWideningUpper(System.Numerics.Vector<short> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtendWideningUpper(System.Numerics.Vector<int> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> Splice(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> Splice(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> Splice(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> Splice(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> Splice(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> Splice(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> Splice(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> Splice(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> Splice(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> Splice(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
         public static System.Numerics.Vector<double> Sqrt(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<float> Sqrt(System.Numerics.Vector<float> value) { throw null; }
 
@@ -5155,6 +5166,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> UnzipOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> UnzipOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> UnzipOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<byte> VectorTableLookup(System.Numerics.Vector<byte> data, System.Numerics.Vector<byte> indices) { throw null; }
+        public static System.Numerics.Vector<double> VectorTableLookup(System.Numerics.Vector<double> data, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static System.Numerics.Vector<short> VectorTableLookup(System.Numerics.Vector<short> data, System.Numerics.Vector<ushort> indices) { throw null; }
+        public static System.Numerics.Vector<int> VectorTableLookup(System.Numerics.Vector<int> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static System.Numerics.Vector<long> VectorTableLookup(System.Numerics.Vector<long> data, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static System.Numerics.Vector<sbyte> VectorTableLookup(System.Numerics.Vector<sbyte> data, System.Numerics.Vector<byte> indices) { throw null; }
+        public static System.Numerics.Vector<float> VectorTableLookup(System.Numerics.Vector<float> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static System.Numerics.Vector<ushort> VectorTableLookup(System.Numerics.Vector<ushort> data, System.Numerics.Vector<ushort> indices) { throw null; }
+        public static System.Numerics.Vector<uint> VectorTableLookup(System.Numerics.Vector<uint> data, System.Numerics.Vector<uint> indices) { throw null; }
+        public static System.Numerics.Vector<ulong> VectorTableLookup(System.Numerics.Vector<ulong> data, System.Numerics.Vector<ulong> indices) { throw null; }
 
         public static System.Numerics.Vector<byte> Xor(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> Xor(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }

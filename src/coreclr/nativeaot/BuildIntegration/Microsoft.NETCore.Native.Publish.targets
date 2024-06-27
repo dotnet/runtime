@@ -128,7 +128,7 @@
       Condition="'$(_symbolIsFile)' == 'false' and Exists('$(_symbolSourcePath)')" />
   </Target>
 
-  <Target Name="_WriteLinkingInstructionsAsMarkdown" AfterTargets="_CopyAotSymbols"
+  <Target Name="_WriteLinkingInstructions" AfterTargets="_CopyAotSymbols"
           Condition="'$(NativeLib)' == 'Static' and '$(SkipLinkingInstructions)' != 'true'">
 
     <ItemGroup>

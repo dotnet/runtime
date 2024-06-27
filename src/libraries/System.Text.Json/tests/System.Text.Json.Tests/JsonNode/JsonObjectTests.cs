@@ -105,20 +105,20 @@ namespace System.Text.Json.Nodes.Tests
 
             var jObject = new JsonObject();
             ex = Assert.Throws<ArgumentNullException>(() => jObject.Add(null, 42));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => jObject[null] = 42);
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => jObject.ContainsKey(null));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => jObject.Remove(null));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             var iDictionary = (IDictionary<string, JsonNode?>)jObject;
             ex = Assert.Throws<ArgumentNullException>(() => iDictionary.TryGetValue(null, out JsonNode _));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
         }
 
         [Fact]
@@ -565,7 +565,7 @@ namespace System.Text.Json.Nodes.Tests
             var jObject = new JsonObject();
             jObject.Add("Prop", jValue);
             ArgumentException ex = Assert.Throws<ArgumentException>(() => jObject.Add("Prop", jValue));
-            Assert.Contains("Prop", ex.ToString());
+            Assert.Contains("Prop", ex.Message);
         }
 
         [Fact]
