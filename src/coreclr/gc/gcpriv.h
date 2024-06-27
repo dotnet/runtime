@@ -1546,11 +1546,11 @@ public:
 
 #ifdef HOST_64BIT
 static constexpr bool _sizeof_freelist_snapshot_symbolic_equal = 
-    TAssertEquality<sizeof(free_list_snapshot), 64 + (2 * SNAPSHOT_SIZE * sizeof(heap_segment_snapshot))>::_cResult;
+    TAssertEquality<sizeof(free_list_snapshot), 72 + (2 * SNAPSHOT_SIZE * sizeof(heap_segment_snapshot))>::_cResult;
 static constexpr bool _sizeof_freelist_snapshot_value_equal = 
-    TAssertEquality<sizeof(free_list_snapshot), 7264>::_cResult;
+    TAssertEquality<sizeof(free_list_snapshot), 7272>::_cResult;
 static constexpr bool _sizeof_freelist_snapshot_buffer_equal = 
-    TAssertEquality<sizeof(free_list_snapshot) * NUM_SNAPSHOTS, 7264000>::_cResult;
+    TAssertEquality<sizeof(free_list_snapshot) * NUM_SNAPSHOTS, 7272000>::_cResult;
 #endif
 #endif
 
