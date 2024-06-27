@@ -17,9 +17,6 @@ namespace System.Text.RegularExpressions.Symbolic
             NullabilityInfo = BuildNullabilityInfo();
         }
 
-        /// <summary>
-        /// TODO: This is only used to speed up the existing architecture, ideally should be removed along with IsNullableFor
-        /// </summary>
         internal int NullabilityInfo { get; }
 
         /// <summary>The regular expression that labels this state and gives it its semantics.</summary>
@@ -102,8 +99,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// TODO: This method is only used to speed up the existing architecture, ideally should be redesigned
-        /// Use <see cref="SymbolicRegexMatcher{TSet}.IsNullableWithContext"/>
+        /// Cached nullability check with encoded bits
         /// whereever possible
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -170,7 +166,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 for (uint ck = 0; ck < CharKind.CharKindCount; ck++)
                 {
-                    nullabilityInfo |= (byte)(IsNullableForInit(ck) ? 1 << (int)ck : 0);
+                    nullabilityInfo |= (byte)(Node.IsNullableFor(CharKind.Context(PrevCharKind, ck)) ? 1 << (int)ck : 0);
                 }
             }
 

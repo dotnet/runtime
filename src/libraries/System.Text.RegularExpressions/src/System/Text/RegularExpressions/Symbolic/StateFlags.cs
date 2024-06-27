@@ -28,18 +28,13 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </summary>
     internal static class StateFlagsExtensions
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsInitial(this StateFlags info) => (info & StateFlags.IsInitialFlag) != StateFlags.None;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsNullable(this StateFlags info) => (info & StateFlags.IsNullableFlag) != StateFlags.None;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool CanBeNullable(this StateFlags info) => (info & StateFlags.CanBeNullableFlag) != StateFlags.None;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool SimulatesBacktracking(this StateFlags info) => (info & StateFlags.SimulatesBacktrackingFlag) != StateFlags.None;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsAccelerated(this StateFlags info) => (info & (StateFlags.IsAcceleratedFlag | StateFlags.IsInitialFlag)) != StateFlags.None;
     }
 }
