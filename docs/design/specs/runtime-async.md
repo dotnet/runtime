@@ -23,9 +23,9 @@ Async methods support the following suspension points:
 * Using new .NET runtime APIs to "await" an "INotifyCompletion" type. The signatures of these methods shall be:
   ```C#
   // public static async2 Task AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
-  public static void modopt([System.Runtime]System.Threading.Tasks.Task) AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
+  public static void modreq([System.Runtime]System.Threading.Tasks.Task) AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
   // public static async2 Task UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
-  public static void modopt([System.Runtime]System.Threading.Tasks.Task) UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
+  public static void modreq([System.Runtime]System.Threading.Tasks.Task) UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
   ```
 
 Each of the above methods will have semantics analogous to the current AsyncTaskMethodBuilder.AwaitOnCompleted/AwaitUnsafeOnCompleted methods. After calling this method, in can be presumed that the task has completed.
@@ -38,7 +38,7 @@ Async methods have the following restrictions:
 
 Suspension points may not appear in exception handling blocks.
 
-All async methods effectively have two entry points, or signatures. The first signature is the one present in the above code: a modopt before the return type. The second signature is a "Task-equivalent signature", described in further detail in [I.8.6.1.5 Method signatures].
+All async methods effectively have two entry points, or signatures. The first signature is the one present in the above code: a modreq before the return type. The second signature is a "Task-equivalent signature", described in further detail in [I.8.6.1.5 Method signatures].
 
 Async methods have a special calling convention and may not be called directly outside of other async methods. To call an async method from a sync method, callers must use the second "Task-equivalent signature".
 
@@ -57,10 +57,10 @@ The primary, mandatory definition must be present in metadata as a MethodDef. Th
 _[Note: async methods have the same return type conventions as sync methods. If the async method produces a System.Int32, the return type must be System.Int32.]_
 
 The second async signature is implicit and runtime-generated and is hereafter referred to as the "Task-equivalent" signature. It is generated based on the primary signature. The transformation is as follows:
+* If the async return type is void, the return type of the Task-equivalent signature is the type of the async custom modifier.
+* Otherwise, the Task-equivalent return type is the custom modifier type (either ``Task`1`` or ``ValueTask`1``), substituted with the async return type.
 
-If the async return type is void, the return type of the Task-equivalent signature is the type of the async custom modifier.
-
-Otherwise, the Task-equivalent return type is the custom modifier type (either ``Task`1`` or ``ValueTask`1``), substituted with the async return type.
+It is an error to explicitly declare a method with the same signature as an async method's "Task-equivalent" signature.
 
 ### I.8.10.2 Method inheritance
 
@@ -68,4 +68,4 @@ For the purposes of inheritance and hiding, both async signatures ([### I.8.6.1.
 
 ### II.10.3.2 The .override directive
 
-Async methods participate in overrides through both definitions (both signatures). An async method with a .override overrides the target method signature, as well as the secondary "Task-equivalent" signature if applicable. An async method may also override only the "Task-equivalent" signature, if an async signature is not present on the base class. A sync method may not override an async method, even if it matches the async method's "Task-equivalent" definition.
+Async methods participate in overrides through both definitions (both signatures). An async method with a .override overrides the target method signature, as well as the secondary "Task-equivalent" signature if applicable. An async method may also override a sync method matching the "Task-equivalent" signature, if an async signature is not present on the base class. A sync method may also override an async method's "Task-equivalent" signature. This will behave as though both the async and "Task-equivalent" methods have been overridden.
