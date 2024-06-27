@@ -181,13 +181,15 @@ namespace System.Text.Json.Nodes
 
         internal static JsonValue? CreateFromElement(ref readonly JsonElement element, JsonNodeOptions? options = null)
         {
-            if (element.ValueKind is JsonValueKind.Null)
+            JsonValueKind kind = element.ValueKind;
+
+            if (kind is JsonValueKind.Null)
             {
                 return null;
             }
 
             // Force usage of JsonArray and JsonObject instead of supporting those in an JsonValue.
-            if (element.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+            if (kind is JsonValueKind.Object or JsonValueKind.Array)
             {
                 ThrowHelper.ThrowInvalidOperationException_NodeElementCannotBeObjectOrArray();
             }
