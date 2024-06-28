@@ -1034,7 +1034,7 @@ void ObjectAllocator::RewriteUses()
                         GenTree*       sideEffects = nullptr;
                         m_compiler->gtExtractSideEffList(indir, &sideEffects, GTF_SIDE_EFFECT, /* ignore root */ true);
 
-                        // indir is based on a local address, no side effectg possible.
+                        // indir is based on a local address, no side effect possible.
                         //
                         indir->Addr() = actualAddr;
                         indir->gtFlags &= ~GTF_SIDE_EFFECT;
