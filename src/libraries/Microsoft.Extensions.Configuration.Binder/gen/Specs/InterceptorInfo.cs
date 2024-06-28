@@ -205,6 +205,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     getInterceptableLocationMethod.CreateDelegate(typeof(Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>), target: null);
 
                 Type? interceptableLocationType = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).Assembly.GetType("Microsoft.CodeAnalysis.CSharp.InterceptableLocation");
+                s_interceptableLocationVersionGetDisplayLocation = interceptableLocationType.GetMethod("GetDisplayLocation", BindingFlags.Instance | BindingFlags.Public);
                 s_interceptableLocationVersionGetter = interceptableLocationType.GetProperty("Version", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
                 s_interceptableLocationDataGetter = interceptableLocationType.GetProperty("Data", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
 
@@ -214,11 +215,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         private static bool _hasInitializedInterceptableLocation;
         private static Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>? s_getInterceptableLocationFunc;
+        private static MethodInfo? s_interceptableLocationVersionGetDisplayLocation;
         private static MethodInfo? s_interceptableLocationDataGetter;
         private static MethodInfo? s_interceptableLocationVersionGetter;
 
         public MethodsToGen Interceptor { get; }
         private object? InterceptableLocation { get; }
+        public string InterceptableLocationGetDisplayLocation() => (string)s_interceptableLocationVersionGetDisplayLocation.Invoke(InterceptableLocation, parameters: null);
         public string InterceptableLocationData => (string)s_interceptableLocationDataGetter.Invoke(InterceptableLocation, parameters: null);
         public int InterceptableLocationVersion => (int)s_interceptableLocationVersionGetter.Invoke(InterceptableLocation, parameters: null);
     }

@@ -160,7 +160,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 foreach (InvocationLocationInfo info in infoList)
                 {
-                    _writer.WriteLine($@"[{Identifier.InterceptsLocation}({info.InterceptableLocationVersion}, ""{info.InterceptableLocationData}"")]");
+                    _writer.WriteLine($@"[{Identifier.InterceptsLocation}({info.InterceptableLocationVersion}, ""{info.InterceptableLocationData}"")] // {info.InterceptableLocationGetDisplayLocation()}");
                 }
             }
 
