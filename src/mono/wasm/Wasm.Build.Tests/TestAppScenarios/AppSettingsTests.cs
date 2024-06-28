@@ -28,7 +28,7 @@ public class AppSettingsTests : AppTestBase
         CopyTestAsset("WasmBasicTestApp", "AppSettingsTests");
         PublishProject("Debug");
 
-        var result = await RunSdkStyleApp(new(
+        var result = await RunSdkStyleAppForPublish(new(
             Configuration: "Debug",
             TestScenario: "AppSettingsTest",
             BrowserQueryString: new Dictionary<string, string> { ["applicationEnvironment"] = applicationEnvironment }

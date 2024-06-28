@@ -75,6 +75,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
+            // Because we do relink in Release publish by default
+            if (options.Config == "Release")
+                options = options with { ExpectedFileType = NativeFilesType.Relinked };
+
             AssertBundle(res.Output, options with { IsPublish = true });
         }
 
