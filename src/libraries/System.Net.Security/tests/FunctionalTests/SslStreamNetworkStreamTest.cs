@@ -917,7 +917,6 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ClientCertificateContext_SendsChain(bool useTrust)
         {
             (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
