@@ -147,7 +147,7 @@ namespace Mono.Linker
 		}
 
 		internal TypeNameResolver TypeNameResolver
-			=> _typeNameResolver ??= new TypeNameResolver (this, this, this.SystemModuleName);
+			=> _typeNameResolver ??= new TypeNameResolver (this, this);
 
 		public ISymbolReaderProvider SymbolReaderProvider { get; set; }
 
@@ -192,8 +192,6 @@ namespace Mono.Linker
 		public HashSet<string> AssembliesWithGeneratedSingleWarning { get; set; }
 
 		public SerializationMarker SerializationMarker { get; }
-
-		public string SystemModuleName { get; set; }
 
 		public LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory)
 			: this(pipeline, logger, outputDirectory, new UnintializedContextFactory ())
@@ -252,7 +250,6 @@ namespace Mono.Linker
 			DisableEventSourceSpecialHandling = true;
 
 			Optimizations = new CodeOptimizationsSettings (defaultOptimizations);
-			SystemModuleName = "System.Private.CoreLib";
 		}
 
 		public void SetFeatureValue (string feature, bool value)

@@ -257,7 +257,7 @@ namespace Mono.Linker.Steps
 			// corelib attribute XML can contain modifications to other assemblies.
 			// We could just mark it here, but the attribute processing isn't necessarily tied to marking,
 			// so this would rely on implementation details of corelib.
-			var coreLib = Context.TryResolve (Context.SystemModuleName);
+			var coreLib = Context.TryResolve (PlatformAssemblies.CoreLib);
 			if (coreLib == null)
 				return;
 

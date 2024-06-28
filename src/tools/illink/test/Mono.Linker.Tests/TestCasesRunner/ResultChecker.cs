@@ -48,7 +48,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			_originalsResolver = originalsResolver;
 			_linkedResolver = linkedResolver;
-			_linkedTypeNameResolver = new TypeNameResolver (new TestResolver (), new TestAssemblyNameResolver (_linkedResolver), PlatformAssemblies.CoreLib);
+			_linkedTypeNameResolver = new TypeNameResolver (new TestResolver (), new TestAssemblyNameResolver (_linkedResolver));
 			_originalReaderParameters = originalReaderParameters;
 			_linkedReaderParameters = linkedReaderParameters;
 		}

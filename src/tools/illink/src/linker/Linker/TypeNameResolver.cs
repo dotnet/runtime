@@ -19,17 +19,15 @@ namespace Mono.Linker
 	{
 		readonly ITryResolveMetadata _metadataResolver;
 		readonly ITryResolveAssemblyName _assemblyResolver;
-		readonly string _systemModuleName;
 
 		private static readonly TypeNameParseOptions s_typeNameParseOptions = new () { MaxNodes = int.MaxValue };
 
 		public readonly record struct TypeResolutionRecord (AssemblyDefinition ReferringAssembly, TypeDefinition ResolvedType);
 
-		public TypeNameResolver (ITryResolveMetadata metadataResolver, ITryResolveAssemblyName assemblyNameResolver, string systemModuleName)
+		public TypeNameResolver (ITryResolveMetadata metadataResolver, ITryResolveAssemblyName assemblyNameResolver)
 		{
 			_metadataResolver = metadataResolver;
 			_assemblyResolver = assemblyNameResolver;
-			_systemModuleName = systemModuleName;
 		}
 
 		public bool TryResolveTypeName (
@@ -110,13 +108,15 @@ namespace Mono.Linker
 			}
 
 			// If it didn't resolve and wasn't assembly-qualified, we also try core library
-			if (topLevelTypeName.AssemblyName == null && assembly.Name.Name != _systemModuleName) {
-				if (_assemblyResolver.TryResolve (_systemModuleName) is AssemblyDefinition systemModule) {
-					resolvedType = GetSimpleTypeFromModule (typeName, systemModule.MainModule);
-					if (resolvedType != null) {
-						typeResolutionRecords.Add (new (systemModule, resolvedType));
-						return resolvedType;
-					}
+			var coreLibrary = _metadataResolver.TryResolve (originalAssembly.MainModule.TypeSystem.Object)?.Module.Assembly;
+			if (coreLibrary is null)
+				return null;
+
+			if (topLevelTypeName.AssemblyName == null && assembly != coreLibrary) {
+				resolvedType = GetSimpleTypeFromModule (typeName, coreLibrary.MainModule);
+				if (resolvedType != null) {
+					typeResolutionRecords.Add (new (coreLibrary, resolvedType));
+					return resolvedType;
 				}
 			}
 

@@ -86,9 +86,6 @@ namespace Mono.Linker.Steps
 
 				// No metadata trimming
 				Context.MetadataTrimming = MetadataTrimming.None;
-
-				// Library mode builds against System.Runtime ref assembly
-				Context.SystemModuleName = "System.Runtime";
 				break;
 			case AssemblyRootMode.AllMembers:
 				Annotations.SetRootAssembly (assembly);

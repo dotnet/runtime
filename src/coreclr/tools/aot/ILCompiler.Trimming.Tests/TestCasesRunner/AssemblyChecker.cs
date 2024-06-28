@@ -71,7 +71,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			TrimmedTestCaseResult testResult)
 		{
 			this.originalsResolver = originalsResolver;
-			this.originalsTypeNameResolver = new TypeNameResolver (new TestResolver (), new TestAssemblyNameResolver (originalsResolver), PlatformAssemblies.CoreLib);
+			this.originalsTypeNameResolver = new TypeNameResolver (new TestResolver (), new TestAssemblyNameResolver (originalsResolver));
 			this.originalReaderParameters = originalReaderParameters;
 			this.originalAssembly = original;
 			this.testResult = testResult;

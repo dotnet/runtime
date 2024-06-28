@@ -59,7 +59,7 @@ namespace Internal.TypeSystem
 
             return type;
 
-            static bool IsFullyQualified (TypeName typeName)
+            static bool IsFullyQualified(TypeName typeName)
             {
                 if (typeName.AssemblyName is null)
                 {
