@@ -884,7 +884,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
         availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED.GetFloatRegSet();
         availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED.GetFloatRegSet();
 #endif // UNIX_AMD64_ABI
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
         availableMaskRegs &= ~RBM_MSK_CALLEE_SAVED;
 #endif // TARGET_XARCH
     }
