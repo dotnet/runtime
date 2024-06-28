@@ -478,12 +478,36 @@ namespace System.Net.Security
 
                 frameSize = nextHeader.Length;
 
-                // Can process more handshake frames in single step or during TLS1.3 post-handshake auth, but we should
-                // avoid processing too much so as to preserve API boundary between handshake and I/O.
-                if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) && !_isRenego || frameSize > _buffer.EncryptedLength)
+                if (frameSize > _buffer.EncryptedLength)
                 {
-                    // We don't have full frame left or we already have app data which needs to be processed by decrypt.
+                    // We don't have full frame left
                     break;
+                }
+
+                if (OperatingSystem.IsWindows())
+                {
+                    // Windows is strange in a way how they handle renegotiation and part of TLS 1.3 handshake.
+                    // If we feed it too much data it will choke.
+
+                    if (_lastFrame.Header.Type == TlsContentType.ChangeCipherSpec && nextHeader.Type == TlsContentType.Handshake)
+                    {
+                        // We are getting late handshake frames. This can be sign or renegotiation.
+                        // It is OK to be wrong here, the flag primarily ensures that we are not feeding schannel too much data
+                        _isRenego = true;
+                    }
+
+                    if (_isRenego)
+                    {
+                        break;
+                    }
+
+                    // Can process more handshake frames in single step or during TLS1.3 post - handshake auth, but we should
+                    // avoid processing too much so as to preserve API boundary between handshake and I/O.
+                    if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec))
+                    {
+                        // We don't have full frame left or we already have app data which needs to be processed by decrypt.
+                        break;
+                    }
                 }
 
                 chunkSize += frameSize;
