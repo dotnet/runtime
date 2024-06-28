@@ -141,6 +141,7 @@ public:
     RegState              intRegState;
     RegState              floatRegState;
     NodeInternalRegisters internalRegisters;
+
 protected:
     Compiler* compiler;
     bool      m_genAlignLoops;

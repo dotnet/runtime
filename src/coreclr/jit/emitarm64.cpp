@@ -7887,7 +7887,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             if (isPredicateRegister(reg1))
             {
                 assert(offs == 0);
-                // For predicate, generate based of rsGetRsvdReg()
+                // For predicate, generate based off rsGetRsvdReg()
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
                 // add rsvd, fp, #imm
@@ -8158,7 +8158,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             {
                 assert(offs == 0);
 
-                // For predicate, generate based of rsGetRsvdReg()
+                // For predicate, generate based off rsGetRsvdReg()
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
                 // add rsvd, fp, #imm
