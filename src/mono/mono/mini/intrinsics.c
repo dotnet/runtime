@@ -2134,7 +2134,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (ins)
 		return ins;
 
-	/* Fallback if SIMD is disabled */
+	// Fallback if SIMD is disabled
 	if (in_corlib &&
 		((!strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) ||
 		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
