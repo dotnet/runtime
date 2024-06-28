@@ -8361,7 +8361,7 @@ HRESULT DacMethodTableSlotEnumerator::GetCount(unsigned int* pCount)
     if (!pCount)
         return E_POINTER;
 
-    mMethods.GetCount();
+    *pCount = mMethods.GetCount();
     return S_OK;
 }
 
