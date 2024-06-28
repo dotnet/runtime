@@ -27,7 +27,7 @@ Unicode2UTF(
     int cchSrc = (int)u16_strlen(wszSrc);
     int cchRet;
 
-    cchRet = WszWideCharToMultiByte(
+    cchRet = WideCharToMultiByte(
         CP_UTF8,
         0,
         wszSrc,

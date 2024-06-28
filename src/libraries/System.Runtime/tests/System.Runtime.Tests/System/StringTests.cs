@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -146,6 +147,30 @@ namespace System.Tests
                 }
             });
             Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public static void Create_CanSquirrelAwayArg()
+        {
+            object arg = new object();
+            object storedArg = null;
+            string result = string.Create(5, arg, (span, arg) =>
+            {
+                "hello".AsSpan().CopyTo(span);
+                storedArg = arg;
+            });
+            Assert.Equal("hello", result);
+            Assert.Same(arg, storedArg);
+        }
+
+        [Fact]
+        public static void Create_CanPassSpanAsArg()
+        {
+            string result = string.Create(5, "hello".AsSpan(), (span, arg) =>
+            {
+                arg.CopyTo(span);
+            });
+            Assert.Equal("hello", result);
         }
 
         [Fact]
@@ -847,7 +872,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Replace_StringComparisonCulture_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparisonCulture_ReturnsExpected(string original, string oldValue, string newValue, bool ignoreCase, CultureInfo culture, string expected)
         {
@@ -964,6 +988,29 @@ namespace System.Tests
 
             Assert.Equal(hashCodeFromStringComparer, hashCodeFromStringGetHashCode);
             Assert.Equal(hashCodeFromStringComparer, hashCodeFromStringGetHashCodeOfSpan);
+        }
+
+        public static IEnumerable<object[]> NonRandomizedGetHashCode_EquivalentForStringAndSpan_MemberData() =>
+            from charValueLimit in new[] { 128, 256, char.MaxValue }
+            from ignoreCase in new[] { false, true }
+            select new object[] { charValueLimit, ignoreCase };
+
+        [Theory]
+        [MemberData(nameof(NonRandomizedGetHashCode_EquivalentForStringAndSpan_MemberData))]
+        public static void NonRandomizedGetHashCode_EquivalentForStringAndSpan(int charValueLimit, bool ignoreCase)
+        {
+            // This is testing internal API. If that API changes, this test will need to be updated.
+            const BindingFlags Flags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic;
+            string suffix = ignoreCase ? "OrdinalIgnoreCase" : "";
+            Func<string, int> getStringHC = typeof(string).GetMethod($"GetNonRandomizedHashCode{suffix}", Flags, Type.EmptyTypes)!.CreateDelegate<Func<string, int>>();
+            Func<ReadOnlySpan<char>, int> getSpanHC = typeof(string).GetMethod($"GetNonRandomizedHashCode{suffix}", Flags, [typeof(ReadOnlySpan<char>)])!.CreateDelegate<Func<ReadOnlySpan<char>, int>>();
+
+            var r = new Random(42);
+            for (int i = 0; i < 512; i++)
+            {
+                string s = new string(r.GetItems(Enumerable.Range(0, charValueLimit).Select(i => (char)i).ToArray(), i));
+                Assert.Equal(getStringHC(s), getSpanHC(s.AsSpan()));
+            }
         }
 
         public static IEnumerable<object[]> GetHashCode_NoSuchStringComparison_ThrowsArgumentException_Data => new[]

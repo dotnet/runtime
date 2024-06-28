@@ -67,17 +67,24 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        private void ConnectCompletionCallback(SocketError socketError)
+        private void ConnectCompletionCallback(int bytesTransferred, Memory<byte> socketAddress, SocketFlags receivedFlags, SocketError socketError)
         {
-            CompletionCallback(0, SocketFlags.None, socketError);
+            CompletionCallback(bytesTransferred, SocketFlags.None, socketError);
         }
 
         internal unsafe SocketError DoOperationConnectEx(Socket _ /*socket*/, SafeSocketHandle handle)
-            => DoOperationConnect(handle);
+        {
+            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, _buffer.Slice(_offset, _count), out int sentBytes);
+            if (socketError != SocketError.IOPending)
+            {
+                FinishOperationSync(socketError, sentBytes, SocketFlags.None);
+            }
+            return socketError;
+        }
 
         internal unsafe SocketError DoOperationConnect(SafeSocketHandle handle)
         {
-            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback);
+            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, Memory<byte>.Empty, out int _);
             if (socketError != SocketError.IOPending)
             {
                 FinishOperationSync(socketError, 0, SocketFlags.None);
@@ -299,11 +306,11 @@ namespace System.Net.Sockets
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
 
-            int bytesSent;
+            int bytesSent = 0;
             SocketError errorCode;
             if (_bufferList == null)
             {
-                errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, _socketFlags, _socketAddress!.Buffer, out bytesSent, TransferCompletionCallback, cancellationToken);
+                errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, _socketFlags, _socketAddress!.Buffer, ref bytesSent, TransferCompletionCallback, cancellationToken);
             }
             else
             {

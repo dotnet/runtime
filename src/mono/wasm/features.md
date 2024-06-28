@@ -53,7 +53,7 @@ Older versions of NodeJS hosts may need `--experimental-wasm-eh` command line op
 Passing Int64 and UInt64 values between JavaScript and C# requires support for the JavaScript `BigInt` type. See [JS-BigInt](https://github.com/WebAssembly/JS-BigInt-integration) for more information on this API.
 
 ### fetch - HTTP client
-If an application uses the [HttpClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient) managed API, your web browser must support the [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) API for it to run.
+If an application uses the [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) managed API, your web browser must support the [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) API for it to run.
 
 Because web browsers do not expose direct access to sockets, we are unable to provide our own implementation of HTTP, and HttpClient's behavior and feature set will as a result depend also on the browser you use to run the application.
 
@@ -62,7 +62,7 @@ A prominent limitation is that your application must obey `Cross-Origin Resource
 For your application to be able to perform HTTP requests in a NodeJS host, you need to install the `node-fetch` and `node-abort-controller` npm packages.
 
 ### WebSocket
-Applications using the [WebSocketClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
+Applications using the [WebSocketClient](https://learn.microsoft.com/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
 
 As with HTTP and HttpClient, we are unable to ship a custom implementation of this feature, so its behavior will depend on the browser being used to run the application.
 
@@ -90,7 +90,7 @@ Trimming will remove unused code from your application, which reduces applicatio
 
 Some applications will break if trimming is used without further configuration due to the trimmer not knowing which code is used, for example any code accessed via reflection or serialization or dependency injection.
 
-One typical source of trimming issues is JSON serialization/deserialization. The solution is to use [Source Generation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation), as shown below:
+One typical source of trimming issues is JSON serialization/deserialization. The solution is to use [Source Generation](https://learn.microsoft.com/dotnet/standard/serialization/system-text-json/source-generation), as shown below:
 
 ```csharp
 [JsonSerializable(typeof(List<Item>))]
@@ -99,7 +99,7 @@ partial class ItemListSerializerContext : JsonSerializerContext { }
 var json = JsonSerializer.Serialize(items, ItemListSerializerContext.Default.ListItem);
 ```
 
-Please ensure that you have thoroughly tested your application with trimming enabled before deployment, as the issues it causes may only appear in obscure parts of your software. For more advice on how to use trimming, see [trimming guidance](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-self-contained).
+Please ensure that you have thoroughly tested your application with trimming enabled before deployment, as the issues it causes may only appear in obscure parts of your software. For more advice on how to use trimming, see [trimming guidance](https://learn.microsoft.com/dotnet/core/deploying/trimming/trim-self-contained).
 
 ### C code or native linked libraries
 Native rebuild will cause the .NET runtime to be re-built alongside your application, which allows you to link additional libraries into the WASM binary or change compiler configuration flags.
@@ -354,7 +354,7 @@ It includes the WASM templates for `dotnet new` and also preview version of mult
 You can use browser dev tools to debug the JavaScript of the application and the runtime.
 
 You could also debug the C# code using our integration with browser dev tools or Visual Studio.
-See detailed [documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/debug)
+See detailed [documentation](https://learn.microsoft.com/aspnet/core/blazor/debug)
 
 You could also use it to debug the WASM code. In order to see `C` function names and debug symbols DWARF, see [Debug symbols](#Native-debug-symbols)
 
@@ -420,7 +420,7 @@ await dotnet.withConfig({browserProfilerOptions: {}}).run();
 
 ### Diagnostic tools
 
-We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe)
+We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe)
 
 At the moment it requires multi-threaded build of the runtime.
 

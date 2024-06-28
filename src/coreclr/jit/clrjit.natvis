@@ -8,8 +8,8 @@ The .NET Foundation licenses this file to you under the MIT license.
 <!--
 Visual Studio debugger visualizers for RyuJIT.
 
-Documentation for VS natvis format: https://learn.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects?view=vs-2022
-Documentation for VS debugger format specifiers: https://learn.microsoft.com/en-us/visualstudio/debugger/format-specifiers-in-cpp?view=vs-2022
+Documentation for VS natvis format: https://learn.microsoft.com/visualstudio/debugger/create-custom-views-of-native-objects?view=vs-2022
+Documentation for VS debugger format specifiers: https://learn.microsoft.com/visualstudio/debugger/format-specifiers-in-cpp?view=vs-2022
 -->
 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">

@@ -612,10 +612,16 @@ namespace System.Diagnostics
         {
             var envp = new string[psi.Environment.Count];
             int index = 0;
-            foreach (var pair in psi.Environment)
+            foreach (KeyValuePair<string, string?> pair in psi.Environment)
             {
-                envp[index++] = pair.Key + "=" + pair.Value;
+                // Ignore null values for consistency with Environment.SetEnvironmentVariable
+                if (pair.Value != null)
+                {
+                    envp[index++] = pair.Key + "=" + pair.Value;
+                }
             }
+            // Resize the array in case we skipped some entries
+            Array.Resize(ref envp, index);
             return envp;
         }
 

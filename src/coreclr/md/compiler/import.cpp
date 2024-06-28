@@ -2989,11 +2989,11 @@ HRESULT RegMeta::GetVersionString(    // S_OK or error.
         // @todo: get from alternate locations when there is no STOREAGESIGNATURE.
         pVer = reinterpret_cast<const char*>(reinterpret_cast<const STORAGESIGNATURE*>(m_pStgdb->m_pvMd)->pVersion);
         // Attempt to convert into caller's buffer.
-        cch = WszMultiByteToWideChar(CP_UTF8,0, pVer,-1, pwzBuf,cchBufSize);
+        cch = MultiByteToWideChar(CP_UTF8,0, pVer,-1, pwzBuf,cchBufSize);
         // Did the string fit?
         if (cch == 0)
         {   // No, didn't fit.  Find out space required.
-            cch = WszMultiByteToWideChar(CP_UTF8,0, pVer,-1, pwzBuf,0);
+            cch = MultiByteToWideChar(CP_UTF8,0, pVer,-1, pwzBuf,0);
             // NUL terminate string.
             if (cchBufSize > 0)
                 pwzBuf[cchBufSize-1] = W('\0');

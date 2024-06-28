@@ -745,8 +745,8 @@ GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_error)
 
 typedef struct {
 	gboolean by_reference;
-	int num_lowered_elements;
-	MonoTypeEnum lowered_elements[4];
+	uint32_t num_lowered_elements;
+	MonoType *lowered_elements[4];
 	uint32_t offsets[4];
 } SwiftPhysicalLowering;
 

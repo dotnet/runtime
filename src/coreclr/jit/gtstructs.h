@@ -117,10 +117,8 @@ GTSTRUCT_N(OpCC        , GT_SELECTCC, GT_SELECT_INCCC, GT_JCMP, GT_JTEST, GT_SEL
 #else
 GTSTRUCT_3(OpCC        , GT_SELECTCC, GT_JCMP, GT_JTEST)
 #endif
-#if defined(TARGET_X86)
+#if !defined(TARGET_64BIT)
 GTSTRUCT_1(MultiRegOp  , GT_MUL_LONG)
-#elif defined (TARGET_ARM)
-GTSTRUCT_3(MultiRegOp  , GT_MUL_LONG, GT_PUTARG_REG, GT_BITCAST)
 #endif
 /*****************************************************************************/
 #undef  GTSTRUCT_0

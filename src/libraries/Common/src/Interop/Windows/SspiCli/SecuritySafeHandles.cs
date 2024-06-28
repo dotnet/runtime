@@ -509,7 +509,7 @@ namespace System.Net.Security
                             if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                             {
                                 // OS function did not use all provided data and turned EMPTY to EXTRA
-                                // https://docs.microsoft.com/en-us/windows/win32/secauthn/extra-buffers-returned-by-schannel
+                                // https://learn.microsoft.com/windows/win32/secauthn/extra-buffers-returned-by-schannel
 
                                 int leftover = inUnmanagedBuffer[1].cbBuffer;
                                 int processed = inSecBuffers._item0.Token.Length - inUnmanagedBuffer[1].cbBuffer;
@@ -810,7 +810,7 @@ namespace System.Net.Security
                         if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                         {
                             // OS function did not use all provided data and turned EMPTY to EXTRA
-                            // https://docs.microsoft.com/en-us/windows/win32/secauthn/extra-buffers-returned-by-schannel
+                            // https://learn.microsoft.com/windows/win32/secauthn/extra-buffers-returned-by-schannel
 
                             int leftover = inUnmanagedBuffer[1].cbBuffer;
                             int processed = inSecBuffers._item0.Token.Length - inUnmanagedBuffer[1].cbBuffer;

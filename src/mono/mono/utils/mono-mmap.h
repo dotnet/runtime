@@ -23,6 +23,7 @@ enum {
 	MONO_MMAP_FIXED   = 1 << 7,
 	MONO_MMAP_32BIT   = 1 << 8,
 	MONO_MMAP_JIT     = 1 << 9,
+	/* do not zero the new pages */
 	MONO_MMAP_NOZERO  = 1 << 10,
 };
 

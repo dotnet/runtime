@@ -11,6 +11,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// Implementation of ISOSDacInterface* interfaces intended to be passed out to consumers
 /// interacting with the DAC via those COM interfaces.
 /// </summary>
+/// <remarks>
+/// Functions on <see cref="ISOSDacInterface"/> are defined with PreserveSig. Target and Contracts
+/// throw on errors. Implementations in this class should wrap logic in a try-catch and return the
+/// corresponding error code.
+/// </remarks>
 [GeneratedComClass]
 internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 {
@@ -84,7 +89,24 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetMethodTableTransparencyData(ulong mt, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetModule(ulong addr, void** mod) => HResults.E_NOTIMPL;
     public unsafe int GetModuleData(ulong moduleAddr, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetNestedExceptionData(ulong exception, ulong* exceptionObject, ulong* nextNestedException) => HResults.E_NOTIMPL;
+
+    public unsafe int GetNestedExceptionData(ulong exception, ulong* exceptionObject, ulong* nextNestedException)
+    {
+        try
+        {
+            Contracts.IException contract = _target.Contracts.Exception;
+            TargetPointer exceptionObjectLocal = contract.GetExceptionInfo(exception, out TargetPointer nextNestedExceptionLocal);
+            *exceptionObject = exceptionObjectLocal;
+            *nextNestedException = nextNestedExceptionLocal;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetObjectClassName(ulong obj, uint count, char* className, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetObjectData(ulong objAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;
@@ -102,7 +124,40 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetSyncBlockCleanupData(ulong addr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetSyncBlockData(uint number, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetThreadAllocData(ulong thread, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetThreadData(ulong thread, DacpThreadData* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetThreadData(ulong thread, DacpThreadData* data)
+    {
+        try
+        {
+            Contracts.IThread contract = _target.Contracts.Thread;
+            Contracts.ThreadData threadData = contract.GetThreadData(thread);
+            data->corThreadId = (int)threadData.Id;
+            data->osThreadId = (int)threadData.OSId.Value;
+            data->state = (int)threadData.State;
+            data->preemptiveGCDisabled = (uint)(threadData.PreemptiveGCDisabled ? 1 : 0);
+            data->allocContextPtr = threadData.AllocContextPointer;
+            data->allocContextLimit = threadData.AllocContextLimit;
+            data->fiberData = 0;    // Always set to 0 - fibers are no longer supported
+
+            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+            data->context = appDomain;
+            data->domain = appDomain;
+
+            data->lockCount = -1;   // Always set to -1 - lock count was .NET Framework and no longer needed
+            data->pFrame = threadData.Frame;
+            data->firstNestedException = threadData.FirstNestedException;
+            data->teb = threadData.TEB;
+            data->lastThrownObjectHandle = threadData.LastThrownObjectHandle;
+            data->nextThread = threadData.NextThread;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
     public unsafe int GetThreadFromThinlockID(uint thinLockId, ulong* pThread) => HResults.E_NOTIMPL;
     public unsafe int GetThreadLocalModuleData(ulong thread, uint index, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetThreadpoolData(void* data) => HResults.E_NOTIMPL;
@@ -114,15 +169,24 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             Contracts.IThread thread = _target.Contracts.Thread;
             Contracts.ThreadStoreData threadStoreData = thread.GetThreadStoreData();
             data->threadCount = threadStoreData.ThreadCount;
-            data->firstThread = threadStoreData.FirstThread.Value;
-            data->fHostConfig = 0;
+            data->firstThread = threadStoreData.FirstThread;
+            data->finalizerThread = threadStoreData.FinalizerThread;
+            data->gcThread = threadStoreData.GCThread;
+
+            Contracts.ThreadStoreCounts threadCounts = thread.GetThreadCounts();
+            data->unstartedThreadCount = threadCounts.UnstartedThreadCount;
+            data->backgroundThreadCount = threadCounts.BackgroundThreadCount;
+            data->pendingThreadCount = threadCounts.PendingThreadCount;
+            data->deadThreadCount = threadCounts.DeadThreadCount;
+
+            data->fHostConfig = 0; // Always 0 for non-Framework
         }
         catch (Exception ex)
         {
             return ex.HResult;
         }
 
-        return HResults.E_NOTIMPL;
+        return HResults.S_OK;
     }
 
     public unsafe int GetTLSIndex(uint* pIndex) => HResults.E_NOTIMPL;

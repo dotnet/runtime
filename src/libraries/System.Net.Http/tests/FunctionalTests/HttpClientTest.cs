@@ -854,20 +854,20 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void DefaultProxy_SetGet_Roundtrips()
+        public async Task DefaultProxy_SetGet_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 IWebProxy proxy = new WebProxy("http://localhost:3128/");
                 HttpClient.DefaultProxy = proxy;
                 Assert.True(Object.ReferenceEquals(proxy, HttpClient.DefaultProxy));
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void DefaultProxy_Credentials_SetGet_Roundtrips()
+        public async Task DefaultProxy_Credentials_SetGet_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 IWebProxy proxy = HttpClient.DefaultProxy;
                 ICredentials nc = proxy.Credentials;
@@ -879,7 +879,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Same(nc, proxy.Credentials);
 
                 return RemoteExecutor.SuccessExitCode;
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [Fact]
@@ -1371,7 +1371,7 @@ namespace System.Net.Http.Functional.Tests
             var handler = new StoreMessageHttpMessageInvoker();
             using (var client = new HttpClient(handler))
             {
-                var version = new Version(1, 2, 3, 4);
+                var version = new Version(1, 1);
                 client.DefaultRequestVersion = version;
                 await client.GetAsync("http://doesntmatter", HttpCompletionOption.ResponseHeadersRead);
                 Assert.Same(version, handler.Message.Version);

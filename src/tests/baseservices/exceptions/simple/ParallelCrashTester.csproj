@@ -5,6 +5,8 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/80356 -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Test expects corerun -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ParallelCrashTester.cs" />

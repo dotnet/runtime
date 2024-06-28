@@ -82,7 +82,7 @@ namespace
 
     void PopulateBindRequest(/*inout*/ BinderTracing::AssemblyBindOperation::BindRequest &request)
     {
-        AssemblySpec *spec = request.AssemblySpec;
+        AssemblySpec *spec = request.AssemblySpecPtr;
         _ASSERTE(spec != nullptr);
 
         if (spec->GetName() != nullptr)
@@ -172,7 +172,7 @@ namespace BinderTracing
 
         // ActivityTracker or EventSource may have triggered the system satellite load, or load of System.Private.CoreLib
         // Don't track such bindings to avoid potential infinite recursion.
-        m_ignoreBind = t_AssemblyLoadStartInProgress && (m_bindRequest.AssemblySpec->IsCoreLib() || m_bindRequest.AssemblySpec->IsCoreLibSatellite());
+        m_ignoreBind = t_AssemblyLoadStartInProgress && (m_bindRequest.AssemblySpecPtr->IsCoreLib() || m_bindRequest.AssemblySpecPtr->IsCoreLibSatellite());
         m_checkedIgnoreBind = true;
         return m_ignoreBind;
     }
@@ -234,12 +234,12 @@ namespace BinderTracing
             bool isLastAttempt = appAssembliesAttempt == nullptr;
             TraceStage(Stage::FindInLoadContext,
                 isLastAttempt && FAILED(m_hr) && SUCCEEDED(inContextAttempt->HResult) ? m_hr : inContextAttempt->HResult,
-                inContextAttempt->Assembly,
+                inContextAttempt->AssemblyHolder,
                 mvidMismatch && isLastAttempt ? errorMsg.GetUnicode() : nullptr);
         }
 
         if (appAssembliesAttempt != nullptr)
-            TraceStage(Stage::ApplicationAssemblies, FAILED(m_hr) && SUCCEEDED(appAssembliesAttempt->HResult) ? m_hr : appAssembliesAttempt->HResult, appAssembliesAttempt->Assembly, mvidMismatch ? errorMsg.GetUnicode() : nullptr);
+            TraceStage(Stage::ApplicationAssemblies, FAILED(m_hr) && SUCCEEDED(appAssembliesAttempt->HResult) ? m_hr : appAssembliesAttempt->HResult, appAssembliesAttempt->AssemblyHolder, mvidMismatch ? errorMsg.GetUnicode() : nullptr);
     }
 
     void ResolutionAttemptedOperation::TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly, const WCHAR *customError)
