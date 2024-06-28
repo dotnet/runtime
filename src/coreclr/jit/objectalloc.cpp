@@ -800,8 +800,8 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
 
             case GT_COLON:
             {
-                GenTree* const lhs = tree->AsOp()->gtGetOp1();
-                GenTree* const rhs = tree->AsOp()->gtGetOp2();
+                GenTree* const lhs = parent->AsOp()->gtGetOp1();
+                GenTree* const rhs = parent->AsOp()->gtGetOp2();
 
                 // One or both children may have been retyped.
                 // Ensure we don't lose the fact that the joint result
@@ -837,10 +837,11 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 }
 
                 parent->ChangeType(newType);
-            }
+
                 ++parentIndex;
                 keepChecking = true;
-                break;
+            }
+            break;
 
             case GT_STOREIND:
             case GT_STORE_BLK:
