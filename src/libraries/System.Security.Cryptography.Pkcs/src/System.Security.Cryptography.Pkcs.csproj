@@ -6,7 +6,7 @@
     <DefineConstants>$(DefineConstants);BUILDING_PKCS</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <NoWarn>$(NoWarn);CA5384;SYSLIB0057</NoWarn>
+    <NoWarn>$(NoWarn);CA5384</NoWarn>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for PKCS and CMS algorithms.
