@@ -181,7 +181,7 @@ namespace System
         internal const string LoadFromHashAlgorithmMessage = "LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm.";
         internal const string LoadFromHashAlgorithmDiagId = "SYSLIB0056";
 
-        internal const string X509CtorCertDataObsoleteMessage = "Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.";
+        internal const string X509CtorCertDataObsoleteMessage = "Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.";
         internal const string X509CtorCertDataObsoleteDiagId = "SYSLIB0057";
     }
 }

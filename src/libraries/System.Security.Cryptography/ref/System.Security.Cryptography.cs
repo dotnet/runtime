@@ -3064,21 +3064,21 @@ namespace System.Security.Cryptography.X509Certificates
         [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate() { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(byte[] data) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(byte[] rawData, System.Security.SecureString? password) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(byte[] rawData, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(byte[] rawData, string? password) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -3088,31 +3088,31 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(System.Security.Cryptography.X509Certificates.X509Certificate cert) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(string fileName) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(string fileName, System.Security.SecureString? password) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(string fileName, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(string fileName, string? password) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public System.IntPtr Handle { get { throw null; } }
         public string Issuer { get { throw null; } }
         public System.ReadOnlyMemory<byte> SerialNumberBytes { get { throw null; } }
         public string Subject { get { throw null; } }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.X509Certificates.X509Certificate CreateFromCertFile(string filename) { throw null; }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.X509Certificates.X509Certificate CreateFromSignedFile(string filename) { throw null; }
         public void Dispose() { }
@@ -3171,29 +3171,29 @@ namespace System.Security.Cryptography.X509Certificates
         [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2() { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(byte[] rawData) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(byte[] rawData, System.Security.SecureString? password) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(byte[] rawData, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(byte[] rawData, string? password) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(nint handle) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.ReadOnlySpan<byte> rawData) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.ReadOnlySpan<byte> rawData, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -3201,24 +3201,24 @@ namespace System.Security.Cryptography.X509Certificates
         protected X509Certificate2(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.Security.Cryptography.X509Certificates.X509Certificate certificate) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName, System.Security.SecureString? password) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName, string? password) { }
-        [System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public bool Archived { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
@@ -3299,21 +3299,21 @@ namespace System.Security.Cryptography.X509Certificates
         public string ExportPkcs7Pem() { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Find(System.Security.Cryptography.X509Certificates.X509FindType findType, object findValue, bool validOnly) { throw null; }
         public new System.Security.Cryptography.X509Certificates.X509Certificate2Enumerator GetEnumerator() { throw null; }
-[System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(byte[] rawData) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(System.ReadOnlySpan<byte> rawData) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(System.ReadOnlySpan<byte> rawData, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(System.ReadOnlySpan<byte> rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(string fileName) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(string fileName, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
         public void ImportFromPem(System.ReadOnlySpan<char> certPem) { }
         public void ImportFromPemFile(string certPemFilePath) { }
