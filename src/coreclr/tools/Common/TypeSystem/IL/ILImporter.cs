@@ -114,8 +114,9 @@ namespace Internal.IL
                 MarkInstructionBoundary();
 
                 ILOpcode opCode = (ILOpcode)ReadILByte();
+                if (opCode == ILOpcode.prefix1)
+                    opCode = (ILOpcode)(0x100 + ReadILByte());
 
-            again:
                 switch (opCode)
                 {
                     case ILOpcode.ldarg_s:
@@ -179,9 +180,6 @@ namespace Internal.IL
                     case ILOpcode.sizeof_:
                         SkipIL(4);
                         break;
-                    case ILOpcode.prefix1:
-                        opCode = (ILOpcode)(0x100 + ReadILByte());
-                        goto again;
                     case ILOpcode.br_s:
                     case ILOpcode.leave_s:
                         {
