@@ -1544,6 +1544,22 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
 
 #endif  // HAVE_MACH_EXCEPTIONS else
 
+#if defined(HOST_ARM64)
+/*++
+Function :
+    CONTEXT_GetSveLengthFromOS
+
+    Gets the SVE vector length
+Parameters :
+    None
+Return value :
+    The SVE vector length in bytes
+--*/
+DWORD64
+CONTEXT_GetSveLengthFromOS(
+    );
+#endif // HOST_ARM64
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
