@@ -3495,8 +3495,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #ifdef TARGET_ARM64
     if (compOpportunisticallyDependsOn(InstructionSet_Sve))
     {
-        rbmAllMask = RBM_ALLMASK;
-        rbmMskCalleeTrash = RBM_MSK_CALLEE_TRASH;
+        rbmAllMask         = RBM_ALLMASK;
+        rbmMskCalleeTrash  = RBM_MSK_CALLEE_TRASH;
         cntCalleeTrashMask = CNT_CALLEE_TRASH_MASK;
     }
 #endif // TARGET_ARM64
