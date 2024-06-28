@@ -70,7 +70,7 @@ internal sealed class ArraySingleObjectRecord : SZArrayRecord<object?>
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType()
     {
         // An array of objects can contain any Object or multiple nulls.
-        const AllowedRecordTypes Allowed = AllowedRecordTypes.AnyObject | AllowedRecordTypes.Nulls;
+        const AllowedRecordTypes Allowed = AllowedRecordTypes.AnyObjectOrNullOrReference | AllowedRecordTypes.Nulls;
 
         return (Allowed, default);
     }

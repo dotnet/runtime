@@ -74,6 +74,8 @@ internal readonly struct MemberTypeInfo
             | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference;
         const AllowedRecordTypes ObjectArray = AllowedRecordTypes.ArraySingleObject
             | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference;
+        const AllowedRecordTypes NonPrimitiveArray = AllowedRecordTypes.BinaryArray
+            | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference;
 
         // Every string can be a string, a null or a reference (to a string)
         const AllowedRecordTypes Strings = AllowedRecordTypes.BinaryObjectString
@@ -92,13 +94,53 @@ internal readonly struct MemberTypeInfo
         {
             BinaryType.Primitive => (default, (PrimitiveType)additionalInfo!),
             BinaryType.String => (Strings, default),
-            BinaryType.Object => (AllowedRecordTypes.AnyObject, default),
+            BinaryType.Object => (AllowedRecordTypes.AnyObjectOrNullOrReference, default),
             BinaryType.StringArray => (StringArray, default),
             BinaryType.PrimitiveArray => (PrimitiveArray, default),
-            BinaryType.Class => (NonSystemClass, default),
-            BinaryType.SystemClass => (SystemClass, default),
-            _ => (ObjectArray, default)
+            BinaryType.Class => (((ClassTypeInfo)additionalInfo!).TypeName.IsArray ? NonPrimitiveArray : NonSystemClass, default),
+            BinaryType.SystemClass => (MapSystemClassTypeName((TypeName)additionalInfo!), default),
+            _ => (ObjectArray, default),
         };
+
+        static AllowedRecordTypes MapSystemClassTypeName(TypeName typeName)
+        {
+            if (!typeName.IsArray)
+            {
+                return SystemClass;
+            }
+            else if (typeName.IsSZArray)
+            {
+                TypeName elementTypeName = typeName.GetElementType();
+                if (elementTypeName.IsSimple && elementTypeName.FullName.StartsWith("System.", StringComparison.Ordinal))
+                {
+                    switch (elementTypeName.FullName)
+                    {
+                        case "System.Boolean":
+                        case "System.Byte":
+                        case "System.SByte":
+                        case "System.Char":
+                        case "System.Int16":
+                        case "System.UInt16":
+                        case "System.Int32":
+                        case "System.UInt32":
+                        case "System.Int64":
+                        case "System.UInt64":
+                        case "System.Single":
+                        case "System.Double":
+                        case "System.Decimal":
+                        case "System.DateTime":
+                        case "System.TimeSpan":
+                            // BinaryFormatter should use BinaryType.PrimitiveArray for these primitive types,
+                            // but it uses BinaryType.SystemClass and we need this workaround.
+                            return PrimitiveArray;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            return NonPrimitiveArray;
+        }
     }
 
     internal bool ShouldBeRepresentedAsArrayOfClassRecords()
