@@ -32,7 +32,7 @@ namespace System
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
 
         public static bool IsQemuDetected =>
-#if TARGET_WINDOWS
+#if TARGET_WINDOWS || TARGET_BROWSER || TARGET_WASI
             false;
 #else
             Interop.Sys.IsQemuDetected();

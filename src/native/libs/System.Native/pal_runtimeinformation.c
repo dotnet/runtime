@@ -155,5 +155,9 @@ int32_t SystemNative_GetOSArchitecture(void)
 
 int32_t SystemNative_IsQemuDetected(void)
 {
+#ifdef TARGET_WASI
+    return 0;
+#else
     return minipal_detect_qemu() ? 1 : 0;
+#endif
 }

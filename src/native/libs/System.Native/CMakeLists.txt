@@ -32,7 +32,6 @@ set(NATIVE_SOURCES
     pal_time.c
     pal_datetime.c
     pal_sysctl.c
-    "${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c"
 )
 
 list(APPEND NATIVE_SOURCES
@@ -48,6 +47,7 @@ if (NOT CLR_CMAKE_TARGET_WASI)
         pal_signal.c
         pal_threading.c
         pal_uid.c
+        "${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c"
     )
 else()
     list (APPEND NATIVE_SOURCES

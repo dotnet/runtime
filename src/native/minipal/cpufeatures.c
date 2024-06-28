@@ -28,6 +28,11 @@
 #include <sys/auxv.h>
 #include <asm/hwcap.h>
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-macros"
+#endif
+
 // Light-up for hardware capabilities that are not present in older headers used by the portable build.
 #ifndef HWCAP_ASIMDRDM
 #define HWCAP_ASIMDRDM  (1 << 12)
@@ -45,6 +50,14 @@
 #define HWCAP_SVE   (1 << 22)
 #endif
 
+#ifndef XSTATE_MASK_AVX512
+#define XSTATE_MASK_AVX512 (0xE0) /* 0b1110_0000 */
+#endif // XSTATE_MASK_AVX512
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
 #endif
 
 #if HAVE_SYSCTLBYNAME
@@ -56,7 +69,7 @@
 #if defined(HOST_UNIX)
 #if defined(HOST_X86) || defined(HOST_AMD64)
 
-static uint32_t xmmYmmStateSupport()
+static uint32_t xmmYmmStateSupport(void)
 {
     uint32_t eax;
     __asm("  xgetbv\n" \
@@ -68,11 +81,7 @@ static uint32_t xmmYmmStateSupport()
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
 
-#ifndef XSTATE_MASK_AVX512
-#define XSTATE_MASK_AVX512 (0xE0) /* 0b1110_0000 */
-#endif // XSTATE_MASK_AVX512
-
-static uint32_t avx512StateSupport()
+static uint32_t avx512StateSupport(void)
 {
 #if defined(HOST_APPLE)
     // MacOS has specialized behavior where it reports AVX512 support but doesnt
@@ -99,12 +108,12 @@ static uint32_t avx512StateSupport()
 #endif
 }
 
-static bool IsAvxEnabled()
+static bool IsAvxEnabled(void)
 {
     return true;
 }
 
-static bool IsAvx512Enabled()
+static bool IsAvx512Enabled(void)
 {
     return true;
 }
@@ -222,11 +231,11 @@ int minipal_getcpufeatures(void)
 
                                     if (IsAvx512Enabled() && (avx512StateSupport() == 1))                       // XGETBV XRC0[7:5] == 111
                                     {
-                                        if (((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0) &&                        // AVX512F
-                                            ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0) &&                        // AVX512BW
-                                            ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0) &&                        // AVX512CD
-                                            ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0) &&                        // AVX512DQ
-                                            ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0))                          // AVX512VL
+                                        if ((((uint32_t)cpuidInfo[CPUID_EBX] & ((uint32_t)1 << 16)) != 0) &&                        // AVX512F
+                                            (((uint32_t)cpuidInfo[CPUID_EBX] & ((uint32_t)1 << 30)) != 0) &&                        // AVX512BW
+                                            (((uint32_t)cpuidInfo[CPUID_EBX] & ((uint32_t)1 << 28)) != 0) &&                        // AVX512CD
+                                            (((uint32_t)cpuidInfo[CPUID_EBX] & ((uint32_t)1 << 17)) != 0) &&                        // AVX512DQ
+                                            (((uint32_t)cpuidInfo[CPUID_EBX] & ((uint32_t)1 << 31)) != 0))                          // AVX512VL
                                         {
                                             // While the AVX-512 ISAs can be individually lit-up, they really
                                             // need F, BW, CD, DQ, and VL to be fully functional without adding
@@ -301,12 +310,12 @@ int minipal_getcpufeatures(void)
         }
     }
 
-    __cpuid(cpuidInfo, 0x80000000);
+    __cpuid(cpuidInfo, (int)0x80000000);
     uint32_t maxCpuIdEx = (uint32_t)cpuidInfo[CPUID_EAX];
 
     if (maxCpuIdEx >= 0x80000001)
     {
-        __cpuid(cpuidInfo, 0x80000001);
+        __cpuid(cpuidInfo, (int)0x80000001);
 
         if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                               // LZCNT
         {
@@ -441,67 +450,58 @@ int minipal_getcpufeatures(void)
     return result;
 }
 
-// Detect if the current process is running under the Apple Rosetta x64 emulator
-bool minipal_detect_rosetta(void)
+static bool GetCpuBrand(char* brand, size_t bufferSize)
 {
 #if defined(HOST_AMD64) || defined(HOST_X86)
     // Check for CPU brand indicating emulation
     int regs[4];
-    char brand[49];
 
     // Get the maximum value for extended function CPUID info
     __cpuid(regs, (int)0x80000000);
     if ((unsigned int)regs[0] < 0x80000004)
     {
-        return false; // Extended CPUID not supported
+        brand[0] = '\0'; // Extended CPUID not supported, return empty string or handle error
+        return false;
     }
 
-    // Retrieve the CPU brand string
+    // Retrieve the CPU brand string directly into the caller-provided buffer
     for (unsigned int i = 0x80000002; i <= 0x80000004; ++i)
     {
         __cpuid(regs, (int)i);
         memcpy(brand + (i - 0x80000002) * sizeof(regs), regs, sizeof(regs));
     }
-    brand[sizeof(brand) - 1] = '\0';
 
-    // Check if CPU brand indicates emulation
-    if (strstr(brand, "VirtualApple") != NULL)
-    {
-        return true;
-    }
-#endif // HOST_AMD64 || HOST_X86
+    brand[bufferSize - 1] = '\0';
 
+    return true;
+#else
+    (void)brand;
+    (void)bufferSize;
     return false;
+#endif // HOST_AMD64 || HOST_X86
 }
 
-bool minipal_detect_qemu(void)
+// Detect if the current process is running under the Apple Rosetta x64 emulator
+bool minipal_detect_rosetta(void)
 {
-#if defined(HOST_AMD64) || defined(HOST_X86)
-    // Check for CPU brand indicating emulation
-    unsigned int regs[4];
     char brand[49];
 
-    // Get the maximum value for extended function CPUID info
-    __cpuid(0x80000000, regs[0], regs[1], regs[2], regs[3]);
-    if (regs[0] < 0x80000004)
-    {
-        return false; // Extended CPUID not supported
-    }
+    // Check if CPU brand indicates emulation
+    return GetCpuBrand(brand, sizeof(brand)) && (strstr(brand, "VirtualApple") != NULL);
+}
 
-    // Retrieve the CPU brand string
-    for (unsigned int i = 0x80000002; i <= 0x80000004; ++i)
-    {
-        __cpuid(i, regs[0], regs[1], regs[2], regs[3]);
-        memcpy(brand + (i - 0x80000002) * sizeof(regs), regs, sizeof(regs));
-    }
-    brand[sizeof(brand) - 1] = '\0';
+#if !defined(HOST_WINDOWS)
+
+// Detect if the current process is running under QEMU
+bool minipal_detect_qemu(void)
+{
+    char brand[49];
 
     // Check if CPU brand indicates emulation
-    if (strstr(brand, "QEMU") != NULL)
+    if (GetCpuBrand(brand, sizeof(brand)) && strstr(brand, "QEMU") != NULL)
     {
         return true;
     }
-#endif
 
     // Check for process name of PID 1 indicating emulation
     char cmdline[256];
@@ -535,3 +535,5 @@ bool minipal_detect_qemu(void)
 
     return false;
 }
+
+#endif // !HOST_WINDOWS
