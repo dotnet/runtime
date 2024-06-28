@@ -192,9 +192,9 @@
         <target state="translated">Vypršel časový limit modulu Regex při pokusu o porovnání vzoru se vstupním řetězcem. K tomu může dojít z celé řady důvodů, mezi které patří velká velikost vstupních dat nebo nadměrné zpětné navracení způsobené vloženými kvantifikátory, zpětnými odkazy a dalšími faktory.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
-        <target state="new">GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</target>
+      <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
+        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
+        <target state="translated">Metoda GeneratedRegexAttribute musí být částečná, bez parametrů, neobecná, neabstraktní a návratová metoda Regex.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
