@@ -1514,8 +1514,8 @@ void EEJitManager::SetCpuInfo()
         uint32_t maxVectorTLength = (maxVectorTBitWidth / 8);
         uint64_t sveLengthFromOS = GetSveLengthFromOS();
 
-        // Do not enable SVE when the user specified vector length is smaller than the one offered by underlying OS.
-        if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
+        // Do not enable SVE when the system vector length is not 128-bits
+        if (sveLengthFromOS == 128)
         {
             CPUCompileFlags.Set(InstructionSet_Sve);
         }
