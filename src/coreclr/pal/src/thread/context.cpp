@@ -384,9 +384,9 @@ bool Xstate_IsAvx512Supported()
 
 #if !HAVE_MACH_EXCEPTIONS
 
-#ifdef XSTATE_SUPPORTED
+#if defined(XSTATE_SUPPORTED) && defined(HOST_AMD64)
 Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
-#endif // XSTATE_SUPPORTED
+#endif // XSTATE_SUPPORTED && HOST_AMD64
 
 /*++
 Function:
@@ -660,6 +660,16 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 #endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X && !HOST_LOONGARCH64 && !HOST_RISCV64 && !HOST_POWERPC64
 #endif // !HAVE_FPREGS_WITH_CW
 
+#if defined(HOST_ARM64) && !defined(TARGET_OSX) && !defined(TARGET_FREEBSD)
+    sve_context* sve = nullptr;
+    fpsimd_context* fp = nullptr;
+    if (((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT) ||
+        ((lpContext->ContextFlags & CONTEXT_XSTATE) == CONTEXT_XSTATE))
+    {
+        GetNativeSigSimdContext(native, &fp, &sve);
+    }
+#endif // HOST_ARM64 && !TARGET_OSX && !TARGET_FREEBSD
+
     if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
 #ifdef HOST_AMD64
@@ -708,9 +718,6 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
             }
         }
 #else // TARGET_OSX
-        fpsimd_context* fp = nullptr;
-        sve_context* sve = nullptr;
-        GetNativeSigSimdContext(native, &fp, &sve);
         if (fp)
         {
             fp->fpsr = lpContext->Fpsr;
@@ -718,31 +725,6 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
             for (int i = 0; i < 32; i++)
             {
                 *(NEON128*) &fp->vregs[i] = lpContext->V[i];
-            }
-        }
-
-        if (sve && (lpContext->XStateFeaturesMask & XSTATE_MASK_SVE) == XSTATE_MASK_SVE)
-        {
-            //TODO-SVE: This only handles vector lengths of 128bits.
-
-            // If this is hit then the kernel does not think the SVE registers are live yet.
-            _ASSERT(sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)));
-
-            uint16_t vq = sve_vq_from_vl(lpContext->Vl);
-
-            // Vector length should not have changed.
-            _ASSERTE(lpContext->Vl == sve->vl);
-
-            //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
-            *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq)) = lpContext->Ffr;
-
-            //TODO-SVE: Copy SVE registers once they are >128bits
-            //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
-
-            for (int i = 0; i < 16; i++)
-            {
-                //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
-                *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i)) = lpContext->P[i];
             }
         }
 #endif // TARGET_OSX
@@ -797,9 +779,10 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 
     // TODO: Enable for all Unix systems
-#if defined(HOST_AMD64) && defined(XSTATE_SUPPORTED)
+#if defined(XSTATE_SUPPORTED)
     if ((lpContext->ContextFlags & CONTEXT_XSTATE) == CONTEXT_XSTATE)
     {
+#if defined(HOST_AMD64)
         if (FPREG_HasYmmRegisters(native))
         {
             _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_AVX) == XSTATE_MASK_AVX);
@@ -828,8 +811,34 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 memcpy_s(dest, sizeof(M512) * 16, &lpContext->Zmm16, sizeof(M512) * 16);
             }
         }
+#elif defined(HOST_ARM64)
+        if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
+        {
+            //TODO-SVE: This only handles vector lengths of 128bits.
+
+            _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_SVE) == XSTATE_MASK_SVE);
+
+            uint16_t vq = sve_vq_from_vl(lpContext->Vl);
+
+            // Vector length should not have changed.
+            _ASSERTE(lpContext->Vl == sve->vl);
+
+            //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
+            *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq)) = lpContext->Ffr;
+
+            //TODO-SVE: Copy SVE registers once they are >128bits
+            //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
+
+            for (int i = 0; i < 16; i++)
+            {
+                //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
+                *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i)) = lpContext->P[i];
+            }
+        }
+#endif //HOST_AMD64
     }
-#endif //HOST_AMD64 && XSTATE_SUPPORTED
+#endif //XSTATE_SUPPORTED
+
 }
 
 #if defined(HOST_64BIT) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(TARGET_OSX)
@@ -862,7 +871,6 @@ void _GetNativeSigSimdContext(uint8_t *data, uint32_t size, fpsimd_context **fp_
         _aarch64_ctx *ctx = reinterpret_cast<_aarch64_ctx *>(&data[position]);
 
         _ASSERTE(position + ctx->size <= size);
-
 
         switch (ctx->magic)
         {
@@ -990,6 +998,16 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X && !HOST_LOONGARCH64 && !HOST_RISCV64 && !HOST_POWERPC64 && !HOST_POWERPC64
 #endif // !HAVE_FPREGS_WITH_CW
 
+#if defined(HOST_ARM64) && !defined(TARGET_OSX) && !defined(TARGET_FREEBSD)
+    const fpsimd_context* fp = nullptr;
+    const sve_context* sve = nullptr;
+    if (((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT) ||
+        ((lpContext->ContextFlags & CONTEXT_XSTATE) == CONTEXT_XSTATE))
+    {
+        GetConstNativeSigSimdContext(native, &fp, &sve);
+    }
+#endif // HOST_ARM64 && !TARGET_OSX && !TARGET_FREEBSD
+
     if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
 #ifdef HOST_AMD64
@@ -1037,9 +1055,6 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             }
         }
 #else // TARGET_OSX
-        const fpsimd_context* fp = nullptr;
-        const sve_context* sve = nullptr;
-        GetConstNativeSigSimdContext(native, &fp, &sve);
         if (fp)
         {
             lpContext->Fpsr = fp->fpsr;
@@ -1047,45 +1062,6 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             for (int i = 0; i < 32; i++)
             {
                 lpContext->V[i] = *(NEON128*) &fp->vregs[i];
-            }
-        }
-
-        if (sve)
-        {
-            //TODO-SVE: This only handles vector lengths of 128bits.
-
-            _ASSERTE((sve->vl > 0) && (sve->vl % 16 == 0));
-            lpContext->Vl  = sve->vl;
-
-            if (sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
-            {
-                uint16_t vq = sve_vq_from_vl(sve->vl);
-
-                lpContext->XStateFeaturesMask |= XSTATE_MASK_SVE;
-
-                //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
-                lpContext->Ffr = *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq));
-
-                //TODO-SVE: Copy SVE registers once they are >128bits
-                //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
-
-                for (int i = 0; i < 16; i++)
-                {
-                    //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
-                    lpContext->P[i] = *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i));
-                }
-            }
-            else
-            {
-                // Sve context is not present due to SVE registers not being live.
-
-                lpContext->XStateFeaturesMask = 0;
-                lpContext->Ffr = 0;
-
-                for (int i = 0; i < 16; i++)
-                {
-                    lpContext->P[i] = 0;
-                }
             }
         }
 #endif // TARGET_OSX
@@ -1146,11 +1122,12 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #endif
     }
 
-#ifdef HOST_AMD64
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
     if ((contextFlags & CONTEXT_XSTATE) == CONTEXT_XSTATE)
     {
     // TODO: Enable for all Unix systems
-#if XSTATE_SUPPORTED
+#if defined(XSTATE_SUPPORTED)
+#if defined(HOST_AMD64)
         if (FPREG_HasYmmRegisters(native))
         {
             uint32_t size;
@@ -1179,6 +1156,31 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 lpContext->XStateFeaturesMask |= XSTATE_MASK_AVX512;
             }
         }
+#elif defined(HOST_ARM64)
+        if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
+        {
+            //TODO-SVE: This only handles vector lengths of 128bits.
+
+            _ASSERTE((sve->vl > 0) && (sve->vl % 16 == 0));
+            lpContext->Vl  = sve->vl;
+
+            uint16_t vq = sve_vq_from_vl(sve->vl);
+
+            lpContext->XStateFeaturesMask |= XSTATE_MASK_SVE;
+
+            //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
+            lpContext->Ffr = *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq));
+
+            //TODO-SVE: Copy SVE registers once they are >128bits
+            //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
+
+            for (int i = 0; i < 16; i++)
+            {
+                //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
+                lpContext->P[i] = *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i));
+            }
+        }
+#endif // HOST_AMD64
         else
 #endif // XSTATE_SUPPORTED
         {
@@ -1188,7 +1190,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->ContextFlags &= ~xstateFlags;
         }
     }
-#endif // HOST_AMD64
+#endif // HOST_AMD64 || HOST_ARM64
 }
 
 #if !HAVE_MACH_EXCEPTIONS

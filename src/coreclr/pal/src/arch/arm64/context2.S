@@ -70,7 +70,6 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
     stp x26, x27, [x0, CONTEXT_X26]
     str x28,      [x0, CONTEXT_X28]
 
-
 LOCAL_LABEL(Done_CONTEXT_INTEGER):
     ldr w1, [x0, CONTEXT_ContextFlags]
     // clangs assembler doesn't seem to support the mov Wx, imm32 yet
@@ -105,8 +104,17 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
     sub x0, x0,   CONTEXT_FLOAT_CONTROL_OFFSET + CONTEXT_NEON_OFFSET
 
 LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
+    ldr w1, [x0, CONTEXT_ContextFlags]
+    // clangs assembler doesn't seem to support the mov Wx, imm32 yet
+    movz w2, #0x40, lsl #16
+    movk w2, #0x40
+    mov w3, w2
+    and w2, w1, w2
+    cmp w2, w3
+    b.ne LOCAL_LABEL(Done_CONTEXT_SVE)
+
     ldr x1, [x0, CONTEXT_XSTATEFEATURESMASK_OFFSET]
-    tbz x1, #XSTATE_SVE, LOCAL_LABEL(Done_CONTEXT_SVE)
+    tbz x1, #XSTATE_SVE_BIT, LOCAL_LABEL(Done_CONTEXT_SVE)
 
     add x0, x0,   CONTEXT_SVE_OFFSET
     str p0, [x0, CONTEXT_P0_VL, MUL VL]
@@ -151,8 +159,7 @@ LEAF_ENTRY RtlCaptureContext, _TEXT
     orr w1, w1, #0x4
     orr w1, w1, #0x8
     str w1, [x0, CONTEXT_ContextFlags]
-    movz x1, 0
-    str x1, [x0, CONTEXT_XSTATEFEATURESMASK_OFFSET]
+    str xzr, [x0, CONTEXT_XSTATEFEATURESMASK_OFFSET]
     ldr x1, [sp]
     EPILOG_STACK_FREE 16
     b C_FUNC(CONTEXT_CaptureContext)
@@ -184,8 +191,11 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
     // since we potentially clobber x0 below, we'll bank it in x16
     mov x16, x0
 
+    ldr w17, [x16, CONTEXT_ContextFlags]
+    tbz w17, #CONTEXT_XSTATE_BIT, LOCAL_LABEL(No_Restore_CONTEXT_SVE)
+
     ldr w17, [x16, CONTEXT_XSTATEFEATURESMASK_OFFSET]
-    tbz w17, #XSTATE_SVE, LOCAL_LABEL(No_Restore_CONTEXT_SVE)
+    tbz w17, #XSTATE_SVE_BIT, LOCAL_LABEL(No_Restore_CONTEXT_SVE)
 
     add x16, x16,   CONTEXT_SVE_OFFSET
     ldr p0, [x16, CONTEXT_FFR_VL, MUL VL]

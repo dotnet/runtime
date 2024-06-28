@@ -42,14 +42,14 @@ typedef ucontext_t native_context_t;
 
 #if !HAVE_MACH_EXCEPTIONS
 
-#if defined(XSTATE_SUPPORTED) && !HAVE_PUBLIC_XSTATE_STRUCT
+#if defined(XSTATE_SUPPORTED) && defined(HOST_AMD64) && !HAVE_PUBLIC_XSTATE_STRUCT
 namespace asm_sigcontext
 {
 #include <asm/sigcontext.h>
 };
 using asm_sigcontext::_fpx_sw_bytes;
 using asm_sigcontext::_xstate;
-#endif // defined(XSTATE_SUPPORTED) && !HAVE_PUBLIC_XSTATE_STRUCT
+#endif // XSTATE_SUPPORTED && HOST_AMD64 && !HAVE_PUBLIC_XSTATE_STRUCT
 
 #else // !HAVE_MACH_EXCEPTIONS
 #include <mach/kern_return.h>
@@ -435,7 +435,7 @@ struct sve_context {
 /////////////////////
 // Extended state
 
-#ifdef XSTATE_SUPPORTED
+#if defined(XSTATE_SUPPORTED) && defined(HOST_AMD64)
 
 #if HAVE_FPSTATE_GLIBC_RESERVED1
 #define FPSTATE_RESERVED __glibc_reserved1
@@ -626,7 +626,7 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
     _ASSERTE(FPREG_HasAvx512Registers(uc));
     return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_ZMM);
 }
-#endif // XSTATE_SUPPORTED
+#endif // XSTATE_SUPPORTED && HOST_AMD64
 
 /////////////////////
 
