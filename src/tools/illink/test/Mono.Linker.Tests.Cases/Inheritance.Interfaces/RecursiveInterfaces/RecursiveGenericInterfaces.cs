@@ -32,7 +32,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 	[KeptOverrideOnMethodInAssembly ("library.dll", "MyClass", "IBase<System.String,System.Double,System.Int32>.GetT", "T IBase`3<System.String,System.Double,System.Int32>::GetT()")]
 	[KeptOverrideOnMethodInAssembly ("library.dll", "MyClass", "IBase<System.String,System.Int64,System.Single>.GetT", "T IBase`3<System.String,System.Int64,System.Single>::GetT()")]
 	[KeptOverrideOnMethodInAssembly ("library.dll", "MyClass", "IBase<System.String,System.Double,System.Single>.GetT", "T IBase`3<System.String,System.Double,System.Single>::GetT()")]
-
+	[RuntimeInterfaceOnTypeInAssembly ("library.dll", "MyClass", "IBase`3<System.Char,System.Int64,System.Int32>", ["IDerived`1<System.Char>", "IMiddle`2<T,System.Int64>", "IBase`3<T,U,System.Int32>"])]
+	[RuntimeInterfaceOnTypeInAssembly ("library.dll", "MyClass", "IBase`3<System.String,System.Int64,System.Int32>", ["IDerived`1<System.String>", "IMiddle`2<T,System.Int64>", "IBase`3<T,U,System.Int32>"])]
 	public class RecursiveGenericInterfaces
 	{
 		[Kept]

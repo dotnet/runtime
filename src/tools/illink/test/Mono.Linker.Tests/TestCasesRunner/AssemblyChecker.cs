@@ -26,11 +26,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
 		bool checkNames;
 
-		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase)
+		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase, TypeMapInfo typeMapInfo)
 		{
 			this.originalAssembly = original;
 			this.linkedAssembly = linked;
 			this.linkedTestCase = linkedTestCase;
+			this._originalTypeMapInfo = typeMapInfo;
 
 			checkNames = original.MainModule.GetTypeReferences ().Any (attr =>
 				attr.Name == nameof (RemovedNameValueAttribute));
@@ -108,23 +109,33 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				foreach (var att in type.CustomAttributes) {
 					switch (att.AttributeType.Name) {
 					case nameof (HasRuntimeInterfaceAttribute):
-						var expectednterfaceTypeName = att.ConstructorArguments[0].Value as string ?? ((TypeReference) att.ConstructorArguments[0].Value).FullName;
-						var expectedInterfaceChains = ((CustomAttributeArgument[]) att.ConstructorArguments[1].Value).Select (t => t.Value as string ?? ((TypeReference) t.Value).FullName);
-						var runtimeIfaces = _originalTypeMapInfo.GetRecursiveInterfaces (type);
-						var matchingRuntimeIface = runtimeIfaces.FirstOrDefault (i => i.InterfaceType.FullName == expectednterfaceTypeName);
-						if (matchingRuntimeIface == default) {
-							yield return $"Type {type.FullName} does not have runtime interface {expectednterfaceTypeName}";
-							continue;
-						}
-
-						if (expectedInterfaceChains.Any ()) {
-							if (!expectedInterfaceChains.Zip (matchingRuntimeIface.ImplementationChain).All (pair => pair.First == pair.Second.InterfaceType.FullName)) {
-								yield return $"Type {type.FullName} does not have expected implementation chain for runtime interface {expectednterfaceTypeName}";
-							}
-						}
+						var expectedInterfaceTypeName = att.ConstructorArguments[0].Value as string ?? ((TypeReference) att.ConstructorArguments[0].Value).FullName;
+						var expectedInterfaceChain = ((CustomAttributeArgument[]) att.ConstructorArguments[1].Value).Select (t => t.Value as string ?? ((TypeReference) t.Value).FullName);
+						var errs = TypeMapInfoValidation.ValidateRuntimeInterfaces (_originalTypeMapInfo, type, expectedInterfaceTypeName, expectedInterfaceChain);
+						foreach (var err in errs)
+							yield return err;
 						break;
+
 					default:
 						break;
+					}
+				}
+				foreach (var method in type.Methods) {
+					foreach (var att in method.CustomAttributes) {
+						switch (att.AttributeType.Name) {
+						case nameof (IsOverrideOfAttribute):
+							string expectedOverriddenMethodName = att.ConstructorArguments.Count switch {
+								1 => (string) att.ConstructorArguments[0].Value,
+								_ => throw new NotImplementedException ($"Unexpected number of arguments in {att.AttributeType.Name} attribute: {att.ConstructorArguments.Count}")
+							};
+							var errs = TypeMapInfoValidation.ValidateMethodIsOverrideOf (_originalTypeMapInfo, method, expectedOverriddenMethodName);
+							foreach (var err in errs)
+								yield return err;
+
+							break;
+						default:
+							break;
+						}
 					}
 				}
 			}

@@ -30,6 +30,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly TypeNameResolver _linkedTypeNameResolver;
 		readonly ReaderParameters _originalReaderParameters;
 		readonly ReaderParameters _linkedReaderParameters;
+		readonly TypeMapInfo _originalTypeMapInfo;
 
 		public ResultChecker ()
 			: this (new TestCaseAssemblyResolver (), new TestCaseAssemblyResolver (),
@@ -50,6 +51,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			_linkedTypeNameResolver = new TypeNameResolver (new TestResolver (), new TestAssemblyNameResolver (_linkedResolver));
 			_originalReaderParameters = originalReaderParameters;
 			_linkedReaderParameters = linkedReaderParameters;
+			_originalTypeMapInfo = new TypeMapInfo (new TestResolver ());
 		}
 
 		protected static void ValidateTypeRefsHaveValidAssemblyRefs (AssemblyDefinition linked)
@@ -147,7 +149,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase)
 		{
-			return new AssemblyChecker (original, linked, linkedTestCase);
+			return new AssemblyChecker (original, linked, linkedTestCase, _originalTypeMapInfo);
 		}
 
 		void InitializeResolvers (TrimmedTestCaseResult linkedResult)
@@ -305,19 +307,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							object type = check.ConstructorArguments[1].Value;
 							TypeDefinition typeDef = GetOriginalTypeFromInAssemblyAttribute (assemblyName, type);
 							string interfaceName = (check.ConstructorArguments[2].Value as TypeReference)?.FullName ?? (string) check.ConstructorArguments[2].Value;
-							TypeMapInfo typeMapInfo = new TypeMapInfo (new TestResolver ());
-							var runtimeInterfaces = typeMapInfo.GetRecursiveInterfaces (typeDef);
-							var runtimeInterface = runtimeInterfaces.SingleOrDefault (i => i.InterfaceType.FullName == interfaceName);
-							if (runtimeInterface == default)
-								errs.Add ($"Expected type `{typeDef}` to have runtime interface `{interfaceName}`");
-
-							var implementationChains = (check.ConstructorArguments[3].Value as CustomAttributeArgument[])
+							var expectedImplChain = (check.ConstructorArguments[3].Value as CustomAttributeArgument[])
 								.Select (caa => (caa.Value as TypeReference)?.FullName ?? (string) caa.Value);
-							if (implementationChains.Any ()) {
-								if (!implementationChains.SequenceEqual (runtimeInterface.ImplementationChain.Select (i => i.InterfaceType.FullName)))
-									errs.Add ($"Expected type `{typeDef}` to have interfaceImpl chain `{string.Join (", ", implementationChains)}` for interface `{interfaceName}`");
-							}
-
+							errs.AddRange (TypeMapInfoValidation.ValidateRuntimeInterfaces (_originalTypeMapInfo, typeDef, interfaceName, expectedImplChain));
 							break;
 						default:
 							break;
