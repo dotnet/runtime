@@ -148,6 +148,13 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateVersion7ThrowsForPreUnixEpoch()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => Guid.CreateVersion7(DateTimeOffset.UnixEpoch - TimeSpan.FromMilliseconds(1)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Guid.CreateVersion7(DateTimeOffset.MinValue));
+        }
+
+        [Fact]
         public static void NewGuid()
         {
             Guid guid1 = Guid.NewGuid();

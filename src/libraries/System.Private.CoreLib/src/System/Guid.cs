@@ -295,21 +295,27 @@ namespace System
         public static Guid CreateVersion7() => CreateVersion7(DateTimeOffset.UtcNow);
 
         /// <summary>Creates a new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</summary>
-        /// <param name="timestamp">The date time offset used to determine the Unix Epoch timestamp</param>
+        /// <param name="timestamp">The date time offset used to determine the Unix Epoch timestamp.</param>
         /// <returns>A new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timestamp" /> represents an offset prior to <see cref="DateTimeOffset.UnixEpoch" />.</exception>
         /// <remarks>
         ///     <para>This seeds the rand_a and rand_b sub-fields with random data.</para>
         /// </remarks>
         public static Guid CreateVersion7(DateTimeOffset timestamp)
         {
             // This isn't the most optimal way, but we don't have an easy way to get
-            // secure random bytes in corelib without doing this, and its not terrible
+            // secure random bytes in corelib without doing this since the secure rng
+            // is in a different layer.
             Guid result = NewGuid();
 
             // 2^48 is roughly 8925.5 years, which from the Unix Epoch means we won't
-            // overflow until around July of 10,895. So there isn't much need to handle it
-            // particularly given that DateTimeOffset.MaxValue is December 31, 9999
+            // overflow until around July of 10,895. So there isn't any need to handle
+            // it given that DateTimeOffset.MaxValue is December 31, 9999. However, we
+            // can't represent timestamps prior to the Unix Epoch since UUIDv7 explicitly
+            // stores a 48-bit unsigned value, so we do need to throw if one is passed in.
+
             long unix_ts_ms = timestamp.ToUnixTimeMilliseconds();
+            ArgumentOutOfRangeException.ThrowIfNegative(unix_ts_ms, nameof(timestamp));
 
             Unsafe.AsRef(in result._a) = (int)(unix_ts_ms >> 16);
             Unsafe.AsRef(in result._b) = (short)(unix_ts_ms);
