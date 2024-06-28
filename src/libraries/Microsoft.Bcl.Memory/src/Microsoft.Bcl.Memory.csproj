@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;$(NetFrameworkMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <!-- Disabling baseline validation since this is a brand new package.
@@ -14,6 +14,7 @@
       Commonly Used Types:
       System.Buffers.Text.Base64Url
     </PackageDescription>
+    <DefineConstants>$(DefineConstants);MICROSOFT_BCL_MEMORY</DefineConstants>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -23,6 +24,10 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="..\ref\Microsoft.Bcl.Memory.Forwards.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' Or '$(TargetFramework)' == 'netstandard2.1'">
+    <Compile Include="..\ref\Microsoft.Bcl.Memory.Forwards.ns21.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -49,8 +54,17 @@
     </Compile>
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' Or '$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Index.cs" />
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Range.cs" />
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Numerics\Hashing\HashHelpers.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
-  
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
+  </ItemGroup>
 </Project>

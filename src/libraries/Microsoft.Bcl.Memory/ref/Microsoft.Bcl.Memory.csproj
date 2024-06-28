@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;$(NetFrameworkMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -10,6 +10,18 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="Microsoft.Bcl.Memory.Forwards.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' Or '$(TargetFramework)' == 'netstandard2.1'">
+    <Compile Include="Microsoft.Bcl.Memory.Forwards.ns21.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' Or '$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Include="Microsoft.Bcl.Memory.ns20.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
