@@ -789,16 +789,18 @@ LinearScan::LinearScan(Compiler* theCompiler)
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
 #endif // TARGET_AMD64
 
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     rbmAllMask        = compiler->rbmAllMask;
     rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
     memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
 
+#if defined(TARGET_XARCH)
     if (!compiler->canUseEvexEncoding())
     {
         availableRegCount -= (CNT_HIGHFLOAT + CNT_MASK_REGS);
     }
 #endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     firstColdLoc = MaxLocation;
 
@@ -865,7 +867,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
 #endif
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     availableMaskRegs = RBM_ALLMASK.GetPredicateRegSet();
 #endif
 

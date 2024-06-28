@@ -178,7 +178,7 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
 {
 }
 
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 void CodeGenInterface::CopyRegisterInfo()
 {
 #if defined(TARGET_AMD64)
@@ -189,7 +189,7 @@ void CodeGenInterface::CopyRegisterInfo()
     rbmAllMask        = compiler->rbmAllMask;
     rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 /*****************************************************************************/
 

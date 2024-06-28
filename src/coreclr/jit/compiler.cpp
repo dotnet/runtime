@@ -3478,17 +3478,28 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif // TARGET_AMD64
 
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     rbmAllMask         = RBM_ALLMASK_INIT;
     rbmMskCalleeTrash  = RBM_MSK_CALLEE_TRASH_INIT;
     cntCalleeTrashMask = CNT_CALLEE_TRASH_MASK_INIT;
 
+#ifdef TARGET_XARCH
     if (canUseEvexEncoding())
     {
         rbmAllMask |= RBM_ALLMASK_EVEX;
         rbmMskCalleeTrash |= RBM_MSK_CALLEE_TRASH_EVEX;
         cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK_EVEX;
     }
+#endif // TARGET_XARCH
+
+#ifdef TARGET_ARM64
+    if (compOpportunisticallyDependsOn(InstructionSet_Sve))
+    {
+        rbmAllMask = RBM_ALLMASK;
+        rbmMskCalleeTrash = RBM_MSK_CALLEE_TRASH;
+        cntCalleeTrashMask = CNT_CALLEE_TRASH_MASK;
+    }
+#endif // TARGET_ARM64
 
     // Make sure we copy the register info and initialize the
     // trash regs after the underlying fields are initialized
@@ -3501,7 +3512,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
 
     codeGen->CopyRegisterInfo();
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 }
 
 #ifdef DEBUG

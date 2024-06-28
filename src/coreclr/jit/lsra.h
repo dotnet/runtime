@@ -1720,7 +1720,7 @@ private:
     PhasedVar<SingleTypeRegSet> availableIntRegs;
     PhasedVar<SingleTypeRegSet> availableFloatRegs;
     PhasedVar<SingleTypeRegSet> availableDoubleRegs;
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     PhasedVar<SingleTypeRegSet> availableMaskRegs;
 #endif
     PhasedVar<SingleTypeRegSet>* availableRegs[TYP_COUNT];
@@ -2087,7 +2087,7 @@ private:
     }
 #endif // TARGET_AMD64
 
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     regMaskTP rbmAllMask;
     regMaskTP rbmMskCalleeTrash;
 
@@ -2099,7 +2099,7 @@ private:
     {
         return this->rbmMskCalleeTrash;
     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     unsigned availableRegCount;
 
@@ -2126,25 +2126,25 @@ private:
         return varTypeCalleeSaveRegs[rt].GetRegSetForType(rt);
     }
 
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     // Not all of the callee trash values are constant, so don't declare this as a method local static
     // doing so results in significantly more complex codegen and we'd rather just initialize this once
     // as part of initializing LSRA instead
     regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     //------------------------------------------------------------------------
     // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
     //
     FORCEINLINE SingleTypeRegSet callerSaveRegs(RegisterType rt) const
     {
-#if !defined(TARGET_XARCH)
+#if !defined(FEATURE_MASKED_HW_INTRINSICS)
         static const regMaskTP varTypeCalleeTrashRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
 #include "typelist.h"
 #undef DEF_TP
         };
-#endif // !TARGET_XARCH
+#endif // !FEATURE_MASKED_HW_INTRINSICS
 
         assert((unsigned)rt < ArrLen(varTypeCalleeTrashRegs));
         return varTypeCalleeTrashRegs[rt].GetRegSetForType(rt);

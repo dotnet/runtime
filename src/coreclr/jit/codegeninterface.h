@@ -88,7 +88,7 @@ public:
     }
 #endif // TARGET_AMD64
 
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     regMaskTP rbmAllMask;
     regMaskTP rbmMskCalleeTrash;
 
