@@ -426,7 +426,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
     }
     CONTRACTL_END;
 
-    PCODE pCode = GetRestoredSlotIfExists(slot);
+    PCODE pCode = GetSlot(slot);
 
     if (pCode == (PCODE)NULL)
     {

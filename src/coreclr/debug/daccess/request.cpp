@@ -428,7 +428,7 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
     else if (slot < mTable->GetNumVtableSlots())
     {
         // Now get the slot:
-        *value = mTable->GetRestoredSlotIfExists(slot);
+        *value = mTable->GetSlot(slot);
         if (*value == 0)
         {
             hr = S_FALSE;
@@ -502,7 +502,7 @@ HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
     {
         MethodDesc* pMD = mTable->GetMethodDescForSlot_NoThrow(slot);
         methodData.MethodDesc = HOST_CDADDR(pMD);
-        methodData.Entrypoint = mTable->GetRestoredSlotIfExists(slot);
+        methodData.Entrypoint = mTable->GetSlot(slot);
         methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
         methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
         methodData.Token = pMD->GetMemberDef();

@@ -7572,18 +7572,6 @@ Module *MethodTable::GetDefiningModuleForOpenType()
     RETURN NULL;
 }
 
-PCODE MethodTable::GetRestoredSlotIfExists(DWORD slotNumber)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    return GetCanonicalMethodTable()->GetSlot(slotNumber);
-}
-
 //==========================================================================================
 PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
 {
