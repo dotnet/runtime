@@ -85,7 +85,7 @@ DWORD MethodDesc::GetAttrs()
 Method Slots
 ------------
 
-Each MethodDesc has a slot, which contains the entry point of the method. The slot must exist for all methods, even the ones that never run like abstract methods. There are multiple places in the runtime that depend on the 1:1 mapping between entry points and MethodDescs, making this relationship an invariant.
+Each MethodDesc has a slot, which contains the current entry point of the method. The slot must exist for all methods, even the ones that never run like abstract methods. There are multiple places in the runtime that depend on mapping between entry points and MethodDescs.
 
 Each MethodDesc logically has an entry point, but we do not allocate these eagerly at MethodDesc creation time. The invariant is that once the method is identified as a method to run, or is used in virtual overriding, we will allocate the entrypoint.
 
