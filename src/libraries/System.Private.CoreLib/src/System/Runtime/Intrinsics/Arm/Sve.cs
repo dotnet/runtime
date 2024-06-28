@@ -5527,7 +5527,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// svuint8_t svlsl[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
         ///   LSL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   LSLR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
         /// svuint8_t svlsl[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
         /// </summary>
         public static unsafe Vector<byte> ShiftLeftLogical(Vector<byte> left, Vector<byte> right) => ShiftLeftLogical(left, right);
@@ -5547,7 +5546,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// svint16_t svlsl[_s16]_x(svbool_t pg, svint16_t op1, svuint16_t op2)
         ///   LSL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   LSLR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
         /// svint16_t svlsl[_s16]_z(svbool_t pg, svint16_t op1, svuint16_t op2)
         /// </summary>
         public static unsafe Vector<short> ShiftLeftLogical(Vector<short> left, Vector<ushort> right) => ShiftLeftLogical(left, right);
@@ -5567,7 +5565,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// svint32_t svlsl[_s32]_x(svbool_t pg, svint32_t op1, svuint32_t op2)
         ///   LSL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   LSLR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
         /// svint32_t svlsl[_s32]_z(svbool_t pg, svint32_t op1, svuint32_t op2)
         /// </summary>
         public static unsafe Vector<int> ShiftLeftLogical(Vector<int> left, Vector<uint> right) => ShiftLeftLogical(left, right);
@@ -5587,7 +5584,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// svint64_t svlsl[_s64]_x(svbool_t pg, svint64_t op1, svuint64_t op2)
         ///   LSL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   LSLR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
         /// svint64_t svlsl[_s64]_z(svbool_t pg, svint64_t op1, svuint64_t op2)
         /// </summary>
         public static unsafe Vector<long> ShiftLeftLogical(Vector<long> left, Vector<ulong> right) => ShiftLeftLogical(left, right);
@@ -5597,7 +5593,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// svint8_t svlsl[_s8]_x(svbool_t pg, svint8_t op1, svuint8_t op2)
         ///   LSL Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   LSLR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
         /// svint8_t svlsl[_s8]_z(svbool_t pg, svint8_t op1, svuint8_t op2)
         /// </summary>
         public static unsafe Vector<sbyte> ShiftLeftLogical(Vector<sbyte> left, Vector<byte> right) => ShiftLeftLogical(left, right);
@@ -5617,7 +5612,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// svuint16_t svlsl[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
         ///   LSL Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   LSLR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
         /// svuint16_t svlsl[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
         /// </summary>
         public static unsafe Vector<ushort> ShiftLeftLogical(Vector<ushort> left, Vector<ushort> right) => ShiftLeftLogical(left, right);
@@ -5637,7 +5631,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// svuint32_t svlsl[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
         ///   LSL Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   LSLR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
         /// svuint32_t svlsl[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
         /// </summary>
         public static unsafe Vector<uint> ShiftLeftLogical(Vector<uint> left, Vector<uint> right) => ShiftLeftLogical(left, right);
@@ -5657,7 +5650,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// svuint64_t svlsl[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
         ///   LSL Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   LSLR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
         /// svuint64_t svlsl[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
         /// </summary>
         public static unsafe Vector<ulong> ShiftLeftLogical(Vector<ulong> left, Vector<ulong> right) => ShiftLeftLogical(left, right);
@@ -5670,7 +5662,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ASR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// svint16_t svasr[_s16]_x(svbool_t pg, svint16_t op1, svuint16_t op2)
         ///   ASR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   ASRR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
         /// svint16_t svasr[_s16]_z(svbool_t pg, svint16_t op1, svuint16_t op2)
         /// </summary>
         public static unsafe Vector<short> ShiftRightArithmetic(Vector<short> left, Vector<ushort> right) => ShiftRightArithmetic(left, right);
@@ -5690,7 +5681,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ASR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// svint32_t svasr[_s32]_x(svbool_t pg, svint32_t op1, svuint32_t op2)
         ///   ASR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   ASRR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
         /// svint32_t svasr[_s32]_z(svbool_t pg, svint32_t op1, svuint32_t op2)
         /// </summary>
         public static unsafe Vector<int> ShiftRightArithmetic(Vector<int> left, Vector<uint> right) => ShiftRightArithmetic(left, right);
@@ -5710,7 +5700,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ASR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// svint64_t svasr[_s64]_x(svbool_t pg, svint64_t op1, svuint64_t op2)
         ///   ASR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   ASRR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
         /// svint64_t svasr[_s64]_z(svbool_t pg, svint64_t op1, svuint64_t op2)
         /// </summary>
         public static unsafe Vector<long> ShiftRightArithmetic(Vector<long> left, Vector<ulong> right) => ShiftRightArithmetic(left, right);
@@ -5720,7 +5709,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ASR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// svint8_t svasr[_s8]_x(svbool_t pg, svint8_t op1, svuint8_t op2)
         ///   ASR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   ASRR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
         /// svint8_t svasr[_s8]_z(svbool_t pg, svint8_t op1, svuint8_t op2)
         /// </summary>
         public static unsafe Vector<sbyte> ShiftRightArithmetic(Vector<sbyte> left, Vector<byte> right) => ShiftRightArithmetic(left, right);
@@ -5743,7 +5731,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// svuint8_t svlsr[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
         ///   LSR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   LSRR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
         /// svuint8_t svlsr[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
         /// </summary>
         public static unsafe Vector<byte> ShiftRightLogical(Vector<byte> left, Vector<byte> right) => ShiftRightLogical(left, right);
@@ -5763,7 +5750,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// svuint16_t svlsr[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
         ///   LSR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   LSRR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
         /// svuint16_t svlsr[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
         /// </summary>
         public static unsafe Vector<ushort> ShiftRightLogical(Vector<ushort> left, Vector<ushort> right) => ShiftRightLogical(left, right);
@@ -5783,7 +5769,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// svuint32_t svlsr[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
         ///   LSR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   LSRR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
         /// svuint32_t svlsr[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
         /// </summary>
         public static unsafe Vector<uint> ShiftRightLogical(Vector<uint> left, Vector<uint> right) => ShiftRightLogical(left, right);
@@ -5803,7 +5788,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LSR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// svuint64_t svlsr[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
         ///   LSR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   LSRR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
         /// svuint64_t svlsr[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
         /// </summary>
         public static unsafe Vector<ulong> ShiftRightLogical(Vector<ulong> left, Vector<ulong> right) => ShiftRightLogical(left, right);
