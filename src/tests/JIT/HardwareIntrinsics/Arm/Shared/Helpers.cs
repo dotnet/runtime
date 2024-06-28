@@ -3710,8 +3710,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort ShiftLeftLogical(ushort op1, byte op2) => UnsignedShift(op1, (short)op2);
 
-        public static ushort ShiftLeftLogical(ushort op1, ushort op2) => UnsignedShift(op1, (short)op2);
-
         public static short ShiftLeftLogicalSaturate(short op1, byte op2) => SignedShift(op1, (short)op2, saturating: true);
 
         public static ushort ShiftLeftLogicalSaturate(ushort op1, byte op2) => UnsignedShift(op1, (short)op2, saturating: true);
@@ -3980,8 +3978,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint ShiftLeftLogical(uint op1, byte op2) => UnsignedShift(op1, (int)op2);
 
-        public static uint ShiftLeftLogical(uint op1, uint op2) => UnsignedShift(op1, (int)op2);
-
         public static int ShiftLeftLogicalSaturate(int op1, byte op2) => SignedShift(op1, (int)op2, saturating: true);
 
         public static uint ShiftLeftLogicalSaturate(uint op1, byte op2) => UnsignedShift(op1, (int)op2, saturating: true);
@@ -4249,8 +4245,6 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long ShiftLeftLogical(long op1, byte op2) => UnsignedShift(op1, (long)op2);
 
         public static ulong ShiftLeftLogical(ulong op1, byte op2) => UnsignedShift(op1, (long)op2);
-
-        public static ulong ShiftLeftLogical(ulong op1, ulong op2) => UnsignedShift(op1, (long)op2);
 
         public static long ShiftLeftLogicalSaturate(long op1, byte op2) => SignedShift(op1, (long)op2, saturating: true);
 
