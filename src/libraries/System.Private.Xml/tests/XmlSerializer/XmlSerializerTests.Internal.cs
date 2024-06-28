@@ -77,7 +77,7 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.StringField2, actual.StringField2);
     }
 
-    // Move this test to XmlSerializerTests.RuntimeOnly.cs once #1399 is fixed for the ReflectionOnly serializer.
+    // TODO - Move this test to XmlSerializerTests.RuntimeOnly.cs once #1399 is fixed for the ReflectionOnly serializer.
     [Fact]
     public static void Xml_XmlSchema()
     {
