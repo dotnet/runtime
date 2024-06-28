@@ -20,6 +20,7 @@ internal sealed class Registry
 
     public IException Exception => GetContract<IException>();
     public IThread Thread => GetContract<IThread>();
+    public IStressLog StressLog => GetContract<IStressLog>();
 
     private T GetContract<T>() where T : IContract
     {

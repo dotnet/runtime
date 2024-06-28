@@ -73,6 +73,14 @@ public sealed unsafe class Target
     internal Contracts.Registry Contracts { get; }
     internal DataCache ProcessedData { get; }
 
+    /// <summary>
+    /// Create a new target instance from a contract descriptor embedded in the target memory.
+    /// </summary>
+    /// <param name="contractDescriptor">The offset of the contract descriptor in the target memory</param>
+    /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="readContext">A context parameter for <paramref name="readFromTarget"/></param>
+    /// <param name="target">The target object.</param>
+    /// <returns>If a target instance could be created, <c>true</c>; otherwise, <c>false</c>.</returns>
     public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
     {
         Reader reader = new Reader(readFromTarget, readContext);
@@ -84,6 +92,21 @@ public sealed unsafe class Target
 
         target = null;
         return false;
+    }
+
+    /// <summary>
+    /// Create a new target instance from an externally-provided contract descriptor.
+    /// </summary>
+    /// <param name="contractDescriptor">The contract descriptor to use for this target</param>
+    /// <param name="globalPointerValues">The values for any global pointers specified in the contract descriptor.</param>
+    /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="readContext">A context parameter for <paramref name="readFromTarget"/></param>
+    /// <param name="isLittleEndian">Whether the target is little-endian</param>
+    /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
+    /// <returns>The target object.</returns>
+    public static Target Create(ContractDescriptorParser.ContractDescriptor contractDescriptor, TargetPointer[] globalPointerValues, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, bool isLittleEndian, int pointerSize)
+    {
+        return new Target(new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize }, contractDescriptor, globalPointerValues, new Reader(readFromTarget, readContext));
     }
 
     private Target(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
