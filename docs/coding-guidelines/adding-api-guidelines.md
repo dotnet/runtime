@@ -25,7 +25,7 @@ the implementation without compat concerns in future releases.
 ### Determine target framework
 
 `net8.0` is the target framework version currently under development and the new apis
-should be added to `net8.0`. [More Information on TargetFrameworks](https://docs.microsoft.com/en-us/dotnet/standard/frameworks)
+should be added to `net8.0`. [More Information on TargetFrameworks](https://learn.microsoft.com/dotnet/standard/frameworks)
 
 ## Making the changes in repo
 
@@ -42,7 +42,7 @@ If your new API or the APIs it calls throw any exceptions, those need to be manu
 
 After your change is merged, we will eventually port them to the dotnet-api-docs repo, where we will review them for language and proper style (For more information, see the [API writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki)).
 
-Once the dotnet-api-docs change is merged, your comments will start showing up in the official API documentation at http://docs.microsoft.com/, and later they'll appear in IntelliSense in Visual Studio and Visual Studio Code.
+Once the dotnet-api-docs change is merged, your comments will start showing up in the official API documentation at https://learn.microsoft.com, and later they'll appear in IntelliSense in Visual Studio and Visual Studio Code.
 Once the documentation is official, any subsequent updates to it must be made directly in https://github.com/dotnet/dotnet-api-docs/. It's fine to make updates to the triple slash comments later, they just won't automatically flow into the official docs.
 
 ## FAQ

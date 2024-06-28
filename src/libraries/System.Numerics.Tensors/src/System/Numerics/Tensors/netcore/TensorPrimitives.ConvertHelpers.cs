@@ -31,88 +31,133 @@ namespace System.Numerics.Tensors
                 return true;
             }
 
-            if (IsInt32Like<TFrom>() && typeof(TTo) == typeof(float))
+            if (typeof(TFrom) == typeof(byte))
             {
-                InvokeSpanIntoSpan<int, float, ConvertInt32ToSingle>(Rename<TFrom, int>(source), Rename<TTo, float>(destination));
-                return true;
+                if (typeof(TTo) == typeof(short) || typeof(TTo) == typeof(ushort))
+                {
+                    InvokeSpanIntoSpan_1to2<byte, ushort, WidenByteToUInt16Operator>(Rename<TFrom, byte>(source), Rename<TTo, ushort>(destination));
+                    return true;
+                }
+
+                if (IsInt32Like<TTo>() || IsUInt32Like<TTo>())
+                {
+                    InvokeSpanIntoSpan_1to4<byte, uint, WidenByteToUInt32Operator>(Rename<TFrom, byte>(source), Rename<TTo, uint>(destination));
+                    return true;
+                }
+
+                if (typeof(TTo) == typeof(float))
+                {
+                    InvokeSpanIntoSpan_1to4<byte, float, WidenByteToSingleOperator>(Rename<TFrom, byte>(source), Rename<TTo, float>(destination));
+                    return true;
+                }
             }
 
-            if (IsUInt32Like<TFrom>() && typeof(TTo) == typeof(float))
+            if (typeof(TFrom) == typeof(sbyte))
             {
-                InvokeSpanIntoSpan<uint, float, ConvertUInt32ToSingle>(Rename<TFrom, uint>(source), Rename<TTo, float>(destination));
-                return true;
+                if (typeof(TTo) == typeof(short))
+                {
+                    InvokeSpanIntoSpan_1to2<sbyte, short, WidenSByteToInt16Operator>(Rename<TFrom, sbyte>(source), Rename<TTo, short>(destination));
+                    return true;
+                }
             }
 
-            if (IsInt64Like<TFrom>() && typeof(TTo) == typeof(double))
+            if (typeof(TFrom) == typeof(ushort))
             {
-                InvokeSpanIntoSpan<long, double, ConvertInt64ToDouble>(Rename<TFrom, long>(source), Rename<TTo, double>(destination));
-                return true;
+                if (IsUInt32Like<TTo>() || IsInt32Like<TTo>())
+            {
+                    InvokeSpanIntoSpan_1to2<ushort, uint, WidenUInt16ToUInt32Operator>(Rename<TFrom, ushort>(source), Rename<TTo, uint>(destination));
+                    return true;
+                }
             }
 
-            if (IsUInt64Like<TFrom>() && typeof(TTo) == typeof(double))
+            if (typeof(TFrom) == typeof(short))
             {
-                InvokeSpanIntoSpan<ulong, double, ConvertUInt64ToDouble>(Rename<TFrom, ulong>(source), Rename<TTo, double>(destination));
-                return true;
+                if (IsInt32Like<TTo>())
+                {
+                    InvokeSpanIntoSpan_1to2<short, int, WidenInt16ToInt32Operator>(Rename<TFrom, short>(source), Rename<TTo, int>(destination));
+                    return true;
+                }
             }
 
-            if (typeof(TFrom) == typeof(float) && typeof(TTo) == typeof(Half))
+            if (IsUInt32Like<TFrom>())
             {
-                InvokeSpanIntoSpan_2to1<float, ushort, NarrowSingleToHalfAsUInt16Operator>(Rename<TFrom, float>(source), Rename<TTo, ushort>(destination));
-                return true;
+                if (IsInt64Like<TTo>() || IsUInt64Like<TTo>())
+                {
+                    InvokeSpanIntoSpan_1to2<uint, ulong, WidenUInt32ToUInt64Operator>(Rename<TFrom, uint>(source), Rename<TTo, ulong>(destination));
+                    return true;
+                }
+
+                if (typeof(TTo) == typeof(float))
+                {
+                    InvokeSpanIntoSpan<uint, float, ConvertUInt32ToSingle>(Rename<TFrom, uint>(source), Rename<TTo, float>(destination));
+                    return true;
+                }
             }
 
-            if (typeof(TFrom) == typeof(Half) && typeof(TTo) == typeof(float))
+            if (IsInt32Like<TFrom>())
             {
-                InvokeSpanIntoSpan_1to2<short, float, WidenHalfAsInt16ToSingleOperator>(Rename<TFrom, short>(source), Rename<TTo, float>(destination));
-                return true;
+                if (IsInt64Like<TTo>())
+                {
+                    InvokeSpanIntoSpan_1to2<int, long, WidenInt32ToInt64Operator>(Rename<TFrom, int>(source), Rename<TTo, long>(destination));
+                    return true;
+                }
+
+                if (typeof(TTo) == typeof(float))
+                {
+                    InvokeSpanIntoSpan<int, float, ConvertInt32ToSingle>(Rename<TFrom, int>(source), Rename<TTo, float>(destination));
+                    return true;
+                }
             }
 
-            if (typeof(TFrom) == typeof(float) && typeof(TTo) == typeof(double))
+            if (IsUInt64Like<TFrom>())
             {
-                InvokeSpanIntoSpan_1to2<float, double, WidenSingleToDoubleOperator>(Rename<TFrom, float>(source), Rename<TTo, double>(destination));
-                return true;
+                if (typeof(TTo) == typeof(double))
+                {
+                    InvokeSpanIntoSpan<ulong, double, ConvertUInt64ToDouble>(Rename<TFrom, ulong>(source), Rename<TTo, double>(destination));
+                    return true;
+                }
             }
 
-            if (typeof(TFrom) == typeof(double) && typeof(TTo) == typeof(float))
+            if (IsInt64Like<TFrom>())
             {
-                InvokeSpanIntoSpan_2to1<double, float, NarrowDoubleToSingleOperator>(Rename<TFrom, double>(source), Rename<TTo, float>(destination));
-                return true;
+                if (typeof(TTo) == typeof(double))
+                {
+                    InvokeSpanIntoSpan<long, double, ConvertInt64ToDouble>(Rename<TFrom, long>(source), Rename<TTo, double>(destination));
+                    return true;
+                }
             }
 
-            if (typeof(TFrom) == typeof(byte) && typeof(TTo) == typeof(ushort))
+            if (typeof(TFrom) == typeof(Half))
             {
-                InvokeSpanIntoSpan_1to2<byte, ushort, WidenByteToUInt16Operator>(Rename<TFrom, byte>(source), Rename<TTo, ushort>(destination));
-                return true;
+                if (typeof(TTo) == typeof(float))
+                {
+                    InvokeSpanIntoSpan_1to2<short, float, WidenHalfAsInt16ToSingleOperator>(Rename<TFrom, short>(source), Rename<TTo, float>(destination));
+                    return true;
+                }
             }
 
-            if (typeof(TFrom) == typeof(sbyte) && typeof(TTo) == typeof(short))
+            if (typeof(TFrom) == typeof(float))
             {
-                InvokeSpanIntoSpan_1to2<sbyte, short, WidenSByteToInt16Operator>(Rename<TFrom, sbyte>(source), Rename<TTo, short>(destination));
-                return true;
+                if (typeof(TTo) == typeof(Half))
+                {
+                    InvokeSpanIntoSpan_2to1<float, ushort, NarrowSingleToHalfAsUInt16Operator>(Rename<TFrom, float>(source), Rename<TTo, ushort>(destination));
+                    return true;
+                }
+
+                if (typeof(TTo) == typeof(double))
+                {
+                    InvokeSpanIntoSpan_1to2<float, double, WidenSingleToDoubleOperator>(Rename<TFrom, float>(source), Rename<TTo, double>(destination));
+                    return true;
+                }
             }
 
-            if (typeof(TFrom) == typeof(ushort) && IsUInt32Like<TTo>())
+            if (typeof(TFrom) == typeof(double))
             {
-                InvokeSpanIntoSpan_1to2<ushort, uint, WidenUInt16ToUInt32Operator>(Rename<TFrom, ushort>(source), Rename<TTo, uint>(destination));
-                return true;
-            }
-
-            if (typeof(TFrom) == typeof(short) && IsInt32Like<TTo>())
-            {
-                InvokeSpanIntoSpan_1to2<short, int, WidenInt16ToInt32Operator>(Rename<TFrom, short>(source), Rename<TTo, int>(destination));
-                return true;
-            }
-
-            if (IsUInt32Like<TTo>() && IsUInt64Like<TTo>())
-            {
-                InvokeSpanIntoSpan_1to2<uint, ulong, WidenUInt32ToUInt64Operator>(Rename<TFrom, uint>(source), Rename<TTo, ulong>(destination));
-                return true;
-            }
-
-            if (IsInt32Like<TFrom>() && IsInt64Like<TTo>())
-            {
-                InvokeSpanIntoSpan_1to2<int, long, WidenInt32ToInt64Operator>(Rename<TFrom, int>(source), Rename<TTo, long>(destination));
-                return true;
+                if (typeof(TTo) == typeof(float))
+                {
+                    InvokeSpanIntoSpan_2to1<double, float, NarrowDoubleToSingleOperator>(Rename<TFrom, double>(source), Rename<TTo, float>(destination));
+                    return true;
+                }
             }
 
             return false;
@@ -193,6 +238,85 @@ namespace System.Numerics.Tensors
             public static (Vector128<ushort> Lower, Vector128<ushort> Upper) Invoke(Vector128<byte> x) => Vector128.Widen(x);
             public static (Vector256<ushort> Lower, Vector256<ushort> Upper) Invoke(Vector256<byte> x) => Vector256.Widen(x);
             public static (Vector512<ushort> Lower, Vector512<ushort> Upper) Invoke(Vector512<byte> x) => Vector512.Widen(x);
+        }
+
+        /// <summary>(uint)byte</summary>
+        private readonly struct WidenByteToUInt32Operator : IUnaryOneToFourOperator<byte, uint>
+        {
+            public static bool Vectorizable => true;
+
+            public static uint Invoke(byte x) => x;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector128<uint>, Vector128<uint>, Vector128<uint>, Vector128<uint>) Invoke(Vector128<byte> x)
+            {
+                (Vector128<ushort> Lower, Vector128<ushort> Upper) ushorts = Vector128.Widen(x);
+                (Vector128<uint> Lower, Vector128<uint> Upper) uintsLower = Vector128.Widen(ushorts.Lower);
+                (Vector128<uint> Lower, Vector128<uint> Upper) uintsUpper = Vector128.Widen(ushorts.Upper);
+                return (uintsLower.Lower, uintsLower.Upper, uintsUpper.Lower, uintsUpper.Upper);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector256<uint>, Vector256<uint>, Vector256<uint>, Vector256<uint>) Invoke(Vector256<byte> x)
+            {
+                (Vector256<ushort> Lower, Vector256<ushort> Upper) ushorts = Vector256.Widen(x);
+                (Vector256<uint> Lower, Vector256<uint> Upper) uintsLower = Vector256.Widen(ushorts.Lower);
+                (Vector256<uint> Lower, Vector256<uint> Upper) uintsUpper = Vector256.Widen(ushorts.Upper);
+                return (uintsLower.Lower, uintsLower.Upper, uintsUpper.Lower, uintsUpper.Upper);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector512<uint>, Vector512<uint>, Vector512<uint>, Vector512<uint>) Invoke(Vector512<byte> x)
+            {
+                (Vector512<ushort> Lower, Vector512<ushort> Upper) ushorts = Vector512.Widen(x);
+                (Vector512<uint> Lower, Vector512<uint> Upper) uintsLower = Vector512.Widen(ushorts.Lower);
+                (Vector512<uint> Lower, Vector512<uint> Upper) uintsUpper = Vector512.Widen(ushorts.Upper);
+                return (uintsLower.Lower, uintsLower.Upper, uintsUpper.Lower, uintsUpper.Upper);
+            }
+        }
+
+        /// <summary>(float)byte</summary>
+        private readonly struct WidenByteToSingleOperator : IUnaryOneToFourOperator<byte, float>
+        {
+            public static bool Vectorizable => true;
+
+            public static float Invoke(byte x) => x;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector128<float>, Vector128<float>, Vector128<float>, Vector128<float>) Invoke(Vector128<byte> x)
+            {
+                var results = WidenByteToUInt32Operator.Invoke(x);
+                return (
+                    Vector128.ConvertToSingle(results.Item1),
+                    Vector128.ConvertToSingle(results.Item2),
+                    Vector128.ConvertToSingle(results.Item3),
+                    Vector128.ConvertToSingle(results.Item4)
+                    );
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector256<float>, Vector256<float>, Vector256<float>, Vector256<float>) Invoke(Vector256<byte> x)
+            {
+                var results = WidenByteToUInt32Operator.Invoke(x);
+                return (
+                    Vector256.ConvertToSingle(results.Item1),
+                    Vector256.ConvertToSingle(results.Item2),
+                    Vector256.ConvertToSingle(results.Item3),
+                    Vector256.ConvertToSingle(results.Item4)
+                    );
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Vector512<float>, Vector512<float>, Vector512<float>, Vector512<float>) Invoke(Vector512<byte> x)
+            {
+                var results = WidenByteToUInt32Operator.Invoke(x);
+                return (
+                    Vector512.ConvertToSingle(results.Item1),
+                    Vector512.ConvertToSingle(results.Item2),
+                    Vector512.ConvertToSingle(results.Item3),
+                    Vector512.ConvertToSingle(results.Item4)
+                    );
+            }
         }
 
         /// <summary>(short)sbyte</summary>

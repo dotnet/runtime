@@ -6,6 +6,7 @@ using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Channels;
@@ -36,6 +37,9 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// The current implementation depends on <see href="https://github.com/microsoft/msquic">MsQuic</see> native library, this property checks its presence (Linux machines).
     /// It also checks whether TLS 1.3, requirement for QUIC protocol, is available and enabled (Windows machines).
     /// </remarks>
+    [SupportedOSPlatformGuard("windows")]
+    [SupportedOSPlatformGuard("linux")]
+    [SupportedOSPlatformGuard("osx")]
     public static bool IsSupported => MsQuicApi.IsQuicSupported;
 
     /// <summary>
@@ -48,7 +52,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     {
         if (!IsSupported)
         {
-            throw new PlatformNotSupportedException(SR.Format(SR.SystemNetQuic_PlatformNotSupported, MsQuicApi.NotSupportedReason));
+            throw new PlatformNotSupportedException(SR.Format(SR.SystemNetQuic_PlatformNotSupported, MsQuicApi.NotSupportedReason ?? "General loading failure."));
         }
 
         // Validate and fill in defaults for the options.
@@ -221,9 +225,9 @@ public sealed partial class QuicListener : IAsyncDisposable
         // https://github.com/microsoft/msquic/discussions/2705.
         // This will be assigned to before the linked CTS is cancelled
         TimeSpan handshakeTimeout = QuicDefaults.HandshakeTimeout;
+        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ConnectionShutdownToken);
         try
         {
-            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ConnectionShutdownToken);
             cancellationToken = linkedCts.Token;
             // Initial timeout for retrieving connection options.
             linkedCts.CancelAfter(handshakeTimeout);
@@ -245,7 +249,7 @@ public sealed partial class QuicListener : IAsyncDisposable
                 await connection.DisposeAsync().ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException) when (connection.ConnectionShutdownToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (connection.ConnectionShutdownToken.IsCancellationRequested && !linkedCts.IsCancellationRequested)
         {
             // Connection closed by peer
             if (NetEventSource.Log.IsEnabled())
@@ -335,6 +339,12 @@ public sealed partial class QuicListener : IAsyncDisposable
         }
 
         QuicConnection connection = new QuicConnection(data.Connection, data.Info);
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} New inbound connection {connection}.");
+        }
+
         SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
 
         // Kicks off the rest of the handshake in the background, the process itself will enqueue the result in the accept queue.
@@ -402,6 +412,11 @@ public sealed partial class QuicListener : IAsyncDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
             return;
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Disposing.");
         }
 
         // Check if the listener has been shut down and if not, shut it down.

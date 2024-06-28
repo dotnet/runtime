@@ -193,7 +193,13 @@ bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
         codeOffset
     );
 
-    return decoder.IsInterruptible();
+    if (decoder.IsInterruptible())
+        return true;
+
+    if (decoder.IsInterruptibleSafePoint())
+        return true;
+
+    return false;
 }
 
 void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
@@ -225,6 +231,24 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
         codeOffset
     );
+
+    if (isActiveStackFrame)
+    {
+        // CONSIDER: We can optimize this by remembering the need to adjust in IsSafePoint and propagating into here.
+        //           Or, better yet, maybe we should change the decoder to not require this adjustment.
+        //           The scenario that adjustment tries to handle (fallthrough into BB with random liveness)
+        //           does not seem possible.
+        if (!decoder.HasInterruptibleRanges())
+        {
+            decoder = GcInfoDecoder(
+                GCInfoToken(gcInfo),
+                GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+                codeOffset - 1
+            );
+
+            assert(decoder.IsInterruptibleSafePoint());
+        }
+    }
 
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
     if (executionAborted)

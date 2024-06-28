@@ -135,7 +135,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> RemoteServersAndLargeContentSizes()
         {
-            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.GetRemoteServers())
             {
                 yield return new object[] { remoteServer, 5 * 1024 };
                 yield return new object[] { remoteServer, 63 * 1024 };

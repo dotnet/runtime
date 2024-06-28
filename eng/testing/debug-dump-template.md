@@ -41,7 +41,7 @@ You can read the rest of the document for information purposes (there is useful 
 
 # Install SOS debugging extension
 
-Now use the [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos) to install the SOS debugging extension.
+Now use the [dotnet-sos global tool](https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-sos) to install the SOS debugging extension.
 ```cmd
 dotnet tool install --global dotnet-sos
 dotnet tool update --global dotnet-sos
@@ -61,7 +61,7 @@ dotnet sos install --architecture x64
 
 ## ... and you want to debug with WinDbg
 
-Install or update WinDbg if necessary ([external](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/debugger-download-tools), [internal](https://osgwiki.com/wiki/Installing_WinDbg)). If you don't have a recent WinDbg you may have to do `.update sos`.
+Install or update WinDbg if necessary ([external](https://learn.microsoft.com/windows-hardware/drivers/debugger/debugger-download-tools), [internal](https://osgwiki.com/wiki/Installing_WinDbg)). If you don't have a recent WinDbg you may have to do `.update sos`.
 
 Open WinDbg and open the dump with `File>Open Dump`.
 ```
@@ -81,7 +81,7 @@ Currently this is not possible because mscordbi.dll is not signed.
 
 ## ... and you want to debug with dotnet-dump
 
-Install the [dotnet-dump global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump).
+Install the [dotnet-dump global tool](https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-dump).
 ```cmd
 dotnet tool install --global dotnet-dump
 dotnet tool update --global dotnet-dump
@@ -129,7 +129,7 @@ loadsymbols
 
 ## ... and you want to debug with dotnet-dump
 
-Install the [dotnet-dump global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump).
+Install the [dotnet-dump global tool](https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-dump).
 ```sh
 dotnet tool install --global dotnet-dump
 dotnet tool update --global dotnet-dump

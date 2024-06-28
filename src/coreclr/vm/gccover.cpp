@@ -37,7 +37,7 @@
 MethodDesc* AsMethodDesc(size_t addr);
 static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE*nextInstr);
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-static void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID codeStart);
+static void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32 safePointOffset, LPVOID codeStart);
 static bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 stopOffset, LPVOID codeStart);
 #endif
 
@@ -544,11 +544,16 @@ void GCCoverageInfo::SprinkleBreakpoints(
         _ASSERTE(len > 0);
         _ASSERTE(len <= (size_t)(codeEnd-cur));
 
+        // For non-fully interruptible code, we want to at least
+        // patch the return sites after the call instructions.
+        // Specially so that we can verify stack-walking through the call site via a simulated hijack.
+        // We would need to know the return kind of the callee, so this may not always be possible.
         switch(instructionType)
         {
         case InstructionType::Call_IndirectUnconditional:
 #ifdef TARGET_AMD64
-            if(safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
+            if(!(EECodeManager::InterruptibleSafePointsEnabled() && safePointDecoder.AreSafePointsInterruptible()) &&
+                safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
 #endif
             {
                *(cur + writeableOffset) = INTERRUPT_INSTR_CALL;        // return value.  May need to protect
@@ -559,7 +564,8 @@ void GCCoverageInfo::SprinkleBreakpoints(
             if(fGcStressOnDirectCalls.val(CLRConfig::INTERNAL_GcStressOnDirectCalls))
             {
 #ifdef TARGET_AMD64
-                if(safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
+                if(!(EECodeManager::InterruptibleSafePointsEnabled() && safePointDecoder.AreSafePointsInterruptible()) &&
+                   safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
 #endif
                 {
                     PBYTE nextInstr;
@@ -589,10 +595,8 @@ void GCCoverageInfo::SprinkleBreakpoints(
             ReplaceInstrAfterCall(cur + writeableOffset, prevDirectCallTargetMD);
         }
 
-        // For fully interruptible code, we end up whacking every instruction
-        // to INTERRUPT_INSTR.  For non-fully interruptible code, we end
-        // up only touching the call instructions (specially so that we
-        // can really do the GC on the instruction just after the call).
+        // For fully interruptible locations, we end up whacking every instruction
+        // to INTERRUPT_INSTR.
         size_t dwRelOffset = (cur - codeStart) + regionOffsetAdj;
         _ASSERTE(FitsIn<DWORD>(dwRelOffset));
         if (codeMan->IsGcSafe(&codeInfo, static_cast<DWORD>(dwRelOffset)))
@@ -689,9 +693,9 @@ enum
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
-void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID pGCCover)
+void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32 safePointOffset, LPVOID pGCCover)
 {
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     IJitManager::MethodRegionInfo *ptr = &(((GCCoverageInfo*)pGCCover)->methodRegion);
 
     //Get code address from offset
@@ -711,6 +715,28 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
     }
 
     PBYTE instrPtr = (BYTE*)PCODEToPINSTR(pCode);
+
+    // if this is an interruptible safe point, just replace it with an interrupt instr and we are done.
+    if (EECodeManager::InterruptibleSafePointsEnabled() && decoder->AreSafePointsInterruptible())
+    {
+        // The instruction about to be replaced cannot already be a gcstress instruction
+        _ASSERTE(!IsGcCoverageInterruptInstruction(instrPtr));
+
+        ExecutableWriterHolder<BYTE> instrPtrWriterHolder(instrPtr, sizeof(DWORD));
+#if defined(TARGET_ARM)
+        size_t instrLen = GetARMInstructionLength(instrPtr);
+
+        if (instrLen == 2)
+            *((WORD*)instrPtrWriterHolder.GetRW())  = INTERRUPT_INSTR;
+        else
+        {
+            *((DWORD*)instrPtrWriterHolder.GetRW()) = INTERRUPT_INSTR_32;
+        }
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        *((DWORD*)instrPtrWriterHolder.GetRW()) = INTERRUPT_INSTR;
+#endif // TARGET_XXXX_
+        return;
+    }
 
     // For code sequences of the type
     // BL func1
@@ -879,7 +905,7 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
 //Replaces the provided interruptible range with corresponding 2 or 4 byte gcStress illegal instruction
 bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 stopOffset, LPVOID pGCCover)
 {
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     PBYTE rangeStart = NULL;
     PBYTE rangeStop = NULL;
 
@@ -1323,7 +1349,7 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageI
 #endif
 
 #ifdef TARGET_X86
-    // Epilog checking relies on precise control of when instrumentation for the  first prolog 
+    // Epilog checking relies on precise control of when instrumentation for the  first prolog
     // instruction is enabled or disabled. In particular, if a function has multiple epilogs, or
     // the first execution of the function terminates via an exception, and subsequent completions
     // do not, then the function may trigger a false stress fault if epilog checks are not disabled.
@@ -1833,7 +1859,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // BUG(github #10318) - when not using allocation contexts, the alloc lock
     // must be acquired here. Until fixed, this assert prevents random heap corruption.
     assert(GCHeapUtilities::UseThreadAllocationContexts());
-    GCHeapUtilities::GetGCHeap()->StressHeap(GetThread()->GetAllocContext());
+    GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context);
 
     // StressHeap can exit early w/o forcing a SuspendEE to trigger the instruction update
     // We can not rely on the return code to determine if the instruction update happened

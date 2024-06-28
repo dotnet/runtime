@@ -226,15 +226,24 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void WriteStringMultipleObjectsTest()
+        public void WriteStringMultipleObjectsArrayTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
             {
-                tw.Write(TestDataProvider.FormatStringMultipleObjects, TestDataProvider.MultipleObjects);
+                tw.Write(TestDataProvider.FormatStringMultipleObjects, (object[])TestDataProvider.MultipleObjects);
                 Assert.Equal(string.Format(TestDataProvider.FormatStringMultipleObjects, TestDataProvider.MultipleObjects), tw.Text);
             }
         }
 
+        [Fact]
+        public void WriteStringMultipleObjectsSpanTest()
+        {
+            using (CharArrayTextWriter tw = NewTextWriter)
+            {
+                tw.Write(TestDataProvider.FormatStringMultipleObjects, (ReadOnlySpan<object>)TestDataProvider.MultipleObjects);
+                Assert.Equal(string.Format(TestDataProvider.FormatStringMultipleObjects, TestDataProvider.MultipleObjects), tw.Text);
+            }
+        }
         #endregion
 
         #region WriteLine Overloads
@@ -454,11 +463,21 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void WriteLineStringMultipleObjectsTest()
+        public void WriteLineStringMultipleObjectsArrayTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
             {
-                tw.WriteLine(TestDataProvider.FormatStringMultipleObjects, TestDataProvider.MultipleObjects);
+                tw.WriteLine(TestDataProvider.FormatStringMultipleObjects, (object[])TestDataProvider.MultipleObjects);
+                Assert.Equal(string.Format(TestDataProvider.FormatStringMultipleObjects + tw.NewLine, TestDataProvider.MultipleObjects), tw.Text);
+            }
+        }
+
+        [Fact]
+        public void WriteLineStringMultipleObjectsSpanTest()
+        {
+            using (CharArrayTextWriter tw = NewTextWriter)
+            {
+                tw.WriteLine(TestDataProvider.FormatStringMultipleObjects, (ReadOnlySpan<object>)TestDataProvider.MultipleObjects);
                 Assert.Equal(string.Format(TestDataProvider.FormatStringMultipleObjects + tw.NewLine, TestDataProvider.MultipleObjects), tw.Text);
             }
         }
@@ -772,8 +791,11 @@ namespace System.IO.Tests
             oracle.Write(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
             broadcasting.Write(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
 
-            oracle.Write(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
-            broadcasting.Write(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
+            oracle.Write(" {0} {1}  {2}    {3}", new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7 });
+            broadcasting.Write(" {0} {1}  {2}    {3}", new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7 });
+
+            oracle.Write(" {0} {1}  {2}    {3}        {4}", (ReadOnlySpan<object>)new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7, "8" });
+            broadcasting.Write(" {0} {1}  {2}    {3}        {4}", (ReadOnlySpan<object>)new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7, "8" });
 
             oracle.WriteLine();
             broadcasting.WriteLine();
@@ -835,8 +857,11 @@ namespace System.IO.Tests
             oracle.WriteLine(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
             broadcasting.WriteLine(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
 
-            oracle.WriteLine(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
-            broadcasting.WriteLine(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
+            oracle.WriteLine(" {0} {1}  {2}    {3}", new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7 });
+            broadcasting.WriteLine(" {0} {1}  {2}    {3}", new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7 });
+
+            oracle.WriteLine(" {0} {1}  {2}    {3}        {4}", (ReadOnlySpan<object>)new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7, "8" });
+            broadcasting.WriteLine(" {0} {1}  {2}    {3}        {4}", (ReadOnlySpan<object>)new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7, "8" });
 
             await oracle.WriteAsync('a');
             await broadcasting.WriteAsync('a');

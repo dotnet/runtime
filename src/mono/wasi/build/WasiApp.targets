@@ -46,11 +46,6 @@
     <!--<WasiRunner Condition="'$(WasiRunner)' == ''">wasmtime</WasiRunner>-->
   </PropertyGroup>
 
-  <ItemGroup>
-    <_BoolPropertiesThatTriggerRelinking Include="WasmEnableSIMD" DefaultValueInRuntimePack="false" />
-    <!--<_BoolPropertiesThatTriggerRelinking Include="WasmEnableExceptionHandling" DefaultValueInRuntimePack="true" />-->
-  </ItemGroup>
-
   <Target Name="_GetWasiGenerateAppBundleDependencies">
     <ItemGroup Condition="'$(InvariantGlobalization)' == 'true' or '$(WasmSingleFileBundle)' == 'true'">
       <ReferenceCopyLocalPaths Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat" />
@@ -148,6 +143,8 @@
 
       <WasiClangCompileOptimizationFlag Condition="'$(WasiClangCompileOptimizationFlag)' == ''">$(_WasiClangOptimizationFlagDefault)</WasiClangCompileOptimizationFlag>
       <WasmCompileOptimizationFlag>$(WasiClangCompileOptimizationFlag)</WasmCompileOptimizationFlag>
+      <WasiBitcodeCompileOptimizationFlag Condition="'$(WasiBitcodeCompileOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</WasiBitcodeCompileOptimizationFlag>
+      <WasiBitcodeCompileOptimizationFlag Condition="'$(WasiBitcodeCompileOptimizationFlag)' == ''"   >$(WasiClangCompileOptimizationFlag)</WasiBitcodeCompileOptimizationFlag>
       <WasiClangLinkOptimizationFlag    Condition="'$(WasiClangLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</WasiClangLinkOptimizationFlag>
       <WasiClangLinkOptimizationFlag    Condition="'$(WasiClangLinkOptimizationFlag)' == ''"   >$(WasiClangCompileOptimizationFlag)</WasiClangLinkOptimizationFlag>
       <WasmLinkOptimizationFlag>$(WasiClangLinkOptimizationFlag)</WasmLinkOptimizationFlag>
@@ -199,6 +196,7 @@
       <_WasmCommonCFlags Condition="'$(InvariantGlobalization)' == 'true'" Include="-DINVARIANT_GLOBALIZATION=1" />
       <_WasmCommonCFlags Condition="'$(InvariantTimezone)' == 'true'"      Include="-DINVARIANT_TIMEZONE=1" />
       <_WasmCommonCFlags Condition="'$(WasmLinkIcalls)' == 'true'"         Include="-DLINK_ICALLS=1" />
+      <_WasmCommonCFlags Condition="'$(_IsLibraryMode)' == 'true'"          Include="-DWASM_LIBRARY_MODE=1" />
       <_WasiClangCFlags Include="@(_WasmCommonCFlags)" />
 
       <_WasiClangCFlags Include="&quot;-I%(_WasmCommonIncludePaths.Identity)&quot;" />
@@ -265,8 +263,9 @@
   <!-- FIXME: merge with some other target -->
   <Target Name="_WasiBeforeWriteRspForCompilingBitcodeRsp" BeforeTargets="_WasmWriteRspForCompilingBitcode">
     <ItemGroup>
-      <_BitcodeLDFlags Include="@(_WasiClangLDFlags)" />
-      <_BitcodeLDFlags Include="$(WasiClangExtraBitcodeLDFlags)" />
+      <_BitcodeCompileFlags Include="@(WasiBitcodeCompileOptimizationFlag)" />
+      <_BitcodeCompileFlags Include="@(_WasiClangCommonFlags)" />
+      <_BitcodeCompileFlags Include="$(WasiClangExtraBitcodeCompileFlags)" />
     </ItemGroup>
   </Target>
 
@@ -450,6 +449,12 @@ wasi.start(instance);
       Lines="$(_WasmNodeScriptContents)"
       Overwrite="true" />
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(_WasmNodeScriptPath)&quot;" />
+  </Target>
+
+  <Target Name="ProvideDefaultUserRuntimeConfig" BeforeTargets="_GenerateRuntimeConfigurationFilesInputCache" Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'">
+    <PropertyGroup Condition="!Exists('$(UserRuntimeConfig)')">
+      <UserRuntimeConfig>$(MSBuildThisFileDirectory)wasiconsole.runtimeconfig.template.json</UserRuntimeConfig>
+    </PropertyGroup>
   </Target>
 
   <!--<Target Name="_WasmCalculateInitialHeapSize" />-->

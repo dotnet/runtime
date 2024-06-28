@@ -923,34 +923,6 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
-#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
-    if (cacheSize == 0)
-    {
-        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
-        // from most of the machines.
-        //
-        // _SC_LEVEL*_*CACHE_SIZE is not yet present.  Work is in progress to enable this for arm64
-        //
-        // /sys/devices/system/cpu/cpu*/cache/index*/ is also not yet present in most systems.
-        // Arm64 patch is in Linux kernel tip.
-        //
-        // midr_el1 is available in "/sys/devices/system/cpu/cpu0/regs/identification/midr_el1",
-        // but without an exhaustive list of ARM64 processors any decode of midr_el1
-        // Would likely be incomplete
-
-        // Published information on ARM64 architectures is limited.
-        // If we use recent high core count chips as a guide for state of the art, we find
-        // total L3 cache to be 1-2MB/core.  As always, there are exceptions.
-
-        // Estimate cache size based on CPU count
-        // Assume lower core count are lighter weight parts which are likely to have smaller caches
-        // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
-        DWORD logicalCPUs = g_processAffinitySet.Count();
-
-        cacheSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
-    }
-#endif
-
 #if HAVE_SYSCTLBYNAME
     if (cacheSize == 0)
     {
@@ -1246,13 +1218,8 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     if (is_restricted)
         *is_restricted = false;
 
-    // The limit was not cached
-    if (g_RestrictedPhysicalMemoryLimit == 0)
-    {
-        restricted_limit = GetRestrictedPhysicalMemoryLimit();
-        VolatileStore(&g_RestrictedPhysicalMemoryLimit, restricted_limit);
-    }
-    restricted_limit = g_RestrictedPhysicalMemoryLimit;
+    restricted_limit = GetRestrictedPhysicalMemoryLimit();
+    VolatileStore(&g_RestrictedPhysicalMemoryLimit, restricted_limit);
 
     if (restricted_limit != 0 && restricted_limit != SIZE_T_MAX)
     {
@@ -1413,8 +1380,15 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 
         if (memory_load != NULL)
         {
-            bool isRestricted;
-            uint64_t total = GetPhysicalMemoryLimit(&isRestricted);
+            uint64_t total;
+            if (restricted_limit != 0 && restricted_limit != SIZE_T_MAX)
+            {
+                total = restricted_limit;
+            }
+            else
+            {
+                total = g_totalPhysicalMemSize;
+            }
 
             if (total > available)
             {

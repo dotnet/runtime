@@ -125,6 +125,9 @@ add_subdirectory(pal/prebuilt/inc)
 set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
 include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
 
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/eventpipe eventpipe)
+
 if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(debug/debug-pal)
 endif()
@@ -206,6 +209,7 @@ if(CLR_CMAKE_HOST_UNIX)
   # warnings and errors to be suppressed.
   # Suppress these warnings here to avoid breaking the build.
   add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-Wno-null-arithmetic>)
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang>:-Wno-sync-alignment>)
   add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-conversion-null>)
   add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-pointer-arith>)
 

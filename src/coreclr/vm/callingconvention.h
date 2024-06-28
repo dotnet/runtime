@@ -308,6 +308,11 @@ struct TransitionBlock
         {
             return argLocDescForStructInRegs->m_cFloatReg > 0;
         }
+    #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        if (argLocDescForStructInRegs != NULL)
+        {
+            return argLocDescForStructInRegs->m_cFloatReg > 0;
+        }
     #endif
         return offset < 0;
     }
@@ -1692,17 +1697,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
         else
         {
-            MethodTable* pMethodTable = nullptr;
-
-            if (!thValueType.IsTypeDesc())
-                pMethodTable = thValueType.AsMethodTable();
-            else
-            {
-                _ASSERTE(thValueType.IsNativeValueType());
-                pMethodTable = thValueType.AsNativeValueType();
-            }
-            _ASSERTE(pMethodTable != nullptr);
-            flags = MethodTable::GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+            flags = MethodTable::GetLoongArch64PassStructInRegisterFlags(thValueType);
             if (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)
             {
                 cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
@@ -1729,16 +1724,24 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
             if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (m_idxGenReg + 1 <= NUM_ARGUMENT_REGISTERS))
             {
+                int argOfs = 0;
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_cFloatReg = 1;
-                int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-                m_idxFPReg += 1;
-
-                m_argLocDescForStructInRegs.m_structFields = flags;
-
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_cGenReg = 1;
+                m_argLocDescForStructInRegs.m_structFields = flags;
+
+                if (flags & STRUCT_FLOAT_FIELD_SECOND)
+                {
+                    argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
+                }
+                else
+                {
+                    argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
+                }
+
+                m_idxFPReg  += 1;
                 m_idxGenReg += 1;
 
                 m_hasArgLocDescForStructInRegs = true;
@@ -1846,7 +1849,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_cFloatReg = 1;
-                int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
+                int argOfs = (flags & STRUCT_FLOAT_FIELD_SECOND)
+                    ? TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8
+                    : TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
                 m_idxFPReg += 1;
 
                 m_argLocDescForStructInRegs.m_structFields = flags;
@@ -2019,9 +2024,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
             {
                 assert(!thValueType.IsTypeDesc());
-
-                MethodTable *pMethodTable = thValueType.AsMethodTable();
-                flags = (MethodTable::GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & 0xff) << RETURN_FP_SIZE_SHIFT;
+                flags = (MethodTable::GetLoongArch64PassStructInRegisterFlags(thValueType) & 0xff) << RETURN_FP_SIZE_SHIFT;
                 break;
             }
 #elif defined(TARGET_RISCV64)

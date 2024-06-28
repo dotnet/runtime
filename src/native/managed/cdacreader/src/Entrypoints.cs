@@ -14,7 +14,10 @@ internal static class Entrypoints
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}init")]
     private static unsafe int Init(ulong descriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, IntPtr* handle)
     {
-        Target target = new(descriptor, readFromTarget, readContext);
+        // TODO: [cdac] Better error code/details
+        if (!Target.TryCreate(descriptor, readFromTarget, readContext, out Target? target))
+            return -1;
+
         GCHandle gcHandle = GCHandle.Alloc(target);
         *handle = GCHandle.ToIntPtr(gcHandle);
         return 0;

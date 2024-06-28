@@ -95,7 +95,7 @@ namespace System.Net.Http.Json
                     {
                         // Matches how HttpClient throws a timeout exception.
                         string message = SR.Format(SR.net_http_request_timedout, client.Timeout.TotalSeconds);
-#if NETCOREAPP
+#if NET
                         throw new TaskCanceledException(message, new TimeoutException(oce.Message, oce), oce.CancellationToken);
 #else
                         throw new TaskCanceledException(message, new TimeoutException(oce.Message, oce));

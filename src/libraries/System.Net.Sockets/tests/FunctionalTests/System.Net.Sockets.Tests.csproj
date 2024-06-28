@@ -86,6 +86,8 @@
              Link="Common\System\Net\EventSourceTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Sockets.cs"
              Link="Common\System\Net\Capability.Sockets.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
              Link="Common\System\ShouldNotBeInvokedException.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"

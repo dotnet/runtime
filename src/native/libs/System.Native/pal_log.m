@@ -10,7 +10,7 @@
 
 void SystemNative_Log (uint8_t* buffer, int32_t length)
 {
-    NSString *msg = [[NSString alloc] initWithBytes: buffer length: length encoding: NSUTF16LittleEndianStringEncoding];
+    NSString *msg = [[NSString alloc] initWithBytes: buffer length: (NSUInteger)length encoding: NSUTF16LittleEndianStringEncoding];
     if (length > 4096)
     {
         // Write in chunks of max 4096 characters; older versions of iOS seems to have a bug where NSLog may hang with long strings (!).
@@ -32,7 +32,10 @@ void SystemNative_Log (uint8_t* buffer, int32_t length)
                 // No newline found, break in the middle.
                 chunk_size = len > max_size ? max_size : len;
             }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcstring-format-directive"
             NSLog (@"%.*s", (int) chunk_size, utf8);
+#pragma clang diagnostic pop
             len -= chunk_size;
             utf8 += chunk_size;
         }

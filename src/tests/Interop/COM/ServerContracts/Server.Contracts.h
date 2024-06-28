@@ -452,6 +452,12 @@ TestingEvents : IDispatch
     // void OnEvent(_In_z_ BSTR t);
 };
 
+struct __declspec(uuid("b630a508-4da5-4c14-a7ab-618ad66b2ebf"))
+IDispatchCoerceTesting : IDispatch
+{
+    // Methods should only be invoked via IDispatch
+};
+
 struct __declspec(uuid("98cc27f0-d521-4f79-8b63-e980e3a92974"))
 IAggregationTesting : IUnknown
 {

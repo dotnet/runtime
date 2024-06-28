@@ -5,7 +5,7 @@ using System.Security.Permissions;
 
 namespace System.ServiceProcess
 {
-#if NETCOREAPP
+#if NET
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed class ServiceControllerPermission : ResourcePermissionBase

@@ -18,6 +18,7 @@ public class Program
     private delegate string Getter();
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         DynamicMethod method = new DynamicMethod("GetField",

@@ -686,7 +686,7 @@ namespace Internal.IL.Stubs
                     TypeDesc intPtrType = context.GetWellKnownType(WellKnownType.IntPtr);
                     TypeDesc int32Type = context.GetWellKnownType(WellKnownType.Int32);
 
-                    _signature = new MethodSignature(0, 0, intPtrType, new[] { int32Type });
+                    _signature = new MethodSignature(0, 0, intPtrType, [ int32Type ]);
                 }
 
                 return _signature;

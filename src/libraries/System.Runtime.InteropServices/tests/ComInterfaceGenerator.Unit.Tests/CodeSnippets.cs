@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -109,8 +110,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             """;
 
-        public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
-        public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
         public const string IntMarshaller = """
             [CustomMarshaller(typeof(int), MarshalMode.Default, typeof(IntMarshaller))]
             internal static class IntMarshaller
@@ -431,6 +430,87 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {{typeName}} Method();
             }
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
+        public string DerivedComInterfaceTypeWithShadowingMethod => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface()}}
+            partial interface IComInterface
+            {
+                void Method();
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterface2 : IComInterface
+            {
+                new void Method();
+            }
+            """;
+
+        public string DerivedComInterfaceTypeShadowsNonComMethod => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface()}}
+            partial interface IComInterface
+            {
+                void Method();
+            }
+            interface IOtherInterface
+            {
+                void Method2();
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterface2 : IComInterface
+            {
+                new void Method2();
+            }
+            """;
+
+        public string DerivedComInterfaceTypeShadowsComAndNonComMethod => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface()}}
+            partial interface IComInterface
+            {
+                void Method();
+            }
+            interface IOtherInterface
+            {
+                void Method();
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterface2 : IComInterface
+            {
+                new void Method();
+            }
+            """;
+
+        public string DerivedComInterfaceTypeTwoLevelShadows => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface()}}
+            partial interface IComInterface
+            {
+                void Method();
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterface1: IComInterface
+            {
+                new void Method1();
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterface2 : IComInterface1
+            {
+                new void Method();
+            }
             """;
 
         public string DerivedComInterfaceType => $$"""

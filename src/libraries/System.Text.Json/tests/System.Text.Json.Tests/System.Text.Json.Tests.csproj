@@ -19,9 +19,10 @@
     <!-- The JsonSerializerIsReflectionEnabledByDefault feature switch is turned off automatically in projects that enable the PublishTrimmed property.
          Enable reflection and preserve required assemblies -->
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">true</JsonSerializerIsReflectionEnabledByDefault>
+    <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
+    <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <XunitShowProgress>true</XunitShowProgress>
     <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
@@ -31,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
     <Compile Include="$(CommonTestPath)System\DateTimeTestHelpers.cs" Link="CommonTest\System\DateTimeTestHelpers.cs" />
     <Compile Include="..\Common\CollectionTests\CollectionTests.AsyncEnumerable.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.AsyncEnumerable.cs" />
@@ -64,8 +66,14 @@
     <Compile Include="..\Common\JsonCreationHandlingTests.Object.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonCreationHandlingTests.Object.cs" />
     <Compile Include="..\Common\JsonNumberTestData.cs" Link="CommonTest\System\Text\Json\Tests\JsonNumberTestData" />
     <Compile Include="..\Common\JsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapper.cs" />
+    <Compile Include="..\Common\JsonSchemaExporterTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSchemaExporterTests.cs" />
+    <Compile Include="..\Common\JsonSchemaExporterTests.TestTypes.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSchemaExporterTests.TestTypes.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="..\Common\MetadataTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.cs" />
+    <Compile Include="..\Common\MetadataTests.JsonSerializer.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
+    <Compile Include="..\Common\MetadataTests.Options.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.Options.cs" />
     <Compile Include="..\Common\NodeInteropTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NodeInteropTests.cs" />
+    <Compile Include="..\Common\NullableAnnotationsTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NullableAnnotationsTests.cs" />
     <Compile Include="..\Common\NumberHandlingTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NumberHandlingTests.cs" />
     <Compile Include="..\Common\PropertyNameTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyNameTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.cs" />
@@ -168,7 +176,9 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
     <Compile Include="Serialization\JsonCreationHandlingTests.cs" />
+    <Compile Include="Serialization\JsonSchemaExporterTests.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonPropertyInfo.cs" />
+    <Compile Include="Serialization\Pipe.WriteTests.cs" />
     <Compile Include="Serialization\RequiredKeywordTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\DomTests.cs" />
@@ -190,14 +200,13 @@
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.JsonTypeInfo.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.cs" />
-    <Compile Include="Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
-    <Compile Include="Serialization\MetadataTests\MetadataTests.Options.cs" />
     <Compile Include="Serialization\MetadataTests\TestResolver.cs" />
     <Compile Include="Serialization\NamingPolicyUnitTests.cs" />
     <Compile Include="Serialization\NodeInteropTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />
     <Compile Include="Serialization\NullableTests.cs" />
+    <Compile Include="Serialization\NullableAnnotationsTests.cs" />
     <Compile Include="Serialization\NumberHandlingTests.cs" />
     <Compile Include="Serialization\Object.ReadTests.cs" />
     <Compile Include="Serialization\Object.WriteTests.cs" />
@@ -304,8 +313,14 @@
     <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <Reference Include="Microsoft.CSharp" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="$(SystemComponentModelAnnotationsVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    <!-- Apple mobile trimming descriptor for Mono runtime -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JsonSchema.Net" Version="$(JsonSchemaNetVersion)" />
   </ItemGroup>
 </Project>

@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Gets a <see cref="BDD"/> that represents the specified <see cref="UnicodeCategory"/>.</summary>
         public static BDD GetCategory(UnicodeCategory category) =>
-            Volatile.Read(ref s_categories[(int)category]) ??
+            s_categories[(int)category] ??
             Interlocked.CompareExchange(ref s_categories[(int)category], BDD.Deserialize(UnicodeCategoryRanges.GetSerializedCategory(category)), null) ??
             s_categories[(int)category]!;
 

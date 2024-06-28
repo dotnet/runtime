@@ -5,10 +5,66 @@
 #include "trace.h"
 #include "utils.h"
 #include "longfile.h"
-
+#include <windows.h>
 #include <cassert>
 #include <ShlObj.h>
 #include <ctime>
+
+
+void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
+{
+    // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
+    // In order to properly print UTF-8 and GB18030 characters, we need to use the version of vfwprintf that takes a locale.
+    _locale_t loc = _create_locale(LC_ALL, ".utf8");
+    ::_vfwprintf_l(f, format, loc, vl);
+    ::fputwc(_X('\n'), f);
+    _free_locale(loc);
+}
+
+namespace {
+    void print_line_to_handle(const pal::char_t* message, HANDLE handle, FILE* fallbackFileHandle) {
+        // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
+        // In order to properly print UTF-8 and GB18030 characters to the console without requiring the user to use chcp to a compatible locale, we use WriteConsoleW.
+        // However, WriteConsoleW will fail if the output is redirected to a file - in that case we will write to the fallbackFileHandle
+        DWORD output;
+        // GetConsoleMode returns FALSE when the output is redirected to a file, and we need to output to the fallback file handle.
+        BOOL isConsoleOutput = ::GetConsoleMode(handle, &output);
+        if (isConsoleOutput == FALSE)
+        {
+            // We use file_vprintf to handle UTF-8 formatting. The WriteFile api will output the bytes directly with Unicode bytes,
+            // while pal::file_vprintf will convert the characters to UTF-8.
+            pal::file_vprintf(fallbackFileHandle, message, va_list());
+        }
+        else {
+            ::WriteConsoleW(handle, message, (int)pal::strlen(message), NULL, NULL);
+            ::WriteConsoleW(handle, _X("\n"), 1, NULL, NULL);
+        }
+    }
+}
+
+void pal::err_print_line(const pal::char_t* message) {
+    // Forward to helper to handle UTF-8 formatting and redirection
+    print_line_to_handle(message, ::GetStdHandle(STD_ERROR_HANDLE), stderr);
+}
+
+void pal::out_vprint_line(const pal::char_t* format, va_list vl) {
+    va_list vl_copy;
+    va_copy(vl_copy, vl);
+    // Get the length of the formatted string + 1 for null terminator
+    int len = 1 + pal::strlen_vprintf(format, vl_copy);
+    if (len < 0)
+    {
+        return;
+    }
+    std::vector<pal::char_t> buffer(len);
+    int written = pal::str_vprintf(&buffer[0], len, format, vl);
+    if (written != len - 1)
+    {
+        return;
+    }
+    // Forward to helper to handle UTF-8 formatting and redirection
+    print_line_to_handle(&buffer[0], ::GetStdHandle(STD_OUTPUT_HANDLE), stdout);
+}
 
 bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
 {
@@ -940,8 +996,4 @@ void pal::mutex_t::lock()
 void pal::mutex_t::unlock()
 {
     ::LeaveCriticalSection(&_impl);
-}
-
-void pal::initialize_createdump()
-{
 }

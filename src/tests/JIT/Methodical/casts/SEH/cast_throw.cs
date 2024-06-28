@@ -10,6 +10,7 @@ internal class DerivedException : BaseException { }
 public class Test_cast_throw
 {
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         BaseException ex = new DerivedException();

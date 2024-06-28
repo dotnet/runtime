@@ -60,7 +60,7 @@
 
   static_assert_no_msg(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
 
-  #define REGNUM_BITS              6       // number of bits in a REG_*
+  #define REGNUM_BITS              7       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
   #define FP_REGSIZE_BYTES         16      // number of bytes in one FP/SIMD register
   #define FPSAVE_REGSIZE_BYTES     8       // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers
@@ -90,7 +90,8 @@
                                    REG_R6, REG_R7, REG_R8, REG_R9, REG_R10,        \
                                    REG_R11, REG_R13, REG_R14,                      \
                                    REG_R12, REG_R15, REG_IP0, REG_IP1,             \
-                                   REG_CALLEE_SAVED_ORDER, REG_LR
+                                   REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28,\
+                                   REG_LR
 
   #define REG_VAR_ORDER_FLT        REG_V16, REG_V17, REG_V18, REG_V19, \
                                    REG_V20, REG_V21, REG_V22, REG_V23, \
@@ -101,15 +102,18 @@
                                    REG_V12, REG_V13, REG_V14, REG_V15, \
                                    REG_V3,  REG_V2, REG_V1,  REG_V0
 
-  #define REG_CALLEE_SAVED_ORDER   REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28
-  #define RBM_CALLEE_SAVED_ORDER   RBM_R19,RBM_R20,RBM_R21,RBM_R22,RBM_R23,RBM_R24,RBM_R25,RBM_R26,RBM_R27,RBM_R28
+  #define RBM_CALL_GC_REGS_ORDER   RBM_R19,RBM_R20,RBM_R21,RBM_R22,RBM_R23,RBM_R24,RBM_R25,RBM_R26,RBM_R27,RBM_R28,RBM_INTRET,RBM_INTRET_1
+  #define RBM_CALL_GC_REGS         (RBM_R19|RBM_R20|RBM_R21|RBM_R22|RBM_R23|RBM_R24|RBM_R25|RBM_R26|RBM_R27|RBM_R28|RBM_INTRET|RBM_INTRET_1)
 
   #define CNT_CALLEE_SAVED        (11)
   #define CNT_CALLEE_TRASH        (17)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
+  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED+2)
 
   #define CNT_CALLEE_SAVED_FLOAT  (8)
   #define CNT_CALLEE_TRASH_FLOAT  (24)
+  #define CNT_CALLEE_SAVED_MASK   (4)
+  #define CNT_CALLEE_TRASH_MASK   (8)
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
@@ -219,14 +223,6 @@
 
   // JMP Indirect call register
   #define REG_INDIRECT_CALL_TARGET_REG    REG_IP0
-
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_R9
-  #define RBM_PINVOKE_FRAME        RBM_R9
-  #define REG_PINVOKE_TCB          REG_R10
-  #define RBM_PINVOKE_TCB          RBM_R10
-  #define REG_PINVOKE_SCRATCH      REG_R10
-  #define RBM_PINVOKE_SCRATCH      RBM_R10
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_R0
@@ -372,9 +368,11 @@
   // For arm64, this is the maximum prolog establishment pre-indexed (that is SP pre-decrement) offset.
   #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 512
 
-  // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions (e.g. "MLA (by element)")
+  // Some "Advanced SIMD / SVE scalar x indexed element" and "Advanced SIMD / SVE vector x indexed element" instructions (e.g. "MLA (by element)")
   // have encoding that restricts what registers that can be used for the indexed element when the element size is H (i.e. 2 bytes).
   #define RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS (RBM_V0|RBM_V1|RBM_V2|RBM_V3|RBM_V4|RBM_V5|RBM_V6|RBM_V7|RBM_V8|RBM_V9|RBM_V10|RBM_V11|RBM_V12|RBM_V13|RBM_V14|RBM_V15)
+  #define RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS (RBM_V0|RBM_V1|RBM_V2|RBM_V3|RBM_V4|RBM_V5|RBM_V6|RBM_V7)
+  #define RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS
 
   #define REG_ZERO_INIT_FRAME_REG1 REG_R9
   #define REG_ZERO_INIT_FRAME_REG2 REG_R10

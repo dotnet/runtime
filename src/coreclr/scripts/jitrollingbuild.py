@@ -462,7 +462,7 @@ def upload_command(coreclr_args):
     except:
         logging.warning("Please install:")
         logging.warning("  pip install azure-storage-blob")
-        logging.warning("See also https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python")
+        logging.warning("See also https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-python")
         raise RuntimeError("Missing azure storage package.")
 
     blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=coreclr_args.az_storage_key)

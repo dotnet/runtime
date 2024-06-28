@@ -127,7 +127,7 @@ static const char * const single_xmmregs [] = {
 const char*
 mono_arch_fregname (int reg)
 {
-	if (reg < AMD64_XMM_NREG)
+	if (reg >= 0 && reg < AMD64_XMM_NREG)
 		return single_xmmregs [reg];
 	else
 		return "unknown";
@@ -136,7 +136,7 @@ mono_arch_fregname (int reg)
 const char *
 mono_arch_xregname (int reg)
 {
-	if (reg < AMD64_XMM_NREG)
+	if (reg >= 0 && reg < AMD64_XMM_NREG)
 		return packed_xmmregs [reg];
 	else
 		return "unknown";
@@ -1324,7 +1324,7 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 			storage = alloca (temp_size);
 		else
 			storage = arg_get_storage (ccontext, ainfo);
-		memset (ccontext, 0, sizeof (CallContext)); // FIXME
+
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
@@ -1989,21 +1989,30 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				break;
 			}
 			case ArgSwiftError: {
+				inreg = FALSE;
+				if (ainfo->offset)
+				{
 					ins->opcode = OP_REGOFFSET;
 					ins->inst_basereg = cfg->frame_reg;
 					ins->inst_offset = ainfo->offset + ARGS_OFFSET;
-					offset = ALIGN_TO (offset, sizeof (target_mgreg_t));
-					offset += sizeof (target_mgreg_t);
-
-					cfg->arch.swift_error_var = ins;
-					cfg->used_int_regs |= (size_t)(1 << AMD64_R12);
+					inreg = TRUE;
 				}
+
+				cfg->arch.swift_error_var = ins;
+
+				/* In the n2m case, the error register functions as an extra return register
+				* and is thus is not treated as callee-saved.
+				*/
+				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+					cfg->used_int_regs |= (size_t)(1 << AMD64_R12);
+
 				break;
+			}
 			default:
 				NOT_IMPLEMENTED;
 			}
 
-			if (!inreg && (ainfo->storage != ArgOnStack) && (ainfo->storage != ArgValuetypeAddrInIReg) && (ainfo->storage != ArgValuetypeAddrOnStack) && (ainfo->storage != ArgGSharedVtOnStack) && (ainfo->storage != ArgSwiftError)) {
+			if (!inreg && (ainfo->storage != ArgOnStack) && (ainfo->storage != ArgValuetypeAddrInIReg) && (ainfo->storage != ArgValuetypeAddrOnStack) && (ainfo->storage != ArgGSharedVtOnStack)) {
 				ins->opcode = OP_REGOFFSET;
 				ins->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
@@ -4280,8 +4289,13 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	guint32 quad;
 
 	if (cfg->arch.swift_error_var) {
-		amd64_mov_reg_membase (code, AMD64_R11, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, sizeof (target_mgreg_t));
-		amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_R12, sizeof (target_mgreg_t));
+		if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			amd64_mov_reg_membase (code, AMD64_R11, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, sizeof (target_mgreg_t));
+			amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_R12, sizeof (target_mgreg_t));
+		}
+		else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+			amd64_mov_reg_membase (code, AMD64_R12, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, sizeof (target_mgreg_t));
+		}
 	}
 
 	/* Move return value to the target register */
@@ -8248,11 +8262,14 @@ MONO_RESTORE_WARNING
 				amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, ainfo->reg, 8);
 				break;
 			case ArgSwiftError:
-				if (ainfo->offset) {
-					amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, ARGS_OFFSET + ainfo->offset, 8);
-					amd64_mov_membase_reg (code, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, AMD64_R11, sizeof (target_mgreg_t));
-				} else {
-					amd64_mov_membase_reg (code, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, ainfo->reg, sizeof (target_mgreg_t));
+				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+					if (ainfo->offset == 0) {
+						amd64_mov_membase_reg (code, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, ainfo->reg, sizeof (target_mgreg_t));
+					}
+				} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+					/* Relies on arguments being passed on the stack */
+					amd64_lea_membase (code, AMD64_R11, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset);
+					amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, AMD64_R11, 8);
 				}
 				break;
 			default:

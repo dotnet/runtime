@@ -310,7 +310,7 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
     m_pCachedImporter(NULL),
     m_isCachedHijackFunctionValid(FALSE)
 {
-    _ASSERTE(baseAddress != NULL);
+    _ASSERTE(baseAddress != (CORDB_ADDRESS)NULL);
     m_globalBase = CORDB_ADDRESS_TO_TADDR(baseAddress);
 
     _ASSERTE(pMetaDataLookup != NULL);
@@ -1207,7 +1207,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
     // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
     // implemented for DAC.
-    if (pTargetIL == 0 && !pModule->IsReflection())
+    if (pTargetIL == 0 && !pModule->IsReflectionEmit())
     {
         pTargetIL = (TADDR)pModule->GetIL(methodRVA);
     }
@@ -4281,7 +4281,7 @@ void DacDbiInterfaceImpl::GetMetadata(VMPTR_Module vmModule, TargetBuffer * pTar
     _ASSERTE(pModule->IsVisibleToDebugger());
 
     // For dynamic modules, metadata is stored as an eagerly-serialized buffer hanging off the Reflection Module.
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         // Here is the fetch.
         ReflectionModule * pReflectionModule = pModule->GetReflectionModule();
@@ -4383,7 +4383,7 @@ void DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModule, ModuleInfo * pDat
     pData->vmAssembly.SetHostPtr(pModule->GetAssembly());
 
     // Is it dynamic?
-    BOOL fIsDynamic = pModule->IsReflection();
+    BOOL fIsDynamic = pModule->IsReflectionEmit();
     pData->fIsDynamic = fIsDynamic;
 
     // Get PE BaseAddress and Size
@@ -4713,8 +4713,16 @@ void DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread        vmThread,
 
     Thread * pThread = vmThread.GetDacPtr();
     gc_alloc_context* allocContext = pThread->GetAllocContext();
-    threadAllocInfo->m_allocBytesSOH = allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr);
-    threadAllocInfo->m_allocBytesUOH = allocContext->alloc_bytes_uoh;
+    if (allocContext != nullptr)
+    {
+        threadAllocInfo->m_allocBytesSOH = allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr);
+        threadAllocInfo->m_allocBytesUOH = allocContext->alloc_bytes_uoh;
+    }
+    else
+    {
+            threadAllocInfo->m_allocBytesSOH = 0;
+            threadAllocInfo->m_allocBytesUOH = 0;
+    }
 }
 
 // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
@@ -4922,12 +4930,7 @@ VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain(VMPTR_Thread vmThread)
     DD_ENTER_MAY_THROW;
 
     Thread *    pThread    = vmThread.GetDacPtr();
-    AppDomain * pAppDomain = pThread->GetDomain();
-
-    if (pAppDomain == NULL)
-    {
-        ThrowHR(E_FAIL);
-    }
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
     VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
     vmAppDomain.SetDacTargetPtr(PTR_HOST_TO_TADDR(pAppDomain));
@@ -5700,7 +5703,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
 
             // Going through thread Frames and looking for first (deepest one) one that
             // that has context available for stackwalking (SP and PC)
-            // For example: RedirectedThreadFrame, InlinedCallFrame, HelperMethodFrame, ComPlusMethodFrame
+            // For example: RedirectedThreadFrame, InlinedCallFrame, HelperMethodFrame, CLRToCOMMethodFrame
             Frame *frame = pThread->GetFrame();
             while (frame != NULL && frame != FRAME_TOP)
             {
@@ -7477,7 +7480,7 @@ HRESULT DacDbiInterfaceImpl::GetDefinesBitField(ULONG32 *pDefines)
 
     if (g_pDebugger == NULL)
         return CORDBG_E_NOTREADY;
-        
+
     *pDefines = g_pDebugger->m_defines;
     return S_OK;
 }

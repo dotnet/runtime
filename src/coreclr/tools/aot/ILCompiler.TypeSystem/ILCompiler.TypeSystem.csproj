@@ -29,7 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(EnableDiaSymReaderUse)' == 'true'" Include="Microsoft.DiaSymReader" Version="$(MicrosoftDiaSymReaderVersion)" />
+    <PackageReference Include="Microsoft.DiaSymReader" Version="$(MicrosoftDiaSymReaderVersion)" Condition="'$(EnableDiaSymReaderUse)' == 'true'" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -198,8 +199,8 @@
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
-      <Link>Utilities\TypeNameParser.cs</Link>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs">
+      <Link>Utilities\TypeNameHelpers.cs</Link>
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
       <Link>Utilities\ValueStringBuilder.cs</Link>

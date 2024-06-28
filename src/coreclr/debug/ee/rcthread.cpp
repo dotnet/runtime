@@ -126,7 +126,7 @@ HANDLE CreateWin32EventOrThrow(
     CONTRACT_END;
 
     HANDLE h = NULL;
-    h = WszCreateEvent(lpEventAttributes, (BOOL) eType, bInitialState, NULL);
+    h = CreateEvent(lpEventAttributes, (BOOL) eType, bInitialState, NULL);
 
     if (h == NULL)
         ThrowLastError();
@@ -151,7 +151,7 @@ HANDLE OpenWin32EventOrThrow(
     }
     CONTRACT_END;
 
-    HANDLE h = WszOpenEvent(
+    HANDLE h = OpenEvent(
         dwDesiredAccess,
         bInheritHandle,
         lpName
@@ -345,7 +345,7 @@ HRESULT DebuggerRCThread::Init(void)
     // We will not fail out if CreateEvent fails for RSEA or RSER. Because
     // the worst case is that debugger cannot attach to debuggee.
     //
-    HandleHolder rightSideEventAvailable(WszCreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
+    HandleHolder rightSideEventAvailable(CreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
 
     // Security fix:
     // We need to check the last error to see if the event was precreated or not
@@ -358,7 +358,7 @@ HRESULT DebuggerRCThread::Init(void)
         rightSideEventAvailable.Clear();
     }
 
-    HandleHolder rightSideEventRead(WszCreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
+    HandleHolder rightSideEventRead(CreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
 
     // Security fix:
     // We need to check the last error to see if the event was precreated or not

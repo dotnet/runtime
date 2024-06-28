@@ -52,6 +52,7 @@ namespace Test_refarg_i2_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             s_aa.self = new AA();

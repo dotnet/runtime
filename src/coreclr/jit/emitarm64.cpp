@@ -4248,6 +4248,47 @@ void emitter::emitIns_Mov(
             break;
         }
 
+        case INS_sve_mov:
+        {
+            if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
+            {
+                assert((opt == INS_OPTS_SCALABLE_B) || insOptsNone(opt));
+                opt  = INS_OPTS_SCALABLE_B;
+                attr = EA_SCALABLE;
+
+                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+                {
+                    return;
+                }
+                fmt = IF_SVE_CZ_4A_L;
+            }
+            else if (isVectorRegister(dstReg) && isVectorRegister(srcReg))
+            {
+                assert(insOptsScalable(opt));
+
+                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+                {
+                    return;
+                }
+                fmt = IF_SVE_AU_3A;
+            }
+            else if (isVectorRegister(dstReg) && isGeneralRegisterOrSP(srcReg))
+            {
+                assert(insOptsScalable(opt));
+                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+                {
+                    return;
+                }
+                srcReg = encodingSPtoZR(srcReg);
+                fmt    = IF_SVE_CB_2A;
+            }
+            else
+            {
+                unreached();
+            }
+
+            break;
+        }
         default:
         {
             unreached();
@@ -7840,42 +7881,14 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_sve_ldr:
         {
-            assert(isVectorRegister(reg1));
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
-            fmt      = IF_SVE_IE_2A;
-
-            // TODO-SVE: Don't assume 128bit vectors
-            scale        = NaturalScale_helper(EA_16BYTE);
-            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-            {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
-            }
-            else
-            {
-                useRegForImm      = true;
-                regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-            }
-        }
-        break;
-
-        // TODO-SVE: Fold into INS_sve_ldr once REG_V0 and REG_P0 are distinct
-        case INS_sve_ldr_mask:
-        {
-            assert(isPredicateRegister(reg1));
-            isSimple = false;
-            size     = EA_SCALABLE;
-            attr     = size;
-            fmt      = IF_SVE_ID_2A;
-            ins      = INS_sve_ldr;
+            fmt      = isVectorRegister(reg1) ? IF_SVE_IE_2A : IF_SVE_ID_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8
-            scale        = NaturalScale_helper(EA_2BYTE);
+            scale        = NaturalScale_helper(isVectorRegister(reg1) ? EA_16BYTE : EA_2BYTE);
             ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
 
             if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
@@ -7886,7 +7899,10 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             {
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
             }
         }
         break;
@@ -8119,42 +8135,14 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_sve_str:
         {
-            assert(isVectorRegister(reg1));
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
-            fmt      = IF_SVE_JH_2A;
-
-            // TODO-SVE: Don't assume 128bit vectors
-            scale        = NaturalScale_helper(EA_16BYTE);
-            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-            {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
-            }
-            else
-            {
-                useRegForImm      = true;
-                regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-            }
-        }
-        break;
-
-        // TODO-SVE: Fold into INS_sve_str once REG_V0 and REG_P0 are distinct
-        case INS_sve_str_mask:
-        {
-            assert(isPredicateRegister(reg1));
-            isSimple = false;
-            size     = EA_SCALABLE;
-            attr     = size;
-            fmt      = IF_SVE_JG_2A;
-            ins      = INS_sve_str;
+            fmt      = isVectorRegister(reg1) ? IF_SVE_JH_2A : IF_SVE_JG_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8
-            scale        = NaturalScale_helper(EA_2BYTE);
+            scale        = NaturalScale_helper(isVectorRegister(reg1) ? EA_16BYTE : EA_2BYTE);
             ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
 
             if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
@@ -8165,7 +8153,10 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             {
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
             }
         }
         break;
@@ -8933,6 +8924,8 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
  *
  * For ARM xreg, xmul and disp are never used and should always be 0/REG_NA.
  *
+ * noSafePoint - force not making this call a safe point in partially interruptible code
+ *
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
 
@@ -8951,7 +8944,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
                            ssize_t          disp /* = 0     */,
-                           bool             isJump /* = false */)
+                           bool             isJump /* = false */,
+                           bool             noSafePoint /* = false */)
 {
     /* Sanity check the arguments depending on callType */
 
@@ -9020,11 +9014,32 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark RBM_INTRET appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET;
+    }
+
+    // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
+    if (secondRetSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET_1;
+    }
+    else if (secondRetSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET_1;
+    }
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
@@ -14243,7 +14258,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
             if (offset != 0)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;
 
@@ -14350,7 +14365,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             else
             {
                 // We require a tmpReg to hold the offset
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // First load/store tmpReg with the large offset constant
                 codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
@@ -14490,7 +14505,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         if (isMulOverflow)
         {
-            regNumber extraReg = dst->GetSingleTempReg();
+            regNumber extraReg = codeGen->internalRegisters.GetSingle(dst);
             assert(extraReg != dst->GetRegNum());
 
             if ((dst->gtFlags & GTF_UNSIGNED) != 0)
@@ -16352,6 +16367,7 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_sxtw:
         case INS_uxtb:
         case INS_uxth:
+        case INS_sve_mov:
         {
             return true;
         }
@@ -16400,7 +16416,7 @@ bool emitter::IsMovInstruction(instruction ins)
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
 {
-    assert(ins == INS_mov);
+    assert((ins == INS_mov) || (ins == INS_sve_mov));
 
     if (canSkip && (dst == src))
     {
@@ -16995,12 +17011,28 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     // store lower 8 bytes
     emitIns_S_R(INS_str, EA_8BYTE, dataReg, varNum, offset);
 
-    // Extract upper 4-bytes from data
-    regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
-    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
+    if (codeGen->internalRegisters.Count(tmpRegProvider) == 0)
+    {
+        // We don't have temp regs - let's do two shuffles then
 
-    // 4-byte write
-    emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
+        // [0,1,2,3] -> [2,3,0,1]
+        emitIns_R_R_R_I(INS_ext, EA_16BYTE, dataReg, dataReg, dataReg, 8, INS_OPTS_16B);
+
+        // store lower 4 bytes
+        emitIns_S_R(INS_str, EA_4BYTE, dataReg, varNum, offset + 8);
+
+        // Restore dataReg to its previous state: [2,3,0,1] -> [0,1,2,3]
+        emitIns_R_R_R_I(INS_ext, EA_16BYTE, dataReg, dataReg, dataReg, 8, INS_OPTS_16B);
+    }
+    else
+    {
+        // Extract upper 4-bytes from data
+        regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
+        emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
+
+        // 4-byte write
+        emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
+    }
 }
 #endif // FEATURE_SIMD
 

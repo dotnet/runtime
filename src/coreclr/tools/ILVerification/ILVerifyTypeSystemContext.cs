@@ -28,7 +28,7 @@ namespace ILVerify
             _resolver = resolver;
         }
 
-        public override ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
+        public override ModuleDesc ResolveAssembly(AssemblyNameInfo name, bool throwIfNotFound = true)
         {
             return CacheResolvedAssemblyOrNetmodule(_resolver.ResolveAssembly(name), name.Name, null, throwIfNotFound);
         }

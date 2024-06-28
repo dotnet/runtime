@@ -530,15 +530,6 @@ void interceptor_ICJI::LongLifetimeFree(void* obj)
     original_ICorJitInfo->LongLifetimeFree(obj);
 }
 
-size_t interceptor_ICJI::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
-                                                    CORINFO_MODULE_HANDLE* pModule,
-                                                    void**                 ppIndirection)
-{
-    mc->cr->AddCall("getClassModuleIdForStatics");
-    size_t temp = original_ICorJitInfo->getClassModuleIdForStatics(cls, pModule, ppIndirection);
-    mc->recGetClassModuleIdForStatics(cls, pModule, ppIndirection, temp);
-    return temp;
-}
 
 bool interceptor_ICJI::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE  cls,
                                                    CORINFO_CONST_LOOKUP* addr,
@@ -914,6 +905,15 @@ bool interceptor_ICJI::isExactType(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+// Returns whether a class handle represents a generic type, if that can be statically determined.
+TypeCompareState interceptor_ICJI::isGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isGenericType");
+    TypeCompareState temp = original_ICorJitInfo->isGenericType(cls);
+    mc->recIsGenericType(cls, temp);
+    return temp;
+}
+
 // Returns whether a class handle represents a Nullable type, if that can be statically determined.
 TypeCompareState interceptor_ICJI::isNullableType(CORINFO_CLASS_HANDLE cls)
 {
@@ -1082,11 +1082,11 @@ uint32_t interceptor_ICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, b
     return result;
 }
 
-void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
-    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
-    mc->recGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
+    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
+    mc->recGetThreadLocalStaticBlocksInfo(pInfo);
 }
 
 void interceptor_ICJI::getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
@@ -1640,12 +1640,19 @@ void interceptor_ICJI::getCallInfo(
     });
 }
 
-// returns the class's domain ID for accessing shared statics
-unsigned interceptor_ICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection)
+size_t interceptor_ICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
-    mc->cr->AddCall("getClassDomainID");
-    unsigned temp = original_ICorJitInfo->getClassDomainID(cls, ppIndirection);
-    mc->recGetClassDomainID(cls, ppIndirection, temp);
+    mc->cr->AddCall("getClassStaticDynamicInfo");
+    size_t temp = original_ICorJitInfo->getClassStaticDynamicInfo(cls);
+    mc->recGetClassStaticDynamicInfo(cls, temp);
+    return temp;
+}
+
+size_t interceptor_ICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getClassThreadStaticDynamicInfo");
+    size_t temp = original_ICorJitInfo->getClassThreadStaticDynamicInfo(cls);
+    mc->recGetClassThreadStaticDynamicInfo(cls, temp);
     return temp;
 }
 
@@ -1947,11 +1954,12 @@ HRESULT interceptor_ICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE    
                                                        PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
                                                        uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
                                                        uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
-                                                       PgoSource*                 pPgoSource)
+                                                       PgoSource*                 pPgoSource,
+                                                       bool*                      pDynamicPgo)
 {
     mc->cr->AddCall("getPgoInstrumentationResults");
-    HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
-    mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, temp);
+    HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo);
+    mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo, temp);
     return temp;
 }
 

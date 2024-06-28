@@ -1,7 +1,7 @@
 # System.Runtime.Intrinsics
 Contains types used to create and convey register states in various sizes and formats for use with instruction-set extensions. Also exposes select instruction-set extensions for various architectures (`x86`, `Arm`, `Wasm`).
 
-Documentation can be found here: https://learn.microsoft.com/en-us/dotnet/api/system.runtime.intrinsics.
+Documentation can be found here: https://learn.microsoft.com/dotnet/api/system.runtime.intrinsics.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)

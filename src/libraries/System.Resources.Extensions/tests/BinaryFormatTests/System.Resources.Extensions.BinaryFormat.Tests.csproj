@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;</TargetFrameworks>
+    <!--
+     Turning off a number of warnings that would otherwise litter this project due to special
+     test type cases for binary formatting.
+
+     SYSLIB0011: BinaryFormatter obsolete
+     SYSLIB0050: Obsolete attribute
+     SYSLIB0051: Formatters obsolete
+    -->
+    <NoWarn>$(NoWarn);CS1574;CS1580;CA1036;CA1051;CA1066;SYSLIB0011;SYSLIB0050;SYSLIB0051;xUnit1013;CS0649</NoWarn>
+    <StringResourcesPath>$(LibrariesProjectRoot)\System.Resources.Extensions\src\Resources\Strings.resx</StringResourcesPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="TestResources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>TestResources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="TestResources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>TestResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TestResources.resx" LogicalName="TestResources.resources" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
+    <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
+    <ProjectReference Include="..\..\src\System.Resources.Extensions.csproj" />
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="$(SystemRuntimeSerializationFormattersVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)\System.Resources.Extensions\src\System\Resources\Extensions\BinaryFormat\**\*.cs" LinkBase="System.Resources.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\System.Formats.Nrbf\src\System\Formats\Nrbf\PrimitiveType.cs" Link="PrimitiveType.cs" />
+    <Compile Include="..\..\..\System.Formats.Nrbf\src\System\Formats\Nrbf\BinaryType.cs" Link="BinaryType.cs" />
+  </ItemGroup>
+
+</Project>

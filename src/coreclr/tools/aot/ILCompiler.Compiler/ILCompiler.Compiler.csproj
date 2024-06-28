@@ -347,6 +347,7 @@
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AddressTakenMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ByRefTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratableObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratedDataNode.cs" />
@@ -368,7 +369,6 @@
     <Compile Include="Compiler\Dataflow\ArrayValue.cs" />
     <Compile Include="Compiler\Dataflow\AttributeDataFlow.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedCallGraph.cs" />
-    <Compile Include="Compiler\Dataflow\CompilerGeneratedNames.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedState.cs" />
     <Compile Include="Compiler\Dataflow\DiagnosticContext.cs" />
     <Compile Include="Compiler\Dataflow\DiagnosticUtilities.cs" />
@@ -396,9 +396,8 @@
     <Compile Include="Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisTokenAccessPattern.cs" />
-    <Compile Include="Compiler\Dataflow\TypeNameParser.Dataflow.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
-      <Link>Compiler\Dataflow\TypeNameParser.cs</Link>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs">
+      <Link>Utilities\TypeNameHelpers.cs</Link>
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
       <Link>Utilities\ValueStringBuilder.cs</Link>
@@ -454,6 +453,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
     <Compile Include="Compiler\ExpectedIsaFeaturesRootProvider.cs" />
     <Compile Include="Compiler\ExternSymbolMappedField.cs" />
+    <Compile Include="Compiler\ObjectDataInterner.cs" />
     <Compile Include="Compiler\SubstitutedILProvider.cs" />
     <Compile Include="Compiler\SubstitutionProvider.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />
@@ -528,8 +528,6 @@
     <Compile Include="Compiler\DependencyAnalysis\RuntimeImportMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StringAllocatorMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunGenericHelperNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMInitialInterfaceDispatchStubNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VTableSliceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeOptionalFieldsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
@@ -729,9 +727,6 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\CorInfoTypes.VarInfo.cs">
       <Link>JitInterface\CorInfoTypes.VarInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\JitInterface\MemoryHelper.cs">
-      <Link>JitInterface\MemoryHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\TypesDebugInfoWriter\TypesDebugInfoWriter.cs">
       <Link>TypeSystem\TypesDebugInfoWriter\TypesDebugInfoWriter.cs</Link>

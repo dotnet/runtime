@@ -42,6 +42,11 @@
     clsid="{4DBD9B61-E372-499F-84DE-EFC70AA8A009}"
     threadingModel="Both" />
 
+  <!-- DispatchCoerceTesting -->
+  <comClass
+    clsid="{661F9962-3477-416B-BE40-4CBA3190A562}"
+    threadingModel="Both" />
+
   <!-- AggregationTesting -->
   <comClass
     clsid="{4CEFE36D-F377-4B6E-8C34-819A8BB9CB04}"

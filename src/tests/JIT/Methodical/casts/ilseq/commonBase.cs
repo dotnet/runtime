@@ -43,6 +43,7 @@ public static class Repro
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         return Bug(new Sibling2());
