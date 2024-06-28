@@ -253,6 +253,7 @@ namespace ILCompiler
                     continue;
 
                 TypeEqualityPatternAnalyzer typeEqualityAnalyzer = default;
+                IsInstCheckPatternAnalyzer isInstCheckAnalyzer = default;
 
                 ILReader reader = new ILReader(methodBytes, offset);
                 while (reader.HasNext)
@@ -262,6 +263,7 @@ namespace ILCompiler
                     ILOpcode opcode = reader.ReadILOpcode();
 
                     typeEqualityAnalyzer.Advance(opcode, reader, method);
+                    isInstCheckAnalyzer.Advance(opcode, reader, method);
 
                     // Mark any applicable EH blocks
                     foreach (ILExceptionRegion ehRegion in ehRegions)
@@ -302,7 +304,8 @@ namespace ILCompiler
                     {
                         int destination = reader.ReadBranchDestination(opcode);
                         if (!TryGetConstantArgument(method, methodBytes, flags, offset, 0, out int constant)
-                            && !TryExpandTypeEquality(typeEqualityAnalyzer, method, out constant))
+                            && !TryExpandTypeEquality(typeEqualityAnalyzer, method, out constant)
+                            && !TryExpandIsInst(isInstCheckAnalyzer, method, out constant))
                         {
                             // Can't get the constant - both branches are live.
                             offsetsToVisit.Push(destination);
@@ -927,6 +930,35 @@ namespace ILCompiler
 
             if (analyzer.IsInequality)
                 constant ^= 1;
+
+            return true;
+        }
+
+        private bool TryExpandIsInst(in IsInstCheckPatternAnalyzer analyzer, MethodIL methodIL, out int constant)
+        {
+            constant = 0;
+            if (!analyzer.IsIsInstBranch)
+                return false;
+
+            var type = (TypeDesc)methodIL.GetObject(analyzer.Token);
+
+            // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+            // Unfortunately this means dataflow will still see code that the rest of the system
+            // might have optimized away. It should not be a problem in practice.
+            if (type.ContainsSignatureVariables())
+                return false;
+
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                return false;
+
+            // We don't track types without a constructed MethodTable very well.
+            if (!ConstructedEETypeNode.CreationAllowed(type))
+                return false;
+
+            if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type.NormalizeInstantiation()))
+                return false;
+
+            constant = 0;
 
             return true;
         }

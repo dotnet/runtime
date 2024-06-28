@@ -35,6 +35,7 @@ namespace Internal.IL
         private readonly byte[] _ilBytes;
 
         private TypeEqualityPatternAnalyzer _typeEqualityPatternAnalyzer;
+        private IsInstCheckPatternAnalyzer _isInstCheckPatternAnalyzer;
 
         private sealed class BasicBlock
         {
@@ -263,11 +264,13 @@ namespace Internal.IL
             }
 
             _typeEqualityPatternAnalyzer = default;
+            _isInstCheckPatternAnalyzer = default;
         }
 
         partial void StartImportingInstruction(ILOpcode opcode)
         {
             _typeEqualityPatternAnalyzer.Advance(opcode, new ILReader(_ilBytes, _currentOffset), _methodIL);
+            _isInstCheckPatternAnalyzer.Advance(opcode, new ILReader(_ilBytes, _currentOffset), _methodIL);
         }
 
         private void EndImportingInstruction()
@@ -834,6 +837,16 @@ namespace Internal.IL
                     && !typeEqualityCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     condition = _factory.MaximallyConstructableType(typeEqualityCheckType);
+                }
+            }
+
+            if (opcode == ILOpcode.brfalse && _isInstCheckPatternAnalyzer.IsIsInstBranch)
+            {
+                TypeDesc isinstCheckType = (TypeDesc)_canonMethodIL.GetObject(_isInstCheckPatternAnalyzer.Token);
+                if (ConstructedEETypeNode.CreationAllowed(isinstCheckType)
+                    && !isinstCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    condition = _factory.MaximallyConstructableType(isinstCheckType);
                 }
             }
 
