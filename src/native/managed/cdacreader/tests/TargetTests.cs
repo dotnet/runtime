@@ -14,12 +14,9 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public unsafe class TargetTests
 {
-    private const ulong ContractDescriptorAddr = 0xaaaaaaaa;
-    private const uint JsonDescriptorAddr = 0xdddddddd;
-    private const uint PointerDataAddr = 0xeeeeeeee;
 
     private static readonly (DataType Type, Target.TypeInfo Info)[] TestTypes =
-    [
+   [
         // Size and fields
         (DataType.Thread, new(){
             Size = 56,
@@ -57,19 +54,13 @@ public unsafe class TargetTests
             "globals": {}
         }
         """);
-        Span<byte> descriptor = stackalloc byte[ContractDescriptor.Size(is64Bit)];
-        ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, 0);
+        Span<byte> descriptor = stackalloc byte[TargetTestHelpers.ContractDescriptor.Size(is64Bit)];
+        TargetTestHelpers.ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, 0);
         fixed (byte* jsonPtr = json)
         {
-            ReadContext context = new ReadContext
-            {
-                ContractDescriptor = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(descriptor)),
-                ContractDescriptorLength = descriptor.Length,
-                JsonDescriptor = jsonPtr,
-                JsonDescriptorLength = json.Length,
-            };
+            TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json);
 
-            bool success = Target.TryCreate(ContractDescriptorAddr, &ReadFromTarget, &context, out Target? target);
+            bool success = TargetTestHelpers.TryCreateTarget(&context, out Target? target);
             Assert.True(success);
 
             foreach ((DataType type, Target.TypeInfo info) in TestTypes)
@@ -131,19 +122,13 @@ public unsafe class TargetTests
             "globals": { {{globalsJson}} }
         }
         """);
-        Span<byte> descriptor = stackalloc byte[ContractDescriptor.Size(is64Bit)];
-        ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, 0);
+        Span<byte> descriptor = stackalloc byte[TargetTestHelpers.ContractDescriptor.Size(is64Bit)];
+        TargetTestHelpers.ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, 0);
         fixed (byte* jsonPtr = json)
         {
-            ReadContext context = new ReadContext
-            {
-                ContractDescriptor = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(descriptor)),
-                ContractDescriptorLength = descriptor.Length,
-                JsonDescriptor = jsonPtr,
-                JsonDescriptorLength = json.Length,
-            };
+            TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json);
 
-            bool success = Target.TryCreate(ContractDescriptorAddr, &ReadFromTarget, &context, out Target? target);
+            bool success = TargetTestHelpers.TryCreateTarget(&context, out Target? target);
             Assert.True(success);
 
             ValidateGlobals(target, TestGlobals);
@@ -175,21 +160,13 @@ public unsafe class TargetTests
             "globals": { {{globalsJson}} }
         }
         """);
-        Span<byte> descriptor = stackalloc byte[ContractDescriptor.Size(is64Bit)];
-        ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, pointerData.Length / pointerSize);
+        Span<byte> descriptor = stackalloc byte[TargetTestHelpers.ContractDescriptor.Size(is64Bit)];
+        TargetTestHelpers.ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, pointerData.Length / pointerSize);
         fixed (byte* jsonPtr = json)
         {
-            ReadContext context = new ReadContext
-            {
-                ContractDescriptor = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(descriptor)),
-                ContractDescriptorLength = descriptor.Length,
-                JsonDescriptor = jsonPtr,
-                JsonDescriptorLength = json.Length,
-                PointerData = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(pointerData)),
-                PointerDataLength = pointerData.Length
-            };
+            TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json, pointerData);
 
-            bool success = Target.TryCreate(ContractDescriptorAddr, &ReadFromTarget, &context, out Target? target);
+            bool success = TargetTestHelpers.TryCreateTarget(&context, out Target? target);
             Assert.True(success);
 
             // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
@@ -302,145 +279,9 @@ public unsafe class TargetTests
             }
         }
 
-        void AssertEqualsWithCallerInfo<T>(T expected, T actual) 
+        void AssertEqualsWithCallerInfo<T>(T expected, T actual)
         {
             Assert.True((expected is null && actual is null) || expected.Equals(actual), $"Expected: {expected}. Actual: {actual}. [test case: {caller} in {filePath}:{lineNumber}]");
-        }
-    }
-
-    [UnmanagedCallersOnly]
-    private static int ReadFromTarget(ulong address, byte* buffer, uint length, void* context)
-    {
-        ReadContext* readContext = (ReadContext*)context;
-        var span = new Span<byte>(buffer, (int)length);
-
-        // Populate the span with the requested portion of the contract descriptor
-        if (address >= ContractDescriptorAddr && address <= ContractDescriptorAddr + (ulong)readContext->ContractDescriptorLength - length)
-        {
-            ulong offset = address - ContractDescriptorAddr;
-            new ReadOnlySpan<byte>(readContext->ContractDescriptor + offset, (int)length).CopyTo(span);
-            return 0;
-        }
-
-        // Populate the span with the JSON descriptor - this assumes the product will read it all at once.
-        if (address == JsonDescriptorAddr)
-        {
-            new ReadOnlySpan<byte>(readContext->JsonDescriptor, readContext->JsonDescriptorLength).CopyTo(span);
-            return 0;
-        }
-
-        // Populate the span with the requested portion of the pointer data
-        if (address >= PointerDataAddr && address <= PointerDataAddr + (ulong)readContext->PointerDataLength - length)
-        {
-            ulong offset = address - PointerDataAddr;
-            new ReadOnlySpan<byte>(readContext->PointerData + offset, (int)length).CopyTo(span);
-            return 0;
-        }
-
-        return -1;
-    }
-
-    // Used by ReadFromTarget to return the appropriate bytes
-    private struct ReadContext
-    {
-        public byte* ContractDescriptor;
-        public int ContractDescriptorLength;
-
-        public byte* JsonDescriptor;
-        public int JsonDescriptorLength;
-
-        public byte* PointerData;
-        public int PointerDataLength;
-    }
-
-    private static class ContractDescriptor
-    {
-        public static int Size(bool is64Bit) => is64Bit ? sizeof(ContractDescriptor64) : sizeof(ContractDescriptor32);
-
-        public static void Fill(Span<byte> dest, bool isLittleEndian, bool is64Bit, int jsonDescriptorSize, int pointerDataCount)
-        {
-            if (is64Bit)
-            {
-                ContractDescriptor64.Fill(dest, isLittleEndian, jsonDescriptorSize, pointerDataCount);
-            }
-            else
-            {
-                ContractDescriptor32.Fill(dest, isLittleEndian, jsonDescriptorSize, pointerDataCount);
-            }
-        }
-
-        private struct ContractDescriptor32
-        {
-            public ulong Magic = BitConverter.ToUInt64("DNCCDAC\0"u8);
-            public uint Flags = 0x2 /*32-bit*/ | 0x1;
-            public uint DescriptorSize;
-            public uint Descriptor = JsonDescriptorAddr;
-            public uint PointerDataCount;
-            public uint Pad0 = 0;
-            public uint PointerData = PointerDataAddr;
-
-            public ContractDescriptor32() { }
-
-            public static void Fill(Span<byte> dest, bool isLittleEndian, int jsonDescriptorSize, int pointerDataCount)
-            {
-                ContractDescriptor32 descriptor = new()
-                {
-                    DescriptorSize = (uint)jsonDescriptorSize,
-                    PointerDataCount = (uint)pointerDataCount,
-                };
-                if (BitConverter.IsLittleEndian != isLittleEndian)
-                    descriptor.ReverseEndianness();
-
-                MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref descriptor, 1)).CopyTo(dest);
-            }
-
-            private void ReverseEndianness()
-            {
-                Magic = BinaryPrimitives.ReverseEndianness(Magic);
-                Flags = BinaryPrimitives.ReverseEndianness(Flags);
-                DescriptorSize = BinaryPrimitives.ReverseEndianness(DescriptorSize);
-                Descriptor = BinaryPrimitives.ReverseEndianness(Descriptor);
-                PointerDataCount = BinaryPrimitives.ReverseEndianness(PointerDataCount);
-                Pad0 = BinaryPrimitives.ReverseEndianness(Pad0);
-                PointerData = BinaryPrimitives.ReverseEndianness(PointerData);
-            }
-        }
-
-        private struct ContractDescriptor64
-        {
-            public ulong Magic = BitConverter.ToUInt64("DNCCDAC\0"u8);
-            public uint Flags = 0x1;
-            public uint DescriptorSize;
-            public ulong Descriptor = JsonDescriptorAddr;
-            public uint PointerDataCount;
-            public uint Pad0 = 0;
-            public ulong PointerData = PointerDataAddr;
-
-            public ContractDescriptor64() { }
-
-            public static void Fill(Span<byte> dest, bool isLittleEndian, int jsonDescriptorSize, int pointerDataCount)
-            {
-                ContractDescriptor64 descriptor = new()
-                {
-                    DescriptorSize = (uint)jsonDescriptorSize,
-                    PointerDataCount = (uint)pointerDataCount,
-                };
-                if (BitConverter.IsLittleEndian != isLittleEndian)
-                    descriptor.ReverseEndianness();
-
-                MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref descriptor, 1)).CopyTo(dest);
-            }
-
-            private void ReverseEndianness()
-            {
-                Magic = BinaryPrimitives.ReverseEndianness(Magic);
-                Flags = BinaryPrimitives.ReverseEndianness(Flags);
-                DescriptorSize = BinaryPrimitives.ReverseEndianness(DescriptorSize);
-                Descriptor = BinaryPrimitives.ReverseEndianness(Descriptor);
-                PointerDataCount = BinaryPrimitives.ReverseEndianness(PointerDataCount);
-                Pad0 = BinaryPrimitives.ReverseEndianness(Pad0);
-                PointerData = BinaryPrimitives.ReverseEndianness(PointerData);
-            }
         }
     }
 
