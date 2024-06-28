@@ -18,9 +18,9 @@ namespace System
 #if TARGET_ARM64 || TARGET_LOONGARCH64
         private const ulong MemmoveNativeThreshold = ulong.MaxValue;
 #elif TARGET_ARM
-        private const nuint MemmoveNativeThreshold = 512;
+        private const nuint MemmoveNativeThreshold = ulong.MaxValue;
 #else
-        private const nuint MemmoveNativeThreshold = 2048;
+        private const nuint MemmoveNativeThreshold = ulong.MaxValue;
 #endif
         private const nuint ZeroMemoryNativeThreshold = 1024;
 
