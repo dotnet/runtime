@@ -32,10 +32,18 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             { "http://q.app/foo?", "http://q.app/foo?" },
             { "http://q.app/foo?XXX", "http://q.app/foo?*" },
             { "http://q.app/a/b/c?a=b%20c&x=1", "http://q.app/a/b/c?*" },
+            { "http://q.app/#", "http://q.app/#" }, // Has empty fragment.
+            { "http://q.app#f", "http://q.app/#f" }, // Has fragment.
+            { "http://q.app#f?a=b", "http://q.app/#f?a=b" }, // Has fragment with a '?'.
+            { "http://q.app/?a=b#f?a=b", "http://q.app/?*#f?a=b" }, // Has query and fragment with a '?'.
+            { "http://q.app?#f", "http://q.app/?#f" }, // Has empty query and fragment.
             { "/cat/1/2", "/cat/1/2" },
             { "/cat/1/2?", "/cat/1/2?" },
             { "/cat/1/2?X", "/cat/1/2?*" },
             { "/cat/1/2?a=b%20c&x=1", "/cat/1/2?*" },
+            { "#", "#" },
+            { "?#", "?#" },
+            { "?lol#???", "?*#???" }
         };
 
         [Theory]
@@ -159,12 +167,12 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             const string queryString = "term=Western%20Australia";
             const string destinationUri = $"{baseUri}?{queryString}";
 
-            await RemoteExecutor.Invoke(static async (syncApiStr, logQueryStringStr) =>
+            await RemoteExecutor.Invoke(static async (syncApiStr, disableUriQueryRedactionStr) =>
             {
                 bool syncApi = bool.Parse(syncApiStr);
-                bool logQueryString = bool.Parse(logQueryStringStr);
+                bool disableUriQueryRedaction = bool.Parse(disableUriQueryRedactionStr);
 
-                if (logQueryString)
+                if (disableUriQueryRedaction)
                 {
                     AppContext.SetSwitch("Microsoft.Extensions.Http.DisableUriQueryRedaction", true);
                 }
@@ -201,13 +209,13 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                         m.EventId == EventIds.RequestStart &&
                         m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler"));
 
-                string expectedUri = logQueryString ? destinationUri : $"{baseUri}?*";
+                string expectedUri = disableUriQueryRedaction ? destinationUri : $"{baseUri}?*";
 
                 Assert.Equal($"HTTP GET {expectedUri}", pipelineStartMessage.Scope.ToString());
                 Assert.Equal($"Start processing HTTP request GET {expectedUri}", pipelineStartMessage.Message);
                 Assert.Equal($"Sending HTTP request GET {expectedUri}", requestStartMessage.Message);
 
-            }, syncApi.ToString(), logQueryString.ToString()).DisposeAsync();
+            }, syncApi.ToString(), disableUriQueryRedaction.ToString()).DisposeAsync();
         }
     }
 }

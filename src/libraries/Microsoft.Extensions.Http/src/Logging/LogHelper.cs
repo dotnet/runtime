@@ -158,19 +158,38 @@ namespace Microsoft.Extensions.Http.Logging
                 return uriString;
             }
 
+            int fragmentOffset = uriString.IndexOf('#');
             int queryOffset = uriString.IndexOf('?');
-
-            if (queryOffset < 0 || queryOffset == uriString.Length - 1)
+            if (fragmentOffset >= 0 && queryOffset > fragmentOffset)
             {
-                // No query string or empty query string.
+                // Not a query delimiter, but a '?' in the fragment.
+                queryOffset = -1;
+            }
+
+            if (queryOffset < 0 || queryOffset == uriString.Length - 1 || queryOffset == fragmentOffset - 1)
+            {
+                // No query or empty query.
                 return uriString;
             }
 
+            if (fragmentOffset < 0)
+            {
 #if NET
-            return $"{uriString.AsSpan(0, queryOffset + 1)}*";
+                return $"{uriString.AsSpan(0, queryOffset + 1)}*";
 #else
-            return $"{uriString.Substring(0, queryOffset + 1)}*";
+                return $"{uriString.Substring(0, queryOffset + 1)}*";
 #endif
+            }
+            else
+            {
+#if NET
+                ReadOnlySpan<char> uriSpan = uriString.AsSpan();
+                return $"{uriSpan[..(queryOffset + 1)]}*{uriSpan[fragmentOffset..]}";
+#else
+                return $"{uriString.Substring(0, queryOffset + 1)}*{uriString.Substring(fragmentOffset)}";
+#endif
+            }
+
         }
     }
 }
