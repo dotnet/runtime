@@ -449,7 +449,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
     }
 
     // This is an optimization that we can take advantage of if we're trying to get the MethodDesc
-    // for an interface virtual, since their slots usually point to stub.
+    // for an interface virtual, since their slots point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
         return MethodDesc::GetMethodDescFromStubAddr(pCode);
