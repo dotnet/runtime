@@ -38,6 +38,11 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
     // to get a single primitive value!
     internal SerializationRecord TryToMapToUserFriendly()
     {
+        if (!TypeName.IsSimple)
+        {
+            return this;
+        }
+
         if (MemberValues.Count == 1)
         {
             if (HasMember("m_value"))
@@ -45,18 +50,18 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
                 return MemberValues[0] switch
                 {
                     // there can be a value match, but no TypeName match
-                    bool value when TypeName.FullName == typeof(bool).FullName => Create(value),
-                    byte value when TypeName.FullName == typeof(byte).FullName => Create(value),
-                    sbyte value when TypeName.FullName == typeof(sbyte).FullName => Create(value),
-                    char value when TypeName.FullName == typeof(char).FullName => Create(value),
-                    short value when TypeName.FullName == typeof(short).FullName => Create(value),
-                    ushort value when TypeName.FullName == typeof(ushort).FullName => Create(value),
-                    int value when TypeName.FullName == typeof(int).FullName => Create(value),
-                    uint value when TypeName.FullName == typeof(uint).FullName => Create(value),
-                    long value when TypeName.FullName == typeof(long).FullName => Create(value),
-                    ulong value when TypeName.FullName == typeof(ulong).FullName => Create(value),
-                    float value when TypeName.FullName == typeof(float).FullName => Create(value),
-                    double value when TypeName.FullName == typeof(double).FullName => Create(value),
+                    bool value when TypeNameMatches(typeof(bool)) => Create(value),
+                    byte value when TypeNameMatches(typeof(byte)) => Create(value),
+                    sbyte value when TypeNameMatches(typeof(sbyte)) => Create(value),
+                    char value when TypeNameMatches(typeof(char)) => Create(value),
+                    short value when TypeNameMatches(typeof(short)) => Create(value),
+                    ushort value when TypeNameMatches(typeof(ushort)) => Create(value),
+                    int value when TypeNameMatches(typeof(int)) => Create(value),
+                    uint value when TypeNameMatches(typeof(uint)) => Create(value),
+                    long value when TypeNameMatches(typeof(long)) => Create(value),
+                    ulong value when TypeNameMatches(typeof(ulong)) => Create(value),
+                    float value when TypeNameMatches(typeof(float)) => Create(value),
+                    double value when TypeNameMatches(typeof(double)) => Create(value),
                     _ => this
                 };
             }
@@ -65,12 +70,12 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
                 return MemberValues[0] switch
                 {
                     // there can be a value match, but no TypeName match
-                    long value when TypeName.FullName == typeof(IntPtr).FullName => Create(new IntPtr(value)),
-                    ulong value when TypeName.FullName == typeof(UIntPtr).FullName => Create(new UIntPtr(value)),
+                    long value when TypeNameMatches(typeof(IntPtr)) => Create(new IntPtr(value)),
+                    ulong value when TypeNameMatches(typeof(UIntPtr)) => Create(new UIntPtr(value)),
                     _ => this
                 };
             }
-            else if (HasMember("_ticks") && MemberValues[0] is long ticks && TypeName.FullName == typeof(TimeSpan).FullName)
+            else if (HasMember("_ticks") && MemberValues[0] is long ticks && TypeNameMatches(typeof(TimeSpan)))
             {
                 return Create(new TimeSpan(ticks));
             }
