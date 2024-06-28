@@ -80,7 +80,7 @@ const string SimpleVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < Re
 
 const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing = @"for (var i = 0; i < Op1ElementCount; i++)
             {
-                {RetBaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
+                {Op1BaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
                 if (iterResult != result[i])
                 {
                     succeeded = false;
