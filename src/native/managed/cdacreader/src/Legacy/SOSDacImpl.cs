@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -88,7 +90,50 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetMethodTableSlot(ulong mt, uint slot, ulong* value) => HResults.E_NOTIMPL;
     public unsafe int GetMethodTableTransparencyData(ulong mt, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetModule(ulong addr, void** mod) => HResults.E_NOTIMPL;
-    public unsafe int GetModuleData(ulong moduleAddr, void* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetModuleData(ulong moduleAddr, DacpModuleData* data)
+    {
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
+            bool isReflectionEmit = contract.IsReflectionEmit(handle);
+
+            data->Address = moduleAddr;
+            data->PEAssembly = moduleAddr; // Module address in .NET 9+ - correspondingly, SOS-DAC APIs for PE assemblies expect a module address
+            data->Assembly = contract.GetAssembly(handle);
+
+            data->isReflection = (uint)(isReflectionEmit ? 1 : 0);
+            data->isPEFile = (uint)(isReflectionEmit ? 0 : 1);      // ReflectionEmit module means it is not a PE file
+            data->dwTransientFlags = (uint)contract.GetFlags(handle);
+
+            data->ilBase = contract.GetILBase(handle);
+            data->metadataStart = contract.GetMetadataAddress(handle, out ulong metadataSize);
+            data->metadataSize = metadataSize;
+
+            data->LoaderAllocator = contract.GetLoaderAllocator(handle);
+            data->ThunkHeap = contract.GetThunkHeap(handle);
+
+            IDictionary<Contracts.ModuleLookupTable, TargetPointer> tables = contract.GetLookupTables(handle);
+            data->FieldDefToDescMap = tables[Contracts.ModuleLookupTable.FieldDefToDesc];
+            data->ManifestModuleReferencesMap = tables[Contracts.ModuleLookupTable.ManifestModuleReferences];
+            data->MemberRefToDescMap = tables[Contracts.ModuleLookupTable.MemberRefToDesc];
+            data->MethodDefToDescMap = tables[Contracts.ModuleLookupTable.MethodDefToDesc];
+            data->TypeDefToMethodTableMap = tables[Contracts.ModuleLookupTable.TypeDefToMethodTable];
+            data->TypeRefToMethodTableMap = tables[Contracts.ModuleLookupTable.TypeRefToMethodTable];
+
+            // Always 0 - .NET no longer has this concept
+            data->dwModuleID = 0;
+            data->dwBaseClassIndex = 0;
+            data->dwModuleIndex = 0;
+        }
+        catch (Exception e)
+        {
+            return e.HResult;
+        }
+
+        return HResults.E_NOTIMPL;
+    }
 
     public unsafe int GetNestedExceptionData(ulong exception, ulong* exceptionObject, ulong* nextNestedException)
     {

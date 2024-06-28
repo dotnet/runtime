@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -13,6 +14,22 @@ internal readonly struct ModuleHandle
     }
 
     internal TargetPointer Address { get; }
+}
+
+[Flags]
+internal enum ModuleFlags
+{
+    EditAndContinue = 0x00000008, // Edit and Continue is enabled for this module
+}
+
+internal enum ModuleLookupTable
+{
+    FieldDefToDesc,
+    ManifestModuleReferences,
+    MemberRefToDesc,
+    MethodDefToDesc,
+    TypeDefToMethodTable,
+    TypeRefToMethodTable,
 }
 
 internal interface ILoader : IContract
@@ -27,7 +44,18 @@ internal interface ILoader : IContract
         };
     }
 
-    public virtual ModuleHandle GetModuleHandle(TargetPointer targetPointer) => throw new NotImplementedException();
+    public virtual ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
+    public virtual ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
+    public virtual TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
+    public virtual TargetPointer GetThunkHeap(ModuleHandle handle) => throw new NotImplementedException();
+    public virtual bool IsReflectionEmit(ModuleHandle handle) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
+    public virtual TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size) => throw new NotImplementedException();
+
+    public virtual IDictionary<ModuleLookupTable, TargetPointer> GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
 }
 
 internal readonly struct Loader : ILoader

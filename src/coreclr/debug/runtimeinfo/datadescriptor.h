@@ -156,6 +156,38 @@ CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(GCHandle)
 
+CDAC_TYPE_BEGIN(Module)
+CDAC_TYPE_INDETERMINATE(Module)
+CDAC_TYPE_FIELD(Module, /*pointer*/, Assembly, cdac_offsets<Module>::Assembly)
+CDAC_TYPE_FIELD(Module, /*pointer*/, Flags, cdac_offsets<Module>::Flags)
+CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_offsets<Module>::LoaderAllocator)
+CDAC_TYPE_FIELD(Module, /*pointer*/, PEAssembly, cdac_offsets<Module>::PEAssembly)
+CDAC_TYPE_FIELD(Module, /*pointer*/, ThunkHeap, cdac_offsets<Module>::ThunkHeap)
+
+CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_offsets<Module>::FieldDefToDescMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_offsets<Module>::ManifestModuleReferencesMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, MemberRefToDescMap, cdac_offsets<Module>::MemberRefToDescMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToDescMap, cdac_offsets<Module>::MethodDefToDescMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, TypeDefToMethodTableMap, cdac_offsets<Module>::TypeDefToMethodTableMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_offsets<Module>::TypeRefToMethodTableMap)
+CDAC_TYPE_END(Module)
+
+CDAC_TYPE_BEGIN(PEAssembly)
+CDAC_TYPE_INDETERMINATE(PEAssembly)
+CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, PEImage, cdac_offsets<PEAssembly>::PEImage)
+CDAC_TYPE_END(PEAssembly)
+
+CDAC_TYPE_BEGIN(PEImage)
+CDAC_TYPE_INDETERMINATE(PEImage)
+CDAC_TYPE_FIELD(PEImage, /*pointer*/, LoadedLayout, cdac_offsets<PEImage>::LoadedLayout)
+CDAC_TYPE_END(PEImage)
+
+CDAC_TYPE_BEGIN(PEImageLayout)
+CDAC_TYPE_INDETERMINATE(PEImageLayout)
+CDAC_TYPE_FIELD(PEImageLayout, /*pointer*/, Base, cdac_offsets<PEImageLayout>::Base)
+CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Size, cdac_offsets<PEImageLayout>::Size)
+CDAC_TYPE_END(PEImageLayout)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()

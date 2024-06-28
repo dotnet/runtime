@@ -1602,6 +1602,26 @@ public:
 
     uint32_t GetNativeMetadataAssemblyCount();
 #endif // !defined(DACCESS_COMPILE)
+
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<>
+struct cdac_offsets<Module>
+{
+    static constexpr size_t Assembly = offsetof(Module, m_pAssembly);
+    static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
+    static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
+    static constexpr size_t PEAssembly = offsetof(Module, m_pPEAssembly);
+    static constexpr size_t ThunkHeap = offsetof(Module, m_pThunkHeap);
+
+    // Lookup map pointers
+    static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap) + offsetof(LookupMap<PTR_FieldDesc>, pTable);
+    static constexpr size_t ManifestModuleReferencesMap = offsetof(Module, m_ManifestModuleReferencesMap) + offsetof(LookupMap<PTR_Module>, pTable);
+    static constexpr size_t MemberRefToDescMap = offsetof(Module, m_MemberRefMap) + offsetof(LookupMap<TADDR>, pTable);
+    static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap) + offsetof(LookupMap<PTR_MethodDesc>, pTable);
+    static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap) + offsetof(LookupMap<PTR_MethodTable>, pTable);
+    static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap) + offsetof(LookupMap<PTR_TypeRef>, pTable);
 };
 
 //
