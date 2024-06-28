@@ -68,9 +68,9 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                     // "EnvVarTrue" - Enable by setting the environment *_DISABLEURIQUERYREDACTION variable to 'true'.
                     // "EnvVar1"    - Enable by setting the environment *DISABLEURIQUERYREDACTION variable to '1'.
                     string[] lqs = ["", "AppCtx"];
-                    foreach (string logQueryStringEnabler in lqs)
+                    foreach (string queryRedactionDisabler in lqs)
                     {
-                        result.Add(syncApi, scopeHandler, logQueryStringEnabler);
+                        result.Add(syncApi, scopeHandler, queryRedactionDisabler);
                     }
                 }
             }
@@ -85,9 +85,9 @@ namespace Microsoft.Extensions.Http.Tests.Logging
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(Handlers_LogExpectedUri_Data))]
-        public async Task Handlers_LogExpectedUri(bool syncApi, bool scopeHandler, string logQueryStringEnabler)
+        public async Task Handlers_LogExpectedUri(bool syncApi, bool scopeHandler, string queryRedactionDisabler)
         {
-            await RemoteExecutor.Invoke(static async (syncApiStr, scopeHandlerStr, logQueryStringEnabler) =>
+            await RemoteExecutor.Invoke(static async (syncApiStr, scopeHandlerStr, queryRedactionDisabler) =>
             {
                 bool syncApi = bool.Parse(syncApiStr);
                 bool scopeHandler = bool.Parse(scopeHandlerStr);
@@ -96,7 +96,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                 const string queryString = "term=Western%20Australia";
                 string destinationUri = $"{baseUri}?{queryString}";
 
-                switch (logQueryStringEnabler)
+                switch (queryRedactionDisabler)
                 {
                     case "AppCtx":
                         AppContext.SetSwitch("Microsoft.Extensions.Http.DisableUriQueryRedaction", true);
@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                     _ = await invoker.SendAsync(request, default);
                 }
 
-                string expectedUri = !string.IsNullOrEmpty(logQueryStringEnabler) ? destinationUri : $"{baseUri}?*";
+                string expectedUri = !string.IsNullOrEmpty(queryRedactionDisabler) ? destinationUri : $"{baseUri}?*";
 
                 if (scopeHandler)
                 {
@@ -143,7 +143,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                     var requestStartMessage = Assert.Single(sink.Writes.Where(m => m.EventId == EventIds.RequestStart));
                     Assert.Equal($"Sending HTTP request GET {expectedUri}", requestStartMessage.Message);
                 }
-            }, syncApi.ToString(), scopeHandler.ToString(), logQueryStringEnabler).DisposeAsync();
+            }, syncApi.ToString(), scopeHandler.ToString(), queryRedactionDisabler).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

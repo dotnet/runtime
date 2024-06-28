@@ -153,7 +153,7 @@ namespace Microsoft.Extensions.Http.Logging
 
             string uriString = uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString();
 
-            if (s_logQueryString)
+            if (s_disableUriQueryRedaction)
             {
                 return uriString;
             }
