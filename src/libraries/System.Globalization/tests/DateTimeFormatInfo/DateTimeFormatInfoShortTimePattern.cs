@@ -146,7 +146,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, "H.mm" };
             yield return new object[] { new CultureInfo("fil-PH").DateTimeFormat, "h:mm tt" };
             yield return new object[] { new CultureInfo("fr-BE").DateTimeFormat, "HH:mm" };
-            yield return new object[] { new CultureInfo("fr-CA").DateTimeFormat, "HH h mm min" }; // HH 'h' mm
+            yield return new object[] { new CultureInfo("fr-CA").DateTimeFormat, "HH 'h' mm 'min'" }; // HH 'h' mm
             yield return new object[] { new CultureInfo("fr-CH").DateTimeFormat, "HH:mm" };
             yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "HH:mm" };
             yield return new object[] { new CultureInfo("gu-IN").DateTimeFormat, "hh:mm tt" };
@@ -252,6 +252,20 @@ namespace System.Globalization.Tests
         public void ShortTimePattern_SetReadOnly_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortTimePattern = "HH:mm");
+        }
+
+        [Fact]
+        public void ShortTimePattern_CheckTimeFormatWithSpaces()
+        {
+            var date = DateTime.Today + TimeSpan.FromHours(15) + TimeSpan.FromMinutes(15);
+            var culture = new CultureInfo("en-US");
+            string formattedDate = date.ToString("t", culture);
+            bool containsSpace = formattedDate.Contains(' ');
+            bool containsNoBreakSpace = formattedDate.Contains('\u00A0');
+            bool containsNarrowNoBreakSpace = formattedDate.Contains('\u202F');
+
+            Assert.True(containsSpace || containsNoBreakSpace || containsNarrowNoBreakSpace,
+                $"Formatted date string '{formattedDate}' does not contain any of the specified spaces.");
         }
     }
 }
