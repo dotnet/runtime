@@ -15,13 +15,6 @@ namespace System
 {
     internal static partial class SpanHelpers // .ByteMemOps
     {
-#if TARGET_ARM64 || TARGET_LOONGARCH64
-        private const ulong MemmoveNativeThreshold = ulong.MaxValue;
-#elif TARGET_ARM
-        private const nuint MemmoveNativeThreshold = ulong.MaxValue;
-#else
-        private const nuint MemmoveNativeThreshold = ulong.MaxValue;
-#endif
         private const nuint ZeroMemoryNativeThreshold = 1024;
 
 
@@ -148,11 +141,6 @@ namespace System
             return;
 
         MCPY05:
-            // PInvoke to the native version when the copy length exceeds the threshold.
-            if (len > MemmoveNativeThreshold)
-            {
-                goto PInvoke;
-            }
 
 #if HAS_CUSTOM_BLOCKS
             if (len >= 256)
@@ -172,7 +160,7 @@ namespace System
 
             // Copy 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
-            Debug.Assert(len > 64 && len <= MemmoveNativeThreshold);
+            Debug.Assert(len > 64);
             nuint n = len >> 6;
 
         MCPY06:
