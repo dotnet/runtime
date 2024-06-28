@@ -120,6 +120,7 @@ internal partial struct Metadata_1
         CanonMT = 1,
         Mask = 1,
     }
+}
 ```
 
 Internally the contract has a `MethodTable_1` struct that depends on the `MethodTable` data descriptor
@@ -160,7 +161,10 @@ The contract additionally depends on the `EEClass` data descriptor.
 
     public MethodTableHandle GetMethodTableHandle(TargetPointer methodTablePointer)
     {
-        ...
+        ... // validate that methodTablePointer points to something that looks like a MethodTable.
+        ... // read Data.MethodTable from methodTablePointer.
+        ... // create a MethodTable_1 and add it to _methodTables.
+        return MethodTableHandle { Address = methodTablePointer }
     }
 
     internal static EEClassOrCanonMTBits GetEEClassOrCanonMTBits(TargetPointer eeClassOrCanonMTPtr)
@@ -172,18 +176,20 @@ The contract additionally depends on the `EEClass` data descriptor.
 
     public uint GetComponentSize(MethodTableHandle methodTableHandle) => GetComponentSize(_methodTables[methodTableHandle.Address]);
 
-    private Data.EEClass GetClassData(MethodTableHandle methodTableHandle)
-    {
-        ...
-    }
-
-    private TargetPointer GetClass(MethodTableHandle methodTableHandle)
+    private TargetPointer GetClassPointer(MethodTableHandle methodTableHandle)
     {
         ... // if the MethodTable stores a pointer to the EEClass, return it
             // otherwise the MethodTable stores a pointer to the canonical MethodTable
             // in that case, return the canonical MethodTable's EEClass.
             // Canonical MethodTables always store an EEClass pointer.
     }
+
+    private Data.EEClass GetClassData(MethodTableHandle methodTableHandle)
+    {
+        TargetPointer eeClassPtr = GetClassPointer(methodTableHandle);
+        ... // read Data.EEClass data from eeClassPtr
+    }
+
 
     public TargetPointer GetCanonicalMethodTable(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).MethodTable;
 
@@ -201,18 +207,11 @@ The contract additionally depends on the `EEClass` data descriptor.
         return (uint)(methodTable.Flags.GetTypeDefRid() | ((int)TableIndex.TypeDef << 24));
     }
 
-    public ushort GetNumMethods(MethodTableHandle methodTableHandle)
-    {
-        EEClass_1 cls = GetClassData(methodTableHandle);
-        return cls.NumMethods;
-    }
+    public ushort GetNumMethods(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).NumMethods;
 
     public ushort GetNumInterfaces(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].NumInterfaces;
 
-    public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle)
-    {
-        return GetClassData(methodTableHandle).AttrClass;
-    }
+    public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).AttrClass;
 
     public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
 ```

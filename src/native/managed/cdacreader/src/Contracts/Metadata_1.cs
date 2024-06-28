@@ -144,7 +144,7 @@ internal partial struct Metadata_1 : IMetadata
 
     public MethodTableHandle GetMethodTableHandle(TargetPointer methodTablePointer)
     {
-        // if we already trust that address, return a handle
+        // if we already validated this address, return a handle
         if (_methodTables.ContainsKey(methodTablePointer))
         {
             return new MethodTableHandle(methodTablePointer);
@@ -152,16 +152,16 @@ internal partial struct Metadata_1 : IMetadata
         // Check if we cached the underlying data already
         if (_target.ProcessedData.TryGet(methodTablePointer, out Data.MethodTable? methodTableData))
         {
-            // we already cached the data, we trust it, create the representation struct for our use
+            // we already cached the data, we must have validated the address, create the representation struct for our use
             MethodTable_1 trustedMethodTable = new MethodTable_1(methodTableData);
             _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTable);
             return new MethodTableHandle(methodTablePointer);
         }
 
-        // Otherwse, don't trust it yet
-        NonValidatedMethodTable_1 untrustedMethodTable = GetUntrustedMethodTableData(methodTablePointer);
+        // Otherwse, get ready to validate
+        NonValidatedMethodTable_1 nonvalidatedMethodTable = GetUntrustedMethodTableData(methodTablePointer);
 
-        // if it's the free object method table, we can trust it
+        // if it's the free object method table, we trust it to be valid
         if (methodTablePointer == FreeObjectMethodTablePointer)
         {
             Data.MethodTable freeObjectMethodTableData = _target.ProcessedData.GetOrAdd<Data.MethodTable>(methodTablePointer);
@@ -169,11 +169,11 @@ internal partial struct Metadata_1 : IMetadata
             _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTable);
             return new MethodTableHandle(methodTablePointer);
         }
-        if (!ValidateMethodTablePointer(untrustedMethodTable))
+        if (!ValidateMethodTablePointer(nonvalidatedMethodTable))
         {
             throw new ArgumentException("Invalid method table pointer");
         }
-        // ok, we trust it, cache the data
+        // ok, we validated it, cache the data and add the MethodTable_1 struct to the dictionary
         Data.MethodTable trustedMethodTableData = _target.ProcessedData.GetOrAdd<Data.MethodTable>(methodTablePointer);
         MethodTable_1 trustedMethodTableF = new MethodTable_1(trustedMethodTableData);
         _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTableF);
@@ -182,12 +182,6 @@ internal partial struct Metadata_1 : IMetadata
 
     private bool ValidateMethodTablePointer(NonValidatedMethodTable_1 umt)
     {
-        // FIXME: is methodTablePointer properly sign-extended from 32-bit targets?
-        // FIXME2: do we need this? Data.MethodTable probably would throw if methodTablePointer is invalid
-        //if (umt.MethodTablePointer == TargetPointer.Null || umt.MethodTablePointer == TargetPointer.MinusOne)
-        //{
-        //    return false;
-        //}
         try
         {
             if (!ValidateWithPossibleAV(umt))
@@ -241,6 +235,7 @@ internal partial struct Metadata_1 : IMetadata
 
     private bool ValidateMethodTable(NonValidatedMethodTable_1 methodTable)
     {
+        // ad-hoc checks; add more here as needed
         if (!methodTable.Flags.IsInterface && !methodTable.Flags.IsString)
         {
             if (methodTable.Flags.BaseSize == 0 || !_target.IsAlignedToPointerSize(methodTable.Flags.BaseSize))
@@ -281,20 +276,7 @@ internal partial struct Metadata_1 : IMetadata
     }
     public uint GetComponentSize(MethodTableHandle methodTableHandle) => GetComponentSize(_methodTables[methodTableHandle.Address]);
 
-    // only called on trusted method tables, so we always trust the resulting EEClass
-    private Data.EEClass GetClassData(MethodTableHandle methodTableHandle)
-    {
-        TargetPointer clsPtr = GetClass(methodTableHandle);
-        // Check if we cached it already
-        if (_target.ProcessedData.TryGet(clsPtr, out Data.EEClass? eeClassData))
-        {
-            return eeClassData;
-        }
-        eeClassData = _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
-        return eeClassData;
-    }
-
-    private TargetPointer GetClass(MethodTableHandle methodTableHandle)
+    private TargetPointer GetClassPointer(MethodTableHandle methodTableHandle)
     {
         MethodTable_1 methodTable = _methodTables[methodTableHandle.Address];
         switch (GetEEClassOrCanonMTBits(methodTable.EEClassOrCanonMT))
@@ -310,6 +292,20 @@ internal partial struct Metadata_1 : IMetadata
                 throw new InvalidOperationException();
         }
     }
+
+    // only called on validated method tables, so we don't need to re-validate the EEClass
+    private Data.EEClass GetClassData(MethodTableHandle methodTableHandle)
+    {
+        TargetPointer clsPtr = GetClassPointer(methodTableHandle);
+        // Check if we cached it already
+        if (_target.ProcessedData.TryGet(clsPtr, out Data.EEClass? eeClassData))
+        {
+            return eeClassData;
+        }
+        eeClassData = _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
+        return eeClassData;
+    }
+
     public TargetPointer GetCanonicalMethodTable(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).MethodTable;
 
     public TargetPointer GetModule(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Module;
