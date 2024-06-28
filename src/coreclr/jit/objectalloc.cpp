@@ -458,11 +458,6 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 {
                     JITDUMP("Allocating V%02u on the stack\n", lclNum);
                     canStack = true;
-#ifdef DEBUG
-                    // printf("@@@ SA V%02u (%s) in %s (0x%08x)\n", lclNum, comp->eeGetClassName(clsHnd),
-                    //        comp->info.compFullName, comp->info.compMethodHash());
-#endif
-
                     const unsigned int stackLclNum =
                         MorphAllocObjNodeIntoStackAlloc(asAllocObj, stackClsHnd, isValueClass, block, stmt);
                     m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
@@ -728,11 +723,6 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
                 if (asCall->IsHelperCall())
                 {
-                    // TODO-ObjectStackAllocation: Special-case helpers here that
-                    // 1. Don't make objects escape.
-                    // 2. Protect objects as interior (GCPROTECT_BEGININTERIOR() instead of GCPROTECT_BEGIN()).
-                    // 3. Don't check that the object is in the heap in ValidateInner.
-
                     canLclVarEscapeViaParentStack =
                         !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(asCall->gtCallMethHnd));
                 }
@@ -797,30 +787,57 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                     break;
                 }
                 FALLTHROUGH;
-            case GT_COLON:
             case GT_QMARK:
             case GT_ADD:
             case GT_FIELD_ADDR:
                 if (parent->TypeGet() == TYP_REF)
                 {
                     parent->ChangeType(newType);
-
-                    if (parent->OperIs(GT_COLON))
-                    {
-                        GenTree* const lhs = parent->AsOp()->gtGetOp1();
-                        GenTree* const rhs = parent->AsOp()->gtGetOp2();
-
-                        if (lhs->TypeIs(TYP_REF))
-                        {
-                            lhs->ChangeType(newType);
-                        }
-
-                        if (rhs->TypeIs(TYP_REF))
-                        {
-                            rhs->ChangeType(newType);
-                        }
-                    }
                 }
+                ++parentIndex;
+                keepChecking = true;
+                break;
+
+            case GT_COLON:
+            {
+                GenTree* const lhs = tree->AsOp()->gtGetOp1();
+                GenTree* const rhs = tree->AsOp()->gtGetOp2();
+
+                // One or both children may have been retyped.
+                // Ensure we don't lose the fact that the joint result
+                // may be a GC type.
+                //
+                var_types lhsType = lhs->TypeGet();
+                var_types rhsType = rhs->TypeGet();
+
+                if (lhsType == TYP_REF)
+                {
+                    assert(rhsType != TYP_REF);
+                    assert(rhsType == tree->TypeGet());
+                    newType = TYP_BYREF;
+                }
+
+                if (rhsType == TYP_REF)
+                {
+                    assert(lhsType != TYP_REF);
+                    assert(lhsType == tree->TypeGet());
+                    newType = TYP_BYREF;
+                }
+
+                tree->ChangeType(newType);
+
+                if (lhsType != newType)
+                {
+                    lhs->ChangeType(newType);
+                }
+
+                if (rhsType != newType)
+                {
+                    rhs->ChangeType(newType);
+                }
+
+                parent->ChangeType(newType);
+            }
                 ++parentIndex;
                 keepChecking = true;
                 break;
@@ -993,28 +1010,37 @@ void ObjectAllocator::RewriteUses()
                                                           m_compiler->gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
                             GenTree* const comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_BYREF, call, payloadAddr);
                             *use                 = comma;
-
-                            // flag this comma so we can find it later
-                            comma->gtFlags |= GTF_MAKE_CSE;
                         }
                     }
                 }
             }
             else if (tree->OperIsIndir())
             {
+                // Look for cases where the addr is a comma created above, and
+                // sink the indir into the comma so later phases can see the access more cleanly.
+                //
                 GenTreeIndir* const indir = tree->AsIndir();
                 GenTree* const      addr  = indir->Addr();
 
-                if (addr->OperIs(GT_COMMA) && ((addr->gtFlags & GTF_MAKE_CSE) != 0))
+                if (addr->OperIs(GT_COMMA))
                 {
-                    GenTree* const actualAddr  = addr->gtEffectiveVal();
-                    GenTree*       sideEffects = nullptr;
-                    m_compiler->gtExtractSideEffList(indir, &sideEffects, GTF_SIDE_EFFECT, /* ignore root */ true);
+                    GenTree* const lastEffect = addr->AsOp()->gtGetOp1();
 
-                    indir->Addr() = actualAddr;
-                    indir->gtFlags &= ~GTF_SIDE_EFFECT;
-                    GenTree* const newComma = m_compiler->gtNewOperNode(GT_COMMA, indir->TypeGet(), sideEffects, indir);
-                    *use                    = newComma;
+                    if (lastEffect->IsCall() &&
+                        lastEffect->AsCall()->IsHelperCall(m_compiler, CORINFO_HELP_UNBOX_TYPETEST))
+                    {
+                        GenTree* const actualAddr  = addr->gtEffectiveVal();
+                        GenTree*       sideEffects = nullptr;
+                        m_compiler->gtExtractSideEffList(indir, &sideEffects, GTF_SIDE_EFFECT, /* ignore root */ true);
+
+                        // indir is based on a local address, no side effectg possible.
+                        //
+                        indir->Addr() = actualAddr;
+                        indir->gtFlags &= ~GTF_SIDE_EFFECT;
+                        GenTree* const newComma =
+                            m_compiler->gtNewOperNode(GT_COMMA, indir->TypeGet(), sideEffects, indir);
+                        *use = newComma;
+                    }
                 }
             }
 

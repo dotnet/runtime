@@ -405,9 +405,6 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
             gcPtrs = m_gcPtrsArray;
         }
 
-        // The gcPtrs array will have the right size for boxed value classes, but all
-        // entries will be shifted down one slot to match the unboxed rep.
-        //
         unsigned gcPtrCount = compiler->info.compCompHnd->getClassGClayout(m_classHandle, gcPtrs);
 
         assert((gcPtrCount == 0) || ((compiler->info.compCompHnd->getClassAttribs(m_classHandle) &

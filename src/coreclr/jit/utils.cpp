@@ -1644,7 +1644,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
 
-                // isNoEscape = true;
                 isPure  = true;
                 noThrow = true; // These return null for a failing cast
                 break;
