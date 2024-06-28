@@ -1599,12 +1599,35 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnMono("Mono does not support pointer compatibility in Array.Copy")]
+        public static unsafe void Copy_CompatiblePointers()
+        {
+            // Can copy between compatible pointers
+            uint*[] uintPointerArray = new uint*[1];
+            Array.ConstrainedCopy(new int*[1] { (int*)0x12345678 }, 0, uintPointerArray, 0, 1);
+            Assert.Equal((UIntPtr)0x12345678, (UIntPtr)uintPointerArray[0]);
+        }
+
+        [Fact]
         public static void Copy_SourceAndDestinationPointers_ThrowsArrayTypeMismatchException()
         {
             unsafe
             {
+                // Can't copy between pointer and object
                 Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new void*[1], new object[1], 0));
                 Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new object[1], new void*[1], 0));
+
+                // Can't copy between pointer and interface
+
+                // .NET Framework and previous versions incorrectly allow copying between arrays of pointer and interface.
+                // Null will be successfully copied. Copying non-null object throws InvalidCastException.
+                // Copying non-null pointer tries to read it as an object reference and crashs in CLR.
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1], new IConvertible[1], 1));
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new IConvertible[1], new int*[1], 1));
+
+                // Can't copy between incompatible pointer types
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1], new bool*[1], 0));
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1], new void*[1], 0));
             }
         }
 
@@ -1665,31 +1688,6 @@ namespace System.Tests
         {
             _ = ignored;
             Assert.Throws<ArrayTypeMismatchException>(() => Array.ConstrainedCopy(sourceArray, sourceIndex, destinationArray, destinationIndex, length));
-        }
-
-        [Fact]
-        public static unsafe void Copy_PointerArray()
-        {
-            // Array of pointers is not supported by xUnit and test data properties with yield return
-
-            // Can copy between compatible pointers
-            uint*[] uintPointerArray = new uint*[1];
-            Array.ConstrainedCopy(new int*[1] { (int*)0x12345678 }, 0, uintPointerArray, 0, 1);
-            Assert.Equal((UIntPtr)0x12345678, (UIntPtr)uintPointerArray[0]);
-
-            // Can't copy between pointer and object
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1] { (int*)0x12345678 }, new object[1], 1));
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new object[1], new int*[1], 1));
-
-            // Can't copy between pointer and interface
-
-            // .NET Framework and previous versions incorrectly allow copying between arrays of pointer and interface.
-            // Null will be successfully copied. Copying non-null object throws InvalidCastException.
-            // Copying non-null pointer tries to read it as an object reference and crashs in CLR.
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new uint*[1], new IConvertible[1], 1));
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1] { (int*)0x12345678 }, new IConvertible[1], 1));
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new IConvertible[1], new int*[1], 1));
-            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new IConvertible[1] { 0x12345678 }, new int*[1], 1));
         }
 
         [Fact]
