@@ -1711,13 +1711,41 @@ ClrDataAccess::GetModule(CLRDATA_ADDRESS addr, IXCLRDataModule **mod)
 }
 
 HRESULT
-ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *ModuleData)
+ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData* moduleData)
 {
-    if (addr == 0 || ModuleData == NULL)
+    if (addr == 0 || moduleData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetModuleData(addr, moduleData);
+        if (FAILED(hr))
+        {
+            hr = GetModuleDataImpl(addr, moduleData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            DacpModuleData moduleDataLocal;
+            HRESULT hrLocal = GetModuleDataImpl(addr, &moduleDataLocal);
+            _ASSERTE(hr == hrLocal);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetModuleDataImpl(addr, moduleData);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *ModuleData)
+{
     Module* pModule = PTR_Module(TO_TADDR(addr));
 
     ZeroMemory(ModuleData,sizeof(DacpModuleData));
@@ -1759,8 +1787,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     }
     EX_END_CATCH(SwallowAllExceptions)
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 HRESULT
