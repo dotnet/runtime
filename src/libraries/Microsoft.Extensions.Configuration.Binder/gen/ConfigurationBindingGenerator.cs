@@ -3,8 +3,12 @@
 
 //#define LAUNCH_DEBUGGER
 using System;
+using System.Diagnostics;
+using System.Reflection;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -62,6 +66,57 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 .WithTrackingName(GenSpecTrackingName);
 
             context.RegisterSourceOutput(genSpec, ReportDiagnosticsAndEmitSource);
+
+            if (!s_hasInitializedInterceptorVersion)
+            {
+                InterceptorVersion = DetermineInterceptableVersion();
+                s_hasInitializedInterceptorVersion = true;
+            }
+        }
+
+        internal static int s_interceptorVersion;
+        internal static int InterceptorVersion
+        {
+            get
+            {
+                Debug.Assert(s_hasInitializedInterceptorVersion);
+                return s_interceptorVersion;
+            }
+            set
+            {
+                s_interceptorVersion = value;
+            }
+        }
+
+        // Used with v1 interceptor lightup approach:
+        private static bool s_hasInitializedInterceptorVersion;
+        internal static Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>? GetInterceptableLocationFunc { get; private set; }
+        internal static MethodInfo? InterceptableLocationVersionGetDisplayLocation { get; private set; }
+        internal static MethodInfo? InterceptableLocationDataGetter { get; private set; }
+        internal static MethodInfo? InterceptableLocationVersionGetter { get; private set; }
+
+        internal static int DetermineInterceptableVersion()
+        {
+            MethodInfo? getInterceptableLocationMethod = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).GetMethod(
+                "GetInterceptableLocation",
+                BindingFlags.Static | BindingFlags.Public,
+                binder: null,
+                new Type[] { typeof(SemanticModel), typeof(InvocationExpressionSyntax), typeof(CancellationToken) },
+                modifiers: Array.Empty<ParameterModifier>());
+
+            if (getInterceptableLocationMethod is null)
+            {
+                return 0;
+            }
+
+            GetInterceptableLocationFunc = (Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>)
+                getInterceptableLocationMethod.CreateDelegate(typeof(Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>), target: null);
+
+            Type? interceptableLocationType = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).Assembly.GetType("Microsoft.CodeAnalysis.CSharp.InterceptableLocation");
+            InterceptableLocationVersionGetDisplayLocation = interceptableLocationType.GetMethod("GetDisplayLocation", BindingFlags.Instance | BindingFlags.Public);
+            InterceptableLocationVersionGetter = interceptableLocationType.GetProperty("Version", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
+            InterceptableLocationDataGetter = interceptableLocationType.GetProperty("Data", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
+            return 1;
         }
 
         /// <summary>

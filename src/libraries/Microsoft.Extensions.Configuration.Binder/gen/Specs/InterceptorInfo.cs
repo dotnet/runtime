@@ -178,51 +178,50 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 throw new ArgumentException(InvalidInvocationErrMsg, nameof(invocation));
             }
 
-            InitializeInterceptableLocationFeature();
-            Interceptor = interceptor;
-            InterceptableLocation = s_getInterceptableLocationFunc(invocation.SemanticModel, invocationExpressionSyntax, default(CancellationToken));
-        }
-
-        internal static void InitializeInterceptableLocationFeature()
-        {
-            const string NewerRoslynRequired = "The 'InterceptsLocationAttribute' class was not found. A newer version of Roslyn is necessary.";
-
-            if (!_hasInitializedInterceptableLocation)
+            if (ConfigurationBindingGenerator.InterceptorVersion == 0)
             {
-                MethodInfo? getInterceptableLocationMethod = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).GetMethod(
-                    "GetInterceptableLocation",
-                    BindingFlags.Static | BindingFlags.Public,
-                    binder: null,
-                    new Type[] { typeof(SemanticModel), typeof(InvocationExpressionSyntax), typeof(CancellationToken) },
-                    modifiers: Array.Empty<ParameterModifier>());
+                SyntaxTree operationSyntaxTree = invocation.Syntax.SyntaxTree;
+                TextSpan memberNameSpan = memberAccessExprSyntax.Name.Span;
+                FileLinePositionSpan linePosSpan = operationSyntaxTree.GetLineSpan(memberNameSpan);
 
-                if (getInterceptableLocationMethod is null)
+                Interceptor = interceptor;
+                LineNumber = linePosSpan.StartLinePosition.Line + 1;
+                CharacterNumber = linePosSpan.StartLinePosition.Character + 1;
+                FilePath = GetInterceptorFilePath();
+
+                // Use the same logic used by the interceptors API for resolving the source mapped value of a path.
+                // https://github.com/dotnet/roslyn/blob/f290437fcc75dad50a38c09e0977cce13a64f5ba/src/Compilers/CSharp/Portable/Compilation/CSharpCompilation.cs#L1063-L1064
+                string GetInterceptorFilePath()
                 {
-                    throw new NotSupportedException(NewerRoslynRequired);
+                    SourceReferenceResolver? sourceReferenceResolver = invocation.SemanticModel?.Compilation.Options.SourceReferenceResolver;
+                    return sourceReferenceResolver?.NormalizePath(operationSyntaxTree.FilePath, baseFilePath: null) ?? operationSyntaxTree.FilePath;
                 }
-
-                s_getInterceptableLocationFunc = (Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>)
-                    getInterceptableLocationMethod.CreateDelegate(typeof(Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>), target: null);
-
-                Type? interceptableLocationType = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).Assembly.GetType("Microsoft.CodeAnalysis.CSharp.InterceptableLocation");
-                s_interceptableLocationVersionGetDisplayLocation = interceptableLocationType.GetMethod("GetDisplayLocation", BindingFlags.Instance | BindingFlags.Public);
-                s_interceptableLocationVersionGetter = interceptableLocationType.GetProperty("Version", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
-                s_interceptableLocationDataGetter = interceptableLocationType.GetProperty("Data", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
-
-                _hasInitializedInterceptableLocation = true;
+            }
+            else
+            {
+                Debug.Assert(ConfigurationBindingGenerator.InterceptorVersion == 1);
+                Interceptor = interceptor;
+                InterceptableLocation = ConfigurationBindingGenerator.GetInterceptableLocationFunc(invocation.SemanticModel, invocationExpressionSyntax, default(CancellationToken));
             }
         }
 
-        private static bool _hasInitializedInterceptableLocation;
-        private static Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>? s_getInterceptableLocationFunc;
-        private static MethodInfo? s_interceptableLocationVersionGetDisplayLocation;
-        private static MethodInfo? s_interceptableLocationDataGetter;
-        private static MethodInfo? s_interceptableLocationVersionGetter;
-
         public MethodsToGen Interceptor { get; }
+
+        // Used with v0 interceptor approach:
+        public string FilePath { get; }
+        public int LineNumber { get; }
+        public int CharacterNumber { get; }
+
+        // Used with v1 interceptor approach:
         private object? InterceptableLocation { get; }
-        public string InterceptableLocationGetDisplayLocation() => (string)s_interceptableLocationVersionGetDisplayLocation.Invoke(InterceptableLocation, parameters: null);
-        public string InterceptableLocationData => (string)s_interceptableLocationDataGetter.Invoke(InterceptableLocation, parameters: null);
-        public int InterceptableLocationVersion => (int)s_interceptableLocationVersionGetter.Invoke(InterceptableLocation, parameters: null);
+
+        public string InterceptableLocationGetDisplayLocation() => InterceptableLocation is null ? "" :
+            (string)ConfigurationBindingGenerator.InterceptableLocationVersionGetDisplayLocation.Invoke(InterceptableLocation, parameters: null);
+
+        public string InterceptableLocationData => InterceptableLocation is null ? "" :
+            (string)ConfigurationBindingGenerator.InterceptableLocationDataGetter.Invoke(InterceptableLocation, parameters: null);
+
+        public int InterceptableLocationVersion => InterceptableLocation is null ? 0 :
+            (int)ConfigurationBindingGenerator.InterceptableLocationVersionGetter.Invoke(InterceptableLocation, parameters: null);
     }
 }

@@ -9,9 +9,11 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
@@ -99,6 +101,32 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.True(source.Value.SourceText.Lines.Count > 10);
         }
 
+        /// <summary>
+        /// Use the same approach as ConfigurationBindingGenerator to look for the GetInterceptableLocation() extension method
+        /// to determine if what interceptor implemenation we should use.
+        /// </summary>
+        /// <returns></returns>
+        private static bool s_initializedInterceptorVersion;
+        private static int s_interceptorVersion;
+        private static int GetInterceptorVersion()
+        {
+            if (!s_initializedInterceptorVersion)
+            {
+
+                MethodInfo method = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).GetMethod(
+                    "GetInterceptableLocation",
+                    BindingFlags.Static | BindingFlags.Public,
+                    binder: null,
+                    new Type[] { typeof(SemanticModel), typeof(InvocationExpressionSyntax), typeof(CancellationToken) },
+                    modifiers: Array.Empty<ParameterModifier>());
+
+                s_interceptorVersion = method is null ? 0 : 1;
+                s_initializedInterceptorVersion = true;
+            }
+
+            return s_interceptorVersion;
+        }
+
         private static async Task<ConfigBindingGenRunResult> VerifyAgainstBaselineUsingFile(
             string filename,
             string testSourceCode,
@@ -112,9 +140,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
     "net462"
 #endif
             ;
+
             string path = extType is ExtensionClassType.None
-                ? Path.Combine("Baselines", environmentSubFolder, filename)
-                : Path.Combine("Baselines", environmentSubFolder, extType.ToString(), filename);
+                ? Path.Combine("Baselines", environmentSubFolder, "Version" + GetInterceptorVersion().ToString(), filename)
+                : Path.Combine("Baselines", environmentSubFolder, extType.ToString(), "Version" + GetInterceptorVersion().ToString(), filename);
             string baseline = LineEndingsHelper.Normalize(File.ReadAllText(path));
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
                                              .Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
