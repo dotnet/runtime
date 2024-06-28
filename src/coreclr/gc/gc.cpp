@@ -13270,7 +13270,7 @@ void free_list_snapshot::init()
     s_dummy = 0;
     s_lock = 0;
     s_counter = 0;
-    s_buffer = new free_list_snapshot[NUM_SNAPSHOTS];
+    s_buffer = new (nothrow) free_list_snapshot[NUM_SNAPSHOTS];
 }
 
 void free_list_snapshot::fail()
