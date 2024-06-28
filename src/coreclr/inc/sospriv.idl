@@ -520,6 +520,39 @@ interface ISOSDacInterface14 : IUnknown
     HRESULT GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
 }
 
+cpp_quote("#ifndef _SOS_MethodData")
+cpp_quote("#define _SOS_MethodData")
+
+typedef struct _SOSMethodData
+{
+    // At least one of MethodDesc, Entrypoint, or Token/DefiningMethodTable/DefiningModule is guaranteed to be set.
+    // Multiple of them may be set as well
+    CLRDATA_ADDRESS MethodDesc;
+
+    CLRDATA_ADDRESS Entrypoint;
+
+    CLRDATA_ADDRESS DefininingMethodTable; // Useful for when the method is inherited from a parent type which is instantiated
+    CLRDATA_ADDRESS DefiningModule;
+    unsigned int Token;
+
+    // Slot data, a given MethodDesc may be present in multiple slots for a single MethodTable
+    unsigned int Slot; // Will be set to 0xFFFFFFFF for EnC added methods
+} SOSMethodData;
+
+cpp_quote("#endif //_SOS_MethodData")
+
+[
+    object,
+    local,
+    uuid(3c0fe725-c324-4a4f-8100-d399588a662e)
+]
+interface ISOSMethodEnum : ISOSEnum
+{
+    HRESULT Next([in] unsigned int count,
+                 [out, size_is(count), length_is(*pNeeded)] SOSMethodData handles[],
+                 [out] unsigned int *pNeeded);
+}
+
 [
     object,
     local,
@@ -527,5 +560,5 @@ interface ISOSDacInterface14 : IUnknown
 ]
 interface ISOSDacInterface15 : IUnknown
 {
-    HRESULT GetMethodTableSlotMethodDesc(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA_ADDRESS *value);
+    HRESULT GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator);
 }

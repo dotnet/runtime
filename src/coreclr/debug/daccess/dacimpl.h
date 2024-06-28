@@ -1224,7 +1224,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
 
     // ISOSDacInterface15
-    virtual HRESULT STDMETHODCALLTYPE GetMethodTableSlotMethodDesc(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA_ADDRESS *value);
+    virtual HRESULT GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator);
 
     //
     // ClrDataAccess.
@@ -1986,6 +1986,26 @@ public:
 
 protected:
     DacReferenceList<SOSMemoryRegion> mRegions;
+
+private:
+    unsigned int mIteratorIndex;
+};
+
+class DacMethodTableSlotEnumerator : public DefaultCOMImpl<ISOSMethodEnum, IID_ISOSMethodEnum>
+{
+public:
+    DacMethodTableSlotEnumerator() {}
+    virtual ~DacMethodTableSlotEnumerator() {}
+
+    HRESULT Init(PTR_MethodTable mTable);
+
+    HRESULT STDMETHODCALLTYPE Skip(unsigned int count);
+    HRESULT STDMETHODCALLTYPE Reset();
+    HRESULT STDMETHODCALLTYPE GetCount(unsigned int *pCount);
+    HRESULT STDMETHODCALLTYPE Next(unsigned int count, SOSMethodData methods[], unsigned int *pFetched);
+
+protected:
+    DacReferenceList<SOSMethodData> mMethods;
 
 private:
     unsigned int mIteratorIndex;

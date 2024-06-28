@@ -461,9 +461,9 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
 }
 
 HRESULT
-ClrDataAccess::GetMethodTableSlotMethodDesc(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA_ADDRESS *value)
+ClrDataAccess::GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator)
 {
-    if (mt == 0 || value == NULL)
+    if (mt == 0 || enumerator == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
@@ -474,23 +474,17 @@ ClrDataAccess::GetMethodTableSlotMethodDesc(CLRDATA_ADDRESS mt, unsigned int slo
     {
         hr = E_INVALIDARG;
     }
-    else if (slot < mTable->GetNumVtableSlots())
-    {
-        *value = HOST_CDADDR(mTable->GetMethodDescForSlot_NoThrow(slot));
-        hr = S_OK;
-    }
     else
     {
-        hr = E_INVALIDARG;
-        MethodTable::IntroducedMethodIterator it(mTable);
-        for (; it.IsValid() && FAILED(hr); it.Next())
+        DacMethodTableSlotEnumerator *methodTableSlotEnumerator = new (nothrow) DacMethodTableSlotEnumerator();
+        *enumerator = methodTableSlotEnumerator;
+        if (*enumerator == NULL)
         {
-            MethodDesc* pMD = it.GetMethodDesc();
-            if (pMD->GetSlot() == slot)
-            {
-                *value = HOST_CDADDR(pMD);
-                hr = S_OK;
-            }
+            hr = E_OUTOFMEMORY;
+        }
+        else
+        {
+            hr = methodTableSlotEnumerator->Init(mTable);
         }
     }
 
@@ -498,6 +492,56 @@ ClrDataAccess::GetMethodTableSlotMethodDesc(CLRDATA_ADDRESS mt, unsigned int slo
     return hr;
 }
 
+HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
+{
+    unsigned int slot = 0;
+
+    SOSMethodData methodData;
+    WORD numVtableSlots = mTable->GetNumVtableSlots();
+    while (slot < numVtableSlots)
+    {
+        MethodDesc* pMD = mTable->GetMethodDescForSlot_NoThrow(slot);
+        methodData.MethodDesc = HOST_CDADDR(pMD);
+        methodData.Entrypoint = mTable->GetRestoredSlotIfExists(slot);
+        methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
+        methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
+        methodData.Token = pMD->GetMemberDef();
+
+        methodData.Slot = slot;
+
+        if (!mMethods.Add(methodData))
+            return E_OUTOFMEMORY;
+    }
+
+    MethodTable::IntroducedMethodIterator it(mTable);
+    for (; it.IsValid(); it.Next())
+    {
+        MethodDesc* pMD = it.GetMethodDesc();
+        WORD slot = pMD->GetSlot();
+        if (slot >= numVtableSlots)
+        {
+            methodData.MethodDesc = HOST_CDADDR(pMD);
+            methodData.Entrypoint = pMD->GetMethodEntryPointIfExists();
+            methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
+            methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
+            methodData.Token = pMD->GetMemberDef();
+
+            if (slot == MethodTable::NO_SLOT)
+            {
+                methodData.Slot = 0xFFFFFFFF;
+            }
+            else
+            {
+                methodData.Slot = slot;
+            }
+
+            if (!mMethods.Add(methodData))
+                return E_OUTOFMEMORY;
+        }
+    }
+
+    return S_OK;
+}
 
 HRESULT
 ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, struct DacpJitCodeHeapInfo codeHeaps[], unsigned int *pNeeded)

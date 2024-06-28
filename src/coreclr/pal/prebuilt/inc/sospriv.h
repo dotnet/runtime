@@ -3477,6 +3477,132 @@ EXTERN_C const IID IID_ISOSDacInterface14;
 #endif 	/* __ISOSDacInterface14_INTERFACE_DEFINED__ */
 
 
+/* interface __MIDL_itf_sospriv_0000_0019 */
+/* [local] */ 
+
+#ifndef _SOS_MethodData
+#define _SOS_MethodData
+typedef struct _SOSMethodData
+    {
+    CLRDATA_ADDRESS MethodDesc;
+    CLRDATA_ADDRESS Entrypoint;
+    CLRDATA_ADDRESS DefininingMethodTable;
+    CLRDATA_ADDRESS DefiningModule;
+    unsigned int Token;
+    unsigned int Slot;
+    } 	SOSMethodData;
+
+#endif //_SOS_MethodData
+
+
+extern RPC_IF_HANDLE __MIDL_itf_sospriv_0000_0019_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_sospriv_0000_0019_v0_0_s_ifspec;
+
+#ifndef __ISOSMethodEnum_INTERFACE_DEFINED__
+#define __ISOSMethodEnum_INTERFACE_DEFINED__
+
+/* interface ISOSMethodEnum */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSMethodEnum;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("3c0fe725-c324-4a4f-8100-d399588a662e")
+    ISOSMethodEnum : public ISOSEnum
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE Next( 
+            /* [in] */ unsigned int count,
+            /* [length_is][size_is][out] */ SOSMethodData handles[  ],
+            /* [out] */ unsigned int *pNeeded) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ISOSMethodEnumVtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSMethodEnum * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSMethodEnum * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSMethodEnum * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *Skip )( 
+            ISOSMethodEnum * This,
+            /* [in] */ unsigned int count);
+        
+        HRESULT ( STDMETHODCALLTYPE *Reset )( 
+            ISOSMethodEnum * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetCount )( 
+            ISOSMethodEnum * This,
+            /* [out] */ unsigned int *pCount);
+        
+        HRESULT ( STDMETHODCALLTYPE *Next )( 
+            ISOSMethodEnum * This,
+            /* [in] */ unsigned int count,
+            /* [length_is][size_is][out] */ SOSMethodData handles[  ],
+            /* [out] */ unsigned int *pNeeded);
+        
+        END_INTERFACE
+    } ISOSMethodEnumVtbl;
+
+    interface ISOSMethodEnum
+    {
+        CONST_VTBL struct ISOSMethodEnumVtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSMethodEnum_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSMethodEnum_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSMethodEnum_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSMethodEnum_Skip(This,count)	\
+    ( (This)->lpVtbl -> Skip(This,count) ) 
+
+#define ISOSMethodEnum_Reset(This)	\
+    ( (This)->lpVtbl -> Reset(This) ) 
+
+#define ISOSMethodEnum_GetCount(This,pCount)	\
+    ( (This)->lpVtbl -> GetCount(This,pCount) ) 
+
+
+#define ISOSMethodEnum_Next(This,count,handles,pNeeded)	\
+    ( (This)->lpVtbl -> Next(This,count,handles,pNeeded) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSMethodEnum_INTERFACE_DEFINED__ */
+
+
 #ifndef __ISOSDacInterface15_INTERFACE_DEFINED__
 #define __ISOSDacInterface15_INTERFACE_DEFINED__
 
@@ -3492,10 +3618,9 @@ EXTERN_C const IID IID_ISOSDacInterface15;
     ISOSDacInterface15 : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE GetMethodTableSlotMethodDesc( 
+        virtual HRESULT STDMETHODCALLTYPE GetMethodTableSlotEnumerator( 
             CLRDATA_ADDRESS mt,
-            unsigned int slot,
-            CLRDATA_ADDRESS *value) = 0;
+            ISOSMethodEnum **enumerator) = 0;
         
     };
     
@@ -3518,11 +3643,10 @@ EXTERN_C const IID IID_ISOSDacInterface15;
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ISOSDacInterface15 * This);
         
-        HRESULT ( STDMETHODCALLTYPE *GetMethodTableSlotMethodDesc )( 
+        HRESULT ( STDMETHODCALLTYPE *GetMethodTableSlotEnumerator )( 
             ISOSDacInterface15 * This,
             CLRDATA_ADDRESS mt,
-            unsigned int slot,
-            CLRDATA_ADDRESS *value);
+            ISOSMethodEnum **enumerator);
         
         END_INTERFACE
     } ISOSDacInterface15Vtbl;
@@ -3547,8 +3671,8 @@ EXTERN_C const IID IID_ISOSDacInterface15;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSDacInterface15_GetMethodTableSlotMethodDesc(This,mt,slot,value)	\
-    ( (This)->lpVtbl -> GetMethodTableSlotMethodDesc(This,mt,slot,value) ) 
+#define ISOSDacInterface15_GetMethodTableSlotEnumerator(This,mt,enumerator)	\
+    ( (This)->lpVtbl -> GetMethodTableSlotEnumerator(This,mt,enumerator) ) 
 
 #endif /* COBJMACROS */
 
