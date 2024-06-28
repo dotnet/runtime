@@ -1451,29 +1451,12 @@ public:
     //
     PCODE GetMethodEntryPointIfExists();
 
+    // Ensure that the temporary entrypoint is allocated, and the slot is filled with some value
     void EnsureTemporaryEntryPoint();
 
     // pamTracker must be NULL for a MethodDesc which cannot be freed by an external AllocMemTracker
     // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
     void EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker);
-
-#ifndef DACCESS_COMPILE
-    void EnsureSlotFilled()
-    {
-        WRAPPER_NO_CONTRACT;
-        EnsureTemporaryEntryPoint();
-        
-#ifdef _DEBUG
-        PCODE *pSlot = GetAddrOfSlot();
-        _ASSERTE(*pSlot != (PCODE)NULL);
-#endif
-
-        if (RequiresStableEntryPoint() && !HasStableEntryPoint())
-        {
-            GetOrCreatePrecode();
-        }
-    }
-#endif // DACCESS_COMPILE
 
     //*******************************************************************************
     // Returns the address of the native code.

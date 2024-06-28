@@ -437,7 +437,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
     }
     CONTRACTL_END;
 
-    PCODE pCode = GetSlot(slot);
+    PCODE pCode = GetCanonicalMethodTable()->GetSlot(slot);
 
     if (pCode == (PCODE)NULL)
     {

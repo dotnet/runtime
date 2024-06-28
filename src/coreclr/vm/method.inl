@@ -12,15 +12,13 @@ inline bool MethodDesc::IsEligibleForTieredCompilation()
 
 #ifdef FEATURE_TIERED_COMPILATION
     _ASSERTE(GetMethodDescChunk()->DeterminedIfMethodsAreEligibleForTieredCompilation());
-    return (VolatileLoadWithoutBarrier(&m_wFlags3AndTokenRemainder) & enum_flag3_IsEligibleForTieredCompilation) != 0;
-#else
-    return false;
 #endif
+    return IsEligibleForTieredCompilation_NoCheckMethodDescChunk();
 }
 
 inline bool MethodDesc::IsEligibleForTieredCompilation_NoCheckMethodDescChunk()
 {
-    LIMITED_METHOD_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     // Just like above, but without the assert. This is used in the path which initializes the flag.
 #ifdef FEATURE_TIERED_COMPILATION

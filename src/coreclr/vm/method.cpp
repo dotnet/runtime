@@ -555,7 +555,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
 
         if (*PTR_PCODE(pSlot) == (PCODE)NULL)
         {
-            EnsureSlotFilled();
+            EnsureTemporaryEntryPoint();
             _ASSERTE(*PTR_PCODE(pSlot) != (PCODE)NULL);
         }
         return *PTR_PCODE(pSlot);
