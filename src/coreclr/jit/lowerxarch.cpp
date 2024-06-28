@@ -3078,8 +3078,6 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 //
 GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 {
-    assert(!comp->canUseEvexEncodingDebugOnly());
-
     var_types   simdType        = node->gtType;
     CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
     var_types   simdBaseType    = node->GetSimdBaseType();
@@ -3102,17 +3100,38 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     // we can optimize the entire conditional select to
     // a single BlendVariable instruction (if supported by the architecture)
 
-    // TODO-XARCH-AVX512 Use VPBLENDM* and take input directly from K registers if cond is from MoveMaskToVectorSpecial.
     // First, determine if the condition is a per-element mask
     if (op1->OperIsHWIntrinsic() && HWIntrinsicInfo::ReturnsPerElementMask(op1->AsHWIntrinsic()->GetHWIntrinsicId()))
     {
         // Next, determine if the target architecture supports BlendVariable
         NamedIntrinsic blendVariableId = NI_Illegal;
 
-        // For Vector256 (simdSize == 32), BlendVariable for floats/doubles is available on AVX, whereas other types
-        // require AVX2
-        if (simdSize == 32)
+        bool isOp1CvtMaskToVector = op1->AsHWIntrinsic()->OperIsConvertMaskToVector();
+
+        if ((simdSize == 64) || isOp1CvtMaskToVector)
         {
+            GenTree* maskNode;
+
+            if (isOp1CvtMaskToVector)
+            {
+                maskNode = op1->AsHWIntrinsic()->Op(1);
+                BlockRange().Remove(op1);
+            }
+            else
+            {
+                maskNode = comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
+                BlockRange().InsertBefore(node, maskNode);
+            }
+
+            assert(maskNode->TypeGet() == TYP_MASK);
+            blendVariableId = NI_EVEX_BlendVariableMask;
+            op1             = maskNode;
+        }
+        else if (simdSize == 32)
+        {
+            // For Vector256 (simdSize == 32), BlendVariable for floats/doubles
+            // is available on AVX, whereas other types (integrals) require AVX2
+
             if (varTypeIsFloating(simdBaseType))
             {
                 // This should have already been confirmed
@@ -3124,9 +3143,9 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
                 blendVariableId = NI_AVX2_BlendVariable;
             }
         }
-        // For Vector128, BlendVariable is available on SSE41
         else if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
         {
+            // For Vector128, BlendVariable is available on SSE41
             blendVariableId = NI_SSE41_BlendVariable;
         }
 
