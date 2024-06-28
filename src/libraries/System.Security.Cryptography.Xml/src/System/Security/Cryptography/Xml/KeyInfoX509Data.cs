@@ -30,7 +30,15 @@ namespace System.Security.Cryptography.Xml
 
         public KeyInfoX509Data(byte[] rgbCert)
         {
-            X509Certificate2 certificate = X509CertificateLoader.LoadCertificate(rgbCert);
+            // Compat: this accepts null arrays for certificate data and would not throw. X509CertificateLoader throws
+            // for a null input. This uses the X509Certificate2 constructor for null inputs to preserve the existing
+            // behavior. Since the input is null and there is nothing to decode, the input is safe for the constructor.
+#pragma warning disable SYSLIB0057
+            X509Certificate2 certificate = rgbCert is null ?
+                new X509Certificate2((byte[])null!) :
+                X509CertificateLoader.LoadCertificate(rgbCert);
+#pragma warning restore SYSLIB0057
+
             AddCertificate(certificate);
         }
 
