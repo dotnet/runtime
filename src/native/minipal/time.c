@@ -68,7 +68,6 @@ int64_t minipal_hires_ticks()
     if (result != 0)
     {
         assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
-        __builtin_unreachable();
     }
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
