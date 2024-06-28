@@ -205,9 +205,8 @@ public partial class QuicConnection
 
                     if (chainData.Length > 0)
                     {
-                        X509Certificate2Collection additionalCertificates = new X509Certificate2Collection();
-                        additionalCertificates.Import(chainData);
-                        chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
+                        X509Certificate2 chainCertificate = X509CertificateLoader.LoadCertificate(chainData);
+                        chain.ChainPolicy.ExtraStore.Add(chainCertificate);
                     }
 
                     bool checkCertName = !chain!.ChainPolicy!.VerificationFlags.HasFlag(X509VerificationFlags.IgnoreInvalidName);
