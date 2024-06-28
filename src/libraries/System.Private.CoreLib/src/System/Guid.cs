@@ -308,6 +308,7 @@ namespace System
 
             // 2^48 is roughly 8925.5 years, which from the Unix Epoch means we won't
             // overflow until around July of 10,895. So there isn't much need to handle it
+            // particularly given that DateTimeOffset.MaxValue is December 31, 9999
             long unix_ts_ms = timestamp.ToUnixTimeMilliseconds();
 
             Unsafe.AsRef(in result._a) = (int)(unix_ts_ms >> 16);
