@@ -216,5 +216,11 @@ namespace System
         {
             throw new ArgumentException(SR.Format(SR.Argument_IncompatibleDimensions, leftDim, rightDim));
         }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_StackShapesNotSame()
+        {
+            throw new ArgumentException(SR.ThrowArgument_StackShapesNotSame);
+        }
     }
 }

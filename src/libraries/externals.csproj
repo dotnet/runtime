@@ -122,7 +122,7 @@
     <ItemGroup>
       <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)') and '$(TargetsMobile)' != 'true'"/>
       <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)') and '$(TargetsMobile)' != 'true'" />
-      <RuntimeFiles Include="@(_HostSymbols)" IsNative="true" Condition="'$(TargetsMobile)' != 'true'" />
+      <RuntimeFiles Include="@(_HostSymbols)" IsNative="true" Condition="Exists('@(_HostSymbols)') and '$(TargetsMobile)' != 'true'" />
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
       <!-- Setup runtime pack native. -->
       <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"

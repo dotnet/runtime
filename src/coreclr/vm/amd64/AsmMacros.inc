@@ -206,26 +206,6 @@ INLINE_GETTHREAD macro Reg
 
         endm
 
-;
-; Inlined macro to get the current thread's allocation context
-; Trashes rax and r11
-;
-
-INLINE_GET_ALLOC_CONTEXT macro Reg
-
-        EXTERN _tls_index: DWORD
-        EXTERN t_thread_alloc_context: DWORD
-
-        mov     r11d, [_tls_index]
-        mov     rax, gs:[OFFSET__TEB__ThreadLocalStoragePointer]
-        mov     rax, [rax + r11 * 8]
-        mov     r11d, SECTIONREL t_thread_alloc_context
-        add     rax, r11
-        mov     Reg, rax
-
-        endm
-
-
 ; if you change this code there will be corresponding code in JITInterfaceGen.cpp which will need to be changed
 ;
 

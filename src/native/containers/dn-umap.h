@@ -7,6 +7,10 @@
 #include "dn-utils.h"
 #include "dn-allocator.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef uint32_t (DN_CALLBACK_CALLTYPE *dn_umap_hash_func_t) (const void *key);
 typedef bool (DN_CALLBACK_CALLTYPE *dn_umap_equal_func_t) (const void *a, const void *b);
 typedef void (DN_CALLBACK_CALLTYPE *dn_umap_key_dispose_func_t) (void *key);
@@ -273,5 +277,9 @@ dn_str_equal (const void *v1, const void *v2);
 uint32_t
 DN_CALLBACK_CALLTYPE
 dn_str_hash (const void *v1);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* __DN_UMAP_H__ */

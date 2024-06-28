@@ -602,14 +602,7 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
         regNumber    physicalReg = genRegNumFromMask(mask, theInterval->registerType);
         RefPosition* pos         = newRefPosition(physicalReg, theLocation, RefTypeFixedReg, nullptr, mask);
         assert(theInterval != nullptr);
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // The LoongArch64's ABI which the float args maybe passed by integer register
-        // when no float register left but free integer register.
-        assert((regType(theInterval->registerType) == FloatRegisterType) ||
-               (allRegs(theInterval->registerType) & mask) != 0);
-#else
         assert((allRegs(theInterval->registerType) & mask) != 0);
-#endif
     }
 
     RefPosition* newRP = newRefPositionRaw(theLocation, theTreeNode, theRefType);
@@ -619,16 +612,6 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
     // Spill info
     newRP->isFixedRegRef = isFixedRegister;
 
-#ifndef TARGET_AMD64
-    // We don't need this for AMD because the PInvoke method epilog code is explicit
-    // at register allocation time.
-    if (theInterval != nullptr && theInterval->isLocalVar && compiler->compMethodRequiresPInvokeFrame() &&
-        theInterval->varNum == compiler->genReturnLocal)
-    {
-        mask &= ~(RBM_PINVOKE_TCB | RBM_PINVOKE_FRAME).GetRegSetForType(theInterval->registerType);
-        noway_assert(mask != RBM_NONE);
-    }
-#endif // !TARGET_AMD64
     newRP->registerAssignment = mask;
 
     newRP->setMultiRegIdx(multiRegIdx);
@@ -647,16 +630,14 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
         theInterval->isSingleDef = theInterval->firstRefPosition == newRP;
     }
 #ifdef DEBUG
-#ifdef HAS_MORE_THAN_64_REGISTERS
     // Need to do this here do the dump can print the mask correctly.
     // Doing in DEBUG so we do not incur of cost of this check for
     // every RefPosition. We will set this anyway in addKillForRegs()
     // in RELEASE.
     if (theRefType == RefTypeKill)
     {
-        newRP->killRegisterAssignment = mask;
+        newRP->killedRegisters = mask;
     }
-#endif // HAS_MORE_THAN_64_REGISTERS
 #endif
     DBEXEC(VERBOSE, newRP->dump(this));
     return newRP;
@@ -720,9 +701,7 @@ void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getLow());
 
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    pos->killRegisterAssignment = mask;
-#endif
+    pos->killedRegisters = mask;
 
     *killTail = pos;
     killTail  = &pos->nextRefPosition;
@@ -2312,7 +2291,7 @@ void LinearScan::buildIntervals()
             const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& seg = abiInfo.Segments[i];
+                const ABIPassingSegment& seg = abiInfo.Segment(i);
                 if (seg.IsPassedInRegister())
                 {
                     RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
@@ -4451,27 +4430,11 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
         numPlacedArgLocals++;
     }
 
-#ifdef TARGET_ARM
-    // If type of node is `long` then it is actually `double`.
-    // The actual `long` types must have been transformed as a field list with two fields.
-    if (node->TypeGet() == TYP_LONG)
+    RefPosition* def = BuildDef(node, argMask);
+    if (isSpecialPutArg)
     {
-        srcCount++;
-        SingleTypeRegSet argMaskHi = genSingleTypeRegMask(REG_NEXT(argReg));
-        assert(genRegArgNext(argReg) == REG_NEXT(argReg));
-        use = BuildUse(op1, argMaskHi, 1);
-        BuildDef(node, argMask, 0);
-        BuildDef(node, argMaskHi, 1);
-    }
-    else
-#endif // TARGET_ARM
-    {
-        RefPosition* def = BuildDef(node, argMask);
-        if (isSpecialPutArg)
-        {
-            def->getInterval()->isSpecialPutArg = true;
-            def->getInterval()->assignRelatedInterval(use->getInterval());
-        }
+        def->getInterval()->isSpecialPutArg = true;
+        def->getInterval()->assignRelatedInterval(use->getInterval());
     }
 
     return srcCount;

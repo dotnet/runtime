@@ -5701,12 +5701,20 @@ void Compiler::SplitTreesRandomly()
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
     // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
-    unsigned maxLvaCount = max(lvaCount * 2, 50000u);
+    unsigned  maxLvaCount = max(lvaCount * 2, 50000u);
+    int       numSplit    = 0;
+    const int splitLimit  = JitConfig.JitStressSplitTreeLimit();
 
     for (BasicBlock* block : Blocks())
     {
         for (Statement* stmt : block->NonPhiStatements())
         {
+            if ((splitLimit >= 0) && (numSplit >= splitLimit))
+            {
+                JITDUMP("Reached split limit (%d) -- stopping\n", splitLimit);
+                return;
+            }
+
             int numTrees = 0;
             for (GenTree* tree : stmt->TreeList())
             {
@@ -5739,6 +5747,7 @@ void Compiler::SplitTreesRandomly()
 
                         fgMorphStmtBlockOps(block, stmt);
                         gtUpdateStmtSideEffects(stmt);
+                        numSplit++;
                     }
 
                     break;
@@ -5754,6 +5763,9 @@ void Compiler::SplitTreesRandomly()
             }
         }
     }
+
+    JITDUMP("Split %d trees\n", numSplit);
+
 #endif
 }
 
@@ -10911,9 +10923,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
             case DoNotEnregisterReason::NoRegVars:
                 m_noRegVars++;
                 break;
-            case DoNotEnregisterReason::MinOptsGC:
-                m_minOptsGC++;
-                break;
 #if !defined(TARGET_64BIT)
             case DoNotEnregisterReason::LongParamField:
                 m_longParamField++;
@@ -11068,7 +11077,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_structArg, notEnreg);
     PRINT_STATS(m_depField, notEnreg);
     PRINT_STATS(m_noRegVars, notEnreg);
-    PRINT_STATS(m_minOptsGC, notEnreg);
 #if !defined(TARGET_64BIT)
     PRINT_STATS(m_longParamField, notEnreg);
 #endif // !TARGET_64BIT

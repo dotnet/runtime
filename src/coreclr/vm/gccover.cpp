@@ -552,7 +552,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         {
         case InstructionType::Call_IndirectUnconditional:
 #ifdef TARGET_AMD64
-            if(!(EECodeManager::InterruptibleSafePointsEnabled() && safePointDecoder.AreSafePointsInterruptible()) && 
+            if(!(EECodeManager::InterruptibleSafePointsEnabled() && safePointDecoder.AreSafePointsInterruptible()) &&
                 safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
 #endif
             {
@@ -695,7 +695,7 @@ enum
 
 void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32 safePointOffset, LPVOID pGCCover)
 {
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     IJitManager::MethodRegionInfo *ptr = &(((GCCoverageInfo*)pGCCover)->methodRegion);
 
     //Get code address from offset
@@ -905,7 +905,7 @@ void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32
 //Replaces the provided interruptible range with corresponding 2 or 4 byte gcStress illegal instruction
 bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 stopOffset, LPVOID pGCCover)
 {
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     PBYTE rangeStart = NULL;
     PBYTE rangeStop = NULL;
 
@@ -1349,7 +1349,7 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageI
 #endif
 
 #ifdef TARGET_X86
-    // Epilog checking relies on precise control of when instrumentation for the  first prolog 
+    // Epilog checking relies on precise control of when instrumentation for the  first prolog
     // instruction is enabled or disabled. In particular, if a function has multiple epilogs, or
     // the first execution of the function terminates via an exception, and subsequent completions
     // do not, then the function may trigger a false stress fault if epilog checks are not disabled.
@@ -1859,7 +1859,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // BUG(github #10318) - when not using allocation contexts, the alloc lock
     // must be acquired here. Until fixed, this assert prevents random heap corruption.
     assert(GCHeapUtilities::UseThreadAllocationContexts());
-    GCHeapUtilities::GetGCHeap()->StressHeap(&t_thread_alloc_context);
+    GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context);
 
     // StressHeap can exit early w/o forcing a SuspendEE to trigger the instruction update
     // We can not rely on the return code to determine if the instruction update happened

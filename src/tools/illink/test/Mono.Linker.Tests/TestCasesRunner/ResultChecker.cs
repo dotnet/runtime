@@ -12,11 +12,14 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Linker;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner.ILVerification;
+using ILLink.Shared.TrimAnalysis;
 using NUnit.Framework;
+using System.Data.Common;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -24,6 +27,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	{
 		readonly BaseAssemblyResolver _originalsResolver;
 		readonly BaseAssemblyResolver _linkedResolver;
+		readonly TypeNameResolver _linkedTypeNameResolver;
 		readonly ReaderParameters _originalReaderParameters;
 		readonly ReaderParameters _linkedReaderParameters;
 
@@ -43,6 +47,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			_originalsResolver = originalsResolver;
 			_linkedResolver = linkedResolver;
+			_linkedTypeNameResolver = new TypeNameResolver (new TestResolver (), new TestAssemblyNameResolver (_linkedResolver));
 			_originalReaderParameters = originalReaderParameters;
 			_linkedReaderParameters = linkedReaderParameters;
 		}
@@ -309,7 +314,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						}
 
 						var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString ();
-						TypeDefinition linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
+						TypeReference linkedTypeRef = null;
+						try {
+							_linkedTypeNameResolver.TryResolveTypeName (linkedAssembly, expectedTypeName, out linkedTypeRef, out _);
+						} catch (AssemblyResolutionException) {}
+						TypeDefinition linkedType = linkedTypeRef?.Resolve ();
 
 						if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
 							ExportedType exportedType = linkedAssembly.MainModule.ExportedTypes

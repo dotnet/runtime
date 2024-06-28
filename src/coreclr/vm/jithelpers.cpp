@@ -1668,7 +1668,7 @@ HCIMPL1_RAW(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
     } CONTRACTL_END;
 
     _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-    gc_alloc_context *allocContext = &t_thread_alloc_context;
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
 
     TypeHandle typeHandle(typeHnd_);
     _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
@@ -1785,7 +1785,7 @@ HCIMPL1_RAW(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
         return HCCALL1(FramedAllocateString, stringLength);
     }
 
-    gc_alloc_context *allocContext = &t_thread_alloc_context;
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
 
     SIZE_T totalSize = StringObject::GetSize(stringLength);
 
@@ -1901,7 +1901,7 @@ HCIMPL2_RAW(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT
         return HCCALL2(JIT_NewArr1, arrayMT, size);
     }
 
-    gc_alloc_context *allocContext = &t_thread_alloc_context;
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
 
     MethodTable *pArrayMT = (MethodTable *)arrayMT;
 
@@ -1959,11 +1959,6 @@ HCIMPL2_RAW(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayM
         return HCCALL2(JIT_NewArr1, arrayMT, size);
     }
 
-    // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
-    // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
-    // some reshuffling of intermediate values into nonvolatile registers around the call.
-    Thread *thread = GetThread();
-
     SIZE_T totalSize = componentCount * sizeof(void *);
     _ASSERTE(totalSize / sizeof(void *) == componentCount);
 
@@ -1975,7 +1970,7 @@ HCIMPL2_RAW(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayM
 
     _ASSERTE(ALIGN_UP(totalSize, DATA_ALIGNMENT) == totalSize);
 
-    gc_alloc_context *allocContext = &t_thread_alloc_context;
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
     BYTE *allocPtr = allocContext->alloc_ptr;
     _ASSERTE(allocPtr <= allocContext->alloc_limit);
     if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
@@ -2109,14 +2104,67 @@ HCIMPLEND
 //      VALUETYPE/BYREF HELPERS
 //
 //========================================================================
+/*************************************************************/
+HCIMPL2_RAW(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* unboxedData)
+{
+    CONTRACTL {
+        THROWS;
+        DISABLED(GC_TRIGGERS);
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    if (unboxedData == nullptr)
+    {
+        // Tail call to the slow helper
+        return HCCALL2(JIT_Box, type, unboxedData);
+    }
+
+    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+
+    TypeHandle typeHandle(type);
+    _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
+    MethodTable *methodTable = typeHandle.AsMethodTable();
+    // The fast helper should never be called for nullable types.
+    _ASSERTE(!methodTable->IsNullable());
+
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (methodTable->RequiresAlign8())
+    {
+        return HCCALL2(JIT_Box, type, unboxedData);
+    }
+#endif
+
+    SIZE_T size = methodTable->GetBaseSize();
+    _ASSERTE(size % DATA_ALIGNMENT == 0);
+
+    BYTE *allocPtr = allocContext->alloc_ptr;
+    _ASSERTE(allocPtr <= allocContext->alloc_limit);
+    if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    {
+        // Tail call to the slow helper
+        return HCCALL2(JIT_Box, type, unboxedData);
+    }
+
+    allocContext->alloc_ptr = allocPtr + size;
+
+    _ASSERTE(allocPtr != nullptr);
+    Object *object = reinterpret_cast<Object *>(allocPtr);
+    _ASSERTE(object->HasEmptySyncBlockInfo());
+    object->SetMethodTable(methodTable);
+
+    // Copy the data into the object
+    CopyValueClass(object->UnBox(), unboxedData, methodTable);
+
+    return object;
+}
+HCIMPLEND_RAW
 
 /*************************************************************/
 HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 {
     FCALL_CONTRACT;
 
-    // <TODO>TODO: if we care, we could do a fast trial allocation
-    // and avoid the building the frame most times</TODO>
     OBJECTREF newobj = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();    // Set up a frame
     GCPROTECT_BEGININTERIOR(unboxedData);
@@ -4569,13 +4617,13 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         }
 
         // We've successfully created the osr method; make it available.
-        _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+        _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
         ppInfo->m_osrMethodCode = osrMethodCode;
         isNewMethod = true;
     }
 
     // If we get here, we have code to transition to...
-    _ASSERTE(osrMethodCode != NULL);
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
 
     {
         Thread *pThread = GetThread();
@@ -4808,7 +4856,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
             }
 
             // We've successfully created the osr method; make it available.
-            _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+            _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
             ppInfo->m_osrMethodCode = newMethodCode;
             isNewMethod = true;
         }
@@ -4816,7 +4864,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 
     // If we get here, we have code to transition to...
     PCODE osrMethodCode = ppInfo->m_osrMethodCode;
-    _ASSERTE(osrMethodCode != NULL);
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
 
     Thread *pThread = GetThread();
 

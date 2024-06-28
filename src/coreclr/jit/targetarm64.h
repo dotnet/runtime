@@ -224,14 +224,6 @@
   // JMP Indirect call register
   #define REG_INDIRECT_CALL_TARGET_REG    REG_IP0
 
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_R9
-  #define RBM_PINVOKE_FRAME        RBM_R9
-  #define REG_PINVOKE_TCB          REG_R10
-  #define RBM_PINVOKE_TCB          RBM_R10
-  #define REG_PINVOKE_SCRATCH      REG_R10
-  #define RBM_PINVOKE_SCRATCH      RBM_R10
-
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_R0
   #define REG_INT_FIRST            REG_R0
