@@ -41,12 +41,17 @@ namespace Mono.Linker
 	public class TypeMapInfo
 	{
 		readonly HashSet<AssemblyDefinition> assemblies = new HashSet<AssemblyDefinition> ();
-		readonly LinkContext context;
+		readonly ITryResolveMetadata context;
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> base_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> default_interface_implementations = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 
 		public TypeMapInfo (LinkContext context)
+		{
+			this.context = context;
+		}
+
+		internal TypeMapInfo (ITryResolveMetadata context)
 		{
 			this.context = context;
 		}
@@ -172,7 +177,7 @@ namespace Mono.Linker
 			if (interfaceTypeToImplChainMap.Count == 0)
 				return ImmutableArray<RuntimeInterfaceImplementation>.Empty;
 
-			return interfaceTypeToImplChainMap.Select (kvp => new RuntimeInterfaceImplementation (originalType, kvp.Key, context.Resolve (kvp.Key), kvp.Value)).ToImmutableArray ();
+			return interfaceTypeToImplChainMap.Select (kvp => new RuntimeInterfaceImplementation (originalType, kvp.Key, context.TryResolve (kvp.Key), kvp.Value)).ToImmutableArray ();
 		}
 
 		void MapInterfaceMethodsInTypeHierarchy (TypeDefinition type)

@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	partial class AssemblyChecker
 	{
 		readonly AssemblyDefinition originalAssembly, linkedAssembly;
+		TypeMapInfo _originalTypeMapInfo = new TypeMapInfo (new TestResolver ());
 		readonly TrimmedTestCaseResult linkedTestCase;
 
 		HashSet<string> linkedMembers;
@@ -43,6 +44,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			IEnumerable<string> GetFailures ()
 			{
+				foreach (var err in VerifyTypeMapInfo (originalAssembly))
+					yield return err;
 				foreach (var err in VerifyExportedTypes (originalAssembly, linkedAssembly))
 					yield return err;
 				foreach (var err in VerifyCustomAttributes (originalAssembly, linkedAssembly))
@@ -96,6 +99,34 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (linkedMembers.Any ())
 					foreach (var err in linkedMembers.Select (m => $"Member `{m}' was not expected to be kept"))
 						yield return err;
+			}
+		}
+
+		private IEnumerable<string> VerifyTypeMapInfo (AssemblyDefinition originalAssembly)
+		{
+			foreach (var type in originalAssembly.AllDefinedTypes ()) {
+				foreach (var att in type.CustomAttributes) {
+					switch (att.AttributeType.Name) {
+					case nameof (HasRuntimeInterfaceAttribute):
+						var expectednterfaceTypeName = att.ConstructorArguments[0].Value as string ?? ((TypeReference) att.ConstructorArguments[0].Value).FullName;
+						var expectedInterfaceChains = ((CustomAttributeArgument[]) att.ConstructorArguments[1].Value).Select (t => t.Value as string ?? ((TypeReference) t.Value).FullName);
+						var runtimeIfaces = _originalTypeMapInfo.GetRecursiveInterfaces (type);
+						var matchingRuntimeIface = runtimeIfaces.FirstOrDefault (i => i.InterfaceType.FullName == expectednterfaceTypeName);
+						if (matchingRuntimeIface == default) {
+							yield return $"Type {type.FullName} does not have runtime interface {expectednterfaceTypeName}";
+							continue;
+						}
+
+						if (expectedInterfaceChains.Any ()) {
+							if (!expectedInterfaceChains.Zip (matchingRuntimeIface.ImplementationChain).All (pair => pair.First == pair.Second.InterfaceType.FullName)) {
+								yield return $"Type {type.FullName} does not have expected implementation chain for runtime interface {expectednterfaceTypeName}";
+							}
+						}
+						break;
+					default:
+						break;
+					}
+				}
 			}
 		}
 
@@ -715,26 +746,26 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
 			default: {
-					string operandString = null;
-					switch (instr.OpCode.OperandType) {
-					case OperandType.InlineField:
-					case OperandType.InlineMethod:
-					case OperandType.InlineType:
-					case OperandType.InlineTok:
-						operandString = instr.Operand switch {
-							FieldReference fieldRef => fieldRef.FullName,
-							MethodReference methodRef => methodRef.FullName,
-							TypeReference typeRef => typeRef.FullName,
-							_ => null
-						};
-						break;
-					}
-
-					if (operandString != null)
-						return $"{instr.OpCode.ToString ()} {operandString}";
-					else
-						return instr.OpCode.ToString ();
+				string operandString = null;
+				switch (instr.OpCode.OperandType) {
+				case OperandType.InlineField:
+				case OperandType.InlineMethod:
+				case OperandType.InlineType:
+				case OperandType.InlineTok:
+					operandString = instr.Operand switch {
+						FieldReference fieldRef => fieldRef.FullName,
+						MethodReference methodRef => methodRef.FullName,
+						TypeReference typeRef => typeRef.FullName,
+						_ => null
+					};
+					break;
 				}
+
+				if (operandString != null)
+					return $"{instr.OpCode.ToString ()} {operandString}";
+				else
+					return instr.OpCode.ToString ();
+			}
 			}
 		}
 
@@ -1186,7 +1217,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield return $"Mismatch in generic parameter constraints on {src} of {src.Owner}. Input has constraints?: {src.HasConstraints}, Output has constraints?: {linked.HasConstraints}";
 				yield break;
 			}
-			
+
 			if (!src.HasConstraints)
 				yield break;
 
@@ -1222,7 +1253,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield return string.Join (Environment.NewLine, $"Custom attributes on `{src}' generic parameter constraints are not matching:", missing, extra);
 			}
 
-			static bool IsKeptAttributeOnConstraint (CustomAttribute attr) {
+			static bool IsKeptAttributeOnConstraint (CustomAttribute attr)
+			{
 				if (attr.AttributeType.Name != nameof (KeptAttributeOnConstraintAttribute))
 					return false;
 
