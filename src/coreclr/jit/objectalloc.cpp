@@ -803,37 +803,18 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 GenTree* const lhs = parent->AsOp()->gtGetOp1();
                 GenTree* const rhs = parent->AsOp()->gtGetOp2();
 
-                // One or both children may have been retyped.
-                // Ensure we don't lose the fact that the joint result
-                // may be a GC type.
+                // We may see sibling null refs. Retype them as appropriate.
                 //
-                var_types lhsType = lhs->TypeGet();
-                var_types rhsType = rhs->TypeGet();
-
-                if (lhsType == TYP_REF)
+                if (lhs == tree)
                 {
-                    assert(rhsType != TYP_REF);
-                    assert(rhsType == tree->TypeGet());
-                    newType = TYP_BYREF;
-                }
-
-                if (rhsType == TYP_REF)
-                {
-                    assert(lhsType != TYP_REF);
-                    assert(lhsType == tree->TypeGet());
-                    newType = TYP_BYREF;
-                }
-
-                tree->ChangeType(newType);
-
-                if (lhsType != newType)
-                {
-                    lhs->ChangeType(newType);
-                }
-
-                if (rhsType != newType)
-                {
+                    assert(rhs->IsIntegralConst(0));
                     rhs->ChangeType(newType);
+                }
+                else
+                {
+                    assert(rhs == tree);
+                    assert(lhs->IsIntegralConst(0));
+                    lhs->ChangeType(newType);
                 }
 
                 parent->ChangeType(newType);
