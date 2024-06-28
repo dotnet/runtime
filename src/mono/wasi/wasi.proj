@@ -27,6 +27,7 @@
   </PropertyGroup>
 
   <Target Name="CheckEnv">
+    <Message Importance="high" Text="[DEBUG] WASI_SDK_PATH=$(WASI_SDK_PATH); WasiSdkRoot=$(WasiSdkRoot); WasiClang=$(WasiClang)"/>
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'wasi'" Text="Expected TargetOS==wasi, got '$(TargetOS)'"/>
     <Error Condition="'$(WASI_SDK_PATH)' == ''" Text="The WASI_SDK_PATH environment variable should be set pointing to the WASI SDK root dir."/>
