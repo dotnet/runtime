@@ -427,6 +427,7 @@ namespace System.Reflection.Metadata
         /// Returns a <see cref="TypeName" /> object representing an array of the current type,
         /// with the specified number of dimensions.
         /// </summary>
+        /// <param name="rank">The number of dimensions for the array. This number must be more than zero and less than or equal to 32.</param>
         /// <returns>
         /// A <see cref="TypeName" /> object representing an array of the current type,
         /// with the specified number of dimensions.
@@ -453,10 +454,26 @@ namespace System.Reflection.Metadata
         /// </returns>
         public TypeName MakeByRefTypeName() => MakeElementTypeName(TypeNameParserHelpers.ByRef);
 
+        /// <summary>
+        /// Creates a new constructed generic type name.
+        /// </summary>
+        /// <param name="typeArguments">An array of type names to be used as generic arguments of the current simple type name.</param>
+        /// <returns>
+        /// A <see cref="TypeName" /> representing the constructed type name formed by using the elements
+        /// of <paramref name="typeArguments"/> for the generic arguments of the current simple type name.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">The current type name is not simple.</exception>
         public TypeName MakeGenericTypeName(ImmutableArray<TypeName> typeArguments)
-            => new TypeName(fullName: null, AssemblyName, elementOrGenericType: this, genericTypeArguments: typeArguments);
+            => IsSimple
+                ? new TypeName(fullName: null, AssemblyName, elementOrGenericType: this, genericTypeArguments: typeArguments)
+                : throw new InvalidOperationException(SR.Format(SR.Arg_NotSimpleTypeName, FullName));
 
-        // Nulls are allowed, as they allow for simply removing the name.
+        /// <summary>
+        /// Returns a <see cref="TypeName" /> object that represents the current type name with provided assembly name.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="TypeName" /> object that represents the current type name with provided assembly name.
+        /// </returns>
         public TypeName WithAssemblyName(AssemblyNameInfo? assemblyName)
             => WithAssemblyName(this, AssemblyName, assemblyName)!;
 

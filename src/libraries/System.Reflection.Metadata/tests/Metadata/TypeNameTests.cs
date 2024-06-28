@@ -500,9 +500,21 @@ namespace System.Reflection.Metadata.Tests
             TypeName genericTypeNameDefinition = TypeName.Parse(genericTypeDefinition.AssemblyQualifiedName.AsSpan());
 
             Type[] genericArgs = new Type[] { typeof(int), typeof(bool) };
-            EnsureBasicMatch(
-                genericTypeNameDefinition.MakeGenericTypeName(genericArgs.Select(type => TypeName.Parse(type.AssemblyQualifiedName.AsSpan())).ToImmutableArray()),
-                genericTypeDefinition.MakeGenericType(genericArgs));
+            ImmutableArray<TypeName> genericTypeNames = genericArgs.Select(type => TypeName.Parse(type.AssemblyQualifiedName.AsSpan())).ToImmutableArray();
+
+            TypeName genericTypeName = genericTypeNameDefinition.MakeGenericTypeName(genericTypeNames);
+            Type genericType = genericTypeDefinition.MakeGenericType(genericArgs);
+
+            EnsureBasicMatch(genericTypeName, genericType);
+
+            TypeName szArrayTypeName = genericTypeNameDefinition.MakeArrayTypeName();
+            Assert.Throws<InvalidOperationException>(() => szArrayTypeName.MakeGenericTypeName(genericTypeNames));
+            TypeName mdArrayTypeName = genericTypeNameDefinition.MakeArrayTypeName(3);
+            Assert.Throws<InvalidOperationException>(() => mdArrayTypeName.MakeGenericTypeName(genericTypeNames));
+            TypeName pointerTypeName = genericTypeNameDefinition.MakePointerTypeName();
+            Assert.Throws<InvalidOperationException>(() => pointerTypeName.MakeGenericTypeName(genericTypeNames));
+            TypeName byRefTypeName = genericTypeNameDefinition.MakeByRefTypeName();
+            Assert.Throws<InvalidOperationException>(() => byRefTypeName.MakeGenericTypeName(genericTypeNames));
         }
 
         [Theory]
