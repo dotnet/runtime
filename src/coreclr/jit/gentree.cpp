@@ -28683,36 +28683,30 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
 
-#ifdef TARGET_LOONGARCH64
-            uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
-#else
-            uint32_t floatFieldFlags = comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(retClsHnd);
-#endif
-            BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+            FpStructInRegistersInfo fpInfo    = comp->GetPassFpStructInRegistersInfo(retClsHnd);
+            BYTE                    gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
 
-            if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+            if ((fpInfo.flags & FpStruct::BothFloat) != 0)
             {
                 comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                assert((structSize > 8) == ((fpInfo.SizeShift1st() == 3) || (fpInfo.SizeShift2nd() == 3)));
+                m_regType[0] = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1] = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
             }
-            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST)
+            else if ((fpInfo.flags & FpStruct::FloatInt) != 0)
             {
                 comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] =
-                    (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
+                assert((structSize > 8) == ((fpInfo.SizeShift1st() == 3) || (fpInfo.SizeShift2nd() == 3)));
+                m_regType[0] = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1] = (fpInfo.SizeShift2nd() == 3) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
             }
-            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
+            else if ((fpInfo.flags & FpStruct::IntFloat) != 0)
             {
                 comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] =
-                    (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
-                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                assert((structSize > 8) == ((fpInfo.SizeShift1st() == 3) || (fpInfo.SizeShift2nd() == 3)));
+                m_regType[0] = (fpInfo.SizeShift1st() == 3) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
+                m_regType[1] = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
             }
             else
             {

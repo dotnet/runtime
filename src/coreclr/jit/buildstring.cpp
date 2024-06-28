@@ -1,17 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#define STRINGIFY(L)     #L
-#define MAKESTRING(M, L) M(L)
-#define STRINGIZE(X)     MAKESTRING(STRINGIFY, X)
-
 #if defined(__clang__)
 #define BUILD_COMPILER                                                                                                 \
-    "Clang " STRINGIZE(__clang_major__) "." STRINGIZE(__clang_minor__) "." STRINGIZE(__clang_patchlevel__)
+    "Clang " STRINGIFY(__clang_major__) "." STRINGIFY(__clang_minor__) "." STRINGIFY(__clang_patchlevel__)
 #elif defined(_MSC_VER)
-#define BUILD_COMPILER "MSVC " STRINGIZE(_MSC_FULL_VER)
+#define BUILD_COMPILER "MSVC " STRINGIFY(_MSC_FULL_VER)
 #elif defined(__GNUC__)
-#define BUILD_COMPILER "GCC " STRINGIZE(__GNUC__) "." STRINGIZE(__GNUC_MINOR__) "." STRINGIZE(__GNUC_PATCHLEVEL__)
+#define BUILD_COMPILER "GCC " STRINGIFY(__GNUC__) "." STRINGIFY(__GNUC_MINOR__) "." STRINGIFY(__GNUC_PATCHLEVEL__)
 #else
 #define BUILD_COMPILER "Unknown"
 #endif
@@ -26,6 +22,8 @@
 #define TARGET_ARCH_STRING "arm64"
 #elif defined(TARGET_LOONGARCH64)
 #define TARGET_ARCH_STRING "loongarch64"
+#elif defined(TARGET_RISCV64)
+#define TARGET_ARCH_STRING "riscv64"
 #else
 #define TARGET_ARCH_STRING "Unknown"
 #endif

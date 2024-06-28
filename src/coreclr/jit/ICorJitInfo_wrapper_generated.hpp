@@ -1229,21 +1229,21 @@ void WrapICorJitInfo::getSwiftLowering(
     API_LEAVE(getSwiftLowering);
 }
 
-uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
+FpStructInRegistersInfo WrapICorJitInfo::getLoongArch64PassFpStructInRegistersInfo(
           CORINFO_CLASS_HANDLE structHnd)
 {
-    API_ENTER(getLoongArch64PassStructInRegisterFlags);
-    uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(structHnd);
-    API_LEAVE(getLoongArch64PassStructInRegisterFlags);
+    API_ENTER(getLoongArch64PassFpStructInRegistersInfo);
+    FpStructInRegistersInfo temp = wrapHnd->getLoongArch64PassFpStructInRegistersInfo(structHnd);
+    API_LEAVE(getLoongArch64PassFpStructInRegistersInfo);
     return temp;
 }
 
-uint32_t WrapICorJitInfo::getRISCV64PassStructInRegisterFlags(
+FpStructInRegistersInfo WrapICorJitInfo::getRiscV64PassFpStructInRegistersInfo(
           CORINFO_CLASS_HANDLE structHnd)
 {
-    API_ENTER(getRISCV64PassStructInRegisterFlags);
-    uint32_t temp = wrapHnd->getRISCV64PassStructInRegisterFlags(structHnd);
-    API_LEAVE(getRISCV64PassStructInRegisterFlags);
+    API_ENTER(getRiscV64PassFpStructInRegistersInfo);
+    FpStructInRegistersInfo temp = wrapHnd->getRiscV64PassFpStructInRegistersInfo(structHnd);
+    API_LEAVE(getRiscV64PassFpStructInRegistersInfo);
     return temp;
 }
 

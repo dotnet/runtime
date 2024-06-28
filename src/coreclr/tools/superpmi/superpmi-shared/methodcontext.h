@@ -779,13 +779,13 @@ public:
     void dmpGetSwiftLowering(DWORDLONG key, const Agnostic_GetSwiftLowering& value);
     void repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
 
-    void recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
-    void dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
-    DWORD repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
+    void recGetLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value);
+    void dmpGetLoongArch64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value);
+    FpStructInRegistersInfo repGetLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd);
 
-    void recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
-    void dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
-    DWORD repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
+    void recGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value);
+    void dmpGetRiscV64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value);
+    FpStructInRegistersInfo repGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd);
 
     void recGetRelocTypeHint(void* target, WORD result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
@@ -1154,7 +1154,7 @@ enum mcPackets
     Packet_GetAssemblyName = 191,
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
-    Packet_GetLoongArch64PassStructInRegisterFlags = 194,
+    //Packet_GetLoongArch64PassStructInRegisterFlags = 194,
     Packet_GetExactClasses = 195,
     Packet_GetRuntimeTypePointer = 196,
     Packet_PrintObjectDescription = 197,
@@ -1170,7 +1170,7 @@ enum mcPackets
     Packet_GetThreadLocalFieldInfo = 207,
     Packet_GetThreadLocalStaticBlocksInfo = 208,
     Packet_GetThreadLocalStaticInfo_NativeAOT = 209,
-    Packet_GetRISCV64PassStructInRegisterFlags = 210,
+    //Packet_GetRISCV64PassStructInRegisterFlags = 210,
     Packet_GetObjectContent = 211,
     Packet_GetTypeLayout = 212,
     Packet_HaveSameMethodDefinition = 213,
@@ -1181,6 +1181,8 @@ enum mcPackets
     Packet_GetClassStaticDynamicInfo = 218,
     Packet_GetClassThreadStaticDynamicInfo = 219,
     Packet_IsGenericType = 220,
+    Packet_GetRiscV64PassFpStructInRegistersInfo = 221,
+    Packet_GetLoongArch64PassFpStructInRegistersInfo = 222,
 };
 
 void SetDebugDumpVariables();

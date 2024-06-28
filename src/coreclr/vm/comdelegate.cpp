@@ -172,7 +172,7 @@ public:
         if (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg)
         {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            if ((m_argLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND) && (m_currentGenRegIndex < m_argLocDesc->m_cGenReg))
+            if ((m_argLocDesc->m_structFields.flags & FpStruct::IntFloat) && (m_currentGenRegIndex < m_argLocDesc->m_cGenReg))
             {
                 // the first field is integer so just skip this.
             }

@@ -58,9 +58,9 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                                                   ClassLayout* structLayout,
                                                   WellKnownArg /*wellKnownParam*/)
 {
-    StructFloatFieldInfoFlags flags     = STRUCT_NO_FLOAT_FIELD;
-    unsigned                  intFields = 0, floatFields = 0;
-    unsigned                  passedSize;
+    FpStructInRegistersInfo info      = {};
+    unsigned                intFields = 0, floatFields = 0;
+    unsigned                passedSize;
 
     if (varTypeIsStruct(type))
     {
@@ -71,20 +71,19 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         }
         else if (!structLayout->IsBlockLayout())
         {
-            flags = (StructFloatFieldInfoFlags)comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(
-                structLayout->GetClassHandle());
+            info = comp->GetPassFpStructInRegistersInfo(structLayout->GetClassHandle());
 
-            if ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+            if ((info.flags & FpStruct::OnlyOne) != 0)
             {
                 floatFields = 1;
             }
-            else if ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+            else if ((info.flags & FpStruct::BothFloat) != 0)
             {
                 floatFields = 2;
             }
-            else if (flags != STRUCT_NO_FLOAT_FIELD)
+            else if (info.flags != FpStruct::UseIntCallConv)
             {
-                assert((flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0);
+                assert((info.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0);
                 floatFields = 1;
                 intFields   = 1;
             }
@@ -104,10 +103,10 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         // Hardware floating-point calling convention
         if ((floatFields == 1) && (intFields == 0))
         {
-            if (flags == STRUCT_NO_FLOAT_FIELD)
+            if (info.flags == FpStruct::UseIntCallConv)
                 assert(varTypeIsFloating(type)); // standalone floating-point real
             else
-                assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0); // struct containing just one FP real
+                assert((info.flags & FpStruct::OnlyOne) != 0); // struct containing just one FP real
 
             return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
                                                                                           passedSize));
@@ -116,15 +115,15 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         {
             assert(varTypeIsStruct(type));
             assert((floatFields + intFields) == 2);
-            assert(flags != STRUCT_NO_FLOAT_FIELD);
-            assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) == 0);
+            assert(info.flags != FpStruct::UseIntCallConv);
+            assert((info.flags & FpStruct::OnlyOne) == 0);
 
-            unsigned firstSize  = ((flags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0) ? 8 : 4;
-            unsigned secondSize = ((flags & STRUCT_SECOND_FIELD_SIZE_IS8) != 0) ? 8 : 4;
+            unsigned firstSize  = (info.SizeShift1st() == 3) ? 8 : 4;
+            unsigned secondSize = (info.SizeShift2nd() == 3) ? 8 : 4;
             unsigned offset = max(firstSize, secondSize); // TODO: cover empty fields and custom offsets / alignments
 
-            bool isFirstFloat  = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_FIRST)) != 0;
-            bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
+            bool isFirstFloat  = (info.flags & (FpStruct::BothFloat | FpStruct::FloatInt)) != 0;
+            bool isSecondFloat = (info.flags & (FpStruct::BothFloat | FpStruct::IntFloat)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
             regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();

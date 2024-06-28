@@ -317,7 +317,7 @@ private:
     }
 };
 
-// StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` and
+// StructFloatFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` and
 // `getRISCV64PassStructInRegisterFlags` API to convey struct argument passing information.
 //
 // `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
@@ -344,17 +344,96 @@ enum StructFloatFieldInfoFlags
     STRUCT_FLOAT_FIELD_SECOND     = 0x4,
     STRUCT_FIRST_FIELD_SIZE_IS8   = 0x10,
     STRUCT_SECOND_FIELD_SIZE_IS8  = 0x20,
-
-    STRUCT_FIRST_FIELD_DOUBLE     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8),
-    STRUCT_SECOND_FIELD_DOUBLE    = (STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8),
-    STRUCT_FIELD_TWO_DOUBLES      = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8 | STRUCT_FLOAT_FIELD_ONLY_TWO),
-
-    STRUCT_MERGE_FIRST_SECOND     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO),
-    STRUCT_MERGE_FIRST_SECOND_8   = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_SECOND_FIELD_SIZE_IS8),
-
-    STRUCT_HAS_FLOAT_FIELDS_MASK  = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_ONLY_ONE),
-    STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
 };
+
+// Bitfields for FpStructInRegistersInfo::flags
+namespace FpStruct
+{
+    enum class IntKind
+    {
+        Integer,
+        GcRef,
+        GcByRef,
+    };
+
+    enum Flags
+    {
+        // Positions of flags and bitfields
+        PosOnlyOne      = 0,
+        PosBothFloat    = 1,
+        PosFloatInt     = 2,
+        PosIntFloat     = 3,
+        PosSizeShift1st = 4, // 2 bits
+        PosSizeShift2nd = 6, // 2 bits
+        PosIntFieldKind = 8, // 2 bits
+
+        UseIntCallConv = 0, // struct is passed according to integer calling convention
+
+        // The flags and bitfields
+        OnlyOne          =    1 << PosOnlyOne,      // has only one field, which is floating-point
+        BothFloat        =    1 << PosBothFloat,    // has two fields, both are floating-point
+        FloatInt         =    1 << PosFloatInt,     // has two fields, 1st is floating and 2nd is integer
+        IntFloat         =    1 << PosIntFloat,     // has two fields, 2nd is floating and 1st is integer
+        SizeShift1stMask = 0b11 << PosSizeShift1st, // log2(size) of 1st field
+        SizeShift2ndMask = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
+        IntFieldKindMask = 0b11 << PosIntFieldKind, // the kind of the integer field (FpStruct::IntKind)
+        // Note: flags OnlyOne, BothFloat, FloatInt, and IntFloat are mutually exclusive
+    };
+}
+
+// On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating-point,
+// can be passed in registers according to hardware FP calling convention. FpStructInRegistersInfo represents
+// passing information for such parameters.
+struct FpStructInRegistersInfo
+{
+    FpStruct::Flags flags;
+    uint32_t offset1st;
+    uint32_t offset2nd;
+
+    unsigned SizeShift1st() const { return (flags >> FpStruct::PosSizeShift1st) & 0b11; }
+    unsigned SizeShift2nd() const { return (flags >> FpStruct::PosSizeShift2nd) & 0b11; }
+
+    unsigned Size1st() const { return 1u << SizeShift1st(); }
+    unsigned Size2nd() const { return 1u << SizeShift2nd(); }
+
+    FpStruct::IntKind IntFieldKind() const
+    {
+        return (FpStruct::IntKind)((flags >> FpStruct::PosIntFieldKind) & 0b11);
+    }
+
+    const char* IntFieldKindName() const
+    {
+        static const char* intKindNames[] = { "Integer", "GcRef", "GcByRef" };
+        return (flags & (FpStruct::FloatInt | FpStruct::IntFloat))
+            ? intKindNames[(int)IntFieldKind()]
+            : "None";
+    }
+
+    const char* FlagName() const
+    {
+        switch (flags & (FpStruct::OnlyOne | FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::IntFloat))
+        {
+            case FpStruct::OnlyOne: return "OnlyOne";
+            case FpStruct::BothFloat: return "BothFloat";
+            case FpStruct::FloatInt: return "FloatInt";
+            case FpStruct::IntFloat: return "IntFloat";
+            default: return "?";
+        }
+    }
+
+    StructFloatFieldInfoFlags ToOldFlags() const
+    {
+        return StructFloatFieldInfoFlags(
+            ((flags & FpStruct::OnlyOne) ? STRUCT_FLOAT_FIELD_ONLY_ONE : 0) |
+            ((flags & FpStruct::BothFloat) ? STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
+            ((flags & FpStruct::FloatInt) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+            ((flags & FpStruct::IntFloat) ? STRUCT_FLOAT_FIELD_SECOND : 0) |
+            ((SizeShift1st() == 3) ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+            ((SizeShift2nd() == 3) ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0));
+    }
+};
+
+static_assert(sizeof(FpStructInRegistersInfo) == 3 * sizeof(uint32_t), "");
 
 #include "corinfoinstructionset.h"
 
@@ -3074,8 +3153,8 @@ public:
     // Classifies a swift structure into primitives or an implicit byref for ABI purposes.
     virtual void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering) = 0;
 
-    virtual uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
-    virtual uint32_t getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
+    virtual FpStructInRegistersInfo getLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls) = 0;
+    virtual FpStructInRegistersInfo getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls) = 0;
 };
 
 /*****************************************************************************

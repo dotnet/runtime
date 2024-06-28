@@ -927,35 +927,18 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_RISCV64) | defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
-        uint32_t floatFieldFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(clsHnd);
-
-        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+        FpStructInRegistersInfo info = GetPassFpStructInRegistersInfo(clsHnd);
+        if ((info.flags & FpStruct::OnlyOne) != 0)
         {
             howToReturnStruct = SPK_PrimitiveType;
             useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;
         }
-        else if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
+        else if (info.flags != FpStruct::UseIntCallConv)
         {
-            howToReturnStruct = SPK_ByValue;
-            useType           = TYP_STRUCT;
-        }
-    }
-
-#elif defined(TARGET_RISCV64)
-    if (structSize <= (TARGET_POINTER_SIZE * 2))
-    {
-        uint32_t floatFieldFlags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(clsHnd);
-
-        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
-        {
-            howToReturnStruct = SPK_PrimitiveType;
-            useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;
-        }
-        else if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
-        {
+            assert((info.flags & (FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::IntFloat)) != 0);
             howToReturnStruct = SPK_ByValue;
             useType           = TYP_STRUCT;
         }
@@ -8298,6 +8281,49 @@ void Compiler::GetStructTypeOffset(
     eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
     assert(structDesc.passedInRegisters);
     GetStructTypeOffset(structDesc, type0, type1, offset0, offset1);
+}
+
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+//------------------------------------------------------------------------
+// GetPassFpStructInRegistersInfo: Gets the information on passing of a struct according to hardware floating-point
+// calling convention.
+//
+// Arguments:
+//      structHandle - type handle
+//
+// Return value:
+//      The passing info
+FpStructInRegistersInfo Compiler::GetPassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHandle)
+{
+#ifdef TARGET_RISCV64
+#define getInfoFunc getRiscV64PassFpStructInRegistersInfo
+#else
+#define getInfoFunc getLoongArch64PassFpStructInRegistersInfo
+#endif
+
+    FpStructInRegistersInfo ret = info.compCompHnd->getInfoFunc(structHandle);
+#ifdef DEBUG
+    if (VERBOSE)
+    {
+        logf("**** " STRINGIFY(getInfoFunc) "(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
+             eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
+#undef getInfoFunc
+        if (ret.flags == FpStruct::UseIntCallConv)
+        {
+            logf("        pass by integer calling convention\n");
+        }
+        else
+        {
+            bool hasOne    = ((ret.flags & FpStruct::OnlyOne) != 0);
+            long size2nd   = hasOne ? -1l : ret.Size2nd();
+            long offset2nd = hasOne ? -1l : ret.offset2nd;
+            logf("        may be passed by floating-point calling convention:\n"
+                 "        flags=%#03x; %s, field sizes={%u, %li}, field offsets={%u, %li}, IntFieldKind=%s\n",
+                 ret.flags, ret.FlagName(), ret.Size1st(), size2nd, ret.offset1st, offset2nd, ret.IntFieldKindName());
+        }
+    }
+#endif // DEBUG
+    return ret;
 }
 
 #endif // defined(UNIX_AMD64_ABI)

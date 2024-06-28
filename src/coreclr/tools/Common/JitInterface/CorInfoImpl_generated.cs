@@ -1859,12 +1859,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static uint _getLoongArch64PassStructInRegisterFlags(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* structHnd)
+        private static FpStructInRegistersInfo _getLoongArch64PassFpStructInRegistersInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* structHnd)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getLoongArch64PassStructInRegisterFlags(structHnd);
+                return _this.getLoongArch64PassFpStructInRegistersInfo(structHnd);
             }
             catch (Exception ex)
             {
@@ -1874,12 +1874,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static uint _getRISCV64PassStructInRegisterFlags(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* structHnd)
+        private static FpStructInRegistersInfo _getRiscV64PassFpStructInRegistersInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* structHnd)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getRISCV64PassStructInRegisterFlags(structHnd);
+                return _this.getRiscV64PassFpStructInRegistersInfo(structHnd);
             }
             catch (Exception ex)
             {
@@ -2736,8 +2736,8 @@ namespace Internal.JitInterface
             callbacks[122] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint>)&_getMethodHash;
             callbacks[123] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*, byte>)&_getSystemVAmd64PassStructInRegisterDescriptor;
             callbacks[124] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_SWIFT_LOWERING*, void>)&_getSwiftLowering;
-            callbacks[125] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getLoongArch64PassStructInRegisterFlags;
-            callbacks[126] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getRISCV64PassStructInRegisterFlags;
+            callbacks[125] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, FpStructInRegistersInfo>)&_getLoongArch64PassFpStructInRegistersInfo;
+            callbacks[126] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, FpStructInRegistersInfo>)&_getRiscV64PassFpStructInRegistersInfo;
             callbacks[127] = (delegate* unmanaged<IntPtr, IntPtr*, void**, uint>)&_getThreadTLSIndex;
             callbacks[128] = (delegate* unmanaged<IntPtr, IntPtr*, void**, int*>)&_getAddrOfCaptureThreadGlobal;
             callbacks[129] = (delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, void**, void*>)&_getHelperFtn;

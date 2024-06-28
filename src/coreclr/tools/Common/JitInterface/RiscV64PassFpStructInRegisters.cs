@@ -9,7 +9,7 @@ using static Internal.JitInterface.FpStruct;
 
 namespace Internal.JitInterface
 {
-    internal static class LoongArch64PassStructInRegister
+    internal static class RiscV64PassFpStructInRegisters
     {
         private const int
             ENREGISTERED_PARAMTYPE_MAXSIZE = 16,
@@ -141,7 +141,7 @@ namespace Internal.JitInterface
 
         private static bool IsAligned(uint val, uint alignment) => 0 == (val & (alignment - 1));
 
-        public static FpStructInRegistersInfo GetLoongArch64PassFpStructInRegistersInfo(TypeDesc td)
+        public static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfo(TypeDesc td)
         {
             if (td.GetElementSize().AsInt > ENREGISTERED_PARAMTYPE_MAXSIZE)
                 return new FpStructInRegistersInfo{};

@@ -9465,7 +9465,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 //
 // The returned value's encoding details how a struct argument uses float registers:
 // see the enum `StructFloatFieldInfoFlags`.
-uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+FpStructInRegistersInfo CEEInfo::getLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         NOTHROW;
@@ -9475,18 +9475,18 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-    uint32_t size = STRUCT_NO_FLOAT_FIELD;
+    FpStructInRegistersInfo info = {};
 
 #if defined(TARGET_LOONGARCH64)
-    size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(TypeHandle(cls));
-#endif
+    info = MethodTable::GetLoongArch64PassFpStructInRegistersInfo(TypeHandle(cls));
+#endif // TARGET_LOONGARCH64
 
     EE_TO_JIT_TRANSITION_LEAF();
 
-    return size;
+    return info;
 }
 
-uint32_t CEEInfo::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+FpStructInRegistersInfo CEEInfo::getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         NOTHROW;
@@ -9496,15 +9496,15 @@ uint32_t CEEInfo::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-    uint32_t size = STRUCT_NO_FLOAT_FIELD;
+    FpStructInRegistersInfo info = {};
 
 #if defined(TARGET_RISCV64)
-    size = (uint32_t)MethodTable::GetRiscV64PassStructInRegisterFlags(TypeHandle(cls));
+    info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(TypeHandle(cls));
 #endif // TARGET_RISCV64
 
     EE_TO_JIT_TRANSITION_LEAF();
 
-    return size;
+    return info;
 }
 
 /*********************************************************************/
