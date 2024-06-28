@@ -615,6 +615,46 @@ add_valuetype_win64 (MonoMethodSignature *signature, ArgInfo *arg_info, MonoType
 
 #endif /* TARGET_WIN32 */
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+static void
+add_return_valuetype_swiftcall (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type, guint32 *stack_size)
+{
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+	int struct_size = mono_class_value_size (klass, NULL);
+	SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (type, FALSE);
+	// The structs that cannot be lowered, we pass them by reference
+	if (lowered_swift_struct.by_reference) {
+		ainfo->storage = ArgValuetypeAddrInIReg;
+		struct_size = ALIGN_TO (struct_size, 8);
+		ainfo->offset = GINT32_TO_INT16 (*stack_size);
+		*stack_size += struct_size;
+		ainfo->reg = AMD64_R10;
+		return;
+	}
+
+	g_assert (lowered_swift_struct.num_lowered_elements > 0 && lowered_swift_struct.num_lowered_elements <= 4);
+
+	ainfo->storage = ArgSwiftValuetypeLoweredRet;
+	ainfo->nregs = lowered_swift_struct.num_lowered_elements;
+	ainfo->byte_arg_size = struct_size;
+
+	// Record the lowered elements of the struct
+	for (uint32_t idx_lowered_elem = 0; idx_lowered_elem < lowered_swift_struct.num_lowered_elements; ++idx_lowered_elem) {
+		MonoTypeEnum lowered_elem = lowered_swift_struct.lowered_elements [idx_lowered_elem]->type;
+		if (lowered_elem == MONO_TYPE_R4) {
+			ainfo->pair_storage [idx_lowered_elem] = ArgInFloatSSEReg;
+		} else if (lowered_elem == MONO_TYPE_R8) {
+			ainfo->pair_storage [idx_lowered_elem] = ArgInDoubleSSEReg;
+		} else {
+			ainfo->pair_storage [idx_lowered_elem] = ArgInIReg;
+		}
+		ainfo->offsets [idx_lowered_elem] = GUINT32_TO_UINT8 (lowered_swift_struct.offsets [idx_lowered_elem]);
+	}
+
+	return;
+}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
+
 static void
 add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			   gboolean is_return,
@@ -623,6 +663,13 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 #ifdef TARGET_WIN32
 	add_valuetype_win64 (sig, ainfo, type, is_return, gr, fr, stack_size);
 #else
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	if (is_return && sig->pinvoke && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		add_return_valuetype_swiftcall (sig, ainfo, type, stack_size);
+		return;
+	}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
+
 	guint32 size, quad, nquads, i, nfields;
 	/* Keep track of the size used in each quad so we can */
 	/* use the right size when copying args/return vars.  */
@@ -970,8 +1017,14 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			add_general (&gr, &stack_size, cinfo->args + 0);
 
 		if (ret_storage == ArgValuetypeAddrInIReg || ret_storage == ArgGsharedvtVariableInReg) {
-			add_general (&gr, &stack_size, &cinfo->ret);
-			cinfo->ret.storage = ret_storage;
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			// We don't need to add the return value to the general registers if we are using the SwiftCall convention
+			if (!(mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && sig->pinvoke))
+#endif
+			{
+				add_general (&gr, &stack_size, &cinfo->ret);
+				cinfo->ret.storage = ret_storage;
+			}
 		}
 	}
 
@@ -1755,6 +1808,7 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 		cfg->ret->inst_offset = -1;
 		break;
 	case ArgNone:
+	case ArgSwiftValuetypeLoweredRet:
 		break;
 	default:
 		g_assert_not_reached ();
@@ -1885,6 +1939,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				offset += cinfo->ret.pair_storage [1] == ArgNone ? 8 : 16;
 				cfg->ret->inst_offset = - offset;
 			}
+			break;
+		case ArgSwiftValuetypeLoweredRet:
 			break;
 		default:
 			g_assert_not_reached ();
@@ -2465,6 +2521,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 	switch (cinfo->ret.storage) {
 	case ArgValuetypeInReg:
+	case ArgSwiftValuetypeLoweredRet:
 		if (cinfo->ret.pair_storage [0] == ArgInIReg && cinfo->ret.pair_storage [1] == ArgNone) {
 			/*
 			 * Tell the JIT to use a more efficient calling convention: call using
@@ -4331,7 +4388,8 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	case OP_VCALL2_REG:
 	case OP_VCALL2_MEMBASE:
 		cinfo = get_call_info (cfg->mempool, ((MonoCallInst*)ins)->signature);
-		if (cinfo->ret.storage == ArgValuetypeInReg) {
+		switch (cinfo->ret.storage) {
+		case ArgValuetypeInReg: {
 			MonoInst *loc = cfg->arch.vret_addr_loc;
 
 			/* Load the destination address */
@@ -4355,6 +4413,40 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 					NOT_IMPLEMENTED;
 				}
 			}
+			break;
+		}
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+		case ArgSwiftValuetypeLoweredRet: {
+			MonoInst *loc = cfg->arch.vret_addr_loc;
+			int i;
+			int gr = 0, fr = 0;
+
+			/* Load the destination address */
+			g_assert (loc->opcode == OP_REGOFFSET);
+			amd64_mov_reg_membase (code, AMD64_RBX, loc->inst_basereg, loc->inst_offset, sizeof(gpointer));
+
+			// Reassemble the returned struct
+			for (i = 0; i < cinfo->ret.nregs; i ++) {
+				switch (cinfo->ret.pair_storage [i]) {
+				case ArgInIReg:
+					amd64_mov_membase_reg (code, AMD64_RBX, cinfo->ret.offsets [i], swift_return_int_regs [gr], sizeof (target_mgreg_t));
+					gr ++;
+					break;
+				case ArgInFloatSSEReg:
+					amd64_movss_membase_reg (code, AMD64_RBX, cinfo->ret.offsets [i], swift_return_float_regs [fr]);
+					fr ++;
+					break;
+				case ArgInDoubleSSEReg:
+					amd64_movsd_membase_reg (code, AMD64_RBX, cinfo->ret.offsets [i], swift_return_float_regs [fr]);
+					fr ++;
+					break;
+				default:
+					NOT_IMPLEMENTED;
+				}
+			}
+			break;
+		}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
 		}
 		break;
 	}
@@ -5641,6 +5733,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			code = amd64_handle_varargs_call (cfg, code, call, TRUE);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			MonoMethodSignature *sig = call->signature;
+			if (sig->pinvoke && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL))
+				amd64_mov_reg_reg (code, AMD64_RAX, AMD64_R10, 8);
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
 			amd64_call_reg (code, ins->sreg1);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = GPTRDIFF_TO_INT (code - cfg->native_code);

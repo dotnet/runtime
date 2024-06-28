@@ -176,6 +176,10 @@ struct sigcontext {
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
+#if defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
+#define MONO_ARCH_HAVE_SWIFTCALL 1
+#endif
+
 struct MonoLMF {
 	/*
 	 * The rsp field points to the stack location where the caller ip is saved.
@@ -246,6 +250,10 @@ static const AMD64_XMM_Reg_No float_param_regs[] = {AMD64_XMM0, AMD64_XMM1, AMD6
 						     AMD64_XMM6, AMD64_XMM7};
 
 static const AMD64_Reg_No return_regs [] = {AMD64_RAX, AMD64_RDX};
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+static const AMD64_Reg_No swift_return_int_regs [] = { AMD64_RAX, AMD64_RDX, AMD64_RCX, AMD64_R8 };
+static const AMD64_XMM_Reg_No swift_return_float_regs [] = { AMD64_XMM0, AMD64_XMM1, AMD64_XMM2, AMD64_XMM3 };
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
 #endif
 
 #define CTX_REGS 2
@@ -302,6 +310,8 @@ typedef enum {
 	/* Variable sized gsharedvt argument passed/returned by addr */
 	ArgGsharedvtVariableInReg,
 	ArgSwiftError,
+	/* Swift lowered struct returned in multiple int and float registers. */
+	ArgSwiftValuetypeLoweredRet,
 	ArgNone /* only in pair_storage */
 } ArgStorage;
 
@@ -310,14 +320,20 @@ typedef struct {
 	guint8  reg;
 	ArgStorage storage : 8;
 
-	/* Only if storage == ArgValuetypeInReg */
+	/* Only if storage == ArgValuetypeInReg/ArgSwiftValuetypeLoweredRet */
+#ifndef MONO_ARCH_HAVE_SWIFTCALL
 	ArgStorage pair_storage [2];
+#else
+	ArgStorage pair_storage [4]; // The last 2 entries are only used for ArgSwiftValuetypeLoweredRet
+	/* Only if storage == ArgSwiftValuetypeLoweredRet */
+	guint16 offsets [4];
+#endif
 	guint8 pair_regs [2];
 	/* The size of each pair (bytes) */
 	int pair_size [2];
 	int nregs;
-	/* Only if storage == ArgOnStack */
-	int arg_size; // Bytes, will always be rounded up/aligned to 8 byte boundary
+	/* Only if storage == ArgOnStack/ArgSwiftValuetypeLoweredRet */
+	int arg_size; // Bytes, when on stack, will always be rounded up/aligned to 8 byte boundary
 	// Size in bytes for small arguments
 	int byte_arg_size;
 	guint8 pass_empty_struct : 1; // Set in scenarios when empty structs needs to be represented as argument.
@@ -493,9 +509,6 @@ typedef struct {
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
 
-#if defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
-#define MONO_ARCH_HAVE_SWIFTCALL 1
-#endif
 
 void
 mono_amd64_patch (unsigned char* code, gpointer target);
