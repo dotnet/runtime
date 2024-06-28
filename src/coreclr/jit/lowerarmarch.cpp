@@ -3391,9 +3391,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             assert((embOp->GetHWIntrinsicId() == NI_Sve_ConvertToInt32)  ||
                                    (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt32) ||
                                    (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToInt64)  ||
-                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt64) ||
-                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToSingle) ||
-                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToDouble));
+                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt64) );
 
                             uint32_t auxSize = genTypeSize(embOp->GetAuxiliaryType());
                             if (maskSize == auxSize)
