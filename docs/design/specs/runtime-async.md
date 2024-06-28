@@ -37,11 +37,10 @@ Async methods have some temporary restrictions with may be lifted later:
 * Usage of the `localloc` instruction is forbidden
 * Pinning locals may not be created
 
-Other restrictions are likely to be permanent, including:
-* Suspension points may not appear in exception handling blocks.
-* By-ref variables and variables with by-ref-like type may not be used across suspension points
+Other restrictions are likely to be permanent.
 
-To facilitate
+Suspension points may not appear in exception handling blocks.
+
 All async methods effectively have two entry points, or signatures. The first signature is the one present in the above code: a modreq before the return type. The second signature is a "Task-equivalent signature", described in further detail in [I.8.6.1.5 Method signatures].
 
 Async methods have a special calling convention and may not be called directly outside of other async methods. To call an async method from a sync method, callers must use the second "Task-equivalent signature".
