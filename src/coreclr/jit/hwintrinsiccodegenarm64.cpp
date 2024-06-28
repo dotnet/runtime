@@ -2358,8 +2358,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_ConditionalExtractAfterLastActiveElement:
             case NI_Sve_ConditionalExtractLastActiveElement:
             {
-		assert(emitter::isFloatReg(targetReg));
-		assert(varTypeIsFloating(node->gtType) || varTypeIsSIMD(node->gtType));
+                assert(emitter::isFloatReg(targetReg));
+                assert(varTypeIsFloating(node->gtType) || varTypeIsSIMD(node->gtType));
 
                 if (targetReg != op2Reg)
                 {
