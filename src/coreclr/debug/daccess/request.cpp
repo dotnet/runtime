@@ -161,15 +161,6 @@ BOOL DacValidateMethodTable(PTR_MethodTable pMT, BOOL &bIsFree)
             // In rare cases, we've seen the standard check above pass when it shouldn't.
             // Insert additional/ad-hoc tests below.
 
-            // FIXME(cdac): ak - this check is trivially true - GetCl() runs in the DAC and synthesizes a token with a mdtTypeDef table
-            // so the check is always true.
-#if 0
-            // Metadata token should look valid for a class
-            mdTypeDef td = pMT->GetCl();
-            if (td != mdTokenNil && TypeFromToken(td) != mdtTypeDef)
-                goto BadMethodTable;
-#endif
-
             // BaseSize should always be greater than 0 for valid objects (unless it's an interface)
             // For strings, baseSize is not ptr-aligned
             if (!pMT->IsInterface() && !pMT->IsString())
