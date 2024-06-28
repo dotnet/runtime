@@ -4227,6 +4227,11 @@ concat_variance_search_table (MonoClass *klass, MonoVarianceSearchEntry *buf, in
 
 static void
 build_variance_search_table_inner (MonoClass *klass, MonoVarianceSearchEntry *buf, int buf_size, int *buf_count, MonoClass *current) {
+	if (!m_class_is_interfaces_inited (current)) {
+		ERROR_DECL (error);
+		mono_class_setup_interfaces (current, error);
+		return_if_nok (error);
+	}
 	guint c = m_class_get_interface_count (current);
 	if (c) {
 		/*
