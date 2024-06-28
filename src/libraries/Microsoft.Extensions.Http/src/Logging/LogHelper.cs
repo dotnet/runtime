@@ -151,7 +151,9 @@ namespace Microsoft.Extensions.Http.Logging
                 return null;
             }
 
-            string uriString = uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString();
+            string uriString = uri.IsAbsoluteUri
+                ? uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.UserInfo, UriFormat.UriEscaped)
+                : uri.ToString();
 
             if (s_disableUriQueryRedaction)
             {

@@ -29,6 +29,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
         {
             { null, null },
             { "http://q.app/foo", "http://q.app/foo" },
+            { "http://user:xxx@q.app/foo", "http://q.app/foo" }, // has user info
             { "http://q.app/foo?", "http://q.app/foo?" },
             { "http://q.app/foo?XXX", "http://q.app/foo?*" },
             { "http://q.app/a/b/c?a=b%20c&x=1", "http://q.app/a/b/c?*" },
@@ -36,7 +37,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             { "http://q.app#f", "http://q.app/#f" }, // Has fragment.
             { "http://q.app#f?a=b", "http://q.app/#f?a=b" }, // Has fragment with a '?'.
             { "http://q.app/?a=b#f?a=b", "http://q.app/?*#f?a=b" }, // Has query and fragment with a '?'.
-            { "http://q.app?#f", "http://q.app/?#f" }, // Has empty query and fragment.
+            { "http://q.app?#f", "http://q.app/?#f" }, // Has empty query and fragment.s
             { "/cat/1/2", "/cat/1/2" },
             { "/cat/1/2?", "/cat/1/2?" },
             { "/cat/1/2?X", "/cat/1/2?*" },
