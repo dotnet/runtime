@@ -118,6 +118,9 @@ public sealed unsafe class Target
 
         _contracts = descriptor.Contracts ?? [];
 
+        // Set pointer type size
+        _knownTypes[DataType.pointer] = new TypeInfo { Size = (uint)_config.PointerSize };
+
         // Read types and map to known data types
         if (descriptor.Types is not null)
         {

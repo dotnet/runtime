@@ -57,56 +57,126 @@ public static class Program
             Console.WriteLine("       StressLog <log file> -? for list of options");
             return 1;
         }
+        else if (args.Contains("-?"))
+        {
+            Console.WriteLine("""      
+                Usage:
+
+                 -o:<outputfile.txt>: write output to a text file instead of the console
+
+                 -v:<hexvalue>: look for a specific hex value (often used to look for addresses
+                 -v:<hexlower>-<hexupper>: look for values >= hexlower and <= hexupper
+                 -v:<hexlower>+<hexsize>: look for values >= hexlower and <= hexlower+hexsize
+
+                 -t:<start time>: don't consider messages before start time
+                 -t:<start time>-<end time>: only consider messages >= start time and <= end time
+                 -t:-<last seconds>: only consider messages in the last seconds
+
+                 -l:<level1>,<level2>,... : print messages at dprint level1,level2,...
+
+                 -g:<gc_index>: only print messages occurring during GC#gc_index
+                 -g:<gc_index1>-<gc_index_2>: as above, for a range of GC indices
+
+                 -f: print the raw format strings along with the message
+                     (useful to search for the format string in the source code
+                 -f:<format string>: search for a specific format string
+                    e.g. '-f:\"<%zx>:%zx\"'
+                 -p:<format string>: search for all format strings with a specific prefix
+                    e.g. '-p:\"commit-accounting\"'
+
+                 -i:<hex facility code>: ignore messages from log facilities
+                   e.g. '-i:7ffe' means ignore messages from anything but LF_GC
+
+                 -tid: print hex thread ids, e.g. 2a08 instead of GC12
+                 -tid:<thread id1>,<thread id2>,...: only print messages from the listed
+                     threads. Thread ids are in hex, given as GC<decimal heap number>,
+                     or BG<decimal heap number>
+                     e.g. '-tid:2bc8,GC3,BG14' would print messages from thread 2bc8, the gc thread
+                     associated with heap 3, and the background GC thread for heap 14
+
+                 -e: print earliest messages from all threads
+                 -e:<thread id1>,<thread id2>,...: print earliest messages from the listed
+                     threads. Thread ids are in hex, given as GC<decimal heap number>,
+                     or BG<decimal heap number>
+                     e.g. '-e:2bc8,GC3,BG14' would print the earliest messages from thread 2bc8,
+                     the gc thread associated with heap 3, and the background GC thread for heap 14
+
+                 -a: print all messages from all threads
+
+                 -d: suppress default messages
+                
+                """);
+            return 0;
+        }
 
         using var stressLogData = MemoryMappedFile.CreateFromFile(args[0], FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
-        using MemoryMappedViewStream stream = stressLogData.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
+        using MemoryMappedViewAccessor accessor = stressLogData.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
 
-        if (stream.Length < sizeof(StressLogHeader))
+        if (accessor.Capacity < sizeof(StressLogHeader))
         {
             Console.WriteLine("Invalid memory-mapped stress log");
             return 1;
         }
-        StressLogHeader* header = (StressLogHeader*)stream.PositionPointer;
-
-        if (header->headerSize != sizeof(StressLogHeader)
-            || !"LRTS"u8.SequenceEqual(header->magic)
-            || header->version is not 0x00010001 or 0x00010002)
+        byte* buffer = null;
+        try
         {
-            Console.WriteLine("Invalid StressLogHeader");
-            return 1;
-        }
+            accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref buffer);
+            StressLogHeader* header = (StressLogHeader*)buffer;
 
-        bool runAgain = false;
-        do
-        {
-            ProcessStressLog(stressLogData, args[1..]);
-
-            Console.Write("'q' to quit, 'r' to run again\n>");
-
-            while (true)
+            if (header->headerSize != sizeof(StressLogHeader)
+                || !"LRTS"u8.SequenceEqual(header->magic)
+                || header->version is not (0x00010001 or 0x00010002))
             {
-                string command = Console.ReadLine()!;
-                if (command.Equals("q", StringComparison.OrdinalIgnoreCase))
-                {
-                    return 0;
-                }
-                else if (command.Equals("r", StringComparison.OrdinalIgnoreCase))
-                {
-                    runAgain = true;
-                    break;
-                }
+                Console.WriteLine("Invalid StressLogHeader");
+                return 1;
             }
-        } while (runAgain);
 
-        return 0;
+            Target target = Target.Create(
+                GetDescriptor((int)(header->version & 0xFFFF)),
+                [TargetPointer.Null, new TargetPointer(header->memoryBase + (nuint)((byte*)&header->moduleTable - (byte*)header))],
+                &ReadFromMemoryMappedLog,
+                header,
+                true,
+                nuint.Size);
+
+            Registry registry = new(target);
+            IStressLog stressLogContract = registry.StressLog;
+
+            bool runAgain = false;
+            do
+            {
+                ProcessStressLog(header, stressLogContract, args[1..]);
+
+                Console.Write("'q' to quit, 'r' to run again\n>");
+
+                while (true)
+                {
+                    string command = Console.ReadLine()!;
+                    if (command.Equals("q", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return 0;
+                    }
+                    else if (command.Equals("r", StringComparison.OrdinalIgnoreCase))
+                    {
+                        runAgain = true;
+                        break;
+                    }
+                }
+            } while (runAgain);
+
+            return 0;
+        }
+        finally
+        {
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+        }
     }
 
-    private static unsafe void ProcessStressLog(MemoryMappedFile stressLogData, string[] args)
+    private static unsafe void ProcessStressLog(StressLogHeader* header, IStressLog stressLogContract, string[] args)
     {
+        List<ThreadStressLogData> logs = [.. stressLogContract.GetThreadStressLogs(new TargetPointer(header->logs))];
 
-
-        ConcurrentBag<StressMsgData> stressLogEntries = new();
-
+        List<StressMsgData> messages = [.. logs.SelectMany(stressLogContract.GetStressMessages)];
     }
 
     private static ContractDescriptorParser.ContractDescriptor GetDescriptor(int stressLogVersion)
@@ -172,11 +242,10 @@ public static class Program
                 "globals": {
                     "StressLogEnabled": [ "0x1", "uint8" ],
                     "StressLogMaxModules": [ "0x5", "uint64" ],
-                    "StressLogChunkMaxSize": [ "0x8000", "uint32" ],
+                    "StressLogChunkSize": [ "0x8000", "uint32" ],
                     "StressLogMaxMessageSize": [ "0x208", "uint64" ],
                     "StressMsgHeaderSize": [ "0x10", "uint32" ],
-                    "StressLog": [[ 1 ], "pointer" ],
-                    "StressLogModuleTable": [[ 2 ], "pointer" ],
+                    "StressLogModuleTable": [[ 1 ], "pointer" ],
                 },
                 "contracts": {
                     "StressLog": 2,

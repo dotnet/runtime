@@ -31,7 +31,7 @@ internal struct StressLogHeader
     private uint reserved1;
 
     [InlineArray(15)]
-    private record struct ReservedSpace(uint reserved);
+    private record struct ReservedSpace(ulong reserved);
     private ReservedSpace reserved2;
 
     public struct ModuleDesc
