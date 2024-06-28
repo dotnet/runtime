@@ -326,10 +326,11 @@ namespace Internal.IL
                 StartImportingInstruction();
 
                 ILOpcode opCode = (ILOpcode)ReadILByte();
+                if (opCode == ILOpcode.prefix1)
+                    opCode = (ILOpcode)(0x100 + ReadILByte());
 
                 StartImportingInstruction(opCode);
 
-            again:
                 switch (opCode)
                 {
                     case ILOpcode.nop:
@@ -818,9 +819,6 @@ namespace Internal.IL
                     case ILOpcode.conv_u:
                         ImportConvert(WellKnownType.UIntPtr, false, true);
                         break;
-                    case ILOpcode.prefix1:
-                        opCode = (ILOpcode)(0x100 + ReadILByte());
-                        goto again;
                     case ILOpcode.arglist:
                         ImportArgList();
                         break;
