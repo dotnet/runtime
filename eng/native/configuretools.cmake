@@ -91,6 +91,8 @@ if (NOT CLR_CMAKE_HOST_WIN32)
   else(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
     set(LD_OSX 1)
   endif()
+  string(STRIP "${ldVersionOutput}" ldVersionOutput)
+  message("-- The linker identification is ${ldVersionOutput}")
 endif()
 
 # This introspection depends on CMAKE_STRINGS, which is why it's in this file instead of configureplatform
