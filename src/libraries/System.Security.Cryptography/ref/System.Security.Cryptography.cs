@@ -3299,21 +3299,21 @@ namespace System.Security.Cryptography.X509Certificates
         public string ExportPkcs7Pem() { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Find(System.Security.Cryptography.X509Certificates.X509FindType findType, object findValue, bool validOnly) { throw null; }
         public new System.Security.Cryptography.X509Certificates.X509Certificate2Enumerator GetEnumerator() { throw null; }
-[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(byte[] rawData) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(System.ReadOnlySpan<byte> rawData) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(System.ReadOnlySpan<byte> rawData, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(System.ReadOnlySpan<byte> rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(string fileName) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(string fileName, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
-[System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
         public void ImportFromPem(System.ReadOnlySpan<char> certPem) { }
         public void ImportFromPemFile(string certPemFilePath) { }
