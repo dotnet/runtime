@@ -4,6 +4,8 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
@@ -89,7 +91,36 @@ namespace System.DirectoryServices.Protocols
 
     public class DirectoryControl
     {
+        // Scratch buffer allocations with sizes which are below this threshold should be made on the stack.
+        // This is partially based on RFC1035, which specifies that a label in a domain name should be < 64 characters.
+        // If a server name is specified as an FQDN, this will be at least three labels in an AD environment - up to
+        // 192 characters. Doubling this to allow for Unicode encoding, then rounding to the nearest power of two
+        // yields 512.
+        internal const int ServerNameStackAllocationThreshold = 512;
+        // Scratch buffer allocations with sizes which are below this threshold should be made on the stack.
+        // This is based on the Active Directory schema. The largest attribute name here is msDS-FailedInteractiveLogonCountAtLastSuccessfulLogon,
+        // which is 53 characters long. This is rounded up to the nearest power of two.
+        internal const int AttributeNameStackAllocationThreshold = 64;
+
+        internal static readonly UTF8Encoding s_utf8Encoding = new(false, true);
+
         internal byte[] _directoryControlValue;
+
+        [ThreadStatic]
+        private static AsnWriter t_smallWriter;
+        [ThreadStatic]
+        private static AsnWriter t_mediumWriter;
+        [ThreadStatic]
+        private static AsnWriter t_largeWriter;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static AsnWriter GetWriter(int expectedSize)
+            => expectedSize switch
+            {
+                > 0 and <= 32 => t_smallWriter ??= new AsnWriter(AsnEncodingRules.BER, 32),
+                > 32 and <= 128 => t_mediumWriter ??= new AsnWriter(AsnEncodingRules.BER, 128),
+                _ => t_largeWriter ??= new AsnWriter(AsnEncodingRules.BER, 256)
+            };
 
         public DirectoryControl(string type, byte[] value, bool isCritical, bool serverSide)
         {
@@ -99,11 +130,7 @@ namespace System.DirectoryServices.Protocols
 
             if (value != null)
             {
-                _directoryControlValue = new byte[value.Length];
-                for (int i = 0; i < value.Length; i++)
-                {
-                    _directoryControlValue[i] = value[i];
-                }
+                _directoryControlValue = value.AsSpan().ToArray();
             }
             IsCritical = isCritical;
             ServerSide = serverSide;
@@ -116,12 +143,7 @@ namespace System.DirectoryServices.Protocols
                 return Array.Empty<byte>();
             }
 
-            byte[] tempValue = new byte[_directoryControlValue.Length];
-            for (int i = 0; i < _directoryControlValue.Length; i++)
-            {
-                tempValue[i] = _directoryControlValue[i];
-            }
-            return tempValue;
+            return _directoryControlValue.AsSpan().ToArray();
         }
 
         public string Type { get; }
@@ -132,101 +154,164 @@ namespace System.DirectoryServices.Protocols
 
         internal static void TransformControls(DirectoryControl[] controls)
         {
-            for (int i = 0; i < controls.Length; i++)
+            Span<byte> attributeNameScratchSpace = stackalloc byte[AttributeNameStackAllocationThreshold];
+
+            try
             {
-                Debug.Assert(controls[i] != null);
-                byte[] value = controls[i].GetValue();
-                if (controls[i].Type == "1.2.840.113556.1.4.319")
+                for (int i = 0; i < controls.Length; i++)
                 {
-                    // The control is a PageControl.
-                    object[] result = BerConverter.Decode("{iO}", value);
-                    Debug.Assert((result != null) && (result.Length == 2));
+                    Debug.Assert(controls[i] != null);
+                    byte[] value = controls[i]._directoryControlValue ?? Array.Empty<byte>();
+                    Span<byte> asnSpan = value;
+                    bool asnReadSuccessful;
 
-                    int size = (int)result[0];
-                    // user expects cookie with length 0 as paged search is done.
-                    byte[] cookie = (byte[])result[1] ?? Array.Empty<byte>();
-
-                    PageResultResponseControl pageControl = new PageResultResponseControl(size, cookie, controls[i].IsCritical, controls[i].GetValue());
-                    controls[i] = pageControl;
-                }
-                else if (controls[i].Type == "1.2.840.113556.1.4.1504")
-                {
-                    // The control is an AsqControl.
-                    object[] o = BerConverter.Decode("{e}", value);
-                    Debug.Assert((o != null) && (o.Length == 1));
-
-                    int result = (int)o[0];
-                    AsqResponseControl asq = new AsqResponseControl(result, controls[i].IsCritical, controls[i].GetValue());
-                    controls[i] = asq;
-                }
-                else if (controls[i].Type == "1.2.840.113556.1.4.841")
-                {
-                    // The control is a DirSyncControl.
-                    object[] o = BerConverter.Decode("{iiO}", value);
-                    Debug.Assert(o != null && o.Length == 3);
-
-                    int moreData = (int)o[0];
-                    int count = (int)o[1];
-                    byte[] dirsyncCookie = (byte[])o[2];
-
-                    DirSyncResponseControl dirsync = new DirSyncResponseControl(dirsyncCookie, (moreData == 0 ? false : true), count, controls[i].IsCritical, controls[i].GetValue());
-                    controls[i] = dirsync;
-                }
-                else if (controls[i].Type == "1.2.840.113556.1.4.474")
-                {
-                    // The control is a SortControl.
-                    int result;
-                    string attribute = null;
-                    object[] o = BerConverter.TryDecode("{ea}", value, out bool decodeSucceeded);
-
-                    // decode might fail as AD for example never returns attribute name, we don't want to unnecessarily throw and catch exception
-                    if (decodeSucceeded)
+                    if (controls[i].Type == "1.2.840.113556.1.4.319")
                     {
-                        Debug.Assert(o != null && o.Length == 2);
-                        result = (int)o[0];
-                        attribute = (string)o[1];
+                        // The control is a PageControl, as described in RFC 2696.
+                        byte[] cookie = Array.Empty<byte>();
+
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        ThrowUnless(sequenceContentLength > 0);
+
+                        asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int size, out int bytesConsumed);
+                        ThrowUnless(asnReadSuccessful);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        // If present, the remaining bytes in the control are expected to be an octet string.
+                        if (!asnSpan.IsEmpty)
+                        {
+                            // user expects cookie with length 0 as paged search is done. In this situation, there'll still be two bytes
+                            // for the ASN.1 tag.
+                            cookie = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                            asnSpan = asnSpan.Slice(bytesConsumed);
+                        }
+                        ThrowUnless(asnSpan.IsEmpty);
+
+                        PageResultResponseControl pageControl = new PageResultResponseControl(size, cookie, controls[i].IsCritical, value);
+                        controls[i] = pageControl;
                     }
-                    else
+                    else if (controls[i].Type == "1.2.840.113556.1.4.1504")
                     {
-                        // decoding might fail as attribute is optional
-                        o = BerConverter.Decode("{e}", value);
-                        Debug.Assert(o != null && o.Length == 1);
+                        // The control is an AsqControl, as described in MS-ADTS section 3.1.1.3.4.1.18
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        ThrowUnless(sequenceContentLength > 0);
 
-                        result = (int)o[0];
+                        ResultCode result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan.Slice(sequenceContentOffset, sequenceContentLength), AsnEncodingRules.BER, out _);
+
+                        AsqResponseControl asq = new AsqResponseControl(result, controls[i].IsCritical, value);
+                        controls[i] = asq;
                     }
+                    else if (controls[i].Type == "1.2.840.113556.1.4.841")
+                    {
+                        // The control is a DirSyncControl, as described in MS-ADTS section 3.1.1.3.4.1.3
+                        byte[] dirsyncCookie;
 
-                    SortResponseControl sort = new SortResponseControl((ResultCode)result, attribute, controls[i].IsCritical, controls[i].GetValue());
-                    controls[i] = sort;
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        ThrowUnless(sequenceContentLength > 0);
+                        asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
+
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int moreData, out int bytesConsumed);
+                        ThrowUnless(asnReadSuccessful);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int count, out bytesConsumed);
+                        ThrowUnless(asnReadSuccessful);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        dirsyncCookie = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                        ThrowUnless(asnSpan.Length == bytesConsumed);
+
+                        DirSyncResponseControl dirsync = new DirSyncResponseControl(dirsyncCookie, moreData != 0, count, controls[i].IsCritical, value);
+                        controls[i] = dirsync;
+                    }
+                    else if (controls[i].Type == "1.2.840.113556.1.4.474")
+                    {
+                        // The control is a SortControl, as described in RFC 2891.
+                        ResultCode result;
+                        string attribute = null;
+
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        ThrowUnless(sequenceContentLength > 0);
+                        asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
+
+                        result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out int bytesConsumed);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        // If present, the remaining bytes in the control are expected to be an octet string.
+                        if (!asnSpan.IsEmpty)
+                        {
+                            // Attribute name is optional: AD for example never returns attribute name
+                            scoped Span<byte> attributeNameBuffer;
+
+                            if (asnSpan.Length <= AttributeNameStackAllocationThreshold)
+                            {
+                                asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, attributeNameScratchSpace, AsnEncodingRules.BER, out bytesConsumed, out int octetStringLength);
+                                Debug.Assert(asnReadSuccessful);
+                                attributeNameBuffer = attributeNameScratchSpace.Slice(0, octetStringLength);
+                            }
+                            else
+                            {
+                                attributeNameBuffer = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                            }
+                            asnSpan = asnSpan.Slice(bytesConsumed);
+
+                            attribute = s_utf8Encoding.GetString(attributeNameBuffer);
+                        }
+
+                        ThrowUnless(asnSpan.IsEmpty);
+
+                        SortResponseControl sort = new SortResponseControl(result, attribute, controls[i].IsCritical, value);
+                        controls[i] = sort;
+                    }
+                    else if (controls[i].Type == "2.16.840.1.113730.3.4.10")
+                    {
+                        // The control is a VlvResponseControl, as described in MS-ADTS 3.1.1.3.4.1.17
+                        ResultCode result;
+                        byte[] context = null;
+
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        ThrowUnless(sequenceContentLength > 0);
+                        asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
+
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int position, out int bytesConsumed);
+                        ThrowUnless(asnReadSuccessful);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int count, out bytesConsumed);
+                        ThrowUnless(asnReadSuccessful);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        // If present, the remaining bytes in the control are expected to be an octet string.
+                        if (!asnSpan.IsEmpty)
+                        {
+                            // user expects cookie with length 0 as paged search is done. In this situation, there'll still be two bytes
+                            // for the ASN.1 tag.
+                            context = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                            asnSpan = asnSpan.Slice(bytesConsumed);
+                        }
+                        ThrowUnless(asnSpan.IsEmpty);
+
+                        VlvResponseControl vlv = new VlvResponseControl(position, count, context, result, controls[i].IsCritical, value);
+                        controls[i] = vlv;
+                    }
                 }
-                else if (controls[i].Type == "2.16.840.1.113730.3.4.10")
-                {
-                    // The control is a VlvResponseControl.
-                    int position;
-                    int count;
-                    int result;
-                    byte[] context = null;
-                    object[] o = BerConverter.TryDecode("{iieO}", value, out bool decodeSucceeded);
+            }
+            catch (AsnContentException asnEx)
+            {
+                throw new BerConversionException(SR.BerConversionError, asnEx);
+            }
+        }
 
-                    if (decodeSucceeded)
-                    {
-                        Debug.Assert(o != null && o.Length == 4);
-                        position = (int)o[0];
-                        count = (int)o[1];
-                        result = (int)o[2];
-                        context = (byte[])o[3];
-                    }
-                    else
-                    {
-                        o = BerConverter.Decode("{iie}", value);
-                        Debug.Assert(o != null && o.Length == 3);
-                        position = (int)o[0];
-                        count = (int)o[1];
-                        result = (int)o[2];
-                    }
-
-                    VlvResponseControl vlv = new VlvResponseControl(position, count, context, (ResultCode)result, controls[i].IsCritical, controls[i].GetValue());
-                    controls[i] = vlv;
-                }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ThrowUnless(bool condition)
+        {
+            if (!condition)
+            {
+                throw new BerConversionException();
             }
         }
     }
@@ -246,16 +331,42 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            _directoryControlValue = BerConverter.Encode("{s}", new object[] { AttributeName });
+            int sizeEstimate = 4 + (AttributeName?.Length ?? 0);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+
+            writer.Reset();
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.18.
+             * ASQRequestValue ::= SEQUENCE {
+             *                      sourceAttribute     OCTET STRING }
+             */
+            using (writer.PushSequence())
+            {
+                if (!string.IsNullOrEmpty(AttributeName))
+                {
+                    int octetStringLength = s_utf8Encoding.GetByteCount(AttributeName);
+                    // This trades slightly increased stack usage for the improved codegen which comes from a constant value.
+                    Span<byte> tmpValue = octetStringLength <= AttributeNameStackAllocationThreshold ? stackalloc byte[AttributeNameStackAllocationThreshold].Slice(0, octetStringLength) : new byte[octetStringLength];
+
+                    s_utf8Encoding.GetBytes(AttributeName, tmpValue);
+                    writer.WriteOctetString(tmpValue);
+                }
+                else
+                {
+                    writer.WriteOctetString([]);
+                }
+            }
+            _directoryControlValue = writer.Encode();
+            writer.Reset();
+
             return base.GetValue();
         }
     }
 
     public class AsqResponseControl : DirectoryControl
     {
-        internal AsqResponseControl(int result, bool criticality, byte[] controlValue) : base("1.2.840.113556.1.4.1504", controlValue, criticality, true)
+        internal AsqResponseControl(ResultCode result, bool criticality, byte[] controlValue) : base("1.2.840.113556.1.4.1504", controlValue, criticality, true)
         {
-            Result = (ResultCode)result;
+            Result = result;
         }
 
         public ResultCode Result { get; }
@@ -276,18 +387,20 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.2.
+             * "When sending this control to the DC, the controlValue field is set to a UTF-8 string
+             * containing the fully qualified domain name of a DC in the domain to which the object
+             * is to be moved. The string is not BER-encoded."
+             */
             if (TargetDomainController != null)
             {
-                UTF8Encoding encoder = new UTF8Encoding();
-                byte[] bytes = encoder.GetBytes(TargetDomainController);
+                int byteCount = s_utf8Encoding.GetByteCount(TargetDomainController);
 
                 // Allocate large enough space for the '\0' character.
-                _directoryControlValue = new byte[bytes.Length + 2];
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    _directoryControlValue[i] = bytes[i];
-                }
+                _directoryControlValue = new byte[byteCount + 2];
+                s_utf8Encoding.GetBytes(TargetDomainController, _directoryControlValue);
             }
+
             return base.GetValue();
         }
     }
@@ -325,7 +438,20 @@ namespace System.DirectoryServices.Protocols
         }
         public override byte[] GetValue()
         {
-            _directoryControlValue = BerConverter.Encode("{i}", new object[] { (int)Flag });
+            AsnWriter writer = GetWriter(expectedSize: 8);
+
+            writer.Reset();
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.5.
+             * ExtendedDNRequestValue ::= SEQUENCE {
+             *                              Flag     INTEGER }
+             */
+            using (writer.PushSequence())
+            {
+                writer.WriteInteger((int)Flag);
+            }
+            _directoryControlValue = writer.Encode();
+            writer.Reset();
+
             return base.GetValue();
         }
     }
@@ -360,7 +486,20 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            _directoryControlValue = BerConverter.Encode("{i}", new object[] { (int)SecurityMasks });
+            AsnWriter writer = GetWriter(expectedSize: 8);
+
+            writer.Reset();
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.11.
+             * SDFlagsRequestValue ::= SEQUENCE {
+             *                          Flags     INTEGER }
+             */
+            using (writer.PushSequence())
+            {
+                writer.WriteInteger((int)SecurityMasks);
+            }
+            _directoryControlValue = writer.Encode();
+            writer.Reset();
+
             return base.GetValue();
         }
     }
@@ -389,7 +528,20 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            _directoryControlValue = BerConverter.Encode("{i}", new object[] { (int)SearchOption });
+            AsnWriter writer = GetWriter(expectedSize: 8);
+
+            writer.Reset();
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.12.
+             * SearchOptionsRequestValue ::= SEQUENCE {
+             *                                  Flags     INTEGER }
+             */
+            using (writer.PushSequence())
+            {
+                writer.WriteInteger((int)SearchOption);
+            }
+            _directoryControlValue = writer.Encode();
+            writer.Reset();
+
             return base.GetValue();
         }
     }
@@ -407,7 +559,6 @@ namespace System.DirectoryServices.Protocols
     public class VerifyNameControl : DirectoryControl
     {
         private string _serverName;
-
         public VerifyNameControl() : base("1.2.840.113556.1.4.1338", null, true, true) { }
 
         public VerifyNameControl(string serverName) : this()
@@ -432,14 +583,37 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            byte[] tmpValue = null;
-            if (ServerName != null)
-            {
-                UnicodeEncoding unicode = new UnicodeEncoding();
-                tmpValue = unicode.GetBytes(ServerName);
-            }
+            int sizeEstimate = 10 + 2 * (ServerName?.Length ?? 0);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
 
-            _directoryControlValue = BerConverter.Encode("{io}", new object[] { Flag, tmpValue });
+            writer.Reset();
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.16.
+             * VerifyNameRequestValue ::= SEQUENCE {
+             *                              Flags       INTEGER,
+             *                              ServerName  OCTET STRING }
+             */
+            using (writer.PushSequence())
+            {
+                writer.WriteInteger(Flag);
+
+                if (!string.IsNullOrEmpty(ServerName))
+                {
+                    int serverNameLength = Encoding.Unicode.GetByteCount(ServerName);
+                    // This differs from AsqRequest - it doesn't allocate ServerNameStackAllocationThreshold and provide a slice into it, because the size of this
+                    // constant is such that the larger stack allocation would outweigh the benefit of a constant-value stackalloc.
+                    Span<byte> tmpValue = serverNameLength <= ServerNameStackAllocationThreshold ? stackalloc byte[serverNameLength] : new byte[serverNameLength];
+
+                    Encoding.Unicode.GetBytes(ServerName, tmpValue);
+                    writer.WriteOctetString(tmpValue);
+                }
+                else
+                {
+                    writer.WriteOctetString([]);
+                }
+            }
+            _directoryControlValue = writer.Encode();
+            writer.Reset();
+
             return base.GetValue();
         }
     }
@@ -474,13 +648,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempCookie = new byte[_dirsyncCookie.Length];
-                for (int i = 0; i < tempCookie.Length; i++)
-                {
-                    tempCookie[i] = _dirsyncCookie[i];
-                }
-
-                return tempCookie;
+                return _dirsyncCookie.AsSpan().ToArray();
             }
             set => _dirsyncCookie = value;
         }
@@ -505,8 +673,25 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            object[] o = new object[] { (int)Option, AttributeCount, _dirsyncCookie };
-            _directoryControlValue = BerConverter.Encode("{iio}", o);
+            int sizeEstimate = 16 + (_dirsyncCookie?.Length ?? 0);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+
+            writer.Reset();
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.3.
+             * DirSyncRequestValue ::= SEQUENCE {
+             *                          Flags       INTEGER,
+             *                          MaxBytes    INTEGER,
+             *                          Cookie  OCTET STRING }
+             */
+            using (writer.PushSequence())
+            {
+                writer.WriteInteger((int)Option);
+                writer.WriteInteger(AttributeCount);
+                writer.WriteOctetString(_dirsyncCookie ?? []);
+            }
+            _directoryControlValue = writer.Encode();
+            writer.Reset();
+
             return base.GetValue();
         }
     }
@@ -531,13 +716,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempCookie = new byte[_dirsyncCookie.Length];
-                for (int i = 0; i < tempCookie.Length; i++)
-                {
-                    tempCookie[i] = _dirsyncCookie[i];
-                }
-
-                return tempCookie;
+                return _dirsyncCookie.AsSpan().ToArray();
             }
         }
 
@@ -586,21 +765,30 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempCookie = new byte[_pageCookie.Length];
-                for (int i = 0; i < _pageCookie.Length; i++)
-                {
-                    tempCookie[i] = _pageCookie[i];
-                }
-
-                return tempCookie;
+                return _pageCookie.AsSpan().ToArray();
             }
             set => _pageCookie = value;
         }
 
         public override byte[] GetValue()
         {
-            object[] o = new object[] { PageSize, _pageCookie };
-            _directoryControlValue = BerConverter.Encode("{io}", o);
+            int sizeEstimate = 6 + (_pageCookie?.Length ?? 1);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+
+            writer.Reset();
+            /* This is as laid out in RFC2696.
+             * realSearchControlValue ::= SEQUENCE {
+             *                              size    INTEGER,
+             *                              cookie  OCTET STRING }
+             */
+            using (writer.PushSequence())
+            {
+                writer.WriteInteger(PageSize);
+                writer.WriteOctetString(_pageCookie);
+            }
+            _directoryControlValue = writer.Encode();
+            writer.Reset();
+
             return base.GetValue();
         }
     }
@@ -624,12 +812,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempCookie = new byte[_pageCookie.Length];
-                for (int i = 0; i < _pageCookie.Length; i++)
-                {
-                    tempCookie[i] = _pageCookie[i];
-                }
-                return tempCookie;
+                return _pageCookie.AsSpan().ToArray();
             }
         }
 
@@ -638,6 +821,10 @@ namespace System.DirectoryServices.Protocols
 
     public class SortRequestControl : DirectoryControl
     {
+        private static readonly Asn1Tag s_orderingRuleTag = new(TagClass.ContextSpecific, 0, false);
+        private static readonly Asn1Tag s_reverseOrderTag = new(TagClass.ContextSpecific, 1, false);
+
+        private int _keysAsnLength;
         private SortKey[] _keys = Array.Empty<SortKey>();
         public SortRequestControl(params SortKey[] sortKeys) : base("1.2.840.113556.1.4.473", null, true, true)
         {
@@ -651,10 +838,12 @@ namespace System.DirectoryServices.Protocols
                 }
             }
 
+            _keysAsnLength = 0;
             _keys = new SortKey[sortKeys.Length];
             for (int i = 0; i < sortKeys.Length; i++)
             {
                 _keys[i] = new SortKey(sortKeys[i].AttributeName, sortKeys[i].MatchingRule, sortKeys[i].ReverseOrder);
+                _keysAsnLength += 13 + (sortKeys[i].AttributeName?.Length ?? 0) + (sortKeys[i].MatchingRule?.Length ?? 0);
             }
         }
 
@@ -666,6 +855,7 @@ namespace System.DirectoryServices.Protocols
         {
             SortKey key = new SortKey(attributeName, matchingRule, reverseOrder);
             _keys = new SortKey[] { key };
+            _keysAsnLength = 13 + (attributeName?.Length ?? 0) + (matchingRule?.Length ?? 0);
         }
 
         public SortKey[] SortKeys
@@ -699,101 +889,73 @@ namespace System.DirectoryServices.Protocols
                     }
                 }
 
+                _keysAsnLength = 0;
                 _keys = new SortKey[value.Length];
                 for (int i = 0; i < value.Length; i++)
                 {
                     _keys[i] = new SortKey(value[i].AttributeName, value[i].MatchingRule, value[i].ReverseOrder);
+                    _keysAsnLength += 13 + (value[i].AttributeName?.Length ?? 0) + (value[i].MatchingRule?.Length ?? 0);
                 }
             }
         }
 
-        public override unsafe byte[] GetValue()
+        public override byte[] GetValue()
         {
-            SortKeyInterop[] nativeSortKeys = new SortKeyInterop[_keys.Length];
-            for (int i = 0; i < _keys.Length; ++i)
+            int sizeEstimate = 12 + _keysAsnLength;
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+
+            writer.Reset();
+            /* This is as laid out in RFC2891.
+             * SortKeyList ::= SEQUENCE OF SEQUENCE {
+             *                  attributeType   AttributeDescription,
+             *                  orderingRule    [0] MatchingRuleId OPTIONAL,
+             *                  reverseOrder    [1] BOOLEAN DEFAULT FALSE }
+             * */
+            using (writer.PushSequence())
             {
-                nativeSortKeys[i] = new SortKeyInterop(_keys[i]);
-            }
+                // This scratch space is used for storing attribute names and matching rule OIDs.
+                // Active Directory's valid matching rule OIDs are listed in MS-ADTS 3.1.1.3.4.1.13,
+                // with a maximum length of 23 characters - within the attribute name stack allocation
+                // threshold.
+                Span<byte> scratchSpace = stackalloc byte[AttributeNameStackAllocationThreshold];
 
-            IntPtr control = IntPtr.Zero;
-            int structSize = Marshal.SizeOf<SortKeyInterop>();
-            int keyCount = nativeSortKeys.Length;
-            IntPtr memHandle = Utility.AllocHGlobalIntPtrArray(keyCount + 1);
-
-            try
-            {
-                void** pMemHandle = (void**)memHandle;
-                IntPtr sortPtr = IntPtr.Zero;
-                int i = 0;
-                for (i = 0; i < keyCount; i++)
+                for (int i = 0; i < _keys.Length; i++)
                 {
-                    sortPtr = Marshal.AllocHGlobal(structSize);
-                    Marshal.StructureToPtr(nativeSortKeys[i], sortPtr, false);
-                    pMemHandle[i] = (void*)sortPtr;
-                }
-                pMemHandle[i] = null;
+                    SortKey key = _keys[i];
 
-                bool critical = IsCritical;
-                int error = LdapPal.CreateDirectorySortControl(UtilityHandle.GetHandle(), memHandle, critical ? (byte)1 : (byte)0, ref control);
-
-                if (error != 0)
-                {
-                    if (LdapErrorMappings.IsLdapError(error))
+                    using (writer.PushSequence())
                     {
-                        string errorMessage = LdapErrorMappings.MapResultCode(error);
-                        throw new LdapException(error, errorMessage);
-                    }
-                    else
-                    {
-                        throw new LdapException(error);
-                    }
-                }
-
-                LdapControl managedControl = new LdapControl();
-                Marshal.PtrToStructure(control, managedControl);
-                BerVal value = managedControl.ldctl_value;
-                // reinitialize the value
-                _directoryControlValue = null;
-                if (value != null)
-                {
-                    _directoryControlValue = new byte[value.bv_len];
-                    Marshal.Copy(value.bv_val, _directoryControlValue, 0, value.bv_len);
-                }
-            }
-            finally
-            {
-                if (control != IntPtr.Zero)
-                {
-                    LdapPal.FreeDirectoryControl(control);
-                }
-
-                if (memHandle != IntPtr.Zero)
-                {
-                    //release the memory from the heap
-                    for (int i = 0; i < keyCount; i++)
-                    {
-                        IntPtr tempPtr = Marshal.ReadIntPtr(memHandle, IntPtr.Size * i);
-                        if (tempPtr != IntPtr.Zero)
+                        if (!string.IsNullOrEmpty(key.AttributeName))
                         {
-                            // free the marshalled name
-                            IntPtr ptr = Marshal.ReadIntPtr(tempPtr);
-                            if (ptr != IntPtr.Zero)
-                            {
-                                Marshal.FreeHGlobal(ptr);
-                            }
-                            // free the marshalled rule
-                            ptr = Marshal.ReadIntPtr(tempPtr, IntPtr.Size);
-                            if (ptr != IntPtr.Zero)
-                            {
-                                Marshal.FreeHGlobal(ptr);
-                            }
+                            int octetStringLength = s_utf8Encoding.GetByteCount(key.AttributeName);
+                            Span<byte> tmpValue = octetStringLength <= AttributeNameStackAllocationThreshold ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
 
-                            Marshal.FreeHGlobal(tempPtr);
+                            s_utf8Encoding.GetBytes(key.AttributeName, tmpValue);
+                            writer.WriteOctetString(tmpValue);
+                        }
+                        else
+                        {
+                            writer.WriteOctetString([]);
+                        }
+
+                        if (!string.IsNullOrEmpty(key.MatchingRule))
+                        {
+                            int octetStringLength = s_utf8Encoding.GetByteCount(key.MatchingRule);
+                            Span<byte> tmpValue = octetStringLength <= AttributeNameStackAllocationThreshold ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
+
+                            s_utf8Encoding.GetBytes(key.MatchingRule, tmpValue);
+                            writer.WriteOctetString(tmpValue, s_orderingRuleTag);
+                        }
+
+                        if (key.ReverseOrder)
+                        {
+                            writer.WriteBoolean(key.ReverseOrder, s_reverseOrderTag);
                         }
                     }
-                    Marshal.FreeHGlobal(memHandle);
                 }
             }
+            _directoryControlValue = writer.Encode();
+            writer.Reset();
 
             return base.GetValue();
         }
@@ -814,6 +976,9 @@ namespace System.DirectoryServices.Protocols
 
     public class VlvRequestControl : DirectoryControl
     {
+        private static readonly Asn1Tag s_byOffsetChoiceTag = new(TagClass.ContextSpecific, 0, true);
+        private static readonly Asn1Tag s_greaterThanOrEqualChoiceTag = new(TagClass.ContextSpecific, 1, false);
+
         private int _before;
         private int _after;
         private int _offset;
@@ -836,8 +1001,7 @@ namespace System.DirectoryServices.Protocols
             AfterCount = afterCount;
             if (target != null)
             {
-                UTF8Encoding encoder = new UTF8Encoding();
-                _target = encoder.GetBytes(target);
+                _target = s_utf8Encoding.GetBytes(target);
             }
         }
 
@@ -913,12 +1077,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempContext = new byte[_target.Length];
-                for (int i = 0; i < tempContext.Length; i++)
-                {
-                    tempContext[i] = _target[i];
-                }
-                return tempContext;
+                return _target.AsSpan().ToArray();
             }
             set => _target = value;
         }
@@ -932,59 +1091,58 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempContext = new byte[_context.Length];
-                for (int i = 0; i < tempContext.Length; i++)
-                {
-                    tempContext[i] = _context[i];
-                }
-                return tempContext;
+                return _context.AsSpan().ToArray();
             }
             set => _context = value;
         }
 
         public override byte[] GetValue()
         {
-            var seq = new StringBuilder(10);
-            var objList = new ArrayList();
+            int sizeEstimate = 16 + (_target?.Length ?? 12) + (_context?.Length ?? 1);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
 
-            // first encode the before and the after count.
-            seq.Append("{ii");
-            objList.Add(BeforeCount);
-            objList.Add(AfterCount);
-
-            // encode Target if it is not null
-            if (Target.Length != 0)
+            writer.Reset();
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.17.
+             * VLVRequestValue ::= SEQUENCE {
+             *                      beforeCount     INTEGER,
+             *                      afterCount      INTEGER,
+             *                      CHOICE {
+             *                          byoffset    [0] SEQUENCE {
+             *                              offset          INTEGER,
+             *                              contentCount    INTEGER },
+             *                          greaterThanOrEqual  [1] AssertionValue },
+             *                      contextID       OCTET STRING OPTIONAL }
+             */
+            using (writer.PushSequence())
             {
-                seq.Append('t');
-                objList.Add(0x80 | 0x1);
-                seq.Append('o');
-                objList.Add(Target);
-            }
-            else
-            {
-                seq.Append("t{");
-                objList.Add(0xa0);
-                seq.Append("ii");
-                objList.Add(Offset);
-                objList.Add(EstimateCount);
-                seq.Append('}');
-            }
+                // first encode the before and the after count.
+                writer.WriteInteger(BeforeCount);
+                writer.WriteInteger(AfterCount);
 
-            // encode the contextID if present
-            if (ContextId.Length != 0)
-            {
-                seq.Append('o');
-                objList.Add(ContextId);
-            }
+                // encode Target if it is not null
+                if (_target != null && _target.Length > 0)
+                {
+                    writer.WriteOctetString(_target, s_greaterThanOrEqualChoiceTag);
+                }
+                else
+                {
+                    using (AsnWriter.Scope innerSequence = writer.PushSequence(s_byOffsetChoiceTag))
+                    {
+                        writer.WriteInteger(Offset);
+                        writer.WriteInteger(EstimateCount);
+                    }
+                }
 
-            seq.Append('}');
-            object[] values = new object[objList.Count];
-            for (int i = 0; i < objList.Count; i++)
-            {
-                values[i] = objList[i];
-            }
+                // encode the contextID if present
+                if (_context != null && _context.Length > 0)
+                {
+                    writer.WriteOctetString(_context);
+                }
 
-            _directoryControlValue = BerConverter.Encode(seq.ToString(), values);
+            }
+            _directoryControlValue = writer.Encode();
+            writer.Reset();
+
             return base.GetValue();
         }
     }
@@ -1014,12 +1172,7 @@ namespace System.DirectoryServices.Protocols
                     return Array.Empty<byte>();
                 }
 
-                byte[] tempContext = new byte[_context.Length];
-                for (int i = 0; i < tempContext.Length; i++)
-                {
-                    tempContext[i] = _context[i];
-                }
-                return tempContext;
+                return _context.AsSpan().ToArray();
             }
         }
 
@@ -1040,7 +1193,21 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            _directoryControlValue = BerConverter.Encode("{o}", new object[] { _sid });
+            int sizeEstimate = 4 + (_sid?.Length ?? 0);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+
+            writer.Reset();
+            /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.19.
+             * QuotaRequestValue ::= SEQUENCE {
+             *                          querySID OCTET STRING }
+             */
+            using (writer.PushSequence())
+            {
+                writer.WriteOctetString(_sid);
+            }
+            _directoryControlValue = writer.Encode();
+            writer.Reset();
+
             return base.GetValue();
         }
     }
