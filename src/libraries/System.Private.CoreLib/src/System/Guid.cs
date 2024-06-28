@@ -284,7 +284,7 @@ namespace System
         ///     <para>This corresponds to the most significant 4 bits of the 6th byte: 00000000-0000-F000-0000-000000000000.</para>
         ///     <para>See RFC 9562 for more information on how to interpret this value.</para>
         /// </remarks>
-        public int Version => _c >> 12;
+        public int Version => _c >>> 12;
 
         /// <summary>Creates a new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</summary>
         /// <returns>A new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</returns>
