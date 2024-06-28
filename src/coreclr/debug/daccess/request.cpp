@@ -507,7 +507,7 @@ HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
         methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
         methodData.Token = pMD->GetMemberDef();
 
-        methodData.Slot = slot;
+        methodData.Slot = slot++;
 
         if (!mMethods.Add(methodData))
             return E_OUTOFMEMORY;

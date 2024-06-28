@@ -818,7 +818,8 @@ class ClrDataAccess
       public ISOSDacInterface11,
       public ISOSDacInterface12,
       public ISOSDacInterface13,
-      public ISOSDacInterface14
+      public ISOSDacInterface14,
+      public ISOSDacInterface15
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1994,7 +1995,10 @@ private:
 class DacMethodTableSlotEnumerator : public DefaultCOMImpl<ISOSMethodEnum, IID_ISOSMethodEnum>
 {
 public:
-    DacMethodTableSlotEnumerator() {}
+    DacMethodTableSlotEnumerator() : mIteratorIndex(0)
+    {
+    }
+    
     virtual ~DacMethodTableSlotEnumerator() {}
 
     HRESULT Init(PTR_MethodTable mTable);

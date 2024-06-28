@@ -2673,6 +2673,7 @@ void MethodDesc::SetTemporaryEntryPoint(AllocMemTracker *pamTracker)
 {
     WRAPPER_NO_CONTRACT;
 
+    _ASSERTE(pamTracker != NULL);
     EnsureTemporaryEntryPointCore(pamTracker);
 
 #ifdef _DEBUG
@@ -2683,8 +2684,8 @@ void MethodDesc::SetTemporaryEntryPoint(AllocMemTracker *pamTracker)
     if (RequiresStableEntryPoint())
     {
         // The rest of the system assumes that certain methods always have stable entrypoints.
-        // Create them now.
-        GetOrCreatePrecode();
+        // Mark the precode as such
+        MarkPrecodeAsStableEntrypoint();
     }
 }
 
@@ -2809,6 +2810,10 @@ Precode* MethodDesc::GetOrCreatePrecode()
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!IsVersionableWithVtableSlotBackpatch());
 
+    // Since this can allocate memory that won't be freed, we need to make sure that the associated MethodTable
+    // is fully allocated and permanent.
+    _ASSERTE(GetMethodTable()->GetAuxiliaryData()->IsPublished());
+
     if (HasPrecode())
     {
         return GetPrecode();
@@ -2829,6 +2834,21 @@ Precode* MethodDesc::GetOrCreatePrecode()
     InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
 
     return Precode::GetPrecodeFromEntryPoint(tempEntry);
+}
+
+void MethodDesc::MarkPrecodeAsStableEntrypoint()
+{
+#if _DEBUG
+    PCODE tempEntry = GetTemporaryEntryPointIfExists();
+    _ASSERTE(tempEntry != NULL);
+    PrecodeType requiredType = GetPrecodeType();
+    PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
+    _ASSERTE(requiredType == availableType);
+#endif
+    _ASSERTE(!HasPrecode());
+    _ASSERTE(RequiresStableEntryPoint());
+
+    InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
 }
 
 bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk()

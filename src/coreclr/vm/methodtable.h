@@ -3007,6 +3007,7 @@ public:
         virtual MethodData  *GetImplMethodData() = 0;
         MethodTable *GetImplMethodTable() { return m_pImplMT; }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber) = 0;
+        virtual bool IsImplSlotNull(UINT32 slotNumber) = 0;
         // Returns INVALID_SLOT_NUMBER if no implementation exists.
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber) = 0;
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber) = 0;
@@ -3119,6 +3120,7 @@ protected:
         virtual MethodData  *GetImplMethodData()
             { LIMITED_METHOD_CONTRACT; return this; }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber);
+        virtual bool IsImplSlotNull(UINT32 slotNumber) { LIMITED_METHOD_CONTRACT; return false; } // Every valid slot on an actual MethodTable has a MethodDesc which is associated with it
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber);
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber);
         virtual void InvalidateCachedVirtualSlot(UINT32 slotNumber);
@@ -3259,6 +3261,12 @@ protected:
             { LIMITED_METHOD_CONTRACT; return this; }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber)
             { WRAPPER_NO_CONTRACT; return DispatchSlot(m_pDeclMT->GetRestoredSlot(slotNumber)); }
+        virtual bool IsImplSlotNull(UINT32 slotNumber)
+        {
+            // Every valid slot on an actual MethodTable has a MethodDesc which is associated with it
+            LIMITED_METHOD_CONTRACT;
+            return false;
+        }
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber)
             { LIMITED_METHOD_CONTRACT; return slotNumber; }
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber);
@@ -3305,6 +3313,7 @@ protected:
         virtual MethodTable *GetImplMethodTable()
             { WRAPPER_NO_CONTRACT; return m_pImpl->GetImplMethodTable(); }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber);
+        virtual bool IsImplSlotNull(UINT32 slotNumber);
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber);
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber);
         virtual void InvalidateCachedVirtualSlot(UINT32 slotNumber);
@@ -3429,6 +3438,7 @@ public:
         inline BOOL IsVirtual() const;
         inline UINT32 GetNumVirtuals() const;
         inline DispatchSlot GetTarget() const;
+        inline bool IsTargetNull() const;
 
         // Can be called only if IsValid()=TRUE
         inline MethodDesc *GetMethodDesc() const;

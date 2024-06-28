@@ -10868,7 +10868,9 @@ MethodTableBuilder::SetupMethodTable2(
                     continue; // For cases where the method is defining the method desc slot, we don't need to fill it in yet
 
                 pMD->EnsureTemporaryEntryPointCore(GetMemTracker());
-                PCODE addr = pMD->GetTemporaryEntryPoint();
+                // Use the IfExists variant, as GetTemporaryEntrypoint isn't safe to call during MethodTable construction, as it might allocate
+                // without using the MemTracker.
+                PCODE addr = pMD->GetTemporaryEntryPointIfExists();
                 _ASSERTE(addr != (PCODE)NULL);
 
                 if (pMD->HasNonVtableSlot())
@@ -10884,7 +10886,7 @@ MethodTableBuilder::SetupMethodTable2(
                 {
                     // The rest of the system assumes that certain methods always have stable entrypoints.
                     // Create them now.
-                    pMD->GetOrCreatePrecode();
+                    pMD->MarkPrecodeAsStableEntrypoint();
                 }
             }
         }
@@ -11246,7 +11248,7 @@ void MethodTableBuilder::VerifyVirtualMethodsImplemented(MethodTable::MethodData
             MethodTable::MethodIterator it(hData);
             for (; it.IsValid() && it.IsVirtual(); it.Next())
             {
-                if (it.GetTarget().IsNull())
+                if (it.IsTargetNull())
                 {
                     MethodDesc *pMD = it.GetDeclMethodDesc();
 

@@ -576,6 +576,12 @@ inline DispatchSlot MethodTable::MethodIterator::GetTarget() const {
     return m_pMethodData->GetImplSlot(m_iCur);
 }
 
+inline bool MethodTable::MethodIterator::IsTargetNull() const {
+    LIMITED_METHOD_CONTRACT;
+    CONSISTENCY_CHECK(IsValid());
+    return m_pMethodData->IsImplSlotNull(m_iCur);
+}
+
 //==========================================================================================
 inline MethodDesc *MethodTable::MethodIterator::GetMethodDesc() const {
     LIMITED_METHOD_CONTRACT;
