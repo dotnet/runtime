@@ -20,7 +20,8 @@ namespace ILCompiler
         {
             if (_isaSupport.Architecture == TargetArchitecture.X64
                 || _isaSupport.Architecture == TargetArchitecture.X86
-                || _isaSupport.Architecture == TargetArchitecture.ARM64)
+                || _isaSupport.Architecture == TargetArchitecture.ARM64
+                || _isaSupport.Architecture == TargetArchitecture.LoongArch64)
             {
                 int isaFlags = HardwareIntrinsicHelpers.GetRuntimeRequiredIsaFlags(_isaSupport);
                 byte[] bytes = BitConverter.GetBytes(isaFlags);

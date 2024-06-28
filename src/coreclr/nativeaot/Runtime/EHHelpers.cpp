@@ -211,7 +211,6 @@ FCIMPL3(void, RhpCopyContextFromExInfo, void * pOSContext, int32_t cbOSContext, 
 }
 FCIMPLEND
 
-#if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
 struct DISPATCHER_CONTEXT
 {
     uintptr_t  ControlPc;
@@ -273,56 +272,8 @@ EXTERN_C int32_t __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExc
 
     return 0;
 }
-#else
-EXTERN_C int32_t RhpPInvokeExceptionGuard()
-{
-    ASSERT_UNCONDITIONALLY("RhpPInvokeExceptionGuard NYI for this architecture!");
-    RhFailFast();
-    return 0;
-}
-#endif
 
-#if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64) || defined(HOST_WASM) || defined(HOST_LOONGARCH64)
 FCDECL2(void, RhpThrowHwEx, int exceptionCode, TADDR faultingIP);
-#else
-FCIMPL0(void, RhpThrowHwEx)
-{
-    ASSERT_UNCONDITIONALLY("RhpThrowHwEx NYI for this architecture!");
-}
-FCIMPLEND
-FCIMPL0(void, RhpThrowEx)
-{
-    ASSERT_UNCONDITIONALLY("RhpThrowEx NYI for this architecture!");
-}
-FCIMPLEND
-FCIMPL0(void, RhpCallCatchFunclet)
-{
-    ASSERT_UNCONDITIONALLY("RhpCallCatchFunclet NYI for this architecture!");
-}
-FCIMPLEND
-FCIMPL0(void, RhpCallFinallyFunclet)
-{
-    ASSERT_UNCONDITIONALLY("RhpCallFinallyFunclet NYI for this architecture!");
-}
-FCIMPLEND
-FCIMPL0(void, RhpCallFilterFunclet)
-{
-    ASSERT_UNCONDITIONALLY("RhpCallFilterFunclet NYI for this architecture!");
-}
-FCIMPLEND
-FCIMPL0(void, RhpRethrow)
-{
-    ASSERT_UNCONDITIONALLY("RhpRethrow NYI for this architecture!");
-}
-FCIMPLEND
-
-EXTERN_C void* RhpCallCatchFunclet2 = NULL;
-EXTERN_C void* RhpCallFinallyFunclet2 = NULL;
-EXTERN_C void* RhpCallFilterFunclet2 = NULL;
-EXTERN_C void* RhpThrowEx2   = NULL;
-EXTERN_C void* RhpThrowHwEx2 = NULL;
-EXTERN_C void* RhpRethrow2   = NULL;
-#endif
 
 EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
 #if defined(HOST_X86)

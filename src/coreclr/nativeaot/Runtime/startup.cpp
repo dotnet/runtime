@@ -55,7 +55,6 @@ int g_cpuFeatures = 0;
 
 // This field is defined in the generated code and sets the ISA expectations.
 EXTERN_C int g_requiredCpuFeatures;
-int g_requiredCpuFeatures = 0;
 #endif
 
 #ifdef TARGET_UNIX
