@@ -13,8 +13,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 // trust to be valid.
 // see Metadata_1.ValidateMethodTablePointer
 // This doesn't need as many properties as MethodTable because we don't want to be operating on
-// an UntrustedMethodTable for too long
-internal struct UntrustedMethodTable_1
+// a NonValidatedMethodTable for too long
+internal struct NonValidatedMethodTable_1
 {
     private readonly Target _target;
     private readonly Target.TypeInfo _type;
@@ -22,7 +22,7 @@ internal struct UntrustedMethodTable_1
 
     private Metadata_1.MethodTableFlags? _methodTableFlags;
 
-    internal UntrustedMethodTable_1(Target target, TargetPointer methodTablePointer)
+    internal NonValidatedMethodTable_1(Target target, TargetPointer methodTablePointer)
     {
         _target = target;
         _type = target.GetTypeInfo(DataType.MethodTable);
@@ -66,14 +66,14 @@ internal struct UntrustedMethodTable_1
     }
 }
 
-internal struct UntrustedEEClass_1
+internal struct NonValidatedEEClass_1
 {
     public readonly Target _target;
     private readonly Target.TypeInfo _type;
 
     internal TargetPointer Address { get; init; }
 
-    internal UntrustedEEClass_1(Target target, TargetPointer eeClassPointer)
+    internal NonValidatedEEClass_1(Target target, TargetPointer eeClassPointer)
     {
         _target = target;
         Address = eeClassPointer;
@@ -132,14 +132,14 @@ internal partial struct Metadata_1 : IMetadata
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
 
-    private UntrustedMethodTable_1 GetUntrustedMethodTableData(TargetPointer methodTablePointer)
+    private NonValidatedMethodTable_1 GetUntrustedMethodTableData(TargetPointer methodTablePointer)
     {
-        return new UntrustedMethodTable_1(_target, methodTablePointer);
+        return new NonValidatedMethodTable_1(_target, methodTablePointer);
     }
 
-    private UntrustedEEClass_1 GetUntrustedEEClassData(TargetPointer eeClassPointer)
+    private NonValidatedEEClass_1 GetUntrustedEEClassData(TargetPointer eeClassPointer)
     {
-        return new UntrustedEEClass_1(_target, eeClassPointer);
+        return new NonValidatedEEClass_1(_target, eeClassPointer);
     }
 
     public MethodTableHandle GetMethodTableHandle(TargetPointer methodTablePointer)
@@ -159,7 +159,7 @@ internal partial struct Metadata_1 : IMetadata
         }
 
         // Otherwse, don't trust it yet
-        UntrustedMethodTable_1 untrustedMethodTable = GetUntrustedMethodTableData(methodTablePointer);
+        NonValidatedMethodTable_1 untrustedMethodTable = GetUntrustedMethodTableData(methodTablePointer);
 
         // if it's the free object method table, we can trust it
         if (methodTablePointer == FreeObjectMethodTablePointer)
@@ -180,7 +180,7 @@ internal partial struct Metadata_1 : IMetadata
         return new MethodTableHandle(methodTablePointer);
     }
 
-    private bool ValidateMethodTablePointer(UntrustedMethodTable_1 umt)
+    private bool ValidateMethodTablePointer(NonValidatedMethodTable_1 umt)
     {
         // FIXME: is methodTablePointer properly sign-extended from 32-bit targets?
         // FIXME2: do we need this? Data.MethodTable probably would throw if methodTablePointer is invalid
@@ -207,7 +207,7 @@ internal partial struct Metadata_1 : IMetadata
         return true;
     }
 
-    private bool ValidateWithPossibleAV(UntrustedMethodTable_1 methodTable)
+    private bool ValidateWithPossibleAV(NonValidatedMethodTable_1 methodTable)
     {
         // For non-generic classes, we can rely on comparing
         //    object->methodtable->class->methodtable
@@ -223,7 +223,7 @@ internal partial struct Metadata_1 : IMetadata
         TargetPointer eeClassPtr = GetClassWithPossibleAV(methodTable);
         if (eeClassPtr != TargetPointer.Null)
         {
-            UntrustedEEClass_1 eeClass = GetUntrustedEEClassData(eeClassPtr);
+            NonValidatedEEClass_1 eeClass = GetUntrustedEEClassData(eeClassPtr);
             TargetPointer methodTablePtrFromClass = GetMethodTableWithPossibleAV(eeClass);
             if (methodTable.Address == methodTablePtrFromClass)
             {
@@ -231,7 +231,7 @@ internal partial struct Metadata_1 : IMetadata
             }
             if (methodTable.Flags.HasInstantiation || methodTable.Flags.IsArray)
             {
-                UntrustedMethodTable_1 methodTableFromClass = GetUntrustedMethodTableData(methodTablePtrFromClass);
+                NonValidatedMethodTable_1 methodTableFromClass = GetUntrustedMethodTableData(methodTablePtrFromClass);
                 TargetPointer classFromMethodTable = GetClassWithPossibleAV(methodTableFromClass);
                 return classFromMethodTable == eeClassPtr;
             }
@@ -239,7 +239,7 @@ internal partial struct Metadata_1 : IMetadata
         return false;
     }
 
-    private bool ValidateMethodTable(UntrustedMethodTable_1 methodTable)
+    private bool ValidateMethodTable(NonValidatedMethodTable_1 methodTable)
     {
         if (!methodTable.Flags.IsInterface && !methodTable.Flags.IsString)
         {
@@ -255,7 +255,7 @@ internal partial struct Metadata_1 : IMetadata
     {
         return (EEClassOrCanonMTBits)(eeClassOrCanonMTPtr & (ulong)EEClassOrCanonMTBits.Mask);
     }
-    private TargetPointer GetClassWithPossibleAV(UntrustedMethodTable_1 methodTable)
+    private TargetPointer GetClassWithPossibleAV(NonValidatedMethodTable_1 methodTable)
     {
         TargetPointer eeClassOrCanonMT = methodTable.EEClassOrCanonMT;
 
@@ -266,12 +266,12 @@ internal partial struct Metadata_1 : IMetadata
         else
         {
             TargetPointer canonicalMethodTablePtr = methodTable.CanonMT;
-            UntrustedMethodTable_1 umt = GetUntrustedMethodTableData(canonicalMethodTablePtr);
+            NonValidatedMethodTable_1 umt = GetUntrustedMethodTableData(canonicalMethodTablePtr);
             return umt.EEClass;
         }
     }
 
-    private static TargetPointer GetMethodTableWithPossibleAV(UntrustedEEClass_1 eeClass) => eeClass.MethodTable;
+    private static TargetPointer GetMethodTableWithPossibleAV(NonValidatedEEClass_1 eeClass) => eeClass.MethodTable;
 
     public uint GetBaseSize(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.BaseSize;
 
