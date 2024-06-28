@@ -12,10 +12,12 @@ namespace System.Formats.Nrbf.Utils;
 
 internal static class TypeNameHelpers
 {
-    // PrimitiveType does not define Object, we fake it as the last element.
+    // PrimitiveType does not define Object, IntPtr or UIntPtr
     internal const PrimitiveType ObjectPrimitiveType = (PrimitiveType)19;
-    private static readonly TypeName?[] s_PrimitiveTypeNames = new TypeName?[(int)ObjectPrimitiveType + 1];
-    private static readonly TypeName?[] s_PrimitiveSZArrayTypeNames = new TypeName?[(int)ObjectPrimitiveType + 1];
+    internal const PrimitiveType IntPtrPrimitiveType = (PrimitiveType)20;
+    internal const PrimitiveType UIntPtrPrimitiveType = (PrimitiveType)21;
+    private static readonly TypeName?[] s_PrimitiveTypeNames = new TypeName?[(int)UIntPtrPrimitiveType + 1];
+    private static readonly TypeName?[] s_PrimitiveSZArrayTypeNames = new TypeName?[(int)UIntPtrPrimitiveType + 1];
     private static AssemblyNameInfo? s_CoreLibAssemblyName;
 
     internal static TypeName GetPrimitiveTypeName(PrimitiveType primitiveType)
@@ -43,6 +45,8 @@ internal static class TypeNameHelpers
                 PrimitiveType.DateTime => "System.DateTime",
                 PrimitiveType.String => "System.String",
                 ObjectPrimitiveType => "System.Object",
+                IntPtrPrimitiveType => "System.IntPtr",
+                UIntPtrPrimitiveType => "System.UIntPtr",
                 _ => "System.UInt64",
             };
 
@@ -78,6 +82,8 @@ internal static class TypeNameHelpers
         else if (typeof(T) == typeof(decimal)) return PrimitiveType.Decimal;
         else if (typeof(T) == typeof(DateTime)) return PrimitiveType.DateTime;
         else if (typeof(T) == typeof(TimeSpan)) return PrimitiveType.TimeSpan;
+        else if (typeof(T) == typeof(IntPtr)) return IntPtrPrimitiveType;
+        else if (typeof(T) == typeof(UIntPtr)) return UIntPtrPrimitiveType;
         else
         {
             Debug.Assert(typeof(T) == typeof(string));
