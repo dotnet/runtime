@@ -5593,7 +5593,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *  Doing this all in one pass is 'hard'.  So instead we do it in 2 basic passes:
  *    1. Assign all the offsets relative to the Virtual '0'. Offsets above (the
  *      incoming arguments) are positive. Offsets below (everything else) are
- *      negative.  This pass also calcuates the total frame size (between Caller's
+ *      negative.  This pass also calculates the total frame size (between Caller's
  *      SP/return address and the Ambient SP).
  *    2. Figure out where to place the frame pointer, and then adjust the offsets
  *      as needed for the final stack size and whether the offset is frame pointer
