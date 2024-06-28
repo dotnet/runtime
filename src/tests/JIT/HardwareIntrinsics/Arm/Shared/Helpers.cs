@@ -6229,13 +6229,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static UInt64 ConvertToUInt64RoundToZero(double op1) => ConvertToUInt64(RoundToZero(op1));
 
-        public static float ConvertIntToSingle(int op1) => op1;
+        public static float ConvertToSingle(int op1) => op1;
 
-        public static float ConvertUIntToSingle(uint op1) => op1;
-
-        public static float ConvertLongToSingle(long op1) => (float)op1;
-
-        public static float ConvertULongToSingle(ulong op1) => (float)op1;
+        public static float ConvertToSingle(uint op1) => op1;
 
         public static float ConvertToSingle(double op1) => (float)op1;
 
@@ -6245,13 +6241,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double ConvertToDoubleUpper(float[] op1, int i) => ConvertToDouble(op1[i + op1.Length / 2]);
 
-        public static double ConvertLongToDouble(long op1) => op1;
+        public static double ConvertToDouble(long op1) => op1;
 
-        public static double ConvertULongToDouble(ulong op1) => op1;
-
-        public static double ConvertIntToDouble(int op1) => op1;
-
-        public static double ConvertUIntToDouble(uint op1) => op1;
+        public static double ConvertToDouble(ulong op1) => op1;
 
         public static short ReverseElement8(short val)
         {
