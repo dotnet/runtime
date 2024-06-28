@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Http.Logging
     internal static class LogHelper
     {
         private static readonly LogDefineOptions s_skipEnabledCheckLogDefineOptions = new LogDefineOptions() { SkipEnabledCheck = true };
-        private static readonly bool s_logQueryString = GetDisableUriQueryRedactionSettingValue();
+        private static readonly bool s_disableUriQueryRedaction = GetDisableUriQueryRedactionSettingValue();
 
         private static class EventIds
         {

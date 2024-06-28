@@ -65,8 +65,8 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                     // valid values for logQueryStringEnabler:
                     // ""           - Do not enable query string logging.
                     // "AppCtx"     - Enable via AppContext switch.
-                    // "EnvVarTrue" - Enable by setting the environment *_LOGQUERYSTRING variable to 'true'.
-                    // "EnvVar1"    - Enable by setting the environment *_LOGQUERYSTRING variable to '1'.
+                    // "EnvVarTrue" - Enable by setting the environment *_DISABLEURIQUERYREDACTION variable to 'true'.
+                    // "EnvVar1"    - Enable by setting the environment *DISABLEURIQUERYREDACTION variable to '1'.
                     string[] lqs = ["", "AppCtx"];
                     foreach (string logQueryStringEnabler in lqs)
                     {
@@ -153,7 +153,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
         [InlineData(true, false)]
         [InlineData(true, true)]
 #endif
-        public async Task Integration_LogsExpectedAbsoluteUri(bool syncApi, bool logQueryString)
+        public async Task Integration_LogsExpectedAbsoluteUri(bool syncApi, bool disableUriQueryRedaction)
         {
             const string baseUri = "http://api.example.com/search";
             const string queryString = "term=Western%20Australia";
