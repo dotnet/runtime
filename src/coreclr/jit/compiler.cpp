@@ -2307,37 +2307,46 @@ void Compiler::compSetProcessor()
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
-    // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
-    // These have been shipped together historically and at the time of this writing
-    // there exists no hardware which doesn't support the entire feature set. To simplify
-    // the overall JIT implementation, we currently require the entire set of ISAs to be
-    // supported and disable AVX512 support otherwise.
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_EVEX))
     {
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
-
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
-
-        if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
+        if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
         {
-            // Some architectures can experience frequency throttling when
-            // executing 512-bit width instructions. To account for this we set the
-            // default preferred vector width to 256-bits in some scenarios. Power
-            // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
-            // allow using such instructions where hardware support is available.
-            //
-            // Do not condition this based on stress mode as it makes the support
-            // reported inconsistent across methods and breaks expectations/functionality
+            // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
+            // These have been shipped together historically and at the time of this writing
+            // there exists no hardware which doesn't support the entire feature set. To simplify
+            // the overall JIT implementation, we currently require the entire set of ISAs to be
+            // supported and disable AVX512 support otherwise.
 
-            preferredVectorByteLength = 256 / 8;
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
+
+            instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
+
+            if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
+            {
+                // Some architectures can experience frequency throttling when
+                // executing 512-bit width instructions. To account for this we set the
+                // default preferred vector width to 256-bits in some scenarios. Power
+                // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
+                // allow using such instructions where hardware support is available.
+                //
+                // Do not condition this based on stress mode as it makes the support
+                // reported inconsistent across methods and breaks expectations/functionality
+
+                preferredVectorByteLength = 256 / 8;
+            }
+        }
+        else
+        {
+            // We shouldn't have EVEX enabled if neither AVX512 nor AVX10v1 are supported
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX10v1));
         }
     }
 
@@ -5049,7 +5058,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doSsa                     = (JitConfig.JitDoSsa() != 0);
         doEarlyProp               = doSsa && (JitConfig.JitDoEarlyProp() != 0);
         doValueNum                = doSsa && (JitConfig.JitDoValueNumber() != 0);
-        doOptimizeIVs             = doSsa && (JitConfig.JitDoOptimizeIVs() != 0);
         doLoopHoisting            = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
         doCopyProp                = doValueNum && (JitConfig.JitDoCopyProp() != 0);
         doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
@@ -5057,6 +5065,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doVNBasedIntrinExpansion  = doValueNum;
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
+        doOptimizeIVs             = doValueNum && (JitConfig.JitDoOptimizeIVs() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 #endif // defined(OPT_CONFIG)
 
@@ -5692,12 +5701,20 @@ void Compiler::SplitTreesRandomly()
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
     // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
-    unsigned maxLvaCount = max(lvaCount * 2, 50000u);
+    unsigned  maxLvaCount = max(lvaCount * 2, 50000u);
+    int       numSplit    = 0;
+    const int splitLimit  = JitConfig.JitStressSplitTreeLimit();
 
     for (BasicBlock* block : Blocks())
     {
         for (Statement* stmt : block->NonPhiStatements())
         {
+            if ((splitLimit >= 0) && (numSplit >= splitLimit))
+            {
+                JITDUMP("Reached split limit (%d) -- stopping\n", splitLimit);
+                return;
+            }
+
             int numTrees = 0;
             for (GenTree* tree : stmt->TreeList())
             {
@@ -5730,6 +5747,7 @@ void Compiler::SplitTreesRandomly()
 
                         fgMorphStmtBlockOps(block, stmt);
                         gtUpdateStmtSideEffects(stmt);
+                        numSplit++;
                     }
 
                     break;
@@ -5745,6 +5763,9 @@ void Compiler::SplitTreesRandomly()
             }
         }
     }
+
+    JITDUMP("Split %d trees\n", numSplit);
+
 #endif
 }
 

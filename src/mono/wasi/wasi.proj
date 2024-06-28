@@ -8,6 +8,10 @@
   <PropertyGroup>
     <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'lib'))</ICULibDir>
     <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'lib'))</ICULibDir>
+    <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+    <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <WasiObjDir>$(ArtifactsObjDir)wasi</WasiObjDir>
@@ -152,9 +156,17 @@
 {
   "items": {
     "WasmOptConfigurationFlags": [@(WasmOptConfigurationFlags -> '%22%(Identity)%22', ',')],
+    "BoolPropertiesThatTriggerRelinking": [
+      { "identity": "InvariantTimezone",      "defaultValueInRuntimePack": "$(InvariantTimezone)" },
+      { "identity": "InvariantGlobalization", "defaultValueInRuntimePack": "$(InvariantGlobalization)" },
+      { "identity": "WasmNativeStrip",        "defaultValueInRuntimePack": "$(WasmNativeStrip)" },
+      { "identity": "WasmSingleFileBundle",   "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
+      { "identity": "WasmEnableSIMD",         "defaultValueInRuntimePack": "$(WasmEnableSIMD)" }
+    ]
   }
 }
 ]]>
+<!-- { "identity": "WasmEnableExceptionHandling", "value": "$(WasmEnableExceptionHandling)", "defaultValueInRuntimePack": "true" }, -->
       </_WasiPropsJson>
     </PropertyGroup>
 

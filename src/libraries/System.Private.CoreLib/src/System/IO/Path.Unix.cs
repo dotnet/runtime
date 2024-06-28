@@ -137,7 +137,7 @@ namespace System.IO
 
         public static bool IsPathRooted(ReadOnlySpan<char> path)
         {
-            return path.Length > 0 && path[0] == PathInternal.DirectorySeparatorChar;
+            return path.StartsWith(PathInternal.DirectorySeparatorChar);
         }
 
         /// <summary>

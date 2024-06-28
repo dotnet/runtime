@@ -1752,18 +1752,23 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
         }
         else if (arg->OperIs(GT_HWINTRINSIC))
         {
-            GenTreeJitIntrinsic* jitIntrinsic = reinterpret_cast<GenTreeJitIntrinsic*>(arg);
+            GenTreeHWIntrinsic* hwintrinsic = arg->AsHWIntrinsic();
 
             // For HWIntrinsic, there are some intrinsics like ExtractVector128 which have
-            // a gtType of TYP_SIMD16 but a SimdSize of 32, so we need to include that in
-            // the assert below.
+            // a gtType of TYP_SIMD16 but a SimdSize of 32, so we can't necessarily assert
+            // the simd size
 
-            assert((jitIntrinsic->GetSimdSize() == 12) || (jitIntrinsic->GetSimdSize() == 16) ||
-                   (jitIntrinsic->GetSimdSize() == 32) || (jitIntrinsic->GetSimdSize() == 64));
-
-            if (jitIntrinsic->GetSimdSize() == 12)
+            if (hwintrinsic->GetSimdSize() == 12)
             {
-                type = TYP_SIMD12;
+                if (hwintrinsic->GetHWIntrinsicId() != NI_Vector128_AsVector128Unsafe)
+                {
+                    // Most nodes that have a simdSize of 12 are actually producing a TYP_SIMD12
+                    // and have been massaged to TYP_SIMD16 to match the actual product size. This
+                    // is not the case for NI_Vector128_AsVector128Unsafe which is explicitly taking
+                    // a TYP_SIMD12 and producing a TYP_SIMD16.
+
+                    type = TYP_SIMD12;
+                }
             }
         }
     }
@@ -3443,10 +3448,13 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             call->gtArgs.PushLateBack(targetArg);
 
             // Set up ABI information for this arg.
+            targetArg->NewAbiInfo =
+                ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
+                                                                                       0, TARGET_POINTER_SIZE));
             targetArg->AbiInfo.ArgType = callTarget->TypeGet();
             targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
-            targetArg->AbiInfo.NumRegs = 1;
-            targetArg->AbiInfo.SetByteSize(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE, false, false);
+            targetArg->AbiInfo.NumRegs  = 1;
+            targetArg->AbiInfo.ByteSize = TARGET_POINTER_SIZE;
 
             // Lower the newly added args now that call is updated
             LowerArg(call, targetArg, true /* late */);
@@ -7546,7 +7554,9 @@ PhaseStatus Lowering::DoPhase()
     // local var liveness can delete code, which may create empty blocks
     if (comp->opts.OptimizationEnabled())
     {
-        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
+        // Don't churn the flowgraph with aggressive compaction since we've already run block layout
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
+                                                /* doAggressiveCompaction */ false);
         modified |= comp->fgRemoveDeadBlocks();
 
         if (modified)

@@ -1503,7 +1503,11 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
     for (i = 0; i <= floatStackTop; i++)
     {
         double td = 0.0;
+#ifdef _MSC_VER
         __asm fstp td // copy out the double
+#else
+        __asm("fstpl %0" : "=m" (td));
+#endif
         m_floatValues[i] = td;
     }
 

@@ -2132,6 +2132,7 @@ private:
 
 #ifdef DYNAMIC_HEAP_COUNT
     PER_HEAP_ISOLATED_METHOD size_t get_total_soh_stable_size();
+    PER_HEAP_ISOLATED_METHOD void update_total_soh_stable_size();
     PER_HEAP_ISOLATED_METHOD void assign_new_budget (int gen_number, size_t desired_per_heap);
     PER_HEAP_METHOD bool prepare_rethread_fl_items();
     PER_HEAP_METHOD void rethread_fl_items(int gen_idx);
@@ -2586,7 +2587,7 @@ private:
     PER_HEAP_ISOLATED_METHOD bool prepare_to_change_heap_count (int new_n_heaps);
     PER_HEAP_METHOD bool change_heap_count (int new_n_heaps);
 
-    PER_HEAP_ISOLATED_METHOD size_t get_msl_wait_time();
+    PER_HEAP_ISOLATED_METHOD void get_msl_wait_time (size_t* soh_msl_wait_time, size_t* uoh_msl_wait_time);
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
@@ -4254,7 +4255,7 @@ private:
     // to smooth out the situation when we rarely pick the gen2 GCs in the first array.
     struct dynamic_heap_count_data_t
     {
-        float target_tcp = 5.0;
+        float target_tcp = 2.0;
         float target_gen2_tcp = 10.0;
 
         static const int recorded_adjustment_size = 4;
@@ -4589,10 +4590,30 @@ private:
             init_recorded_tcp();
         }
 
-        bool should_change (float tcp, float* tcp_to_consider, size_t current_gc_index)
+        enum decide_change_condition
         {
+            init_change_condition = 0x0000,
+            change = 0x0001,
+            too_few_samples = 0x0002,
+            not_enough_diff_accumulated = 0x0004,
+            already_toward_target = 0x0008,
+            tcp_in_range = 0x0010,
+            temp_change = 0x0020
+        };
+
+        bool should_change (float tcp, float* tcp_to_consider, size_t current_gc_index,
+                            // The following are only for diagnostics
+                            decide_change_condition* change_decision,
+                            int* recorded_tcp_count, float* recorded_tcp_slope,
+                            size_t* num_gcs_since_last_change,
+                            float* current_around_target_accumulation)
+        {
+            *change_decision = decide_change_condition::init_change_condition;
+
             adjustment* adj = get_last_adjustment();
             size_t last_changed_gc_index = adj->gc_index;
+            *recorded_tcp_count = 0;
+            *recorded_tcp_slope = 0.0f;
 
             check_success_after_adjust (current_gc_index, adj, tcp);
 
@@ -4600,18 +4621,21 @@ private:
             dprintf (6666, ("accumulating %.3f + %.3f -> %.3f",
                 around_target_accumulation, diff_to_target, (around_target_accumulation + diff_to_target)));
             around_target_accumulation += diff_to_target;
+            *current_around_target_accumulation = around_target_accumulation;
 
-            size_t num_gcs_since_last_change = current_gc_index - last_changed_gc_index;
-            dprintf (6666, ("we adjusted at GC#%Id, %Id GCs ago", last_changed_gc_index, num_gcs_since_last_change));
-            if (last_changed_gc_index && (num_gcs_since_last_change < (2 * sample_size)))
+            *num_gcs_since_last_change = current_gc_index - last_changed_gc_index;
+            dprintf (6666, ("we adjusted at GC#%Id, %Id GCs ago", last_changed_gc_index, *num_gcs_since_last_change));
+            if (last_changed_gc_index && (*num_gcs_since_last_change < (2 * sample_size)))
             {
-                dprintf (6666, ("we just adjusted %Id GCs ago, skipping", num_gcs_since_last_change));
+                *change_decision = decide_change_condition::too_few_samples;
+                dprintf (6666, ("we just adjusted %Id GCs ago, skipping", *num_gcs_since_last_change));
                 return false;
             }
 
             // If we haven't accumulated enough changes.
             if ((around_target_accumulation < around_target_threshold) && (around_target_accumulation > -around_target_threshold))
             {
+                *change_decision = decide_change_condition::not_enough_diff_accumulated;
                 dprintf (6666, ("accumulated %.3f < %.3f and > %.3f, skipping",
                     around_target_accumulation, around_target_threshold, -around_target_threshold));
                 return false;
@@ -4620,7 +4644,9 @@ private:
             // If the slope clearly indicates it's already going the direction we want to.
             float avg_recorded_tcp = 0.0;
             int tcp_count = rearrange_recorded_tcp ();
+            *recorded_tcp_count = tcp_count;
             float tcp_slope = slope (recorded_tcp_rearranged, tcp_count, &avg_recorded_tcp);
+            *recorded_tcp_slope = tcp_slope;
             dprintf (6666, ("acc thres exceeded! %s slope of %d tcps is %.3f",
                 ((around_target_accumulation > 0.0) ? "above" : "below"), tcp_count, tcp_slope));
 
@@ -4629,6 +4655,7 @@ private:
                 (((around_target_accumulation > 0.0) && (tcp_slope < -0.2)) ||
                 ((around_target_accumulation < 0.0) && (tcp_slope > 0.2))))
             {
+                *change_decision = decide_change_condition::already_toward_target;
                 dprintf (6666, ("already trending the right direction, skipping"));
                 reset_accumulation();
                 return false;
@@ -4638,6 +4665,7 @@ private:
             float diff_pct = diff_to_target / target_tcp;
             if (is_tcp_in_range (diff_pct, tcp_slope))
             {
+                *change_decision = decide_change_condition::tcp_in_range;
                 dprintf (6666, ("diff %.3f, slope %.3f already in range", diff_pct, tcp_slope));
                 reset_accumulation();
                 return false;
@@ -4648,6 +4676,7 @@ private:
 
             if (is_temp_change (tcp_to_consider))
             {
+                *change_decision = decide_change_condition::temp_change;
                 dprintf (6666, ("this is a temporary change, ignore"));
                 reset_accumulation();
                 return false;
@@ -4677,8 +4706,20 @@ private:
             return (int)round(current_hc * (4.0 * pow (current_hc, -0.7)));
         }
 
-        int get_hc_change_factors (int change_int, size_t last_change_gc_index)
+        enum hc_change_freq_reason
         {
+            // Default is just a number we set to not change really often.
+            default_reason = 0x0000,
+            expensive_hc_change = 0x0001,
+            dec = 0x0002,
+            dec_multiple = 0x0004,
+            fluctuation = 0x0008
+        };
+
+        int get_hc_change_freq_factors (int change_int, size_t last_change_gc_index, hc_change_freq_reason* reason)
+        {
+            *reason = hc_change_freq_reason::default_reason;
+
             int factor = 3;
             int inc_factor = factor;
 
@@ -4703,7 +4744,8 @@ private:
 
                 if (change_heap_count_time > avg_gc_pause_time)
                 {
-                    factor *= 2 * (int)(change_heap_count_time/ avg_gc_pause_time);
+                    factor *= 2 * (int)(change_heap_count_time / avg_gc_pause_time);
+                    *reason = hc_change_freq_reason::expensive_hc_change;
                 }
 
                 dprintf (6666, ("last HC change took %.3fms  / avg gc pause %.3fms = %d , factor %d",
@@ -4715,6 +4757,7 @@ private:
             {
                 // Dec in general should be done less frequently than inc.
                 factor *= 2;
+                *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::dec);
 
                 adjustment* adj = get_last_adjustment();
                 int last_hc_change = adj->hc_change;
@@ -4726,6 +4769,7 @@ private:
                     // If it's the 2nd time in a row we want to dec, we also delay it.
                     dprintf (6666, ("last was dec, factor %d->%d", factor, (factor * 2)));
                     factor *= 2;
+                    *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::dec_multiple);
                 }
                 else
                 {
@@ -4747,6 +4791,7 @@ private:
                             {
                                 dprintf (6666, ("We dec-ed and quickly followed with an inc, factor %d -> %d", factor, (factor * 4)));
                                 factor *= 4;
+                                *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::fluctuation);
                             }
                         }
                     }
@@ -4756,8 +4801,22 @@ private:
             return factor;
         }
 
-        adjust_metric should_change_hc (int max_hc_datas, int min_hc_datas, int max_hc_growth, int& change_int, size_t current_gc_index)
+        // If we did consider changing, which adjustment are we actually doing? These are the reasons that caused us
+        // to make that decision.
+        enum decide_adjustment_reason
         {
+            init_adjustment_reason = 0x0000,
+            limited_by_bounds = 0x0001,
+            cannot_adjust_budget = 0x0002,
+            change_pct_too_small = 0x0004,
+            change_too_soon = 0x0008
+        };
+
+        adjust_metric should_change_hc (int max_hc_datas, int min_hc_datas, int max_hc_growth, int& change_int, size_t current_gc_index,
+                                        // These are only for diagnostics.
+                                        decide_adjustment_reason* adj_reason, int* hc_change_freq_factor, hc_change_freq_reason* hc_freq_reason)
+        {
+            *adj_reason = decide_adjustment_reason::init_adjustment_reason;
             adjust_metric adj_metric = not_adjusted;
 
             int saved_change_int = change_int;
@@ -4774,15 +4833,16 @@ private:
                 }
             }
 
+            if (saved_change_int != change_int)
+            {
+                *adj_reason = decide_adjustment_reason::limited_by_bounds;
+                dprintf (6666, ("change %d heaps instead of %d so we don't go over upper/lower limit", change_int, saved_change_int));
+            }
+
             if (change_int == 0)
             {
                 dprintf (6666, ("cannot change due to upper/lower limit!"));
                 return adj_metric;
-            }
-
-            if (saved_change_int != change_int)
-            {
-                dprintf (6666, ("change %d heaps instead of %d so we don't go over upper/lower limit", change_int, saved_change_int));
             }
 
             // Now we need to decide whether we should change the HC or the budget.
@@ -4801,11 +4861,13 @@ private:
             // because we use this to indicate if at some point we should change HC instead.
             if ((change_int > 0) && (n_heaps == min_hc_datas))
             {
+                *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::cannot_adjust_budget);
                 dprintf (6666, ("we are already at min datas heaps %d, cannot inc budget so must inc HC", n_heaps));
                 adj_metric = adjust_hc;
             }
             else if ((change_int < 0) && (n_heaps == max_hc_datas))
             {
+                *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::cannot_adjust_budget);
                 dprintf (6666, ("we are already at max datas heaps %d, cannot dec budget so must dec HC", n_heaps));
                 adj_metric = adjust_hc;
             }
@@ -4821,13 +4883,13 @@ private:
             if (last_change_gc_index)
             {
                 size_t num_gcs_since_change = current_gc_index - last_change_gc_index;
-                int hc_change_factor = get_hc_change_factors (change_int, last_change_gc_index);
+                *hc_change_freq_factor = get_hc_change_freq_factors (change_int, last_change_gc_index, hc_freq_reason);
 
-                dprintf (6666, ("hc would change %.3f, factor is %d", hc_change_pct, hc_change_factor));
+                dprintf (6666, ("hc would change %.3f, factor is %d", hc_change_pct, *hc_change_freq_factor));
                 if (hc_change_pct < 0.2)
                 {
                     // Should we also consider absolute time here?
-                    int delayed_hc_change_factor = hc_change_factor * 3;
+                    int delayed_hc_change_freq_factor = *hc_change_freq_factor * 3;
                     int count = 0;
                     if (adj->metric == adjust_budget)
                     {
@@ -4835,20 +4897,22 @@ private:
                     }
 
                     dprintf (6666, ("we've changed budget instead of HC %d times from %Id GCs ago, thres %d times",
-                                    count, num_gcs_since_change, delayed_hc_change_factor));
+                                    count, num_gcs_since_change, delayed_hc_change_freq_factor));
 
-                    if (count < delayed_hc_change_factor)
+                    if (count < delayed_hc_change_freq_factor)
                     {
+                        *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::change_pct_too_small);
                         adj_metric = adjust_budget;
                     }
                 }
                 else
                 {
-                    bool change_p = (num_gcs_since_change > (size_t)(hc_change_factor * sample_size));
-                    dprintf (6666, ("It's been %Id GCs since we wanted to change HC last time, thres %d GCs, %s",
-                        num_gcs_since_change, (hc_change_factor * sample_size), (change_p ? "change" : "don't change yet")));
+                    bool change_p = (num_gcs_since_change > (size_t)(*hc_change_freq_factor * sample_size));
+                    dprintf (6666, ("It's been %Id GCs since we changed last time, thres %d GCs, %s",
+                        num_gcs_since_change, (*hc_change_freq_factor * sample_size), (change_p ? "change" : "don't change yet")));
                     if (!change_p)
                     {
+                        *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::change_too_soon);
                         adj_metric = not_adjusted;
                     }
                 }
@@ -4954,15 +5018,15 @@ private:
 
                         size_t new_budget_per_heap = (size_t)(last_budget_per_heap / last_alloc_time * target_alloc_time);
                         new_budget_per_heap = Align (new_budget_per_heap, get_alignment_constant (TRUE));
+                        size_t saved_new_budget_per_heap = new_budget_per_heap;
 
-                        dprintf (6666, ("adjust last budget %Id to %Id (%.3fmb)",
-                            last_budget_per_heap, new_budget_per_heap, (new_budget_per_heap / 1000.0 / 1000.0)));
+                        new_budget_per_heap = max (new_budget_per_heap, bcs_per_heap);
+                        new_budget_per_heap = min (new_budget_per_heap, budget_old_gen_per_heap);
 
-                        if ((new_budget_per_heap >= bcs_per_heap) && (new_budget_per_heap <= budget_old_gen_per_heap))
-                        {
-                            dprintf (6666, ("setting this as the new budget!"));
-                            return new_budget_per_heap;
-                        }
+                        dprintf (6666, ("adjust last budget %Id to %Id->%Id (%.3fmb)",
+                            last_budget_per_heap, saved_new_budget_per_heap, new_budget_per_heap, (new_budget_per_heap / 1000.0 / 1000.0)));
+
+                        return new_budget_per_heap;
                     }
                 }
             }
@@ -5009,6 +5073,7 @@ private:
         }
     };
     PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t current_total_soh_stable_size;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t last_suspended_end_time;
     // If the last full GC is blocking, this is that GC's index; for BGC, this is the settings.gc_index
     // when the BGC ended.

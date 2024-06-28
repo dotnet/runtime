@@ -480,13 +480,8 @@ namespace Internal.JitInterface
                 }
             }
 
-#pragma warning disable SA1001, SA1113, SA1115 // Comma should be on the same line as previous parameter
-            _methodCodeNode.SetCode(objectData
-#if !SUPPORT_JIT && !READYTORUN
-                , isFoldable: (_compilation._compilationOptions & RyuJitCompilationOptions.MethodBodyFolding) != 0
-#endif
-                );
-#pragma warning restore SA1001, SA1113, SA1115 // Comma should be on the same line as previous parameter
+            _methodCodeNode.SetCode(objectData);
+
 #if READYTORUN
             if (_methodColdCodeNode != null)
             {
@@ -2941,6 +2936,18 @@ namespace Internal.JitInterface
                 return true;
 
             return _compilation.IsEffectivelySealed(type);
+        }
+
+        private TypeCompareState isGenericType(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            {
+                return TypeCompareState.May;
+            }
+
+            return type.HasInstantiation ? TypeCompareState.Must : TypeCompareState.MustNot;
         }
 
         private TypeCompareState isNullableType(CORINFO_CLASS_STRUCT_* cls)

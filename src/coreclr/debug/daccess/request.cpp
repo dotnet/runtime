@@ -720,8 +720,18 @@ ClrDataAccess::GetThreadAllocData(CLRDATA_ADDRESS addr, struct DacpAllocData *da
 
     Thread* thread = PTR_Thread(TO_TADDR(addr));
 
-    data->allocBytes = TO_CDADDR(thread->m_alloc_context.alloc_bytes);
-    data->allocBytesLoh = TO_CDADDR(thread->m_alloc_context.alloc_bytes_uoh);
+    PTR_gc_alloc_context pAllocContext = thread->GetAllocContext();
+
+    if (pAllocContext != NULL)
+    {
+        data->allocBytes = TO_CDADDR(pAllocContext->alloc_bytes);
+        data->allocBytesLoh = TO_CDADDR(pAllocContext->alloc_bytes_uoh);
+    }
+    else
+    {
+        data->allocBytes = TO_CDADDR(0);
+        data->allocBytesLoh = TO_CDADDR(0);
+    }
 
     SOSDacLeave();
     return hr;
@@ -816,8 +826,18 @@ HRESULT ClrDataAccess::GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct Dacp
     threadData->osThreadId = (DWORD)thread->m_OSThreadId;
     threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
-    threadData->allocContextPtr = TO_CDADDR(thread->m_alloc_context.alloc_ptr);
-    threadData->allocContextLimit = TO_CDADDR(thread->m_alloc_context.alloc_limit);
+
+    PTR_gc_alloc_context allocContext = thread->GetAllocContext();
+    if (allocContext)
+    {
+        threadData->allocContextPtr = TO_CDADDR(allocContext->alloc_ptr);
+        threadData->allocContextLimit = TO_CDADDR(allocContext->alloc_limit);
+    }
+    else
+    {
+        threadData->allocContextPtr = TO_CDADDR(0);
+        threadData->allocContextLimit = TO_CDADDR(0);
+    }
 
     threadData->fiberData = (CLRDATA_ADDRESS)NULL;
 
@@ -1702,11 +1722,11 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
 
     ZeroMemory(ModuleData,sizeof(DacpModuleData));
     ModuleData->Address = addr;
-    ModuleData->PEAssembly = HOST_CDADDR(pModule->GetPEAssembly());
+    ModuleData->PEAssembly = addr; // Module address in .NET 9+ - correspondingly, SOS-DAC APIs for PE assemblies expect a module address
     COUNT_T metadataSize = 0;
     if (!pModule->GetPEAssembly()->IsDynamic())
     {
-        ModuleData->ilBase = (CLRDATA_ADDRESS)(ULONG_PTR) pModule->GetPEAssembly()->GetIJWBase();
+        ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedLayout()->GetBase()));
     }
 
     ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
@@ -2105,13 +2125,14 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
 }
 
 HRESULT
-ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded)
+ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded)
 {
-    if (addr == 0 || (fileName == NULL && pNeeded == NULL) || (fileName != NULL && count == 0))
+    if (moduleAddr == 0 || (fileName == NULL && pNeeded == NULL) || (fileName != NULL && count == 0))
         return E_INVALIDARG;
 
     SOSDacEnter();
-    PEAssembly* pPEAssembly = PTR_PEAssembly(TO_TADDR(addr));
+    PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
+    PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // Turn from bytes to wide characters
     if (!pPEAssembly->GetPath().IsEmpty())
@@ -2162,20 +2183,25 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_up
 }
 
 HRESULT
-ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base)
+ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
 {
-    if (addr == 0 || base == NULL)
+    if (moduleAddr == 0 || base == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
 
-    PEAssembly* pPEAssembly = PTR_PEAssembly(TO_TADDR(addr));
+    PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
+    PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // More fields later?
     if (!pPEAssembly->IsDynamic())
-        *base = TO_CDADDR(pPEAssembly->GetIJWBase());
+    {
+        *base = TO_CDADDR(dac_cast<TADDR>(pPEAssembly->GetLoadedLayout()->GetBase()));
+    }
     else
+    {
         *base = (CLRDATA_ADDRESS)NULL;
+    }
 
     SOSDacLeave();
     return hr;

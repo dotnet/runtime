@@ -115,6 +115,23 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             Contracts.IThread contract = _target.Contracts.Thread;
             Contracts.ThreadData threadData = contract.GetThreadData(thread);
             data->corThreadId = (int)threadData.Id;
+            data->osThreadId = (int)threadData.OSId.Value;
+            data->state = (int)threadData.State;
+            data->preemptiveGCDisabled = (uint)(threadData.PreemptiveGCDisabled ? 1 : 0);
+            data->allocContextPtr = threadData.AllocContextPointer;
+            data->allocContextLimit = threadData.AllocContextLimit;
+            data->fiberData = 0;    // Always set to 0 - fibers are no longer supported
+
+            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+            data->context = appDomain;
+            data->domain = appDomain;
+
+            data->lockCount = -1;   // Always set to -1 - lock count was .NET Framework and no longer needed
+            data->pFrame = threadData.Frame;
+            data->firstNestedException = threadData.FirstNestedException;
+            data->teb = threadData.TEB;
+            data->lastThrownObjectHandle = threadData.LastThrownObjectHandle;
             data->nextThread = threadData.NextThread;
         }
         catch (Exception ex)
@@ -122,8 +139,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             return ex.HResult;
         }
 
-        // TODO: [cdac] Implement/populate rest of thread data fields
-        return HResults.E_NOTIMPL;
+        return HResults.S_OK;
     }
     public unsafe int GetThreadFromThinlockID(uint thinLockId, ulong* pThread) => HResults.E_NOTIMPL;
     public unsafe int GetThreadLocalModuleData(ulong thread, uint index, void* data) => HResults.E_NOTIMPL;

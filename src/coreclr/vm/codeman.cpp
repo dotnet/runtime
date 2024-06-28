@@ -1270,11 +1270,13 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_VectorT256);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0) && (maxVectorTBitWidth >= 512))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0) && (maxVectorTBitWidth >= 512))
     {
         // We require 512-bit Vector<T> to be opt-in
         CPUCompileFlags.Set(InstructionSet_VectorT512);
     }
+
+    // x86-64-v1
 
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {
@@ -1291,10 +1293,38 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_SSE2);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Aes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAES))
+    // x86-64-v2
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Sse3) != 0) &&
+        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3) &&
+        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3_4))
     {
-        CPUCompileFlags.Set(InstructionSet_AES);
+        // We need to additionally check that EXTERNAL_EnableSSE3_4 is set, as that
+        // is a prexisting config flag that controls the SSE3+ ISAs
+        CPUCompileFlags.Set(InstructionSet_SSE3);
     }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Ssse3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSSE3))
+    {
+        CPUCompileFlags.Set(InstructionSet_SSSE3);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Sse41) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE41))
+    {
+        CPUCompileFlags.Set(InstructionSet_SSE41);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Sse42) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE42))
+    {
+        CPUCompileFlags.Set(InstructionSet_SSE42);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Popcnt) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePOPCNT))
+    {
+        CPUCompileFlags.Set(InstructionSet_POPCNT);
+    }
+
+    // x86-64-v3
 
     if (((cpuFeatures & XArchIntrinsicConstants_Avx) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX))
     {
@@ -1304,61 +1334,6 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX2))
     {
         CPUCompileFlags.Set(InstructionSet_AVX2);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512F))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512F);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512f_vl) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512F_VL))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512F_VL);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512bw) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BW))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512BW);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512bw_vl) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BW_VL))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512BW_VL);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512cd) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512CD))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512CD);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512cd_vl) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512CD_VL))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512CD_VL);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512dq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512DQ);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512dq_vl) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ_VL))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512DQ_VL);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi_vl) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI_VL))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512VBMI_VL);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_AvxVnni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVXVNNI);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Bmi1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableBMI1))
@@ -1381,43 +1356,69 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_LZCNT);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Pclmulqdq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePCLMULQDQ))
-    {
-        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
-    }
-
     if (((cpuFeatures & XArchIntrinsicConstants_Movbe) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableMOVBE))
     {
         CPUCompileFlags.Set(InstructionSet_MOVBE);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Popcnt) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePOPCNT))
+    // x86-64-v4
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
+        ((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0))
     {
-        CPUCompileFlags.Set(InstructionSet_POPCNT);
+        // While the AVX-512 ISAs can be individually lit-up, they really
+        // need F, BW, CD, DQ, and VL to be fully functional without adding
+        // significant complexity into the JIT. Additionally, unlike AVX/AVX2
+        // there was never really any hardware that didn't provide all 5 at
+        // once, with the notable exception being Knight's Landing which
+        // provided a similar but not quite the same feature.
+
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512F) &&
+            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512F_VL) &&
+            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BW) &&
+            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BW_VL) &&
+            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512CD) &&
+            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512CD_VL) &&
+            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ) &&
+            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ_VL))
+        {
+            CPUCompileFlags.Set(InstructionSet_EVEX);
+            CPUCompileFlags.Set(InstructionSet_AVX512F);
+            CPUCompileFlags.Set(InstructionSet_AVX512F_VL);
+            CPUCompileFlags.Set(InstructionSet_AVX512BW);
+            CPUCompileFlags.Set(InstructionSet_AVX512BW_VL);
+            CPUCompileFlags.Set(InstructionSet_AVX512CD);
+            CPUCompileFlags.Set(InstructionSet_AVX512CD_VL);
+            CPUCompileFlags.Set(InstructionSet_AVX512DQ);
+            CPUCompileFlags.Set(InstructionSet_AVX512DQ_VL);
+        }
     }
 
-    // We need to additionally check that EXTERNAL_EnableSSE3_4 is set, as that
-    // is a prexisting config flag that controls the SSE3+ ISAs
-    if (((cpuFeatures & XArchIntrinsicConstants_Sse3) != 0) &&
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3) &&
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3_4))
+    if ((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi) != 0)
     {
-        CPUCompileFlags.Set(InstructionSet_SSE3);
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI) &&
+            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI_VL))
+        {
+            CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
+            CPUCompileFlags.Set(InstructionSet_AVX512VBMI_VL);
+        }
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Sse41) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE41))
+    // Unversioned
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Aes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAES))
     {
-        CPUCompileFlags.Set(InstructionSet_SSE41);
+        CPUCompileFlags.Set(InstructionSet_AES);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Sse42) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE42))
+    if (((cpuFeatures & XArchIntrinsicConstants_Pclmulqdq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePCLMULQDQ))
     {
-        CPUCompileFlags.Set(InstructionSet_SSE42);
+        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Ssse3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSSE3))
+    if (((cpuFeatures & XArchIntrinsicConstants_AvxVnni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
     {
-        CPUCompileFlags.Set(InstructionSet_SSSE3);
+        CPUCompileFlags.Set(InstructionSet_AVXVNNI);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Serialize) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableX86Serialize))
@@ -1425,22 +1426,17 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_X86Serialize);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) && (CPUCompileFlags.IsSet(InstructionSet_AVX512F) || CPUCompileFlags.IsSet(InstructionSet_AVX10v1)))
+    if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
+        ((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0))
     {
-        CPUCompileFlags.Set(InstructionSet_EVEX);
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
+        {
+            CPUCompileFlags.Set(InstructionSet_EVEX);
+            CPUCompileFlags.Set(InstructionSet_AVX10v1);
+        }
     }
 
-    // As Avx10v1_V512 could imply Avx10v1,
-    // then the flag check here can be conducted for only once, and let 
-    // `EnusreValidInstructionSetSupport` to handle the illegal combination.
-    // To ensure `EnusreValidInstructionSetSupport` handle the dependency correctly, the implication
-    // defined in InstructionSetDesc.txt should be explicit, no transitive implication should be assumed.
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX10v1);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0))
+    if ((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0)
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
     }

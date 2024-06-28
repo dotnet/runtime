@@ -5,7 +5,7 @@ using System.Collections;
 using System.Drawing;
 using System.Linq;
 using System.Resources.Extensions.BinaryFormat;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Resources.Extensions.Tests.Common;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
@@ -17,18 +17,18 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
     {
         BinaryFormattedObject format = new(Serialize(new ArrayList()));
 
-        VerifyArrayList((ClassRecord)format[1]);
+        VerifyArrayList((ClassRecord)format[format.RootRecord.Id]);
 
-        format[2].Should().BeAssignableTo<ArrayRecord<object>>();
+        format[((ClassRecord)format.RootRecord).GetArrayRecord("_items").Id].Should().BeAssignableTo<SZArrayRecord<object>>();
     }
 
     private static void VerifyArrayList(ClassRecord systemClass)
     {
-        systemClass.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        systemClass.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
 
         systemClass.TypeName.FullName.Should().Be(typeof(ArrayList).FullName);
         systemClass.MemberNames.Should().BeEquivalentTo(["_items", "_size", "_version"]);
-        systemClass.GetSerializationRecord("_items").Should().BeAssignableTo<ArrayRecord<object>>();
+        systemClass.GetSerializationRecord("_items").Should().BeAssignableTo<SZArrayRecord<object>>();
     }
 
     [Theory]
@@ -40,10 +40,10 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
             value
         }));
 
-        ClassRecord listRecord = (ClassRecord)format[1];
+        ClassRecord listRecord = (ClassRecord)format[format.RootRecord.Id];
         VerifyArrayList(listRecord);
 
-        ArrayRecord<object> array = (ArrayRecord<object>)format[2];
+        SZArrayRecord<object> array = (SZArrayRecord<object>)format[listRecord.GetArrayRecord("_items").Id];
 
         array.GetArray().Take(listRecord.GetInt32("_size")).Should().BeEquivalentTo(new[] { value });
     }
@@ -56,10 +56,10 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
             "JarJar"
         }));
 
-        ClassRecord listRecord = (ClassRecord)format[1];
+        ClassRecord listRecord = (ClassRecord)format[format.RootRecord.Id];
         VerifyArrayList(listRecord);
 
-        ArrayRecord<object> array = (ArrayRecord<object>)format[2];
+        SZArrayRecord<object> array = (SZArrayRecord<object>)format[listRecord.GetArrayRecord("_items").Id];
 
         array.GetArray().Take(listRecord.GetInt32("_size")).ToArray().Should().BeEquivalentTo(new object[] { "JarJar" });
     }
@@ -125,8 +125,8 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
     public void BinaryFormattedObject_ParseEmptyIntList()
     {
         BinaryFormattedObject format = new(Serialize(new List<int>()));
-        ClassRecord classInfo = (ClassRecord)format[1];
-        classInfo.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        ClassRecord classInfo = (ClassRecord)format[format.RootRecord.Id];
+        classInfo.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
 
         // Note that T types are serialized as the mscorlib type.
         classInfo.TypeName.FullName.Should().Be(
@@ -143,11 +143,11 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
             "_version"
         ]);
 
-        classInfo.GetSerializationRecord("_items").Should().BeAssignableTo<ArrayRecord<int>>();
+        classInfo.GetSerializationRecord("_items").Should().BeAssignableTo<SZArrayRecord<int>>();
         classInfo.GetInt32("_size").Should().Be(0);
         classInfo.GetInt32("_version").Should().Be(0);
 
-        ArrayRecord<int> array = (ArrayRecord<int>)format[2];
+        SZArrayRecord<int> array = (SZArrayRecord<int>)format[classInfo.GetArrayRecord("_items").Id];
         array.Length.Should().Be(0);
     }
 
@@ -156,12 +156,12 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
     {
         BinaryFormattedObject format = new(Serialize(new List<string>()));
 
-        ClassRecord classInfo = (ClassRecord)format[1];
-        classInfo.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        ClassRecord classInfo = (ClassRecord)format[format.RootRecord.Id];
+        classInfo.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
         classInfo.TypeName.FullName.Should().StartWith("System.Collections.Generic.List`1[[System.String,");
-        classInfo.GetSerializationRecord("_items").Should().BeAssignableTo<ArrayRecord<string>>();
+        classInfo.GetSerializationRecord("_items").Should().BeAssignableTo<SZArrayRecord<string>>();
 
-        ArrayRecord<string> array = (ArrayRecord<string>)format[2];
+        SZArrayRecord<string> array = (SZArrayRecord<string>)format[classInfo.GetArrayRecord("_items").Id];
         array.Length.Should().Be(0);
     }
 

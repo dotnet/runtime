@@ -18,8 +18,6 @@ namespace System.Numerics
         // syntax. We do this because it saves roughly 8-bytes of IL per method which
         // in turn helps improve inlining chances.
 
-        // TODO: Vector3 is "inefficient" and we'd be better off taking Vector4 or Vector128<T>
-
         internal const uint RowCount = 4;
         internal const uint ColumnCount = 4;
 
@@ -38,7 +36,7 @@ namespace System.Numerics
             public ref Matrix4x4 AsM4x4() => ref Unsafe.As<Impl, Matrix4x4>(ref this);
 
             private const float BillboardEpsilon = 1e-4f;
-            private const float BillboardMinAngle = 1.0f - (0.1f * (MathF.PI / 180.0f)); // 0.1 degrees
+            private const float BillboardMinAngle = 1.0f - (0.1f * (float.Pi / 180.0f)); // 0.1 degrees
             private const float DecomposeEpsilon = 0.0001f;
 
             public Vector4 X;
@@ -52,19 +50,19 @@ namespace System.Numerics
                              float m31, float m32, float m33, float m34,
                              float m41, float m42, float m43, float m44)
             {
-                X = new Vector4(m11, m12, m13, m14);
-                Y = new Vector4(m21, m22, m23, m24);
-                Z = new Vector4(m31, m32, m33, m34);
-                W = new Vector4(m41, m42, m43, m44);
+                X = Vector4.Create(m11, m12, m13, m14);
+                Y = Vector4.Create(m21, m22, m23, m24);
+                Z = Vector4.Create(m31, m32, m33, m34);
+                W = Vector4.Create(m41, m42, m43, m44);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Init(in Matrix3x2.Impl value)
             {
-                X = new Vector4(value.X, 0, 0);
-                Y = new Vector4(value.Y, 0, 0);
+                X = Vector4.Create(value.X, 0, 0);
+                Y = Vector4.Create(value.Y, 0, 0);
                 Z = Vector4.UnitZ;
-                W = new Vector4(value.Z, 0, 1);
+                W = Vector4.Create(value.Z, 0, 1);
             }
 
             public static Impl Identity
@@ -92,8 +90,7 @@ namespace System.Numerics
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
-
-                    return Unsafe.Add(ref Unsafe.AsRef(in this.X), row)[column];
+                    return Unsafe.Add(ref Unsafe.AsRef(in X), row)[column];
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -103,7 +100,7 @@ namespace System.Numerics
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
-                    Unsafe.Add(ref this.X, row)[column] = value;
+                    Unsafe.Add(ref X, row)[column] = value;
                 }
             }
 
@@ -122,12 +119,12 @@ namespace System.Numerics
             public Vector3 Translation
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                readonly get => new Vector3(W.X, W.Y, W.Z);
+                readonly get => W.AsVector3();
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
-                    W = new Vector4(value, W.W);
+                    W = Vector4.Create(value, W.W);
                 }
             }
 
@@ -167,29 +164,10 @@ namespace System.Numerics
             {
                 Impl result;
 
-                // result.X = Transform(left.X, in right);
-                result.X = right.X * left.X.X;
-                result.X += right.Y * left.X.Y;
-                result.X += right.Z * left.X.Z;
-                result.X += right.W * left.X.W;
-
-                // result.Y = Transform(left.Y, in right);
-                result.Y = right.X * left.Y.X;
-                result.Y += right.Y * left.Y.Y;
-                result.Y += right.Z * left.Y.Z;
-                result.Y += right.W * left.Y.W;
-
-                // result.Z = Transform(left.Z, in right);
-                result.Z = right.X * left.Z.X;
-                result.Z += right.Y * left.Z.Y;
-                result.Z += right.Z * left.Z.Z;
-                result.Z += right.W * left.Z.W;
-
-                // result.W = Transform(left.W, in right);
-                result.W = right.X * left.W.X;
-                result.W += right.Y * left.W.Y;
-                result.W += right.Z * left.W.Z;
-                result.W += right.W * left.W.W;
+                result.X = Vector4.Transform(left.X, in right);
+                result.Y = Vector4.Transform(left.Y, in right);
+                result.Z = Vector4.Transform(left.Z, in right);
+                result.W = Vector4.Transform(left.W, in right);
 
                 return result;
             }
@@ -237,15 +215,14 @@ namespace System.Numerics
             public static Impl CreateBillboard(in Vector3 objectPosition, in Vector3 cameraPosition, in Vector3 cameraUpVector, in Vector3 cameraForwardVector)
             {
                 Vector3 axisZ = objectPosition - cameraPosition;
-                float norm = axisZ.LengthSquared();
 
-                if (norm < BillboardEpsilon)
+                if (axisZ.LengthSquared() < BillboardEpsilon)
                 {
                     axisZ = -cameraForwardVector;
                 }
                 else
                 {
-                    axisZ = Vector3.Multiply(axisZ, 1.0f / MathF.Sqrt(norm));
+                    axisZ = Vector3.Normalize(axisZ);
                 }
 
                 Vector3 axisX = Vector3.Normalize(Vector3.Cross(cameraUpVector, axisZ));
@@ -253,10 +230,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(axisX, 0);
-                result.Y = new Vector4(axisY, 0);
-                result.Z = new Vector4(axisZ, 0);
-                result.W = new Vector4(objectPosition, 1);
+                result.X = axisX.AsVector4();
+                result.Y = axisY.AsVector4();
+                result.Z = axisZ.AsVector4();;
+                result.W = Vector4.Create(objectPosition, 1);
 
                 return result;
             }
@@ -266,15 +243,14 @@ namespace System.Numerics
             {
                 // Treat the case when object and camera positions are too close.
                 Vector3 faceDir = objectPosition - cameraPosition;
-                float norm = faceDir.LengthSquared();
 
-                if (norm < BillboardEpsilon)
+                if (faceDir.LengthSquared() < BillboardEpsilon)
                 {
                     faceDir = -cameraForwardVector;
                 }
                 else
                 {
-                    faceDir = Vector3.Multiply(faceDir, (1.0f / MathF.Sqrt(norm)));
+                    faceDir = Vector3.Normalize(faceDir);
                 }
 
                 Vector3 axisY = rotateAxis;
@@ -282,16 +258,16 @@ namespace System.Numerics
                 // Treat the case when angle between faceDir and rotateAxis is too close to 0.
                 float dot = Vector3.Dot(axisY, faceDir);
 
-                if (MathF.Abs(dot) > BillboardMinAngle)
+                if (float.Abs(dot) > BillboardMinAngle)
                 {
                     faceDir = objectForwardVector;
 
                     // Make sure passed values are useful for compute.
                     dot = Vector3.Dot(axisY, faceDir);
 
-                    if (MathF.Abs(dot) > BillboardMinAngle)
+                    if (float.Abs(dot) > BillboardMinAngle)
                     {
-                        faceDir = (MathF.Abs(axisY.Z) > BillboardMinAngle) ? Vector3.UnitX : new Vector3(0, 0, -1);
+                        faceDir = (float.Abs(axisY.Z) > BillboardMinAngle) ? Vector3.UnitX : Vector3.Create(0, 0, -1);
                     }
                 }
 
@@ -300,10 +276,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(axisX, 0);
-                result.Y = new Vector4(axisY, 0);
-                result.Z = new Vector4(axisZ, 0);
-                result.W = new Vector4(objectPosition, 1);
+                result.X = axisX.AsVector4();
+                result.Y = axisY.AsVector4();
+                result.Z = axisZ.AsVector4();
+                result.W = Vector4.Create(objectPosition, 1);
 
                 return result;
             }
@@ -311,70 +287,8 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateFromAxisAngle(in Vector3 axis, float angle)
             {
-                // a: angle
-                // x, y, z: unit vector for axis.
-                //
-                // Rotation matrix M can compute by using below equation.
-                //
-                //        T               T
-                //  M = uu + (cos a)( I-uu ) + (sin a)S
-                //
-                // Where:
-                //
-                //  u = ( x, y, z )
-                //
-                //      [  0 -z  y ]
-                //  S = [  z  0 -x ]
-                //      [ -y  x  0 ]
-                //
-                //      [ 1 0 0 ]
-                //  I = [ 0 1 0 ]
-                //      [ 0 0 1 ]
-                //
-                //
-                //     [  xx+cosa*(1-xx)   yx-cosa*yx-sina*z zx-cosa*xz+sina*y ]
-                // M = [ xy-cosa*yx+sina*z    yy+cosa(1-yy)  yz-cosa*yz-sina*x ]
-                //     [ zx-cosa*zx-sina*y zy-cosa*zy+sina*x   zz+cosa*(1-zz)  ]
-                //
-
-                float x = axis.X;
-                float y = axis.Y;
-                float z = axis.Z;
-
-                float sa = MathF.Sin(angle);
-                float ca = MathF.Cos(angle);
-
-                float xx = x * x;
-                float yy = y * y;
-                float zz = z * z;
-
-                float xy = x * y;
-                float xz = x * z;
-                float yz = y * z;
-
-                Impl result;
-
-                result.X = new Vector4(
-                    xx + ca * (1.0f - xx),
-                    xy - ca * xy + sa * z,
-                    xz - ca * xz - sa * y,
-                    0
-                );
-                result.Y = new Vector4(
-                    xy - ca * xy - sa * z,
-                    yy + ca * (1.0f - yy),
-                    yz - ca * yz + sa * x,
-                    0
-                );
-                result.Z = new Vector4(
-                    xz - ca * xz + sa * y,
-                    yz - ca * yz - sa * x,
-                    zz + ca * (1.0f - zz),
-                    0
-                );
-                result.W = Vector4.UnitW;
-
-                return result;
+                Quaternion q = Quaternion.CreateFromAxisAngle(axis, angle);
+                return CreateFromQuaternion(q);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -393,19 +307,19 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(
+                result.X = Vector4.Create(
                     1.0f - 2.0f * (yy + zz),
                     2.0f * (xy + wz),
                     2.0f * (xz - wy),
                     0
                 );
-                result.Y = new Vector4(
+                result.Y = Vector4.Create(
                     2.0f * (xy - wz),
                     1.0f - 2.0f * (zz + xx),
                     2.0f * (yz + wx),
                     0
                 );
-                result.Z = new Vector4(
+                result.Z = Vector4.Create(
                     2.0f * (xz + wy),
                     2.0f * (yz - wx),
                     1.0f - 2.0f * (yy + xx),
@@ -426,44 +340,18 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateLookTo(in Vector3 cameraPosition, in Vector3 cameraDirection, in Vector3 cameraUpVector)
             {
-                Vector3 axisZ = Vector3.Normalize(-cameraDirection);
-                Vector3 axisX = Vector3.Normalize(Vector3.Cross(cameraUpVector, axisZ));
-                Vector3 axisY = Vector3.Cross(axisZ, axisX);
-                Vector3 negativeCameraPosition = -cameraPosition;
+                // This implementation is based on the DirectX Math Library XMMatrixLookToRH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
 
-                Impl result;
-
-                result.X = new Vector4(
-                    axisX.X,
-                    axisY.X,
-                    axisZ.X,
-                    0
-                );
-                result.Y = new Vector4(
-                    axisX.Y,
-                    axisY.Y,
-                    axisZ.Y,
-                    0
-                );
-                result.Z = new Vector4(
-                    axisX.Z,
-                    axisY.Z,
-                    axisZ.Z,
-                    0
-                );
-                result.W = new Vector4(
-                    Vector3.Dot(axisX, negativeCameraPosition),
-                    Vector3.Dot(axisY, negativeCameraPosition),
-                    Vector3.Dot(axisZ, negativeCameraPosition),
-                    1
-                );
-
-                return result;
+                return CreateLookToLeftHanded(cameraPosition, -cameraDirection, cameraUpVector);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateLookToLeftHanded(in Vector3 cameraPosition, in Vector3 cameraDirection, in Vector3 cameraUpVector)
             {
+                // This implementation is based on the DirectX Math Library XMMatrixLookToLH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 Vector3 axisZ = Vector3.Normalize(cameraDirection);
                 Vector3 axisX = Vector3.Normalize(Vector3.Cross(cameraUpVector, axisZ));
                 Vector3 axisY = Vector3.Cross(axisZ, axisX);
@@ -471,45 +359,28 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(
-                    axisX.X,
-                    axisY.X,
-                    axisZ.X,
-                    0
-                );
-                result.Y = new Vector4(
-                    axisX.Y,
-                    axisY.Y,
-                    axisZ.Y,
-                    0
-                );
-                result.Z = new Vector4(
-                    axisX.Z,
-                    axisY.Z,
-                    axisZ.Z,
-                    0
-                );
-                result.W = new Vector4(
-                    Vector3.Dot(axisX, negativeCameraPosition),
-                    Vector3.Dot(axisY, negativeCameraPosition),
-                    Vector3.Dot(axisZ, negativeCameraPosition),
-                    1
-                );
+                result.X = Vector4.Create(axisX, Vector3.Dot(axisX, negativeCameraPosition));
+                result.Y = Vector4.Create(axisY, Vector3.Dot(axisY, negativeCameraPosition));
+                result.Z = Vector4.Create(axisZ, Vector3.Dot(axisZ, negativeCameraPosition));
+                result.W = Vector4.UnitW;
 
-                return result;
+                return Transpose(result);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateOrthographic(float width, float height, float zNearPlane, float zFarPlane)
             {
+                // This implementation is based on the DirectX Math Library XMMatrixOrthographicRH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 float range = 1.0f / (zNearPlane - zFarPlane);
 
                 Impl result;
 
-                result.X = new Vector4(2.0f / width, 0, 0, 0);
-                result.Y = new Vector4(0, 2.0f / height, 0, 0);
-                result.Z = new Vector4(0, 0, range, 0);
-                result.W = new Vector4(0, 0, range * zNearPlane, 1);
+                result.X = Vector4.Create(2.0f / width, 0, 0, 0);
+                result.Y = Vector4.Create(0, 2.0f / height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 0);
+                result.W = Vector4.Create(0, 0, range * zNearPlane, 1);
 
                 return result;
             }
@@ -517,14 +388,17 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateOrthographicLeftHanded(float width, float height, float zNearPlane, float zFarPlane)
             {
+                // This implementation is based on the DirectX Math Library XMMatrixOrthographicLH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 float range = 1.0f / (zFarPlane - zNearPlane);
 
                 Impl result;
 
-                result.X = new Vector4(2.0f / width, 0, 0, 0);
-                result.Y = new Vector4(0, 2.0f / height, 0, 0);
-                result.Z = new Vector4(0, 0, range, 0);
-                result.W = new Vector4(0, 0, -range * zNearPlane, 1);
+                result.X = Vector4.Create(2.0f / width, 0, 0, 0);
+                result.Y = Vector4.Create(0, 2.0f / height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 0);
+                result.W = Vector4.Create(0, 0, -range * zNearPlane, 1);
 
                 return result;
             }
@@ -532,16 +406,19 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
             {
+                // This implementation is based on the DirectX Math Library XMMatrixOrthographicOffCenterRH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 float reciprocalWidth = 1.0f / (right - left);
                 float reciprocalHeight = 1.0f / (top - bottom);
                 float range = 1.0f / (zNearPlane - zFarPlane);
 
                 Impl result;
 
-                result.X = new Vector4(reciprocalWidth + reciprocalWidth, 0, 0, 0);
-                result.Y = new Vector4(0, reciprocalHeight + reciprocalHeight, 0, 0);
-                result.Z = new Vector4(0, 0, range, 0);
-                result.W = new Vector4(
+                result.X = Vector4.Create(reciprocalWidth + reciprocalWidth, 0, 0, 0);
+                result.Y = Vector4.Create(0, reciprocalHeight + reciprocalHeight, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 0);
+                result.W = Vector4.Create(
                     -(left + right) * reciprocalWidth,
                     -(top + bottom) * reciprocalHeight,
                     range * zNearPlane,
@@ -554,16 +431,19 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateOrthographicOffCenterLeftHanded(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
             {
+                // This implementation is based on the DirectX Math Library XMMatrixOrthographicOffCenterLH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 float reciprocalWidth = 1.0f / (right - left);
                 float reciprocalHeight = 1.0f / (top - bottom);
                 float range = 1.0f / (zFarPlane - zNearPlane);
 
                 Impl result;
 
-                result.X = new Vector4(reciprocalWidth + reciprocalWidth, 0, 0, 0);
-                result.Y = new Vector4(0, reciprocalHeight + reciprocalHeight, 0, 0);
-                result.Z = new Vector4(0, 0, range, 0);
-                result.W = new Vector4(
+                result.X = Vector4.Create(reciprocalWidth + reciprocalWidth, 0, 0, 0);
+                result.Y = Vector4.Create(0, reciprocalHeight + reciprocalHeight, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 0);
+                result.W = Vector4.Create(
                     -(left + right) * reciprocalWidth,
                     -(top + bottom) * reciprocalHeight,
                     -range * zNearPlane,
@@ -576,6 +456,9 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreatePerspective(float width, float height, float nearPlaneDistance, float farPlaneDistance)
             {
+                // This implementation is based on the DirectX Math Library XMMatrixPerspectiveRH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
@@ -585,10 +468,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(dblNearPlaneDistance / width, 0, 0, 0);
-                result.Y = new Vector4(0, dblNearPlaneDistance / height, 0, 0);
-                result.Z = new Vector4(0, 0, range, -1.0f);
-                result.W = new Vector4(0, 0, range * nearPlaneDistance, 0);
+                result.X = Vector4.Create(dblNearPlaneDistance / width, 0, 0, 0);
+                result.Y = Vector4.Create(0, dblNearPlaneDistance / height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, -1.0f);
+                result.W = Vector4.Create(0, 0, range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -596,6 +479,9 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreatePerspectiveLeftHanded(float width, float height, float nearPlaneDistance, float farPlaneDistance)
             {
+                // This implementation is based on the DirectX Math Library XMMatrixPerspectiveLH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
@@ -605,10 +491,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(dblNearPlaneDistance / width, 0, 0, 0);
-                result.Y = new Vector4(0, dblNearPlaneDistance / height, 0, 0);
-                result.Z = new Vector4(0, 0, range, 1.0f);
-                result.W = new Vector4(0, 0, -range * nearPlaneDistance, 0);
+                result.X = Vector4.Create(dblNearPlaneDistance / width, 0, 0, 0);
+                result.Y = Vector4.Create(0, dblNearPlaneDistance / height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 1.0f);
+                result.W = Vector4.Create(0, 0, -range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -616,6 +502,9 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreatePerspectiveFieldOfView(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
             {
+                // This implementation is based on the DirectX Math Library XMMatrixPerspectiveFovRH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(fieldOfView, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(fieldOfView, float.Pi);
 
@@ -623,16 +512,16 @@ namespace System.Numerics
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
-                float height = 1.0f / MathF.Tan(fieldOfView * 0.5f);
+                float height = 1.0f / float.Tan(fieldOfView * 0.5f);
                 float width = height / aspectRatio;
                 float range = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
 
                 Impl result;
 
-                result.X = new Vector4(width, 0, 0, 0);
-                result.Y = new Vector4(0, height, 0, 0);
-                result.Z = new Vector4(0, 0, range, -1.0f);
-                result.W = new Vector4(0, 0, range * nearPlaneDistance, 0);
+                result.X = Vector4.Create(width, 0, 0, 0);
+                result.Y = Vector4.Create(0, height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, -1.0f);
+                result.W = Vector4.Create(0, 0, range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -640,6 +529,9 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreatePerspectiveFieldOfViewLeftHanded(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
             {
+                // This implementation is based on the DirectX Math Library XMMatrixPerspectiveFovLH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(fieldOfView, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(fieldOfView, float.Pi);
 
@@ -647,16 +539,16 @@ namespace System.Numerics
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
-                float height = 1.0f / MathF.Tan(fieldOfView * 0.5f);
+                float height = 1.0f / float.Tan(fieldOfView * 0.5f);
                 float width = height / aspectRatio;
                 float range = float.IsPositiveInfinity(farPlaneDistance) ? 1.0f : farPlaneDistance / (farPlaneDistance - nearPlaneDistance);
 
                 Impl result;
 
-                result.X = new Vector4(width, 0, 0, 0);
-                result.Y = new Vector4(0, height, 0, 0);
-                result.Z = new Vector4(0, 0, range, 1.0f);
-                result.W = new Vector4(0, 0, -range * nearPlaneDistance, 0);
+                result.X = Vector4.Create(width, 0, 0, 0);
+                result.Y = Vector4.Create(0, height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 1.0f);
+                result.W = Vector4.Create(0, 0, -range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -664,6 +556,9 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreatePerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
             {
+                // This implementation is based on the DirectX Math Library XMMatrixPerspectiveOffCenterRH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
@@ -675,15 +570,15 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
-                result.Y = new Vector4(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
-                result.Z = new Vector4(
+                result.X = Vector4.Create(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
+                result.Y = Vector4.Create(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
+                result.Z = Vector4.Create(
                     (left + right) * reciprocalWidth,
                     (top + bottom) * reciprocalHeight,
                     range,
                     -1.0f
                 );
-                result.W = new Vector4(0, 0, range * nearPlaneDistance, 0);
+                result.W = Vector4.Create(0, 0, range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -691,6 +586,9 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreatePerspectiveOffCenterLeftHanded(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
             {
+                // This implementation is based on the DirectX Math Library XMMatrixPerspectiveOffCenterLH method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
@@ -702,15 +600,15 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
-                result.Y = new Vector4(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
-                result.Z = new Vector4(
+                result.X = Vector4.Create(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
+                result.Y = Vector4.Create(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
+                result.Z = Vector4.Create(
                     -(left + right) * reciprocalWidth,
                     -(top + bottom) * reciprocalHeight,
                     range,
                     1.0f
                 );
-                result.W = new Vector4(0, 0, -range * nearPlaneDistance, 0);
+                result.W = Vector4.Create(0, 0, -range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -718,15 +616,18 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateReflection(in Plane value)
             {
-                Plane p = Plane.Normalize(value);
-                Vector3 f = p.Normal * -2.0f;
+                // This implementation is based on the DirectX Math Library XMMatrixReflect method
+                // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
+
+                Vector4 p = Plane.Normalize(value).AsVector4();
+                Vector4 s = p * -2.0f;
 
                 Impl result;
 
-                result.X = new Vector4(f * p.Normal.X, 0) + Vector4.UnitX;
-                result.Y = new Vector4(f * p.Normal.Y, 0) + Vector4.UnitY;
-                result.Z = new Vector4(f * p.Normal.Z, 0) + Vector4.UnitZ;
-                result.W = new Vector4(f * p.D, 1);
+                result.X = Vector4.MultiplyAddEstimate(Vector4.Create(p.X), s, Vector4.UnitX);
+                result.Y = Vector4.MultiplyAddEstimate(Vector4.Create(p.Y), s, Vector4.UnitY);
+                result.Z = Vector4.MultiplyAddEstimate(Vector4.Create(p.Z), s, Vector4.UnitZ);
+                result.W = Vector4.MultiplyAddEstimate(Vector4.Create(p.W), s, Vector4.UnitW);
 
                 return result;
             }
@@ -734,8 +635,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationX(float radians)
             {
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
                 // [  1  0  0  0 ]
                 // [  0  c  s  0 ]
@@ -745,8 +645,8 @@ namespace System.Numerics
                 Impl result;
 
                 result.X = Vector4.UnitX;
-                result.Y = new Vector4(0,  c, s, 0);
-                result.Z = new Vector4(0, -s, c, 0);
+                result.Y = Vector4.Create(0,  c, s, 0);
+                result.Z = Vector4.Create(0, -s, c, 0);
                 result.W = Vector4.UnitW;
 
                 return result;
@@ -755,11 +655,10 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationX(float radians, in Vector3 centerPoint)
             {
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
-                float y = centerPoint.Y * (1 - c) + centerPoint.Z * s;
-                float z = centerPoint.Z * (1 - c) - centerPoint.Y * s;
+                float y = float.MultiplyAddEstimate(centerPoint.Y, 1 - c, +centerPoint.Z * s);
+                float z = float.MultiplyAddEstimate(centerPoint.Z, 1 - c, -centerPoint.Y * s);
 
                 // [  1  0  0  0 ]
                 // [  0  c  s  0 ]
@@ -769,9 +668,9 @@ namespace System.Numerics
                 Impl result;
 
                 result.X = Vector4.UnitX;
-                result.Y = new Vector4(0,  c, s, 0);
-                result.Z = new Vector4(0, -s, c, 0);
-                result.W = new Vector4(0,  y, z, 1);
+                result.Y = Vector4.Create(0,  c, s, 0);
+                result.Z = Vector4.Create(0, -s, c, 0);
+                result.W = Vector4.Create(0,  y, z, 1);
 
                 return result;
             }
@@ -779,8 +678,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationY(float radians)
             {
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
                 // [  c  0 -s  0 ]
                 // [  0  1  0  0 ]
@@ -789,9 +687,9 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(c, 0, -s, 0);
+                result.X = Vector4.Create(c, 0, -s, 0);
                 result.Y = Vector4.UnitY;
-                result.Z = new Vector4(s, 0,  c, 0);
+                result.Z = Vector4.Create(s, 0,  c, 0);
                 result.W = Vector4.UnitW;
 
                 return result;
@@ -800,11 +698,10 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationY(float radians, in Vector3 centerPoint)
             {
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
-                float x = centerPoint.X * (1 - c) - centerPoint.Z * s;
-                float z = centerPoint.Z * (1 - c) + centerPoint.X * s;
+                float x = float.MultiplyAddEstimate(centerPoint.X, 1 - c, -centerPoint.Z * s);
+                float z = float.MultiplyAddEstimate(centerPoint.Z, 1 - c, +centerPoint.X * s);
 
                 // [  c  0 -s  0 ]
                 // [  0  1  0  0 ]
@@ -813,10 +710,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(c, 0, -s, 0);
+                result.X = Vector4.Create(c, 0, -s, 0);
                 result.Y = Vector4.UnitY;
-                result.Z = new Vector4(s, 0,  c, 0);
-                result.W = new Vector4(x, 0,  z, 1);
+                result.Z = Vector4.Create(s, 0,  c, 0);
+                result.W = Vector4.Create(x, 0,  z, 1);
 
                 return result;
             }
@@ -824,9 +721,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationZ(float radians)
             {
-
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
                 // [  c  s  0  0 ]
                 // [ -s  c  0  0 ]
@@ -835,8 +730,8 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4( c, s, 0, 0);
-                result.Y = new Vector4(-s, c, 0, 0);
+                result.X = Vector4.Create( c, s, 0, 0);
+                result.Y = Vector4.Create(-s, c, 0, 0);
                 result.Z = Vector4.UnitZ;
                 result.W = Vector4.UnitW;
 
@@ -846,11 +741,10 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationZ(float radians, in Vector3 centerPoint)
             {
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
-                float x = centerPoint.X * (1 - c) + centerPoint.Y * s;
-                float y = centerPoint.Y * (1 - c) - centerPoint.X * s;
+                float x = float.MultiplyAddEstimate(centerPoint.X, 1 - c, +centerPoint.Y * s);
+                float y = float.MultiplyAddEstimate(centerPoint.Y, 1 - c, -centerPoint.X * s);
 
                 // [  c  s  0  0 ]
                 // [ -s  c  0  0 ]
@@ -859,10 +753,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4( c, s, 0, 0);
-                result.Y = new Vector4(-s, c, 0, 0);
+                result.X = Vector4.Create( c, s, 0, 0);
+                result.Y = Vector4.Create(-s, c, 0, 0);
                 result.Z = Vector4.UnitZ;
-                result.W = new Vector4(x, y, 0, 1);
+                result.W = Vector4.Create(x, y, 0, 1);
 
                 return result;
             }
@@ -872,9 +766,9 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scaleX, 0, 0, 0);
-                result.Y = new Vector4(0, scaleY, 0, 0);
-                result.Z = new Vector4(0, 0, scaleZ, 0);
+                result.X = Vector4.Create(scaleX, 0, 0, 0);
+                result.Y = Vector4.Create(0, scaleY, 0, 0);
+                result.Z = Vector4.Create(0, 0, scaleZ, 0);
                 result.W = Vector4.UnitW;
 
                 return result;
@@ -885,10 +779,10 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scaleX, 0, 0, 0);
-                result.Y = new Vector4(0, scaleY, 0, 0);
-                result.Z = new Vector4(0, 0, scaleZ, 0);
-                result.W = new Vector4(centerPoint * (Vector3.One - new Vector3(scaleX, scaleY, scaleZ)), 1);
+                result.X = Vector4.Create(scaleX, 0, 0, 0);
+                result.Y = Vector4.Create(0, scaleY, 0, 0);
+                result.Z = Vector4.Create(0, 0, scaleZ, 0);
+                result.W = Vector4.Create(centerPoint * (Vector3.One - Vector3.Create(scaleX, scaleY, scaleZ)), 1);
 
                 return result;
             }
@@ -898,9 +792,9 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scales.X, 0, 0, 0);
-                result.Y = new Vector4(0, scales.Y, 0, 0);
-                result.Z = new Vector4(0, 0, scales.Z, 0);
+                result.X = Vector4.Create(scales.X, 0, 0, 0);
+                result.Y = Vector4.Create(0, scales.Y, 0, 0);
+                result.Z = Vector4.Create(0, 0, scales.Z, 0);
                 result.W = Vector4.UnitW;
 
                 return result;
@@ -911,10 +805,10 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scales.X, 0, 0, 0);
-                result.Y = new Vector4(0, scales.Y, 0, 0);
-                result.Z = new Vector4(0, 0, scales.Z, 0);
-                result.W = new Vector4(centerPoint * (Vector3.One - scales), 1);
+                result.X = Vector4.Create(scales.X, 0, 0, 0);
+                result.Y = Vector4.Create(0, scales.Y, 0, 0);
+                result.Z = Vector4.Create(0, 0, scales.Z, 0);
+                result.W = Vector4.Create(centerPoint * (Vector3.One - scales), 1);
 
                 return result;
             }
@@ -924,9 +818,9 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scale, 0, 0, 0);
-                result.Y = new Vector4(0, scale, 0, 0);
-                result.Z = new Vector4(0, 0, scale, 0);
+                result.X = Vector4.Create(scale, 0, 0, 0);
+                result.Y = Vector4.Create(0, scale, 0, 0);
+                result.Z = Vector4.Create(0, 0, scale, 0);
                 result.W = Vector4.UnitW;
 
                 return result;
@@ -937,10 +831,10 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scale, 0, 0, 0);
-                result.Y = new Vector4(0, scale, 0, 0);
-                result.Z = new Vector4(0, 0, scale, 0);
-                result.W = new Vector4(centerPoint * (Vector3.One - new Vector3(scale)), 1);
+                result.X = Vector4.Create(scale, 0, 0, 0);
+                result.Y = Vector4.Create(0, scale, 0, 0);
+                result.Z = Vector4.Create(0, 0, scale, 0);
+                result.W = Vector4.Create(centerPoint * (Vector3.One - Vector3.Create(scale)), 1);
 
                 return result;
             }
@@ -948,17 +842,18 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateShadow(in Vector3 lightDirection, in Plane plane)
             {
-                Plane p = Plane.Normalize(plane);
-                float dot = Vector3.Dot(lightDirection, p.Normal);
+                Vector4 p = Plane.Normalize(plane).AsVector4();
+                Vector4 l = lightDirection.AsVector4();
+                float dot = Vector4.Dot(p, l);
 
-                Vector3 normal = -p.Normal;
+                p = -p;
 
                 Impl result;
 
-                result.X = new Vector4(lightDirection * normal.X, 0) + new Vector4(dot, 0, 0, 0);
-                result.Y = new Vector4(lightDirection * normal.Y, 0) + new Vector4(0, dot, 0, 0);
-                result.Z = new Vector4(lightDirection * normal.Z, 0) + new Vector4(0, 0, dot, 0);
-                result.W = new Vector4(lightDirection * -p.D, dot);
+                result.X = Vector4.MultiplyAddEstimate(l, Vector4.Create(p.X), Vector4.Create(dot, 0, 0, 0));
+                result.Y = Vector4.MultiplyAddEstimate(l, Vector4.Create(p.Y), Vector4.Create(0, dot, 0, 0));
+                result.Z = Vector4.MultiplyAddEstimate(l, Vector4.Create(p.Z), Vector4.Create(0, 0, dot, 0));
+                result.W = Vector4.MultiplyAddEstimate(l, Vector4.Create(p.W), Vector4.Create(0, 0, 0, dot));
 
                 return result;
             }
@@ -971,7 +866,7 @@ namespace System.Numerics
                 result.X = Vector4.UnitX;
                 result.Y = Vector4.UnitY;
                 result.Z = Vector4.UnitZ;
-                result.W = new Vector4(position, 1);
+                result.W = Vector4.Create(position, 1);
 
                 return result;
             }
@@ -984,7 +879,7 @@ namespace System.Numerics
                 result.X = Vector4.UnitX;
                 result.Y = Vector4.UnitY;
                 result.Z = Vector4.UnitZ;
-                result.W = new Vector4(positionX, positionY, positionZ, 1);
+                result.W = Vector4.Create(positionX, positionY, positionZ, 1);
 
                 return result;
             }
@@ -996,13 +891,13 @@ namespace System.Numerics
                 Impl result;
 
                 // 4x SIMD fields to get a lot better codegen
-                result.W = new Vector4(width, height, 0f, 0f);
-                result.W *= new Vector4(0.5f, 0.5f, 0f, 0f);
+                result.W = Vector4.Create(width, height, 0f, 0f);
+                result.W *= Vector4.Create(0.5f, 0.5f, 0f, 0f);
 
-                result.X = new Vector4(result.W.X, 0f, 0f, 0f);
-                result.Y = new Vector4(0f, -result.W.Y, 0f, 0f);
-                result.Z = new Vector4(0f, 0f, minDepth - maxDepth, 0f);
-                result.W += new Vector4(x, y, minDepth, 1f);
+                result.X = Vector4.Create(result.W.X, 0f, 0f, 0f);
+                result.Y = Vector4.Create(0f, -result.W.Y, 0f, 0f);
+                result.Z = Vector4.Create(0f, 0f, minDepth - maxDepth, 0f);
+                result.W += Vector4.Create(x, y, minDepth, 1f);
 
                 return result;
             }
@@ -1013,13 +908,13 @@ namespace System.Numerics
                 Impl result;
 
                 // 4x SIMD fields to get a lot better codegen
-                result.W = new Vector4(width, height, 0f, 0f);
-                result.W *= new Vector4(0.5f, 0.5f, 0f, 0f);
+                result.W = Vector4.Create(width, height, 0f, 0f);
+                result.W *= Vector4.Create(0.5f, 0.5f, 0f, 0f);
 
-                result.X = new Vector4(result.W.X, 0f, 0f, 0f);
-                result.Y = new Vector4(0f, -result.W.Y, 0f, 0f);
-                result.Z = new Vector4(0f, 0f, maxDepth - minDepth, 0f);
-                result.W += new Vector4(x, y, minDepth, 1f);
+                result.X = Vector4.Create(result.W.X, 0f, 0f, 0f);
+                result.Y = Vector4.Create(0f, -result.W.Y, 0f, 0f);
+                result.Z = Vector4.Create(0f, 0f, maxDepth - minDepth, 0f);
+                result.W += Vector4.Create(x, y, minDepth, 1f);
 
                 return result;
             }
@@ -1033,10 +928,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(axisX, 0);
-                result.Y = new Vector4(axisY, 0);
-                result.Z = new Vector4(axisZ, 0);
-                result.W = new Vector4(position, 1);
+                result.X = axisX.AsVector4();
+                result.Y = axisY.AsVector4();
+                result.Z = axisZ.AsVector4();
+                result.W = Vector4.Create(position, 1);
 
                 return result;
             }
@@ -1044,193 +939,187 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static unsafe bool Decompose(in Impl matrix, out Vector3 scale, out Quaternion rotation, out Vector3 translation)
             {
-                bool result = true;
+                Impl matTemp = Identity;
 
-                fixed (Vector3* scaleBase = &scale)
+                Vector3* canonicalBasis = stackalloc Vector3[3] {
+                    Vector3.UnitX,
+                    Vector3.UnitY,
+                    Vector3.UnitZ,
+                };
+
+                translation = matrix.W.AsVector3();
+
+                Vector3** vectorBasis = stackalloc Vector3*[3] {
+                    (Vector3*)&matTemp.X,
+                    (Vector3*)&matTemp.Y,
+                    (Vector3*)&matTemp.Z,
+                };
+
+                *(vectorBasis[0]) = matrix.X.AsVector3();
+                *(vectorBasis[1]) = matrix.Y.AsVector3();
+                *(vectorBasis[2]) = matrix.Z.AsVector3();
+
+                float* scales = stackalloc float[3] {
+                    vectorBasis[0]->Length(),
+                    vectorBasis[1]->Length(),
+                    vectorBasis[2]->Length(),
+                };
+
+                uint a, b, c;
+
+                #region Ranking
+                float x = scales[0];
+                float y = scales[1];
+                float z = scales[2];
+
+                if (x < y)
                 {
-                    float* pfScales = (float*)scaleBase;
-                    float det;
-
-                    VectorBasis vectorBasis;
-                    Vector3** pVectorBasis = (Vector3**)&vectorBasis;
-
-                    Impl matTemp = Identity;
-                    CanonicalBasis canonicalBasis = default;
-                    Vector3* pCanonicalBasis = &canonicalBasis.Row0;
-
-                    canonicalBasis.Row0 = new Vector3(1.0f, 0.0f, 0.0f);
-                    canonicalBasis.Row1 = new Vector3(0.0f, 1.0f, 0.0f);
-                    canonicalBasis.Row2 = new Vector3(0.0f, 0.0f, 1.0f);
-
-                    translation = new Vector3(
-                        matrix.W.X,
-                        matrix.W.Y,
-                        matrix.W.Z);
-
-                    pVectorBasis[0] = (Vector3*)&matTemp.X;
-                    pVectorBasis[1] = (Vector3*)&matTemp.Y;
-                    pVectorBasis[2] = (Vector3*)&matTemp.Z;
-
-                    *(pVectorBasis[0]) = new Vector3(matrix.X.X, matrix.X.Y, matrix.X.Z);
-                    *(pVectorBasis[1]) = new Vector3(matrix.Y.X, matrix.Y.Y, matrix.Y.Z);
-                    *(pVectorBasis[2]) = new Vector3(matrix.Z.X, matrix.Z.Y, matrix.Z.Z);
-
-                    scale.X = pVectorBasis[0]->Length();
-                    scale.Y = pVectorBasis[1]->Length();
-                    scale.Z = pVectorBasis[2]->Length();
-
-                    uint a, b, c;
-
-                    #region Ranking
-                    float x = pfScales[0];
-                    float y = pfScales[1];
-                    float z = pfScales[2];
-
-                    if (x < y)
+                    if (y < z)
                     {
-                        if (y < z)
+                        a = 2;
+                        b = 1;
+                        c = 0;
+                    }
+                    else
+                    {
+                        a = 1;
+
+                        if (x < z)
                         {
-                            a = 2;
-                            b = 1;
+                            b = 2;
                             c = 0;
                         }
                         else
                         {
-                            a = 1;
-
-                            if (x < z)
-                            {
-                                b = 2;
-                                c = 0;
-                            }
-                            else
-                            {
-                                b = 0;
-                                c = 2;
-                            }
+                            b = 0;
+                            c = 2;
                         }
+                    }
+                }
+                else
+                {
+                    if (x < z)
+                    {
+                        a = 2;
+                        b = 0;
+                        c = 1;
                     }
                     else
                     {
-                        if (x < z)
+                        a = 0;
+
+                        if (y < z)
                         {
-                            a = 2;
-                            b = 0;
+                            b = 2;
                             c = 1;
                         }
                         else
                         {
-                            a = 0;
-
-                            if (y < z)
-                            {
-                                b = 2;
-                                c = 1;
-                            }
-                            else
-                            {
-                                b = 1;
-                                c = 2;
-                            }
+                            b = 1;
+                            c = 2;
                         }
                     }
-                    #endregion
+                }
+                #endregion
 
-                    if (pfScales[a] < DecomposeEpsilon)
+                if (scales[a] < DecomposeEpsilon)
+                {
+                    *(vectorBasis[a]) = canonicalBasis[a];
+                }
+
+                *vectorBasis[a] = Vector3.Normalize(*vectorBasis[a]);
+
+                if (scales[b] < DecomposeEpsilon)
+                {
+                    uint cc;
+                    float fAbsX, fAbsY, fAbsZ;
+
+                    fAbsX = float.Abs(vectorBasis[a]->X);
+                    fAbsY = float.Abs(vectorBasis[a]->Y);
+                    fAbsZ = float.Abs(vectorBasis[a]->Z);
+
+                    #region Ranking
+                    if (fAbsX < fAbsY)
                     {
-                        *(pVectorBasis[a]) = pCanonicalBasis[a];
-                    }
-
-                    *pVectorBasis[a] = Vector3.Normalize(*pVectorBasis[a]);
-
-                    if (pfScales[b] < DecomposeEpsilon)
-                    {
-                        uint cc;
-                        float fAbsX, fAbsY, fAbsZ;
-
-                        fAbsX = MathF.Abs(pVectorBasis[a]->X);
-                        fAbsY = MathF.Abs(pVectorBasis[a]->Y);
-                        fAbsZ = MathF.Abs(pVectorBasis[a]->Z);
-
-                        #region Ranking
-                        if (fAbsX < fAbsY)
+                        if (fAbsY < fAbsZ)
                         {
-                            if (fAbsY < fAbsZ)
-                            {
-                                cc = 0;
-                            }
-                            else
-                            {
-                                if (fAbsX < fAbsZ)
-                                {
-                                    cc = 0;
-                                }
-                                else
-                                {
-                                    cc = 2;
-                                }
-                            }
+                            cc = 0;
                         }
                         else
                         {
                             if (fAbsX < fAbsZ)
                             {
+                                cc = 0;
+                            }
+                            else
+                            {
+                                cc = 2;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (fAbsX < fAbsZ)
+                        {
+                            cc = 1;
+                        }
+                        else
+                        {
+                            if (fAbsY < fAbsZ)
+                            {
                                 cc = 1;
                             }
                             else
                             {
-                                if (fAbsY < fAbsZ)
-                                {
-                                    cc = 1;
-                                }
-                                else
-                                {
-                                    cc = 2;
-                                }
+                                cc = 2;
                             }
                         }
-                        #endregion
-
-                        *pVectorBasis[b] = Vector3.Cross(*pVectorBasis[a], *(pCanonicalBasis + cc));
                     }
+                    #endregion
 
-                    *pVectorBasis[b] = Vector3.Normalize(*pVectorBasis[b]);
-
-                    if (pfScales[c] < DecomposeEpsilon)
-                    {
-                        *pVectorBasis[c] = Vector3.Cross(*pVectorBasis[a], *pVectorBasis[b]);
-                    }
-
-                    *pVectorBasis[c] = Vector3.Normalize(*pVectorBasis[c]);
-
-                    det = matTemp.GetDeterminant();
-
-                    // use Kramer's rule to check for handedness of coordinate system
-                    if (det < 0.0f)
-                    {
-                        // switch coordinate system by negating the scale and inverting the basis vector on the x-axis
-                        pfScales[a] = -pfScales[a];
-                        *pVectorBasis[a] = -(*pVectorBasis[a]);
-
-                        det = -det;
-                    }
-
-                    det -= 1.0f;
-                    det *= det;
-
-                    if ((DecomposeEpsilon < det))
-                    {
-                        // Non-SRT matrix encountered
-                        rotation = Quaternion.Identity;
-                        result = false;
-                    }
-                    else
-                    {
-                        // generate the quaternion from the matrix
-                        rotation = Quaternion.CreateFromRotationMatrix(Unsafe.As<Impl, Matrix4x4>(ref matTemp));
-                    }
+                    *vectorBasis[b] = Vector3.Cross(*vectorBasis[a], canonicalBasis[cc]);
                 }
 
+                *vectorBasis[b] = Vector3.Normalize(*vectorBasis[b]);
+
+                if (scales[c] < DecomposeEpsilon)
+                {
+                    *vectorBasis[c] = Vector3.Cross(*vectorBasis[a], *vectorBasis[b]);
+                }
+
+                *vectorBasis[c] = Vector3.Normalize(*vectorBasis[c]);
+
+                float det = matTemp.GetDeterminant();
+
+                // use Kramer's rule to check for handedness of coordinate system
+                if (det < 0.0f)
+                {
+                    // switch coordinate system by negating the scale and inverting the basis vector on the x-axis
+                    scales[a] = -scales[a];
+                    *vectorBasis[a] = -(*vectorBasis[a]);
+
+                    det = -det;
+                }
+
+                det -= 1.0f;
+                det *= det;
+
+                bool result;
+
+                if (DecomposeEpsilon < det)
+                {
+                    // Non-SRT matrix encountered
+                    rotation = Quaternion.Identity;
+                    result = false;
+                }
+                else
+                {
+                    // generate the quaternion from the matrix
+                    rotation = Quaternion.CreateFromRotationMatrix(matTemp.AsM4x4());
+                    result = true;
+                }
+
+                scale = Unsafe.ReadUnaligned<Vector3>(scales);
                 return result;
             }
 
@@ -1253,7 +1142,7 @@ namespace System.Numerics
                     if (!Sse.IsSupported)
                     {
                         // Redundant test so we won't prejit remainder of this method on platforms without SSE.
-                        throw new PlatformNotSupportedException();
+                        ThrowPlatformNotSupportedException();
                     }
 
                     // Load the matrix values into rows
@@ -1263,53 +1152,51 @@ namespace System.Numerics
                     Vector128<float> row4 = matrix.W.AsVector128();
 
                     // Transpose the matrix
-                    Vector128<float> vTemp1 = Sse.Shuffle(row1, row2, 0x44); //_MM_SHUFFLE(1, 0, 1, 0)
-                    Vector128<float> vTemp3 = Sse.Shuffle(row1, row2, 0xEE); //_MM_SHUFFLE(3, 2, 3, 2)
-                    Vector128<float> vTemp2 = Sse.Shuffle(row3, row4, 0x44); //_MM_SHUFFLE(1, 0, 1, 0)
-                    Vector128<float> vTemp4 = Sse.Shuffle(row3, row4, 0xEE); //_MM_SHUFFLE(3, 2, 3, 2)
+                    Vector128<float> vTemp1 = Sse.Shuffle(row1, row2, 0b01_00_01_00); //_MM_SHUFFLE(1, 0, 1, 0)
+                    Vector128<float> vTemp3 = Sse.Shuffle(row1, row2, 0b11_10_11_10); //_MM_SHUFFLE(3, 2, 3, 2)
+                    Vector128<float> vTemp2 = Sse.Shuffle(row3, row4, 0b01_00_01_00); //_MM_SHUFFLE(1, 0, 1, 0)
+                    Vector128<float> vTemp4 = Sse.Shuffle(row3, row4, 0b11_10_11_10); //_MM_SHUFFLE(3, 2, 3, 2)
 
-                    row1 = Sse.Shuffle(vTemp1, vTemp2, 0x88); //_MM_SHUFFLE(2, 0, 2, 0)
-                    row2 = Sse.Shuffle(vTemp1, vTemp2, 0xDD); //_MM_SHUFFLE(3, 1, 3, 1)
-                    row3 = Sse.Shuffle(vTemp3, vTemp4, 0x88); //_MM_SHUFFLE(2, 0, 2, 0)
-                    row4 = Sse.Shuffle(vTemp3, vTemp4, 0xDD); //_MM_SHUFFLE(3, 1, 3, 1)
+                    row1 = Sse.Shuffle(vTemp1, vTemp2, 0b10_00_10_00); //_MM_SHUFFLE(2, 0, 2, 0)
+                    row2 = Sse.Shuffle(vTemp1, vTemp2, 0b11_01_11_01); //_MM_SHUFFLE(3, 1, 3, 1)
+                    row3 = Sse.Shuffle(vTemp3, vTemp4, 0b10_00_10_00); //_MM_SHUFFLE(2, 0, 2, 0)
+                    row4 = Sse.Shuffle(vTemp3, vTemp4, 0b11_01_11_01); //_MM_SHUFFLE(3, 1, 3, 1)
 
-                    Vector128<float> V00 = Permute(row3, 0x50);           //_MM_SHUFFLE(1, 1, 0, 0)
-                    Vector128<float> V10 = Permute(row4, 0xEE);           //_MM_SHUFFLE(3, 2, 3, 2)
-                    Vector128<float> V01 = Permute(row1, 0x50);           //_MM_SHUFFLE(1, 1, 0, 0)
-                    Vector128<float> V11 = Permute(row2, 0xEE);           //_MM_SHUFFLE(3, 2, 3, 2)
-                    Vector128<float> V02 = Sse.Shuffle(row3, row1, 0x88); //_MM_SHUFFLE(2, 0, 2, 0)
-                    Vector128<float> V12 = Sse.Shuffle(row4, row2, 0xDD); //_MM_SHUFFLE(3, 1, 3, 1)
+                    Vector128<float> V00 = Vector128.Shuffle(row3, Vector128.Create(0, 0, 1, 1));
+                    Vector128<float> V10 = Vector128.Shuffle(row4, Vector128.Create(2, 3, 2, 3));
+                    Vector128<float> V01 = Vector128.Shuffle(row1, Vector128.Create(0, 0, 1, 1));
+                    Vector128<float> V11 = Vector128.Shuffle(row2, Vector128.Create(2, 3, 2, 3));
+                    Vector128<float> V02 = Sse.Shuffle(row3, row1, 0b10_00_10_00); //_MM_SHUFFLE(2, 0, 2, 0)
+                    Vector128<float> V12 = Sse.Shuffle(row4, row2, 0b11_01_11_01); //_MM_SHUFFLE(3, 1, 3, 1)
 
                     Vector128<float> D0 = V00 * V10;
                     Vector128<float> D1 = V01 * V11;
                     Vector128<float> D2 = V02 * V12;
 
-                    V00 = Permute(row3, 0xEE);           //_MM_SHUFFLE(3, 2, 3, 2)
-                    V10 = Permute(row4, 0x50);           //_MM_SHUFFLE(1, 1, 0, 0)
-                    V01 = Permute(row1, 0xEE);           //_MM_SHUFFLE(3, 2, 3, 2)
-                    V11 = Permute(row2, 0x50);           //_MM_SHUFFLE(1, 1, 0, 0)
-                    V02 = Sse.Shuffle(row3, row1, 0xDD); //_MM_SHUFFLE(3, 1, 3, 1)
-                    V12 = Sse.Shuffle(row4, row2, 0x88); //_MM_SHUFFLE(2, 0, 2, 0)
+                    V00 = Vector128.Shuffle(row3, Vector128.Create(2, 3, 2, 3));
+                    V10 = Vector128.Shuffle(row4, Vector128.Create(0, 0, 1, 1));
+                    V01 = Vector128.Shuffle(row1, Vector128.Create(2, 3, 2, 3));
+                    V11 = Vector128.Shuffle(row2, Vector128.Create(0, 0, 1, 1));
+                    V02 = Sse.Shuffle(row3, row1, 0b11_01_11_01); //_MM_SHUFFLE(3, 1, 3, 1)
+                    V12 = Sse.Shuffle(row4, row2, 0b10_00_10_00); //_MM_SHUFFLE(2, 0, 2, 0)
 
-                    // Note:  We use this expansion pattern instead of Fused Multiply Add
-                    // in order to support older hardware
-                    D0 -= V00 * V10;
-                    D1 -= V01 * V11;
-                    D2 -= V02 * V12;
+                    D0 = Vector128.MultiplyAddEstimate(-V00, V10, D0);
+                    D1 = Vector128.MultiplyAddEstimate(-V01, V11, D1);
+                    D2 = Vector128.MultiplyAddEstimate(-V02, V12, D2);
 
                     // V11 = D0Y,D0W,D2Y,D2Y
-                    V11 = Sse.Shuffle(D0, D2, 0x5D);  //_MM_SHUFFLE(1, 1, 3, 1)
-                    V00 = Permute(row2, 0x49);        //_MM_SHUFFLE(1, 0, 2, 1)
-                    V10 = Sse.Shuffle(V11, D0, 0x32); //_MM_SHUFFLE(0, 3, 0, 2)
-                    V01 = Permute(row1, 0x12);        //_MM_SHUFFLE(0, 1, 0, 2)
-                    V11 = Sse.Shuffle(V11, D0, 0x99); //_MM_SHUFFLE(2, 1, 2, 1)
+                    V11 = Sse.Shuffle(D0, D2, 0b01_01_11_01);  //_MM_SHUFFLE(1, 1, 3, 1)
+                    V00 = Vector128.Shuffle(row2, Vector128.Create(1, 2, 0, 1));
+                    V10 = Sse.Shuffle(V11, D0, 0b00_11_00_10); //_MM_SHUFFLE(0, 3, 0, 2)
+                    V01 = Vector128.Shuffle(row1, Vector128.Create(2, 0, 1, 0));
+                    V11 = Sse.Shuffle(V11, D0, 0b10_01_10_01); //_MM_SHUFFLE(2, 1, 2, 1)
 
                     // V13 = D1Y,D1W,D2W,D2W
-                    Vector128<float> V13 = Sse.Shuffle(D1, D2, 0xFD); //_MM_SHUFFLE(3, 3, 3, 1)
-                    V02 = Permute(row4, 0x49);                        //_MM_SHUFFLE(1, 0, 2, 1)
-                    V12 = Sse.Shuffle(V13, D1, 0x32);                 //_MM_SHUFFLE(0, 3, 0, 2)
-                    Vector128<float> V03 = Permute(row3, 0x12);       //_MM_SHUFFLE(0, 1, 0, 2)
-                    V13 = Sse.Shuffle(V13, D1, 0x99);                 //_MM_SHUFFLE(2, 1, 2, 1)
+                    Vector128<float> V13 = Sse.Shuffle(D1, D2, 0b11_11_11_01); //_MM_SHUFFLE(3, 3, 3, 1)
+                    V02 = Vector128.Shuffle(row4, Vector128.Create(1, 2, 0, 1));
+                    V12 = Sse.Shuffle(V13, D1, 0b00_11_00_10);                 //_MM_SHUFFLE(0, 3, 0, 2)
+                    Vector128<float> V03 = Vector128.Shuffle(row3, Vector128.Create(2, 0, 1, 0));
+                    V13 = Sse.Shuffle(V13, D1, 0b10_01_10_01);                 //_MM_SHUFFLE(2, 1, 2, 1)
 
                     Vector128<float> C0 = V00 * V10;
                     Vector128<float> C2 = V01 * V11;
@@ -1317,44 +1204,44 @@ namespace System.Numerics
                     Vector128<float> C6 = V03 * V13;
 
                     // V11 = D0X,D0Y,D2X,D2X
-                    V11 = Sse.Shuffle(D0, D2, 0x4);    //_MM_SHUFFLE(0, 0, 1, 0)
-                    V00 = Permute(row2, 0x9e);         //_MM_SHUFFLE(2, 1, 3, 2)
-                    V10 = Sse.Shuffle(D0, V11, 0x93);  //_MM_SHUFFLE(2, 1, 0, 3)
-                    V01 = Permute(row1, 0x7b);         //_MM_SHUFFLE(1, 3, 2, 3)
-                    V11 = Sse.Shuffle(D0, V11, 0x26);  //_MM_SHUFFLE(0, 2, 1, 2)
+                    V11 = Sse.Shuffle(D0, D2, 0b00_00_01_00);   //_MM_SHUFFLE(0, 0, 1, 0)
+                    V00 = Vector128.Shuffle(row2, Vector128.Create(2, 3, 1, 2));
+                    V10 = Sse.Shuffle(D0, V11, 0b10_01_00_11);  //_MM_SHUFFLE(2, 1, 0, 3)
+                    V01 = Vector128.Shuffle(row1, Vector128.Create(3, 2, 3, 1));
+                    V11 = Sse.Shuffle(D0, V11, 0b00_10_01_10);  //_MM_SHUFFLE(0, 2, 1, 2)
 
                     // V13 = D1X,D1Y,D2Z,D2Z
-                    V13 = Sse.Shuffle(D1, D2, 0xa4);   //_MM_SHUFFLE(2, 2, 1, 0)
-                    V02 = Permute(row4, 0x9e);         //_MM_SHUFFLE(2, 1, 3, 2)
-                    V12 = Sse.Shuffle(D1, V13, 0x93);  //_MM_SHUFFLE(2, 1, 0, 3)
-                    V03 = Permute(row3, 0x7b);         //_MM_SHUFFLE(1, 3, 2, 3)
-                    V13 = Sse.Shuffle(D1, V13, 0x26);  //_MM_SHUFFLE(0, 2, 1, 2)
+                    V13 = Sse.Shuffle(D1, D2, 0b10_10_01_00);   //_MM_SHUFFLE(2, 2, 1, 0)
+                    V02 = Vector128.Shuffle(row4, Vector128.Create(2, 3, 1, 2));
+                    V12 = Sse.Shuffle(D1, V13, 0b10_01_00_11);  //_MM_SHUFFLE(2, 1, 0, 3)
+                    V03 = Vector128.Shuffle(row3, Vector128.Create(3, 2, 3, 1));
+                    V13 = Sse.Shuffle(D1, V13, 0b_00_10_01_10); //_MM_SHUFFLE(0, 2, 1, 2)
 
-                    C0 -= V00 * V10;
-                    C2 -= V01 * V11;
-                    C4 -= V02 * V12;
-                    C6 -= V03 * V13;
+                    C0 = Vector128.MultiplyAddEstimate(-V00, V10, C0);
+                    C2 = Vector128.MultiplyAddEstimate(-V01, V11, C2);
+                    C4 = Vector128.MultiplyAddEstimate(-V02, V12, C4);
+                    C6 = Vector128.MultiplyAddEstimate(-V03, V13, C6);
 
-                    V00 = Permute(row2, 0x33); //_MM_SHUFFLE(0, 3, 0, 3)
+                    V00 = Vector128.Shuffle(row2, Vector128.Create(3, 0, 3, 0));
 
                     // V10 = D0Z,D0Z,D2X,D2Y
-                    V10 = Sse.Shuffle(D0, D2, 0x4A); //_MM_SHUFFLE(1, 0, 2, 2)
-                    V10 = Permute(V10, 0x2C);        //_MM_SHUFFLE(0, 2, 3, 0)
-                    V01 = Permute(row1, 0x8D);       //_MM_SHUFFLE(2, 0, 3, 1)
+                    V10 = Sse.Shuffle(D0, D2, 0b01_00_10_10); //_MM_SHUFFLE(1, 0, 2, 2)
+                    V10 = Vector128.Shuffle(V10, Vector128.Create(0, 3, 2, 0));
+                    V01 = Vector128.Shuffle(row1, Vector128.Create(1, 3, 0, 2));
 
                     // V11 = D0X,D0W,D2X,D2Y
-                    V11 = Sse.Shuffle(D0, D2, 0x4C); //_MM_SHUFFLE(1, 0, 3, 0)
-                    V11 = Permute(V11, 0x93);        //_MM_SHUFFLE(2, 1, 0, 3)
-                    V02 = Permute(row4, 0x33);       //_MM_SHUFFLE(0, 3, 0, 3)
+                    V11 = Sse.Shuffle(D0, D2, 0b01_00_11_00); //_MM_SHUFFLE(1, 0, 3, 0)
+                    V11 = Vector128.Shuffle(V11, Vector128.Create(3, 0, 1, 2));
+                    V02 = Vector128.Shuffle(row4, Vector128.Create(3, 0, 3, 0));
 
                     // V12 = D1Z,D1Z,D2Z,D2W
-                    V12 = Sse.Shuffle(D1, D2, 0xEA); //_MM_SHUFFLE(3, 2, 2, 2)
-                    V12 = Permute(V12, 0x2C);        //_MM_SHUFFLE(0, 2, 3, 0)
-                    V03 = Permute(row3, 0x8D);       //_MM_SHUFFLE(2, 0, 3, 1)
+                    V12 = Sse.Shuffle(D1, D2, 0b11_10_10_10); //_MM_SHUFFLE(3, 2, 2, 2)
+                    V12 = Vector128.Shuffle(V12, Vector128.Create(0, 3, 2, 0));
+                    V03 = Vector128.Shuffle(row3, Vector128.Create(1, 3, 0, 2));
 
                     // V13 = D1X,D1W,D2Z,D2W
-                    V13 = Sse.Shuffle(D1, D2, 0xEC); //_MM_SHUFFLE(3, 2, 3, 0)
-                    V13 = Permute(V13, 0x93);        //_MM_SHUFFLE(2, 1, 0, 3)
+                    V13 = Sse.Shuffle(D1, D2, 0b11_10_11_00); //_MM_SHUFFLE(3, 2, 3, 0)
+                    V13 = Vector128.Shuffle(V13, Vector128.Create(3, 0, 1, 2));
 
                     V00 *= V10;
                     V01 *= V11;
@@ -1373,23 +1260,23 @@ namespace System.Numerics
                     Vector128<float> C7 = C6 + V03;
                     C6 -= V03;
 
-                    C0 = Sse.Shuffle(C0, C1, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
-                    C2 = Sse.Shuffle(C2, C3, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
-                    C4 = Sse.Shuffle(C4, C5, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
-                    C6 = Sse.Shuffle(C6, C7, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
+                    C0 = Sse.Shuffle(C0, C1, 0b11_01_10_00); //_MM_SHUFFLE(3, 1, 2, 0)
+                    C2 = Sse.Shuffle(C2, C3, 0b11_01_10_00); //_MM_SHUFFLE(3, 1, 2, 0)
+                    C4 = Sse.Shuffle(C4, C5, 0b11_01_10_00); //_MM_SHUFFLE(3, 1, 2, 0)
+                    C6 = Sse.Shuffle(C6, C7, 0b11_01_10_00); //_MM_SHUFFLE(3, 1, 2, 0)
 
-                    C0 = Permute(C0, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
-                    C2 = Permute(C2, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
-                    C4 = Permute(C4, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
-                    C6 = Permute(C6, 0xD8); //_MM_SHUFFLE(3, 1, 2, 0)
+                    C0 = Vector128.Shuffle(C0, Vector128.Create(0, 2, 1, 3));
+                    C2 = Vector128.Shuffle(C2, Vector128.Create(0, 2, 1, 3));
+                    C4 = Vector128.Shuffle(C4, Vector128.Create(0, 2, 1, 3));
+                    C6 = Vector128.Shuffle(C6, Vector128.Create(0, 2, 1, 3));
 
                     // Get the determinant
                     float det = Vector4.Dot(C0.AsVector4(), row1.AsVector4());
 
                     // Check determinate is not zero
-                    if (MathF.Abs(det) < float.Epsilon)
+                    if (float.Abs(det) < float.Epsilon)
                     {
-                        Vector4 vNaN = new Vector4(float.NaN);
+                        Vector4 vNaN = Vector4.Create(float.NaN);
 
                         result.X = vNaN;
                         result.Y = vNaN;
@@ -1401,10 +1288,7 @@ namespace System.Numerics
 
                     // Create Vector128<float> copy of the determinant and invert them.
 
-                    Vector128<float> ones = Vector128.Create(1.0f);
-                    Vector128<float> vTemp = Vector128.Create(det);
-
-                    vTemp = ones / vTemp;
+                    Vector128<float> vTemp = Vector128<float>.One / det;
 
                     result.X = (C0 * vTemp).AsVector4();
                     result.Y = (C2 * vTemp).AsVector4();
@@ -1412,24 +1296,6 @@ namespace System.Numerics
                     result.W = (C6 * vTemp).AsVector4();
 
                     return true;
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static Vector128<float> Permute(Vector128<float> value, [ConstantExpected] byte control)
-                {
-                    if (Avx.IsSupported)
-                    {
-                        return Avx.Permute(value, control);
-                    }
-                    else if (Sse.IsSupported)
-                    {
-                        return Sse.Shuffle(value, value, control);
-                    }
-                    else
-                    {
-                        // Redundant test so we won't prejit remainder of this method on platforms without SSE.
-                        throw new PlatformNotSupportedException();
-                    }
                 }
 
                 static bool SoftwareFallback(in Impl matrix, out Impl result)
@@ -1546,9 +1412,9 @@ namespace System.Numerics
 
                     float det = a * a11 + b * a12 + c * a13 + d * a14;
 
-                    if (MathF.Abs(det) < float.Epsilon)
+                    if (float.Abs(det) < float.Epsilon)
                     {
-                        Vector4 vNaN = new Vector4(float.NaN);
+                        Vector4 vNaN = Vector4.Create(float.NaN);
 
                         result.X = vNaN;
                         result.Y = vNaN;
@@ -1645,25 +1511,25 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(
+                result.X = Vector4.Create(
                     value.X.X * q11 + value.X.Y * q21 + value.X.Z * q31,
                     value.X.X * q12 + value.X.Y * q22 + value.X.Z * q32,
                     value.X.X * q13 + value.X.Y * q23 + value.X.Z * q33,
                     value.X.W
                 );
-                result.Y = new Vector4(
+                result.Y = Vector4.Create(
                     value.Y.X * q11 + value.Y.Y * q21 + value.Y.Z * q31,
                     value.Y.X * q12 + value.Y.Y * q22 + value.Y.Z * q32,
                     value.Y.X * q13 + value.Y.Y * q23 + value.Y.Z * q33,
                     value.Y.W
                 );
-                result.Z = new Vector4(
+                result.Z = Vector4.Create(
                     value.Z.X * q11 + value.Z.Y * q21 + value.Z.Z * q31,
                     value.Z.X * q12 + value.Z.Y * q22 + value.Z.Z * q32,
                     value.Z.X * q13 + value.Z.Y * q23 + value.Z.Z * q33,
                     value.Z.W
                 );
-                result.W = new Vector4(
+                result.W = Vector4.Create(
                     value.W.X * q11 + value.W.Y * q21 + value.W.Z * q31,
                     value.W.X * q12 + value.W.Y * q22 + value.W.Z * q32,
                     value.W.X * q13 + value.W.Y * q23 + value.W.Z * q33,
@@ -1717,10 +1583,10 @@ namespace System.Numerics
                 }
                 else
                 {
-                    result.X = new Vector4(matrix.X.X, matrix.Y.X, matrix.Z.X, matrix.W.X);
-                    result.Y = new Vector4(matrix.X.Y, matrix.Y.Y, matrix.Z.Y, matrix.W.Y);
-                    result.Z = new Vector4(matrix.X.Z, matrix.Y.Z, matrix.Z.Z, matrix.W.Z);
-                    result.W = new Vector4(matrix.X.W, matrix.Y.W, matrix.Z.W, matrix.W.W);
+                    result.X = Vector4.Create(matrix.X.X, matrix.Y.X, matrix.Z.X, matrix.W.X);
+                    result.Y = Vector4.Create(matrix.X.Y, matrix.Y.Y, matrix.Z.Y, matrix.W.Y);
+                    result.Z = Vector4.Create(matrix.X.Z, matrix.Y.Z, matrix.Z.Z, matrix.W.Z);
+                    result.W = Vector4.Create(matrix.X.W, matrix.Y.W, matrix.Z.W, matrix.W.W);
                 }
 
                 return result;
@@ -1793,21 +1659,9 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public override readonly int GetHashCode() => HashCode.Combine(X, Y, Z, W);
 
-            bool IEquatable<Impl>.Equals(Impl other) => Equals(in other);
+            readonly bool IEquatable<Impl>.Equals(Impl other) => Equals(in other);
 
-            private struct CanonicalBasis
-            {
-                public Vector3 Row0;
-                public Vector3 Row1;
-                public Vector3 Row2;
-            };
-
-            private unsafe struct VectorBasis
-            {
-                public Vector3* Element0;
-                public Vector3* Element1;
-                public Vector3* Element2;
-            }
+            private static void ThrowPlatformNotSupportedException() => throw new PlatformNotSupportedException();
         }
     }
 }

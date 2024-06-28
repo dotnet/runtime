@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
@@ -23,7 +24,22 @@ namespace System.Net.Security
         internal static TimeSpan RefreshAfterFailureBackOffInterval => TimeSpan.FromSeconds(5);
 
         private const bool TrimRootCertificate = true;
-        internal readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts;
+        internal ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts
+        {
+            get
+            {
+                ConcurrentDictionary<SslProtocols, SafeSslContextHandle>? sslContexts = _sslContexts;
+                if (sslContexts is null)
+                {
+                    Interlocked.CompareExchange(ref _sslContexts, new(), null);
+                    sslContexts = _sslContexts;
+                }
+
+                return sslContexts;
+            }
+        }
+
+        private ConcurrentDictionary<SslProtocols, SafeSslContextHandle>? _sslContexts;
         internal readonly SafeX509Handle CertificateHandle;
         internal readonly SafeEvpPKeyHandle KeyHandle;
 
@@ -57,7 +73,6 @@ namespace System.Net.Security
 
             TargetCertificate = target;
             Trust = trust;
-            SslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
 
             using (RSAOpenSsl? rsa = (RSAOpenSsl?)target.GetRSAPrivateKey())
             {

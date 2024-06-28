@@ -118,12 +118,9 @@ namespace System.Text.Json.Serialization.Metadata
                     }
 
                     FlushResult result = await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
-                    if (result.IsCanceled || result.IsCompleted)
+                    if (result.IsCanceled)
                     {
-                        if (result.IsCanceled)
-                        {
-                            ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
-                        }
+                        ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
                     }
                 }
                 finally

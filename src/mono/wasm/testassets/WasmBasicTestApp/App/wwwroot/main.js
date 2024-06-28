@@ -139,10 +139,8 @@ try {
                     }
                 }
             });
-            const iterationCount = params.get("iterationCount") ?? 70;
-            for (let i = 0; i < iterationCount; i++) {
-                exports.InterpPgoTest.Greeting();
-            };
+            const iterationCount = params.get("iterationCount") ?? "70";
+            exports.InterpPgoTest.TryToTier(parseInt(iterationCount));
             await INTERNAL.interp_pgo_save_data();
             exit(0);
             break;

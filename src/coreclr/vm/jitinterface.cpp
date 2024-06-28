@@ -4547,28 +4547,48 @@ bool CEEInfo::isExactType(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+// Returns whether a class handle represents a generic type, if that can be statically determined.
+TypeCompareState CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    TypeCompareState result = TypeCompareState::May;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle typeHandle(cls);
+
+    if (typeHandle != TypeHandle(g_pCanonMethodTableClass))
+    {
+        result = typeHandle.HasInstantiation() ? TypeCompareState::Must : TypeCompareState::MustNot;
+    }
+
+    EE_TO_JIT_TRANSITION_LEAF();
+    return result;
+}
+
 // Returns whether a class handle represents a Nullable type, if that can be statically determined.
 TypeCompareState CEEInfo::isNullableType(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    TypeHandle typeHandle = TypeHandle();
+    TypeCompareState result;
 
-    TypeCompareState result = TypeCompareState::May;
+    JIT_TO_EE_TRANSITION_LEAF();
 
-    JIT_TO_EE_TRANSITION();
+    TypeHandle typeHandle(cls);
 
-    if (typeHandle != TypeHandle(g_pCanonMethodTableClass))
-    {
-        TypeHandle VMClsHnd(cls);
-        result = Nullable::IsNullableType(VMClsHnd) ? TypeCompareState::Must : TypeCompareState::MustNot;
-    }
+    result = Nullable::IsNullableType(typeHandle) ? TypeCompareState::Must : TypeCompareState::MustNot;
 
-    EE_TO_JIT_TRANSITION();
+    EE_TO_JIT_TRANSITION_LEAF();
     return result;
 }
 
@@ -11420,6 +11440,28 @@ void CEEJitInfo::recordRelocation(void * location,
         break;
 
 #endif // TARGET_ARM64
+
+#ifdef TARGET_LOONGARCH64
+    case IMAGE_REL_LOONGARCH64_PC:
+        {
+            _ASSERTE(addlDelta == 0);
+
+            INT64 imm = (INT64)target - ((INT64)location & 0xFFFFFFFFFFFFF000LL);
+            imm += ((INT64)target & 0x800) << 1;
+            PutLoongArch64PC12((UINT32 *)locationRW, imm);
+        }
+        break;
+
+    case IMAGE_REL_LOONGARCH64_JIR:
+        {
+            _ASSERTE(addlDelta == 0);
+
+            INT64 imm = (INT64)target - (INT64)location;
+            PutLoongArch64JIR((UINT32 *)locationRW, imm);
+        }
+        break;
+
+#endif // TARGET_LOONGARCH64
 
     default:
         _ASSERTE(!"Unknown reloc type");

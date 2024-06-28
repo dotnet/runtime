@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -72,11 +73,13 @@ namespace System.Text.Json.Serialization.Converters
                     node = new JsonArray(element, options);
                     break;
                 default:
-                    node = new JsonValuePrimitive<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
+                    node = JsonValue.CreateFromElement(ref element, options);
                     break;
             }
 
             return node;
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.True;
     }
 }

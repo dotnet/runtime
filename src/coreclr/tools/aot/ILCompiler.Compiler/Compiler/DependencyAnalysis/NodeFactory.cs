@@ -40,7 +40,8 @@ namespace ILCompiler.DependencyAnalysis
             InlinedThreadStatics inlinedThreadStatics,
             ImportedNodeProvider importedNodeProvider,
             PreinitializationManager preinitializationManager,
-            DevirtualizationManager devirtualizationManager)
+            DevirtualizationManager devirtualizationManager,
+            ObjectDataInterner dataInterner)
         {
             _target = context.Target;
             _context = context;
@@ -56,6 +57,7 @@ namespace ILCompiler.DependencyAnalysis
             _importedNodeProvider = importedNodeProvider;
             PreinitializationManager = preinitializationManager;
             DevirtualizationManager = devirtualizationManager;
+            ObjectInterner = dataInterner;
         }
 
         public void SetMarkingComplete()
@@ -111,6 +113,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public InteropStubManager InteropStubManager
+        {
+            get;
+        }
+
+        internal ObjectDataInterner ObjectInterner
         {
             get;
         }
@@ -283,7 +290,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _fatFunctionPointers = new NodeCache<MethodKey, FatFunctionPointerNode>(method =>
             {
-                return new FatFunctionPointerNode(method.Method, method.IsUnboxingStub);
+                return new FatFunctionPointerNode(method.Method, method.IsUnboxingStub, addressTaken: false);
+            });
+
+            _fatAddressTakenFunctionPointers = new NodeCache<MethodKey, FatFunctionPointerNode>(method =>
+            {
+                return new FatFunctionPointerNode(method.Method, method.IsUnboxingStub, addressTaken: true);
             });
 
             _gvmDependenciesNode = new NodeCache<MethodDesc, GVMDependenciesNode>(method =>
@@ -306,9 +318,19 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeGVMEntriesNode(type);
             });
 
+            _addressTakenMethods = new NodeCache<MethodDesc, AddressTakenMethodNode>(method =>
+            {
+                return new AddressTakenMethodNode(MethodEntrypoint(method, unboxingStub: false));
+            });
+
+            _reflectedDelegateTargetMethods = new NodeCache<MethodDesc, DelegateTargetVirtualMethodNode>(method =>
+            {
+                return new DelegateTargetVirtualMethodNode(method, reflected: true);
+            });
+
             _delegateTargetMethods = new NodeCache<MethodDesc, DelegateTargetVirtualMethodNode>(method =>
             {
-                return new DelegateTargetVirtualMethodNode(method);
+                return new DelegateTargetVirtualMethodNode(method, reflected: false);
             });
 
             _reflectedDelegates = new NodeCache<TypeDesc, ReflectedDelegateNode>(type =>
@@ -971,6 +993,16 @@ namespace ILCompiler.DependencyAnalysis
             return _fatFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
         }
 
+        private NodeCache<MethodKey, FatFunctionPointerNode> _fatAddressTakenFunctionPointers;
+
+        public IMethodNode FatAddressTakenFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
+        {
+            if (ObjectInterner.IsNull)
+                return FatFunctionPointer(method, isUnboxingStub);
+
+            return _fatAddressTakenFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
+        }
+
         public IMethodNode ExactCallableAddress(MethodDesc method, bool isUnboxingStub = false)
         {
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
@@ -978,6 +1010,15 @@ namespace ILCompiler.DependencyAnalysis
                 return FatFunctionPointer(method, isUnboxingStub);
             else
                 return MethodEntrypoint(method, isUnboxingStub);
+        }
+
+        public IMethodNode ExactCallableAddressTakenAddress(MethodDesc method, bool isUnboxingStub = false)
+        {
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (method != canonMethod)
+                return FatAddressTakenFunctionPointer(method, isUnboxingStub);
+            else
+                return AddressTakenMethodEntrypoint(method, isUnboxingStub);
         }
 
         public IMethodNode CanonicalEntrypoint(MethodDesc method, bool isUnboxingStub = false)
@@ -1011,6 +1052,21 @@ namespace ILCompiler.DependencyAnalysis
         internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
         {
             return _gvmTableEntries.GetOrAdd(type);
+        }
+
+        private NodeCache<MethodDesc, AddressTakenMethodNode> _addressTakenMethods;
+        public IMethodNode AddressTakenMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
+        {
+            if (unboxingStub || ObjectInterner.IsNull)
+                return MethodEntrypoint(method, unboxingStub);
+
+            return _addressTakenMethods.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, DelegateTargetVirtualMethodNode> _reflectedDelegateTargetMethods;
+        public DelegateTargetVirtualMethodNode ReflectedDelegateTargetVirtualMethod(MethodDesc method)
+        {
+            return _reflectedDelegateTargetMethods.GetOrAdd(method);
         }
 
         private NodeCache<MethodDesc, DelegateTargetVirtualMethodNode> _delegateTargetMethods;

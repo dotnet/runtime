@@ -768,6 +768,13 @@ bool MyICJI::isExactType(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repIsExactType(cls);
 }
 
+// Returns true if a class handle represents a generic type.
+TypeCompareState MyICJI::isGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("isGenericType");
+    return jitInstance->mc->repIsGenericType(cls);
+}
+
 // Returns true if a class handle represents a Nullable type.
 TypeCompareState MyICJI::isNullableType(CORINFO_CLASS_HANDLE cls)
 {

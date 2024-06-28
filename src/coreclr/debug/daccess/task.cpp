@@ -2705,7 +2705,7 @@ ClrDataModule::RequestGetModuleData(
     Module* pModule = GetModule();
     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
-    outGMD->PEAssembly = TO_CDADDR(PTR_HOST_TO_TADDR(pPEAssembly));
+    outGMD->PEAssembly = TO_CDADDR(PTR_HOST_TO_TADDR(pModule));
     outGMD->IsDynamic = pModule->IsReflection();
 
     if (pPEAssembly != NULL)

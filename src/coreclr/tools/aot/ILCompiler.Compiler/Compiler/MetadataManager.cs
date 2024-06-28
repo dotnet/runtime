@@ -562,6 +562,15 @@ namespace ILCompiler
             // RuntimeFieldHandle data structure.
         }
 
+        public void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
+        {
+            if (target.IsVirtual)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.DelegateTargetVirtualMethod(target), "Delegate to a virtual method created");
+            }
+        }
+
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to delegate targets.
         /// </summary>
@@ -697,6 +706,11 @@ namespace ILCompiler
                 if (transformed.GetTransformedMethodDefinition(typicalMethod) != null &&
                     ShouldMethodBeInInvokeMap(method) &&
                     (GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) != 0)
+                    continue;
+
+                // If the method will be folded, no need to emit stack trace info for this one
+                ISymbolNode internedBody = factory.ObjectInterner.GetDeduplicatedSymbol(factory, methodBody);
+                if (internedBody != methodBody)
                     continue;
 
                 MethodStackTraceVisibilityFlags stackVisibility = _stackTraceEmissionPolicy.GetMethodVisibility(method);

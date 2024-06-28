@@ -491,7 +491,8 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Compute HashCode. Should only be overridden by a MethodDesc that represents an instantiated method.
+        /// Compute HashCode. This hashcode is persisted into the image.
+        /// The algorithm to compute it must be in sync with the one used at runtime.
         /// </summary>
         protected virtual int ComputeHashCode()
         {

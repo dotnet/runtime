@@ -2733,22 +2733,16 @@ namespace Mono.Linker.Steps
 		{
 			var arguments = instance.GenericArguments;
 
-			var generic_element = GetGenericProviderFromInstance (instance);
-			if (generic_element == null)
-				return;
-
-			var parameters = generic_element.GenericParameters;
-
-			if (arguments.Count != parameters.Count)
-				return;
+			IGenericParameterProvider? generic_element = GetGenericProviderFromInstance (instance);
+			Collection<GenericParameter>? parameters = generic_element?.GenericParameters;
 
 			for (int i = 0; i < arguments.Count; i++) {
 				var argument = arguments[i];
-				var parameter = parameters[i];
+				var parameter = parameters?[i];
 
 				var argumentTypeDef = MarkType (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance), origin);
 
-				if (Annotations.FlowAnnotations.RequiresGenericArgumentDataFlowAnalysis (parameter)) {
+				if (parameter is not null && Annotations.FlowAnnotations.RequiresGenericArgumentDataFlowAnalysis (parameter)) {
 					// The only two implementations of IGenericInstance both derive from MemberReference
 					Debug.Assert (instance is MemberReference);
 
@@ -2762,7 +2756,7 @@ namespace Mono.Linker.Steps
 
 				_dependencyGraph.AddRoot (_nodeFactory.GetTypeIsRelevantToVariantCastingNode (argumentTypeDef), "Generic Argument");
 
-				if (parameter.HasDefaultConstructorConstraint)
+				if (parameter?.HasDefaultConstructorConstraint == true)
 					MarkDefaultConstructor (argumentTypeDef, new DependencyInfo (DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance), origin);
 			}
 		}

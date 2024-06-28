@@ -884,8 +884,7 @@ DEFINE_METHOD(VALUE_TYPE,           EQUALS,                 Equals,             
 
 DEFINE_CLASS(GC,                    System,                 GC)
 DEFINE_METHOD(GC,                   KEEP_ALIVE,             KeepAlive,                  SM_Obj_RetVoid)
-DEFINE_METHOD(GC,                   COLLECT,                Collect,                    SM_RetVoid)
-DEFINE_METHOD(GC,                   WAIT_FOR_PENDING_FINALIZERS, WaitForPendingFinalizers, SM_RetVoid)
+DEFINE_METHOD(GC,                   RUN_FINALIZERS,         RunFinalizers,              SM_RetUInt)
 
 DEFINE_CLASS_U(System,              WeakReference,          WeakReferenceObject)
 DEFINE_FIELD_U(_taggedHandle,       WeakReferenceObject,    m_taggedHandle)
@@ -937,10 +936,6 @@ DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,  
 #ifdef PROFILING_SUPPORTED
 DEFINE_METHOD(STUBHELPERS,          PROFILER_BEGIN_TRANSITION_CALLBACK, ProfilerBeginTransitionCallback, SM_IntPtr_IntPtr_Obj_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          PROFILER_END_TRANSITION_CALLBACK,   ProfilerEndTransitionCallback,   SM_IntPtr_IntPtr_RetVoid)
-#endif
-
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-DEFINE_METHOD(STUBHELPERS,          ARRAY_TYPE_CHECK,    ArrayTypeCheck,          SM_Obj_ArrObject_RetVoid)
 #endif
 
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
@@ -1169,6 +1164,7 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_Ptr
 DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
 DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_ArrObject_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_ArrObject_IntPtr_PtrVoid_RetRefObj)
+DEFINE_METHOD(CASTHELPERS, ARRAYTYPECHECK,   ArrayTypeCheck,              SM_Obj_Array_RetVoid)
 
 #ifdef FEATURE_EH_FUNCLETS
 DEFINE_CLASS(EH, Runtime, EH)

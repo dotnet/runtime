@@ -1859,17 +1859,17 @@ void CodeGen::genGenerateMachineCode()
             {
                 if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
                 {
-                    printf("X86 with AVX10/512");
+                    printf("X64 with AVX10/512");
                 }
                 else
                 {
-                    printf("X86 with AVX10/256");
+                    printf("X64 with AVX10/256");
                 }
             }
             else
             {
                 assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-                printf("X86 with AVX512");
+                printf("X64 with AVX512");
             }
         }
         else if (compiler->canUseVexEncoding())
@@ -3202,7 +3202,7 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
     const ABIPassingInformation& abiInfo     = compiler->lvaGetParameterABIInfo(paramLclNum);
     for (unsigned i = 0; i < abiInfo.NumSegments; i++)
     {
-        const ABIPassingSegment& seg = abiInfo.Segments[i];
+        const ABIPassingSegment& seg = abiInfo.Segment(i);
         if (!seg.IsPassedInRegister() || ((paramRegs & genRegMask(seg.GetRegister())) == 0))
         {
             continue;
@@ -3325,7 +3325,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& seg = abiInfo.Segments[i];
+                const ABIPassingSegment& seg = abiInfo.Segment(i);
                 if (seg.IsPassedInRegister() && ((paramRegs & genRegMask(seg.GetRegister())) != 0))
                 {
                     var_types storeType = genParamStackType(lclDsc, seg);
@@ -4356,7 +4356,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 {
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
-        if (lclNum == compiler->lvaSwiftSelfArg)
+        if ((lclNum == compiler->lvaSwiftSelfArg) || (lclNum == compiler->lvaSwiftIndirectResultArg))
         {
             continue;
         }
@@ -4373,7 +4373,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 
         for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
-            const ABIPassingSegment& seg = abiInfo.Segments[i];
+            const ABIPassingSegment& seg = abiInfo.Segment(i);
             if (seg.IsPassedOnStack() != handleStack)
             {
                 continue;
@@ -4434,9 +4434,9 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
             JITDUMP("Homing stack part of split parameter V%02u\n", lclNum);
 
             assert(abiInfo.NumSegments == 2);
-            assert(abiInfo.Segments[0].GetRegister() == REG_ARG_LAST);
-            assert(abiInfo.Segments[1].GetStackOffset() == 0);
-            const ABIPassingSegment& seg = abiInfo.Segments[1];
+            assert(abiInfo.Segment(0).GetRegister() == REG_ARG_LAST);
+            assert(abiInfo.Segment(1).GetStackOffset() == 0);
+            const ABIPassingSegment& seg = abiInfo.Segment(1);
 
             genHomeStackSegment(lclNum, seg, initReg, initRegStillZeroed);
 
@@ -5694,6 +5694,15 @@ void CodeGen::genFnProlog()
         {
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
+        }
+
+        if ((compiler->lvaSwiftIndirectResultArg != BAD_VAR_NUM) &&
+            ((intRegState.rsCalleeRegArgMaskLiveIn & theFixedRetBuffMask(CorInfoCallConvExtension::Swift)) != 0))
+        {
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
+                                      theFixedRetBuffReg(CorInfoCallConvExtension::Swift),
+                                      compiler->lvaSwiftIndirectResultArg, 0);
+            intRegState.rsCalleeRegArgMaskLiveIn &= ~theFixedRetBuffMask(CorInfoCallConvExtension::Swift);
         }
 
         if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
@@ -7505,7 +7514,7 @@ void CodeGen::genJmpPlaceArgs(GenTree* jmp)
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
         for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
-            const ABIPassingSegment& segment = abiInfo.Segments[i];
+            const ABIPassingSegment& segment = abiInfo.Segment(i);
             if (segment.IsPassedOnStack())
             {
                 continue;
