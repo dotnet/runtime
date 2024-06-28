@@ -116,8 +116,7 @@ public class AttackTests : ReadTests
     // AppDomain.CurrentDomain.MonitoringTotalAllocatedMemorySize is available,
     // but it reports allocations for all threads. Using this API would require
     // ensuring that it's the only test that is being run at a time.
-    // Mono either allocates more than expected or the API is not precise enough.
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+    [Fact]
     public void ArraysOfStringsAreNotBeingPreAllocated()
     {
         using MemoryStream stream = new();
