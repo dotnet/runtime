@@ -21865,7 +21865,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
         case GT_MUL:
         {
-            assert(!varTypeIsLong(simdBaseType));
+            assert(!varTypeIsLong(simdBaseType) || (simdSize == 16));
             GenTree** scalarOp = nullptr;
 
             if (varTypeIsArithmetic(op1))
@@ -21927,6 +21927,33 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                         intrinsic = NI_AdvSimd_MultiplyScalar;
                     }
                     break;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    assert(simdSize == 16);
+
+                    // Make op1 and op2 multi-use:
+                    GenTree* op1Dup = fgMakeMultiUse(&op1);
+                    GenTree* op2Dup = fgMakeMultiUse(&op2);
+
+                    // long left0 = op1.GetElement(0)
+                    // long left1 = op1.GetElement(1)
+                    GenTree* left0 = gtNewSimdGetElementNode(TYP_LONG, op1, gtNewIconNode(0), simdBaseJitType, 16);
+                    GenTree* left1 = gtNewSimdGetElementNode(TYP_LONG, op1Dup, gtNewIconNode(1), simdBaseJitType, 16);
+
+                    // long right0 = op2.GetElement(0)
+                    // long right1 = op2.GetElement(1)
+                    GenTree* right0 = gtNewSimdGetElementNode(TYP_LONG, op2, gtNewIconNode(0), simdBaseJitType, 16);
+                    GenTree* right1 = gtNewSimdGetElementNode(TYP_LONG, op2Dup, gtNewIconNode(1), simdBaseJitType, 16);
+
+                    // Vector128<long> vec = Vector128.Create(left0 * right0, left1 * right1)
+                    op1          = gtNewOperNode(GT_MUL, TYP_LONG, left0, right0);
+                    op2          = gtNewOperNode(GT_MUL, TYP_LONG, left1, right1);
+                    GenTree* vec = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseJitType, 16);
+                    return gtNewSimdHWIntrinsicNode(TYP_SIMD16, vec, gtNewIconNode(1), op2, NI_AdvSimd_Insert,
+                                                    simdBaseJitType, 16);
                 }
 
                 default:

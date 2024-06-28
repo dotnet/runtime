@@ -1769,9 +1769,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsLong(simdBaseType))
+            if (varTypeIsLong(simdBaseType) && (intrinsic == NI_Vector64_op_Multiply))
             {
-                // TODO-ARM64-CQ: We should support long/ulong multiplication.
+                // long/ulong multiplication needs no special handling for SIMD8
                 break;
             }
 
