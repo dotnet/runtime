@@ -199,7 +199,7 @@ internal partial struct Metadata_1 : IMetadata
                 return false;
             }
         }
-        catch (Exception)
+        catch (System.Exception)
         {
             // FIXME: maybe don't swallow all exceptions?
             return false;
