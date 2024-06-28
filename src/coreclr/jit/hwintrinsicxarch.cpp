@@ -142,85 +142,82 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
 static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 {
     assert(className != nullptr);
+
     if (className[0] == 'A')
     {
         if (strcmp(className, "Aes") == 0)
         {
             return InstructionSet_AES;
         }
-        if (strcmp(className, "Avx") == 0)
+        else if (strncmp(className, "Avx", 3) == 0)
         {
-            return InstructionSet_AVX;
-        }
-        if (strcmp(className, "Avx2") == 0)
-        {
-            return InstructionSet_AVX2;
-        }
-        if (strcmp(className, "Avx512BW") == 0)
-        {
-            return InstructionSet_AVX512BW;
-        }
-        if (strcmp(className, "Avx512CD") == 0)
-        {
-            return InstructionSet_AVX512CD;
-        }
-        if (strcmp(className, "Avx512DQ") == 0)
-        {
-            return InstructionSet_AVX512DQ;
-        }
-        if (strcmp(className, "Avx512F") == 0)
-        {
-            return InstructionSet_AVX512F;
-        }
-        if (strcmp(className, "Avx512Vbmi") == 0)
-        {
-            return InstructionSet_AVX512VBMI;
-        }
-        if (strcmp(className, "AvxVnni") == 0)
-        {
-            return InstructionSet_AVXVNNI;
-        }
-        if (strcmp(className, "Avx10v1") == 0)
-        {
-            return InstructionSet_AVX10v1;
-        }
-    }
-    else if (className[0] == 'S')
-    {
-        if (strcmp(className, "Sse") == 0)
-        {
-            return InstructionSet_SSE;
-        }
-        if (strcmp(className, "Sse2") == 0)
-        {
-            return InstructionSet_SSE2;
-        }
-        if (strcmp(className, "Sse3") == 0)
-        {
-            return InstructionSet_SSE3;
-        }
-        if (strcmp(className, "Ssse3") == 0)
-        {
-            return InstructionSet_SSSE3;
-        }
-        if (strcmp(className, "Sse41") == 0)
-        {
-            return InstructionSet_SSE41;
-        }
-        if (strcmp(className, "Sse42") == 0)
-        {
-            return InstructionSet_SSE42;
+            if (className[3] == '\0')
+            {
+                return InstructionSet_AVX;
+            }
+            else if (strcmp(className + 3, "10v1") == 0)
+            {
+                return InstructionSet_AVX10v1;
+            }
+            else if (strcmp(className + 3, "2") == 0)
+            {
+                return InstructionSet_AVX2;
+            }
+            else if (strncmp(className + 3, "512", 3) == 0)
+            {
+                if (strcmp(className + 6, "BW") == 0)
+                {
+                    return InstructionSet_AVX512BW;
+                }
+                else if (strcmp(className + 6, "CD") == 0)
+                {
+                    return InstructionSet_AVX512CD;
+                }
+                else if (strcmp(className + 6, "DQ") == 0)
+                {
+                    return InstructionSet_AVX512DQ;
+                }
+                else if (strcmp(className + 6, "F") == 0)
+                {
+                    return InstructionSet_AVX512F;
+                }
+                else if (strcmp(className + 6, "Vbmi") == 0)
+                {
+                    return InstructionSet_AVX512VBMI;
+                }
+            }
+            else if (strcmp(className + 3, "Vnni") == 0)
+            {
+                return InstructionSet_AVXVNNI;
+            }
         }
     }
     else if (className[0] == 'B')
     {
-        if (strcmp(className, "Bmi1") == 0)
+        if (strncmp(className, "Bmi", 3) == 0)
         {
-            return InstructionSet_BMI1;
+            if (strcmp(className + 3, "1") == 0)
+            {
+                return InstructionSet_BMI1;
+            }
+            else if (strcmp(className + 3, "2") == 0)
+            {
+                return InstructionSet_BMI2;
+            }
         }
-        if (strcmp(className, "Bmi2") == 0)
+    }
+    else if (className[0] == 'F')
+    {
+        if (strcmp(className, "Fma") == 0)
         {
-            return InstructionSet_BMI2;
+            return InstructionSet_FMA;
+        }
+    }
+    else if (className[0] == 'L')
+    {
+        if (strcmp(className, "Lzcnt") == 0)
+        {
+            return InstructionSet_LZCNT;
         }
     }
     else if (className[0] == 'P')
@@ -229,24 +226,66 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             return InstructionSet_PCLMULQDQ;
         }
-        if (strcmp(className, "Popcnt") == 0)
+        else if (strcmp(className, "Popcnt") == 0)
         {
             return InstructionSet_POPCNT;
         }
     }
+    else if (className[0] == 'S')
+    {
+        if (strncmp(className, "Sse", 3) == 0)
+        {
+            if (className[3] == '\0')
+            {
+                return InstructionSet_SSE;
+            }
+            else if (strcmp(className + 3, "2") == 0)
+            {
+                return InstructionSet_SSE2;
+            }
+            else if (strcmp(className + 3, "3") == 0)
+            {
+                return InstructionSet_SSE3;
+            }
+            else if (strcmp(className + 3, "41") == 0)
+            {
+                return InstructionSet_SSE41;
+            }
+            else if (strcmp(className + 3, "42") == 0)
+            {
+                return InstructionSet_SSE42;
+            }
+        }
+        else if (strcmp(className, "Ssse3") == 0)
+        {
+            return InstructionSet_SSSE3;
+        }
+    }
     else if (className[0] == 'V')
     {
-        if (strncmp(className, "Vector128", 9) == 0)
+        if (strncmp(className, "Vector", 6) == 0)
         {
-            return InstructionSet_Vector128;
-        }
-        else if (strncmp(className, "Vector256", 9) == 0)
-        {
-            return InstructionSet_Vector256;
-        }
-        else if (strncmp(className, "Vector512", 9) == 0)
-        {
-            return InstructionSet_Vector512;
+            if (strncmp(className + 6, "128", 3) == 0)
+            {
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector128;
+                }
+            }
+            else if (strncmp(className + 6, "256", 3) == 0)
+            {
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector256;
+                }
+            }
+            else if (strncmp(className + 6, "512", 3) == 0)
+            {
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector512;
+                }
+            }
         }
         else if (strcmp(className, "VL") == 0)
         {
@@ -254,21 +293,16 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             return InstructionSet_ILLEGAL;
         }
     }
-    else if (strcmp(className, "Fma") == 0)
+    else if (strncmp(className, "X86", 3) == 0)
     {
-        return InstructionSet_FMA;
-    }
-    else if (strcmp(className, "Lzcnt") == 0)
-    {
-        return InstructionSet_LZCNT;
-    }
-    else if (strcmp(className, "X86Base") == 0)
-    {
-        return InstructionSet_X86Base;
-    }
-    else if (strcmp(className, "X86Serialize") == 0)
-    {
-        return InstructionSet_X86Serialize;
+        if (strcmp(className + 3, "Base") == 0)
+        {
+            return InstructionSet_X86Base;
+        }
+        else if (strcmp(className + 3, "Serialize") == 0)
+        {
+            return InstructionSet_X86Serialize;
+        }
     }
 
     return InstructionSet_ILLEGAL;
@@ -287,25 +321,35 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
 {
     assert(className != nullptr);
 
-    if (strcmp(className, "X64") == 0)
+    if (enclosingClassName == nullptr)
     {
-        assert(enclosingClassName != nullptr);
-        return X64VersionOfIsa(lookupInstructionSet(enclosingClassName));
-    }
-    else if (strcmp(className, "VL") == 0)
-    {
-        assert(enclosingClassName != nullptr);
-        return VLVersionOfIsa(lookupInstructionSet(enclosingClassName));
-    }
-    else if (strcmp(className, "V512") == 0)
-    {
-        assert(enclosingClassName != nullptr);
-        return V512VersionOfIsa(lookupInstructionSet(enclosingClassName));
-    }
-    else
-    {
+        // No nested class is the most common, so fast path it
         return lookupInstructionSet(className);
     }
+
+    // Since lookupId is only called for the xplat intrinsics
+    // or intrinsics in the platform specific namespace, we assume
+    // that it will be one we can handle and don't try to early out.
+
+    CORINFO_InstructionSet enclosingIsa = lookupInstructionSet(enclosingClassName);
+
+    if (className[0] == 'V')
+    {
+        if (strcmp(className, "V512") == 0)
+        {
+            return V512VersionOfIsa(enclosingIsa);
+        }
+        else if (strcmp(className, "VL") == 0)
+        {
+            return VLVersionOfIsa(enclosingIsa);
+        }
+    }
+    else if (strcmp(className, "X64") == 0)
+    {
+        return X64VersionOfIsa(enclosingIsa);
+    }
+
+    return InstructionSet_ILLEGAL;
 }
 
 //------------------------------------------------------------------------
@@ -970,8 +1014,8 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
             static_assert_no_msg(NI_AVX512F_RotateLeftVariable == (NI_AVX512F_RotateLeft + 1));
             static_assert_no_msg(NI_AVX512F_RotateRightVariable == (NI_AVX512F_RotateRight + 1));
             static_assert_no_msg(NI_AVX512F_VL_RotateLeftVariable == (NI_AVX512F_VL_RotateLeft + 1));
-            static_assert_no_msg(NI_AVX10v1_RotateLeftVariable == (NI_AVX10v1_RotateLeft + 1));
             static_assert_no_msg(NI_AVX512F_VL_RotateRightVariable == (NI_AVX512F_VL_RotateRight + 1));
+            static_assert_no_msg(NI_AVX10v1_RotateLeftVariable == (NI_AVX10v1_RotateLeft + 1));
             static_assert_no_msg(NI_AVX10v1_RotateRightVariable == (NI_AVX10v1_RotateRight + 1));
 
             impSpillSideEffect(true,
@@ -1091,6 +1135,59 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_As:
+        case NI_Vector128_AsByte:
+        case NI_Vector128_AsDouble:
+        case NI_Vector128_AsInt16:
+        case NI_Vector128_AsInt32:
+        case NI_Vector128_AsInt64:
+        case NI_Vector128_AsNInt:
+        case NI_Vector128_AsNUInt:
+        case NI_Vector128_AsSByte:
+        case NI_Vector128_AsSingle:
+        case NI_Vector128_AsUInt16:
+        case NI_Vector128_AsUInt32:
+        case NI_Vector128_AsUInt64:
+        case NI_Vector128_AsVector4:
+        case NI_Vector256_As:
+        case NI_Vector256_AsByte:
+        case NI_Vector256_AsDouble:
+        case NI_Vector256_AsInt16:
+        case NI_Vector256_AsInt32:
+        case NI_Vector256_AsInt64:
+        case NI_Vector256_AsNInt:
+        case NI_Vector256_AsNUInt:
+        case NI_Vector256_AsSByte:
+        case NI_Vector256_AsSingle:
+        case NI_Vector256_AsUInt16:
+        case NI_Vector256_AsUInt32:
+        case NI_Vector256_AsUInt64:
+        case NI_Vector512_As:
+        case NI_Vector512_AsByte:
+        case NI_Vector512_AsDouble:
+        case NI_Vector512_AsInt16:
+        case NI_Vector512_AsInt32:
+        case NI_Vector512_AsInt64:
+        case NI_Vector512_AsNInt:
+        case NI_Vector512_AsNUInt:
+        case NI_Vector512_AsSByte:
+        case NI_Vector512_AsSingle:
+        case NI_Vector512_AsUInt16:
+        case NI_Vector512_AsUInt32:
+        case NI_Vector512_AsUInt64:
+        {
+            // We fold away the cast here, as it only exists to satisfy
+            // the type system. It is safe to do this here since the retNode type
+            // and the signature return type are both the same TYP_SIMD.
+
+            assert(sig->numArgs == 1);
+
+            retNode = impSIMDPopStack();
+            SetOpLclRelatedToSIMDIntrinsic(retNode);
+            assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+            break;
+        }
+
         case NI_Vector128_AsVector:
         {
             assert(sig->numArgs == 1);
@@ -1161,6 +1258,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         return vecCon;
                     }
 
+                    op1 = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_AsVector128Unsafe, simdBaseJitType, 8);
+
                     GenTree* idx  = gtNewIconNode(2, TYP_INT);
                     GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
                     op1           = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16);
@@ -1186,6 +1285,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         vecCon->gtSimdVal.f32[3] = 0.0f;
                         return vecCon;
                     }
+
+                    op1 = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_AsVector128Unsafe, simdBaseJitType, 12);
 
                     GenTree* idx  = gtNewIconNode(3, TYP_INT);
                     GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
@@ -1219,6 +1320,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
+            break;
+        }
+
+        case NI_Vector128_AsVector128Unsafe:
+        {
+            assert(sig->numArgs == 1);
+            assert(retType == TYP_SIMD16);
+            assert(simdBaseJitType == CORINFO_TYPE_FLOAT);
+            assert((simdSize == 8) || (simdSize == 12));
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_AsVector128Unsafe, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2043,8 +2156,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (!varTypeIsMask(op1))
                 {
-                    op1 =
-                        gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_EVEX_ConvertVectorToMask, simdBaseJitType, simdSize);
+                    op1 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
                 }
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_EVEX_MoveMask, simdBaseJitType, simdSize);
             }
@@ -2237,6 +2349,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 0);
             retNode = gtNewOneConNode(retType, simdBaseType);
+            break;
+        }
+
+        case NI_Vector128_get_Zero:
+        case NI_Vector256_get_Zero:
+        case NI_Vector512_get_Zero:
+        {
+            assert(sig->numArgs == 0);
+            retNode = gtNewZeroConNode(retType);
             break;
         }
 
@@ -2761,6 +2882,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 retNode = gtNewSimdCmpOpAnyNode(GT_NE, retType, op1, op2, simdBaseJitType, simdSize);
             }
 
+            break;
+        }
+
+        case NI_Vector128_op_UnaryPlus:
+        case NI_Vector256_op_UnaryPlus:
+        case NI_Vector512_op_UnaryPlus:
+        {
+            assert(sig->numArgs == 1);
+            retNode = impSIMDPopStack();
             break;
         }
 
@@ -4141,7 +4271,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!varTypeIsMask(op3))
             {
-                op3 = gtNewSimdHWIntrinsicNode(TYP_MASK, op3, NI_EVEX_ConvertVectorToMask, simdBaseJitType, simdSize);
+                op3 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op3, simdBaseJitType, simdSize);
             }
             retNode =
                 gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, NI_EVEX_BlendVariableMask, simdBaseJitType, simdSize);
@@ -4157,8 +4287,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, op3, NI_EVEX_CompareMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
 
             break;
         }
@@ -4172,9 +4301,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareEqualMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4191,9 +4318,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareGreaterThanMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4210,9 +4335,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareGreaterThanOrEqualMask,
                                                simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4229,9 +4352,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareLessThanMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4248,9 +4369,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareLessThanOrEqualMask, simdBaseJitType,
                                                simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4267,9 +4386,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareNotEqualMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4282,9 +4399,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareNotGreaterThanMask, simdBaseJitType,
                                                simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4297,9 +4412,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareNotGreaterThanOrEqualMask,
                                                simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4312,9 +4425,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareNotLessThanMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4327,9 +4438,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareNotLessThanOrEqualMask,
                                                simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4342,9 +4451,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareOrderedMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4357,9 +4464,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareUnorderedMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 

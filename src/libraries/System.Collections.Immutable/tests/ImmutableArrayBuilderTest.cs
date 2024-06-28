@@ -369,11 +369,17 @@ namespace System.Collections.Immutable.Tests
             builder.RemoveRange(1, 2);
             Assert.Equal(new[] { 1, 4, 5 }, builder);
 
+            builder.RemoveRange(1, 0);
+            Assert.Equal(new[] { 1, 4, 5 }, builder);
+
             builder.RemoveRange(new int[] { 4, 6 });
             Assert.Equal(new[] { 1, 5 }, builder);
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.RemoveRange(-1, 1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.RemoveRange(1, 10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.RemoveRange(10, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.RemoveRange(1, 10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.RemoveRange(1, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.RemoveRange(1, int.MaxValue));
             AssertExtensions.Throws<ArgumentNullException>("items", () => builder.RemoveRange(null));
         }
 

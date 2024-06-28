@@ -180,6 +180,10 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 //    Weight of ref position.
 weight_t LinearScan::getWeight(RefPosition* refPos)
 {
+    // RefTypeKill does not have a valid treeNode field, so we do not expect
+    // to see getWeight called for it
+    assert(refPos->refType != RefTypeKill);
+
     weight_t weight;
     GenTree* treeNode = refPos->treeNode;
 
@@ -278,11 +282,7 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPo
     RefPosition* kill = nextKill;
     while ((kill != nullptr) && (kill->nodeLocation < nextLocation))
     {
-#ifdef HAS_MORE_THAN_64_REGISTERS
-        if (kill->killRegisterAssignment.IsRegNumInMask(regRecord->regNum))
-#else
-        if ((kill->registerAssignment & genSingleTypeRegMask(regRecord->regNum)) != RBM_NONE)
-#endif
+        if (kill->killedRegisters.IsRegNumInMask(regRecord->regNum))
         {
             nextLocation = kill->nodeLocation;
             break;
@@ -312,7 +312,7 @@ SingleTypeRegSet LinearScan::getMatchingConstants(SingleTypeRegSet mask,
     SingleTypeRegSet result     = RBM_NONE;
     while (candidates != RBM_NONE)
     {
-        regNumber        regNum       = genFirstRegNumFromMask(candidates);
+        regNumber        regNum       = genFirstRegNumFromMask(candidates, currentInterval->registerType);
         SingleTypeRegSet candidateBit = genSingleTypeRegMask(regNum);
         candidates ^= candidateBit;
 
@@ -3080,7 +3080,7 @@ regNumber LinearScan::allocateReg(Interval*                currentInterval,
         return REG_NA;
     }
 
-    regNumber  foundReg               = genRegNumFromMask(foundRegBit);
+    regNumber  foundReg               = genRegNumFromMask(foundRegBit, currentInterval->registerType);
     RegRecord* availablePhysRegRecord = getRegisterRecord(foundReg);
     Interval*  assignedInterval       = availablePhysRegRecord->assignedInterval;
     if ((assignedInterval != currentInterval) &&
@@ -4041,7 +4041,7 @@ void LinearScan::processKills(RefPosition* killRefPosition)
 {
     RefPosition* nextKill = killRefPosition->nextRefPosition;
 
-    regMaskTP killedRegs = killRefPosition->getKillRegisterAssignment();
+    regMaskTP killedRegs = killRefPosition->getKilledRegisters();
     while (killedRegs.IsNonEmpty())
     {
         regNumber  killedReg        = genFirstRegNumFromMaskAndToggle(killedRegs);
@@ -4061,9 +4061,9 @@ void LinearScan::processKills(RefPosition* killRefPosition)
         updateNextFixedRef(regRecord, regNextRefPos, nextKill);
     }
 
-    regsBusyUntilKill &= ~killRefPosition->getKillRegisterAssignment();
+    regsBusyUntilKill &= ~killRefPosition->getKilledRegisters();
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE,
-                                    killRefPosition->getKillRegisterAssignment()));
+                                    killRefPosition->getKilledRegisters()));
 }
 
 //------------------------------------------------------------------------
@@ -4087,7 +4087,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
     INDEBUG(bool killedRegs = false);
     while (candidateRegs != RBM_NONE)
     {
-        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
+        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs, IntRegisterType);
 
         RegRecord* regRecord        = getRegisterRecord(nextReg);
         Interval*  assignedInterval = regRecord->assignedInterval;
@@ -4182,7 +4182,7 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
         regNumber newReg   = REG_NA;
         while (candidateRegs != RBM_NONE)
         {
-            regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
+            regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs, interval->registerType);
             if (nextReg > targetReg)
             {
                 newReg = nextReg;
@@ -8571,7 +8571,15 @@ void LinearScan::insertMove(
     // This var can't be marked lvRegister now
     varDsc->SetRegNum(REG_STK);
 
-    GenTree* src = compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
+    var_types typ = varDsc->TypeGet();
+#if defined(FEATURE_SIMD)
+    if ((typ == TYP_SIMD12) && compiler->lvaMapSimd12ToSimd16(varDsc))
+    {
+        typ = TYP_SIMD16;
+    }
+#endif
+
+    GenTree* src = compiler->gtNewLclvNode(lclNum, typ);
     SetLsraAdded(src);
 
     // There are three cases we need to handle:
@@ -9772,8 +9780,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     regMaskTP targetCandidates = targetRegsToDo;
     while (targetCandidates.IsNonEmpty())
     {
-        regNumber targetReg = genFirstRegNumFromMask(targetCandidates);
-        targetCandidates.RemoveRegNumFromMask(targetReg);
+        regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetCandidates);
         if (location[targetReg] == REG_NA)
         {
 #ifdef TARGET_ARM
@@ -9802,9 +9809,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     {
         while (targetRegsReady.IsNonEmpty())
         {
-            regNumber targetReg = genFirstRegNumFromMask(targetRegsReady);
+            regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsReady);
             targetRegsToDo.RemoveRegNumFromMask(targetReg);
-            targetRegsReady.RemoveRegNumFromMask(targetReg);
             assert(location[targetReg] != targetReg);
             assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
@@ -10389,81 +10395,102 @@ void RefPosition::dump(LinearScan* linearScan)
 
     printf(" %s ", getRefTypeName(refType));
 
-    if (this->IsPhysRegRef())
+    if (IsPhysRegRef())
     {
-        this->getReg()->tinyDump();
+        getReg()->tinyDump();
     }
     else if (getInterval())
     {
-        this->getInterval()->tinyDump();
+        getInterval()->tinyDump();
     }
-    if (this->treeNode)
+    if ((refType != RefTypeKill) && treeNode)
     {
         printf("%s", treeNode->OpName(treeNode->OperGet()));
-        if (this->treeNode->IsMultiRegNode())
+        if (treeNode->IsMultiRegNode())
         {
-            printf("[%d]", this->multiRegIdx);
+            printf("[%d]", multiRegIdx);
         }
         printf(" ");
     }
-    printf(FMT_BB " ", this->bbNum);
+    printf(FMT_BB " ", bbNum);
 
     printf("regmask=");
-    linearScan->compiler->dumpRegMask(registerAssignment);
+    if (refType == RefTypeKill)
+    {
+        linearScan->compiler->dumpRegMask(getKilledRegisters());
+    }
+    else
+    {
+        var_types type = TYP_UNKNOWN;
+        if ((refType == RefTypeBB) || (refType == RefTypeKillGCRefs))
+        {
+            // These refTypes do not have intervals
+            type = TYP_INT;
+        }
+        else
+        {
+            type = getRegisterType();
+        }
+        linearScan->compiler->dumpRegMask(registerAssignment, type);
+    }
 
     printf(" minReg=%d", minRegCandidateCount);
 
-    if (this->lastUse)
+    if (lastUse)
     {
         printf(" last");
     }
-    if (this->reload)
+    if (reload)
     {
         printf(" reload");
     }
-    if (this->spillAfter)
+    if (spillAfter)
     {
         printf(" spillAfter");
     }
-    if (this->singleDefSpill)
+    if (singleDefSpill)
     {
         printf(" singleDefSpill");
     }
-    if (this->writeThru)
+    if (writeThru)
     {
         printf(" writeThru");
     }
-    if (this->moveReg)
+    if (moveReg)
     {
         printf(" move");
     }
-    if (this->copyReg)
+    if (copyReg)
     {
         printf(" copy");
     }
-    if (this->isFixedRegRef)
+    if (isFixedRegRef)
     {
         printf(" fixed");
     }
-    if (this->isLocalDefUse)
+    if (isLocalDefUse)
     {
         printf(" local");
     }
-    if (this->delayRegFree)
+    if (delayRegFree)
     {
         printf(" delay");
     }
-    if (this->outOfOrder)
+    if (outOfOrder)
     {
         printf(" outOfOrder");
     }
 
-    if (this->RegOptional())
+    if (RegOptional())
     {
         printf(" regOptional");
     }
 
-    printf(" wt=%.2f", linearScan->getWeight(this));
+    if (refType != RefTypeKill)
+    {
+        printf(" wt=%.2f", linearScan->getWeight(this));
+    }
+
     printf(">\n");
 }
 
@@ -10545,10 +10572,10 @@ void Interval::dump(Compiler* compiler)
     printf(" physReg:%s", getRegName(physReg));
 
     printf(" Preferences=");
-    compiler->dumpRegMask(this->registerPreferences);
+    compiler->dumpRegMask(this->registerPreferences, this->registerType);
 
     printf(" Aversions=");
-    compiler->dumpRegMask(this->registerAversion);
+    compiler->dumpRegMask(this->registerAversion, this->registerType);
     if (relatedInterval)
     {
         printf(" RelatedInterval ");
@@ -11066,7 +11093,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                                 printf("\n        Kill: ");
                                 killPrinted = true;
                             }
-                            compiler->dumpRegMask(currentRefPosition->registerAssignment);
+                            compiler->dumpRegMask(currentRefPosition->getKilledRegisters());
                             printf(" ");
                             break;
                         case RefTypeFixedReg:
@@ -11463,7 +11490,13 @@ void LinearScan::dumpRegRecordTitleIfNeeded()
     if ((lastDumpedRegisters != registersToDump) || (rowCountSinceLastTitle > MAX_ROWS_BETWEEN_TITLES))
     {
         lastUsedRegNumIndex = 0;
-        int lastRegNumIndex = compiler->compFloatingPointUsed ? REG_FP_LAST : REG_INT_LAST;
+        int lastRegNumIndex = compiler->compFloatingPointUsed ?
+#ifdef HAS_MORE_THAN_64_REGISTERS
+                                                              REG_MASK_LAST
+#else
+                                                              REG_FP_LAST
+#endif
+                                                              : REG_INT_LAST;
         for (int regNumIndex = 0; regNumIndex <= lastRegNumIndex; regNumIndex++)
         {
             if (registersToDump.IsRegNumInMask((regNumber)regNumIndex))
@@ -12074,7 +12107,7 @@ void LinearScan::verifyFinalAllocation()
 
             case RefTypeKill:
                 dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, currentBlock, NONE,
-                                        currentRefPosition.registerAssignment);
+                                        currentRefPosition.getKilledRegisters());
                 break;
 
             case RefTypeFixedReg:
@@ -12228,7 +12261,7 @@ void LinearScan::verifyFinalAllocation()
                     SingleTypeRegSet candidateRegs = currentRefPosition.registerAssignment;
                     while (candidateRegs != RBM_NONE)
                     {
-                        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
+                        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs, IntRegisterType);
 
                         RegRecord* regRecord        = getRegisterRecord(nextReg);
                         Interval*  assignedInterval = regRecord->assignedInterval;
@@ -12872,7 +12905,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
     LsraLocation bestFitLocation = earliestIsBest ? MaxLocation : MinLocation;
     for (SingleTypeRegSet bestFitCandidates = candidates; bestFitCandidates != RBM_NONE;)
     {
-        regNumber        bestFitCandidateRegNum = genFirstRegNumFromMask(bestFitCandidates);
+        regNumber        bestFitCandidateRegNum = genFirstRegNumFromMask(bestFitCandidates, regType);
         SingleTypeRegSet bestFitCandidateBit    = genSingleTypeRegMask(bestFitCandidateRegNum);
         bestFitCandidates ^= bestFitCandidateBit;
 
@@ -12971,7 +13004,7 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     SingleTypeRegSet lowestRegOrderBit = RBM_NONE;
     for (SingleTypeRegSet regOrderCandidates = candidates; regOrderCandidates != RBM_NONE;)
     {
-        regNumber        regOrderCandidateRegNum = genFirstRegNumFromMask(regOrderCandidates);
+        regNumber        regOrderCandidateRegNum = genFirstRegNumFromMask(regOrderCandidates, regType);
         SingleTypeRegSet regOrderCandidateBit    = genSingleTypeRegMask(regOrderCandidateRegNum);
         regOrderCandidates ^= regOrderCandidateBit;
 
@@ -13007,7 +13040,7 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
 
     for (SingleTypeRegSet spillCandidates = candidates; spillCandidates != RBM_NONE;)
     {
-        regNumber        spillCandidateRegNum = genFirstRegNumFromMask(spillCandidates);
+        regNumber        spillCandidateRegNum = genFirstRegNumFromMask(spillCandidates, regType);
         SingleTypeRegSet spillCandidateBit    = genSingleTypeRegMask(spillCandidateRegNum);
         spillCandidates ^= spillCandidateBit;
 
@@ -13132,7 +13165,7 @@ void LinearScan::RegisterSelection::try_FAR_NEXT_REF()
     SingleTypeRegSet farthestSet      = RBM_NONE;
     for (SingleTypeRegSet farthestCandidates = candidates; farthestCandidates != RBM_NONE;)
     {
-        regNumber        farthestCandidateRegNum = genFirstRegNumFromMask(farthestCandidates);
+        regNumber        farthestCandidateRegNum = genFirstRegNumFromMask(farthestCandidates, regType);
         SingleTypeRegSet farthestCandidateBit    = genSingleTypeRegMask(farthestCandidateRegNum);
         farthestCandidates ^= farthestCandidateBit;
 
@@ -13165,7 +13198,7 @@ void LinearScan::RegisterSelection::try_PREV_REG_OPT()
     SingleTypeRegSet prevRegOptSet = RBM_NONE;
     for (SingleTypeRegSet prevRegOptCandidates = candidates; prevRegOptCandidates != RBM_NONE;)
     {
-        regNumber        prevRegOptCandidateRegNum = genFirstRegNumFromMask(prevRegOptCandidates);
+        regNumber        prevRegOptCandidateRegNum = genFirstRegNumFromMask(prevRegOptCandidates, regType);
         SingleTypeRegSet prevRegOptCandidateBit    = genSingleTypeRegMask(prevRegOptCandidateRegNum);
         prevRegOptCandidates ^= prevRegOptCandidateBit;
         Interval* assignedInterval   = linearScan->physRegs[prevRegOptCandidateRegNum].assignedInterval;
@@ -13268,7 +13301,7 @@ void LinearScan::RegisterSelection::calculateUnassignedSets() // TODO: Seperate 
     SingleTypeRegSet coversCandidates = candidates;
     for (; coversCandidates != RBM_NONE;)
     {
-        regNumber        coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
+        regNumber        coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates, regType);
         SingleTypeRegSet coversCandidateBit    = genSingleTypeRegMask(coversCandidateRegNum);
         coversCandidates ^= coversCandidateBit;
 
@@ -13296,7 +13329,7 @@ void LinearScan::RegisterSelection::calculateCoversSets()
     SingleTypeRegSet coversCandidates = (preferenceSet == RBM_NONE) ? candidates : preferenceSet;
     for (; coversCandidates != RBM_NONE;)
     {
-        regNumber        coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
+        regNumber        coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates, regType);
         SingleTypeRegSet coversCandidateBit    = genSingleTypeRegMask(coversCandidateRegNum);
         coversCandidates ^= coversCandidateBit;
 
@@ -13607,7 +13640,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
         while (checkConflictMask != RBM_NONE)
         {
-            regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
+            regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask, regType);
             SingleTypeRegSet checkConflictBit = genSingleTypeRegMask(checkConflictReg);
             checkConflictMask ^= checkConflictBit;
 
@@ -13926,7 +13959,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
     SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
     while (checkConflictMask != RBM_NONE)
     {
-        regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
+        regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask, regType);
         SingleTypeRegSet checkConflictBit = genSingleTypeRegMask(checkConflictReg);
         checkConflictMask ^= checkConflictBit;
 

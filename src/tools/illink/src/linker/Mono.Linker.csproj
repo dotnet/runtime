@@ -23,6 +23,7 @@
     <NoWarn>$(NoWarn);NU5131</NoWarn>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
     <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <Target Name="_ComputePackRuntimeConfigFilePath">
@@ -73,11 +74,18 @@
   <ItemGroup>
     <AdditionalFiles Include="BannedSymbols.txt" />
     <Compile Remove="ref\**\*.cs" />
-    <Compile Include="..\..\external\corert\**\*.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <InternalsVisibleTo Include="Mono.Linker.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- PrivateAssets prevents ILCompiler.DependencyAnalysisFramework from becoming a dependency of the Microsoft.NET.ILLink package, which is designed to
+         be referenced by custom step authors as the public surface available to custom steps (which should not use the dependency analysis framework). -->
+    <ProjectReference Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

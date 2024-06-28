@@ -304,25 +304,12 @@ namespace Mono.Linker
 			return true;
 		}
 
-		public bool HasAppliedPreserve (TypeDefinition type, TypePreserve preserve)
-		{
-			if (!preserved_types.TryGetValue (type, out (TypePreserve preserve, bool applied) existing))
-				throw new InternalErrorException ($"Type {type} must have a TypePreserve before it can be applied.");
-
-			if (preserve != existing.preserve)
-				throw new InternalErrorException ($"Type {type} does not have {preserve}. The TypePreserve may have changed before the call to {nameof (HasAppliedPreserve)}.");
-
-			return existing.applied;
-		}
-
 		public void SetPreserve (TypeDefinition type, TypePreserve preserve)
 		{
 			Debug.Assert (preserve != TypePreserve.Nothing);
 			if (!preserved_types.TryGetValue (type, out (TypePreserve preserve, bool applied) existing)) {
 				preserved_types.Add (type, (preserve, false));
 				if (IsProcessed (type)) {
-					// Required to track preserve for marked types where the existing preserve
-					// was Nothing (since these aren't explicitly tracked.)
 					var addedPending = pending_preserve.Add (type);
 					Debug.Assert (addedPending);
 				}

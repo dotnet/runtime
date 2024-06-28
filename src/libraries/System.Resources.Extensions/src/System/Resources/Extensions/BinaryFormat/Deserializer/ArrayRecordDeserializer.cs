@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 
 namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 
@@ -22,15 +22,14 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         : base(arrayRecord, deserializer)
     {
         // Other array types are handled directly (ArraySinglePrimitive and ArraySingleString).
-        Debug.Assert(arrayRecord.RecordType is not (RecordType.ArraySingleString or RecordType.ArraySinglePrimitive));
-        Debug.Assert(arrayRecord.ArrayType is (BinaryArrayType.Single or BinaryArrayType.Jagged or BinaryArrayType.Rectangular));
+        Debug.Assert(arrayRecord.RecordType is not (SerializationRecordType.ArraySingleString or SerializationRecordType.ArraySinglePrimitive));
 
         _arrayRecord = arrayRecord;
-        _elementType = deserializer.TypeResolver.GetType(arrayRecord.ElementTypeName);
-        Type expectedArrayType = arrayRecord.ArrayType switch
+        _elementType = deserializer.TypeResolver.GetType(arrayRecord.TypeName.GetElementType());
+        Type expectedArrayType = arrayRecord.Rank switch
         {
-            BinaryArrayType.Rectangular => _elementType.MakeArrayType(arrayRecord.Rank),
-            _ => _elementType.MakeArrayType()
+            1 => _elementType.MakeArrayType(),
+            _ => _elementType.MakeArrayType(arrayRecord.Rank),
         };
         // Tricky part: for arrays of classes/structs the following record allocates and array of class records
         // (because the payload reader can not load types, instantiate objects and rehydrate them)
@@ -48,14 +47,14 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         _canIterate = _arrayOfT.Length > 0;
     }
 
-    internal override Id Continue()
+    internal override SerializationRecordId Continue()
     {
         int[] indices = _indices;
         int[] lengths = _lengths;
 
         while (_canIterate)
         {
-            (object? memberValue, Id reference) = UnwrapMemberValue(_arrayOfClassRecords.GetValue(indices));
+            (object? memberValue, SerializationRecordId reference) = UnwrapMemberValue(_arrayOfClassRecords.GetValue(indices));
 
             if (s_missingValueSentinel == memberValue)
             {
@@ -67,7 +66,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
             {
                 // Need to track a fixup for this index.
                 _hasFixups = true;
-                Deserializer.PendValueUpdater(new ArrayUpdater(_arrayRecord.ObjectId, reference, indices.ToArray()));
+                Deserializer.PendValueUpdater(new ArrayUpdater(_arrayRecord.Id, reference, indices.ToArray()));
             }
 
             _arrayOfT.SetValue(memberValue, indices);
@@ -95,41 +94,36 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
 
         if (!_hasFixups)
         {
-            Deserializer.CompleteObject(_arrayRecord.ObjectId);
+            Deserializer.CompleteObject(_arrayRecord.Id);
         }
 
-        return Id.Null;
+        return default(SerializationRecordId);
     }
 
     internal static Array GetArraySinglePrimitive(SerializationRecord record) => record switch
     {
-        ArrayRecord<bool> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<byte> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<sbyte> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<char> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<short> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<ushort> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<int> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<uint> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<long> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<ulong> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<float> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<double> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<decimal> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<DateTime> primitiveArray => primitiveArray.GetArray(),
-        ArrayRecord<TimeSpan> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<bool> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<byte> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<sbyte> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<char> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<short> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<ushort> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<int> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<uint> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<long> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<ulong> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<float> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<double> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<decimal> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<DateTime> primitiveArray => primitiveArray.GetArray(),
+        SZArrayRecord<TimeSpan> primitiveArray => primitiveArray.GetArray(),
         _ => throw new NotSupportedException(),
     };
 
     [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.BinaryFormattedObject.TypeResolver.GetType(TypeName)")]
     internal static Array? GetSimpleBinaryArray(ArrayRecord arrayRecord, BinaryFormattedObject.ITypeResolver typeResolver)
     {
-        if (arrayRecord.ArrayType is not (BinaryArrayType.Single or BinaryArrayType.Jagged or BinaryArrayType.Rectangular))
-        {
-            throw new NotSupportedException(SR.NotSupported_NonZeroOffsets);
-        }
-
-        Type arrayRecordElementType = typeResolver.GetType(arrayRecord.ElementTypeName);
+        Type arrayRecordElementType = typeResolver.GetType(arrayRecord.TypeName.GetElementType());
         Type elementType = arrayRecordElementType;
         while (elementType.IsArray)
         {
@@ -142,10 +136,10 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
             return null;
         }
 
-        Type expectedArrayType = arrayRecord.ArrayType switch
+        Type expectedArrayType = arrayRecord.Rank switch
         {
-            BinaryArrayType.Rectangular => arrayRecordElementType.MakeArrayType(arrayRecord.Rank),
-            _ => arrayRecordElementType.MakeArrayType()
+            1 => arrayRecordElementType.MakeArrayType(),
+            _ => arrayRecordElementType.MakeArrayType(arrayRecord.Rank)
         };
 
         return arrayRecord.GetArray(expectedArrayType);

@@ -4,7 +4,7 @@
 using System.Resources.Extensions.Tests.Common.TestTypes;
 using System.Resources.Extensions.Tests.FormattedObject;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Text;
 
 namespace System.Resources.Extensions.Tests.Common;
@@ -114,7 +114,7 @@ public class CorruptedTests : SerializationTest<FormattedObjectSerializer>
         WriteMemberReference(writer, NextClassId);
         WriteMemberReference(writer, NextClassId);
         // ClassWithId
-        writer.Write((byte)RecordType.ClassWithId);
+        writer.Write((byte)SerializationRecordType.ClassWithId);
         writer.Write(NextClassId); // id
         writer.Write(ClassId); // id of the class that provides metadata
         WriteMemberReference(writer, ClassId);

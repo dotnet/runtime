@@ -2477,9 +2477,7 @@ public:
             // After the allocation pass, this contains the actual assignment
             SingleTypeRegSet registerAssignment;
         };
-#ifdef HAS_MORE_THAN_64_REGISTERS
-        regMaskTP killRegisterAssignment;
-#endif
+        regMaskTP killedRegisters;
     };
     unsigned int bbNum;
 
@@ -2662,14 +2660,10 @@ public:
         return referent->registerType;
     }
 
-    regMaskTP getKillRegisterAssignment()
+    regMaskTP getKilledRegisters()
     {
         assert(refType == RefTypeKill);
-#ifdef HAS_MORE_THAN_64_REGISTERS
-        return killRegisterAssignment;
-#else
-        return registerAssignment;
-#endif
+        return killedRegisters;
     }
 
     // Returns true if it is a reference on a GenTree node.

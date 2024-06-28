@@ -113,7 +113,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			SubstitutionProvider substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
-			ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider);
+			ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 

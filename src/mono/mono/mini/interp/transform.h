@@ -522,7 +522,7 @@ void
 interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock *to);
 
 int
-interp_compute_native_offset_estimates (TransformData *td);
+interp_compute_native_offset_estimates (TransformData *td, gboolean final_code);
 
 void
 interp_optimize_code (TransformData *td);

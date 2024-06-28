@@ -273,7 +273,7 @@ namespace System
 
         bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
         {
-            // See explanation in StringEqualityComparer.Equals.
+            // See explanation in OrdinalComparer.Equals.
             if (span.IsEmpty && target is null)
             {
                 return false;
@@ -377,7 +377,15 @@ namespace System
 
         bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
         {
-            // See explanation in StringEqualityComparer.Equals.
+            // Dictionary<string, TValue> does not permit null keys, but it does permit string.Empty keys,
+            // so we'd like for ReadOnlySpan<char>.Empty (which contains a null ref) to map to string.Empty.
+            // However, HashSet<string> permits both string.Empty and null string keys, and ReadOnlySpan<char>.Empty
+            // shouldn't map to both, as that would break HashSet<string> lookups (e.g. the HashSet<string> could contain
+            // both null and empty strings, which are not equal to each other, yet removing a
+            // ReadOnlySpan<char>.Empty would only remove one of them?). That means we need to pick whether
+            // ReadOnlySpan<char>.Empty is equivalent to string empty or null, and because of dictionary, we
+            // should pick empty. That means if the span is empty (whether or not is has a null reference),
+            // this should return false if the target string is null.
             if (span.IsEmpty && target is null)
             {
                 return false;
@@ -443,7 +451,7 @@ namespace System
 
         bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
         {
-            // See explanation in StringEqualityComparer.Equals.
+            // See explanation in OrdinalComparer.Equals.
             if (span.IsEmpty && target is null)
             {
                 return false;
@@ -525,7 +533,7 @@ namespace System
 
         bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
         {
-            // See explanation in StringEqualityComparer.Equals.
+            // See explanation in OrdinalComparer.Equals.
             if (span.IsEmpty && target is null)
             {
                 return false;

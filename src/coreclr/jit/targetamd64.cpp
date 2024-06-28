@@ -105,13 +105,12 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
     {
         if (varTypeIsStruct(type))
         {
-            info.NumSegments = structDesc.eightByteCount;
-            info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[structDesc.eightByteCount];
+            info = ABIPassingInformation(comp, structDesc.eightByteCount);
 
             for (unsigned i = 0; i < structDesc.eightByteCount; i++)
             {
                 regNumber reg = structDesc.IsIntegralSlot(i) ? m_intRegs.Dequeue() : m_floatRegs.Dequeue();
-                info.Segments[i] =
+                info.Segment(i) =
                     ABIPassingSegment::InRegister(reg, structDesc.eightByteOffsets[i], structDesc.eightByteSizes[i]);
             }
         }

@@ -119,7 +119,6 @@ typedef DPTR(struct FailedAssembly)     PTR_FailedAssembly;
 typedef VPTR(class EditAndContinueModule) PTR_EditAndContinueModule;
 typedef DPTR(class EEClass)             PTR_EEClass;
 typedef DPTR(class DelegateEEClass)     PTR_DelegateEEClass;
-typedef DPTR(struct DomainLocalModule)  PTR_DomainLocalModule;
 typedef VPTR(class EECodeManager)       PTR_EECodeManager;
 typedef DPTR(class RangeSectionMap)     PTR_RangeSectionMap;
 typedef DPTR(class EEConfig)            PTR_EEConfig;
@@ -201,15 +200,6 @@ Thread * const CURRENT_THREAD = NULL;
 #ifndef DACCESS_COMPILE
 EXTERN_C AppDomain* STDCALL GetAppDomain();
 #endif //!DACCESS_COMPILE
-
-inline void RetailBreak()
-{
-#ifdef TARGET_X86
-    __asm int 3
-#else
-    DebugBreak();
-#endif
-}
 
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
 

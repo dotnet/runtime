@@ -198,6 +198,8 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
 extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode);
 
+extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
+
 extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers();
 #ifdef FEATURE_BASICFREEZE
 extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void *pSection, SIZE_T sizeSection);
@@ -245,6 +247,7 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
+    static FCDECL1(CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);

@@ -1244,10 +1244,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         // By this point, lowering has ensured that all call arguments are one of the following:
-        // - an arg setup store
-        // - an arg placeholder
-        // - a nop
-        // - a copy blk
         // - a field list
         // - a put arg
         //
@@ -2272,6 +2268,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_Vector128_AsVector128Unsafe:
             case NI_Vector128_AsVector2:
             case NI_Vector128_AsVector3:
             case NI_Vector128_ToVector256:
@@ -2455,16 +2452,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX10v1_FusedMultiplyAddScalar:
             case NI_AVX10v1_FusedMultiplySubtractNegatedScalar:
             case NI_AVX10v1_FusedMultiplySubtractScalar:
-            case NI_AVX10v1_MultiplyAdd:
-            case NI_AVX10v1_MultiplyAddNegated:
-            case NI_AVX10v1_MultiplyAddNegatedScalar:
-            case NI_AVX10v1_MultiplyAddScalar:
-            case NI_AVX10v1_MultiplyAddSubtract:
-            case NI_AVX10v1_MultiplySubtract:
-            case NI_AVX10v1_MultiplySubtractAdd:
-            case NI_AVX10v1_MultiplySubtractNegated:
-            case NI_AVX10v1_MultiplySubtractNegatedScalar:
-            case NI_AVX10v1_MultiplySubtractScalar:
             {
                 assert((numArgs == 3) || (intrinsicTree->OperIsEmbRoundingEnabled()));
                 assert(isRMW);
@@ -2809,7 +2796,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
                 else if (isRMW)
                 {
-                    if (!op2->isContained() && HWIntrinsicInfo::IsCommutative(intrinsicId))
+                    if (!op2->isContained() && intrinsicTree->isCommutativeHWIntrinsic())
                     {
                         // When op2 is not contained and we are commutative, we can set op2
                         // to also be a tgtPrefUse. Codegen will then swap the operands.

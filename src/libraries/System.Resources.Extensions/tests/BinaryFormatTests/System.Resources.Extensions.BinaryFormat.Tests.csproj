@@ -38,18 +38,20 @@
     <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
     <ProjectReference Include="..\..\src\System.Resources.Extensions.csproj" />
     <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="$(SystemRuntimeSerializationFormattersVersion)" />
   </ItemGroup>
-  
-  <!-- when System.Runtime.Serialization.BinaryFormat gets approved, this whole block will be repalced with a reference to package -->
+
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)\System.Runtime.Serialization.BinaryFormat\src\**\*.cs" LinkBase="System.Runtime.Serialization.BinaryFormat" />
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.IO.Hashing\src\System.IO.Hashing.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)\System.Resources.Extensions\src\System\Resources\Extensions\BinaryFormat\**\*.cs" LinkBase="System.Resources.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\System.Formats.Nrbf\src\System\Formats\Nrbf\PrimitiveType.cs" Link="PrimitiveType.cs" />
+    <Compile Include="..\..\..\System.Formats.Nrbf\src\System\Formats\Nrbf\BinaryType.cs" Link="BinaryType.cs" />
   </ItemGroup>
 
 </Project>

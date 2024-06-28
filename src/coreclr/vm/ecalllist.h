@@ -54,10 +54,6 @@ FCFuncStart(gDependentHandleFuncs)
     FCFuncElement("InternalFree",                  DependentHandle::InternalFree)
 FCFuncEnd()
 
-FCFuncStart(gEnumFuncs)
-    FCFuncElement("InternalGetCorElementType",  ReflectionEnum::InternalGetCorElementType)
-FCFuncEnd()
-
 FCFuncStart(gObjectFuncs)
     FCFuncElement("GetType", ObjectNative::GetClass)
 FCFuncEnd()
@@ -362,7 +358,6 @@ FCFuncEnd()
 FCFuncStart(gArrayFuncs)
     FCFuncElement("GetCorElementTypeOfElementType", ArrayNative::GetCorElementTypeOfElementType)
     FCFuncElement("IsSimpleCopy", ArrayNative::IsSimpleCopy)
-    FCFuncElement("InternalSetValue", ArrayNative::SetValue)
 FCFuncEnd()
 
 FCFuncStart(gBufferFuncs)
@@ -439,8 +434,6 @@ FCFuncStart(gMonitorFuncs)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeHelpers)
-    FCFuncElement("InitializeArray", ArrayNative::InitializeArray)
-    FCFuncElement("GetSpanDataFrom", ArrayNative::GetSpanDataFrom)
     FCFuncElement("PrepareDelegate", ReflectionInvocation::PrepareDelegate)
     FCFuncElement("GetHashCode", ObjectNative::GetHashCode)
     FCFuncElement("TryGetHashCode", ObjectNative::TryGetHashCode)
@@ -455,6 +448,7 @@ FCFuncEnd()
 
 FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
+    FCFuncElement("GetPrimitiveCorElementType", MethodTableNative::GetPrimitiveCorElementType)
 FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)
@@ -479,9 +473,6 @@ FCFuncStart(gStubHelperFuncs)
     FCFuncElement("ValidateByref", StubHelpers::ValidateByref)
     FCFuncElement("LogPinnedArgument", StubHelpers::LogPinnedArgument)
     FCFuncElement("GetStubContext", StubHelpers::GetStubContext)
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-    FCFuncElement("ArrayTypeCheck", StubHelpers::ArrayTypeCheck)
-#endif //FEATURE_ARRAYSTUB_AS_IL
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     FCFuncElement("MulticastDebuggerTraceHelper", StubHelpers::MulticastDebuggerTraceHelper)
 #endif //FEATURE_MULTICASTSTUB_AS_IL
@@ -545,7 +536,6 @@ FCClassElement("ComAwareWeakReference", "System", gComAwareWeakReferenceFuncs)
 FCClassElement("Debugger", "System.Diagnostics", gDiagnosticsDebugger)
 FCClassElement("Delegate", "System", gDelegateFuncs)
 FCClassElement("DependentHandle", "System.Runtime", gDependentHandleFuncs)
-FCClassElement("Enum", "System", gEnumFuncs)
 FCClassElement("Environment", "System", gEnvironmentFuncs)
 FCClassElement("Exception", "System", gExceptionFuncs)
 FCClassElement("GC", "System", gGCInterfaceFuncs)

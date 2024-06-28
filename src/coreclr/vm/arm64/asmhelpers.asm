@@ -46,8 +46,8 @@
     IMPORT $g_GCShadowEnd
 #endif // WRITE_BARRIER_CHECK
 
-    IMPORT JIT_GetSharedNonGCStaticBase_Helper
-    IMPORT JIT_GetSharedGCStaticBase_Helper
+    IMPORT JIT_GetDynamicNonGCStaticBase_Portable
+    IMPORT JIT_GetDynamicGCStaticBase_Portable
 
 #ifdef FEATURE_COMINTEROP
     IMPORT CLRToCOMWorker
@@ -1026,58 +1026,34 @@ Fail
 ;
 
 ; ------------------------------------------------------------------
-; void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain
+; void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo *dynamicInfo)
+
+    LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1]
-    tst w2, #1
-    beq CallHelper1
-
+    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
+    tbnz x1, #0, CallHelper1
+    mov x0, x1
     ret lr
 
 CallHelper1
-    ; Tail call JIT_GetSharedNonGCStaticBase_Helper
-    b JIT_GetSharedNonGCStaticBase_Helper
+    ; Tail call JIT_GetDynamicNonGCStaticBase_Portable
+    b JIT_GetDynamicNonGCStaticBase_Portable
     LEAF_END
 
+; void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo *dynamicInfo)
 
-; ------------------------------------------------------------------
-; void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-    ret lr
-    LEAF_END
-
-
-; ------------------------------------------------------------------
-; void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain
+    LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1]
-    tst w2, #1
-    beq CallHelper2
-
-    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
+    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
+    tbnz x1, #0, CallHelper2
+    mov x0, x1
     ret lr
 
 CallHelper2
-    ; Tail call Jit_GetSharedGCStaticBase_Helper
-    b JIT_GetSharedGCStaticBase_Helper
+    ; Tail call JIT_GetDynamicGCStaticBase_Portable
+    b JIT_GetDynamicGCStaticBase_Portable
     LEAF_END
-
-
-; ------------------------------------------------------------------
-; void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
-    ret lr
-    LEAF_END
-
 
 ; ------------------------------------------------------------------
 ; __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)

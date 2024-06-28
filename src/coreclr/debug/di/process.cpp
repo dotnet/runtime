@@ -6996,7 +6996,7 @@ HRESULT CordbProcess::RefreshPatchTable(CORDB_ADDRESS address, SIZE_T size, BYTE
                     if (IsPatchInRequestedRange(address, size, patchAddress))
                     {
                         _ASSERTE( buffer != NULL );
-                        _ASSERTE( size != NULL );
+                        _ASSERTE( size != 0 );
 
 
                         //unapply the patch here.
@@ -10405,8 +10405,8 @@ void CordbRCEventThread::ThreadProc()
     unsigned int   waitCount;
 
 #ifdef _DEBUG
-    memset(&rgProcessSet, NULL, MAXIMUM_WAIT_OBJECTS * sizeof(CordbProcess *));
-    memset(&waitSet, NULL, MAXIMUM_WAIT_OBJECTS * sizeof(HANDLE));
+    memset(&rgProcessSet, 0, MAXIMUM_WAIT_OBJECTS * sizeof(CordbProcess *));
+    memset(&waitSet, 0, MAXIMUM_WAIT_OBJECTS * sizeof(HANDLE));
 #endif
 
 

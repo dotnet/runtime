@@ -1,28 +1,126 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
-using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
+        public static unsafe void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
+        {
+            if (array is null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void* GetSpanDataFrom(
+            if (fldHandle.IsNullHandle())
+                throw new ArgumentException(SR.Argument_InvalidHandle);
+
+            IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
+
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out void* address, out uint size))
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            // Note that we do not check that the field is actually in the PE file that is initializing
+            // the array. Basically, the data being published can be accessed by anyone with the proper
+            // permissions (C# marks these as assembly visibility, and thus are protected from outside
+            // snooping)
+
+            MethodTable* pMT = GetMethodTable(array);
+            TypeHandle elementTH = pMT->GetArrayElementTypeHandle();
+
+            if (elementTH.IsTypeDesc || !elementTH.AsMethodTable()->IsPrimitive) // Enum is included
+                throw new ArgumentException(SR.Argument_BadArrayForInitializeArray);
+
+            nuint totalSize = pMT->ComponentSize * array.NativeLength;
+
+            // make certain you don't go off the end of the rva static
+            if (totalSize > size)
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            ref byte src = ref *(byte*)address; // Ref is extending the lifetime of the static field.
+            GC.KeepAlive(fldInfo);
+
+            ref byte dst = ref MemoryMarshal.GetArrayDataReference(array);
+
+            Debug.Assert(!elementTH.AsMethodTable()->ContainsGCPointers);
+
+            if (BitConverter.IsLittleEndian)
+            {
+                SpanHelpers.Memmove(ref dst, ref src, totalSize);
+            }
+            else
+            {
+                switch (pMT->ComponentSize)
+                {
+                    case sizeof(byte):
+                        SpanHelpers.Memmove(ref dst, ref src, totalSize);
+                        break;
+                    case sizeof(ushort):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<ushort>(ref Unsafe.As<byte, ushort>(ref src), array.Length),
+                            new Span<ushort>(ref Unsafe.As<byte, ushort>(ref dst), array.Length));
+                        break;
+                    case sizeof(uint):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<uint>(ref Unsafe.As<byte, uint>(ref src), array.Length),
+                            new Span<uint>(ref Unsafe.As<byte, uint>(ref dst), array.Length));
+                        break;
+                    case sizeof(ulong):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<ulong>(ref Unsafe.As<byte, ulong>(ref src), array.Length),
+                            new Span<ulong>(ref Unsafe.As<byte, ulong>(ref dst), array.Length));
+                        break;
+                    default:
+                        Debug.Fail("Incorrect primitive type size!");
+                        break;
+                }
+            }
+        }
+
+        private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
-            out int count);
+            out int count)
+        {
+            if (fldHandle.IsNullHandle())
+                throw new ArgumentException(SR.Argument_InvalidHandle);
+
+            IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
+
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out void* data, out uint totalSize))
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            TypeHandle th = targetTypeHandle.GetNativeTypeHandle();
+            Debug.Assert(!th.IsTypeDesc); // TypeDesc can't be used as generic parameter
+            MethodTable* targetMT = th.AsMethodTable();
+
+            if (!targetMT->IsPrimitive) // Enum is included
+                throw new ArgumentException(SR.Argument_BadArrayForInitializeArray);
+
+            uint targetTypeSize = targetMT->GetNumInstanceFieldBytes();
+            Debug.Assert(uint.IsPow2(targetTypeSize));
+
+            if (((nuint)data & (targetTypeSize - 1)) != 0)
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            if (!BitConverter.IsLittleEndian)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            count = (int)(totalSize / targetTypeSize);
+            ref byte dataRef = ref *(byte*)data; // Ref is extending the lifetime of the static field.
+            GC.KeepAlive(fldInfo);
+
+            return ref dataRef;
+        }
 
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
         // but have aliasing behavior of a value class.  The intent is that you would use
@@ -655,6 +753,8 @@ namespace System.Runtime.CompilerServices
         // Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
         public bool IsPrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_PrimitiveValueType or enum_flag_Category_TruePrimitive;
 
+        public bool IsTruePrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_TruePrimitive;
+
         public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
 
         public bool IsGenericTypeDefinition => (Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == enum_flag_GenericsMask_TypicalInst;
@@ -684,6 +784,13 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern uint GetNumInstanceFieldBytes();
+
+        /// <summary>
+        /// Get the <see cref="CorElementType"/> representing primitive-like type. Enums are represented by underlying type.
+        /// </summary>
+        /// <remarks>This method should only be called when <see cref="IsPrimitive"/> returns <see langword="true"/>.</remarks>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern CorElementType GetPrimitiveCorElementType();
     }
 
     // Subset of src\vm\methodtable.h
@@ -693,8 +800,8 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(0)]
         private uint Flags;
 
-        private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0001;     // Is any field type or sub field type overrode Equals or GetHashCode
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
+        private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
 
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
 
