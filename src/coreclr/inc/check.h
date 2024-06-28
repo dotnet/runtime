@@ -162,7 +162,6 @@ public: // !!! NOTE: Called from macros only!!!
 #endif
 };
 
-
 //--------------------------------------------------------------------------------
 // These CHECK macros are the correct way to propagate an assertion.  These
 // routines are designed for use inside "Check" routines.  Such routines may
@@ -535,10 +534,8 @@ CHECK CheckValue(TYPENAME &val)
 
 #endif // _PREFAST_ || _PREFIX_
 
-
 #define COMPILER_ASSUME(_condition) \
     COMPILER_ASSUME_MSG(_condition, "")
-
 
 //--------------------------------------------------------------------------------
 // PREFIX_ASSUME_MSG and PREFAST_ASSUME_MSG are just another name
@@ -576,18 +573,17 @@ CHECK CheckValue(TYPENAME &val)
 #define UNREACHABLE() \
     UNREACHABLE_MSG("")
 
-#ifdef __llvm__
+#define UNREACHABLE_RET() \
+  do {                    \
+    UNREACHABLE();        \
+    return 0;             \
+  } while (0)
 
-// LLVM complains if a function does not return what it says.
-#define UNREACHABLE_RET() do { UNREACHABLE(); return 0; } while (0)
-#define UNREACHABLE_MSG_RET(_message) UNREACHABLE_MSG(_message); return 0;
-
-#else // __llvm__
-
-#define UNREACHABLE_RET() UNREACHABLE()
-#define UNREACHABLE_MSG_RET(_message) UNREACHABLE_MSG(_message)
-
-#endif // __llvm__ else
+#define UNREACHABLE_MSG_RET(_message) \
+  do {                                \
+    UNREACHABLE_MSG(_message);        \
+    return 0;                         \
+  } while (0)
 
 #ifdef _DEBUG_IMPL
 
@@ -605,7 +601,6 @@ CHECK CheckValue(TYPENAME &val)
 #define UNREACHABLE_MSG(_message) __UNREACHABLE()
 
 #endif
-
 
 //--------------------------------------------------------------------------------
 // STRESS_CHECK represents a check which is included in a free build
@@ -703,8 +698,6 @@ CHECK CheckValue(TYPENAME &val)
 #define CCHECK_FAILF    CHECK_FAILF
 
 #endif
-
-
 
 //--------------------------------------------------------------------------------
 // Common base level checks

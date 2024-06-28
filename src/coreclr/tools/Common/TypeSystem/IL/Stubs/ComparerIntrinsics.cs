@@ -240,6 +240,9 @@ namespace Internal.IL.Stubs
             if (type.ContainsGCPointers)
                 return false;
 
+            if (type.IsInlineArray)
+                return false;
+
             if (type.IsGenericDefinition)
                 return false;
 

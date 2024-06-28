@@ -294,6 +294,7 @@ namespace System.Reflection.Emit
         }
     }
 
+    // The order of the enum values should match with the ModuleBuilderImpl.s_coreTypes array elements order.
     internal enum CoreTypeId
     {
         Void,
@@ -314,5 +315,6 @@ namespace System.Reflection.Emit
         IntPtr,
         UIntPtr,
         TypedReference,
+        ValueType
     }
 }

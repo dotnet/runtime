@@ -58,6 +58,10 @@ TailCallTls::TailCallTls()
 {
 }
 
+#ifndef _MSC_VER
+thread_local RuntimeThreadLocals t_runtime_thread_locals;
+#endif
+
 Thread* STDCALL GetThreadHelper()
 {
     return GetThreadNULLOk();
@@ -354,6 +358,7 @@ void SetThread(Thread* t)
     {
         InitializeCurrentThreadsStaticData(t);
         EnsureTlsDestructionMonitor();
+        t->InitRuntimeThreadLocals();
     }
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
@@ -957,6 +962,20 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
         m_ThreadHandleForClose = hThread;
     }
 
+    if (GCHeapUtilities::IsGCHeapInitialized())
+    {
+        // If the GC heap is initialized, we need to fix the alloc context for this detaching thread.
+        GCX_COOP();
+        // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
+        // however, there could be other threads terminating and doing the same Add.
+        InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, t_runtime_thread_locals.alloc_context.alloc_limit - t_runtime_thread_locals.alloc_context.alloc_ptr);
+        GCHeapUtilities::GetGCHeap()->FixAllocContext(&t_runtime_thread_locals.alloc_context, NULL, NULL);
+        t_runtime_thread_locals.alloc_context.init(); // re-initialize the context.
+
+        // Clear out the alloc context pointer for this thread. When TLS is gone, this pointer will point into freed memory.
+        m_pRuntimeThreadLocals = nullptr;
+    }
+
     // We need to make sure that TLS are touched last here.
     SetThread(NULL);
 
@@ -1365,7 +1384,7 @@ Thread::Thread()
 
     m_pBlockingLock = NULL;
 
-    m_alloc_context.init();
+    m_pRuntimeThreadLocals = nullptr;
     m_thAllocContextObj = 0;
 
     m_UserInterrupt = 0;
@@ -2826,14 +2845,14 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     {
         // Guaranteed to NOT be a shutdown case, because we tear down the heap before
         // we tear down any threads during shutdown.
-        if (ThisThreadID == CurrentThreadID)
+        if (ThisThreadID == CurrentThreadID && GetAllocContext() != nullptr)
         {
             GCX_COOP();
             // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
             // however, there could be other threads terminating and doing the same Add.
-            InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, m_alloc_context.alloc_limit - m_alloc_context.alloc_ptr);
-            GCHeapUtilities::GetGCHeap()->FixAllocContext(&m_alloc_context, NULL, NULL);
-            m_alloc_context.init();
+            InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, GetAllocContext()->alloc_limit - GetAllocContext()->alloc_ptr);
+            GCHeapUtilities::GetGCHeap()->FixAllocContext(GetAllocContext(), NULL, NULL);
+            GetAllocContext()->init(); // re-initialize the context.
         }
     }
 
@@ -2883,15 +2902,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             LOG((LF_SYNC, INFO3, "OnThreadTerminate obtain lock\n"));
             ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 
-        }
-
-        if  (GCHeapUtilities::IsGCHeapInitialized() && ThisThreadID != CurrentThreadID)
-        {
-            // We must be holding the ThreadStore lock in order to clean up alloc context.
-            // We should never call FixAllocContext during GC.
-            dead_threads_non_alloc_bytes += m_alloc_context.alloc_limit - m_alloc_context.alloc_ptr;
-            GCHeapUtilities::GetGCHeap()->FixAllocContext(&m_alloc_context, NULL, NULL);
-            m_alloc_context.init();
         }
 
         SetThreadState(TS_Dead);
@@ -7519,7 +7529,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
     // which holds the boxed value class, so dereference and unbox.
     if (pFD->IsByValue())
     {
-        _ASSERTE(result != NULL);
+        _ASSERTE(result != (TADDR)NULL);
         PTR_Object obj = *PTR_UNCHECKED_OBJECTREF(result);
         if (obj == NULL)
             return (TADDR)NULL;
@@ -7706,81 +7716,6 @@ UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCoun
     }
 
     return total;
-}
-
-INT32 Thread::ResetManagedThreadObject(INT32 nPriority)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-    return ResetManagedThreadObjectInCoopMode(nPriority);
-}
-
-INT32 Thread::ResetManagedThreadObjectInCoopMode(INT32 nPriority)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    THREADBASEREF pObject = (THREADBASEREF)ObjectFromHandle(m_ExposedObject);
-    if (pObject != NULL)
-    {
-        pObject->ResetName();
-        nPriority = pObject->GetPriority();
-    }
-
-    return nPriority;
-}
-
-void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeeded, BOOL fResetAbort)
-{
-    CONTRACTL {
-        NOTHROW;
-        if(!fNotFinalizerThread || fThreadObjectResetNeeded) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
-    }
-    CONTRACTL_END;
-
-    _ASSERTE (this == GetThread());
-
-    INT32 nPriority = ThreadNative::PRIORITY_NORMAL;
-
-    if (!fNotFinalizerThread && this == FinalizerThread::GetFinalizerThread())
-    {
-        nPriority = ThreadNative::PRIORITY_HIGHEST;
-    }
-
-    if(fThreadObjectResetNeeded)
-    {
-        nPriority = ResetManagedThreadObject(nPriority);
-    }
-
-    if (fResetAbort && IsAbortRequested()) {
-        UnmarkThreadForAbort();
-    }
-
-    if (IsThreadPoolThread() && fThreadObjectResetNeeded)
-    {
-        SetBackground(TRUE);
-        if (nPriority != ThreadNative::PRIORITY_NORMAL)
-        {
-            SetThreadPriority(THREAD_PRIORITY_NORMAL);
-        }
-    }
-    else if (!fNotFinalizerThread && this == FinalizerThread::GetFinalizerThread())
-    {
-        SetBackground(TRUE);
-        if (nPriority != ThreadNative::PRIORITY_HIGHEST)
-        {
-            SetThreadPriority(THREAD_PRIORITY_HIGHEST);
-        }
-    }
 }
 
 DeadlockAwareLock::DeadlockAwareLock(const char *description)

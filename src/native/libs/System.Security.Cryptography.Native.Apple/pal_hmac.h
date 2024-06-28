@@ -65,3 +65,10 @@ PALEXPORT int32_t AppleCryptoNative_HmacOneShot(PAL_HashAlgorithm algorithm,
                                                 uint8_t* pOutput,
                                                 int32_t cbOutput,
                                                 int32_t* pcbDigest);
+
+/*
+Clones the current HMAC context.
+
+Returns a handle to the new HMAC context, or NULL if the clone failed.
+*/
+PALEXPORT HmacCtx* AppleCryptoNative_HmacClone(const HmacCtx* ctx);

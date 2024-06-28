@@ -425,39 +425,6 @@ InternalExceptionWorker proc public
         jmp     @JIT_InternalThrow@4
 InternalExceptionWorker endp
 
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubNullException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_NullReferenceException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubNullException endp
-
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubRangeException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_IndexOutOfRangeException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubRangeException endp
-
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubTypeMismatchException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_ArrayTypeMismatchException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubTypeMismatchException endp
-
 ;------------------------------------------------------------------------------
 ; This helper routine enregisters the appropriate arguments and makes the
 ; actual call.

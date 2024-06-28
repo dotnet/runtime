@@ -83,7 +83,7 @@ struct InlinedThreadStaticRoot
     TypeManager* m_typeManager;
 };
 
-struct ThreadBuffer
+struct RuntimeThreadLocals
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
@@ -126,7 +126,7 @@ struct ReversePInvokeFrame
     Thread* m_savedThread;
 };
 
-class Thread : private ThreadBuffer
+class Thread : private RuntimeThreadLocals
 {
     friend class AsmOffsets;
     friend struct DefaultSListTraits<Thread>;
@@ -158,7 +158,7 @@ public:
                                                     // For suspension APCs it is mostly harmless, but wasteful and in extreme
                                                     // cases may force the target thread into stack oveflow.
                                                     // We use this flag to avoid sending another APC when one is still going through.
-                                                    // 
+                                                    //
                                                     // On Unix this is an optimization to not queue up more signals when one is
                                                     // still being processed.
     };

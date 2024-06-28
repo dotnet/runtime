@@ -265,7 +265,9 @@ namespace System.Net.Http.Headers
                 return true;
             }
 
-            var builder = new ValueStringBuilder(value.Length <= 128 ? stackalloc char[128] : new char[value.Length]);
+            var builder = value.Length <= 128 ?
+                new ValueStringBuilder(stackalloc char[128]) :
+                new ValueStringBuilder(value.Length);
 
             do
             {
@@ -276,6 +278,7 @@ namespace System.Net.Http.Headers
 
                 if ((value.Length - idx) < 3 || !TryReadAlpnHexDigit(value[1], out int hi) || !TryReadAlpnHexDigit(value[2], out int lo))
                 {
+                    builder.Dispose();
                     result = null;
                     return false;
                 }

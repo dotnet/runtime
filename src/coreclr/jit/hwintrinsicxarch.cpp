@@ -142,85 +142,82 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
 static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 {
     assert(className != nullptr);
+
     if (className[0] == 'A')
     {
         if (strcmp(className, "Aes") == 0)
         {
             return InstructionSet_AES;
         }
-        if (strcmp(className, "Avx") == 0)
+        else if (strncmp(className, "Avx", 3) == 0)
         {
-            return InstructionSet_AVX;
-        }
-        if (strcmp(className, "Avx2") == 0)
-        {
-            return InstructionSet_AVX2;
-        }
-        if (strcmp(className, "Avx512BW") == 0)
-        {
-            return InstructionSet_AVX512BW;
-        }
-        if (strcmp(className, "Avx512CD") == 0)
-        {
-            return InstructionSet_AVX512CD;
-        }
-        if (strcmp(className, "Avx512DQ") == 0)
-        {
-            return InstructionSet_AVX512DQ;
-        }
-        if (strcmp(className, "Avx512F") == 0)
-        {
-            return InstructionSet_AVX512F;
-        }
-        if (strcmp(className, "Avx512Vbmi") == 0)
-        {
-            return InstructionSet_AVX512VBMI;
-        }
-        if (strcmp(className, "AvxVnni") == 0)
-        {
-            return InstructionSet_AVXVNNI;
-        }
-        if (strcmp(className, "Avx10v1") == 0)
-        {
-            return InstructionSet_AVX10v1;
-        }
-    }
-    else if (className[0] == 'S')
-    {
-        if (strcmp(className, "Sse") == 0)
-        {
-            return InstructionSet_SSE;
-        }
-        if (strcmp(className, "Sse2") == 0)
-        {
-            return InstructionSet_SSE2;
-        }
-        if (strcmp(className, "Sse3") == 0)
-        {
-            return InstructionSet_SSE3;
-        }
-        if (strcmp(className, "Ssse3") == 0)
-        {
-            return InstructionSet_SSSE3;
-        }
-        if (strcmp(className, "Sse41") == 0)
-        {
-            return InstructionSet_SSE41;
-        }
-        if (strcmp(className, "Sse42") == 0)
-        {
-            return InstructionSet_SSE42;
+            if (className[3] == '\0')
+            {
+                return InstructionSet_AVX;
+            }
+            else if (strcmp(className + 3, "10v1") == 0)
+            {
+                return InstructionSet_AVX10v1;
+            }
+            else if (strcmp(className + 3, "2") == 0)
+            {
+                return InstructionSet_AVX2;
+            }
+            else if (strncmp(className + 3, "512", 3) == 0)
+            {
+                if (strcmp(className + 6, "BW") == 0)
+                {
+                    return InstructionSet_AVX512BW;
+                }
+                else if (strcmp(className + 6, "CD") == 0)
+                {
+                    return InstructionSet_AVX512CD;
+                }
+                else if (strcmp(className + 6, "DQ") == 0)
+                {
+                    return InstructionSet_AVX512DQ;
+                }
+                else if (strcmp(className + 6, "F") == 0)
+                {
+                    return InstructionSet_AVX512F;
+                }
+                else if (strcmp(className + 6, "Vbmi") == 0)
+                {
+                    return InstructionSet_AVX512VBMI;
+                }
+            }
+            else if (strcmp(className + 3, "Vnni") == 0)
+            {
+                return InstructionSet_AVXVNNI;
+            }
         }
     }
     else if (className[0] == 'B')
     {
-        if (strcmp(className, "Bmi1") == 0)
+        if (strncmp(className, "Bmi", 3) == 0)
         {
-            return InstructionSet_BMI1;
+            if (strcmp(className + 3, "1") == 0)
+            {
+                return InstructionSet_BMI1;
+            }
+            else if (strcmp(className + 3, "2") == 0)
+            {
+                return InstructionSet_BMI2;
+            }
         }
-        if (strcmp(className, "Bmi2") == 0)
+    }
+    else if (className[0] == 'F')
+    {
+        if (strcmp(className, "Fma") == 0)
         {
-            return InstructionSet_BMI2;
+            return InstructionSet_FMA;
+        }
+    }
+    else if (className[0] == 'L')
+    {
+        if (strcmp(className, "Lzcnt") == 0)
+        {
+            return InstructionSet_LZCNT;
         }
     }
     else if (className[0] == 'P')
@@ -229,24 +226,66 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             return InstructionSet_PCLMULQDQ;
         }
-        if (strcmp(className, "Popcnt") == 0)
+        else if (strcmp(className, "Popcnt") == 0)
         {
             return InstructionSet_POPCNT;
         }
     }
+    else if (className[0] == 'S')
+    {
+        if (strncmp(className, "Sse", 3) == 0)
+        {
+            if (className[3] == '\0')
+            {
+                return InstructionSet_SSE;
+            }
+            else if (strcmp(className + 3, "2") == 0)
+            {
+                return InstructionSet_SSE2;
+            }
+            else if (strcmp(className + 3, "3") == 0)
+            {
+                return InstructionSet_SSE3;
+            }
+            else if (strcmp(className + 3, "41") == 0)
+            {
+                return InstructionSet_SSE41;
+            }
+            else if (strcmp(className + 3, "42") == 0)
+            {
+                return InstructionSet_SSE42;
+            }
+        }
+        else if (strcmp(className, "Ssse3") == 0)
+        {
+            return InstructionSet_SSSE3;
+        }
+    }
     else if (className[0] == 'V')
     {
-        if (strncmp(className, "Vector128", 9) == 0)
+        if (strncmp(className, "Vector", 6) == 0)
         {
-            return InstructionSet_Vector128;
-        }
-        else if (strncmp(className, "Vector256", 9) == 0)
-        {
-            return InstructionSet_Vector256;
-        }
-        else if (strncmp(className, "Vector512", 9) == 0)
-        {
-            return InstructionSet_Vector512;
+            if (strncmp(className + 6, "128", 3) == 0)
+            {
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector128;
+                }
+            }
+            else if (strncmp(className + 6, "256", 3) == 0)
+            {
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector256;
+                }
+            }
+            else if (strncmp(className + 6, "512", 3) == 0)
+            {
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector512;
+                }
+            }
         }
         else if (strcmp(className, "VL") == 0)
         {
@@ -254,21 +293,16 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             return InstructionSet_ILLEGAL;
         }
     }
-    else if (strcmp(className, "Fma") == 0)
+    else if (strncmp(className, "X86", 3) == 0)
     {
-        return InstructionSet_FMA;
-    }
-    else if (strcmp(className, "Lzcnt") == 0)
-    {
-        return InstructionSet_LZCNT;
-    }
-    else if (strcmp(className, "X86Base") == 0)
-    {
-        return InstructionSet_X86Base;
-    }
-    else if (strcmp(className, "X86Serialize") == 0)
-    {
-        return InstructionSet_X86Serialize;
+        if (strcmp(className + 3, "Base") == 0)
+        {
+            return InstructionSet_X86Base;
+        }
+        else if (strcmp(className + 3, "Serialize") == 0)
+        {
+            return InstructionSet_X86Serialize;
+        }
     }
 
     return InstructionSet_ILLEGAL;
@@ -287,25 +321,35 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
 {
     assert(className != nullptr);
 
-    if (strcmp(className, "X64") == 0)
+    if (enclosingClassName == nullptr)
     {
-        assert(enclosingClassName != nullptr);
-        return X64VersionOfIsa(lookupInstructionSet(enclosingClassName));
-    }
-    else if (strcmp(className, "VL") == 0)
-    {
-        assert(enclosingClassName != nullptr);
-        return VLVersionOfIsa(lookupInstructionSet(enclosingClassName));
-    }
-    else if (strcmp(className, "V512") == 0)
-    {
-        assert(enclosingClassName != nullptr);
-        return V512VersionOfIsa(lookupInstructionSet(enclosingClassName));
-    }
-    else
-    {
+        // No nested class is the most common, so fast path it
         return lookupInstructionSet(className);
     }
+
+    // Since lookupId is only called for the xplat intrinsics
+    // or intrinsics in the platform specific namespace, we assume
+    // that it will be one we can handle and don't try to early out.
+
+    CORINFO_InstructionSet enclosingIsa = lookupInstructionSet(enclosingClassName);
+
+    if (className[0] == 'V')
+    {
+        if (strcmp(className, "V512") == 0)
+        {
+            return V512VersionOfIsa(enclosingIsa);
+        }
+        else if (strcmp(className, "VL") == 0)
+        {
+            return VLVersionOfIsa(enclosingIsa);
+        }
+    }
+    else if (strcmp(className, "X64") == 0)
+    {
+        return X64VersionOfIsa(enclosingIsa);
+    }
+
+    return InstructionSet_ILLEGAL;
 }
 
 //------------------------------------------------------------------------
@@ -970,8 +1014,8 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
             static_assert_no_msg(NI_AVX512F_RotateLeftVariable == (NI_AVX512F_RotateLeft + 1));
             static_assert_no_msg(NI_AVX512F_RotateRightVariable == (NI_AVX512F_RotateRight + 1));
             static_assert_no_msg(NI_AVX512F_VL_RotateLeftVariable == (NI_AVX512F_VL_RotateLeft + 1));
-            static_assert_no_msg(NI_AVX10v1_RotateLeftVariable == (NI_AVX10v1_RotateLeft + 1));
             static_assert_no_msg(NI_AVX512F_VL_RotateRightVariable == (NI_AVX512F_VL_RotateRight + 1));
+            static_assert_no_msg(NI_AVX10v1_RotateLeftVariable == (NI_AVX10v1_RotateLeft + 1));
             static_assert_no_msg(NI_AVX10v1_RotateRightVariable == (NI_AVX10v1_RotateRight + 1));
 
             impSpillSideEffect(true,
@@ -1276,6 +1320,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
+            break;
+        }
+
+        case NI_Vector128_AsVector128Unsafe:
+        {
+            assert(sig->numArgs == 1);
+            assert(retType == TYP_SIMD16);
+            assert(simdBaseJitType == CORINFO_TYPE_FLOAT);
+            assert((simdSize == 8) || (simdSize == 12));
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_AsVector128Unsafe, simdBaseJitType, simdSize);
             break;
         }
 

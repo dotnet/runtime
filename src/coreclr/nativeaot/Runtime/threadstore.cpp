@@ -431,13 +431,13 @@ FCIMPL1(void, RhpCancelThreadAbort, void* thread)
 }
 FCIMPLEND
 
-C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
+C_ASSERT(sizeof(Thread) == sizeof(RuntimeThreadLocals));
 
 #ifndef _MSC_VER
-__thread ThreadBuffer tls_CurrentThread;
+__thread RuntimeThreadLocals tls_CurrentThread;
 #endif
 
-EXTERN_C ThreadBuffer* RhpGetThread()
+EXTERN_C RuntimeThreadLocals* RhpGetThread()
 {
     return &tls_CurrentThread;
 }

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Nrbf.Utils;
 using System.IO;
-using System.IO.Hashing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -47,16 +46,7 @@ public readonly struct SerializationRecordId : IEquatable<SerializationRecordId>
     public override bool Equals(object? obj) => obj is SerializationRecordId other && Equals(other);
 
     /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        int id = _id;
-#if NET
-        Span<int> integers = new(ref id);
-#else
-        Span<int> integers = stackalloc int[1] { id };
-#endif
-        return (int)XxHash32.HashToUInt32(MemoryMarshal.AsBytes(integers));
-    }
+    public override int GetHashCode() => HashCode.Combine(_id);
 
     internal bool IsDefault => _id == default;
 }

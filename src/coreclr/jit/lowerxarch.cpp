@@ -1303,7 +1303,7 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerFusedMultiplyAdd: Changes NI_FMA_MultiplyAddScalar / NI_AVX10v1_MultiplyAddScalar produced
+// LowerFusedMultiplyAdd: Changes NI_FMA_MultiplyAddScalar produced
 //     by Math(F).FusedMultiplyAdd to a better FMA intrinsics if there are GT_NEG around in order
 //     to eliminate them.
 //
@@ -1311,22 +1311,21 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 //     node - The hardware intrinsic node
 //
 //  Notes:
-//     Math(F).FusedMultiplyAdd is expanded into NI_FMA_MultiplyAddScalar / NI_AVX10v1_MultiplyAddScalar and
+//     Math(F).FusedMultiplyAdd is expanded into NI_FMA_MultiplyAddScalar and
 //     depending on additional GT_NEG nodes around it can be:
 //
-//      x *  y + z -> NI_FMA_MultiplyAddScalar / NI_AVX10v1_MultiplyAddScalar
-//      x * -y + z -> NI_FMA_MultiplyAddNegatedScalar / NI_AVX10v1_MultiplyAddNegatedScalar
-//     -x *  y + z -> NI_FMA_MultiplyAddNegatedScalar / NI_AVX10v1_MultiplyAddNegatedScalar
-//     -x * -y + z -> NI_FMA_MultiplyAddScalar / NI_AVX10v1_MultiplyAddScalar
-//      x *  y - z -> NI_FMA_MultiplySubtractScalar / NI_AVX10v1_MultiplySubtractScalar
-//      x * -y - z -> NI_FMA_MultiplySubtractNegatedScalar / NI_AVX10v1_MultiplySubtractNegatedScalar
-//     -x *  y - z -> NI_FMA_MultiplySubtractNegatedScalar / NI_AVX10v1_MultiplySubtractNegatedScalar
-//     -x * -y - z -> NI_FMA_MultiplySubtractScalar / NI_AVX10v1_MultiplySubtractScalar
+//      x *  y + z -> NI_FMA_MultiplyAddScalar
+//      x * -y + z -> NI_FMA_MultiplyAddNegatedScalar
+//     -x *  y + z -> NI_FMA_MultiplyAddNegatedScalar
+//     -x * -y + z -> NI_FMA_MultiplyAddScalar
+//      x *  y - z -> NI_FMA_MultiplySubtractScalar
+//      x * -y - z -> NI_FMA_MultiplySubtractNegatedScalar
+//     -x *  y - z -> NI_FMA_MultiplySubtractNegatedScalar
+//     -x * -y - z -> NI_FMA_MultiplySubtractScalar
 //
 void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
 {
-    assert((node->GetHWIntrinsicId() == NI_FMA_MultiplyAddScalar) ||
-           (node->GetHWIntrinsicId() == NI_AVX10v1_MultiplyAddScalar));
+    assert(node->GetHWIntrinsicId() == NI_FMA_MultiplyAddScalar);
     GenTreeHWIntrinsic* createScalarOps[3];
 
     for (size_t i = 1; i <= 3; i++)
@@ -1370,26 +1369,11 @@ void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
         createScalarOps[2]->Op(1)->ClearContained();
         ContainCheckHWIntrinsic(createScalarOps[2]);
 
-        if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-        {
-            node->ChangeHWIntrinsicId(negMul ? NI_AVX10v1_MultiplySubtractNegatedScalar
-                                             : NI_AVX10v1_MultiplySubtractScalar);
-        }
-        else
-        {
-            node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplySubtractNegatedScalar : NI_FMA_MultiplySubtractScalar);
-        }
+        node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplySubtractNegatedScalar : NI_FMA_MultiplySubtractScalar);
     }
     else
     {
-        if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-        {
-            node->ChangeHWIntrinsicId(negMul ? NI_AVX10v1_MultiplyAddNegatedScalar : NI_AVX10v1_MultiplyAddScalar);
-        }
-        else
-        {
-            node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplyAddNegatedScalar : NI_FMA_MultiplyAddScalar);
-        }
+        node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplyAddNegatedScalar : NI_FMA_MultiplyAddScalar);
     }
 }
 
@@ -2150,7 +2134,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
 
         case NI_FMA_MultiplyAddScalar:
-        case NI_AVX10v1_MultiplyAddScalar:
             LowerFusedMultiplyAdd(node);
             break;
 
@@ -4908,7 +4891,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
             NamedIntrinsic extractIntrinsicId = NI_AVX512F_ExtractVector128;
 
-            if ((genTypeSize(simdBaseType) == 8) && !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+            if ((genTypeSize(simdBaseType) == 8) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
             {
                 extractIntrinsicId = NI_AVX512DQ_ExtractVector128;
             }
@@ -5192,7 +5175,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
             NamedIntrinsic extractIntrinsicId = NI_AVX512F_ExtractVector128;
 
-            if ((genTypeSize(simdBaseType) == 8) && !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+            if ((genTypeSize(simdBaseType) == 8) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
             {
                 extractIntrinsicId = NI_AVX512DQ_ExtractVector128;
             }
@@ -5212,7 +5195,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
         NamedIntrinsic insertIntrinsicId = NI_AVX512F_InsertVector128;
 
-        if ((genTypeSize(simdBaseType) == 8) && !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+        if ((genTypeSize(simdBaseType) == 8) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
         {
             insertIntrinsicId = NI_AVX512DQ_InsertVector128;
         }
@@ -8709,9 +8692,9 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX10v1_RotateRight:
                 case NI_AVX10v1_RoundScale:
                 case NI_AVX10v1_ShiftRightArithmetic:
+                case NI_AVX10v1_Shuffle2x128:
                 case NI_AVX10v1_SumAbsoluteDifferencesInBlock32:
                 case NI_AVX10v1_TernaryLogic:
-                case NI_AVX10v1_Shuffle2x128:
                 case NI_AVX10v1_V512_Range:
                 case NI_AVX10v1_V512_Reduce:
                 {
@@ -8848,6 +8831,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_RoundScaleScalar:
                 case NI_AVX512DQ_RangeScalar:
                 case NI_AVX512DQ_ReduceScalar:
+                case NI_AVX10v1_FixupScalar:
                 case NI_AVX10v1_GetMantissaScalar:
                 case NI_AVX10v1_RangeScalar:
                 case NI_AVX10v1_ReduceScalar:
@@ -8938,6 +8922,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_X64_ConvertScalarToVector128Single:
                 case NI_AVX10v1_X64_ConvertScalarToVector128Double:
                 case NI_AVX10v1_X64_ConvertScalarToVector128Single:
+                case NI_AVX10v1_ConvertScalarToVector128Double:
                 case NI_AVX10v1_ConvertScalarToVector128Single:
                 {
                     if (!varTypeIsIntegral(childNode->TypeGet()))
@@ -9536,7 +9521,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
-    const bool isCommutative = HWIntrinsicInfo::IsCommutative(intrinsicId);
+    const bool isCommutative = node->isCommutativeHWIntrinsic();
 
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
