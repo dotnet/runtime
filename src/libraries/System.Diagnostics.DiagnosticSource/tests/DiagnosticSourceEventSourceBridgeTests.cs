@@ -1485,6 +1485,170 @@ namespace System.Diagnostics.Tests
                         sampledtraceId));
             }).Dispose();
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestSamplingPrecedence()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new("TestActivitySource");
+
+                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
+
+                eventSourceListener.Enable(
+@"[AS]TestActivitySource+TestActivity/-ParentRatioSampler(0.0)
+[AS]TestActivitySource/-
+[AS]*+TestActivity/-
+[AS]*/-
+");
+
+                using (Activity? a = source.StartActivity("TestActivity"))
+                {
+                    Assert.NotNull(a);
+                    Assert.False(a.Recorded);
+                }
+            }).Dispose();
+
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new("TestActivitySource");
+
+                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
+
+                eventSourceListener.Enable(
+@"[AS]TestActivitySource+TestActivity/-ParentRatioSampler(0.0)
+[AS]TestActivitySource+TestActivity/-Propagate
+[AS]TestActivitySource+TestActivity/-
+[AS]TestActivitySource+TestActivity/-Record
+");
+
+                using (Activity? a = source.StartActivity("TestActivity"))
+                {
+                    Assert.NotNull(a);
+                    Assert.True(a.Recorded);
+                }
+            }).Dispose();
+
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new("TestActivitySource");
+
+                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
+
+                eventSourceListener.Enable(
+@"[AS]TestActivitySource+TestActivity/-
+[AS]TestActivitySource/-ParentRatioSampler(0.0)
+[AS]*+TestActivity/-
+[AS]*/-
+");
+
+                using (Activity? a = source.StartActivity("OtherActivity"))
+                {
+                    Assert.NotNull(a);
+                    Assert.False(a.Recorded);
+                }
+            }).Dispose();
+
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new("TestActivitySource");
+
+                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
+
+                eventSourceListener.Enable(
+@"[AS]TestActivitySource/-ParentRatioSampler(0.0)
+[AS]TestActivitySource/-Propagate
+[AS]TestActivitySource/-
+[AS]TestActivitySource/-Record
+");
+
+                using (Activity? a = source.StartActivity("OtherActivity"))
+                {
+                    Assert.NotNull(a);
+                    Assert.True(a.Recorded);
+                }
+            }).Dispose();
+
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new("OtherActivitySource");
+
+                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
+
+                eventSourceListener.Enable(
+@"[AS]TestActivitySource+TestActivity/-
+[AS]TestActivitySource/-
+[AS]*+TestActivity/-ParentRatioSampler(0.0)
+[AS]*/-
+");
+
+                using (Activity? a = source.StartActivity("TestActivity"))
+                {
+                    Assert.NotNull(a);
+                    Assert.False(a.Recorded);
+                }
+            }).Dispose();
+
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new("OtherActivitySource");
+
+                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
+
+                eventSourceListener.Enable(
+@"[AS]*+TestActivity/-ParentRatioSampler(0.0)
+[AS]*+TestActivity/-Propagate
+[AS]*+TestActivity/-
+[AS]*+TestActivity/-Record
+");
+
+                using (Activity? a = source.StartActivity("TestActivity"))
+                {
+                    Assert.NotNull(a);
+                    Assert.True(a.Recorded);
+                }
+            }).Dispose();
+
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new("OtherActivitySource");
+
+                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
+
+                eventSourceListener.Enable(
+@"[AS]TestActivitySource+TestActivity/-
+[AS]TestActivitySource/-
+[AS]*+TestActivity/-
+[AS]*/-ParentRatioSampler(0.0)
+");
+
+                using (Activity? a = source.StartActivity("OtherActivity"))
+                {
+                    Assert.NotNull(a);
+                    Assert.False(a.Recorded);
+                }
+            }).Dispose();
+
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new("OtherActivitySource");
+
+                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
+
+                eventSourceListener.Enable(
+@"[AS]*/-ParentRatioSampler(0.0)
+[AS]*/-Propagate
+[AS]*/-
+[AS]*/-Record
+");
+
+                using (Activity? a = source.StartActivity("OtherActivity"))
+                {
+                    Assert.NotNull(a);
+                    Assert.True(a.Recorded);
+                }
+            }).Dispose();
+        }
     }
 
     /****************************************************************************/

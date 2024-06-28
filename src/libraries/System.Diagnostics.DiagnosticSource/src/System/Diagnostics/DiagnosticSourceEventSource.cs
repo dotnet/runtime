@@ -515,7 +515,7 @@ namespace System.Diagnostics
                         break;
                 }
 
-                if (eventSource._activitySourceSpecs != null)
+                if (eventSource._rawActivitySourceSpecs != null)
                 {
                     NormalizeActivitySourceSpecsList(eventSource);
                     CreateActivityListener(eventSource);
@@ -531,7 +531,11 @@ namespace System.Diagnostics
             {
                 eventSource._activityListener?.Dispose();
                 eventSource._activityListener = null;
-                eventSource._activitySourceSpecs = null; // nothing to dispose inside this list.
+
+                // nothing to dispose inside these spec.
+                eventSource._rawActivitySourceSpecs = null;
+                eventSource._activitySourceSpecsBySourceName = null;
+                eventSource._wildcardActivitySourceSpecs = null;
 
                 var curSpec = specList;
                 specList = null;            // Null out the list
@@ -681,8 +685,8 @@ namespace System.Diagnostics
             {
                 _eventSource = eventSource;
 
-                Next = _eventSource._activitySourceSpecs;
-                _eventSource._activitySourceSpecs = this;
+                Next = _eventSource._rawActivitySourceSpecs;
+                _eventSource._rawActivitySourceSpecs = this;
 
                 SourceName = activitySourceName;
                 ActivityName = activityName;
@@ -858,70 +862,6 @@ namespace System.Diagnostics
                 new FilterAndTransform(filterAndPayloadSpec, endIdx, colonIdx, activitySourceName.ToString(), activityName, supportedEvent, sampleFunc, eventSource);
             }
 
-            private static ActivitySamplingResult Sample(ref ActivityCreationOptions<string> options, DiagnosticSourceEventSource eventSource)
-            {
-                ActivityCreationOptions<ActivityContext> activityContextOptions = default;
-
-                return Sample(options.Source.Name, options.Name, hasActivityContext: false, ref activityContextOptions, eventSource);
-            }
-
-            private static ActivitySamplingResult Sample(ref ActivityCreationOptions<ActivityContext> options, DiagnosticSourceEventSource eventSource)
-            {
-                return Sample(options.Source.Name, options.Name, hasActivityContext: true, ref options, eventSource);
-            }
-
-            private static ActivitySamplingResult Sample(
-                string activitySourceName,
-                string activityName,
-                bool hasActivityContext,
-                ref ActivityCreationOptions<ActivityContext> options,
-                DiagnosticSourceEventSource eventSource)
-            {
-                FilterAndTransform? list = eventSource._activitySourceSpecs;
-                ActivitySamplingResult specificResult = ActivitySamplingResult.None;
-                ActivitySamplingResult wildResult = ActivitySamplingResult.None;
-
-                while (list != null)
-                {
-                    if (list.ActivityName == null || list.ActivityName == activityName)
-                    {
-                        var samplingResult = list.SampleFunc?.Invoke(hasActivityContext, ref options) ?? ActivitySamplingResult.None;
-
-                        if (activitySourceName == list.SourceName)
-                        {
-                            if (samplingResult > specificResult)
-                            {
-                                specificResult = samplingResult;
-                            }
-
-                            if (specificResult >= ActivitySamplingResult.AllDataAndRecorded)
-                            {
-                                return specificResult; // highest possible value
-                            }
-                            // We don't break here as we can have more than one entry with the same source name.
-                        }
-                        else if (list.SourceName == "*")
-                        {
-                            if (specificResult != ActivitySamplingResult.None)
-                            {
-                                // We reached the '*' nodes which means there is no more specific source names in the list.
-                                // If we encountered any specific node before, then return that value.
-                                return specificResult;
-                            }
-
-                            if (samplingResult > wildResult)
-                            {
-                                wildResult = samplingResult;
-                            }
-                        }
-                    }
-                    list = list.Next;
-                }
-
-                // We can return None in case there is no '*' nor any entry match the source name.
-                return specificResult != ActivitySamplingResult.None ? specificResult : wildResult;
-            }
-
             internal static ActivitySamplingResult ParentRatioSampler(long idUpperBound, in ActivityContext parentContext, ActivityTraceId traceId)
             {
                 if (parentContext.TraceId != default)
@@ -956,27 +896,19 @@ namespace System.Diagnostics
             internal static void CreateActivityListener(DiagnosticSourceEventSource eventSource)
             {
                 Debug.Assert(eventSource._activityListener == null);
-                Debug.Assert(eventSource._activitySourceSpecs != null);
+                Debug.Assert(eventSource._wildcardActivitySourceSpecs != null
+                    || eventSource._activitySourceSpecsBySourceName != null);
 
                 eventSource._activityListener = new ActivityListener();
 
-                eventSource._activityListener.SampleUsingParentId = (ref ActivityCreationOptions<string> options) => Sample(ref options, eventSource);
-                eventSource._activityListener.Sample = (ref ActivityCreationOptions<ActivityContext> options) => Sample(ref options, eventSource);
+                eventSource._activityListener.SampleUsingParentId = (ref ActivityCreationOptions<string> options) => OnSampleUsingParentId(ref options, eventSource);
+                eventSource._activityListener.Sample = (ref ActivityCreationOptions<ActivityContext> options) => OnSample(ref options, eventSource);
 
                 eventSource._activityListener.ShouldListenTo = (activitySource) =>
                 {
-                    FilterAndTransform? list = eventSource._activitySourceSpecs;
-                    while (list != null)
-                    {
-                        if (activitySource.Name == list.SourceName || list.SourceName == "*")
-                        {
-                            return true;
-                        }
-
-                        list = list.Next;
-                    }
-
-                    return false;
+                    return eventSource._wildcardActivitySourceSpecs != null
+                        || (eventSource._activitySourceSpecsBySourceName != null
+                        && eventSource._activitySourceSpecsBySourceName.ContainsKey(activitySource.Name));
                 };
 
                 eventSource._activityListener.ActivityStarted = activity => OnActivityStarted(eventSource, activity);
@@ -986,109 +918,118 @@ namespace System.Diagnostics
                 ActivitySource.AddActivityListener(eventSource._activityListener);
             }
 
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Activity))]
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityContext))]
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityEvent))]
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityLink))]
-            [DynamicDependency(nameof(DateTime.Ticks), typeof(DateTime))]
-            [DynamicDependency(nameof(TimeSpan.Ticks), typeof(TimeSpan))]
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
-            private static void OnActivityStarted(DiagnosticSourceEventSource eventSource, Activity activity)
-            {
-                FilterAndTransform? list = eventSource._activitySourceSpecs;
-                while (list != null)
-                {
-                    if ((list.Events & ActivityEvents.ActivityStart) != 0 &&
-                        (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
-                        (list.ActivityName == null || list.ActivityName == activity.OperationName))
-                    {
-                        eventSource.ActivityStart(activity.Source.Name, activity.OperationName, list.Morph(activity));
-                        return;
-                    }
-
-                    list = list.Next;
-                }
-            }
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
-            private static void OnActivityStopped(DiagnosticSourceEventSource eventSource, Activity activity)
-            {
-                FilterAndTransform? list = eventSource._activitySourceSpecs;
-                while (list != null)
-                {
-                    if ((list.Events & ActivityEvents.ActivityStop) != 0 &&
-                        (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
-                        (list.ActivityName == null || list.ActivityName == activity.OperationName))
-                    {
-                        eventSource.ActivityStop(activity.Source.Name, activity.OperationName, list.Morph(activity));
-                        return;
-                    }
-
-                    list = list.Next;
-                }
-            }
-
-            // Move all wildcard nodes at the end of the list.
-            // This will give more priority to the specific nodes over the wildcards.
             internal static void NormalizeActivitySourceSpecsList(DiagnosticSourceEventSource eventSource)
             {
                 Debug.Assert(eventSource._activityListener == null);
-                Debug.Assert(eventSource._activitySourceSpecs != null);
+                Debug.Assert(eventSource._rawActivitySourceSpecs != null);
 
-                FilterAndTransform? list = eventSource._activitySourceSpecs;
+                FilterAndTransform? currentRaw = eventSource._rawActivitySourceSpecs;
 
-                FilterAndTransform? firstSpecificList = null;
-                FilterAndTransform? lastSpecificList = null;
+                ActivitySourceFilterAndTransformSpecs? wildcardSpecs = null;
+                Dictionary<string, ActivitySourceFilterAndTransformSpecs>? specsBySourceName = null;
 
-                FilterAndTransform? firstWildcardList = null;
-                FilterAndTransform? lastWildcardList = null;
-
-                while (list != null)
+                while (currentRaw != null)
                 {
-                    if (list.SourceName == "*")
+                    Debug.Assert(currentRaw.SourceName != null);
+                    Debug.Assert(currentRaw.SampleFunc != null);
+
+                    FilterAndTransform? nextRaw = currentRaw.Next;
+
+                    if (currentRaw.SourceName == "*")
                     {
-                        if (firstWildcardList == null)
-                        {
-                            firstWildcardList = lastWildcardList = list;
-                        }
-                        else
-                        {
-                            Debug.Assert(lastWildcardList != null);
-                            lastWildcardList.Next = list;
-                            lastWildcardList = list;
-                        }
+                        AddRawToSpecs(currentRaw, wildcardSpecs ??= new());
                     }
                     else
                     {
-                        if (firstSpecificList == null)
+                        specsBySourceName ??= new(StringComparer.OrdinalIgnoreCase);
+
+                        if (!specsBySourceName.TryGetValue(currentRaw.SourceName, out ActivitySourceFilterAndTransformSpecs? specs))
                         {
-                            firstSpecificList = lastSpecificList = list;
+                            specs = new();
+                            specsBySourceName[currentRaw.SourceName] = specs;
                         }
-                        else
-                        {
-                            Debug.Assert(lastSpecificList != null);
-                            lastSpecificList.Next = list;
-                            lastSpecificList = list;
-                        }
+
+                        AddRawToSpecs(currentRaw, specs);
                     }
 
-                    list = list.Next;
+                    currentRaw = nextRaw;
                 }
 
-                if (firstSpecificList == null || firstWildcardList == null)
+                Debug.Assert(wildcardSpecs != null || specsBySourceName != null);
+
+                eventSource._rawActivitySourceSpecs = null;
+                eventSource._wildcardActivitySourceSpecs = wildcardSpecs;
+                eventSource._activitySourceSpecsBySourceName = specsBySourceName;
+
+                static void AddRawToSpecs(FilterAndTransform currentRaw, ActivitySourceFilterAndTransformSpecs specs)
                 {
-                    Debug.Assert(firstSpecificList != null || firstWildcardList != null);
-                    return; // list shouldn't be chanaged.
+                    if (currentRaw.ActivityName != null)
+                    {
+                        Dictionary<string, FilterAndTransform> specsByActivityName = specs.SpecsByActivityName ??= new(StringComparer.OrdinalIgnoreCase);
+
+                        currentRaw.Next = !specsByActivityName.TryGetValue(currentRaw.ActivityName, out FilterAndTransform? head)
+                            ? null
+                            : head;
+
+                        specsByActivityName[currentRaw.ActivityName] = currentRaw;
+                    }
+                    else
+                    {
+                        currentRaw.Next = specs.WildcardSpecs;
+                        specs.WildcardSpecs = currentRaw;
+                    }
+                }
+            }
+
+            private static void OnActivityStarted(DiagnosticSourceEventSource eventSource, Activity activity)
+            {
+                if (eventSource._wildcardActivitySourceSpecs?.OnActivityStarted(eventSource, activity) == true)
+                {
+                    return;
                 }
 
-                Debug.Assert(lastWildcardList != null && lastSpecificList != null);
+                if (eventSource._activitySourceSpecsBySourceName?.TryGetValue(activity.Source.Name, out ActivitySourceFilterAndTransformSpecs? specs) == true)
+                {
+                    specs.OnActivityStarted(eventSource, activity);
+                }
+            }
 
-                lastSpecificList.Next = firstWildcardList;
-                lastWildcardList.Next = null;
+            private static void OnActivityStopped(DiagnosticSourceEventSource eventSource, Activity activity)
+            {
+                if (eventSource._wildcardActivitySourceSpecs?.OnActivityStopped(eventSource, activity) == true)
+                {
+                    return;
+                }
 
-                eventSource._activitySourceSpecs = firstSpecificList;
+                if (eventSource._activitySourceSpecsBySourceName?.TryGetValue(activity.Source.Name, out ActivitySourceFilterAndTransformSpecs? specs) == true)
+                {
+                    specs.OnActivityStopped(eventSource, activity);
+                }
+            }
+
+            private static ActivitySamplingResult OnSampleUsingParentId(ref ActivityCreationOptions<string> options, DiagnosticSourceEventSource eventSource)
+            {
+                ActivityCreationOptions<ActivityContext> activityContextOptions = default;
+
+                return OnSample(options.Source.Name, options.Name, hasActivityContext: false, ref activityContextOptions, eventSource);
+            }
+
+            private static ActivitySamplingResult OnSample(ref ActivityCreationOptions<ActivityContext> options, DiagnosticSourceEventSource eventSource)
+            {
+                return OnSample(options.Source.Name, options.Name, hasActivityContext: true, ref options, eventSource);
+            }
+
+            private static ActivitySamplingResult OnSample(
+                string activitySourceName,
+                string activityName,
+                bool hasActivityContext,
+                ref ActivityCreationOptions<ActivityContext> options,
+                DiagnosticSourceEventSource eventSource)
+            {
+                return (eventSource._activitySourceSpecsBySourceName?.TryGetValue(activitySourceName, out ActivitySourceFilterAndTransformSpecs? specs) == true
+                    ? specs.Sample(activityName, hasActivityContext, ref options)
+                    : eventSource._wildcardActivitySourceSpecs?.Sample(activityName, hasActivityContext, ref options))
+                    ?? ActivitySamplingResult.None;
             }
 
             private void Dispose()
@@ -1675,8 +1616,109 @@ namespace System.Diagnostics
 #endregion
 
         private FilterAndTransform? _specs;                 // Transformation specifications that indicate which sources/events are forwarded.
-        private FilterAndTransform? _activitySourceSpecs;   // ActivitySource Transformation specifications that indicate which sources/events are forwarded.
+        private FilterAndTransform? _rawActivitySourceSpecs;
+        private Dictionary<string, ActivitySourceFilterAndTransformSpecs>? _activitySourceSpecsBySourceName;
+        private ActivitySourceFilterAndTransformSpecs? _wildcardActivitySourceSpecs;
         private ActivityListener? _activityListener;
+
+        private sealed class ActivitySourceFilterAndTransformSpecs
+        {
+            public Dictionary<string, FilterAndTransform>? SpecsByActivityName;
+            public FilterAndTransform? WildcardSpecs;
+
+            public bool OnActivityStarted(DiagnosticSourceEventSource eventSource, Activity activity)
+            {
+                return OnActivityStarted(eventSource, activity, WildcardSpecs)
+                    || (SpecsByActivityName != null
+                        && SpecsByActivityName.TryGetValue(activity.OperationName, out FilterAndTransform? specs)
+                        && OnActivityStarted(eventSource, activity, specs));
+            }
+
+            public bool OnActivityStopped(DiagnosticSourceEventSource eventSource, Activity activity)
+            {
+                return OnActivityStopped(eventSource, activity, WildcardSpecs)
+                    || (SpecsByActivityName != null
+                        && SpecsByActivityName.TryGetValue(activity.OperationName, out FilterAndTransform? specs)
+                        && OnActivityStopped(eventSource, activity, specs));
+            }
+
+            public ActivitySamplingResult? Sample(
+                string activityName,
+                bool hasActivityContext,
+                ref ActivityCreationOptions<ActivityContext> options)
+            {
+                return SpecsByActivityName?.TryGetValue(activityName, out FilterAndTransform? specs) == true
+                    ? Sample(hasActivityContext, ref options, specs)
+                    : Sample(hasActivityContext, ref options, WildcardSpecs);
+            }
+
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Activity))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityContext))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityEvent))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ActivityLink))]
+            [DynamicDependency(nameof(DateTime.Ticks), typeof(DateTime))]
+            [DynamicDependency(nameof(TimeSpan.Ticks), typeof(TimeSpan))]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
+            private static bool OnActivityStarted(DiagnosticSourceEventSource eventSource, Activity activity, FilterAndTransform? list)
+            {
+                while (list != null)
+                {
+                    if ((list.Events & ActivityEvents.ActivityStart) != 0)
+                    {
+                        eventSource.ActivityStart(activity.Source.Name, activity.OperationName, list.Morph(activity));
+                        return true;
+                    }
+                    list = list.Next;
+                }
+
+                return false;
+            }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
+            private static bool OnActivityStopped(DiagnosticSourceEventSource eventSource, Activity activity, FilterAndTransform? list)
+            {
+                while (list != null)
+                {
+                    if ((list.Events & ActivityEvents.ActivityStop) != 0)
+                    {
+                        eventSource.ActivityStop(activity.Source.Name, activity.OperationName, list.Morph(activity));
+                        return true;
+                    }
+                    list = list.Next;
+                }
+
+                return false;
+            }
+
+            private static ActivitySamplingResult? Sample(
+                bool hasActivityContext,
+                ref ActivityCreationOptions<ActivityContext> options,
+                FilterAndTransform? list)
+            {
+                ActivitySamplingResult? finalSamplingResult = null;
+
+                while (list != null)
+                {
+                    ActivitySamplingResult samplingResult = list.SampleFunc!(hasActivityContext, ref options);
+
+                    if (!finalSamplingResult.HasValue || samplingResult > finalSamplingResult)
+                    {
+                        finalSamplingResult = samplingResult;
+                    }
+
+                    if (finalSamplingResult >= ActivitySamplingResult.AllDataAndRecorded)
+                    {
+                        return finalSamplingResult.Value; // highest possible value
+                    }
+
+                    list = list.Next;
+                }
+
+                return finalSamplingResult;
+            }
+        }
 #endregion
     }
 }
