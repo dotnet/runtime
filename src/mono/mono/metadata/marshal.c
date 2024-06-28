@@ -3702,6 +3702,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			int swift_error_args = 0, swift_self_args = 0;
 			for (int i = 0; i < method->signature->param_count; ++i) {
 				MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
+				bool is_swift_self_generic = (strcmp(param_klass->name, "SwiftSelf`1") == 0) && (strcmp(param_klass->name_space, "System.Runtime.InteropServices.Swift") == 0);
 				if (param_klass) {
 					if (param_klass == swift_error && !m_type_is_byref (method->signature->params [i])) {
 						swift_error_args = swift_self_args = 0;
@@ -3709,7 +3710,15 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						break;
 					} else if (param_klass == swift_error || param_klass == swift_error_ptr) {
 						swift_error_args++;
-					} else if (param_klass == swift_self) {
+					} else if (is_swift_self_generic && i > 0) {
+						swift_error_args = swift_self_args = 0;
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftSelf<T> must be the first argument in the signature.");
+						break;
+					} else if (is_swift_self_generic && m_type_is_byref (method->signature->params [i])) {
+						swift_error_args = swift_self_args = 0;
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Expected SwiftSelf<T> struct, got pointer/reference.");
+						break;
+					} else if (param_klass == swift_self || is_swift_self_generic) {
 						swift_self_args++;
 					} else if (!type_is_blittable (method->signature->params [i]) || m_class_is_simd_type (param_klass)) {
 						swift_error_args = swift_self_args = 0;
