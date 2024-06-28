@@ -508,13 +508,13 @@ public:
         {
             registerType = FloatRegisterType;
         }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         else
         {
             assert(emitter::isMaskReg(reg));
             registerType = MaskRegisterType;
         }
-#endif
+#endif // FEATURE_MASKED_HW_INTRINSICS
         regNum       = reg;
         isCalleeSave = ((RBM_CALLEE_SAVED & genRegMask(reg)) != 0);
     }

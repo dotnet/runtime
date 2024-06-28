@@ -1265,6 +1265,7 @@ protected:
     void        genCall(GenTreeCall* call);
     void        genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void        genDefinePendingCallLabel(GenTreeCall* call);
+    void        genCallPlaceRegArgs(GenTreeCall* call);
     void        genJmpPlaceArgs(GenTree* jmp);
     void        genJmpPlaceVarArgs();
     BasicBlock* genCallFinally(BasicBlock* block);
@@ -1629,6 +1630,13 @@ public:
     void instGen_MemoryBarrier(BarrierKind barrierKind = BARRIER_FULL);
 
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
+
+    void instGen_Set_Reg_To_Base_Plus_Imm(emitAttr  size,
+                                          regNumber dstReg,
+                                          regNumber baseReg,
+                                          ssize_t   imm,
+                                          insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
+                                              DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
     void instGen_Set_Reg_To_Imm(emitAttr  size,
                                 regNumber reg,

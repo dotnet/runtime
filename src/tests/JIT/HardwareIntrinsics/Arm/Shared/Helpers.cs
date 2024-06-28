@@ -1943,6 +1943,28 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long MultiplyWideningUpperAndSubtract(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static T ShiftLeft<T>(T op1, ulong op2) where T : INumber<T>
+        {
+            T two = T.One + T.One;
+            for (ulong i = 0; (op1 != T.Zero) && (i < op2); i++)
+            {
+                op1 *= two;
+            }
+
+            return op1;
+        }
+
+        public static T ShiftRight<T>(T op1, ulong op2) where T : INumber<T>
+        {
+            T two = T.One + T.One;
+            for (ulong i = 0; (op1 != T.Zero) && (i < op2); i++)
+            {
+                op1 /= two;
+            }
+
+            return op1;
+        }
+
         public static T SignExtend<T>(T n, int numBits, bool zeroExtend) where T : struct, IComparable, IConvertible
         {
             // Get the underlying integer value

@@ -1526,8 +1526,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 2, simdBaseType, simdBaseJitType, sigReader.op2ClsHnd,
-                               sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 2, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
+                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 2, &immLowerBound, &immUpperBound);
 
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp2, mustExpand, immLowerBound, immUpperBound,
@@ -1559,8 +1559,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 1, simdBaseType, simdBaseJitType, sigReader.op2ClsHnd,
-                               sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 1, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
+                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1, &immLowerBound, &immUpperBound);
 #else
         immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
@@ -1798,6 +1798,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_Sve_CreateWhileLessThanMask64Bit:
                     case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op1JitType);
+                        break;
+
+                    case NI_Sve_ShiftLeftLogical:
+                    case NI_Sve_ShiftRightArithmetic:
+                    case NI_Sve_ShiftRightLogical:
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
                         break;
 
                     default:
