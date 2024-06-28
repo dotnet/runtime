@@ -1639,7 +1639,7 @@ public:
 
     MethodDesc* GetMethodDescForSlot(DWORD slot);
 
-    // This api produces the same result as GetMethodDescForSlot_NoThrow, but it uses a variation on the
+    // This api produces the same result as GetMethodDescForSlot, but it uses a variation on the
     // algorithm that does not allocate a temporary entrypoint for the slot if it doesn't exist.
     MethodDesc* GetMethodDescForSlot_NoThrow(DWORD slot);
 
