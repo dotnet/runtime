@@ -97,17 +97,22 @@
 #define CONTEXT_V31          CONTEXT_V30+16
 #define CONTEXT_FLOAT_CONTROL_OFFSET  CONTEXT_V31+16
 #define CONTEXT_Fpcr         0
-#define CONTEXT_Fpsr         CONTEXT_Fpcr+8
+#define CONTEXT_Fpsr         CONTEXT_Fpcr+4
+#define CONTEXT_NEON_SIZE    CONTEXT_FLOAT_CONTROL_OFFSET+CONTEXT_Fpsr+4
 
-#define CONTEXT_XSTATEFEATURESMASK_OFFSET CONTEXT_NEON_OFFSET+CONTEXT_FLOAT_CONTROL_OFFSET+CONTEXT_Fpsr+8
+#define CONTEXT_DEBUG_OFFSET CONTEXT_NEON_OFFSET+CONTEXT_NEON_SIZE
+#define CONTEXT_DEBUG_SIZE   120 // (8*4)+(8*8)+(2*4)+(2*8)
+
+#define CONTEXT_XSTATEFEATURESMASK_OFFSET CONTEXT_DEBUG_OFFSET+CONTEXT_DEBUG_SIZE
 
 // TODO-SVE: Support Vector register sizes >128bit
-// SVE register offsets are multiples of the vector length
-// For 128bit, Z and V registers fully overlap, so there is no need to load/store both.
 
 #define CONTEXT_SVE_OFFSET   CONTEXT_XSTATEFEATURESMASK_OFFSET+8
-#define CONTEXT_FFR_VL       0
+#define CONTEXT_VL_OFFSET    0
 
+// SVE register offsets are multiples of the vector length
+#define CONTEXT_SVE_REGS_OFFSET   CONTEXT_VL_OFFSET+4
+#define CONTEXT_FFR_VL       0
 #define CONTEXT_P0_VL        CONTEXT_FFR_VL+1
 #define CONTEXT_P1_VL        CONTEXT_P0_VL+1
 #define CONTEXT_P2_VL        CONTEXT_P1_VL+1
@@ -125,6 +130,9 @@
 #define CONTEXT_P14_VL       CONTEXT_P13_VL+1
 #define CONTEXT_P15_VL       CONTEXT_P14_VL+1
 
-#define CONTEXT_Size         CONTEXT_SVE_OFFSET + ((CONTEXT_P15_VL+1) * 4)
+#define CONTEXT_SVE_REGS_SIZE     ((CONTEXT_P15_VL+1) * 4)
+#define CONTEXT_SVE_SIZE     CONTEXT_SVE_REGS_SIZE + 8
+
+#define CONTEXT_Size         CONTEXT_SVE_OFFSET + CONTEXT_SVE_SIZE
 
 #endif

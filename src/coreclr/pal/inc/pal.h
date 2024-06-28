@@ -1958,9 +1958,8 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // TODO-SVE: Support Vector register sizes >128bit
     // For 128bit, Z and V registers fully overlap, so there is no need to load/store both.
-    /* +0x390 */ DWORD Vl;
-    /* +0x394 */ DWORD Ffr;
-    /* +0x398 */ DWORD64 __pad; // Ensure 128bit alignment
+    /* +0x398 */ DWORD Vl;
+    /* +0x39c */ DWORD Ffr;
     /* +0x3a0 */ DWORD P[16];
     /* +0x3e0 */
 
