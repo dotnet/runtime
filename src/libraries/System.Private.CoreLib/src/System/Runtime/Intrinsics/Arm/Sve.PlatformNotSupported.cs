@@ -888,7 +888,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64_t svcvt_s64[_f32]_z(svbool_t pg, svfloat32_t op)
         /// </summary>
         public static unsafe Vector<long> ConvertToInt64(Vector<float> value) { throw new PlatformNotSupportedException(); }
-        
 
         ///  ConvertToUInt32 : Floating-point convert
 
