@@ -16,7 +16,7 @@ namespace System.Diagnostics.Metrics.Tests
         [Fact]
         public void MeasurementConstructionTest()
         {
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 35; i++)
             {
                 TagListTests.CreateTagList(i, out TagList tags);
                 TagListTests.ValidateTags(in tags, i);
@@ -1704,6 +1704,29 @@ namespace System.Diagnostics.Metrics.Tests
 
                Assert.NotNull(histogramWithAdvice.Advice?.HistogramBucketBoundaries);
                Assert.Equal(explicitBucketBoundaries, histogramWithAdvice.Advice.HistogramBucketBoundaries);
+           }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRecordingWithEmptyTagList()
+        {
+           RemoteExecutor.Invoke(() =>
+           {
+                using MeterListener meterListener = new MeterListener();
+                using Meter meter = new Meter("demo");
+
+                int count = 0;
+
+                Counter<int> counter = meter.CreateCounter<int>("counter");
+                meterListener.SetMeasurementEventCallback<int>((instrument, measurement, tags,state) => count += measurement);
+                meterListener.EnableMeasurementEvents(counter);
+
+                counter.Add(1);
+                counter.Add(1, new TagList());
+                counter.Add(1, Array.Empty<KeyValuePair<string, object>>());
+                counter.Add(1, new TagList(Array.Empty<KeyValuePair<string, object>>()));
+
+                Assert.Equal(4, count);
            }).Dispose();
         }
 

@@ -152,7 +152,24 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetMethodTableTransparencyData(ulong mt, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetModule(ulong addr, void** mod) => HResults.E_NOTIMPL;
     public unsafe int GetModuleData(ulong moduleAddr, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetNestedExceptionData(ulong exception, ulong* exceptionObject, ulong* nextNestedException) => HResults.E_NOTIMPL;
+
+    public unsafe int GetNestedExceptionData(ulong exception, ulong* exceptionObject, ulong* nextNestedException)
+    {
+        try
+        {
+            Contracts.IException contract = _target.Contracts.Exception;
+            TargetPointer exceptionObjectLocal = contract.GetExceptionInfo(exception, out TargetPointer nextNestedExceptionLocal);
+            *exceptionObject = exceptionObjectLocal;
+            *nextNestedException = nextNestedExceptionLocal;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetObjectClassName(ulong obj, uint count, char* className, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetObjectData(ulong objAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;

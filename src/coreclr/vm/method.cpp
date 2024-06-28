@@ -1102,7 +1102,7 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
     }
 
 #ifdef _DEBUG_IMPL
-    if (pIL != NULL)
+    if (pIL != (TADDR)NULL)
     {
         //
         // This is convenient place to verify that COR_ILMETHOD_DECODER::GetOnDiskSize is in sync
@@ -2236,7 +2236,7 @@ void MethodDesc::Reset()
 
     _ASSERTE(InEnCEnabledModule() || // The process is frozen by the debugger
              IsDynamicMethod() || // These are used in a very restricted way
-             GetLoaderModule()->IsReflection()); // Rental methods
+             GetLoaderModule()->IsReflectionEmit()); // Rental methods
 
     // Reset any flags relevant to the old code
     ClearFlagsOnUpdate();
@@ -2248,7 +2248,7 @@ void MethodDesc::Reset()
     else
     {
         // We should go here only for the rental methods
-        _ASSERTE(GetLoaderModule()->IsReflection());
+        _ASSERTE(GetLoaderModule()->IsReflectionEmit());
 
         InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, FALSE);
 
@@ -2932,7 +2932,7 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
     GetMethodDescChunk()->EnsureTemporaryEntryPointsCreated(pLoaderAllocator, pamTracker);
 
     PTR_PCODE pSlot = GetAddrOfSlot();
-    _ASSERTE(*pSlot == NULL);
+    _ASSERTE(*pSlot == (PCODE)NULL);
     *pSlot = GetTemporaryEntryPoint();
 
     if (RequiresStableEntryPoint())
@@ -2948,7 +2948,7 @@ void MethodDescChunk::CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocat
 {
     WRAPPER_NO_CONTRACT;
 
-    _ASSERTE(GetTemporaryEntryPoints() == NULL);
+    _ASSERTE(GetTemporaryEntryPoints() == (TADDR)NULL);
 
     TADDR temporaryEntryPoints = Precode::AllocateTemporaryEntryPoints(this, pLoaderAllocator, pamTracker);
 
@@ -2962,7 +2962,7 @@ void MethodDescChunk::CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocat
 
     *(((TADDR *)this)-1) = temporaryEntryPoints;
 
-    _ASSERTE(GetTemporaryEntryPoints() != NULL);
+    _ASSERTE(GetTemporaryEntryPoints() != (TADDR)NULL);
 }
 
 //*******************************************************************************
@@ -3142,7 +3142,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot_Locked(
     _ASSERTE(mdLoaderAllocator != nullptr);
     _ASSERTE(mdLoaderAllocator == GetLoaderAllocator());
     _ASSERTE(slotLoaderAllocator != nullptr);
-    _ASSERTE(slot != NULL);
+    _ASSERTE(slot != (TADDR)NULL);
     _ASSERTE(slotType < EntryPointSlots::SlotType_Count);
     _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
@@ -3164,7 +3164,7 @@ FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != (PCODE)NULL);
     _ASSERTE(isPrestubEntryPoint == (entryPoint == GetPrestubEntryPointToBackpatch()));
     _ASSERTE(!isPrestubEntryPoint || !onlyFromPrestubEntryPoint);
     _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
@@ -3219,7 +3219,7 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
     bool mayHaveEntryPointSlotsToBackpatch)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != (PCODE)NULL);
     _ASSERTE(IsVersionable());
     _ASSERTE(mayHaveEntryPointSlotsToBackpatch == MayHaveEntryPointSlotsToBackpatch());
 
@@ -3237,7 +3237,7 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
 void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != (PCODE)NULL);
 
     if (MayHaveEntryPointSlotsToBackpatch())
     {
@@ -3331,7 +3331,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
         return InterlockedCompareExchangeT(GetAddrOfNativeCodeSlot(), addr, pExpected) == pExpected;
     }
 
-    _ASSERTE(pExpected == NULL);
+    _ASSERTE(pExpected == (PCODE)NULL);
     return SetStableEntryPointInterlocked(addr);
 }
 
@@ -3340,7 +3340,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
 void MethodDesc::SetMethodEntryPoint(PCODE addr)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(addr != NULL);
+    _ASSERTE(addr != (PCODE)NULL);
 
     // Similarly to GetMethodEntryPoint(), it is up to the caller to ensure that calls to this function are appropriately
     // synchronized. Currently, the only caller synchronizes with the following lock.
