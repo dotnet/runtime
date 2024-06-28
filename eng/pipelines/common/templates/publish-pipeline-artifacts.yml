@@ -1,0 +1,17 @@
+parameters:
+- name: displayName
+  type: string
+- name: inputs
+  type: object
+- name: isOfficialBuild
+  type: boolean
+
+steps:
+  - ${{ if parameters.isOfficialBuild }}:
+    - task: 1ES.PublishPipelineArtifact@1
+      displayName: ${{ parameters.displayName }}
+      inputs: ${{ parameters.inputs }}
+  - ${{ else }}:
+    - task: PublishPipelineArtifact@1
+      displayName: ${{ parameters.displayName }}
+      inputs: ${{ parameters.inputs }}

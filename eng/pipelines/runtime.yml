@@ -51,6 +51,7 @@ variables:
 extends:
   template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
+    isOfficialBuild: false
     stages:
     - stage: Build
       jobs:
@@ -147,7 +148,6 @@ extends:
           - windows_x86
           - windows_arm
           - windows_arm64
-          - FreeBSD_x64
           jobParameters:
             testGroup: innerloop
 
@@ -214,6 +214,7 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
+          templatePath: 'templates'
           buildConfig: release
           platforms:
           - Android_x64
@@ -785,7 +786,6 @@ extends:
           - OSX_arm64
           - OSX_x64
           - windows_x64
-          - FreeBSD_x64
           jobParameters:
             testScope: innerloop
             testBuildPlatforms:
@@ -894,7 +894,6 @@ extends:
             - Linux_arm64
             - Linux_musl_x64
             - windows_x64
-            - FreeBSD_x64
           jobParameters:
             liveRuntimeBuildConfig: release
             liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
