@@ -1903,19 +1903,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         switch (intrinsic)
         {
-            case NI_Sve_ConditionalSelect:
-            {
-                if (op1->IsVectorAllBitsSet() || op1->IsMaskAllBitsSet())
-                {
-                    return retNode->AsHWIntrinsic()->Op(2);
-                }
-                else if (op1->IsVectorZero())
-                {
-                    return retNode->AsHWIntrinsic()->Op(3);
-                }
-                break;
-            }
-
             case NI_Sve_GetActiveElementCount:
             case NI_Sve_TestAnyTrue:
             case NI_Sve_TestFirstTrue:

@@ -9936,13 +9936,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
             {
-                if (oper == GT_NOT)
-                {
-                    break;
-                }
-
                 GenTree* op1 = node->Op(1);
-                GenTree* op2 = node->Op(2);
+                GenTree* op2 = (oper == GT_NOT) ? op1 : node->Op(2);
 
                 if (!op1->OperIsHWIntrinsic() || !op2->OperIsHWIntrinsic())
                 {
@@ -9990,6 +9985,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                     }
 
+                    case GT_NOT:
+                    {
+                        maskIntrinsicId = NI_EVEX_NotMask;
+                        break;
+                    }
+
                     case GT_OR:
                     {
                         maskIntrinsicId = NI_EVEX_OrMask;
@@ -10025,8 +10026,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 node->Op(1) = cvtOp1->Op(1);
                 DEBUG_DESTROY_NODE(op1);
 
-                node->Op(2) = cvtOp2->Op(1);
-                DEBUG_DESTROY_NODE(op2);
+                if (oper != GT_NOT)
+                {
+                    node->Op(2) = cvtOp2->Op(1);
+                    DEBUG_DESTROY_NODE(op2);
+                }
 
                 node = gtNewSimdCvtMaskToVectorNode(simdType, node, simdBaseJitType, simdSize)->AsHWIntrinsic();
 
