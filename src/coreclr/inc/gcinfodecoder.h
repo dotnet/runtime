@@ -303,15 +303,6 @@ public:
 
         _ASSERTE(numBits > 0 && numBits <= BITS_PER_SIZE_T);
 
-        // "m_RelPos == BITS_PER_SIZE_T" means that m_current
-        // is not yet fetched. Do that now.
-        if(m_RelPos == BITS_PER_SIZE_T)
-        {
-            m_pCurrent++;
-            m_current = *m_pCurrent;
-            m_RelPos = 0;
-        }
-
         size_t result = m_current;
         m_current >>= numBits;
         int newRelPos = m_RelPos + numBits;
@@ -387,6 +378,7 @@ public:
         {
             m_pCurrent--;
             m_RelPos = BITS_PER_SIZE_T;
+            m_current = 0;
         }
         else
         {
