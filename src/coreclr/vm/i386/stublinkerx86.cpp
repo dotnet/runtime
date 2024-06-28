@@ -2434,7 +2434,10 @@ namespace
 {
     gc_alloc_context* STDCALL GetAllocContextHelper()
     {
-        return &t_runtime_thread_locals.alloc_context;
+        // TODO: I'm not sure to understand if it should return the gc_alloc_context or the ee_alloc_context
+        //       because X86EmitCurrentThreadAllocContextFetch seems to use both this function and
+        //       fetching the ee_alloc_context from the TLS
+        return &t_runtime_thread_locals.alloc_context.gc_alloc_context;
     }
 }
 #endif
