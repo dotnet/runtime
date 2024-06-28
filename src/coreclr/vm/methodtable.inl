@@ -29,7 +29,12 @@ FORCEINLINE PTR_EEClass MethodTable::GetClassWithPossibleAV()
     LIMITED_METHOD_DAC_CONTRACT;
 
     TADDR addr = m_pCanonMT;
-
+#ifdef DACCESS_COMPILE
+    if (addr == (TADDR)NULL)
+    {
+        DacError(E_UNEXPECTED);
+    }
+#endif
     LowBits lowBits = union_getLowBits(addr);
     if (lowBits == UNION_EECLASS)
     {
@@ -39,6 +44,12 @@ FORCEINLINE PTR_EEClass MethodTable::GetClassWithPossibleAV()
     {
         // pointer to canonical MethodTable.
         TADDR canonicalMethodTable = union_getPointer(addr);
+#ifdef DACCESS_COMPILE
+        if (canonicalMethodTable == (TADDR)NULL)
+        {
+            DacError(E_UNEXPECTED);
+        }
+#endif
         // a canonical method table always points at its EEClass, and m_pEEClass has no mask bit, so just return it
         return PTR_MethodTable(canonicalMethodTable)->m_pEEClass;
     }
