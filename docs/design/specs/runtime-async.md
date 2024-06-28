@@ -30,14 +30,18 @@ Async methods support the following suspension points:
 
 Each of the above methods will have semantics analogous to the current AsyncTaskMethodBuilder.AwaitOnCompleted/AwaitUnsafeOnCompleted methods. After calling this method, in can be presumed that the task has completed.
 
-Async methods have the following restrictions:
-* Usage of the `localloc` instruction is forbidden
-* The `ldloca` and `ldarga` instructions are redefined to return managed pointers instead of pointers.
-* Pinning locals may not be created
+Only local variables which are "hoisted" may be used across suspension points. That is, only "hoisted" local variables will have their state preserved after returning from a suspension. On methods with the `localsinit` flag set, non-"hoisted" local variables will be initialized to their default value when resuming from suspension. Otherwise, these variables will have an undefined value. To identify "hoisted" local variables, they must have an optional custom modifier to the `System.Runtime.CompilerServices.HoistedLocal` class, which will be a new .NET runtime API. This custom modifier must be the last custom modifier on the variable. It is invalid for by-ref variables, or variables with a by-ref-like type, to be marked hoisted. Hoisted local variables are stored in managed memory and cannot be converted to unmanaged pointers without explicit pinning.
+
+Async methods have some temporary restrictions with may be lifted later:
 * The `tail` prefix is forbidden
+* Usage of the `localloc` instruction is forbidden
+* Pinning locals may not be created
 
-Suspension points may not appear in exception handling blocks.
+Other restrictions are likely to be permanent, including:
+* Suspension points may not appear in exception handling blocks.
+* By-ref variables and variables with by-ref-like type may not be used across suspension points
 
+To facilitate
 All async methods effectively have two entry points, or signatures. The first signature is the one present in the above code: a modreq before the return type. The second signature is a "Task-equivalent signature", described in further detail in [I.8.6.1.5 Method signatures].
 
 Async methods have a special calling convention and may not be called directly outside of other async methods. To call an async method from a sync method, callers must use the second "Task-equivalent signature".
