@@ -11412,7 +11412,7 @@ public:
 
 #endif // TARGET_AMD64
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
 private:
     // The following are for initializing register allocator "constants" defined in targetamd64.h
     // that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which adds
@@ -11448,7 +11448,7 @@ public:
     {
         return this->cntCalleeTrashMask;
     }
-#endif // FEATURE_MASKED_HW_INTRINSICS
+#endif // TARGET_XARCH
 
 }; // end of class Compiler
 

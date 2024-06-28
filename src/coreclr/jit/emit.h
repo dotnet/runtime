@@ -2509,14 +2509,14 @@ private:
     }
 #endif // TARGET_AMD64
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
     regMaskTP rbmMskCalleeTrash;
 
     FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }
-#endif // FEATURE_MASKED_HW_INTRINSICS
+#endif // TARGET_AMD64
 
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
 #if defined(FEATURE_SIMD)

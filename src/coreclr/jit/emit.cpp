@@ -754,9 +754,9 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
 #endif // TARGET_AMD64
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
     rbmMskCalleeTrash = emitComp->rbmMskCalleeTrash;
-#endif // FEATURE_MASKED_HW_INTRINSICS
+#endif // TARGET_XARCH
 }
 
 void emitter::emitEndCG()
