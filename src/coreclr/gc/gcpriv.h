@@ -1413,6 +1413,8 @@ static_assert(count_free_region_kinds == FREE_REGION_KINDS, "Keep count_free_reg
 
 class region_free_list
 {
+    friend class free_list_snapshot;
+
     size_t  num_free_regions;
     size_t  size_free_regions;
     size_t  size_committed_in_free_regions;
@@ -1449,6 +1451,107 @@ public:
 };
 
 static_assert(sizeof(region_free_list) == sizeof(dac_region_free_list), "The DAC relies on the size of these two types matching for pointer arithmetic.");
+
+enum snapshot_stage
+{
+    distribute_free_regions_start = 1,
+    aggressive_end = 2,
+    added_surplus = 3,
+    moved_old_oom = 4,
+    processed_balance = 5,
+    sorted = 6,
+    distribute_free_regions_end = 7,
+    plan_should_sweep_start = 8,
+    plan_should_sweep_end = 9,
+    get_free_region_start = 10,
+    get_free_region_end = 11,
+    return_free_region_start = 12,
+    return_free_region_end = 13,
+    gc_start = 14,
+    gc_end = 15,
+};
+
+enum freelist_type
+{
+    free_regions_basic = 0x101,    // "1" 257
+    global_decommit_basic = 0x102, // "2" 258
+    surplus_basic = 0x103,         // "3" 259
+};
+
+class heap_segment_snapshot
+{
+public:
+    PTR_heap_segment next;
+    PTR_heap_segment prev_free_region;
+
+    heap_segment* heap_segment;
+
+    uint8_t* allocated;
+    uint8_t* committed;
+    uint8_t* reserved;
+    uint8_t* used;
+    uint8_t* mem;
+
+    uint8_t gen_num;
+    uint8_t valid;
+    int age_in_free;
+};
+
+template<size_t A, size_t B> struct TAssertEquality {
+    static_assert(A==B, "Not equal");
+    static constexpr bool _cResult = (A==B);
+};
+
+#ifdef HOST_64BIT
+static constexpr bool _sizeof_heapsegment_snapshot_equal = 
+    TAssertEquality<sizeof(heap_segment_snapshot), 72>::_cResult;
+#endif
+
+const int NUM_SNAPSHOTS = 1000;
+const int SNAPSHOT_SIZE = 50;
+
+class free_list_snapshot
+{
+private:
+    static int* s_nullptr; // always null
+    static int s_dummy; // always zero
+
+    static VOLATILE(int32_t) s_lock;
+
+    static free_list_snapshot* s_buffer;
+
+    static int s_counter_full;
+    static int s_counter;
+
+    size_t gc_index;
+    int snapshot_index;
+    snapshot_stage stage;
+    freelist_type type;
+
+    region_free_list* free_list;
+    size_t num_free_regions;
+    size_t size_free_regions;
+    size_t size_committed_in_free_regions;
+    size_t num_free_regions_added;
+    size_t num_free_regions_removed;
+    heap_segment_snapshot start[SNAPSHOT_SIZE];
+    heap_segment_snapshot end[SNAPSHOT_SIZE];
+
+public:
+    static void init();
+    static void fail();
+    static void record(heap_segment_snapshot* dst, heap_segment* src);
+    static void record(snapshot_stage stage, freelist_type type, region_free_list* free_list);
+};
+
+#ifdef HOST_64BIT
+static constexpr bool _sizeof_freelist_snapshot_symbolic_equal = 
+    TAssertEquality<sizeof(free_list_snapshot), 72 + (2 * SNAPSHOT_SIZE * sizeof(heap_segment_snapshot))>::_cResult;
+static constexpr bool _sizeof_freelist_snapshot_value_equal = 
+    TAssertEquality<sizeof(free_list_snapshot), 7272>::_cResult;
+static constexpr bool _sizeof_freelist_snapshot_buffer_equal = 
+    TAssertEquality<sizeof(free_list_snapshot) * NUM_SNAPSHOTS, 7272000>::_cResult;
+#endif
 #endif
 
 enum bookkeeping_element
@@ -1495,6 +1598,7 @@ float median_of_3 (float a, float b, float c);
 //class definition of the internal class
 class gc_heap
 {
+    friend class free_list_snapshot;
     friend class GCHeap;
 #ifdef FEATURE_PREMORTEM_FINALIZATION
     friend class CFinalize;
