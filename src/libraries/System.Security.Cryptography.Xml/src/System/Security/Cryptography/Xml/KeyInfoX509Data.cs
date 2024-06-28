@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Xml
 
         public KeyInfoX509Data(byte[] rgbCert)
         {
-            X509Certificate2 certificate = new X509Certificate2(rgbCert);
+            X509Certificate2 certificate = X509CertificateLoader.LoadCertificate(rgbCert);
             AddCertificate(certificate);
         }
 
@@ -316,7 +316,9 @@ namespace System.Security.Cryptography.Xml
 
             foreach (XmlNode node in x509CertificateNodes)
             {
-                AddCertificate(new X509Certificate2(Convert.FromBase64String(Utils.DiscardWhiteSpaces(node.InnerText))));
+                AddCertificate(
+                    X509CertificateLoader.LoadCertificate(
+                        Convert.FromBase64String(Utils.DiscardWhiteSpaces(node.InnerText))));
             }
         }
     }

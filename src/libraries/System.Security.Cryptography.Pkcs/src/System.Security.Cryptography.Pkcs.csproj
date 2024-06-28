@@ -6,7 +6,7 @@
     <DefineConstants>$(DefineConstants);BUILDING_PKCS</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <NoWarn>$(NoWarn);CA5384</NoWarn>
+    <NoWarn>$(NoWarn);CA5384;SYSLIB0057</NoWarn>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for PKCS and CMS algorithms.
@@ -651,7 +651,6 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Cryptography\src\Microsoft.Bcl.Cryptography.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
@@ -662,6 +661,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Cryptography\src\Microsoft.Bcl.Cryptography.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

@@ -33,9 +33,9 @@ namespace System.Security.Cryptography.X509Certificates
                         certificate = X509CertificateLoader.LoadCertificate(data);
                         break;
                     case X509ContentType.Pkcs7:
-#pragma warning disable SYSLIB0056 // Content is known to be PKCS7.
+#pragma warning disable SYSLIB0057 // Content is known to be PKCS7.
                         certificate = new X509Certificate2(data);
-#pragma warning restore SYSLIB0056
+#pragma warning restore SYSLIB0057
                         break;
                     default:
                         return null;
