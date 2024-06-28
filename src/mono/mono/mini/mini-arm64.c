@@ -1865,15 +1865,10 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [pindex]);
 			if (klass == swift_self && sig->pinvoke) {
-				guint32 align;
-				MonoType *ptype = mini_get_underlying_type (sig->params [pindex]);
-				int size = mini_type_stack_size_full (ptype, &align, cinfo->pinvoke);
-				g_assert (size == 8);
-
 				ainfo->storage = ArgVtypeInIRegs;
 				ainfo->reg = ARMREG_R20;
 				ainfo->nregs = 1;
-				ainfo->size = size;
+				ainfo->size = 8;
 				continue;
 			} else if (klass == swift_error || klass == swift_error_ptr) {
 				if (sig->pinvoke)

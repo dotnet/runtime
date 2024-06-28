@@ -7563,17 +7563,34 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 								g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
 							}
 						} else {
-							// For structs that cannot be lowered, we change the argument to byref type
-							ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
-							// Load the address of the struct
-							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-							CHECK_ARG (idx_param);
-							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
-							MONO_ADD_INS (cfg->cbb, struct_base_address);
-							*sp++ = struct_base_address;
+							if ((strcmp (klass->name, "SwiftSelf`1") == 0) && (strcmp (klass->name_space, "System.Runtime.InteropServices.Swift") == 0)) {
+								// For SwiftSelf<T> that cannot be lowered, we change the argument to byref SwiftSelf type
+								ptype = mono_class_get_byref_type (swift_self);
+								MonoInst *swift_self_base_address = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+								CHECK_ARG (idx_param);
+								NEW_ARGLOADA (cfg, swift_self_base_address, idx_param);
+								MONO_ADD_INS (cfg->cbb, swift_self_base_address);
 
-							++new_param_count;
-							g_array_append_val (new_params, ptype);
+								MonoClassField *klass_fields = m_class_get_fields (klass);
+								MonoInst *struct_base_address = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+								MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_ADD_IMM, struct_base_address->dreg, swift_self_base_address->dreg, klass_fields->offset);
+								*sp++ = struct_base_address;
+
+								++new_param_count;
+								g_array_append_val(new_params, ptype);
+							} else {
+								// For structs that cannot be lowered, we change the argument to byref type
+								ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
+								// Load the address of the struct
+								MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+								CHECK_ARG (idx_param);
+								NEW_ARGLOADA (cfg, struct_base_address, idx_param);
+								MONO_ADD_INS (cfg->cbb, struct_base_address);
+								*sp++ = struct_base_address;
+
+								++new_param_count;
+								g_array_append_val (new_params, ptype);
+							}
 						}
 					} else {
 						// Copy over non-struct arguments

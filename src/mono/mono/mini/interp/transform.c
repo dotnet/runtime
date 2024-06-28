@@ -3435,7 +3435,10 @@ interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *c
 				}
 			} else {
 				// For structs that cannot be lowered, we change the argument to byref type
-				ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
+				if ((strcmp (klass->name, "SwiftSelf`1") == 0) && (strcmp (klass->name_space, "System.Runtime.InteropServices.Swift") == 0))
+					ptype = mono_class_get_byref_type (swift_self);
+				else
+					ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
 				// Load the address of the struct
 				interp_add_ins (td, MINT_LDLOCA_S);
 				interp_ins_set_sreg (td->last_ins, sp_old_params [idx_param].var);

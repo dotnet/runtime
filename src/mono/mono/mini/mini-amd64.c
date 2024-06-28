@@ -1017,15 +1017,12 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 			if (klass == swift_self && sig->pinvoke) {
-				guint32 size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
-				g_assert (size == 8);
-
 				ainfo->storage = ArgValuetypeInReg;
 				ainfo->pair_storage [0] = ArgInIReg;
 				ainfo->pair_storage [1] = ArgNone;
 				ainfo->nregs = 1;
 				ainfo->pair_regs [0] = GINT32_TO_UINT8 (AMD64_R13);
-				ainfo->pair_size [0] = size;
+				ainfo->pair_size [0] = 8;
 				continue;
 			} else if (klass == swift_error || klass == swift_error_ptr) {
 				if (sig->pinvoke)
