@@ -225,7 +225,6 @@ namespace System
                 return;
             }
 
-        PInvoke:
             // Implicit nullchecks
             Debug.Assert(len > 0);
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
