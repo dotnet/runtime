@@ -196,6 +196,24 @@ namespace System.Linq.Expressions.Tests
             Assert.False(isNullOfType());
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void TypeEqualConstantWithAccessToLambdaHoistedVariables(bool useInterpreter)
+        {
+            ParameterExpression arg0 = Expression.Parameter(typeof(object), "value");
+
+            // f1 = () => value;
+            Expression<Func<object>> expr1 = Expression.Lambda<Func<object>>(arg0);
+
+            // f0 = (object value) => (() => value) is int;
+            Expression<Func<object, bool>> expr0 = Expression.Lambda<Func<object, bool>>(
+                Expression.TypeEqual(
+                    expr1,
+                    typeof(int)),
+                parameters: new[] { arg0 });
+            Func<object, bool> f0 = expr0.Compile(useInterpreter);
+            Assert.False(f0(null));
+        }
+
         [Fact]
         public void ToStringTest()
         {

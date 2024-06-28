@@ -951,6 +951,44 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void SwitchOnStringWithAccessToLambdaHoistedVariables(bool useInterpreter)
+        {
+            ParameterExpression arg0 = Expression.Parameter(typeof(string), "value");
+
+            // f1 = (Func<int> f) => f();
+            ParameterExpression arg1 = Expression.Parameter(typeof(Func<int>), "f");
+            Expression<Func<Func<int>, int>> expr1 =
+                Expression.Lambda<Func<Func<int>, int>>(
+                    body: Expression.Invoke(arg1),
+                    parameters: new[] { arg1 });
+
+            // f2 = () => value.Length;
+            Expression<Func<int>> expr2 =
+                Expression.Lambda<Func<int>>(
+                    Expression.Property(arg0, typeof(string).GetProperty("Length")));
+
+            // f0 = (string value) => value switch { "1" => 1, ..., "7" => 7, _ => f1(f2) };
+            Expression<Func<string, int>> expr0 =
+                Expression.Lambda<Func<string, int>>(
+                    body: Expression.Switch(
+                        switchValue: arg0,
+                        defaultBody: Expression.Invoke(expr1, expr2),
+                        cases: Enumerable.Range(1, 7).Select(index =>
+                            Expression.SwitchCase(Expression.Constant(index), Expression.Constant(index.ToString()))).ToArray()),
+                    parameters: new[] { arg0 });
+
+            Func<string, int> f0 = expr0.Compile(useInterpreter);
+            Assert.Equal(1, f0("1"));
+            Assert.Equal(2, f0("2"));
+            Assert.Equal(3, f0("3"));
+            Assert.Equal(4, f0("4"));
+            Assert.Equal(5, f0("5"));
+            Assert.Equal(6, f0("6"));
+            Assert.Equal(7, f0("7"));
+            Assert.Equal(2, f0("10"));
+        }
+
         [Fact]
         public void ToStringTest()
         {
