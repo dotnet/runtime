@@ -36,7 +36,7 @@
     <WasmExtraFilesToDeploy Include="package.json" />
     <WasmExtraFilesToDeploy Include="package-lock.json" />
 
-    <NodeNpmModule Include="ws" Alias="WebSocket" />
+    <NodeNpmModule Include="ws" />
     <NodeNpmModule Include="node-fetch" />
     <NodeNpmModule Include="node-abort-controller" />
 

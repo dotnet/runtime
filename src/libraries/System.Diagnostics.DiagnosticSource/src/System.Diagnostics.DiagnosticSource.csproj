@@ -55,6 +55,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\ExponentialHistogramAggregator.cs" />
     <Compile Include="System\Diagnostics\Metrics\Gauge.cs" />
     <Compile Include="System\Diagnostics\Metrics\Histogram.cs" />
+    <Compile Include="System\Diagnostics\Metrics\InstrumentAdvice.cs" />
     <Compile Include="System\Diagnostics\Metrics\IMeterFactory.cs" />
     <Compile Include="System\Diagnostics\Metrics\Instrument.cs" />
     <Compile Include="System\Diagnostics\Metrics\Instrument.common.cs" />
@@ -93,10 +94,8 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\ObjectSequence.netcore.cs" />
     <Compile Include="System\Diagnostics\Metrics\StringSequence.netcore.cs" />
     <Compile Include="System\Diagnostics\System.Diagnostics.DiagnosticSource.Typeforwards.netcoreapp.cs" />
-    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
-             Link="Common\System\LocalAppContextSwitches.Common.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
-             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs" Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

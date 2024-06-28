@@ -20,6 +20,8 @@ namespace System.Text.Json.Nodes
     {
         private JsonElement? _jsonElement;
 
+        internal override JsonElement? UnderlyingElement => _jsonElement;
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonObject"/> class that is empty.
         /// </summary>
@@ -116,8 +118,15 @@ namespace System.Text.Json.Nodes
         /// <returns>
         ///   <see langword="true"/> if a property with the specified name was found; otherwise, <see langword="false"/>.
         /// </returns>
-        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode) =>
-            Dictionary.TryGetValue(propertyName, out jsonNode);
+        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
+            return Dictionary.TryGetValue(propertyName, out jsonNode);
+        }
 
         /// <inheritdoc/>
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
@@ -158,11 +167,11 @@ namespace System.Text.Json.Nodes
 
         private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Object;
 
-        internal override bool DeepEqualsCore(JsonNode? node)
+        internal override bool DeepEqualsCore(JsonNode node)
         {
             switch (node)
             {
-                case null or JsonArray:
+                case JsonArray:
                     return false;
                 case JsonValue value:
                     // JsonValue instances have special comparison semantics, dispatch to their implementation.
@@ -195,6 +204,11 @@ namespace System.Text.Json.Nodes
 
         internal JsonNode? GetItem(string propertyName)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             if (TryGetPropertyValue(propertyName, out JsonNode? value))
             {
                 return value;
@@ -227,6 +241,11 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
             if (dict.TryGetValue(propertyName, out JsonNode? replacedValue))

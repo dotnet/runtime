@@ -206,7 +206,7 @@ ABIPassingInformation::ABIPassingInformation(Compiler* comp, unsigned numSegment
 
     if (numSegments > 1)
     {
-        Segments = new (comp, CMK_ABI) ABIPassingSegment[numSegments];
+        m_segments = new (comp, CMK_ABI) ABIPassingSegment[numSegments];
     }
 }
 
@@ -225,10 +225,10 @@ const ABIPassingSegment& ABIPassingInformation::Segment(unsigned index) const
     assert(index < NumSegments);
     if (NumSegments == 1)
     {
-        return SingleSegment;
+        return m_singleSegment;
     }
 
-    return Segments[index];
+    return m_segments[index];
 }
 
 //-----------------------------------------------------------------------------
@@ -258,6 +258,25 @@ bool ABIPassingInformation::HasAnyRegisterSegment() const
     for (unsigned i = 0; i < NumSegments; i++)
     {
         if (Segment(i).IsPassedInRegister())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//-----------------------------------------------------------------------------
+// HasAnyFloatingRegisterSegment:
+//   Check if any part of this value is passed in a floating-point register.
+//
+// Return Value:
+//   True if so.
+//
+bool ABIPassingInformation::HasAnyFloatingRegisterSegment() const
+{
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        if (Segment(i).IsPassedInRegister() && genIsValidFloatReg(Segment(i).GetRegister()))
         {
             return true;
         }
@@ -335,6 +354,34 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 }
 
 //-----------------------------------------------------------------------------
+// CountRegsAndStackSlots:
+//   Count how many registers and stack slots are used for passing the
+//   argument.
+//
+// Return Value:
+//   Count of registers plus count of stack slots.
+//
+unsigned ABIPassingInformation::CountRegsAndStackSlots() const
+{
+    unsigned numSlots = 0;
+
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        const ABIPassingSegment& seg = Segment(i);
+        if (seg.IsPassedInRegister())
+        {
+            numSlots++;
+        }
+        else
+        {
+            numSlots += (seg.Size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+        }
+    }
+
+    return numSlots;
+}
+
+//-----------------------------------------------------------------------------
 // FromSegment:
 //   Create ABIPassingInformation from a single segment.
 //
@@ -348,8 +395,8 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const ABIPassingSegment& segment)
 {
     ABIPassingInformation info;
-    info.NumSegments   = 1;
-    info.SingleSegment = segment;
+    info.NumSegments     = 1;
+    info.m_singleSegment = segment;
     return info;
 }
 
@@ -371,7 +418,7 @@ ABIPassingInformation ABIPassingInformation::FromSegments(Compiler*             
 {
     ABIPassingInformation info;
     info.NumSegments = 2;
-    info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[2]{firstSegment, secondSegment};
+    info.m_segments  = new (comp, CMK_ABI) ABIPassingSegment[2]{firstSegment, secondSegment};
     return info;
 }
 

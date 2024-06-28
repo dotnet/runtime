@@ -28,7 +28,7 @@ namespace System.Runtime.CompilerServices
         }
 
 #pragma warning disable IDE0060
-        private static unsafe void* GetSpanDataFrom(
+        private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
             out int count)
@@ -266,8 +266,6 @@ namespace System.Runtime.CompilerServices
         {
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2059:UnrecognizedReflectionPattern",
-            Justification = "We keep class constructors of all types with an MethodTable")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Constructed MethodTable of a Nullable forces a constructed MethodTable of the element type")]
         public static unsafe object GetUninitializedObject(

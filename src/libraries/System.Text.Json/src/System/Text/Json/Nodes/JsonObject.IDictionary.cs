@@ -25,6 +25,11 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public void Add(string propertyName, JsonNode? value)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             Dictionary.Add(propertyName, value);
             value?.AssignParent(this);
         }
@@ -74,7 +79,15 @@ namespace System.Text.Json.Nodes
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
-        public bool ContainsKey(string propertyName) => Dictionary.ContainsKey(propertyName);
+        public bool ContainsKey(string propertyName)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
+            return Dictionary.ContainsKey(propertyName);
+        }
 
         /// <summary>
         ///   Gets the number of elements contained in <see cref="JsonObject"/>.
@@ -180,7 +193,15 @@ namespace System.Text.Json.Nodes
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
-        bool IDictionary<string, JsonNode?>.TryGetValue(string propertyName, out JsonNode? jsonNode) => Dictionary.TryGetValue(propertyName, out jsonNode);
+        bool IDictionary<string, JsonNode?>.TryGetValue(string propertyName, out JsonNode? jsonNode)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
+            return Dictionary.TryGetValue(propertyName, out jsonNode);
+        }
 
         /// <summary>
         ///   Returns <see langword="false"/>.

@@ -51,8 +51,7 @@ internal sealed class TerminalFormatStrings
     /// The dictionary of keystring to ConsoleKeyInfo.
     /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
     /// </summary>
-    public readonly Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo> KeyFormatToConsoleKey =
-        new Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo>(new ReadOnlyMemoryContentComparer());
+    public readonly Dictionary<string, ConsoleKeyInfo> KeyFormatToConsoleKey = new(StringComparer.Ordinal);
 
     /// <summary> Max key length </summary>
     public readonly int MaxKeyFormatLength;
@@ -164,7 +163,7 @@ internal sealed class TerminalFormatStrings
             MaxKeyFormatLength = int.MinValue;
             MinKeyFormatLength = int.MaxValue;
 
-            foreach (KeyValuePair<ReadOnlyMemory<char>, ConsoleKeyInfo> entry in KeyFormatToConsoleKey)
+            foreach (KeyValuePair<string, ConsoleKeyInfo> entry in KeyFormatToConsoleKey)
             {
                 if (entry.Key.Length > MaxKeyFormatLength)
                 {
@@ -229,8 +228,8 @@ internal sealed class TerminalFormatStrings
 
     private void AddKey(TermInfo.Database db, TermInfo.WellKnownStrings keyId, ConsoleKey key, bool shift, bool alt, bool control)
     {
-        ReadOnlyMemory<char> keyFormat = db.GetString(keyId).AsMemory();
-        if (!keyFormat.IsEmpty)
+        string? keyFormat = db.GetString(keyId);
+        if (!string.IsNullOrEmpty(keyFormat))
             KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo(key == ConsoleKey.Enter ? '\r' : '\0', key, shift, alt, control);
     }
 
@@ -248,17 +247,8 @@ internal sealed class TerminalFormatStrings
 
     private void AddKey(TermInfo.Database db, string extendedName, ConsoleKey key, bool shift, bool alt, bool control)
     {
-        ReadOnlyMemory<char> keyFormat = db.GetExtendedString(extendedName).AsMemory();
-        if (!keyFormat.IsEmpty)
+        string? keyFormat = db.GetExtendedString(extendedName);
+        if (!string.IsNullOrEmpty(keyFormat))
             KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
-    }
-
-    private sealed class ReadOnlyMemoryContentComparer : IEqualityComparer<ReadOnlyMemory<char>>
-    {
-        public bool Equals(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y) =>
-            x.Span.SequenceEqual(y.Span);
-
-        public int GetHashCode(ReadOnlyMemory<char> obj) =>
-            string.GetHashCode(obj.Span);
     }
 }

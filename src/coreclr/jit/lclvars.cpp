@@ -1721,7 +1721,8 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
 template <typename Classifier>
 void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 {
-    lvaParameterPassingInfo = new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
+    lvaParameterPassingInfo =
+        info.compArgsCount == 0 ? nullptr : new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
 
     for (unsigned i = 0; i < info.compArgsCount; i++)
     {
@@ -1768,11 +1769,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 //
 void Compiler::lvaClassifyParameterABI()
 {
-    if (info.compArgsCount == 0)
-    {
-        return;
-    }
-
     ClassifierInfo cInfo;
     cInfo.CallConv   = info.compCallConv;
     cInfo.IsVarArgs  = info.compIsVarArgs;
@@ -3216,10 +3212,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("opts.compFlags & CLFLG_REGVAR is not set\n");
             assert(!compEnregLocals());
             break;
-        case DoNotEnregisterReason::MinOptsGC:
-            JITDUMP("it is a GC Ref and we are compiling MinOpts\n");
-            assert(!JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()));
-            break;
 #if !defined(TARGET_64BIT)
         case DoNotEnregisterReason::LongParamField:
             JITDUMP("it is a decomposed field of a long parameter\n");
@@ -4150,11 +4142,6 @@ void Compiler::lvaSortByRefCount()
 #ifdef JIT32_GCENCODER
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
 #endif
-        }
-        if (opts.MinOpts() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
-        {
-            varDsc->lvTracked = 0;
-            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::MinOptsGC));
         }
         if (!compEnregLocals())
         {

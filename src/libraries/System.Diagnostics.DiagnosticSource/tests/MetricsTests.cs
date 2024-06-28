@@ -3,7 +3,6 @@
 
 using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
-using System.Diagnostics.Metrics;
 using System.Diagnostics.Tests;
 using System.Linq;
 using System.Threading;
@@ -17,7 +16,7 @@ namespace System.Diagnostics.Metrics.Tests
         [Fact]
         public void MeasurementConstructionTest()
         {
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 35; i++)
             {
                 TagListTests.CreateTagList(i, out TagList tags);
                 TagListTests.ValidateTags(in tags, i);
@@ -1686,6 +1685,49 @@ namespace System.Diagnostics.Metrics.Tests
                     Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
                 }
             }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestHistogramCreationWithAdvice()
+        {
+           RemoteExecutor.Invoke(() =>
+           {
+               using Meter meter = new Meter(nameof(TestHistogramCreationWithAdvice));
+
+               Histogram<int> histogramWithoutAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithoutAdvice));
+
+               Assert.Null(histogramWithoutAdvice.Advice);
+
+               int[] explicitBucketBoundaries = new int[] { 0, 100, 1000, 10000 };
+
+               Histogram<int> histogramWithAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithAdvice), advice: new InstrumentAdvice<int> { HistogramBucketBoundaries = explicitBucketBoundaries });
+
+               Assert.NotNull(histogramWithAdvice.Advice?.HistogramBucketBoundaries);
+               Assert.Equal(explicitBucketBoundaries, histogramWithAdvice.Advice.HistogramBucketBoundaries);
+           }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRecordingWithEmptyTagList()
+        {
+           RemoteExecutor.Invoke(() =>
+           {
+                using MeterListener meterListener = new MeterListener();
+                using Meter meter = new Meter("demo");
+
+                int count = 0;
+
+                Counter<int> counter = meter.CreateCounter<int>("counter");
+                meterListener.SetMeasurementEventCallback<int>((instrument, measurement, tags,state) => count += measurement);
+                meterListener.EnableMeasurementEvents(counter);
+
+                counter.Add(1);
+                counter.Add(1, new TagList());
+                counter.Add(1, Array.Empty<KeyValuePair<string, object>>());
+                counter.Add(1, new TagList(Array.Empty<KeyValuePair<string, object>>()));
+
+                Assert.Equal(4, count);
+           }).Dispose();
         }
 
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct

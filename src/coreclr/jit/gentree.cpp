@@ -888,15 +888,8 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
 #if !defined(TARGET_64BIT)
     else if (OperIsMultiRegOp())
     {
-        // A MultiRegOp is a GT_MUL_LONG, GT_PUTARG_REG, or GT_BITCAST.
-        // For the latter two (ARM-only), they only have multiple registers if they produce a long value
-        // (GT_MUL_LONG always produces a long value).
-#ifdef TARGET_ARM
-        return (TypeGet() == TYP_LONG) ? 2 : 1;
-#else
         assert(OperIs(GT_MUL_LONG));
         return 2;
-#endif
     }
 #endif
 #ifdef FEATURE_HW_INTRINSICS
@@ -1259,87 +1252,6 @@ void CallArgABIInformation::SetHfaType(var_types type, unsigned hfaSlots)
 }
 
 //---------------------------------------------------------------
-// SetByteSize: Set information related to this argument's size and alignment.
-//
-// Arguments:
-//   byteSize      - The size in bytes of the argument.
-//   byteAlignment - The alignment in bytes of the argument.
-//   isStruct      - Whether this arg is a struct.
-//   isFloatHfa    - Whether this is a float HFA.
-//
-// Remarks:
-//   This function will determine how the argument size needs to be rounded. On
-//   most ABIs all arguments are rounded to stack pointer size, but Apple arm64
-//   ABI is an exception as it allows packing some small arguments into the
-//   same stack slot.
-//
-void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa)
-{
-    unsigned roundedByteSize;
-    if (compAppleArm64Abi())
-    {
-        // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
-        if (isStruct && !isFloatHfa)
-        {
-            roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
-        }
-        else
-        {
-            roundedByteSize = byteSize;
-        }
-    }
-    else
-    {
-        roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
-    }
-
-#if !defined(TARGET_ARM)
-    // Arm32 could have a struct with 8 byte alignment
-    // which rounded size % 8 is not 0.
-    assert(byteAlignment != 0);
-    assert(roundedByteSize % byteAlignment == 0);
-#endif // TARGET_ARM
-
-    ByteSize      = roundedByteSize;
-    ByteAlignment = byteAlignment;
-}
-
-//---------------------------------------------------------------
-// SetMultiRegsNumw: Set the registers for a multi-reg arg using 'sequential' registers.
-//
-// Remarks:
-//   This assumes that `NumRegs` and the first reg num has already been set and
-//   determines how many sequential registers are necessary to pass the
-//   argument.
-//   Note that on ARM the registers set may skip odd float registers if the arg
-//   is a HFA of doubles, since double and float registers overlap.
-void CallArgABIInformation::SetMultiRegNums()
-{
-#if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    if (NumRegs == 1)
-    {
-        return;
-    }
-
-    regNumber argReg = GetRegNum(0);
-#ifdef TARGET_ARM
-    unsigned int regSize = (GetHfaType() == TYP_DOUBLE) ? 2 : 1;
-#else
-    unsigned int regSize = 1;
-#endif
-
-    if (NumRegs > MAX_ARG_REG_COUNT)
-        NO_WAY("Multireg argument exceeds the maximum length");
-
-    for (unsigned int regIndex = 1; regIndex < NumRegs; regIndex++)
-    {
-        argReg = (regNumber)(argReg + regSize);
-        SetRegNum(regIndex, argReg);
-    }
-#endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-}
-
-//---------------------------------------------------------------
 // GetStackByteSize: Get the number of stack bytes used to pass this argument.
 //
 // Returns:
@@ -1468,7 +1380,7 @@ void CallArg::CheckIsStruct()
 CallArgs::CallArgs()
     : m_head(nullptr)
     , m_lateHead(nullptr)
-    , m_nextStackByteOffset(0)
+    , m_argsStackSize(0)
 #ifdef UNIX_X86_ABI
     , m_stkSizeBytes(0)
     , m_padStkAlign(0)
@@ -3397,14 +3309,16 @@ AGAIN:
                 switch (vecCon->TypeGet())
                 {
 #if defined(FEATURE_SIMD)
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     case TYP_MASK:
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[1]);
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[0]);
                         break;
                     }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
+#if defined(TARGET_XARCH)
                     case TYP_SIMD64:
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[15]);
@@ -9047,24 +8961,11 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
 // Return Value:
 //    Returns the newly created PutArgReg node.
 //
-// Notes:
-//    The node is generated as GenTreeMultiRegOp on RyuJIT/armel, GenTreeOp on all the other archs.
-//
 GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg)
 {
     assert(arg != nullptr);
 
-    GenTree* node = nullptr;
-#if defined(TARGET_ARM)
-    // A PUTARG_REG could be a MultiRegOp on arm since we could move a double register to two int registers.
-    node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_PUTARG_REG, type, arg, nullptr);
-    if (type == TYP_LONG)
-    {
-        node->AsMultiRegOp()->gtOtherReg = REG_NEXT(argReg);
-    }
-#else
-    node = gtNewOperNode(GT_PUTARG_REG, type, arg);
-#endif
+    GenTree* node = gtNewOperNode(GT_PUTARG_REG, type, arg);
     node->SetRegNum(argReg);
 
     return node;
@@ -9817,7 +9718,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
 {
     assert((m_head == nullptr) && (m_lateHead == nullptr));
 
-    m_nextStackByteOffset      = other->m_nextStackByteOffset;
+    m_argsStackSize            = other->m_argsStackSize;
     m_hasThisPointer           = other->m_hasThisPointer;
     m_hasRetBuffer             = other->m_hasRetBuffer;
     m_isVarArgs                = other->m_isVarArgs;
@@ -9845,6 +9746,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
         carg->m_isTmp           = arg.m_isTmp;
         carg->m_processed       = arg.m_processed;
         carg->AbiInfo           = arg.AbiInfo;
+        carg->NewAbiInfo        = arg.NewAbiInfo;
         *tail                   = carg;
         tail                    = &carg->m_next;
     }
@@ -12299,12 +12201,15 @@ void Compiler::gtDispConst(GenTree* tree)
                     break;
                 }
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                 case TYP_MASK:
                 {
                     printf("<0x%08x, 0x%08x>", vecCon->gtSimdVal.u32[0], vecCon->gtSimdVal.u32[1]);
                     break;
                 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
                 default:
                 {
@@ -13174,6 +13079,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "swift error";
         case WellKnownArg::SwiftSelf:
             return "swift self";
+        case WellKnownArg::X86TailCallSpecialArg:
+            return "tail call";
         default:
             return nullptr;
     }
@@ -14371,6 +14278,14 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
     // Here `op` is the non-constant operand, `cons` is the constant operand
     // and `val` is the constant value.
+
+    if (((op->gtFlags & GTF_SIDE_EFFECT) != 0) && tree->OperIsCompare() && ((tree->gtFlags & GTF_RELOP_JMP_USED) != 0))
+    {
+        // TODO-CQ: Some phases currently have an invariant that JTRUE(x)
+        // must have x be a relational operator. As such, we cannot currently
+        // fold such cases and need to preserve the tree as is.
+        return tree;
+    }
 
     switch (oper)
     {
@@ -15923,10 +15838,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                         // Fold into GT_IND of null byref.
                         tree->BashToConst(0, TYP_BYREF);
-                        if (vnStore != nullptr)
-                        {
-                            fgValueNumberTreeConst(tree);
-                        }
+                        fgUpdateConstTreeValueNumber(tree);
 
                         JITDUMP("\nFolded to null byref:\n");
                         DISPTREE(tree);
@@ -16128,10 +16040,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             tree->BashToConst(static_cast<int>(i1));
             tree->AsIntCon()->gtFieldSeq = fieldSeq;
 
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(tree);
-            }
+            fgUpdateConstTreeValueNumber(tree);
 
             JITDUMP("Bashed to int constant:\n");
             DISPTREE(tree);
@@ -16351,10 +16260,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 #ifdef TARGET_64BIT
             tree->AsIntCon()->gtFieldSeq = fieldSeq;
 #endif
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(tree);
-            }
+            fgUpdateConstTreeValueNumber(tree);
 
             JITDUMP("Bashed to long constant:\n");
             DISPTREE(tree);
@@ -16509,10 +16415,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                    (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
             tree->BashToConst(d1, tree->TypeGet());
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(tree);
-            }
+            fgUpdateConstTreeValueNumber(tree);
 
             JITDUMP("Bashed to fp constant:\n");
             DISPTREE(tree);
@@ -20349,6 +20252,12 @@ bool GenTree::isCommutativeHWIntrinsic() const
             case NI_AVX512F_Min:
             {
                 return !varTypeIsFloating(node->GetSimdBaseType());
+            }
+
+            case NI_AVX512F_Add:
+            case NI_AVX512F_Multiply:
+            {
+                return node->GetOperandCount() == 2;
             }
 #endif // TARGET_XARCH
 
@@ -28580,6 +28489,110 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
     }
 }
 
+//---------------------------------------------------------------------------------------
+// GenTreeHWIntrinsic::ShouldConstantProp:
+//    Determines if a given operand should be constant propagated
+//
+// Arguments
+//    operand     - The operand to check
+//    vecCon      - The vector constant to check
+//
+// Return Value
+//    true if operand should be constant propagated, otherwise false
+//
+// Remarks
+//    This method takes the operand and vector constant given that assertion prop
+//    may be checking if the underlying constant for a lcl_var should be propagated
+//
+bool GenTreeHWIntrinsic::ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon)
+{
+    assert(HWIntrinsicInfo::CanBenefitFromConstantProp(gtHWIntrinsicId));
+
+    var_types simdBaseType = GetSimdBaseType();
+
+    switch (gtHWIntrinsicId)
+    {
+#if defined(TARGET_ARM64)
+        case NI_Vector64_op_Equality:
+        case NI_Vector64_op_Inequality:
+#endif // TARGET_ARM64
+        case NI_Vector128_op_Equality:
+        case NI_Vector128_op_Inequality:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_op_Equality:
+        case NI_Vector256_op_Inequality:
+        case NI_Vector512_op_Equality:
+        case NI_Vector512_op_Inequality:
+#endif // TARGET_XARCH
+        {
+            // We can optimize when the constant is zero, but only
+            // for non floating-point since +0.0 == -0.0.
+            return vecCon->IsZero() && !varTypeIsFloating(simdBaseType);
+        }
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_CompareEqual:
+        case NI_AdvSimd_Arm64_CompareEqual:
+        case NI_AdvSimd_Arm64_CompareEqualScalar:
+        {
+            // We can optimize when the constant is zero due to a
+            // specialized encoding for the instruction
+            return vecCon->IsZero();
+        }
+
+        case NI_AdvSimd_CompareGreaterThan:
+        case NI_AdvSimd_CompareGreaterThanOrEqual:
+        case NI_AdvSimd_Arm64_CompareGreaterThan:
+        case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+        case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
+        case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
+        {
+            // We can optimize when the constant is zero, but only
+            // for signed types, due to a specialized encoding for
+            // the instruction
+            return vecCon->IsZero() && !varTypeIsUnsigned(simdBaseType);
+        }
+#endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH)
+        case NI_SSE41_Insert:
+        {
+            // We can optimize for float when the constant is zero
+            // due to a specialized encoding for the instruction
+            return (simdBaseType == TYP_FLOAT) && vecCon->IsZero();
+        }
+
+        case NI_EVEX_CompareEqualMask:
+        case NI_EVEX_CompareNotEqualMask:
+        {
+            // We can optimize when the constant is zero, but only
+            // for non floating-point since +0.0 == -0.0
+            return vecCon->IsZero() && !varTypeIsFloating(simdBaseType);
+        }
+#endif // TARGET_XARCH
+
+        case NI_Vector128_Shuffle:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_Shuffle:
+        case NI_Vector512_Shuffle:
+#elif defined(TARGET_ARM64)
+        case NI_Vector64_Shuffle:
+#endif
+        {
+            // The shuffle indices need to be constant so we can preserve
+            // the node as a hwintrinsic instead of rewriting as a user call.
+            assert(GetOperandCount() == 2);
+            return IsUserCall() && (operand == Op(2));
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    return false;
+}
 #endif // FEATURE_HW_INTRINSICS
 
 //---------------------------------------------------------------------------------------
@@ -29611,6 +29624,34 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         return tree;
     }
 
+    NamedIntrinsic ni              = tree->GetHWIntrinsicId();
+    var_types      retType         = tree->TypeGet();
+    var_types      simdBaseType    = tree->GetSimdBaseType();
+    CorInfoType    simdBaseJitType = tree->GetSimdBaseJitType();
+    unsigned int   simdSize        = tree->GetSimdSize();
+
+    simd_t simdVal = {};
+
+    if (GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(tree, simdVal))
+    {
+        GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+        for (GenTree* arg : tree->Operands())
+        {
+            DEBUG_DESTROY_NODE(arg);
+        }
+
+        vecCon->gtSimdVal = simdVal;
+
+        if (fgGlobalMorph)
+        {
+            INDEBUG(vecCon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+        }
+
+        fgUpdateConstTreeValueNumber(vecCon);
+        return vecCon;
+    }
+
     GenTree* op1     = nullptr;
     GenTree* op2     = nullptr;
     GenTree* op3     = nullptr;
@@ -29640,6 +29681,86 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         {
             return tree;
         }
+    }
+
+    if (tree->OperIsConvertMaskToVector())
+    {
+        GenTree* op = op1;
+
+        if (!op->OperIsHWIntrinsic())
+        {
+            return tree;
+        }
+
+        unsigned            simdBaseTypeSize = genTypeSize(simdBaseType);
+        GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
+
+        if (!cvtOp->OperIsConvertVectorToMask())
+        {
+            return tree;
+        }
+
+        if ((genTypeSize(cvtOp->GetSimdBaseType()) != simdBaseTypeSize))
+        {
+            // We need the operand to be the same kind of mask; otherwise
+            // the bitwise operation can differ in how it performs
+            return tree;
+        }
+
+#if defined(TARGET_XARCH)
+        GenTree* vectorNode = cvtOp->Op(1);
+#elif defined(TARGET_ARM64)
+        GenTree* vectorNode = cvtOp->Op(2);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+        DEBUG_DESTROY_NODE(op, tree);
+        INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        return vectorNode;
+    }
+
+    if (tree->OperIsConvertVectorToMask())
+    {
+        GenTree* op = op1;
+
+#if defined(TARGET_ARM64)
+        if (!op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
+        {
+            return tree;
+        }
+        op = op2;
+#endif // TARGET_ARM64
+
+        if (!op->OperIsHWIntrinsic())
+        {
+            return tree;
+        }
+
+        unsigned            simdBaseTypeSize = genTypeSize(simdBaseType);
+        GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
+
+        if (!cvtOp->OperIsConvertMaskToVector())
+        {
+            return tree;
+        }
+
+        if ((genTypeSize(cvtOp->GetSimdBaseType()) != simdBaseTypeSize))
+        {
+            // We need the operand to be the same kind of mask; otherwise
+            // the bitwise operation can differ in how it performs
+            return tree;
+        }
+
+        GenTree* maskNode = cvtOp->Op(1);
+
+#if defined(TARGET_ARM64)
+        DEBUG_DESTROY_NODE(op1);
+#endif // TARGET_ARM64
+
+        DEBUG_DESTROY_NODE(op, tree);
+        return maskNode;
     }
 
     bool       isScalar = false;
@@ -29673,12 +29794,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
 
     GenTree* resultNode = tree;
-
-    NamedIntrinsic ni              = tree->GetHWIntrinsicId();
-    var_types      retType         = tree->TypeGet();
-    var_types      simdBaseType    = tree->GetSimdBaseType();
-    CorInfoType    simdBaseJitType = tree->GetSimdBaseJitType();
-    unsigned int   simdSize        = tree->GetSimdSize();
 
     if (otherNode == nullptr)
     {
@@ -30458,10 +30573,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
         if (resultNode->OperIsConst())
         {
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(resultNode);
-            }
+            fgUpdateConstTreeValueNumber(resultNode);
 
             // Make sure no side effect flags are set on this constant node.
             resultNode->gtFlags &= ~GTF_ALL_EFFECT;
