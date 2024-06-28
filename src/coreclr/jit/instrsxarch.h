@@ -88,7 +88,7 @@ INST4(lea,              "lea",              IUM_WR, BAD_CODE,     BAD_CODE,     
 
 // Note that emitter has only partial support for BT. It can only emit the reg,reg form
 // and the registers need to be reversed to get the correct encoding.
-INST3(bt,               "bt",               IUM_RD, 0x0F00A3,     BAD_CODE,     0x0F00A3,                                INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF)
+INST3(bt,               "bt",               IUM_RD, 0x0F00A3,     BAD_CODE,     0x0F00A3,                                INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF | Encoding_REX2)
 
 INST3(bsf,              "bsf",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BC,                                INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Undefined_CF | Encoding_REX2)
 INST3(bsr,              "bsr",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BD,                                INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Undefined_CF | Encoding_REX2)
