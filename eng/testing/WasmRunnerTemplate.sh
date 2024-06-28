@@ -136,6 +136,12 @@ pushd $EXECUTION_DIR
 # ========================= BEGIN Test Execution ============================= 
 echo ----- start $(date) ===============  To repro directly: ===================================================== 
 echo pushd $EXECUTION_DIR
+
+echo Pavel memory stats before
+free -m
+vmstat
+top -n 1
+
 # RunCommands defined in eng\testing\tests.wasm.targets
 [[RunCommandsEcho]]
 echo popd
@@ -146,6 +152,12 @@ pushd $EXECUTION_DIR
 _exitCode=$?
 popd
 echo ----- end $(date) ----- exit code $_exitCode ----------------------------------------------------------
+
+echo Pavel memory stats after
+free -m
+vmstat
+top -n 1
+
 
 echo "XHarness artifacts: $XHARNESS_OUT"
 
