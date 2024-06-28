@@ -74,4 +74,18 @@ public class NativeTests : BlazorWasmTestBase
         (CommandResult res, _) = BlazorPublish(new BlazorBuildOptions(id, config, ExpectSuccess: false));
         Assert.Contains("AOT is not supported without IL trimming", res.Output);
     }
+
+    [Theory]
+    [InlineData("Debug")]
+    public void BlazorWasm_CannotAOT_InDebug(string config)
+    {
+        string id = $"blazorwasm_{config}_aot_{GetRandomId()}";
+        CreateBlazorWasmTemplateProject(id);
+        AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
+                                    extraItems: null,
+                                    extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
+
+        (CommandResult res, _) = BlazorPublish(new BlazorBuildOptions(id, config, ExpectSuccess: false));
+        Assert.Contains("AOT is not supported without in debug configuration", res.Output);
+    }
 }
