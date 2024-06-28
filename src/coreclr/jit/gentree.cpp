@@ -21492,18 +21492,18 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 {
                     assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
-                    if (simdSize == 64)
+                    bool isV512Supported = false;
+                    if (compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512DQ_VL))
                     {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
-                        intrinsic = NI_AVX512DQ_MultiplyLow;
-                    }
-                    else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-                    {
-                        intrinsic = NI_AVX10v1_MultiplyLow;
-                    }
-                    else if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
-                    {
-                        intrinsic = NI_AVX512DQ_VL_MultiplyLow;
+                        if (simdSize == 64)
+                        {
+                            assert(isV512Supported);
+                            intrinsic = NI_AVX512DQ_MultiplyLow;
+                        }
+                        else
+                        {
+                            intrinsic = !isV512Supported ? NI_AVX10v1_MultiplyLow : NI_AVX512DQ_VL_MultiplyLow;
+                        }
                     }
                     else
                     {
