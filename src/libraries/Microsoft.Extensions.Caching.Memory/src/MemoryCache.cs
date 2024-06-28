@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -153,7 +154,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     coherentState.RemoveEntry(priorEntry, _options);
                 }
             }
-            else if (!UpdateCacheSizeExceedsCapacity(entry, coherentState))
+            else if (!UpdateCacheSizeExceedsCapacity(entry, priorEntry, coherentState))
             {
                 bool entryAdded;
                 if (priorEntry == null)
@@ -166,15 +167,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     // Try to update with the new entry if a previous entries exist.
                     entryAdded = coherentState._entries.TryUpdate(entry.Key, entry, priorEntry);
 
-                    if (entryAdded)
-                    {
-                        if (_options.HasSizeLimit)
-                        {
-                            // The prior entry was removed, decrease the by the prior entry's size
-                            Interlocked.Add(ref coherentState._cacheSize, -priorEntry.Size);
-                        }
-                    }
-                    else
+                    if (!entryAdded)
                     {
                         // The update will fail if the previous entry was removed after retrieval.
                         // Adding the new entry will succeed only if no entry has been added since.
@@ -192,7 +185,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     if (_options.HasSizeLimit)
                     {
                         // Entry could not be added, reset cache size
-                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size);
+                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size + (priorEntry?.Size).GetValueOrDefault());
                     }
                     entry.SetExpired(EvictionReason.Replaced);
                     entry.InvokeEvictionCallbacks();
@@ -444,7 +437,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// Returns true if increasing the cache size by the size of entry would
         /// cause it to exceed any size limit on the cache, otherwise, returns false.
         /// </summary>
-        private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry, CoherentState coherentState)
+        private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry, CacheEntry? priorEntry, CoherentState coherentState)
         {
             long sizeLimit = _options.SizeLimitValue;
             if (sizeLimit < 0)
@@ -456,6 +449,11 @@ namespace Microsoft.Extensions.Caching.Memory
             for (int i = 0; i < 100; i++)
             {
                 long newSize = sizeRead + entry.Size;
+                if (priorEntry != null)
+                {
+                    Debug.Assert(entry.Key == priorEntry.Key);
+                    newSize -= priorEntry.Size;
+                }
 
                 if ((ulong)newSize > (ulong)sizeLimit)
                 {
