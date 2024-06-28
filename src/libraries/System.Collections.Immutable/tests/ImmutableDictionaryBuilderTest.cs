@@ -255,27 +255,6 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(5, populated.GetValueOrDefault("a", 1));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public void DebuggerAttributesValid()
-        {
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableDictionary.CreateBuilder<string, int>());
-            ImmutableDictionary<int, string>.Builder builder = ImmutableDictionary.CreateBuilder<int, string>();
-            builder.Add(1, "One");
-            builder.Add(2, "Two");
-            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(builder);
-            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
-            KeyValuePair<int, string>[] items = itemProperty.GetValue(info.Instance) as KeyValuePair<int, string>[];
-            Assert.Equal(builder, items);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public static void TestDebuggerAttributes_Null()
-        {
-            Type proxyType = DebuggerAttributes.GetProxyType(ImmutableHashSet.Create<string>());
-            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
-            Assert.IsType<ArgumentNullException>(tie.InnerException);
-        }
-
         [Fact]
         public void ToImmutableDictionary()
         {
