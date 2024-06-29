@@ -57,9 +57,9 @@ namespace System.Text.Unicode
                 goto ProcessInputOfLessThanDWordSize;
             }
 
-            if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && inputLength > 64)
+            if (Vector256.IsHardwareAccelerated && Avx2.IsSupported && inputLength > 32)
             {
-                return GetPointerToFirstInvalidByteAvx512(pInputBuffer, inputLength, out utf16CodeUnitCountAdjustment, out scalarCountAdjustment);
+                return GetPointerToFirstInvalidByte_Avx2(pInputBuffer, inputLength, out utf16CodeUnitCountAdjustment, out scalarCountAdjustment);
             }
 
             byte* pFinalPosWhereCanReadDWordFromInputBuffer = pInputBuffer + (uint)inputLength - sizeof(uint);
@@ -764,11 +764,11 @@ namespace System.Text.Unicode
         // Which is based on "Validating UTF-8 In Less Than One Instruction Per Byte" article available at https://arxiv.org/abs/2010.03090
         //   (c) John Keiser, Daniel Lemire
 
-        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
-        private static byte* GetPointerToFirstInvalidByteAvx512(byte* pInputBuffer, int inputLength,
+        [CompExactlyDependsOn(typeof(Avx2))]
+        private static byte* GetPointerToFirstInvalidByte_Avx2(byte* pInputBuffer, int inputLength,
             out int utf16CodeUnitCountAdjustment, out int scalarCountAdjustment)
         {
-            Debug.Assert(inputLength > 64);
+            Debug.Assert(inputLength > 32);
 
             const byte tooShort = 1 << 0;
             const byte tooLong = 1 << 1;
@@ -782,217 +782,207 @@ namespace System.Text.Unicode
             const byte carry = tooShort | tooLong | twoConts;
 
             int processedLength = 0;
-            Vector512<byte> prevInputBlock = Vector512<byte>.Zero;
-            Vector512<byte> maxValue = Vector512.Create(255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-                255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-                255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-                0b11110000 - 1, 0b11100000 - 1, 0b11000000 - 1);
-            Vector512<byte> prevIncomplete = Avx512BW.SubtractSaturate(prevInputBlock, maxValue);
-            Vector512<byte> shuf1 = Vector512.Create(tooLong, tooLong, tooLong, tooLong,
-                tooLong, tooLong, tooLong, tooLong,
-                twoConts, twoConts, twoConts, twoConts,
-                tooShort | overlong2,
-                tooShort,
-                tooShort | overlong3 | surrogate,
-                tooShort | tooLarge | tooLarge1000 | overlong4,
-                tooLong, tooLong, tooLong, tooLong,
-                tooLong, tooLong, tooLong, tooLong,
-                twoConts, twoConts, twoConts, twoConts,
-                tooShort | overlong2,
-                tooShort,
-                tooShort | overlong3 | surrogate,
-                tooShort | tooLarge | tooLarge1000 | overlong4,
-                tooLong, tooLong, tooLong, tooLong,
-                tooLong, tooLong, tooLong, tooLong,
-                twoConts, twoConts, twoConts, twoConts,
-                tooShort | overlong2,
-                tooShort,
-                tooShort | overlong3 | surrogate,
-                tooShort | tooLarge | tooLarge1000 | overlong4,
-                tooLong, tooLong, tooLong, tooLong,
-                tooLong, tooLong, tooLong, tooLong,
-                twoConts, twoConts, twoConts, twoConts,
-                tooShort | overlong2,
-                tooShort,
-                tooShort | overlong3 | surrogate,
-                tooShort | tooLarge | tooLarge1000 | overlong4);
-            Vector512<byte> shuf2 = Vector512.Create(
-                carry | overlong3 | overlong2 | overlong4,
-                carry | overlong2,
-                carry, carry,
-                carry | tooLarge,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000 | surrogate,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | overlong3 | overlong2 | overlong4,
-                carry | overlong2,
-                carry, carry,
-                carry | tooLarge,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000 | surrogate,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | overlong3 | overlong2 | overlong4,
-                carry | overlong2,
-                carry, carry,
-                carry | tooLarge,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000 | surrogate,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | overlong3 | overlong2 | overlong4,
-                carry | overlong2,
-                carry, carry,
-                carry | tooLarge,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                carry | tooLarge | tooLarge1000 | surrogate,
-                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000);
-            Vector512<byte> shuf3 = Vector512.Create(tooShort, tooShort, tooShort, tooShort,
-                tooShort, tooShort, tooShort, tooShort,
-                tooLong | overlong2 | twoConts | overlong3 | tooLarge1000 | overlong4,
-                tooLong | overlong2 | twoConts | overlong3 | tooLarge,
-                tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                tooShort, tooShort, tooShort, tooShort, tooShort, tooShort, tooShort, tooShort,
-                tooShort, tooShort, tooShort, tooShort,
-                tooLong | overlong2 | twoConts | overlong3 | tooLarge1000 | overlong4,
-                tooLong | overlong2 | twoConts | overlong3 | tooLarge,
-                tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                tooShort, tooShort, tooShort, tooShort,
-                tooShort, tooShort, tooShort, tooShort,
-                tooShort, tooShort, tooShort, tooShort,
-                tooLong | overlong2 | twoConts | overlong3 | tooLarge1000 | overlong4,
-                tooLong | overlong2 | twoConts | overlong3 | tooLarge,
-                tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                tooShort, tooShort, tooShort, tooShort, tooShort, tooShort, tooShort, tooShort,
-                tooShort, tooShort, tooShort, tooShort,
-                tooLong | overlong2 | twoConts | overlong3 | tooLarge1000 | overlong4,
-                tooLong | overlong2 | twoConts | overlong3 | tooLarge,
-                tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                tooShort, tooShort, tooShort, tooShort);
-            Vector512<byte> thirdByte = Vector512.Create((byte)(0b11100000u - 0x80));
-            Vector512<byte> fourthByte = Vector512.Create((byte)(0b11110000u - 0x80));
-            Vector512<byte> v0f = Vector512.Create((byte)0x0F);
-            Vector512<byte> v80 = Vector512.Create((byte)0x80);
 
+            Vector256<byte> prevInputBlock = Vector256<byte>.Zero;
+            Vector256<byte> maxValue = Vector256.Create(255, 255, 255, 255, 255, 255, 255, 255,
+                255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+                255, 255, 255, 255, 255, 0b11110000 - 1, 0b11100000 - 1, 0b11000000 - 1);
+            Vector256<byte> prevIncomplete = Avx2.SubtractSaturate(prevInputBlock, maxValue);
+            Vector256<byte> shuf1 = Vector256.Create(tooLong, tooLong, tooLong, tooLong,
+                    tooLong, tooLong, tooLong, tooLong,
+                    twoConts, twoConts, twoConts, twoConts,
+                    tooShort | overlong2,
+                    tooShort,
+                    tooShort | overlong3 | surrogate,
+                    tooShort | tooLarge | tooLarge1000 | overlong4,
+                    tooLong, tooLong, tooLong, tooLong,
+                    tooLong, tooLong, tooLong, tooLong,
+                    twoConts, twoConts, twoConts, twoConts,
+                    tooShort | overlong2,
+                    tooShort,
+                    tooShort | overlong3 | surrogate,
+                    tooShort | tooLarge | tooLarge1000 | overlong4);
+            Vector256<byte> shuf2 = Vector256.Create(carry | overlong3 | overlong2 | overlong4,
+                    carry | overlong2,
+                    carry, carry,
+                    carry | tooLarge,
+                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                    carry | tooLarge | tooLarge1000 | surrogate,
+                    carry | tooLarge | tooLarge1000,
+                    carry | tooLarge | tooLarge1000,
+                    carry | overlong3 | overlong2 | overlong4,
+                    carry | overlong2,
+                    carry, carry,
+                    carry | tooLarge,
+                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                    carry | tooLarge | tooLarge1000 | surrogate,
+                    carry | tooLarge | tooLarge1000,
+                    carry | tooLarge | tooLarge1000);
+            Vector256<byte> shuf3 = Vector256.Create(tooShort, tooShort, tooShort, tooShort,
+                    tooShort, tooShort, tooShort, tooShort,
+                    tooLong | overlong2 | twoConts | overlong3 | tooLarge1000 | overlong4,
+                    tooLong | overlong2 | twoConts | overlong3 | tooLarge,
+                    tooLong | overlong2 | twoConts | surrogate | tooLarge,
+                    tooLong | overlong2 | twoConts | surrogate | tooLarge,
+                    tooShort, tooShort, tooShort, tooShort, tooShort, tooShort, tooShort, tooShort,
+                    tooShort, tooShort, tooShort, tooShort,
+                    tooLong | overlong2 | twoConts | overlong3 | tooLarge1000 | overlong4,
+                    tooLong | overlong2 | twoConts | overlong3 | tooLarge,
+                    tooLong | overlong2 | twoConts | surrogate | tooLarge,
+                    tooLong | overlong2 | twoConts | surrogate | tooLarge,
+                    tooShort, tooShort, tooShort, tooShort);
+            Vector256<byte> thirdByte = Vector256.Create((byte)(0b11100000u - 0x80));
+            Vector256<byte> fourthByte = Vector256.Create((byte)(0b11110000u - 0x80));
+            Vector256<byte> v0f = Vector256.Create((byte)0x0F);
+            Vector256<byte> v80 = Vector256.Create((byte)0x80);
+            // So we want to count the number of 4-byte sequences,
+            // the number of 4-byte sequences, 3-byte sequences, and
+            // the number of 2-byte sequences.
+            // We can do it indirectly. We know how many bytes in total
+            // we have (length). Let us assume that the length covers
+            // only complete sequences (we need to adjust otherwise).
+            // We have that
+            // length = 4 * n4 + 3 * n3 + 2 * n2 + n1
+            // where n1 is the number of 1-byte sequences (ASCII),
+            // n2 is the number of 2-byte sequences, n3 is the number
+            // of 3-byte sequences, and n4 is the number of 4-byte sequences.
+            //
+            // Let ncon be the number of continuation bytes, then we have
+            // length =  n4 + n3 + n2 + ncon + n1
+            //
+            // We can solve for n2 and n3 in terms of the other variables:
+            // n3 = n1 - 2 * n4 + 2 * ncon - length
+            // n2 = -2 * n1 + n4 - 4 * ncon + 2 * length
+            // Thus we only need to count the number of continuation bytes,
+            // the number of ASCII bytes and the number of 4-byte sequences.
+            // But we need even less because we compute
+            // utfadjust = -2 * n4 - 2 * n3 - n2
+            // so n1 and length cancel out in the end. Thus we only need to compute
+            // n3' =  - 2 * n4 + 2 * ncon
+            // n2' = n4 - 4 * ncon
+            // The *block* here is what begins at processedLength and ends
+            // at processedLength/16*16 or when an error occurs.
             // The block goes from processedLength to processedLength/16*16.
             int countBytes = 0; // number of continuation bytes in the block
             int n4 = 0; // number of 4-byte sequences that start in this block
-            for (; processedLength + 64 <= inputLength; processedLength += 64)
+            for (; processedLength + 32 <= inputLength; processedLength += 32)
             {
-                Vector512<byte> currentBlock = Vector512.Load(pInputBuffer + processedLength);
-                ulong mask = currentBlock.ExtractMostSignificantBits();
+                Vector256<byte> currentBlock = Vector256.Load(pInputBuffer + processedLength);
+                int mask = (int)currentBlock.ExtractMostSignificantBits();
                 if (mask == 0)
                 {
                     // We have an ASCII block, no need to process it, but
                     // we need to check if the previous block was incomplete.
-                    if (Vector512.GreaterThan(prevIncomplete, Vector512<byte>.Zero).ExtractMostSignificantBits() != 0)
+                    if (!Avx.TestZ(prevIncomplete, prevIncomplete))
                     {
-                        byte* invalidBytePointer = SimpleRewindAndValidateWithErrors(16 - 3, pInputBuffer + processedLength - 3, inputLength - processedLength + 3);
+                        byte* invalidBytePointer = SimpleRewindAndValidateWithErrors(32 - 3, pInputBuffer + processedLength - 3, inputLength - processedLength + 3);
                         // So the code is correct up to invalidBytePointer
                         if (invalidBytePointer < pInputBuffer + processedLength)
+                        {
                             RemoveCounters(invalidBytePointer, pInputBuffer + processedLength, ref n4, ref countBytes);
+                        }
                         else
+                        {
                             AddCounters(pInputBuffer + processedLength, invalidBytePointer, ref n4, ref countBytes);
+                        }
                         (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = CalculateN2N3FinalSimdAdjustments(n4, countBytes);
                         return invalidBytePointer;
                     }
-
-                    prevIncomplete = Vector512<byte>.Zero;
+                    prevIncomplete = Vector256<byte>.Zero;
 
                     // Often, we have a lot of ASCII characters in a row.
-                    int localAsciiRun = 64;
+                    int localAsciiRun = 32;
                     if (processedLength + localAsciiRun + 64 <= inputLength)
                     {
                         for (; processedLength + localAsciiRun + 64 <= inputLength; localAsciiRun += 64)
                         {
-                            Vector512<byte> block = Vector512.Load(pInputBuffer + processedLength + localAsciiRun);
-                            if (block.ExtractMostSignificantBits() != 0)
+                            Vector256<byte> block1 = Vector256.Load(pInputBuffer + processedLength + localAsciiRun);
+                            Vector256<byte> block2 = Vector256.Load(pInputBuffer + processedLength + localAsciiRun + 32);
+                            if ((block1 | block2).ExtractMostSignificantBits() != 0)
+                            {
                                 break;
+                            }
                         }
-                        processedLength += localAsciiRun - 64;
+                        processedLength += localAsciiRun - 32;
                     }
+
                 }
                 else // Contains non-ASCII characters, we need to do non-trivial processing
                 {
                     // Use SubtractSaturate to effectively compare if bytes in block are greater than markers.
-                    Vector512<int> moveMask = Vector512.Create(28, 29, 30, 31, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
-                    Vector512<byte> shuffled = Avx512F.PermuteVar16x32x2(currentBlock.AsInt32(), moveMask, prevInputBlock.AsInt32()).AsByte();
+                    Vector256<byte> shuffled = Avx2.Permute2x128(prevInputBlock, currentBlock, 0x21);
                     prevInputBlock = currentBlock;
+                    Vector256<byte> prev1 = Avx2.AlignRight(prevInputBlock, shuffled, 16 - 1);
+                    Vector256<byte> byte1High = Avx2.Shuffle(shuf1, Avx2.ShiftRightLogical(prev1.AsUInt16(), 4).AsByte() & v0f);// takes the XXXX 0000 part of the previous byte
+                    Vector256<byte> byte1Low = Avx2.Shuffle(shuf2, prev1 & v0f); // takes the 0000 XXXX part of the previous part
+                    Vector256<byte> byte2High = Avx2.Shuffle(shuf3, Avx2.ShiftRightLogical(currentBlock.AsUInt16(), 4).AsByte() & v0f); // takes the XXXX 0000 part of the current byte
+                    Vector256<byte> sc = byte1High & byte1Low & byte2High;
+                    Vector256<byte> prev2 = Avx2.AlignRight(prevInputBlock, shuffled, 16 - 2);
+                    Vector256<byte> prev3 = Avx2.AlignRight(prevInputBlock, shuffled, 16 - 3);
+                    Vector256<byte> isThirdByte = Avx2.SubtractSaturate(prev2, thirdByte);
+                    Vector256<byte> isFourthByte = Avx2.SubtractSaturate(prev3, fourthByte);
+                    Vector256<byte> must23 = isThirdByte | isFourthByte;
+                    Vector256<byte> must23As80 = must23 & v80;
+                    Vector256<byte> error = must23As80 ^ sc;
 
-                    Vector512<byte> prev1 = Avx512BW.AlignRight(prevInputBlock, shuffled, 16 - 1);
-
-                    // takes the XXXX 0000 part of the previous byte
-                    Vector512<byte> byte1High = Avx512BW.Shuffle(shuf1, Avx512BW.ShiftRightLogical(prev1.AsUInt16(), 4).AsByte() & v0f);
-                    Vector512<byte> byte1Low = Avx512BW.Shuffle(shuf2, prev1 & v0f); // takes the 0000 XXXX part of the previous part
-
-                    // takes the XXXX 0000 part of the current byte
-                    Vector512<byte> byte2High = Avx512BW.Shuffle(shuf3, Avx512BW.ShiftRightLogical(currentBlock.AsUInt16(), 4).AsByte() & v0f);
-                    Vector512<byte> sc = byte1High & byte1Low & byte2High;
-                    Vector512<byte> prev2 = Avx512BW.AlignRight(prevInputBlock, shuffled, 16 - 2);
-                    Vector512<byte> prev3 = Avx512BW.AlignRight(prevInputBlock, shuffled, 16 - 3);
-                    Vector512<byte> isThirdByte = Avx512BW.SubtractSaturate(prev2, thirdByte);
-                    Vector512<byte> isFourthByte = Avx512BW.SubtractSaturate(prev3, fourthByte);
-                    Vector512<byte> must23 = isThirdByte | isFourthByte;
-                    Vector512<byte> must23As80 = must23 & v80;
-                    Vector512<byte> error = must23As80 ^ sc;
-
-                    if (Vector512.GreaterThan(error, Vector512<byte>.Zero).ExtractMostSignificantBits() != 0)
+                    if (!Avx.TestZ(error, error))
                     {
-                        byte* invalidBytePointer;
-                        if (processedLength == 0)
-                            invalidBytePointer = SimpleRewindAndValidateWithErrors(0, pInputBuffer + processedLength, inputLength);
-                        else
-                            invalidBytePointer = SimpleRewindAndValidateWithErrors(3, pInputBuffer + processedLength - 3, inputLength - processedLength + 3);
+                        byte* invalidBytePointer = processedLength == 0 ?
+                            SimpleRewindAndValidateWithErrors(0, pInputBuffer + processedLength, inputLength) :
+                            SimpleRewindAndValidateWithErrors(3, pInputBuffer + processedLength - 3, inputLength - processedLength + 3);
+
                         if (invalidBytePointer < pInputBuffer + processedLength)
+                        {
                             RemoveCounters(invalidBytePointer, pInputBuffer + processedLength, ref n4, ref countBytes);
+                        }
                         else
+                        {
                             AddCounters(pInputBuffer + processedLength, invalidBytePointer, ref n4, ref countBytes);
-                        (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = (n4, countBytes);
+                        }
+                        (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = CalculateN2N3FinalSimdAdjustments(n4, countBytes);
                         return invalidBytePointer;
                     }
 
-                    prevIncomplete = Avx512BW.SubtractSaturate(currentBlock, maxValue);
+                    prevIncomplete = Avx2.SubtractSaturate(currentBlock, maxValue);
                     countBytes += BitOperations.PopCount(byte2High.ExtractMostSignificantBits());
-                    // We use two instructions (SubtractSaturate and ExtractMostSignificantBits) to update n4, with one arithmetic operation.
-                    n4 += BitOperations.PopCount(Avx512BW.SubtractSaturate(currentBlock, fourthByte).ExtractMostSignificantBits());
+                    // We use two instructions (SubtractSaturate and MoveMask) to update n4, with one arithmetic operation.
+                    n4 += BitOperations.PopCount(Avx2.SubtractSaturate(currentBlock, fourthByte).ExtractMostSignificantBits());
                 }
             }
-
             // We may still have an error.
-            bool hasIncomplete = Vector512.GreaterThan(prevIncomplete, Vector512<byte>.Zero).ExtractMostSignificantBits() != 0;
+            bool hasIncomplete = !Avx.TestZ(prevIncomplete, prevIncomplete);
             if (processedLength < inputLength || hasIncomplete)
             {
                 byte* invalidBytePointer;
                 if (processedLength == 0 || !hasIncomplete)
+                {
                     invalidBytePointer = SimpleRewindAndValidateWithErrors(0, pInputBuffer + processedLength, inputLength - processedLength);
+                }
                 else
+                {
                     invalidBytePointer = SimpleRewindAndValidateWithErrors(3, pInputBuffer + processedLength - 3, inputLength - processedLength + 3);
+                }
                 if (invalidBytePointer != pInputBuffer + inputLength)
                 {
                     if (invalidBytePointer < pInputBuffer + processedLength)
+                    {
                         RemoveCounters(invalidBytePointer, pInputBuffer + processedLength, ref n4, ref countBytes);
+                    }
                     else
+                    {
                         AddCounters(pInputBuffer + processedLength, invalidBytePointer, ref n4, ref countBytes);
+                    }
                     (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = CalculateN2N3FinalSimdAdjustments(n4, countBytes);
                     return invalidBytePointer;
                 }
                 AddCounters(pInputBuffer + processedLength, invalidBytePointer, ref n4, ref countBytes);
             }
-
             (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = CalculateN2N3FinalSimdAdjustments(n4, countBytes);
             return pInputBuffer + inputLength;
         }
