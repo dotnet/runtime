@@ -12,16 +12,14 @@ namespace System.Buffers.Text
         /// </summary>
         /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
-        /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
-        /// <param name="standardFormat">Expected format of the Utf8 string</param>
+        /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed</param>
+        /// <param name="standardFormat">Expected format of the Utf8 string. Supported formats are G and l.</param>
         /// <returns>
         /// true for success. "bytesConsumed" contains the length in bytes of the substring that was parsed.
         /// false if the string was not syntactically valid or an overflow or underflow occurred. "bytesConsumed" is set to 0.
         /// </returns>
         /// <remarks>
-        /// Formats supported:
-        ///     G (default)   True/False
-        ///     l             true/false
+        /// The parsing is case insensitive and the format parameter is not currently used.
         /// </remarks>
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
