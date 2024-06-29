@@ -1599,7 +1599,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnMono("Mono does not support pointer compatibility in Array.Copy")]
         public static unsafe void Copy_CompatiblePointers()
         {
             // Can copy between compatible pointers
