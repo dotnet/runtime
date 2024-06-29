@@ -121,6 +121,7 @@ namespace System.Net.Http
                 {
                     activity.SetTag("server.address", requestUri.Host);
                     activity.SetTag("server.port", requestUri.Port);
+                    activity.SetTag("uri.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
                 }
 
                 KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method);

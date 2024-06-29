@@ -12,6 +12,41 @@ namespace System.Net.Http
 {
     internal static class DiagnosticsHelper
     {
+        internal static string GetRedactedUriString(Uri uri)
+        {
+            Debug.Assert(uri.IsAbsoluteUri);
+            string uriString = uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.UserInfo, UriFormat.UriEscaped);
+
+            if (GlobalHttpSettings.DiagnosticsHandler.DisableUriQueryRedaction)
+            {
+                return uriString;
+            }
+
+            int fragmentOffset = uriString.IndexOf('#');
+            int queryOffset = uriString.IndexOf('?');
+            if (fragmentOffset >= 0 && queryOffset > fragmentOffset)
+            {
+                // Not a query delimiter, but a '?' in the fragment.
+                queryOffset = -1;
+            }
+
+            if (queryOffset < 0 || queryOffset == uriString.Length - 1 || queryOffset == fragmentOffset - 1)
+            {
+                // No query or empty query.
+                return uriString;
+            }
+
+            if (fragmentOffset < 0)
+            {
+                return $"{uriString.AsSpan(0, queryOffset + 1)}*";
+            }
+            else
+            {
+                ReadOnlySpan<char> uriSpan = uriString.AsSpan();
+                return $"{uriSpan[..(queryOffset + 1)]}*{uriSpan[fragmentOffset..]}";
+            }
+        }
+
         internal static KeyValuePair<string, object?> GetMethodTag(HttpMethod method)
         {
             // Return canonical names for known methods and "_OTHER" for unknown ones.

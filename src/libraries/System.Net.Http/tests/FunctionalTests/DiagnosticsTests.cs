@@ -382,9 +382,9 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(200)]
         [InlineData(404)]
-        public void SendAsync_ExpectedTagsLogged(int statusCode)
+        public async Task SendAsync_ExpectedTagsLogged(int statusCode)
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync, statusCodeStr) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync, statusCodeStr) =>
             {
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -392,6 +392,7 @@ namespace System.Net.Http.Functional.Tests
                 parentActivity.Start();
 
                 Uri? currentUri = null;
+                string? expectedUriFull = null;
 
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
@@ -409,6 +410,7 @@ namespace System.Net.Http.Functional.Tests
                     VerifyTag(tags, "server.address", currentUri.Host);
                     VerifyTag(tags, "server.port", currentUri.Port);
                     VerifyTag(tags, "http.request.method", "GET");
+                    VerifyTag(tags, "uri.full", expectedUriFull);
 
                     if (kvp.Key.EndsWith(".Stop"))
                     {
@@ -436,6 +438,8 @@ namespace System.Net.Http.Functional.Tests
                     await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
                         async uri =>
                         {
+                            uri = new Uri($"{uri.Scheme}://user:pass@{uri.Authority}/1/2/?a=1&b=2#fragment");
+                            expectedUriFull = $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}?*{uri.Fragment}";
                             currentUri = uri;
                             await GetAsync(useVersion, testAsync, uri);
                             await activityStopTcs.Task;
@@ -447,7 +451,7 @@ namespace System.Net.Http.Functional.Tests
                             AssertHeadersAreInjected(requestData, parentActivity);
                         });
                 }
-            }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString()).DisposeAsync();
         }
 
         protected static void VerifyTag<T>(KeyValuePair<string, object?>[] tags, string name, T value)
