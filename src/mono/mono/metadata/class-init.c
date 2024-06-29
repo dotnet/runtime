@@ -4268,26 +4268,26 @@ build_variance_search_table_inner (MonoClass *klass, MonoVarianceSearchEntry *bu
 	}
 }
 
+// Only call this with the loader lock held
 static void
 build_variance_search_table (MonoClass *klass) {
 	// FIXME: Is there a way to deterministically compute the right capacity?
 	int buf_size = 512, buf_count = 0;
-	MonoVarianceSearchEntry *buf = g_alloca (buf_size * sizeof(MonoVarianceSearchEntry));
+	MonoVarianceSearchEntry *buf = g_alloca (buf_size * sizeof(MonoVarianceSearchEntry)),
+		*result = NULL;
 	memset (buf, 0, buf_size * sizeof(MonoVarianceSearchEntry));
-
-	klass->variant_search_table = NULL;
-	klass->variant_search_table_length = 0;
-	// Break recursion
-	klass->variant_search_table_inited = TRUE;
-
 	build_variance_search_table_inner (klass, buf, buf_size, &buf_count, klass);
 
 	if (buf_count) {
 		guint bytes = buf_count * sizeof(MonoVarianceSearchEntry);
-		klass->variant_search_table = g_malloc (bytes);
-		memcpy (klass->variant_search_table, buf, bytes);
+		result = g_malloc (bytes);
+		memcpy (result, buf, bytes);
 	}
 	klass->variant_search_table_length = buf_count;
+	klass->variant_search_table = result;
+	// Ensure we do not set the inited flag until we've stored the result pointer
+	mono_memory_barrier ();
+	klass->variant_search_table_inited = TRUE;
 }
 
 void
@@ -4296,8 +4296,12 @@ mono_class_get_variance_search_table (MonoClass *klass, MonoVarianceSearchEntry 
 	g_assert (table);
 	g_assert (table_size);
 
-	if (!klass->variant_search_table_inited)
-		build_variance_search_table (klass);
+	if (!klass->variant_search_table_inited) {
+		mono_loader_lock ();
+		if (!klass->variant_search_table_inited)
+			build_variance_search_table (klass);
+		mono_loader_unlock ();
+	}
 
 	*table = (MonoVarianceSearchEntry *)klass->variant_search_table;
 	*table_size = klass->variant_search_table_length;
