@@ -8,7 +8,7 @@ namespace System.Runtime.CompilerServices
 {
     [StackTraceHidden]
     [DebuggerStepThrough]
-    internal static unsafe partial class CastHelpers
+    internal static unsafe class CastHelpers
     {
         // In coreclr the table is allocated and written to on the native side.
         internal static int[]? s_table;
@@ -24,9 +24,6 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CastHelpers_AreTypesAssignableHelper")]
-        private static partial Interop.BOOL AreTypesAssignableHelper(void* fromTypeHnd, void* toTypeHnd);
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
@@ -317,30 +314,6 @@ namespace System.Runtime.CompilerServices
             }
 
             return ChkCastClassSpecial(toTypeHnd, obj);
-        }
-
-        [DebuggerHidden]
-        private static bool AreTypesAssignable(void* fromTypeHnd, void* toTypeHnd)
-        {
-            if (fromTypeHnd == toTypeHnd)
-            {
-                return true;
-            }
-
-            CastResult result = CastCache.TryGet(s_table!, (nuint)fromTypeHnd, (nuint)toTypeHnd);
-            if (result == CastResult.CanCast)
-            {
-                return true;
-            }
-            else if (result == CastResult.CannotCast)
-            {
-                return false;
-            }
-            else
-            {
-                // Result will be cached in the helper.
-                return AreTypesAssignableHelper(fromTypeHnd, toTypeHnd) != Interop.BOOL.FALSE;
-            }
         }
 
         // Optimized helper for classes. Assumes that the trivial cases

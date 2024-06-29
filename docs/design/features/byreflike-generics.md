@@ -112,7 +112,7 @@ throw
 
 Adding `gpAcceptByRefLike` to the metadata of a Generic parameter will be considered a non-breaking binary change.
 
-Enumerating of constructors/methods on `Span<T>` and `ReadOnlySpan<T>` may throw `TypeLoadException` if `T` is a ByRefLike type. See "Troublesome APIs" above for the list of APIs that cause this condition.
+Enumerating of constructors/methods on `Span<T>` and `ReadOnlySpan<T>` may throw `TypeLoadException` if `T` is a ByRefLike type. See "Troublesome API mitigation" above for the list of APIs that cause this condition.
 
 ## <a name="invalid_il_options"></a> Options for invalid IL
 
@@ -180,7 +180,7 @@ void M<T, U>(T t) where T: allows ref struct
 
 ### Option 1) Compiler helpers
 
-The following two helper functions could be introduced and would replace currently invalid IL sequences. Their behavior would broadly be defined to operate as if the ByRefLike aspect of either the `TFrom` and `TTo` is not present.
+The following two helper functions could be introduced and would replace currently invalid IL sequences. Their behavior would broadly be defined to operate as if the ByRefLike aspect of either the `TFrom` and `TTo` is not present. An alternative approach would be consult with the Roslyn team and define the semantics of these functions to adhere to C# language rules.
 
 ```csharp
 namespace System.Runtime.CompilerServices

@@ -18,7 +18,6 @@
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
 #endif // !TARGET_UNIX
 #include "pgo.h"
-#include "qcall.h"
 
 enum StompWriteBarrierCompletionAction
 {
@@ -246,8 +245,6 @@ extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type,
 extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL3(void, JIT_Unbox_Nullable, void * destPtr, CORINFO_CLASS_HANDLE type, Object* obj);
-
-extern "C" BOOL QCALLTYPE CastHelpers_AreTypesAssignableHelper(CORINFO_CLASS_HANDLE fromTypeHnd, CORINFO_CLASS_HANDLE toTypeHnd);
 
 // ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
 // Copied write barriers must be called at a different location

@@ -287,9 +287,6 @@ namespace ILCompiler
                 case ReadyToRunHelper.CheckCastClassSpecial:
                     mangledName = "RhTypeCast_CheckCastClassSpecial";
                     break;
-                case ReadyToRunHelper.AreTypesAssignable:
-                    mangledName = "RhTypeCast_AreTypesAssignable";
-                    break;
 
                 case ReadyToRunHelper.CheckInstanceAny:
                     mangledName = "RhTypeCast_IsInstanceOfAny";

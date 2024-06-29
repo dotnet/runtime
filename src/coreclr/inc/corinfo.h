@@ -439,7 +439,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_CHKCASTANY,
     CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                     // has been taken care of by the inlined check
-    CORINFO_HELP_ARETYPESASSIGNABLE, // Used to check if TypeHandle can be assigned to TypeHandle
 
     CORINFO_HELP_ISINSTANCEOF_EXCEPTION,
 

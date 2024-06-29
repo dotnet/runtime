@@ -3021,25 +3021,6 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                                typeInfo(TYP_INT));
                                 return returnToken;
                             }
-
-                            // Casts that result to TypeCompareState::May and involve a ByRefLike type,
-                            // must be checked at run-time.
-                            if (opts == BoxPatterns::IsByRefLike)
-                            {
-                                assert(castResult == TypeCompareState::May);
-                                JITDUMP(
-                                    "\n Importing BOX; ISINST; BR_TRUE/FALSE for ByRefLike, must be checked at run-time\n");
-
-                                impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
-                                impPopStack();
-
-                                GenTree* toType   = impTokenToHandle(pResolvedToken);
-                                GenTree* fromType = impTokenToHandle(&isInstResolvedToken);
-                                impPushOnStack(gtNewHelperCallNode(CORINFO_HELP_ARETYPESASSIGNABLE, TYP_INT, toType,
-                                                                   fromType),
-                                               typeInfo(TYP_INT));
-                                return returnToken;
-                            }
                         }
                         else if ((foldAsHelper == CORINFO_HELP_BOX_NULLABLE) &&
                                  ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0))
