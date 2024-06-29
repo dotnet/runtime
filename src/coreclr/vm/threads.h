@@ -3362,6 +3362,13 @@ public:
         return *retAddrSlot;
     }
 
+#ifdef FEATURE_HIJACK
+    void* GetHijackedReturnAddress()
+    {
+        return m_pvHJRetAddr;
+    }
+#endif
+
 #ifdef _DEBUG
 private:
     // When we create an object, or create an OBJECTREF, or create an Interior Pointer, or enter EE from managed
