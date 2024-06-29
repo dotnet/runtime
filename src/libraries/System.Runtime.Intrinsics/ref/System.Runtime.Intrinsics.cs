@@ -4317,8 +4317,12 @@ namespace System.Runtime.Intrinsics.Arm
 
         public static System.Numerics.Vector<int> ConvertToInt32(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<int> ConvertToInt32(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<long> ConvertToInt64(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<long> ConvertToInt64(System.Numerics.Vector<float> value) { throw null; }
         public static System.Numerics.Vector<uint> ConvertToUInt32(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<uint> ConvertToUInt32(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ConvertToUInt64(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ConvertToUInt64(System.Numerics.Vector<float> value) { throw null; }
 
         public static ulong Count16BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count32BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }

@@ -1731,6 +1731,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     case NI_Sve_ConvertToInt32:
                     case NI_Sve_ConvertToUInt32:
+                    case NI_Sve_ConvertToInt64:
+                    case NI_Sve_ConvertToUInt64:
                         // Save the base type of return SIMD. It is used to contain this intrinsic inside
                         // ConditionalSelect.
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sig->retTypeSigClass));

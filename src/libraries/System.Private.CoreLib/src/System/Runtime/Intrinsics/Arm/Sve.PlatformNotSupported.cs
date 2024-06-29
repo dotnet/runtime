@@ -869,6 +869,26 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<int> ConvertToInt32(Vector<float> value) { throw new PlatformNotSupportedException(); }
 
 
+        ///  ConvertToInt64 : Floating-point convert
+
+        /// <summary>
+        /// svint64_t svcvt_s64[_f64]_m(svint64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FCVTZS Ztied.D, Pg/M, Zop.D
+        /// svint64_t svcvt_s64[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FCVTZS Ztied.D, Pg/M, Ztied.D
+        /// svint64_t svcvt_s64[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<long> ConvertToInt64(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svcvt_s64[_f32]_m(svint64_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FCVTZS Ztied.D, Pg/M, Zop.S
+        /// svint64_t svcvt_s64[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FCVTZS Ztied.D, Pg/M, Ztied.S
+        /// svint64_t svcvt_s64[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<long> ConvertToInt64(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
         ///  ConvertToUInt32 : Floating-point convert
 
         /// <summary>
@@ -888,6 +908,27 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svcvt_u32[_f32]_z(svbool_t pg, svfloat32_t op)
         /// </summary>
         public static unsafe Vector<uint> ConvertToUInt32(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  ConvertToUInt64 : Floating-point convert
+
+        /// <summary>
+        /// svuint64_t svcvt_u64[_f64]_m(svuint64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FCVTZU Ztied.D, Pg/M, Zop.D
+        /// svuint64_t svcvt_u64[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FCVTZU Ztied.D, Pg/M, Ztied.D
+        /// svuint64_t svcvt_u64[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<ulong> ConvertToUInt64(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svcvt_u64[_f32]_m(svuint64_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FCVTZU Ztied.D, Pg/M, Zop.S
+        /// svuint64_t svcvt_u64[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FCVTZU Ztied.D, Pg/M, Ztied.S
+        /// svuint64_t svcvt_u64[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<ulong> ConvertToUInt64(Vector<float> value) { throw new PlatformNotSupportedException(); }
 
 
         ///  Count16BitElements : Count the number of 16-bit elements in a vector
