@@ -549,20 +549,22 @@ namespace System.Text.RegularExpressions.Symbolic
 
             while (true)
             {
-                const int CharsPerTimeoutCheck = 1_000;
-                // TODO: maybe this should be for NFA mode only
+                // TODO: this could be safely raised higher but 25k is about the limit where it contributes overhead
+                const int CharsPerTimeoutCheck = 25000;
                 int innerLoopLength = _checkTimeout && input.Length - pos > CharsPerTimeoutCheck ?
                     pos + CharsPerTimeoutCheck :
                     input.Length;
 
                 bool done;
                 if (currentState.NfaState is null)
+                {
                     done =
                         FindEndPositionDeltasDFAOptimized<TOptimizedInputReader,
                             TAcceleratedStateHandler,
                             TOptimizedNullabilityHandler>(input, innerLoopLength - 1, mode, ref pos,
                             currentState.DfaStateId, ref endPos, ref initialStatePosCandidate,
                             ref initialStatePosCandidate);
+                }
                 else
                 {
                     // nfa fallback check, assume \Z and full nullability for nfa since it's already extremely rare to get here
@@ -629,7 +631,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 // catastrophic backtracking.  Catastrophic backtracking is not an issue for the NonBacktracking engine, but we
                 // still check the timeout now and again to provide some semblance of the behavior a developer experiences with
                 // the backtracking engines.  We can, however, choose a large number here, since it's not actually needed for security.
-                const int CharsPerTimeoutCheck = 1_000;
+                // todo: the reason why this is lower than FindEndPositionOptimized is an arbitrary choice, but 255+ minterms and NFA mode may
+                // reach speeds low enough for this to be relevant
+                const int CharsPerTimeoutCheck = 5_000;
                 int innerLoopLength = _checkTimeout && input.Length - pos > CharsPerTimeoutCheck ?
                     pos + CharsPerTimeoutCheck :
                     input.Length;
