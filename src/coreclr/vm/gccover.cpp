@@ -1819,16 +1819,15 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // The legacy X86 GC encoder does not encode the state of return registers at
     // call sites, so we must add an extra frame to protect returns.
 #ifdef TARGET_X86
-    DWORD_PTR retValRegs[1] = { 0 };
-    UINT  numberOfRegs = 0;
+    DWORD_PTR retValReg = 0;
 
     if (afterCallProtect[0])
     {
-        retValRegs[numberOfRegs++] = regs->Eax;
+        retValReg = regs->Eax;
     }
 
     _ASSERTE(sizeof(OBJECTREF) == sizeof(DWORD_PTR));
-    GCFrame gcFrame(pThread, (OBJECTREF*)retValRegs, numberOfRegs, TRUE);
+    GCFrame gcFrame(pThread, (OBJECTREF*)retValReg, numberOfRegs, TRUE);
 #endif
 
     MethodDesc *pMD = nativeCodeVersion.GetMethodDesc();
@@ -1860,7 +1859,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     {
         if (afterCallProtect[0])
         {
-            regs->Eax = retValRegs[0];
+            regs->Eax = retValReg;
         }
     }
 #endif

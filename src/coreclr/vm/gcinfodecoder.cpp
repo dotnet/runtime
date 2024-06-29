@@ -429,8 +429,8 @@ bool GcInfoDecoder::CouldBeInterruptibleSafePoint()
 {
     // This is used in asserts. Ideally it would return false
     // if current location canot possibly be a safepoint.
-    // However we optimize away "boring" callsites when no variables are tracked.
-    // So there is no way to tell currently tat a pint is indeed not a safe point.
+    // However in some cases we optimize away "boring" callsites when no variables are tracked.
+    // So there is no way to tell precisely that a point is indeed not a safe point.
     // Thus we do what we can here, but this could be better if we could have more data
     return AreSafePointsInterruptible() && m_NumInterruptibleRanges == 0;
 }
