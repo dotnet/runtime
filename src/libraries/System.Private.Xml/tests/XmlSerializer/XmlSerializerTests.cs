@@ -2302,8 +2302,9 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         return stream;
     }
 
-    private static string WithXmlHeader(string xml)
+    private static string WithXmlHeader(string xml, bool normalizeLineEndings = true)
     {
+        xml = (normalizeLineEndings) ? xml.Replace("\r\n", "\n").Replace("\n", Environment.NewLine) : xml;
         return "<?xml version=\"1.0\" encoding=\"utf-8\"?>" + Environment.NewLine + xml;
     }
 
