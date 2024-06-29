@@ -1183,7 +1183,7 @@ CorUnix::InternalSetThreadPriority(
     st = pthread_setschedparam(pTargetThread->GetPThreadSelf(), policy, &schedParam);
     if (st != 0)
     {
-#if SET_SCHEDPARAM_NEEDS_PRIVS
+#if SET_SCHEDPARAM_NEEDS_PRIVS || defined(__sun)
         if (EPERM == st)
         {
             // UNIXTODO: Should log a warning to the event log
