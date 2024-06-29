@@ -1526,7 +1526,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTree* control = comp->gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
                 BlockRange().InsertBefore(node, control);
 
-                node->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, control);
+                node->ResetHWIntrinsicId(ternaryLogicId, comp, op3, op2, op1, control);
             }
             else
             {
