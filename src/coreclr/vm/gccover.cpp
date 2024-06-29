@@ -1827,7 +1827,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     }
 
     _ASSERTE(sizeof(OBJECTREF) == sizeof(DWORD_PTR));
-    GCFrame gcFrame(pThread, (OBJECTREF*)retValReg, numberOfRegs, TRUE);
+    GCFrame gcFrame(pThread, (OBJECTREF*)retValReg, 1, TRUE);
 #endif
 
     MethodDesc *pMD = nativeCodeVersion.GetMethodDesc();
