@@ -126,7 +126,7 @@ extends:
       - ${{ if eq(variables.isOfficialBuild, true) }}:
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
-            jobTemplate: /eng/pipelines/installer/jobs/base-job.yml
+            jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
             jobParameters:
               liveRuntimeBuildConfig: Release
               liveLibrariesBuildConfig: Release

@@ -865,7 +865,7 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/installer/jobs/base-job.yml
+          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
             - Linux_arm
@@ -885,7 +885,7 @@ extends:
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/installer/jobs/base-job.yml
+          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
           buildConfig: Release
           platforms:
             - OSX_arm64

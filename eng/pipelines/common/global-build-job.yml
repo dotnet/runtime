@@ -28,6 +28,7 @@ parameters:
   enableRichCodeNavigation: false
   richCodeNavigationLanguage: 'csharp'
   richCodeNavigationEnvironment: 'production'
+  preBuildSteps: []
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -63,6 +64,8 @@ jobs:
 
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
+      - name: _archParameter
+        value: -arch ${{ parameters.archType }}
 
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
         - name: _osParameter
@@ -169,13 +172,36 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
+    - ${{ if ne(parameters.preBuildSteps,'') }}:
+      - ${{ each preBuildStep in parameters.preBuildSteps }}:
+        - ${{ if ne(preBuildStep.template, '') }}:
+          - template: ${{ preBuildStep.template }}
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
+              osSubgroup: ${{ parameters.osSubgroup }}
+              archType: ${{ parameters.archType }}
+              buildConfig: ${{ parameters.buildConfig }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
+              runtimeVariant: ${{ parameters.runtimeVariant }}
+              helixQueues: ${{ parameters.helixQueues }}
+              targetRid: ${{ parameters.targetRid }}
+              nameSuffix: ${{ parameters.nameSuffix }}
+              platform: ${{ parameters.platform }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+              ${{ if ne(preBuildStep.forwardedParameters, '') }}:
+                ${{ each parameter in preBuildStep.forwardedParameters }}:
+                  ${{ parameter }}: ${{ parameters[parameter] }}
+              ${{ if ne(preBuildStep.parameters, '') }}:
+                ${{ insert }}: ${{ preBuildStep.parameters }}
+        - ${{ else }}:
+          - ${{ preBuildStep }}
+
     # Build
     - template: /eng/pipelines/common/templates/global-build-step.yml
       parameters:
         buildArgs: ${{ parameters.buildArgs }}
         useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-        archType: ${{ parameters.archType }}
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: |

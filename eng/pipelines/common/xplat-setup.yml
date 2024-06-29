@@ -127,7 +127,7 @@ jobs:
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
         ${{ if in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'iOSSimulator', 'tvOS', 'tvOSSimulator') }}:
-          vmImage: 'macOS-11'
+          vmImage: 'macOS-12'
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:

@@ -81,13 +81,6 @@ jobs:
     - name: buildLinuxDacStagingPath
       value: '$(crossDacArtifactPath)/Linux.$(archType).$(buildConfigUpper)'
 
-    - name: crossDacHostArch
-      value: x64
-
-    - ${{ if eq(parameters.archType, 'arm') }}:
-      - name: crossDacHostArch
-        value: x86
-
     # We need this because both mono and coreclr build currently depends on CoreClr
     - name: coreClrProductArtifactName
       value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'

@@ -164,10 +164,8 @@ extends:
           buildConfig: release
           platforms:
           - linux_x64
-          - linux_arm
           - linux_arm64
           - linux_musl_x64
-          - linux_musl_arm
           - linux_musl_arm64
           jobParameters:
             buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
@@ -181,7 +179,56 @@ extends:
                 inputs:
                   SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
                   Contents: libcoreclr.so
-                  TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGroup)$(osSubgroup).$(archType).$(_BuildConfig)/$(crossDacHostArch)
+                  TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGroup)$(osSubgroup).$(archType).$(_BuildConfig)/x64
+              - task: PublishBuildArtifacts@1
+                displayName: Publish runtime for CrossDac
+                inputs:
+                  pathToPublish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
+                  PublishLocation: Container
+                  artifactName: CoreCLRCrossDacArtifacts
+              # Create RPMs and DEBs
+              - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+                parameters:
+                  packageType: deb
+                  target: debpkg
+                  packageStepDescription: Runtime Deps, Runtime, Framework Packs Deb installers
+                  subsetArg: -s packs.installers
+                  packagingArgs: -c $(_BuildConfig) --arch $(archType) --os $(osGroup) --ci /p:OfficialBuildId=$(Build.BuildNumber) /p:BuildDebPackage=true
+                  condition: and(succeeded(), eq(variables.osSubgroup, ''), eq(variables.archType, 'x64'))
+              - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+                parameters:
+                  packageType: rpm
+                  target: rpmpkg
+                  packageStepDescription: Runtime Deps, Runtime, Framework Packs RPM installers
+                  subsetArg: -s packs.installers
+                  packagingArgs: -c $(_BuildConfig) --arch $(archType) --os $(osGroup) --ci /p:OfficialBuildId=$(Build.BuildNumber) /p:BuildRpmPackage=true
+                  condition: and(succeeded(), eq(variables.osSubgroup, ''), in(variables.archType, 'x64', 'arm64'))
+
+              # Upload the results.
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: $(osGroup)$(osSubgroup)_$(archType)
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - linux_arm
+          - linux_musl_arm
+          jobParameters:
+            buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
+            nameSuffix: CoreCLR
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 120
+            postBuildSteps:
+              # Upload libcoreclr.so for CrossDac packaging
+              - task: CopyFiles@2
+                displayName: Gather runtime for CrossDac
+                inputs:
+                  SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
+                  Contents: libcoreclr.so
+                  TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGroup)$(osSubgroup).$(archType).$(_BuildConfig)/x86
               - task: PublishBuildArtifacts@1
                 displayName: Publish runtime for CrossDac
                 inputs:
@@ -193,8 +240,65 @@ extends:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: $(osGroup)$(osSubgroup)_$(archType)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/coreclr/templates/crossdac-hostarch.yml
+
+      #
+      # Build and Pack CrossDac
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          jobParameters:
+            buildArgs: -s crossdacpack -c $(_BuildConfig) /p:CrossDacArtifactsDir=$(crossDacArtifactsPath)
+            nameSuffix: CrossDac
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 120
+            preBuildSteps:
+            - task: DownloadBuildArtifacts@0
+              displayName: Download Runtimes for CrossDac packaging
+              inputs:
+                artifactName: $(crossDacArtifactsContainer)
+                downloadPath: $(crossDacArtifactsBasePath)
+                checkDownloadedFiles: true
+            - template: /eng/pipelines/common/templates/global-build-step.yml
+              parameters:
+                buildArgs: -s linuxdac+alpinedac -c $(_BuildConfig)
+                archParameter: -arch x64,x86,arm,arm64
+            - task: CopyFiles@2
+              displayName: Gather CrossDacs
+              inputs:
+                SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+                Contents: |
+                  **
+                  !**\sharedFramework\**
+                TargetFolder: $(crossDacArtifactsPath)
+            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+              parameters:
+                basePath: $(crossDacArtifactsPath)
+                isOfficialBuild: ${{ variables.isOfficialBuild }}
+                timeoutInMinutes: 30
+            postBuildSteps:
+            # Save packages using the prepare-signed-artifacts format.
+            # CrossDac packages are expected to be in the windows_x64 folder.
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              parameters:
+                name: windows_x64
+            dependsOn:
+            - build_linux_x64_release_CoreCLR
+            - build_linux_arm_release_CoreCLR
+            - build_linux_arm64_release_CoreCLR
+            - build_linux_musl_x64_release_CoreCLR
+            - build_linux_musl_arm_release_CoreCLR
+            - build_linux_musl_arm64_release_CoreCLR
+          variables:
+          - name: crossDacArtifactsContainer
+            value: CoreCLRCrossDacArtifacts
+          - name: crossDacArtifactsBasePath
+            value: $(Build.StagingDirectory)/CrossDac
+          - name: crossDacArtifactsPath
+            value: $(crossDacArtifactsBasePath)/$(crossDacArtifactsContainer)
 
       #
       # Build Mono runtime packs
