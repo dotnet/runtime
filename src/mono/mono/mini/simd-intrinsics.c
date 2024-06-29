@@ -2145,28 +2145,39 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		if (!type_enum_is_float(arg0_type))
 			return emit_xzero (cfg, klass);
-		args [0] = emit_xcompare (cfg, klass, arg0_type, args [0], args [0]);
-		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, SN_op_OnesComplement);
+		MonoInst *xcmp = emit_xcompare (cfg, klass, arg0_type, args [0], args [0]);
+		MonoInst *xnot = emit_simd_ins (cfg, klass, OP_ONES_COMPLEMENT, xcmp->dreg, -1);
+		xnot->inst_c1 = arg0_type;
+		return xnot;
 	}
 	case SN_IsNegative: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-		if (type_enum_is_unsigned(arg0_type))
+		if (type_enum_is_unsigned(arg0_type)) {
 			return emit_xzero (cfg, klass);
+		} else if (arg0_type == MONO_TYPE_R4) {
+			arg0_type = MONO_TYPE_I4;
+		} else if (arg0_type == MONO_TYPE_R8) {
+			arg0_type = MONO_TYPE_I8;
+		}
 		return emit_xcompare_for_intrinsic (cfg, klass, SN_LessThan, arg0_type, args [0], emit_xzero (cfg, klass));
 	}
 	case SN_IsPositive: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-		if (type_enum_is_unsigned(arg0_type))
+		if (type_enum_is_unsigned(arg0_type)) {
 			return emit_xones (cfg, klass);
+		} else if (arg0_type == MONO_TYPE_R4) {
+			arg0_type = MONO_TYPE_I4;
+		} else if (arg0_type == MONO_TYPE_R8) {
+			arg0_type = MONO_TYPE_I8;
+		}
 		return emit_xcompare_for_intrinsic (cfg, klass, SN_GreaterThanOrEqual, arg0_type, args [0], emit_xzero (cfg, klass));
 	}
 	case SN_IsPositiveInfinity: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-		MonoType *etype = get_vector_t_elem_type(fsig->params [0]);
-		if (etype->type == MONO_TYPE_R4) {
+		if (arg0_type == MONO_TYPE_R4) {
 			guint32 value[4];
 
 			value [0] = 0x7F800000;
@@ -2176,8 +2187,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 			MonoInst* arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
 			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
-		}
-		if (etype->type == MONO_TYPE_R8) {
+		} else if (arg0_type == MONO_TYPE_R8) {
 			guint64 value[2];
 
 			value [0] = 0x7FF0000000000000;
