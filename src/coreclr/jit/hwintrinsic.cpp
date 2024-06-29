@@ -1922,6 +1922,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
+            case NI_Sve_CreateBreakAfterMask:
+            case NI_Sve_CreateBreakAfterPropagateMask:
+            case NI_Sve_CreateBreakBeforeMask:
+            case NI_Sve_CreateBreakBeforePropagateMask:
             case NI_Sve_GetActiveElementCount:
             case NI_Sve_TestAnyTrue:
             case NI_Sve_TestFirstTrue:
@@ -1940,6 +1944,22 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             default:
                 break;
+        }
+
+        switch (intrinsic)
+        {
+            case NI_Sve_CreateBreakAfterPropagateMask:
+            case NI_Sve_CreateBreakBeforePropagateMask:
+            {
+                GenTree* op3 = retNode->AsHWIntrinsic()->Op(3);
+
+                // HWInstrinsic requires a mask for op3
+                if (!varTypeIsMask(op3))
+                {
+                    retNode->AsHWIntrinsic()->Op(3) =
+                        gtNewSimdCvtVectorToMaskNode(TYP_MASK, op3, simdBaseJitType, simdSize);
+                }
+            }
         }
 
         if (!varTypeIsMask(op1))
