@@ -1618,10 +1618,6 @@ namespace System.Tests
                 Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new object[1], new void*[1], 0));
 
                 // Can't copy between pointer and interface
-
-                // .NET Framework and previous versions incorrectly allow copying between arrays of pointer and interface.
-                // Null will be successfully copied. Copying non-null object throws InvalidCastException.
-                // Copying non-null pointer tries to read it as an object reference and crashs in CLR.
                 Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1], new IConvertible[1], 1));
                 Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new IConvertible[1], new int*[1], 1));
 
