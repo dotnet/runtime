@@ -30506,23 +30506,15 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (op1->IsVectorAllBitsSet() || op1->IsMaskAllBitsSet())
                 {
-                    if ((op3->gtFlags & GTF_SIDE_EFFECT) == 0)
+                    if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {
-                        // op3 has no side effects, so we can return op2 directly
-                        return op2;
+                        // op3 has side effects, this would require us to append a new statement
+                        // to ensure that it isn't lost, which isn't safe to do from the general
+                        // purpose handler here. We'll recognize this and mark it in VN instead
                     }
 
-                    if ((op2->gtFlags & GTF_SIDE_EFFECT) == 0)
-                    {
-                        // op2 has no side effects, but op3 does, we need to wrap
-                        // so that the side effects for op3 are preserved
-                        return gtWrapWithSideEffects(op2, op3, GTF_ALL_EFFECT);
-                    }
-
-                    // op2 and op3 both have side effects, we would have to evaluate op2
-                    // into a local and then wrap the op3 with side effects returning that
-                    // local, which isn't safe to do from the general purpose handler here
-                    break;
+                    // op3 has no side effects, so we can return op2 directly
+                    return op2;
                 }
 
                 if (op1->IsVectorZero())
