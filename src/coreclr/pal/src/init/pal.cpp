@@ -79,6 +79,7 @@ int CacheLineSize;
 #endif // __NetBSD__
 
 #ifdef __sun
+#include <priv.h>
 #include <procfs.h>
 #endif // __sun
 
@@ -141,6 +142,42 @@ static bool RunningNatively()
     return ret != 0;
 }
 #endif // __APPLE__
+
+#if defined(__sun)
+//
+// Let this program be "privilege aware". See privileges(7)
+//
+// Add the "proc_lock_memory" privilege needed for the later mlock in:
+// PAL_InitializeCoreCLR / InitializeFlushProcessWriteBuffers
+//
+// This privilege is added to the "inheritable" set via the exec_attr(5)
+// by adding a file like: /etc/security/exec_attr.d/dotnet  containing:
+// Basic Solaris User:solaris:cmd:::/opt/dotnet/bin/dotnet:privs=proc_lock_memory
+// Where /opt/dotnet/bin/dotnet is the path of the actual dotnet executable.
+// Then run your program with pfexec(1)
+//
+// The proc_lock_memory privilege is not effective until we add it to
+// the effective privilege set, which is what this function does.
+//
+static int AddPrivLockMem()
+{
+    priv_set_t *pset;
+    int err;
+
+    pset = priv_allocset();
+    if (pset == NULL)
+        return (ERROR_NOT_ENOUGH_MEMORY);
+    if (priv_addset(pset, "proc_lock_memory") != 0) {
+        priv_freeset(pset);
+        return (ERROR_INVALID_PARAMETER);
+    }
+    // Don't fail here if we can't set the privilege.
+    // Just let the mlock() call fail later instead.
+    (void) setppriv(PRIV_ON, PRIV_EFFECTIVE, pset);
+    priv_freeset(pset);
+    return (0);
+}
+#endif // __sun
 
 /*++
 Function:
@@ -367,6 +404,14 @@ Initialize(
         // Set our pid and sid.
         gPID = getpid();
         gSID = getsid(gPID);
+
+#ifdef __sun
+        if (AddPrivLockMem() != 0)
+        {
+            palError = ERROR_NO_SYSTEM_RESOURCES;
+            goto done;
+        }
+#endif // __sun
 
         // Initialize the thread local storage
         if (FALSE == TLSInitialize())
