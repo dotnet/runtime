@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -132,7 +131,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             return e.HResult;
         }
 
-        return HResults.E_NOTIMPL;
+        return HResults.S_OK;
     }
 
     public unsafe int GetNestedExceptionData(ulong exception, ulong* exceptionObject, ulong* nextNestedException)

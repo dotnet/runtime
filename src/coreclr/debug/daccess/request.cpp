@@ -1731,6 +1731,27 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData* module
             DacpModuleData moduleDataLocal;
             HRESULT hrLocal = GetModuleDataImpl(addr, &moduleDataLocal);
             _ASSERTE(hr == hrLocal);
+            _ASSERTE(moduleData->Address == moduleDataLocal.Address);
+            _ASSERTE(moduleData->PEAssembly == moduleDataLocal.PEAssembly);
+            _ASSERTE(moduleData->ilBase == moduleDataLocal.ilBase);
+            _ASSERTE(moduleData->metadataStart == moduleDataLocal.metadataStart);
+            _ASSERTE(moduleData->metadataSize == moduleDataLocal.metadataSize);
+            _ASSERTE(moduleData->Assembly == moduleDataLocal.Assembly);
+            _ASSERTE(moduleData->bIsReflection == moduleDataLocal.bIsReflection);
+            _ASSERTE(moduleData->bIsPEFile == moduleDataLocal.bIsPEFile);
+            _ASSERTE(moduleData->dwBaseClassIndex == moduleDataLocal.dwBaseClassIndex);
+            _ASSERTE(moduleData->dwModuleID == moduleDataLocal.dwModuleID);
+            _ASSERTE(moduleData->dwTransientFlags == moduleDataLocal.dwTransientFlags);
+            _ASSERTE(moduleData->TypeDefToMethodTableMap == moduleDataLocal.TypeDefToMethodTableMap);
+            _ASSERTE(moduleData->TypeRefToMethodTableMap == moduleDataLocal.TypeRefToMethodTableMap);
+            _ASSERTE(moduleData->MethodDefToDescMap == moduleDataLocal.MethodDefToDescMap);
+            _ASSERTE(moduleData->FieldDefToDescMap == moduleDataLocal.FieldDefToDescMap);
+            _ASSERTE(moduleData->MemberRefToDescMap == moduleDataLocal.MemberRefToDescMap);
+            _ASSERTE(moduleData->FileReferencesMap == moduleDataLocal.FileReferencesMap);
+            _ASSERTE(moduleData->ManifestModuleReferencesMap == moduleDataLocal.ManifestModuleReferencesMap);
+            _ASSERTE(moduleData->LoaderAllocator == moduleDataLocal.LoaderAllocator);
+            _ASSERTE(moduleData->ThunkHeap == moduleDataLocal.ThunkHeap);
+            _ASSERTE(moduleData->dwModuleIndex == moduleDataLocal.dwModuleIndex);
         }
 #endif
     }

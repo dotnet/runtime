@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -71,9 +67,7 @@ internal readonly struct Loader_1 : ILoader
             return TargetPointer.Null;
         }
 
-        // TODO: [cdac]
-        size = 0;
-        return TargetPointer.Null;
+        return module.PEAssembly.PEImage.GetLoadedMetadata(out size);
     }
 
     IDictionary<ModuleLookupTable, TargetPointer> ILoader.GetLookupTables(ModuleHandle handle)
