@@ -15,12 +15,7 @@ namespace System
     /// int lastElement = someArray[^1]; // lastElement = 5
     /// </code>
     /// </remarks>
-#if SYSTEM_PRIVATE_CORELIB || MICROSOFT_BCL_MEMORY
-    public
-#else
-    internal
-#endif
-    readonly struct Index : IEquatable<Index>
+    public readonly struct Index : IEquatable<Index>
     {
         private readonly int _value;
 

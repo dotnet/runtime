@@ -10,11 +10,13 @@
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <PackageDescription>
       Provides Base64Url encoding, decoding and validation APIs support for .NET Framework and .NET Standard.
+      Provides Index and Range types support for .NET Framework and .NET Standard 2.0.
 
       Commonly Used Types:
       System.Buffers.Text.Base64Url
+      System.Index
+      System.Range
     </PackageDescription>
-    <DefineConstants>$(DefineConstants);MICROSOFT_BCL_MEMORY</DefineConstants>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -26,8 +28,9 @@
     <Compile Include="..\ref\Microsoft.Bcl.Memory.Forwards.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' Or '$(TargetFramework)' == 'netstandard2.1'">
-    <Compile Include="..\ref\Microsoft.Bcl.Memory.Forwards.ns21.cs" />
+  <!-- Targetting NetCOreApp & Netstandard 2.1 -->
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+    <Compile Include="..\ref\Microsoft.Bcl.Memory.Forwards.netstandard21.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -54,7 +57,8 @@
     </Compile>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' Or '$(TargetFramework)' == 'netstandard2.0'">
+  <!-- Targetting  NetFramework & Netstandard 2.0 -->
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <Compile Include="..\..\System.Private.CoreLib\src\System\Index.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Range.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Numerics\Hashing\HashHelpers.cs" />

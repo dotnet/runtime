@@ -30,6 +30,10 @@
     <Compile Include="..\..\System.Runtime\tests\System.Runtime.Tests\System\IndexTests.cs">
       <Link>System\IndexTests.cs</Link>
     </Compile>
+  </ItemGroup>
+
+  <!-- Targetting  NetFramework & Netstandard 2.0 -->
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <Compile Include="..\..\Common\tests\System\Runtime\CompilerServices\RuntimeHelpers.cs">
       <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
     </Compile>

@@ -26,11 +26,11 @@
     <Compile Include="..\Common\OperationExtensions.cs" Link="Common\OperationExtensions.cs" />
     <Compile Include="..\Common\ConvertToSourceGeneratedInteropFixer.cs" Link="Common\ConvertToSourceGeneratedInteropFixer.cs" />
     <Compile Include="..\Common\FixAllContextExtensions.cs" Link="Common\FixAllContextExtensions.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Index.cs" Link="Common\System\Index.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" Pack="true" PackagePath="analyzers/dotnet/cs" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\Microsoft.Bcl.Memory\src\Microsoft.Bcl.Memory.csproj" />
   </ItemGroup>
 
 </Project>
