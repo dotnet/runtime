@@ -4,7 +4,6 @@
 #if defined(HOST_ARM64)
 #include <arm64intr.h>
 #endif
-#define _INC_WINDOWS
 #include <windows.h>
 
 // Implementation of Redhawk PAL inline functions
@@ -56,8 +55,6 @@ FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *p
 }
 #endif // HOST_AMD64
 
-#ifdef HOST_64BIT
-
 FORCEINLINE void * PalInterlockedExchangePointer(_Inout_ void * volatile *pDst, _In_ void *pValue)
 {
     return InterlockedExchangePointer((void * volatile *)pDst, pValue);
@@ -68,23 +65,11 @@ FORCEINLINE void * PalInterlockedCompareExchangePointer(_Inout_ void * volatile 
     return InterlockedCompareExchangePointer((void * volatile *)pDst, pValue, pComparand);
 }
 
-#else // HOST_64BIT
-
-#define PalInterlockedExchangePointer(_pDst, _pValue) \
-    ((void *)InterlockedExchange((long volatile *)(_pDst), (long)(size_t)(_pValue)))
-
-#define PalInterlockedCompareExchangePointer(_pDst, _pValue, _pComparand) \
-    ((void *)InterlockedCompareExchange((long volatile *)(_pDst), (long)(size_t)(_pValue), (long)(size_t)(_pComparand)))
-
-#endif // HOST_64BIT
-
-EXTERN_C __declspec(dllimport) unsigned long __stdcall GetLastError();
 FORCEINLINE int PalGetLastError()
 {
     return (int)GetLastError();
 }
 
-EXTERN_C __declspec(dllimport) void  __stdcall SetLastError(unsigned long error);
 FORCEINLINE void PalSetLastError(int error)
 {
     SetLastError((unsigned long)error);
