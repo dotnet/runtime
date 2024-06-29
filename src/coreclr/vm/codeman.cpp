@@ -1514,8 +1514,10 @@ void EEJitManager::SetCpuInfo()
         uint32_t maxVectorTLength = (maxVectorTBitWidth / 8);
         uint64_t sveLengthFromOS = GetSveLengthFromOS();
 
-        // Do not enable SVE when the user specified vector length is smaller than the one offered by underlying OS.
-        if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
+        // For now, enable SVE only when the system vector length is 16 bytes (128-bits)
+        // TODO: https://github.com/dotnet/runtime/issues/101477
+        if (sveLengthFromOS == 16)
+        // if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
         {
             CPUCompileFlags.Set(InstructionSet_Sve);
         }
@@ -4256,7 +4258,7 @@ void GetUnmanagedStackWalkInfo(IN  ULONG64   ControlPc,
 
                 if (dwLow > dwHigh)
                 {
-                    _ASSERTE(*pFuncEntry == NULL);
+                    _ASSERTE(*pFuncEntry == 0);
                 }
             }
         }

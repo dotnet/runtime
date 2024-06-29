@@ -179,6 +179,9 @@ MurmurHash3_32_streaming (const uint8_t *key, uint32_t seed)
 // end of reformulated murmur3-32
 
 void
+#ifdef _MSC_VER
+__cdecl
+#endif
 dn_simdhash_assert_fail (const char *file, int line, const char *condition);
 
 #define dn_simdhash_assert(expr) \

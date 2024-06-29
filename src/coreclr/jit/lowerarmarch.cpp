@@ -1266,6 +1266,27 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCmpOp(node, GT_NE);
         }
 
+        case NI_Sve_TestAnyTrue:
+        {
+            LowerNodeCC(node, GenCondition::NE);
+            node->gtType = TYP_VOID;
+            return node->gtNext;
+        }
+
+        case NI_Sve_TestFirstTrue:
+        {
+            LowerNodeCC(node, GenCondition::SLT);
+            node->gtType = TYP_VOID;
+            return node->gtNext;
+        }
+
+        case NI_Sve_TestLastTrue:
+        {
+            LowerNodeCC(node, GenCondition::ULT);
+            node->gtType = TYP_VOID;
+            return node->gtNext;
+        }
+
         case NI_Vector128_WithLower:
         case NI_Vector128_WithUpper:
         {
@@ -3176,6 +3197,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+            case NI_Sve_DuplicateSelectedScalarToVector:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op2));
                 if (intrin.op2->IsCnsIntOrI())
@@ -3192,6 +3214,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_PrefetchInt16:
             case NI_Sve_PrefetchInt32:
             case NI_Sve_PrefetchInt64:
+            case NI_Sve_ExtractVector:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())
@@ -3367,7 +3390,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             // For now, make sure that we get here only for intrinsics that we are
                             // sure about to rely on auxiliary type's size.
                             assert((embOp->GetHWIntrinsicId() == NI_Sve_ConvertToInt32) ||
-                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt32));
+                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt32) ||
+                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToInt64) ||
+                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt64));
 
                             uint32_t auxSize = genTypeSize(embOp->GetAuxiliaryType());
                             if (maskSize == auxSize)

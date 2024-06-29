@@ -14,6 +14,7 @@
 
 #include "finalizerthread.h"
 #include "dbginterface.h"
+#include <minipal/time.h>
 
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
@@ -2188,6 +2189,8 @@ void Thread::RareDisablePreemptiveGC()
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
             ResetThreadState(Thread::TS_GCSuspendRedirected);
 #endif
+            // make sure this is cleared - in case a signal is lost or somehow we did not act on it
+            m_hasPendingActivation = false;
 
             DWORD status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
             if (status != S_OK)
@@ -3207,44 +3210,6 @@ COR_PRF_SUSPEND_REASON GCSuspendReasonToProfSuspendReason(ThreadSuspend::SUSPEND
 }
 #endif // PROFILING_SUPPORTED
 
-static int64_t QueryPerformanceCounter()
-{
-    LARGE_INTEGER ts;
-    QueryPerformanceCounter(&ts);
-    return ts.QuadPart;
-}
-
-static int64_t QueryPerformanceFrequency()
-{
-    LARGE_INTEGER ts;
-    QueryPerformanceFrequency(&ts);
-    return ts.QuadPart;
-}
-
-// exponential spinwait with an approximate time limit for waiting in microsecond range.
-// when iteration == -1, only usecLimit is used
-void SpinWait(int iteration, int usecLimit)
-{
-    int64_t startTicks = QueryPerformanceCounter();
-    int64_t ticksPerSecond = QueryPerformanceFrequency();
-    int64_t endTicks = startTicks + (usecLimit * ticksPerSecond) / 1000000;
-
-    int l = iteration >= 0 ? min(iteration, 30): 30;
-    for (int i = 0; i < l; i++)
-    {
-        for (int j = 0; j < (1 << i); j++)
-        {
-            System_YieldProcessor();
-        }
-
-        int64_t currentTicks = QueryPerformanceCounter();
-        if (currentTicks > endTicks)
-        {
-            break;
-        }
-    }
-}
-
 //************************************************************************************
 //
 // SuspendRuntime is responsible for ensuring that all managed threads reach a
@@ -3335,16 +3300,14 @@ void ThreadSuspend::SuspendAllThreads()
     // See VSW 475315 and 488918 for details.
     ::FlushProcessWriteBuffers();
 
-    int retries = 0;
-    int prevRemaining = 0;
-    int remaining = 0;
-    bool observeOnly = false;
+    int prevRemaining = INT32_MAX;
+    bool observeOnly = true;
+    uint32_t rehijackDelay = 8;
+    uint32_t usecsSinceYield = 0;
 
     while(true)
     {
-        prevRemaining = remaining;
-        remaining = 0;
-
+        int remaining = 0;
         Thread* pTargetThread = NULL;
         while ((pTargetThread = ThreadStore::GetThreadList(pTargetThread)) != NULL)
         {
@@ -3361,7 +3324,7 @@ void ThreadSuspend::SuspendAllThreads()
             }
         }
 
-        if (!remaining)
+        if (remaining == 0)
             break;
 
         // if we see progress or have just done a hijacking pass
@@ -3369,21 +3332,33 @@ void ThreadSuspend::SuspendAllThreads()
         if (remaining < prevRemaining || !observeOnly)
         {
             // 5 usec delay, then check for more progress
-            SpinWait(-1, 5);
+            minipal_microdelay(5, &usecsSinceYield);
             observeOnly = true;
         }
         else
         {
-            SpinWait(retries++, 100);
+            minipal_microdelay(rehijackDelay, &usecsSinceYield);
             observeOnly = false;
 
-            // make sure our spining is not starving other threads, but not too often,
-            // this can cause a 1-15 msec delay, depending on OS, and that is a lot while
-            // very rarely needed, since threads are supposed to be releasing their CPUs
-            if ((retries & 127) == 0)
+            // double up rehijack delay in case we are rehjacking too often
+            // up to 100 usec, as that should be enough to make progress.
+            if (rehijackDelay < 100)
             {
-                SwitchToThread();
+                rehijackDelay *= 2;
             }
+        }
+
+        prevRemaining = remaining;
+
+        // If we see 1 msec of uninterrupted wait, it is a concern.
+        // Since we are stopping threads, there should be free cores to run on. Perhaps
+        // some thread that we need to stop needs to run on the same core as ours.
+        // Let's yield the timeslice to make sure such threads can run.
+        // We will not do this often though, since this can introduce arbitrary delays.
+        if (usecsSinceYield > 1000)
+        {
+            SwitchToThread();
+            usecsSinceYield = 0;
         }
     }
 
@@ -5937,7 +5912,13 @@ bool Thread::InjectActivation(ActivationReason reason)
         if (hThread != INVALID_HANDLE_VALUE)
         {
             m_hasPendingActivation = true;
-            return ::PAL_InjectActivation(hThread);
+            BOOL success = ::PAL_InjectActivation(hThread);
+            if (!success)
+            {
+                m_hasPendingActivation = false;
+            }
+
+            return success;
         }
     }
 

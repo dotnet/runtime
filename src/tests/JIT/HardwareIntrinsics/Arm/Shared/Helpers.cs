@@ -17,6 +17,253 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     static class Helpers
     {
+        public static Vector<T> InitVector<T>(Func<int, T> f)
+        {
+            var count = Vector<T>.Count;
+            var arr = new T[count];
+            for (var i = 0; i < count; i++)
+            {
+                arr[i] = f(i);
+            }
+            return new Vector<T>(arr);
+        }
+
+        public static byte[] CreateMaskForFirstActiveElement(byte[] mask, byte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new byte[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static short[] CreateMaskForFirstActiveElement(short[] mask, short[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new short[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static int[] CreateMaskForFirstActiveElement(int[] mask, int[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new int[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static long[] CreateMaskForFirstActiveElement(long[] mask, long[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new long[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static sbyte[] CreateMaskForFirstActiveElement(sbyte[] mask, sbyte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new sbyte[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ushort[] CreateMaskForFirstActiveElement(ushort[] mask, ushort[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ushort[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static uint[] CreateMaskForFirstActiveElement(uint[] mask, uint[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new uint[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ulong[] CreateMaskForFirstActiveElement(ulong[] mask, ulong[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ulong[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static int LastActiveElement(byte[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(ushort[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(uint[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(ulong[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static byte[] CreateMaskForNextActiveElement(byte[] mask, byte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new byte[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ushort[] CreateMaskForNextActiveElement(ushort[] mask, ushort[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ushort[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static uint[] CreateMaskForNextActiveElement(uint[] mask, uint[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new uint[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ulong[] CreateMaskForNextActiveElement(ulong[] mask, ulong[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ulong[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
         public static sbyte CountLeadingSignBits(sbyte op1)
         {
             return (sbyte)(CountLeadingZeroBits((sbyte)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
@@ -1580,6 +1827,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double Divide(double op1, double op2) => op1 / op2;
 
+        public static float Scale(float op1, int op2) => op1 * MathF.Pow((float)2.0, op2);
+
+        public static double Scale(double op1, long op2) =>  op1 * Math.Pow(2.0, op2);
+
         public static float Sqrt(float value) => MathF.Sqrt(value);
 
         public static double Sqrt(double value) => Math.Sqrt(value);
@@ -1927,6 +2178,28 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long MultiplyWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static long MultiplyWideningUpperAndSubtract(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static T ShiftLeft<T>(T op1, ulong op2) where T : INumber<T>
+        {
+            T two = T.One + T.One;
+            for (ulong i = 0; (op1 != T.Zero) && (i < op2); i++)
+            {
+                op1 *= two;
+            }
+
+            return op1;
+        }
+
+        public static T ShiftRight<T>(T op1, ulong op2) where T : INumber<T>
+        {
+            T two = T.One + T.One;
+            for (ulong i = 0; (op1 != T.Zero) && (i < op2); i++)
+            {
+                op1 /= two;
+            }
+
+            return op1;
+        }
 
         public static T SignExtend<T>(T n, int numBits, bool zeroExtend) where T : struct, IComparable, IConvertible
         {
@@ -6161,14 +6434,18 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int ConvertDoubleToInt32(double op1) => (int)Math.Clamp(op1, long.MinValue, long.MaxValue);
 
         public static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
+        
+        public static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
 
-        private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
+        public static long ConvertFloatToInt64(float op1) => (long)Math.Clamp(op1, int.MinValue, int.MaxValue);
 
         public static uint ConvertDoubleToUInt32(double op1) => (uint)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
 
         public static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
 
-        private static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+        public static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+
+        public static ulong ConvertFloatToUInt64(float op1) => (ulong)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
 
         public static Int32 ConvertToInt32RoundAwayFromZero(float op1) => ConvertToInt32(RoundAwayFromZero(op1));
 
@@ -7039,6 +7316,266 @@ namespace JIT.HardwareIntrinsics.Arm
                 ret = (ret << 8) + (long)array[offset+(ulong)i];
             }
             return BitConverter.Int64BitsToDouble(ret);
+        }
+
+        public static Byte Splice(Byte[] first, Byte[] second, Byte[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static double Splice(double[] first, double[] second, double[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (Double.IsNaN(maskArray[i]) || maskArray[i] > 0.0d)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static float Splice(float[] first, float[] second, float[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0.0f)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static Int16 Splice(Int16[] first, Int16[] second, Int16[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static Int32 Splice(Int32[] first, Int32[] second, Int32[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static Int64 Splice(Int64[] first, Int64[] second, Int64[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static SByte Splice(SByte[] first, SByte[] second, SByte[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static UInt16 Splice(UInt16[] first, UInt16[] second, UInt16[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static UInt32 Splice(UInt32[] first, UInt32[] second, UInt32[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static ulong Splice(ulong[] first, ulong[] second, ulong[] maskArray, int index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
         }
 
     }
