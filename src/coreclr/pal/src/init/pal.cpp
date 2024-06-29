@@ -76,16 +76,11 @@ int CacheLineSize;
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
-#elif defined(__sun)
-#ifndef _KERNEL
-#define _KERNEL
-#define UNDEF_KERNEL
-#endif
-#include <sys/procfs.h>
-#ifdef UNDEF_KERNEL
-#undef _KERNEL
-#endif
-#endif
+#endif // __NetBSD__
+
+#ifdef __sun
+#include <procfs.h>
+#endif // __sun
 
 #ifdef __FreeBSD__
 #include <sys/user.h>
