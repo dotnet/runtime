@@ -1922,6 +1922,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
+            case NI_Sve_CreateMaskForFirstActiveElement:
+            case NI_Sve_CreateMaskForNextActiveElement:
             case NI_Sve_GetActiveElementCount:
             case NI_Sve_TestAnyTrue:
             case NI_Sve_TestFirstTrue:

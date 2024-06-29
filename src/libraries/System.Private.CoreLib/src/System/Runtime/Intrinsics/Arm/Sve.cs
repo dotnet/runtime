@@ -1073,6 +1073,79 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> CreateFalseMaskUInt64() => CreateFalseMaskUInt64();
 
 
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<byte> CreateMaskForFirstActiveElement(Vector<byte> mask, Vector<byte> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<short> CreateMaskForFirstActiveElement(Vector<short> mask, Vector<short> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<int> CreateMaskForFirstActiveElement(Vector<int> mask, Vector<int> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<long> CreateMaskForFirstActiveElement(Vector<long> mask, Vector<long> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateMaskForFirstActiveElement(Vector<sbyte> mask, Vector<sbyte> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<ushort> CreateMaskForFirstActiveElement(Vector<ushort> mask, Vector<ushort> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<uint> CreateMaskForFirstActiveElement(Vector<uint> mask, Vector<uint> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<ulong> CreateMaskForFirstActiveElement(Vector<ulong> mask, Vector<ulong> srcMask) => CreateMaskForFirstActiveElement(mask, srcMask);
+
+        /// <summary>
+        /// svbool_t svpnext_b8(svbool_t pg, svbool_t op)
+        ///   PNEXT Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<byte> CreateMaskForNextActiveElement(Vector<byte> mask, Vector<byte> srcMask) => CreateMaskForNextActiveElement(mask, srcMask);
+
+        /// <summary>
+        /// svbool_t svpnext_b16(svbool_t pg, svbool_t op)
+        ///   PNEXT Ptied.H, Pg, Ptied.H
+        /// </summary>
+        public static unsafe Vector<ushort> CreateMaskForNextActiveElement(Vector<ushort> mask, Vector<ushort> srcMask) => CreateMaskForNextActiveElement(mask, srcMask);
+
+        /// <summary>
+        /// svbool_t svpnext_b32(svbool_t pg, svbool_t op)
+        ///   PNEXT Ptied.S, Pg, Ptied.S
+        /// </summary>
+        public static unsafe Vector<uint> CreateMaskForNextActiveElement(Vector<uint> mask, Vector<uint> srcMask) => CreateMaskForNextActiveElement(mask, srcMask);
+
+        /// <summary>
+        /// svbool_t svpnext_b64(svbool_t pg, svbool_t op)
+        ///   PNEXT Ptied.D, Pg, Ptied.D
+        /// </summary>
+        public static unsafe Vector<ulong> CreateMaskForNextActiveElement(Vector<ulong> mask, Vector<ulong> srcMask) => CreateMaskForNextActiveElement(mask, srcMask);
+
+
         ///  CreateTrueMaskByte : Set predicate elements to true
 
         /// <summary>

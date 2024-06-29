@@ -28,6 +28,242 @@ namespace JIT.HardwareIntrinsics.Arm
             return new Vector<T>(arr);
         }
 
+        public static byte[] CreateMaskForFirstActiveElement(byte[] mask, byte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new byte[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static short[] CreateMaskForFirstActiveElement(short[] mask, short[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new short[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static int[] CreateMaskForFirstActiveElement(int[] mask, int[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new int[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static long[] CreateMaskForFirstActiveElement(long[] mask, long[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new long[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static sbyte[] CreateMaskForFirstActiveElement(sbyte[] mask, sbyte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new sbyte[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ushort[] CreateMaskForFirstActiveElement(ushort[] mask, ushort[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ushort[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static uint[] CreateMaskForFirstActiveElement(uint[] mask, uint[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new uint[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ulong[] CreateMaskForFirstActiveElement(ulong[] mask, ulong[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ulong[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static int LastActiveElement(byte[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(ushort[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(uint[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(ulong[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static byte[] CreateMaskForNextActiveElement(byte[] mask, byte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new byte[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ushort[] CreateMaskForNextActiveElement(ushort[] mask, ushort[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ushort[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static uint[] CreateMaskForNextActiveElement(uint[] mask, uint[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new uint[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ulong[] CreateMaskForNextActiveElement(ulong[] mask, ulong[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ulong[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
         public static sbyte CountLeadingSignBits(sbyte op1)
         {
             return (sbyte)(CountLeadingZeroBits((sbyte)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
