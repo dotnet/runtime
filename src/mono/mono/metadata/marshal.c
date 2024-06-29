@@ -130,8 +130,9 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "Sys
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.Runtime.InteropServices", "UnmanagedCallConvAttribute")
 
-GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self_t, "System.Runtime.InteropServices.Swift", "SwiftSelf`1");
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
 
 static gboolean type_is_blittable (MonoType *type);
 
@@ -3697,12 +3698,13 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+			MonoClass *swift_self_t = mono_class_try_get_swift_self_t_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			int swift_error_args = 0, swift_self_args = 0;
 			for (int i = 0; i < method->signature->param_count; ++i) {
 				MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
-				bool is_swift_self_generic = (strcmp(param_klass->name, "SwiftSelf`1") == 0) && (strcmp(param_klass->name_space, "System.Runtime.InteropServices.Swift") == 0);
+				MonoGenericClass *param_gklass = mono_class_try_get_generic_class (param_klass);
 				if (param_klass) {
 					if (param_klass == swift_error && !m_type_is_byref (method->signature->params [i])) {
 						swift_error_args = swift_self_args = 0;
@@ -3710,15 +3712,15 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						break;
 					} else if (param_klass == swift_error || param_klass == swift_error_ptr) {
 						swift_error_args++;
-					} else if (is_swift_self_generic && i > 0) {
+					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && i > 0) {
 						swift_error_args = swift_self_args = 0;
 						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftSelf<T> must be the first argument in the signature.");
 						break;
-					} else if (is_swift_self_generic && m_type_is_byref (method->signature->params [i])) {
+					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && m_type_is_byref (method->signature->params [i])) {
 						swift_error_args = swift_self_args = 0;
 						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Expected SwiftSelf<T> struct, got pointer/reference.");
 						break;
-					} else if (param_klass == swift_self || is_swift_self_generic) {
+					} else if (param_klass == swift_self || (param_gklass && (param_gklass->container_class == swift_self_t))) {
 						swift_self_args++;
 					} else if (!type_is_blittable (method->signature->params [i]) || m_class_is_simd_type (param_klass)) {
 						swift_error_args = swift_self_args = 0;

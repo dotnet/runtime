@@ -741,6 +741,7 @@ IlgenCallbacksToMono*
 mono_marshal_get_mono_callbacks_for_ilgen (void);
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_self)
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_self_t);
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_error)
 
 typedef struct {
