@@ -1494,7 +1494,7 @@ namespace System.Tests
                 yield return new object[] {  1.4,   1.0 };
                 yield return new object[] {  1.5,   2.0 };
                 yield return new object[] {  2e7,   2e7 };
-                yield return new object[] { -0.0,   0.0 };
+                yield return new object[] { -0.0,  -0.0 };
                 yield return new object[] { -1.4,  -1.0 };
                 yield return new object[] { -1.5,  -2.0 };
                 yield return new object[] { -2e7,  -2e7 };
@@ -1509,7 +1509,7 @@ namespace System.Tests
                 yield return new object[] {  1.4f,   1.0f };
                 yield return new object[] {  1.5f,   2.0f };
                 yield return new object[] {  2e7f,   2e7f };
-                yield return new object[] { -0.0f,   0.0f };
+                yield return new object[] { -0.0f,  -0.0f };
                 yield return new object[] { -1.4f,  -1.0f };
                 yield return new object[] { -1.5f,  -2.0f };
                 yield return new object[] { -2e7f,  -2e7f };
