@@ -2209,16 +2209,16 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
 
         pCode->EmitLabel(debuggerCheckEnd);
-#endif
+#endif // DEBUGGING_SUPPORTED
 
         // compare LoopCounter with InvocationCount. If equal then branch to Label_endOfMethod
         pCode->EmitLDLOC(dwLoopCounterNum);
 #ifdef TARGET_X86
         pCode->EmitLoadThis();
         pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
-#else
+#else // TARGET_X86
         pCode->EmitLDLOC(dwInvocationCountNum);
-#endif
+#endif // TARGET_X86
         pCode->EmitBEQ(endOfMethod);
 
         // Load next delegate from array using LoopCounter as index
