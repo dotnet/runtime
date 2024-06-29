@@ -2182,9 +2182,22 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitLabel(nextDelegate);
 
 #ifdef DEBUGGING_SUPPORTED
+        ILCodeLabel *debuggerCheck = pCode->NewCodeLabel();
+
+        // Call MulticastDebuggerTraceHelper only if any debugger is attatched
+        pCode->EmitLDC((DWORD_PTR)&g_CORDebuggerControlFlags);
+        pCode->EmitCONV_I();
+        pCode->EmitLDIND_I4();
+
+        // (g_CORDebuggerControlFlags & DBCF_ATTACHED) != 0
+        pCode->EmitLDC(DBCF_ATTACHED);
+        pCode->EmitAND();
+        pCode->EmitBRFALSE(debuggerCheck);
+
         pCode->EmitLoadThis();
         pCode->EmitLDLOC(dwLoopCounterNum);
         pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
+        pCode->EmitLabel(debuggerCheck);
 #endif // DEBUGGING_SUPPORTED
 
         // compare LoopCounter with InvocationCount. If equal then branch to Label_endOfMethod
