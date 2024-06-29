@@ -7533,6 +7533,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), n);
 				uint32_t new_param_count = 0;
 				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+				MonoClass *swift_self_t = mono_class_try_get_swift_self_t_class ();
 				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 				/*
 				 * Go through the lowered arguments, if the argument is a struct, 
@@ -7542,6 +7543,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				for (int idx_param = 0; idx_param < n; ++idx_param) {
 					MonoType *ptype = fsig->params [idx_param];
 					MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+					MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
 
 					// SwiftSelf and SwiftError are special cases where we need to preserve the class information for the codegen to handle them correctly.
 					if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error)) {
@@ -7563,7 +7565,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 								g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
 							}
 						} else {
-							if ((strcmp (klass->name, "SwiftSelf`1") == 0) && (strcmp (klass->name_space, "System.Runtime.InteropServices.Swift") == 0)) {
+							if (gklass && (gklass->container_class == swift_self_t)) {
 								// For SwiftSelf<T> that cannot be lowered, we change the argument to byref SwiftSelf type
 								ptype = mono_class_get_byref_type (swift_self);
 								MonoInst *swift_self_base_address = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
@@ -7580,7 +7582,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 								g_array_append_val(new_params, ptype);
 							} else {
 								// For structs that cannot be lowered, we change the argument to byref type
-								ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
+								ptype = mono_class_get_byref_type (mono_defaults.int_class);
 								// Load the address of the struct
 								MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 								CHECK_ARG (idx_param);
