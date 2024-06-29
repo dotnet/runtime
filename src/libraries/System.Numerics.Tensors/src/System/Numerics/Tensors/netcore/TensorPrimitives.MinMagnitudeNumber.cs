@@ -77,8 +77,7 @@ namespace System.Numerics.Tensors
                 Vector256<T> xMag = Vector256.Abs(x);
                 Vector256<T> yMag = Vector256.Abs(y);
 
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double))
-                )
+                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector256.ConditionalSelect(
                         Vector256.LessThan(xMag, yMag) | IsNaN(yMag) | (Vector256.Equals(xMag, yMag) & IsNegative(x)),
@@ -119,8 +118,7 @@ namespace System.Numerics.Tensors
                 Vector512<T> xMag = Vector512.Abs(x);
                 Vector512<T> yMag = Vector512.Abs(y);
 
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double))
-                )
+                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector512.ConditionalSelect(
                         Vector512.LessThan(xMag, yMag) | IsNaN(yMag) | (Vector512.Equals(xMag, yMag) & IsNegative(x)),

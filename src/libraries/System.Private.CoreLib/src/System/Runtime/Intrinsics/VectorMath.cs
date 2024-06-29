@@ -1135,6 +1135,7 @@ namespace System.Runtime.Intrinsics
             }
             return TVector.ConditionalSelect(TVector.GreaterThan(x, y), x, y);
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TVector MaxMagnitude<TVector, T>(TVector x, TVector y)
             where TVector : unmanaged, ISimdVector<TVector, T>
@@ -1168,8 +1169,7 @@ namespace System.Runtime.Intrinsics
             TVector xMag = TVector.Abs(x);
             TVector yMag = TVector.Abs(y);
 
-            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double))
-            )
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
                 return TVector.ConditionalSelect(
                     TVector.GreaterThan(xMag, yMag) | TVector.IsNaN(yMag) | (TVector.Equals(xMag, yMag) & TVector.IsPositive(x)),
