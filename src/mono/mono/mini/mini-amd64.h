@@ -239,20 +239,26 @@ static const AMD64_XMM_Reg_No float_return_regs [] = { AMD64_XMM0 };
 #else
 #define PARAM_REGS 6
 #define FLOAT_PARAM_REGS 8
-#define RETURN_REGS 2
-#define FLOAT_RETURN_REGS 2
 
 static const AMD64_Reg_No param_regs [] = {AMD64_RDI, AMD64_RSI, AMD64_RDX,
 					   AMD64_RCX, AMD64_R8,  AMD64_R9};
-
 static const AMD64_XMM_Reg_No float_param_regs[] = {AMD64_XMM0, AMD64_XMM1, AMD64_XMM2,
 						     AMD64_XMM3, AMD64_XMM4, AMD64_XMM5,
 						     AMD64_XMM6, AMD64_XMM7};
 
+#ifndef MONO_ARCH_HAVE_SWIFTCALL
+#define RETURN_REGS 2
+#define FLOAT_RETURN_REGS 2
+
 static const AMD64_Reg_No return_regs [] = {AMD64_RAX, AMD64_RDX};
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-static const AMD64_Reg_No swift_return_int_regs [] = { AMD64_RAX, AMD64_RDX, AMD64_RCX, AMD64_R8 };
-static const AMD64_XMM_Reg_No swift_return_float_regs [] = { AMD64_XMM0, AMD64_XMM1, AMD64_XMM2, AMD64_XMM3 };
+static const AMD64_XMM_Reg_No float_return_regs [] = {AMD64_XMM0, AMD64_XMM1};
+#else MONO_ARCH_HAVE_SWIFTCALL
+#define SWIFT_RETURN_BUFFER_REG AMD64_RAX
+#define RETURN_REGS 4
+#define FLOAT_RETURN_REGS 4
+
+static const AMD64_Reg_No return_regs [] = { AMD64_RAX, AMD64_RDX, AMD64_RCX, AMD64_R8 };
+static const AMD64_XMM_Reg_No float_return_regs [] = { AMD64_XMM0, AMD64_XMM1, AMD64_XMM2, AMD64_XMM3 };
 #endif /* MONO_ARCH_HAVE_SWIFTCALL */
 #endif
 
@@ -323,12 +329,13 @@ typedef struct {
 	/* Only if storage == ArgValuetypeInReg/ArgSwiftValuetypeLoweredRet */
 #ifndef MONO_ARCH_HAVE_SWIFTCALL
 	ArgStorage pair_storage [2];
+	guint8 pair_regs [2];
 #else
 	ArgStorage pair_storage [4]; // The last 2 entries are only used for ArgSwiftValuetypeLoweredRet
+	guint8 pair_regs [4];
 	/* Only if storage == ArgSwiftValuetypeLoweredRet */
 	guint16 offsets [4];
 #endif
-	guint8 pair_regs [2];
 	/* The size of each pair (bytes) */
 	int pair_size [2];
 	int nregs;
