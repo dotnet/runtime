@@ -239,7 +239,7 @@ namespace System.Runtime.Caching
             Dispose();
         }
 
-        internal bool InUnhandledExceptionHandler => Volatile.Read(ref _inUnhandledExceptionHandler) > 0;
+        internal bool InUnhandledExceptionHandler => _inUnhandledExceptionHandler > 0;
         private void OnUnhandledException(object sender, UnhandledExceptionEventArgs eventArgs)
         {
             Interlocked.Increment(ref _inUnhandledExceptionHandler);
