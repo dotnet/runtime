@@ -863,7 +863,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 
         ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
         contextFlags |= CONTEXT_XSTATE;
 #endif
 
@@ -1053,7 +1053,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 
     ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
     contextFlags |= CONTEXT_XSTATE;
 #endif
 
