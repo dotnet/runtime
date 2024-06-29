@@ -526,7 +526,10 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
         }
     }
 
-    m_Reader.SetCurrentPos(savedPos + m_NumSafePoints * numBitsPerOffset);
+    // Cannot just set the "savedPos + m_NumSafePoints * numBitsPerOffset" as
+    // there could be no more data if method tracks no variables of any kind.
+    // Must use Skip, which handles potential stream end.
+    m_Reader.Skip(savedPos + m_NumSafePoints * numBitsPerOffset - m_Reader.GetCurrentPos());
     return result;
 }
 
