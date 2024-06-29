@@ -1731,6 +1731,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     case NI_Sve_ConvertToInt32:
                     case NI_Sve_ConvertToUInt32:
+                    case NI_Sve_ConvertToInt64:
+                    case NI_Sve_ConvertToUInt64:
                         // Save the base type of return SIMD. It is used to contain this intrinsic inside
                         // ConditionalSelect.
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sig->retTypeSigClass));
@@ -1798,6 +1800,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_Sve_CreateWhileLessThanMask64Bit:
                     case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op1JitType);
+                        break;
+
+                    case NI_Sve_ShiftLeftLogical:
+                    case NI_Sve_ShiftRightArithmetic:
+                    case NI_Sve_ShiftRightLogical:
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
                         break;
 
                     default:
@@ -1916,6 +1924,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
+            case NI_Sve_CreateMaskForFirstActiveElement:
+            case NI_Sve_CreateMaskForNextActiveElement:
             case NI_Sve_GetActiveElementCount:
             case NI_Sve_TestAnyTrue:
             case NI_Sve_TestFirstTrue:

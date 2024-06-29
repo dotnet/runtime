@@ -46,7 +46,7 @@ To setup the nightly SDK, you can either install it to your machine or use a por
 
 To use a portable build (recommended way), first extract somewhere the _zip/tar.gz_ you downloaded at the beginning of this section. Then, you can either add the path where you extracted it to your `PATH` environment variable, or always fully qualify the path to the `dotnet` you extracted (e.g. `/path/to/nightly/build/dotnet`).
 
-After setting up the new dotnet you can verify you are using the newer version by issuing the `dotnet --version` command on it. At the time of writing, the version ought to be equal or greater than `8.0.100-*`.
+After setting up the new dotnet you can verify you are using the newer version by issuing the `dotnet --version` command on it. At the time of writing, the version ought to be equal or greater than `9.0.100-*`.
 
 ## Creating and running the app with your build
 
@@ -94,12 +94,12 @@ Once we have your `NuGet.Config` file ready, we have to make our project aware t
 
 ```xml
 <ItemGroup>
-  <!-- At the time of writing, '8.0.0-dev' is the version of the runtime repo's shipping packages. -->
-  <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="8.0.0-dev" />
+  <!-- At the time of writing, '9.0.0-dev' is the version of the runtime repo's shipping packages. -->
+  <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="9.0.0-dev" />
 </ItemGroup>
 ```
 
-If you're unsure of what version your packages are, it is included as part of their filenames. For example, pick the `nupkg` file that will be used with your app from your shipping folder (`artifacts/packages/<configuration>/Shipping`). It's name is something like `Microsoft.NETCore.App.Runtime.win-x64.8.0.0-dev.nupkg`, depending on the current version and your target platform.
+If you're unsure of what version your packages are, it is included as part of their filenames. For example, pick the `nupkg` file that will be used with your app from your shipping folder (`artifacts/packages/<configuration>/Shipping`). It's name is something like `Microsoft.NETCore.App.Runtime.win-x64.9.0.0-dev.nupkg`, depending on the current version and your target platform.
 
 ### Write a small test
 
@@ -126,8 +126,8 @@ Adjust the `win-x64` to match your machine's OS and architecture.
 Running this little app should yield an output like the following:
 
 ```text
-Hello World from .NET 8.0.0-dev
-The location of System.Private.CoreLib.dll is '/path/to/your/app/bin/Debug/net8.0/win-x64/publish/System.Private.CoreLib.dll'
+Hello World from .NET 9.0.0-dev
+The location of System.Private.CoreLib.dll is '/path/to/your/app/bin/Debug/net9.0/win-x64/publish/System.Private.CoreLib.dll'
 ```
 
 ## Making Changes and Consuming Updated Packages

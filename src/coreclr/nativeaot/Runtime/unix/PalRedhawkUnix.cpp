@@ -1082,7 +1082,6 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
     // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
     // the process exits.
     // ESRCH may happen on some OSes when the thread is exiting.
-    // The thread should leave cooperative mode, but we could have seen it in its earlier state.
     if ((status == EAGAIN)
      || (status == ESRCH)
 #ifdef __APPLE__
