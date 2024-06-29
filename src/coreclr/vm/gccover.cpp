@@ -1855,12 +1855,9 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     CONSISTENCY_CHECK(!pThread->HasPendingGCStressInstructionUpdate());
 
 #ifdef TARGET_X86
-    if (numberOfRegs != 0)
+    if (afterCallProtect[0])
     {
-        if (afterCallProtect[0])
-        {
-            regs->Eax = retValReg;
-        }
+        regs->Eax = retValReg;
     }
 #endif
 
