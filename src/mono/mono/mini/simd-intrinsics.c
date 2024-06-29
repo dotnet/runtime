@@ -2145,8 +2145,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		if (!type_enum_is_float(arg0_type))
 			return emit_xzero (cfg, klass);
+		int op = -1;
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+		op = OP_ONES_COMPLEMENT;
+#elif defined(TARGET_WASM)
+		op = OP_WASM_ONESCOMPLEMENT;
+#endif
+		if (op == -1)
+			return NULL;
 		MonoInst *xcmp = emit_xcompare (cfg, klass, arg0_type, args [0], args [0]);
-		MonoInst *xnot = emit_simd_ins (cfg, klass, OP_ONES_COMPLEMENT, xcmp->dreg, -1);
+		MonoInst *xnot = emit_simd_ins (cfg, klass, op, xcmp->dreg, -1);
 		xnot->inst_c1 = arg0_type;
 		return xnot;
 	}
@@ -2185,7 +2193,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			value [2] = 0x7F800000;
 			value [3] = 0x7F800000;
 
-			MonoInst* arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
+			MonoInst *arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
 			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
 		} else if (arg0_type == MONO_TYPE_R8) {
 			guint64 value[2];
@@ -2193,7 +2201,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			value [0] = 0x7FF0000000000000;
 			value [1] = 0x7FF0000000000000;
 
-			MonoInst* arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
+			MonoInst *arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
 			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
 		}
 		return emit_xzero (cfg, klass);
