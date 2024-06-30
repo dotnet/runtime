@@ -704,7 +704,7 @@ namespace System.Text.RegularExpressions.Symbolic
             int currStateId = startStateId;
             int deadStateId = _deadStateId;
             int initialStateId = _initialStateId;
-            int maxChar = mtlookup.Length;
+            int maxChar = _mintermClassifier.MaxChar();
             try
             {
                 // The goal is to make this loop as fast as it can possibly be,
@@ -1655,7 +1655,8 @@ namespace System.Text.RegularExpressions.Symbolic
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int GetPositionId(byte[] lookup, int maxChar, ReadOnlySpan<char> input, int pos)
             {
-                Debug.Assert(pos < input.Length);
+                Debug.Assert(pos < input.Length, "pos < input.Length");
+                Debug.Assert(maxChar <= (lookup.Length + 1), $"maxChar = {maxChar}; lookup.Length = {lookup.Length}");
                 return input[pos] > maxChar ? 0 : lookup[input[pos]];
             }
         }
