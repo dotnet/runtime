@@ -277,9 +277,9 @@ namespace System.Text.Json.Serialization
             }
 
             ConvertCollection(ref state, options);
-            value = (TCollection)state.Current.ReturnValue!;
-
-            jsonTypeInfo.OnDeserialized?.Invoke(value);
+            object result = state.Current.ReturnValue!;
+            value = (TCollection)result;
+            jsonTypeInfo.OnDeserialized?.Invoke(result);
 
             return true;
         }
