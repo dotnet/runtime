@@ -1088,13 +1088,6 @@ namespace System.Collections.Concurrent.Tests
                 }));
         }
 
-        // TODO: Revise this test when EqualityComparer<string>.Default implements IAlternateEqualityComparer<ReadOnlySpan<char>, string>
-        [Fact]
-        public void GetAlternateLookup_FailsForDefaultComparer()
-        {
-            Assert.False(new ConcurrentDictionary<string, string>().TryGetAlternateLookup<ReadOnlySpan<char>>(out _));
-        }
-
         [Fact]
         public void GetAlternateLookup_FailsWhenIncompatible()
         {
@@ -1119,17 +1112,19 @@ namespace System.Collections.Concurrent.Tests
         [InlineData(3)]
         [InlineData(4)]
         [InlineData(5)]
+        [InlineData(6)]
         public void GetAlternateLookup_OperationsMatchUnderlyingDictionary(int mode)
         {
             // Test with a variety of comparers to ensure that the alternate lookup is consistent with the underlying dictionary
             ConcurrentDictionary<string, int> dictionary = new(mode switch
             {
-                0 => StringComparer.Ordinal,
-                1 => StringComparer.OrdinalIgnoreCase,
-                2 => StringComparer.InvariantCulture,
-                3 => StringComparer.InvariantCultureIgnoreCase,
-                4 => StringComparer.CurrentCulture,
-                5 => StringComparer.CurrentCultureIgnoreCase,
+                0 => EqualityComparer<string>.Default,
+                1 => StringComparer.Ordinal,
+                2 => StringComparer.OrdinalIgnoreCase,
+                3 => StringComparer.InvariantCulture,
+                4 => StringComparer.InvariantCultureIgnoreCase,
+                5 => StringComparer.CurrentCulture,
+                6 => StringComparer.CurrentCultureIgnoreCase,
                 _ => throw new ArgumentOutOfRangeException(nameof(mode))
             });
             ConcurrentDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> lookup = dictionary.GetAlternateLookup<ReadOnlySpan<char>>();
@@ -1165,7 +1160,8 @@ namespace System.Collections.Concurrent.Tests
 
             // Ensure that case-sensitivity of the comparer is respected
             lookup["a".AsSpan()] = 42;
-            if (dictionary.Comparer.Equals(StringComparer.Ordinal) ||
+            if (dictionary.Comparer.Equals(EqualityComparer<string>.Default) ||
+                dictionary.Comparer.Equals(StringComparer.Ordinal) ||
                 dictionary.Comparer.Equals(StringComparer.InvariantCulture) ||
                 dictionary.Comparer.Equals(StringComparer.CurrentCulture))
             {

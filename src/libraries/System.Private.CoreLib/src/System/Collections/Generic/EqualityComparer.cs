@@ -262,4 +262,47 @@ namespace System.Collections.Generic
         public override int GetHashCode() =>
             GetType().GetHashCode();
     }
+
+    // This class exists to be EqualityComparer<string>.Default. It can't just use the GenericEqualityComparer<string>,
+    // as it needs to also implement IAlternateEqualityComparer<ReadOnlySpan<char>, string>, and it can't be
+    // StringComparer.Ordinal, as that doesn't derive from the abstract EqualityComparer<T>.
+    [Serializable]
+    internal sealed partial class StringEqualityComparer :
+        EqualityComparer<string>,
+        IAlternateEqualityComparer<ReadOnlySpan<char>, string>,
+        ISerializable
+    {
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            // This type was introduced after BinaryFormatter was deprecated. BinaryFormatter serializes
+            // types from System.Private.CoreLib without an assembly name, and then on deserialization assumes
+            // "mscorlib". To support such roundtripping, this type would need to be public and type-forwarded from
+            // the mscorlib shim. Instead, we serialize this instead as a GenericEqualityComparer<string>. The
+            // resulting behavior is the same, except it won't implement IAlternateEqualityComparer, and so functionality
+            // that relies on that interface (which was also introduced after BinaryFormatter was deprecated) won't work.
+            info.SetType(typeof(GenericEqualityComparer<string>));
+        }
+
+        public override bool Equals(string? x, string? y) => string.Equals(x, y);
+
+        public override int GetHashCode([DisallowNull] string obj) => obj?.GetHashCode() ?? 0;
+
+        public bool Equals(ReadOnlySpan<char> span, string target)
+        {
+            // See explanation in OrdinalComparer.Equals.
+            if (span.IsEmpty && target is null)
+            {
+                return false;
+            }
+
+            return span.SequenceEqual(target);
+        }
+
+        public int GetHashCode(ReadOnlySpan<char> span) => string.GetHashCode(span);
+
+        public string Create(ReadOnlySpan<char> span) => span.ToString();
+
+        public override bool Equals(object? obj) => obj is StringEqualityComparer;
+        public override int GetHashCode() => GetType().GetHashCode();
+    }
 }

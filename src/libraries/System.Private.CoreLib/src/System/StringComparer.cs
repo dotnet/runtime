@@ -88,7 +88,7 @@ namespace System
             {
                 case StringComparer stringComparer:
                     return stringComparer.IsWellKnownOrdinalComparerCore(out ignoreCase);
-                case GenericEqualityComparer<string>:
+                case StringEqualityComparer:
                     // special-case EqualityComparer<string>.Default, which is Ordinal-equivalent
                     ignoreCase = false;
                     return true;
