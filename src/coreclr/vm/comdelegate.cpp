@@ -2166,11 +2166,14 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
             dwReturnValNum = pCode->NewLocal(sig.GetRetTypeHandleNT());
 
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
-        ILCodeLabel *endOfMethod = pCode->NewCodeLabel();
+        ILCodeLabel *checkCount = pCode->NewCodeLabel();
 
         // initialize counter
         pCode->EmitLDC(0);
         pCode->EmitSTLOC(dwLoopCounterNum);
+
+        // Make the shape of the loop similar to what C# compiler emits
+        pCode->EmitBR(checkCount);
 
         //Label_nextDelegate:
         pCode->EmitLabel(nextDelegate);
@@ -2199,12 +2202,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitLabel(debuggerCheckEnd);
 #endif // DEBUGGING_SUPPORTED
 
-        // compare LoopCounter with InvocationCount. If equal then branch to Label_endOfMethod
-        pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
-        pCode->EmitBEQ(endOfMethod);
-
         // Load next delegate from array using LoopCounter as index
         pCode->EmitLoadThis();
         pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_LIST)));
@@ -2212,9 +2209,8 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitLDELEM_REF();
 
         // Load the arguments
-        UINT paramCount = 0;
-        while(paramCount < sig.NumFixedArgs())
-            pCode->EmitLDARG(paramCount++);
+        for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
+            pCode->EmitLDARG(paramCount);
 
         // call the delegate
         pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
@@ -2229,11 +2225,14 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitADD();
         pCode->EmitSTLOC(dwLoopCounterNum);
 
-        // branch to next delegate
-        pCode->EmitBR(nextDelegate);
+        //Label_checkCount
+        pCode->EmitLabel(checkCount);
 
-        //Label_endOfMethod
-        pCode->EmitLabel(endOfMethod);
+        // compare LoopCounter with InvocationCount. If less then branch to nextDelegate
+        pCode->EmitLDLOC(dwLoopCounterNum);
+        pCode->EmitLoadThis();
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
+        pCode->EmitBLT(nextDelegate);
 
         // load the return value. return value from the last delegate call is returned
         if(fReturnVal)
