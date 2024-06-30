@@ -348,6 +348,9 @@ namespace System.Text.Json.Serialization
             if (!state.Current.ProcessedStartToken)
             {
                 state.Current.ProcessedStartToken = true;
+
+                jsonTypeInfo.OnSerializing?.Invoke(dictionary);
+
                 writer.WriteStartObject();
 
                 if (state.CurrentContainsMetadata && CanHaveMetadata)
@@ -356,8 +359,6 @@ namespace System.Text.Json.Serialization
                 }
 
                 state.Current.JsonPropertyInfo = jsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
-
-                jsonTypeInfo.OnSerializing?.Invoke(dictionary);
             }
 
             bool success = OnWriteResume(writer, dictionary, options, ref state);

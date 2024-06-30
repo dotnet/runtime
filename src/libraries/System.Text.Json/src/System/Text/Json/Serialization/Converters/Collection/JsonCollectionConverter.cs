@@ -263,8 +263,8 @@ namespace System.Text.Json.Serialization
                             if (options.AllowOutOfOrderMetadataProperties)
                             {
                                 Debug.Assert(JsonSerializer.IsMetadataPropertyName(reader.GetUnescapedSpan(), (state.Current.BaseJsonTypeInfo ?? jsonTypeInfo).PolymorphicTypeResolver), "should only be hit if metadata property.");
-                                bool result = reader.TrySkipPartial(reader.CurrentDepth - 1); // skip to the end of the object
-                                Debug.Assert(result, "Metadata reader must have buffered all contents.");
+                                bool buffered = reader.TrySkipPartial(reader.CurrentDepth - 1); // skip to the end of the object
+                                Debug.Assert(buffered, "Metadata reader must have buffered all contents.");
                                 Debug.Assert(reader.TokenType is JsonTokenType.EndObject);
                             }
                             else
@@ -305,6 +305,8 @@ namespace System.Text.Json.Serialization
                 {
                     state.Current.ProcessedStartToken = true;
 
+                    jsonTypeInfo.OnSerializing?.Invoke(value);
+
                     if (state.CurrentContainsMetadata && CanHaveMetadata)
                     {
                         state.Current.MetadataPropertyName = JsonSerializer.WriteMetadataForCollection(this, ref state, writer);
@@ -313,8 +315,6 @@ namespace System.Text.Json.Serialization
                     // Writing the start of the array must happen after any metadata
                     writer.WriteStartArray();
                     state.Current.JsonPropertyInfo = jsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
-
-                    jsonTypeInfo.OnSerializing?.Invoke(value);
                 }
 
                 success = OnWriteResume(writer, value, options, ref state);
