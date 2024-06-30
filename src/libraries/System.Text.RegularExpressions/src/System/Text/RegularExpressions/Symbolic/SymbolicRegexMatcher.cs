@@ -404,31 +404,31 @@ namespace System.Text.RegularExpressions.Symbolic
             // The Z anchor and over 255 minterms are rare enough to consider them separate edge cases
             if (!(_containsEndZAnchor || _mintermClassifier.IntLookup() is not null))
             {
-                matchEnd = (_mintermClassifier.IsAsciiOnly(), _findOpts is not null, _containsAnyAnchor) switch
+                matchEnd = (_mintermClassifier.IsFullLookup(), _findOpts is not null, _containsAnyAnchor) switch
                 {
-                    (true, true, true) =>
-                        FindEndPositionOptimized<OptimizedAsciiInputReader, AcceleratedStateHandler,
-                            AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
-                    (true, true, false) =>
-                        FindEndPositionOptimized<OptimizedAsciiInputReader, NoAnchorAcceleratedStateHandler,
-                            NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
-                    (true, false, false) =>
-                        FindEndPositionOptimized<OptimizedAsciiInputReader, NoAcceleratedStateHandler,
-                            NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
-                    (true, false, true) =>
-                        FindEndPositionOptimized<OptimizedAsciiInputReader, NoAcceleratedStateHandler,
+                    (false, true, true) =>
+                        FindEndPositionOptimized<OptimizedSmallInputReader, AcceleratedStateHandler,
                             AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                     (false, true, false) =>
-                        FindEndPositionOptimized<OptimizedUnicodeInputReader, NoAnchorAcceleratedStateHandler,
+                        FindEndPositionOptimized<OptimizedSmallInputReader, NoAnchorAcceleratedStateHandler,
                             NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
-                    (false, true, true) =>
-                        FindEndPositionOptimized<OptimizedUnicodeInputReader, AcceleratedStateHandler,
-                            AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                     (false, false, false) =>
-                        FindEndPositionOptimized<OptimizedUnicodeInputReader, NoAcceleratedStateHandler,
+                        FindEndPositionOptimized<OptimizedSmallInputReader, NoAcceleratedStateHandler,
                             NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                     (false, false, true) =>
-                        FindEndPositionOptimized<OptimizedUnicodeInputReader, NoAcceleratedStateHandler,
+                        FindEndPositionOptimized<OptimizedSmallInputReader, NoAcceleratedStateHandler,
+                            AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (true, true, false) =>
+                        FindEndPositionOptimized<OptimizedFullInputReader, NoAnchorAcceleratedStateHandler,
+                            NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (true, true, true) =>
+                        FindEndPositionOptimized<OptimizedFullInputReader, AcceleratedStateHandler,
+                            AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (true, false, false) =>
+                        FindEndPositionOptimized<OptimizedFullInputReader, NoAcceleratedStateHandler,
+                            NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (true, false, true) =>
+                        FindEndPositionOptimized<OptimizedFullInputReader, NoAcceleratedStateHandler,
                             AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                 };
             }
@@ -704,6 +704,7 @@ namespace System.Text.RegularExpressions.Symbolic
             int currStateId = startStateId;
             int deadStateId = _deadStateId;
             int initialStateId = _initialStateId;
+            int maxChar = mtlookup.Length;
             try
             {
                 // The goal is to make this loop as fast as it can possibly be,
@@ -747,7 +748,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // If there is more input available try to transition with the next character.
                     // Note: the order here is important so the transition gets taken
                     if (!DfaStateHandler.TryTakeDFATransition(
-                    this, ref currStateId, TOptimizedInputReader.GetPositionId(mtlookup, input, pos))
+                    this, ref currStateId, TOptimizedInputReader.GetPositionId(mtlookup, maxChar, input, pos))
                         || pos >= lengthMinus1)
                     {
                         if (pos + 1 < input.Length)
@@ -1633,26 +1634,39 @@ namespace System.Text.RegularExpressions.Symbolic
 #endif
         }
 
+        /// <summary>
+        /// This input reader attempts to minimize overhead
+        /// by handling constraints outside of the loop:
+        /// 1. the position must be already valid for the input.
+        /// 2. the pattern must not to contain \Z.
+        /// 3. to save memory, `maxChar` is a local variable set to the ordinal char for highest non-0 minterm
+        /// </summary>
         private interface IOptimizedInputReader
         {
-            public static abstract int GetPositionId(byte[] lookup, ReadOnlySpan<char> input,
+            public static abstract int GetPositionId(byte[] lookup, int maxChar, ReadOnlySpan<char> input,
                 int pos);
         }
 
-        private readonly struct OptimizedAsciiInputReader : IOptimizedInputReader
+        /// <summary>
+        /// This reader maps all characters > maxChar to 0
+        /// </summary>
+        private readonly struct OptimizedSmallInputReader : IOptimizedInputReader
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int GetPositionId(byte[] lookup, ReadOnlySpan<char> input, int pos)
+            public static int GetPositionId(byte[] lookup, int maxChar, ReadOnlySpan<char> input, int pos)
             {
                 Debug.Assert(pos < input.Length);
-                return input[pos] >= 128 ? 0 : lookup[input[pos]];
+                return input[pos] > maxChar ? 0 : lookup[input[pos]];
             }
         }
 
-        private readonly struct OptimizedUnicodeInputReader : IOptimizedInputReader
+        /// <summary>
+        /// This reader is effectively an array lookup for the full 64k utf16 code unit mapping
+        /// </summary>
+        private readonly struct OptimizedFullInputReader : IOptimizedInputReader
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int GetPositionId(byte[] lookup, ReadOnlySpan<char> input, int pos)
+            public static int GetPositionId(byte[] lookup, int maxChar, ReadOnlySpan<char> input, int pos)
             {
                 Debug.Assert(pos < input.Length);
                 Debug.Assert(lookup.Length == (ushort.MaxValue + 1));
@@ -1686,7 +1700,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 where TOptimizedInputReader : struct, IOptimizedInputReader
             {
                 Debug.Assert(pos < input.Length, $"input end should not be handled here {input}, pat:{matcher._dotstarredInitialStates[CharKind.General].Node}");
-                return nullabilityArray[currStateId] > 0 && matcher.IsNullableWithContext(currStateId, TOptimizedInputReader.GetPositionId(lookup, input, pos));
+                return nullabilityArray[currStateId] > 0 && matcher.IsNullableWithContext(currStateId, TOptimizedInputReader.GetPositionId(lookup, lookup.Length + 1, input, pos));
             }
         }
 
@@ -1784,7 +1798,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
                 {
                     currentStateId = matcher._dotstarredInitialStates[
-                        matcher._positionKinds[TOptimizedInputReader.GetPositionId(lookup, input, pos - 1) + 1]
+                        matcher._positionKinds[TOptimizedInputReader.GetPositionId(lookup, lookup.Length + 1, input, pos - 1) + 1]
                     ].Id;
                     return true;
                 }
