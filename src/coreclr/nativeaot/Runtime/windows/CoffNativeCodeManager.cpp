@@ -440,9 +440,8 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
 
-    bool executionAborted = ((CoffNativeMethodInfo *)pMethodInfo)->executionAborted;
-
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
+    bool executionAborted = ((CoffNativeMethodInfo *)pMethodInfo)->executionAborted;
     if (executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
 
@@ -453,35 +452,12 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::ActiveStackFrame);
 
 #ifdef USE_GC_INFO_DECODER
-    if (!isActiveStackFrame && !executionAborted)
-    {
-        // the reasons for this adjustment are explained in EECodeManager::EnumGcRefs
-        codeOffset--;
-    }
 
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
         codeOffset
     );
-
-    if (isActiveStackFrame)
-    {
-        // CONSIDER: We can optimize this by remembering the need to adjust in IsSafePoint and propagating into here.
-        //           Or, better yet, maybe we should change the decoder to not require this adjustment.
-        //           The scenario that adjustment tries to handle (fallthrough into BB with random liveness)
-        //           does not seem possible.
-        if (!decoder.HasInterruptibleRanges())
-        {
-            decoder = GcInfoDecoder(
-                GCInfoToken(gcInfo),
-                GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
-                codeOffset - 1
-            );
-
-            assert(decoder.IsInterruptibleSafePoint());
-        }
-    }
 
     if (!decoder.EnumerateLiveSlots(
         pRegisterSet,
