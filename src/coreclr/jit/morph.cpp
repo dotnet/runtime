@@ -8509,6 +8509,19 @@ DONE_MORPHING_CHILDREN:
                     // Otherwise we may sign-extend incorrectly in cases where the GT_NEG
                     // node ends up feeding directly into a cast, for example in
                     // GT_CAST<ubyte>(GT_SUB(0, s_1.ubyte))
+
+                    if (op1->IsIntegralConst(0))
+                    {
+                        tree->ChangeOper(GT_NEG);
+                        tree->gtType = genActualType(op2->TypeGet());
+
+                        tree->AsOp()->gtOp1 = op2;
+                        tree->AsOp()->gtOp2 = nullptr;
+
+                        DEBUG_DESTROY_NODE(op1);
+                        return tree;
+                    }
+
                     tree->AsOp()->gtOp2 = op2 = gtNewOperNode(GT_NEG, genActualType(op2->TypeGet()), op2);
                     fgMorphTreeDone(op2);
 
@@ -9799,8 +9812,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
     assert(!optValnumCSE_phase);
     assert(opts.OptimizationEnabled());
 
-    NamedIntrinsic intrinsicId  = node->GetHWIntrinsicId();
-    var_types      simdBaseType = node->GetSimdBaseType();
+    NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
+    var_types      retType         = node->TypeGet();
+    CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
+    var_types      simdBaseType    = node->GetSimdBaseType();
+    unsigned       simdSize        = node->GetSimdSize();
 
     switch (intrinsicId)
     {
@@ -9838,7 +9854,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
 #if defined(TARGET_XARCH)
-            if ((node->GetSimdSize() == 8) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            if ((simdSize == 8) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
                 // When SSE4.1 isn't supported then Vector2 only needs a single horizontal add
                 // which means the result isn't broadcast across the entire vector and we can't
@@ -9853,7 +9869,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (op1->OperIs(GT_INTRINSIC))
             {
-                if (!varTypeIsFloating(node->GetSimdBaseType()))
+                if (!varTypeIsFloating(simdBaseType))
                 {
                     break;
                 }
@@ -9902,7 +9918,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             // Must be working with the same types of vectors.
-            if (hwop1->TypeGet() != node->TypeGet())
+            if (hwop1->TypeGet() != retType)
             {
                 break;
             }
@@ -9914,10 +9930,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (sqrt != nullptr)
             {
-                unsigned  simdSize = node->GetSimdSize();
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
-                node = gtNewSimdSqrtNode(simdType, hwop1, node->GetSimdBaseJitType(), simdSize)->AsHWIntrinsic();
+                node = gtNewSimdSqrtNode(simdType, hwop1, simdBaseJitType, simdSize)->AsHWIntrinsic();
                 DEBUG_DESTROY_NODE(sqrt);
             }
             else
@@ -9954,7 +9969,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+                unsigned simdBaseTypeSize = genTypeSize(simdBaseType);
 
                 if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize) ||
                     (genTypeSize(cvtOp2->GetSimdBaseType()) != simdBaseTypeSize))
@@ -9963,10 +9978,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     // the bitwise operation can differ in how it performs
                     break;
                 }
-
-                var_types   simdType        = node->TypeGet();
-                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-                unsigned    simdSize        = node->GetSimdSize();
 
                 NamedIntrinsic maskIntrinsicId = NI_Illegal;
 
@@ -10032,7 +10043,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     DEBUG_DESTROY_NODE(op2);
                 }
 
-                node = gtNewSimdCvtMaskToVectorNode(simdType, node, simdBaseJitType, simdSize)->AsHWIntrinsic();
+                node = gtNewSimdCvtMaskToVectorNode(retType, node, simdBaseJitType, simdSize)->AsHWIntrinsic();
 
                 INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return node;
@@ -10052,8 +10063,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
     switch (oper)
     {
         // Transforms:
-        // 1.(~v1 & v2) to VectorXxx.AndNot(v1, v2)
-        // 2.(v1 & (~v2)) to VectorXxx.AndNot(v2, v1)
+        // 1. (~v1 & v2) to VectorXxx.AndNot(v1, v2)
+        // 2. (v1 & ~v2) to VectorXxx.AndNot(v2, v1)
         case GT_AND:
         {
             GenTree* op1 = node->Op(1);
@@ -10077,22 +10088,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     lhs = op2;
                     rhs = hw->Op(1);
                 }
-                else if (hwOper == GT_XOR)
-                {
-                    GenTree* hwOp1 = hw->Op(1);
-                    GenTree* hwOp2 = hw->Op(2);
-
-                    if (hwOp1->IsVectorAllBitsSet())
-                    {
-                        lhs = op2;
-                        rhs = hwOp2;
-                    }
-                    else if (hwOp2->IsVectorAllBitsSet())
-                    {
-                        lhs = op2;
-                        rhs = hwOp1;
-                    }
-                }
             }
 
             if ((lhs == nullptr) && op2->OperIsHWIntrinsic())
@@ -10111,28 +10106,13 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     lhs = op1;
                     rhs = hw->Op(1);
                 }
-                else if (hwOper == GT_XOR)
-                {
-                    GenTree* hwOp1 = hw->Op(1);
-                    GenTree* hwOp2 = hw->Op(2);
-
-                    if (hwOp1->IsVectorAllBitsSet())
-                    {
-                        lhs = op1;
-                        rhs = hwOp2;
-                    }
-                    else if (hwOp2->IsVectorAllBitsSet())
-                    {
-                        lhs = op1;
-                        rhs = hwOp1;
-                    }
-                }
             }
 
-            if ((lhs == nullptr) || (rhs == nullptr))
+            if (lhs == nullptr)
             {
                 break;
             }
+            assert(rhs != nullptr);
 
             // Filter out side effecting cases for several reasons:
             // 1. gtNewSimdBinOpNode may swap operand order.
@@ -10143,16 +10123,64 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            var_types    simdType        = node->TypeGet();
-            CorInfoType  simdBaseJitType = node->GetSimdBaseJitType();
-            unsigned int simdSize        = node->GetSimdSize();
-
-            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, simdType, lhs, rhs, simdBaseJitType, simdSize);
+            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, retType, lhs, rhs, simdBaseJitType, simdSize);
 
             DEBUG_DESTROY_NODE(node);
             INDEBUG(andnNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             return andnNode;
+        }
+
+        // Transforms:
+        // 1. (Zero - v1) to VectorXxx.Negate(v1); for integers
+        case GT_SUB:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (varTypeIsIntegral(simdBaseType) && op1->IsVectorZero())
+            {
+                GenTree* negNode = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize);
+
+                DEBUG_DESTROY_NODE(op1);
+                DEBUG_DESTROY_NODE(node);
+                INDEBUG(negNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+                return negNode;
+            }
+            break;
+        }
+
+        // Transforms:
+        // 1. (v1 ^ AllBitsSet) to VectorXxx.OnesComplement(v1)
+        // 2. (v1 ^ -0.0) to VectorXxx.Negate(v1); for floating-point
+        case GT_XOR:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (op2->IsVectorAllBitsSet())
+            {
+                GenTree* notNode = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize);
+
+                DEBUG_DESTROY_NODE(op2);
+                DEBUG_DESTROY_NODE(node);
+                INDEBUG(notNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+                return notNode;
+            }
+
+            if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
+            {
+                GenTree* negNode = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize);
+
+                DEBUG_DESTROY_NODE(op2);
+                DEBUG_DESTROY_NODE(node);
+                INDEBUG(negNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+                return negNode;
+            }
+            break;
         }
 
         default:
@@ -10727,6 +10755,16 @@ GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
         DEBUG_DESTROY_NODE(xorOp);
 
         return op1;
+    }
+    else if (varTypeIsFloating(xorOp) && op2->IsFloatNegativeZero())
+    {
+        // "x ^ -0.0" is "-x"
+
+        xorOp->ChangeOper(GT_NEG);
+        xorOp->gtOp2 = nullptr;
+
+        DEBUG_DESTROY_NODE(op2);
+        return xorOp;
     }
 
     return nullptr;
