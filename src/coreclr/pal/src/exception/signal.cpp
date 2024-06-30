@@ -863,7 +863,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 
         ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
         contextFlags |= CONTEXT_XSTATE;
 #endif
 
@@ -935,7 +935,13 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     }
 #endif
 
-    if ((status != 0) && (status != EAGAIN))
+    // ESRCH may happen on some OSes when the thread is exiting.
+    if (status == EAGAIN || status == ESRCH)
+    {
+        return ERROR_CANCELLED;
+    }
+
+    if (status != 0)
     {
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
@@ -1047,7 +1053,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 
     ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
     contextFlags |= CONTEXT_XSTATE;
 #endif
 

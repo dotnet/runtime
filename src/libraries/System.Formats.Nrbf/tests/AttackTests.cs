@@ -108,12 +108,15 @@ public class AttackTests : ReadTests
     }
 
 #if !NETFRAMEWORK
+    // The tests need to ensure that 2GB+ does not get pre-allocated.
+    // 200k is enough to get the job done and avoid getting false positives.
+    const long AllocationThreshold = 200_000;
+
     // GC.GetAllocatedBytesForCurrentThread() is not available on Full Framework.
     // AppDomain.CurrentDomain.MonitoringTotalAllocatedMemorySize is available,
     // but it reports allocations for all threads. Using this API would require
     // ensuring that it's the only test that is being run at a time.
-    // Mono either allocates more than expected or the API is not precise enough
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+    [Fact]
     public void ArraysOfStringsAreNotBeingPreAllocated()
     {
         using MemoryStream stream = new();
@@ -136,7 +139,7 @@ public class AttackTests : ReadTests
 
         long after = GetAllocatedByteCount();
 
-        Assert.InRange(after, before, before + 5000);
+        Assert.InRange(after, before, before + AllocationThreshold);
         Assert.Equal(SerializationRecordType.ArraySingleString, serializationRecord.RecordType);
     }
 
@@ -162,7 +165,7 @@ public class AttackTests : ReadTests
 
         long after = GetAllocatedByteCount();
 
-        Assert.InRange(after, before, before + 200_000);
+        Assert.InRange(after, before, before + AllocationThreshold);
     }
 
     private static long GetAllocatedByteCount()

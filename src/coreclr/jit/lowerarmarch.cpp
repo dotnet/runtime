@@ -3310,7 +3310,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector64_GetElement:
             case NI_Vector128_GetElement:
             {
-                assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op2));
 
                 if (intrin.op2->IsCnsIntOrI())
@@ -3318,7 +3317,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     MakeSrcContained(node, intrin.op2);
                 }
 
-                if (IsContainableMemoryOp(intrin.op1))
+                if (IsContainableMemoryOp(intrin.op1) && IsSafeToContainMem(node, intrin.op1))
                 {
                     MakeSrcContained(node, intrin.op1);
 
@@ -3390,7 +3389,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             // For now, make sure that we get here only for intrinsics that we are
                             // sure about to rely on auxiliary type's size.
                             assert((embOp->GetHWIntrinsicId() == NI_Sve_ConvertToInt32) ||
-                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt32));
+                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt32) ||
+                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToInt64) ||
+                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt64));
 
                             uint32_t auxSize = genTypeSize(embOp->GetAuxiliaryType());
                             if (maskSize == auxSize)

@@ -1844,6 +1844,12 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000L
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000L
 
+#define CONTEXT_XSTATE (CONTEXT_ARM64 | 0x40L)
+
+#define XSTATE_SVE (0)
+
+#define XSTATE_MASK_SVE (UI64(1) << (XSTATE_SVE))
+
 //
 // This flag is set by the unwinder if it has unwound to a call
 // site, and cleared whenever it unwinds through a trap frame.
@@ -1944,7 +1950,18 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     /* +0x338 */ DWORD64 Bvr[ARM64_MAX_BREAKPOINTS];
     /* +0x378 */ DWORD Wcr[ARM64_MAX_WATCHPOINTS];
     /* +0x380 */ DWORD64 Wvr[ARM64_MAX_WATCHPOINTS];
-    /* +0x390 */
+
+    /* +0x390 */ DWORD64 XStateFeaturesMask;
+
+    //
+    // Sve Registers
+    //
+    // TODO-SVE: Support Vector register sizes >128bit
+    // For 128bit, Z and V registers fully overlap, so there is no need to load/store both.
+    /* +0x398 */ DWORD Vl;
+    /* +0x39c */ DWORD Ffr;
+    /* +0x3a0 */ DWORD P[16];
+    /* +0x3e0 */
 
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
