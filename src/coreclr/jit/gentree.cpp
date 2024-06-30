@@ -26571,31 +26571,21 @@ GenTree* Compiler::gtNewSimdUnOpNode(
 #if defined(TARGET_XARCH)
         case GT_NEG:
         {
-            if (simdSize == 32)
+            if (simdSize == 64)
+            {
+                assert(canUseEvexEncodingDebugOnly());
+                intrinsic = NI_Vector512_op_UnaryNegation;
+            }
+            else if (simdSize == 32)
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-                assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-            }
-            else if (simdSize == 64)
-            {
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-            }
-
-            if (varTypeIsFloating(simdBaseType))
-            {
-                // op1 ^ -0.0
-
-                op2 = gtNewDconNode(-0.0, simdBaseType);
-                op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize);
-
-                return gtNewSimdBinOpNode(GT_XOR, type, op1, op2, simdBaseJitType, simdSize);
+                intrinsic = NI_Vector256_op_UnaryNegation;
             }
             else
             {
-                // Zero - op1
-                op2 = gtNewZeroConNode(type);
-                return gtNewSimdBinOpNode(GT_SUB, type, op2, op1, simdBaseJitType, simdSize);
+                intrinsic = NI_Vector128_op_UnaryNegation;
             }
+            return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
         }
 
         case GT_NOT:
@@ -28318,13 +28308,19 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
             return GT_MUL;
         }
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_XARCH)
+        case NI_Vector128_op_UnaryNegation:
+        case NI_Vector256_op_UnaryNegation:
+        case NI_Vector512_op_UnaryNegation:
+#elif defined(TARGET_ARM64)
         case NI_AdvSimd_Negate:
         case NI_AdvSimd_Arm64_Negate:
+#endif
         {
             return GT_NEG;
         }
 
+#if defined(TARGET_ARM64)
         case NI_AdvSimd_NegateScalar:
         case NI_AdvSimd_Arm64_NegateScalar:
         {

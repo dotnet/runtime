@@ -1497,12 +1497,60 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case GT_NEG:
+        {
+            var_types   simdType        = node->TypeGet();
+            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+            var_types   simdBaseType    = node->GetSimdBaseType();
+            unsigned    simdSize        = node->GetSimdSize();
+            GenTree*    op1             = node->Op(1);
+
+            GenTree* result;
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                // op1 ^ -0.0
+
+                GenTree* cns = comp->gtNewDconNode(-0.0, simdBaseType);
+                cns          = comp->gtNewSimdCreateBroadcastNode(simdType, cns, simdBaseJitType, simdSize);
+                BlockRange().InsertBefore(node, cns);
+
+                result = comp->gtNewSimdBinOpNode(GT_XOR, simdType, op1, cns, simdBaseJitType, simdSize);
+                BlockRange().InsertBefore(node, result);
+            }
+            else
+            {
+                // Zero - op1
+
+                GenTree* cns = comp->gtNewZeroConNode(simdType);
+                BlockRange().InsertBefore(node, cns);
+
+                result = comp->gtNewSimdBinOpNode(GT_SUB, simdType, cns, op1, simdBaseJitType, simdSize);
+                BlockRange().InsertBefore(node, result);
+            }
+
+            LIR::Use use;
+
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                use.ReplaceWith(result);
+            }
+            else
+            {
+                result->SetUnusedValue();
+            }
+
+            BlockRange().Remove(node);
+            return LowerNode(result);
+        }
+
         case GT_NOT:
         {
-            var_types simdType     = node->TypeGet();
-            var_types simdBaseType = node->GetSimdBaseType();
-            unsigned  simdSize     = node->GetSimdSize();
-            GenTree*  op1          = node->Op(1);
+            var_types   simdType        = node->TypeGet();
+            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+            var_types   simdBaseType    = node->GetSimdBaseType();
+            unsigned    simdSize        = node->GetSimdSize();
+            GenTree*    op1             = node->Op(1);
 
             assert(varTypeIsSIMD(simdType));
 
@@ -1530,63 +1578,27 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             else
             {
-                NamedIntrinsic xorId;
-
-                if (simdSize == 64)
-                {
-                    assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
-
-                    if (varTypeIsFloating(simdBaseType))
-                    {
-                        xorId = NI_AVX512DQ_Xor;
-                    }
-                    else
-                    {
-                        xorId = NI_AVX512F_Xor;
-                    }
-                }
-                else if (simdSize == 32)
-                {
-                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
-
-                    if (varTypeIsFloating(simdBaseType))
-                    {
-                        xorId = NI_AVX_Xor;
-                    }
-                    else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                    {
-                        xorId = NI_AVX2_Xor;
-                    }
-                    else
-                    {
-                        // Since this is a bitwise operation, we can still support it by lying
-                        // about the type and doing the operation using a supported instruction
-
-                        xorId = NI_AVX_Xor;
-
-                        if (varTypeIsLong(simdBaseType))
-                        {
-                            node->SetSimdBaseJitType(CORINFO_TYPE_DOUBLE);
-                        }
-                        else
-                        {
-                            node->SetSimdBaseJitType(CORINFO_TYPE_FLOAT);
-                        }
-                    }
-                }
-                else if (simdBaseType == TYP_FLOAT)
-                {
-                    xorId = NI_SSE_Xor;
-                }
-                else
-                {
-                    xorId = NI_SSE2_Xor;
-                }
+                // op1 ^ AllBitsSet
 
                 GenTree* cns = comp->gtNewAllBitsSetConNode(simdType);
                 BlockRange().InsertBefore(node, cns);
 
-                node->ResetHWIntrinsicId(xorId, op1, cns);
+                GenTree* result = comp->gtNewSimdBinOpNode(GT_XOR, simdType, op1, cns, simdBaseJitType, simdSize);
+                BlockRange().InsertBefore(node, result);
+
+                LIR::Use use;
+
+                if (BlockRange().TryGetUse(node, &use))
+                {
+                    use.ReplaceWith(result);
+                }
+                else
+                {
+                    result->SetUnusedValue();
+                }
+
+                BlockRange().Remove(node);
+                node = result->AsHWIntrinsic();
             }
 
             return LowerNode(node);
