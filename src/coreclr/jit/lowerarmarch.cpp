@@ -3310,7 +3310,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector64_GetElement:
             case NI_Vector128_GetElement:
             {
-                assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op2));
 
                 if (intrin.op2->IsCnsIntOrI())
