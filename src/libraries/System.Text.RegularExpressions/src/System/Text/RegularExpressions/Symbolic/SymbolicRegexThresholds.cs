@@ -22,25 +22,24 @@ namespace System.Text.RegularExpressions.Symbolic
         /// processing starts out in DFA mode, even if we've previously triggered NFA mode for the same regex.
         /// We switch over into NFA mode the first time a given traversal (match operation) results in us needing
         /// to create a new node and the graph is already or newly beyond this threshold.
-        /// TODO: summarize this
-        /// this should be a very last resort action, going from DFA mode to NFA mode turns 500MB/s to 5MB/s
-        /// with an entirely different search-time algorithmic complexity
-        /// 100_000 isn't a really a high memory cost either,
-        /// ideally NFA mode should never be used, 1_000_000 is ok as well but it depends how much memory the user has
+        /// This limit is chosen due to memory usage constraints, the worst possible allocation is currently approx. 50 MB;
+        /// There is some motivation to make this configurable, as it can exchange upfront costs with potentially
+        /// significant search-time performance gains
         /// </remarks>
-        internal const int NfaThreshold = 100_000;
+        internal const int NfaThreshold = 25_000;
 
         /// <summary>
         /// Default maximum estimated safe expansion size of a <see cref="SymbolicRegexNode{TSet}"/> AST
         /// after the AST has been anlayzed for safe handling.
-        /// TODO: this is perhaps too conservative, consider raising this, 5000 is ok even in safety critical scenarios, ~50 000 for general purpose is ok too
         /// <remarks>
         /// If the AST exceeds this threshold then <see cref="NotSupportedException"/> is thrown.
         /// This default value may be overridden with the AppContext data
         /// whose name is given by  <see cref="SymbolicRegexSafeSizeThreshold_ConfigKeyName"/>.
         /// </remarks>
+        /// This limit is chosen due to worst case NFA speed constraints, which is about 150kb/s,
+        /// although it could be safely raised higher at the expense of worst-case NFA performance
         /// </summary>
-        internal const int DefaultSymbolicRegexSafeSizeThreshold = 1000;
+        internal const int DefaultSymbolicRegexSafeSizeThreshold = 10_000; // nfa speed constraint
 
         ///<summary>The environment variable name for a value overriding the default value <see cref="DefaultSymbolicRegexSafeSizeThreshold"/></summary>
         internal const string SymbolicRegexSafeSizeThreshold_ConfigKeyName = "REGEX_NONBACKTRACKING_MAX_AUTOMATA_SIZE";

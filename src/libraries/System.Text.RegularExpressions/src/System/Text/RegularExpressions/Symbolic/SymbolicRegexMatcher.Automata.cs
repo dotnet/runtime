@@ -230,12 +230,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
             while (canLoop)
             {
-#if DEBUG
-                // if (current._left is null)
-                //     _wout($"NULL {current._kind}");
-                // else
-                //     _wout($"{pos} {current._kind} l:{current._left!._kind} {current}");
-#endif
                 (bool loop, SymbolicRegexNode<TSet> next) = current switch
                 {
                     // This could potentially be a very good future optimization for
@@ -386,16 +380,23 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Gets or creates a new DFA transition.</summary>
         /// <remarks>This function locks the matcher for safe concurrent use of the <see cref="_builder"/></remarks>
         private bool TryCreateNewTransition(
-            MatchingState<TSet> sourceState, int mintermId, int offset, bool checkThreshold, [NotNullWhen(true)] out MatchingState<TSet>? nextState)
+            MatchingState<TSet> sourceState, int mintermId, int offset, bool checkThreshold, [NotNullWhen(true)] out MatchingState<TSet>? nextState,
+            long timeoutOccursAt = 0)
         {
             Debug.Assert(offset < _dfaDelta.Length);
-
             lock (this)
             {
                 // check if meanwhile delta[offset] has become defined possibly by another thread
                 MatchingState<TSet>? targetState = _stateArray[_dfaDelta[offset]];
                 if (targetState is null)
                 {
+                    // check if there is an active timer
+                    if (timeoutOccursAt != 0 && Environment.TickCount64 > timeoutOccursAt)
+                    {
+                        nextState = null;
+                        return false;
+                    }
+
                     if (checkThreshold && _stateCache.Count >= SymbolicRegexThresholds.NfaThreshold)
                     {
                         nextState = null;
