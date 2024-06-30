@@ -2191,13 +2191,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitLDC(DBCF_ATTACHED);
         pCode->EmitAND();
         pCode->EmitBRTRUE(invokeTraceHelper);
-        pCode->EmitBR(debuggerCheckEnd); // Tune branch prediction to prefer non-debugging path
-
-        pCode->EmitLabel(invokeTraceHelper);
-
-        pCode->EmitLoadThis();
-        pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
 
         pCode->EmitLabel(debuggerCheckEnd);
 #endif // DEBUGGING_SUPPORTED
@@ -2240,6 +2233,17 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         // return
         pCode->EmitRET();
+
+#ifdef DEBUGGING_SUPPORTED
+        // Emit debugging support at the end of the method for better perf
+        pCode->EmitLabel(invokeTraceHelper);
+
+        pCode->EmitLoadThis();
+        pCode->EmitLDLOC(dwLoopCounterNum);
+        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
+
+        pCode->EmitBR(debuggerCheckEnd);
+#endif // DEBUGGING_SUPPORTED
 
         PCCOR_SIGNATURE pSig;
         DWORD cbSig;
