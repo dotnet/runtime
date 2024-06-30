@@ -2159,11 +2159,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-#ifndef TARGET_X86
-        // x86 has much less available registers comparing to other architectures.
-        // To reduce register pressure and stack spilling, avoid saving invocationCount in local variable.
-        DWORD dwInvocationCountNum = pCode->NewLocal(ELEMENT_TYPE_I4);
-#endif // TARGET_X86
         DWORD dwLoopCounterNum = pCode->NewLocal(ELEMENT_TYPE_I4);
 
         DWORD dwReturnValNum = -1;
@@ -2172,13 +2167,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
         ILCodeLabel *endOfMethod = pCode->NewCodeLabel();
-
-#ifndef TARGET_X86
-        // Get count of delegates
-        pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
-        pCode->EmitSTLOC(dwInvocationCountNum);
-#endif // TARGET_X86
 
         // initialize counter
         pCode->EmitLDC(0);
@@ -2213,12 +2201,8 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         // compare LoopCounter with InvocationCount. If equal then branch to Label_endOfMethod
         pCode->EmitLDLOC(dwLoopCounterNum);
-#ifdef TARGET_X86
         pCode->EmitLoadThis();
         pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
-#else // TARGET_X86
-        pCode->EmitLDLOC(dwInvocationCountNum);
-#endif // TARGET_X86
         pCode->EmitBEQ(endOfMethod);
 
         // Load next delegate from array using LoopCounter as index
