@@ -532,6 +532,275 @@ FloatComparisonMode HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(Flo
 }
 
 //------------------------------------------------------------------------
+// lookupIdForFloatComparisonMode: Get the intrinsic ID to use for a given float comparison mode
+//
+// Arguments:
+//    intrinsic    -- The base intrinsic that is being simplified
+//    comparison   -- The comparison mode used
+//    simdBaseType -- The base type for which the comparison is being done
+//    simdSize     -- The simd size for which the comparison is being done
+//
+// Return Value:
+//     The intrinsic ID to use instead of intrinsic
+//
+NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic      intrinsic,
+                                                               FloatComparisonMode comparison,
+                                                               var_types           simdBaseType,
+                                                               unsigned            simdSize)
+{
+    assert(varTypeIsFloating(simdBaseType));
+    assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
+
+    switch (comparison)
+    {
+        case FloatComparisonMode::OrderedEqualNonSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareEqualMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarEqual : NI_SSE2_CompareScalarEqual;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareEqual;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareEqual : NI_SSE2_CompareEqual;
+        }
+
+        case FloatComparisonMode::OrderedGreaterThanSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareGreaterThanMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarGreaterThan : NI_SSE2_CompareScalarGreaterThan;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareGreaterThan;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareGreaterThan : NI_SSE2_CompareGreaterThan;
+        }
+
+        case FloatComparisonMode::OrderedGreaterThanOrEqualSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareGreaterThanOrEqualMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarGreaterThanOrEqual : NI_SSE2_CompareScalarGreaterThanOrEqual;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareGreaterThanOrEqual;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareGreaterThanOrEqual : NI_SSE2_CompareGreaterThanOrEqual;
+        }
+
+        case FloatComparisonMode::OrderedLessThanSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareLessThanMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarLessThan : NI_SSE2_CompareScalarLessThan;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareLessThan;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareLessThan : NI_SSE2_CompareLessThan;
+        }
+
+        case FloatComparisonMode::OrderedLessThanOrEqualSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareLessThanOrEqualMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarLessThanOrEqual : NI_SSE2_CompareScalarLessThanOrEqual;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareLessThanOrEqual;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareLessThanOrEqual : NI_SSE2_CompareLessThanOrEqual;
+        }
+
+        case FloatComparisonMode::UnorderedNotEqualNonSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareNotEqualMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotEqual : NI_SSE2_CompareScalarNotEqual;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareNotEqual;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotEqual : NI_SSE2_CompareNotEqual;
+        }
+
+        case FloatComparisonMode::UnorderedNotGreaterThanSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareNotGreaterThanMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotGreaterThan : NI_SSE2_CompareScalarNotGreaterThan;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareNotGreaterThan;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotGreaterThan : NI_SSE2_CompareNotGreaterThan;
+        }
+
+        case FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareNotGreaterThanOrEqualMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotGreaterThanOrEqual : NI_SSE2_CompareScalarNotGreaterThanOrEqual;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareNotGreaterThanOrEqual;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotGreaterThanOrEqual : NI_SSE2_CompareNotGreaterThanOrEqual;
+        }
+
+        case FloatComparisonMode::UnorderedNotLessThanSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareNotLessThanMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotLessThan : NI_SSE2_CompareScalarNotLessThan;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareNotLessThan;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotLessThan : NI_SSE2_CompareNotLessThan;
+        }
+
+        case FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareNotLessThanOrEqualMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotLessThanOrEqual : NI_SSE2_CompareScalarNotLessThanOrEqual;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareNotLessThanOrEqual;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotLessThanOrEqual : NI_SSE2_CompareNotLessThanOrEqual;
+        }
+
+        case FloatComparisonMode::OrderedNonSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareOrderedMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarOrdered : NI_SSE2_CompareScalarOrdered;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareOrdered;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareOrdered : NI_SSE2_CompareOrdered;
+        }
+
+        case FloatComparisonMode::UnorderedNonSignaling:
+        {
+            if (intrinsic == NI_EVEX_CompareMask)
+            {
+                return NI_EVEX_CompareUnorderedMask;
+            }
+            else if (intrinsic == NI_AVX_CompareScalar)
+            {
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarUnordered : NI_SSE2_CompareScalarUnordered;
+            }
+
+            assert(intrinsic == NI_AVX_Compare);
+
+            if (simdSize == 32)
+            {
+                return NI_AVX_CompareUnordered;
+            }
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareUnordered : NI_SSE2_CompareUnordered;
+        }
+
+        default:
+        {
+            return intrinsic;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // isFullyImplementedIsa: Gets a value that indicates whether the InstructionSet is fully implemented
 //
 // Arguments:
@@ -4286,17 +4555,48 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AVX_Compare:
+        case NI_AVX_CompareScalar:
         case NI_AVX512F_Compare:
         {
             assert(sig->numArgs == 3);
+
+            if (intrinsic == NI_AVX512F_Compare)
+            {
+                intrinsic = NI_EVEX_CompareMask;
+                retType   = TYP_MASK;
+            }
 
             op3 = impPopStack().val;
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, op3, NI_EVEX_CompareMask, simdBaseJitType, simdSize);
-            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            if (op3->IsCnsIntOrI())
+            {
+                FloatComparisonMode mode = static_cast<FloatComparisonMode>(op3->AsIntConCommon()->IntegralValue());
+                NamedIntrinsic      id   = HWIntrinsicInfo::lookupIdForFloatComparisonMode(intrinsic, mode, simdBaseType, simdSize);
 
+                if (id != intrinsic)
+                {
+                    intrinsic = id;
+                    op3       = nullptr;
+                }
+            }
+
+            if (op3 == nullptr)
+            {
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            }
+
+            if (retType == TYP_MASK)
+            {
+                retType = getSIMDTypeForSize(simdSize);
+                retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
+            }
             break;
         }
 

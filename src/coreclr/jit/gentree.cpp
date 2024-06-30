@@ -28240,13 +28240,22 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
         case NI_SSE2_AddScalar:
         case NI_AVX512F_AddScalar:
         case NI_AVX10v1_AddScalar:
-#elif defined(TARGET_ARM64)
-        case NI_AdvSimd_AddScalar:
-#endif
         {
             *isScalar = true;
             return GT_ADD;
         }
+#endif
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_AddScalar:
+        {
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
+            return GT_ADD;
+        }
+#endif
 
 #if defined(TARGET_XARCH)
         case NI_SSE_Divide:
@@ -28265,13 +28274,22 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
         case NI_SSE2_DivideScalar:
         case NI_AVX512F_DivideScalar:
         case NI_AVX10v1_DivideScalar:
-#elif defined(TARGET_ARM64)
-        case NI_AdvSimd_DivideScalar:
-#endif
         {
             *isScalar = true;
             return GT_DIV;
         }
+#endif
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_DivideScalar:
+        {
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
+            return GT_DIV;
+        }
+#endif
 
 #if defined(TARGET_XARCH)
         case NI_SSE_Multiply:
@@ -28310,13 +28328,22 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
         case NI_SSE2_MultiplyScalar:
         case NI_AVX512F_MultiplyScalar:
         case NI_AVX10v1_MultiplyScalar:
-#elif defined(TARGET_ARM64)
-        case NI_AdvSimd_MultiplyScalar:
-#endif
         {
             *isScalar = true;
             return GT_MUL;
         }
+#endif
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_MultiplyScalar:
+        {
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
+            return GT_MUL;
+        }
+#endif
 
 #if defined(TARGET_ARM64)
         case NI_AdvSimd_Negate:
@@ -28328,7 +28355,10 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
         case NI_AdvSimd_NegateScalar:
         case NI_AdvSimd_Arm64_NegateScalar:
         {
-            *isScalar = true;
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
             return GT_NEG;
         }
 #endif
@@ -28373,7 +28403,10 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
 #ifdef TARGET_ARM64
         case NI_AdvSimd_ShiftLeftLogicalScalar:
         {
-            *isScalar = true;
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
             return GT_LSH;
         }
 #endif
@@ -28400,7 +28433,10 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
 #ifdef TARGET_ARM64
         case NI_AdvSimd_ShiftRightArithmeticScalar:
         {
-            *isScalar = true;
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
             return GT_RSH;
         }
 #endif
@@ -28423,7 +28459,10 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
 #ifdef TARGET_ARM64
         case NI_AdvSimd_ShiftRightLogicalScalar:
         {
-            *isScalar = true;
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
             return GT_RSZ;
         }
 #endif
@@ -28448,13 +28487,204 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
         case NI_SSE2_SubtractScalar:
         case NI_AVX512F_SubtractScalar:
         case NI_AVX10v1_SubtractScalar:
-#elif defined(TARGET_ARM64)
-        case NI_AdvSimd_SubtractScalar:
-#endif
         {
             *isScalar = true;
             return GT_SUB;
         }
+#endif
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_SubtractScalar:
+        {
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
+            return GT_SUB;
+        }
+#endif
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_CompareEqual:
+        case NI_SSE2_CompareEqual:
+        case NI_SSE41_CompareEqual:
+        case NI_AVX_CompareEqual:
+        case NI_AVX2_CompareEqual:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_CompareEqual:
+        case NI_AdvSimd_Arm64_CompareEqual:
+#endif
+        {
+            return GT_EQ;
+        }
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_CompareScalarEqual:
+        case NI_SSE2_CompareScalarEqual:
+        {
+            *isScalar = true;
+            return GT_EQ;
+        }
+#endif
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_Arm64_CompareEqualScalar:
+        {
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
+            return GT_EQ;
+        }
+#endif
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_CompareGreaterThan:
+        case NI_SSE2_CompareGreaterThan:
+        case NI_SSE42_CompareGreaterThan:
+        case NI_AVX_CompareGreaterThan:
+        case NI_AVX2_CompareGreaterThan:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_CompareGreaterThan:
+        case NI_AdvSimd_Arm64_CompareGreaterThan:
+#endif
+        {
+            return GT_GT;
+        }
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_CompareScalarGreaterThan:
+        case NI_SSE2_CompareScalarGreaterThan:
+        {
+            *isScalar = true;
+            return GT_GT;
+        }
+#endif
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
+        {
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
+            return GT_GT;
+        }
+#endif
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_CompareGreaterThanOrEqual:
+        case NI_SSE2_CompareGreaterThanOrEqual:
+        case NI_AVX_CompareGreaterThanOrEqual:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_CompareGreaterThanOrEqual:
+        case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+#endif
+        {
+            return GT_GE;
+        }
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_CompareScalarGreaterThanOrEqual:
+        case NI_SSE2_CompareScalarGreaterThanOrEqual:
+        {
+            *isScalar = true;
+            return GT_GE;
+        }
+#endif
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
+        {
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
+            return GT_GE;
+        }
+#endif
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_CompareLessThan:
+        case NI_SSE2_CompareLessThan:
+        case NI_SSE42_CompareLessThan:
+        case NI_AVX_CompareLessThan:
+        case NI_AVX2_CompareLessThan:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_CompareLessThan:
+        case NI_AdvSimd_Arm64_CompareLessThan:
+#endif
+        {
+            return GT_LT;
+        }
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_CompareScalarLessThan:
+        case NI_SSE2_CompareScalarLessThan:
+        {
+            *isScalar = true;
+            return GT_LT;
+        }
+#endif
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_Arm64_CompareLessThanScalar:
+        {
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
+            return GT_LT;
+        }
+#endif
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_CompareLessThanOrEqual:
+        case NI_SSE2_CompareLessThanOrEqual:
+        case NI_AVX_CompareLessThanOrEqual:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_CompareLessThanOrEqual:
+        case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
+#endif
+        {
+            return GT_LE;
+        }
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_CompareScalarLessThanOrEqual:
+        case NI_SSE2_CompareScalarLessThanOrEqual:
+        {
+            *isScalar = true;
+            return GT_LE;
+        }
+#endif
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar:
+        {
+            if (genTypeSize(GetSimdBaseType()) != 8)
+            {
+                *isScalar = true;
+            }
+            return GT_LE;
+        }
+#endif
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_CompareNotEqual:
+        case NI_SSE2_CompareNotEqual:
+        case NI_AVX_CompareNotEqual:
+        {
+            return GT_NE;
+        }
+
+        case NI_SSE_CompareScalarNotEqual:
+        case NI_SSE2_CompareScalarNotEqual:
+        {
+            *isScalar = true;
+            return GT_NE;
+        }
+#endif
 
         default:
         {
