@@ -2191,7 +2191,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         ILCodeLabel *invokeTraceHelper = pCode->NewCodeLabel();
         ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
 
-        // Call MulticastDebuggerTraceHelper only if any debugger is attatched
+        // Call MulticastDebuggerTraceHelper only if any debugger is attached
         pCode->EmitLDC((DWORD_PTR)&g_CORDebuggerControlFlags);
         pCode->EmitCONV_I();
         pCode->EmitLDIND_I4();
