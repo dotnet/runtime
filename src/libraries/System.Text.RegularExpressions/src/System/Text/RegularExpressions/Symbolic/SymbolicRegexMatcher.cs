@@ -538,7 +538,8 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private int FindEndPositionOptimized<TOptimizedInputReader, TAcceleratedStateHandler, TOptimizedNullabilityHandler>(ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, PerThreadData perThreadData)
+        private int FindEndPositionOptimized<TOptimizedInputReader, TAcceleratedStateHandler, TOptimizedNullabilityHandler>(
+            ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, PerThreadData perThreadData)
             where TOptimizedInputReader : struct, IOptimizedInputReader
             where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
             where TOptimizedNullabilityHandler : struct, IOptimizedNullabilityHandler
@@ -549,28 +550,32 @@ namespace System.Text.RegularExpressions.Symbolic
 
             while (true)
             {
-                // TODO: this could be safely raised higher but 25k is about the limit where it contributes overhead
-                const int CharsPerTimeoutCheck = 25000;
-                int innerLoopLength = _checkTimeout && input.Length - pos > CharsPerTimeoutCheck ?
-                    pos + CharsPerTimeoutCheck :
-                    input.Length;
-
+                int innerLoopLength;
                 bool done;
                 if (currentState.NfaState is null)
                 {
+                    const int dfaCharsPerTimeoutCheck = 100000;
+                    innerLoopLength = _checkTimeout && input.Length - pos > dfaCharsPerTimeoutCheck
+                        ? pos + dfaCharsPerTimeoutCheck
+                        : input.Length;
                     done =
                         FindEndPositionDeltasDFAOptimized<TOptimizedInputReader,
                             TAcceleratedStateHandler,
                             TOptimizedNullabilityHandler>(input, innerLoopLength - 1, mode, ref pos,
                             currentState.DfaStateId, ref endPos, ref initialStatePosCandidate,
-                            ref initialStatePosCandidate);
+                            ref initialStatePosCandidate, timeoutOccursAt);
                 }
                 else
                 {
                     // nfa fallback check, assume \Z and full nullability for nfa since it's already extremely rare to get here
+                    // worst case NFA speed is about 150 kb/s, this means the check is about every 13ms
+                    const int nfaCharsPerTimeoutCheck = 1000;
+                    innerLoopLength = _checkTimeout && input.Length - pos > nfaCharsPerTimeoutCheck
+                        ? pos + nfaCharsPerTimeoutCheck
+                        : input.Length;
                     done =
                         FindEndPositionDeltasNFA<NfaStateHandler, FullInputReader, NoOptimizationsInitialStateHandler,
-                            FullNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos,
+                            FullNullabilityHandler>(input, innerLoopLength, mode, timeoutOccursAt, ref pos, ref currentState, ref endPos,
                             ref initialStatePosCandidate, ref initialStatePosCandidate);
                 }
 
@@ -631,16 +636,34 @@ namespace System.Text.RegularExpressions.Symbolic
                 // catastrophic backtracking.  Catastrophic backtracking is not an issue for the NonBacktracking engine, but we
                 // still check the timeout now and again to provide some semblance of the behavior a developer experiences with
                 // the backtracking engines.  We can, however, choose a large number here, since it's not actually needed for security.
-                // todo: the reason why this is lower than FindEndPositionOptimized is an arbitrary choice, but 255+ minterms and NFA mode may
                 // reach speeds low enough for this to be relevant
-                const int CharsPerTimeoutCheck = 5_000;
-                int innerLoopLength = _checkTimeout && input.Length - pos > CharsPerTimeoutCheck ?
-                    pos + CharsPerTimeoutCheck :
-                    input.Length;
-
-                bool done = currentState.NfaState is not null ?
-                    FindEndPositionDeltasNFA<NfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePosCandidate) :
-                    FindEndPositionDeltasDFA<DfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePosCandidate);
+                // The fallback function has lower limits due to possibly worse performance
+                int innerLoopLength;
+                bool done;
+                if (currentState.NfaState is null)
+                {
+                    const int dfaCharsPerTimeoutCheck = 25000;
+                    innerLoopLength = _checkTimeout && input.Length - pos > dfaCharsPerTimeoutCheck
+                        ? pos + dfaCharsPerTimeoutCheck
+                        : input.Length;
+                    done =
+                        FindEndPositionDeltasDFA<DfaStateHandler, TInputReader, TFindOptimizationsHandler,
+                            TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos,
+                            ref endStateId, ref initialStatePosCandidate, timeoutOccursAt);
+                }
+                else
+                {
+                    // nfa fallback check, assume \Z and full nullability for nfa since it's already extremely rare to get here
+                    // worst case NFA speed is about 150 kb/s, this means the check is about every 13ms
+                    const int nfaCharsPerTimeoutCheck = 1000;
+                    innerLoopLength = _checkTimeout && input.Length - pos > nfaCharsPerTimeoutCheck
+                        ? pos + nfaCharsPerTimeoutCheck
+                        : input.Length;
+                    done =
+                        FindEndPositionDeltasNFA<NfaStateHandler, TInputReader, TFindOptimizationsHandler,
+                            TNullabilityHandler>(input, innerLoopLength, mode, timeoutOccursAt, ref pos, ref currentState, ref endPos,
+                            ref endStateId, ref initialStatePosCandidate);
+                }
 
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
                 // there is no more input available, then the whole search is done.
@@ -680,7 +703,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private bool FindEndPositionDeltasDFAOptimized<TOptimizedInputReader, TAcceleratedStateHandler,
             TOptimizedNullabilityHandler>(ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
-                ref int posRef, int startStateId, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
+                ref int posRef, int startStateId, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef, long timeoutOccursAt)
             where TOptimizedInputReader : struct, IOptimizedInputReader
             where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
             where TOptimizedNullabilityHandler : struct, IOptimizedNullabilityHandler
@@ -748,7 +771,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     // If there is more input available try to transition with the next character.
                     // Note: the order here is important so the transition gets taken
                     if (!DfaStateHandler.TryTakeDFATransition(
-                    this, ref currStateId, TOptimizedInputReader.GetPositionId(mtlookup, maxChar, input, pos))
+                    this, ref currStateId, TOptimizedInputReader.GetPositionId(mtlookup, maxChar, input, pos),
+                    timeoutOccursAt)
                         || pos >= lengthMinus1)
                     {
                         if (pos + 1 < input.Length)
@@ -800,7 +824,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// A negative value if iteration completed because we ran out of input or we failed to transition.
         /// </returns>
         private bool FindEndPositionDeltasDFA<TStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, int length, RegexRunnerMode mode,
-                ref int posRef, ref CurrentState state, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
+                ref int posRef, ref CurrentState state, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef,
+                long timeoutOccursAt)
             where TStateHandler : struct, IStateHandler
             where TInputReader : struct, IInputReader
             where TFindOptimizationsHandler : struct, IInitialStateHandler
@@ -851,7 +876,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If there is more input available try to transition with the next character.
                     if (pos >= length || !TStateHandler.TryTakeTransition(this, ref state,
-                            positionId))
+                            positionId, timeoutOccursAt))
                     {
                         return false;
                     }
@@ -872,7 +897,6 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// TODO: this is the fallback NFA function
         /// Workhorse inner loop for <see cref="FindEndPositionFallback{TInputReader,TFindOptimizationsHandler,TNullabilityHandler}"/>.  Consumes the <paramref name="input"/> character by character,
         /// starting at <paramref name="posRef"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
         /// lazily building out the graph as needed.
@@ -889,7 +913,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// 0 if iteration completed because we reached an initial state.
         /// A negative value if iteration completed because we ran out of input or we failed to transition.
         /// </returns>
-        private bool FindEndPositionDeltasNFA<TStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, int length, RegexRunnerMode mode,
+        private bool FindEndPositionDeltasNFA<TStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(
+                ReadOnlySpan<char> input, int length, RegexRunnerMode mode, long timeoutOccursAt,
                 ref int posRef, ref CurrentState state, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
             where TStateHandler : struct, IStateHandler
             where TInputReader : struct, IInputReader
@@ -931,7 +956,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // If there is more input available try to transition with the next character.
-                    if (pos >= length || !TStateHandler.TryTakeTransition(this, ref state, positionId))
+                    if (pos >= length || !TStateHandler.TryTakeTransition(this, ref state, positionId, timeoutOccursAt))
                     {
                         return false;
                     }
@@ -1007,7 +1032,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// starting at <paramref name="i"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
         /// lazily building out the graph as needed.
         /// </summary>
-        private bool FindStartPositionDeltasDFA<TStateHandler, TInputReader, TNullabilityHandler>(ReadOnlySpan<char> input, ref int i, int startThreshold, ref CurrentState state, ref int lastStart)
+        private bool FindStartPositionDeltasDFA<TStateHandler, TInputReader, TNullabilityHandler>(
+            ReadOnlySpan<char> input, ref int i, int startThreshold, ref CurrentState state, ref int lastStart)
             where TStateHandler : struct, IStateHandler
             where TInputReader : struct, IInputReader
             where TNullabilityHandler : struct, INullabilityHandler
@@ -1037,7 +1063,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // Try to transition with the next character, the one before the current position.
-                    if (!TStateHandler.TryTakeTransition(this, ref state, positionId))
+                    if (!TStateHandler.TryTakeTransition(this, ref state, positionId, 0))
                     {
                         // Return false to indicate the search didn't finish.
                         return false;
@@ -1085,7 +1111,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // Try to transition with the next character, the one before the current position.
-                    if (!TStateHandler.TryTakeTransition(this, ref state, positionId))
+                    if (!TStateHandler.TryTakeTransition(this, ref state, positionId, 0))
                     {
                         // Return false to indicate the search didn't finish.
                         return false;
@@ -1356,7 +1382,7 @@ namespace System.Text.RegularExpressions.Symbolic
             public static abstract bool IsNullableFor(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, uint nextCharKind);
             public static abstract int ExtractNullableCoreStateId(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, ReadOnlySpan<char> input, int pos);
             public static abstract int FixedLength(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, uint nextCharKind);
-            public static abstract bool TryTakeTransition(SymbolicRegexMatcher<TSet> matcher, ref CurrentState state, int mintermId);
+            public static abstract bool TryTakeTransition(SymbolicRegexMatcher<TSet> matcher, ref CurrentState state, int mintermId, long timeoutOccursAt);
             public static abstract StateFlags GetStateFlags(SymbolicRegexMatcher<TSet> matcher, in CurrentState state);
         }
 
@@ -1380,7 +1406,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
             /// <summary>Take the transition to the next DFA state.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool TryTakeTransition(SymbolicRegexMatcher<TSet> matcher, ref CurrentState state, int mintermId)
+            public static bool TryTakeTransition(SymbolicRegexMatcher<TSet> matcher, ref CurrentState state, int mintermId,
+                long timeoutOccursAt)
             {
                 Debug.Assert(state.DfaStateId > 0, $"Expected non-zero {nameof(state.DfaStateId)}.");
                 Debug.Assert(state.NfaState is null, $"Expected null {nameof(state.NfaState)}.");
@@ -1412,7 +1439,7 @@ namespace System.Text.RegularExpressions.Symbolic
             /// <summary>Take the transition to the next DFA state without paying for the NFA structure</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool TryTakeDFATransition(SymbolicRegexMatcher<TSet> matcher, ref int state,
-                int mintermId)
+                int mintermId, long timeoutOccursAt)
             {
                 Debug.Assert(state > 0, $"Expected non-zero {nameof(state)}.");
                 // Use the mintermId for the character being read to look up which state to transition to.
@@ -1429,7 +1456,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 if (matcher.TryCreateNewTransition(matcher.GetState(state), mintermId,
                         matcher.DeltaOffset(state, mintermId),
-                        checkThreshold: true, out MatchingState<TSet>? nextState))
+                        checkThreshold: true, out MatchingState<TSet>? nextState, timeoutOccursAt))
                 {
                     // We were able to create a new DFA transition to some state. Move to it and
                     // return that we're still operating as a DFA and can keep going.
@@ -1516,7 +1543,8 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             /// <summary>Take the transition to the next NFA state.</summary>
-            public static bool TryTakeTransition(SymbolicRegexMatcher<TSet> matcher, ref CurrentState state, int mintermId)
+            public static bool TryTakeTransition(SymbolicRegexMatcher<TSet> matcher, ref CurrentState state, int mintermId,
+                long timeoutOccursAt = 0)
             {
                 Debug.Assert(state.DfaStateId < 0, $"Expected negative {nameof(state.DfaStateId)}.");
                 Debug.Assert(state.NfaState is not null, $"Expected non-null {nameof(state.NfaState)}.");
