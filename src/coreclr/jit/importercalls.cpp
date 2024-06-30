@@ -2815,6 +2815,10 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 
     CORINFO_CLASS_HANDLE fieldOwnerHnd = info.compCompHnd->getFieldClass(fieldToken);
 
+    // We're expanding RuntimeHelpers.CreateSpan<int>((RuntimeFieldHandle)0x...), thus, we need to
+    // statically initialize the class containing that RuntimeFieldHandle
+    info.compCompHnd->initClass(fieldToken, info.compMethodHnd, impTokenLookupContextHandle);
+
     CORINFO_CLASS_HANDLE fieldClsHnd;
     var_types            fieldElementType =
         JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd, fieldOwnerHnd));
