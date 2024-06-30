@@ -21909,7 +21909,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
         case GT_MUL:
         {
-            assert(!varTypeIsLong(simdBaseType) || (simdSize == 16));
             GenTree** scalarOp = nullptr;
 
             if (varTypeIsArithmetic(op1))
