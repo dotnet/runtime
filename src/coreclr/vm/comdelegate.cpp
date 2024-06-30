@@ -2178,23 +2178,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         //Label_nextDelegate:
         pCode->EmitLabel(nextDelegate);
 
-#ifdef DEBUGGING_SUPPORTED
-        ILCodeLabel *invokeTraceHelper = pCode->NewCodeLabel();
-        ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
-
-        // Call MulticastDebuggerTraceHelper only if any debugger is attached
-        pCode->EmitLDC((DWORD_PTR)&g_CORDebuggerControlFlags);
-        pCode->EmitCONV_I();
-        pCode->EmitLDIND_I4();
-
-        // (g_CORDebuggerControlFlags & DBCF_ATTACHED) != 0
-        pCode->EmitLDC(DBCF_ATTACHED);
-        pCode->EmitAND();
-        pCode->EmitBRTRUE(invokeTraceHelper);
-
-        pCode->EmitLabel(debuggerCheckEnd);
-#endif // DEBUGGING_SUPPORTED
-
         // Load next delegate from array using LoopCounter as index
         pCode->EmitLoadThis();
         pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_LIST)));
@@ -2220,6 +2203,23 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         //Label_checkCount
         pCode->EmitLabel(checkCount);
+        
+#ifdef DEBUGGING_SUPPORTED
+        ILCodeLabel *invokeTraceHelper = pCode->NewCodeLabel();
+        ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
+
+        // Call MulticastDebuggerTraceHelper only if any debugger is attached
+        pCode->EmitLDC((DWORD_PTR)&g_CORDebuggerControlFlags);
+        pCode->EmitCONV_I();
+        pCode->EmitLDIND_I4();
+
+        // (g_CORDebuggerControlFlags & DBCF_ATTACHED) != 0
+        pCode->EmitLDC(DBCF_ATTACHED);
+        pCode->EmitAND();
+        pCode->EmitBRTRUE(invokeTraceHelper);
+
+        pCode->EmitLabel(debuggerCheckEnd);
+#endif // DEBUGGING_SUPPORTED
 
         // compare LoopCounter with InvocationCount. If less then branch to nextDelegate
         pCode->EmitLDLOC(dwLoopCounterNum);
