@@ -21988,6 +21988,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                     if (simdSize == 8)
                     {
+                        // Vector64<long> vec = Vector64.Create(left0 * right0)
                         return gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8,
                                                                gtNewOperNode(GT_MUL, TYP_LONG, left0, right0),
                                                                simdBaseJitType, 8);
