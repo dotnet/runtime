@@ -21975,27 +21975,26 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 case TYP_LONG:
                 case TYP_ULONG:
                 {
+                    if (simdSize == 8)
+                    {
+                        // Vector64<long> vec = Vector64.CreateScalar(op1.ToScalar() * op2.ToScalar())
+                        op1            = gtNewSimdToScalarNode(TYP_LONG, op1, simdBaseJitType, 8);
+                        op2            = gtNewSimdToScalarNode(TYP_LONG, op2, simdBaseJitType, 8);
+                        GenTreeOp* mul = gtNewOperNode(GT_MUL, TYP_LONG, op1, op2);
+                        return gtNewSimdCreateScalarNode(TYP_SIMD8, mul, simdBaseJitType, 8);
+                    }
+
                     // Make op1 and op2 multi-use:
                     GenTree* op1Dup = fgMakeMultiUse(&op1);
                     GenTree* op2Dup = fgMakeMultiUse(&op2);
 
                     // long left0  = op1.GetElement(0)
                     // long right0 = op2.GetElement(0)
-                    GenTree* left0 =
-                        gtNewSimdGetElementNode(TYP_LONG, op1, gtNewIconNode(0), simdBaseJitType, simdSize);
-                    GenTree* right0 =
-                        gtNewSimdGetElementNode(TYP_LONG, op2, gtNewIconNode(0), simdBaseJitType, simdSize);
+                    GenTree* left0  = gtNewSimdToScalarNode(TYP_LONG, op1, simdBaseJitType, 16);
+                    GenTree* right0 = gtNewSimdToScalarNode(TYP_LONG, op2, simdBaseJitType, 16);
 
-                    if (simdSize == 8)
-                    {
-                        // Vector64<long> vec = Vector64.Create(left0 * right0)
-                        return gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8,
-                                                               gtNewOperNode(GT_MUL, TYP_LONG, left0, right0),
-                                                               simdBaseJitType, 8);
-                    }
-
-                    // long right1 = op2.GetElement(1)
                     // long left1  = op1.GetElement(1)
+                    // long right1 = op2.GetElement(1)
                     GenTree* left1  = gtNewSimdGetElementNode(TYP_LONG, op1Dup, gtNewIconNode(1), simdBaseJitType, 16);
                     GenTree* right1 = gtNewSimdGetElementNode(TYP_LONG, op2Dup, gtNewIconNode(1), simdBaseJitType, 16);
 
