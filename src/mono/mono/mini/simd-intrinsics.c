@@ -2172,7 +2172,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				arg0_type = MONO_TYPE_I8;
 				cast_klass = mono_defaults.int64_class;
 			}
-			klass = create_class_instance ("System.Runtime.Intrinsics", m_class_get_name (klass), m_class_get_byval_arg (cast_klass));
+			klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (cast_klass));
 		}
 		return emit_xcompare_for_intrinsic (cfg, klass, SN_LessThan, arg0_type, args [0], emit_xzero (cfg, klass));
 	}
@@ -2190,7 +2190,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				arg0_type = MONO_TYPE_I8;
 				cast_klass = mono_defaults.int64_class;
 			}
-			klass = create_class_instance ("System.Runtime.Intrinsics", m_class_get_name (klass), m_class_get_byval_arg (cast_klass));
+			klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (cast_klass));
 		}
 		return emit_xcompare_for_intrinsic (cfg, klass, SN_GreaterThanOrEqual, arg0_type, args [0], emit_xzero (cfg, klass));
 	}
