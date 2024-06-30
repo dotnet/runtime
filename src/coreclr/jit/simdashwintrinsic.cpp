@@ -910,6 +910,31 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdFloorNode(retType, op1, simdBaseJitType, simdSize);
                 }
 
+                case NI_VectorT_IsNaN:
+                {
+                    return gtNewSimdIsNaNNode(retType, op1, simdBaseJitType, simdSize);
+                }
+
+                case NI_VectorT_IsNegative:
+                {
+                    return gtNewSimdIsNegativeNode(retType, op1, simdBaseJitType, simdSize);
+                }
+
+                case NI_VectorT_IsPositive:
+                {
+                    return gtNewSimdIsPositiveNode(retType, op1, simdBaseJitType, simdSize);
+                }
+
+                case NI_VectorT_IsPositiveInfinity:
+                {
+                    return gtNewSimdIsPositiveInfinityNode(retType, op1, simdBaseJitType, simdSize);
+                }
+
+                case NI_VectorT_IsZero:
+                {
+                    return gtNewSimdIsZeroNode(retType, op1, simdBaseJitType, simdSize);
+                }
+
                 case NI_VectorT_LoadUnsafe:
                 {
                     if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
