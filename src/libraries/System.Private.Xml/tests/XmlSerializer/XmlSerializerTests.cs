@@ -2304,7 +2304,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 
     private static string WithXmlHeader(string xml)
     {
-        return "<?xml version=\"1.0\" encoding=\"utf-8\"?>" + Environment.NewLine + xml;
+        return "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" + xml;
     }
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
