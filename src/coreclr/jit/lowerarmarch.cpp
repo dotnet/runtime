@@ -3317,7 +3317,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     MakeSrcContained(node, intrin.op2);
                 }
 
-                if (IsContainableMemoryOp(intrin.op1))
+                if (IsContainableMemoryOp(intrin.op1) && IsSafeToContainMem(node, intrin.op1))
                 {
                     MakeSrcContained(node, intrin.op1);
 
