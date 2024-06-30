@@ -123,7 +123,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind == JsonTypeInfoKind.None)
+                if (Kind is not (JsonTypeInfoKind.Object or JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
@@ -153,7 +153,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind == JsonTypeInfoKind.None)
+                if (Kind is not (JsonTypeInfoKind.Object or JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
@@ -183,7 +183,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind == JsonTypeInfoKind.None)
+                if (Kind is not (JsonTypeInfoKind.Object or JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
@@ -213,7 +213,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind == JsonTypeInfoKind.None)
+                if (Kind is not (JsonTypeInfoKind.Object or JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
@@ -1224,9 +1224,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(!IsReadOnly);
 
-            // Callbacks currently only supported in object kinds
-            // TODO: extend to collections/dictionaries
-            if (Kind != JsonTypeInfoKind.None)
+            if (Kind is JsonTypeInfoKind.Object or JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary)
             {
                 if (typeof(IJsonOnSerializing).IsAssignableFrom(Type))
                 {
