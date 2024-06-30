@@ -390,14 +390,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 MatchingState<TSet>? targetState = _stateArray[_dfaDelta[offset]];
                 if (targetState is null)
                 {
-                    // check if there is an active timer
-                    if (timeoutOccursAt != 0 && Environment.TickCount64 > timeoutOccursAt)
-                    {
-                        nextState = null;
-                        return false;
-                    }
-
-                    if (checkThreshold && _stateCache.Count >= SymbolicRegexThresholds.NfaThreshold)
+                    if (// check if there is an active timer
+                        (timeoutOccursAt != 0 && Environment.TickCount64 > timeoutOccursAt) ||
+                        // check if size exceeds the NFA threshold
+                        (checkThreshold && _stateCache.Count >= SymbolicRegexThresholds.NfaThreshold))
                     {
                         nextState = null;
                         return false;
