@@ -55,6 +55,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public bool StartsWithLineAnchor => (_info & StartsWithLineAnchorMask) != 0;
 
         public bool ContainsLineAnchor => (_info & ContainsLineAnchorMask) != 0;
+
         public bool StartsWithSomeAnchor => (_info & StartsWithSomeAnchorMask) != 0;
 
         public bool ContainsSomeAnchor => (_info & ContainsSomeAnchorMask) != 0;

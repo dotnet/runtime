@@ -100,22 +100,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>
         /// Cached nullability check with encoded bits
-        /// whereever possible
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullableFor(uint nextCharKind)
         {
             return ((1 << (int)nextCharKind) & NullabilityInfo) != 0;
-        }
-
-        /// <summary>
-        /// Full nullability check for initialization
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool IsNullableForInit(uint nextCharKind)
-        {
-            Debug.Assert(CharKind.IsValidCharKind(nextCharKind));
-            return Node.IsNullableFor(CharKind.Context(PrevCharKind, nextCharKind));
         }
 
         /// <summary>

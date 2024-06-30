@@ -211,31 +211,30 @@ namespace System.Text.RegularExpressions.Symbolic
             if (findOptimizations.IsUseful &&
                 findOptimizations.LeadingAnchor is not RegexNodeKind.Beginning)
             {
-                // this makes some assumptions about the frequency of occurrences
-                // some large sets like \p{Sm} are faster with infrequent matches but slower with frequent matches
-                // the easiest thing to do here is to leave it as-is, but this means some inputs can have large performance losses of 10x or more
-
-                var setIsTooCommon = new Func<RegexFindOptimizations.FixedDistanceSet, bool>((fds) =>
-                {
-                    return fds switch
-                    {
-                        { Chars: not null } =>
-                            // anything above 4 uint16 chars is generally slower than DFA
-                            fds.Negated ||
-                            (fds.Chars.Length > 4 &&
-                            Array.Exists(fds.Chars, char.IsAsciiLetterLower)),
-                        { Range: not null } => false,
-                        // for fixed length strings just trust the optimizations
-                        _ => _optimizedReversalState.Kind != MatchReversalKind.FixedLength,
-                    };
-                });
-
                 // In some cases where the findOptimizations are useful, just using the DFA can still be faster.
                 _findOpts = findOptimizations switch
                 {
-                    { FindMode: FindNextStartingPositionMode.FixedDistanceSets_LeftToRight } when  findOptimizations.FixedDistanceSets!.TrueForAll(setIsTooCommon.Invoke) => null,
-                    { FindMode: FindNextStartingPositionMode.LeadingSet_LeftToRight } when setIsTooCommon(findOptimizations.FixedDistanceSets![0]) => null,
-                    _ => findOptimizations
+                    // for sets in fixed length patterns just trust the optimizations,
+                    // the performance can be either better or worse depending on frequency
+                    {
+                        FindMode:
+                        FindNextStartingPositionMode.FixedDistanceSets_LeftToRight or
+                        FindNextStartingPositionMode.LeadingSet_LeftToRight} when
+                        _optimizedReversalState.Kind != MatchReversalKind.FixedLength => findOptimizations,
+                    // string literals are the best case
+                    {
+                        FindMode:
+                        FindNextStartingPositionMode.LeadingString_LeftToRight or
+                        FindNextStartingPositionMode.FixedDistanceString_LeftToRight or
+                        FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight
+                    } => findOptimizations,
+                    // note: only the Teddy implementation is faster than DFA here, Aho Corasick should map to null
+                    { FindMode: FindNextStartingPositionMode.LeadingStrings_LeftToRight } => findOptimizations,
+                    { FindMode: FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight } => findOptimizations,
+                    // for singular character sets it depends if there's any reasonably small set to be accelerated
+                    { FindMode: FindNextStartingPositionMode.FixedDistanceSets_LeftToRight } when findOptimizations.FixedDistanceSets!.TrueForAll(CharSetIsTooCommon) => null,
+                    { FindMode: FindNextStartingPositionMode.LeadingSet_LeftToRight } when CharSetIsTooCommon(findOptimizations.FixedDistanceSets![0]) => null,
+                    _ => null
                 };
             }
 
@@ -290,6 +289,36 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             _reverseInitialStates = reverseInitialStates;
 
+
+            // TODO: this is still work in progress
+            // The frequency of occurrences makes a big difference here,
+            // anything above 4 uint16 chars is generally slower than DFA, but
+            // if the characters are very rare, then SearchValues can be up to ~2x faster
+            // SearchValues<char> implementations to avoid:
+            // - ProbabilisticCharSearchValues
+            // - ProbabilisticWithAsciiCharSearchValues`1
+            // - AsciiCharSearchValues`1
+            // - Any5SearchValues`2"
+            // SearchValues<string> implementations to avoid:
+            // - StringSearchValuesAhoCorasick`2
+            bool CharSetIsTooCommon(RegexFindOptimizations.FixedDistanceSet fixedDistanceSet)
+            {
+                return fixedDistanceSet switch
+                {
+                    // anything above 4 uint16 chars is generally slower than DFA
+                    { Chars: not null } =>
+                        // negated sets are usually large
+                        fixedDistanceSet.Negated ||
+                        (fixedDistanceSet.Chars.Length > 4
+                        // TODO: this extra condition is currently kept so there's no regressions
+                        // if ~500mb/s worst case is acceptable then this could be removed
+                        // but being able to guess which character sets are not too frequent can
+                        // often reach over 1gb/s with AVX
+                        && Array.Exists(fixedDistanceSet.Chars, char.IsAsciiLetterLower)),
+                    { Range: not null } => false,
+                    _ => false,
+                };
+            }
 
             // Maps a minterm ID to a character kind
             uint CalculateMintermIdKind(int mintermId)
@@ -561,9 +590,9 @@ namespace System.Text.RegularExpressions.Symbolic
                     done =
                         FindEndPositionDeltasDFAOptimized<TOptimizedInputReader,
                             TAcceleratedStateHandler,
-                            TOptimizedNullabilityHandler>(input, innerLoopLength - 1, mode, ref pos,
+                            TOptimizedNullabilityHandler>(input, innerLoopLength - 1, mode, timeoutOccursAt, ref pos,
                             currentState.DfaStateId, ref endPos, ref initialStatePosCandidate,
-                            ref initialStatePosCandidate, timeoutOccursAt);
+                            ref initialStatePosCandidate);
                 }
                 else
                 {
@@ -648,8 +677,8 @@ namespace System.Text.RegularExpressions.Symbolic
                         : input.Length;
                     done =
                         FindEndPositionDeltasDFA<DfaStateHandler, TInputReader, TFindOptimizationsHandler,
-                            TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos,
-                            ref endStateId, ref initialStatePosCandidate, timeoutOccursAt);
+                            TNullabilityHandler>(input, innerLoopLength, mode, timeoutOccursAt, ref pos, ref currentState, ref endPos,
+                            ref endStateId, ref initialStatePosCandidate);
                 }
                 else
                 {
@@ -699,11 +728,14 @@ namespace System.Text.RegularExpressions.Symbolic
 
 
         /// <summary>
-        /// tbd
+        /// This version of <see cref="FindEndPositionDeltasDFA"/> uses a different set of interfaces,
+        /// which don't check for many inner loop edge cases e.g. input end or '\n'.
+        /// All edge cases are handled before entering the loop.
         /// </summary>
         private bool FindEndPositionDeltasDFAOptimized<TOptimizedInputReader, TAcceleratedStateHandler,
             TOptimizedNullabilityHandler>(ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
-                ref int posRef, int startStateId, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef, long timeoutOccursAt)
+            long timeoutOccursAt, ref int posRef, int startStateId, ref int endPosRef, ref int initialStatePosRef,
+            ref int initialStatePosCandidateRef)
             where TOptimizedInputReader : struct, IOptimizedInputReader
             where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
             where TOptimizedNullabilityHandler : struct, IOptimizedNullabilityHandler
@@ -742,8 +774,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (TAcceleratedStateHandler.TryFindNextStartingPosition<TOptimizedInputReader>(
                     this, mtlookup, input, ref currStateId, ref pos, initialStateId))
                     {
-                        // future work could combine this with an immediate state transition
-                        // but this requires changing too much for now
+                        // a good potential future optimization here would
+                        // be to combine this with an immediate state transition
                         if (pos == input.Length)
                         {
                             // patterns such as ^$ can be nullable right away
@@ -769,7 +801,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // If there is more input available try to transition with the next character.
-                    // Note: the order here is important so the transition gets taken
+                    // Note: the order here is important so the transition itself gets taken
                     if (!DfaStateHandler.TryTakeDFATransition(
                     this, ref currStateId, TOptimizedInputReader.GetPositionId(mtlookup, maxChar, input, pos),
                     timeoutOccursAt)
@@ -824,8 +856,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// A negative value if iteration completed because we ran out of input or we failed to transition.
         /// </returns>
         private bool FindEndPositionDeltasDFA<TStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, int length, RegexRunnerMode mode,
-                ref int posRef, ref CurrentState state, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef,
-                long timeoutOccursAt)
+                long timeoutOccursAt, ref int posRef, ref CurrentState state, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef
+                )
             where TStateHandler : struct, IStateHandler
             where TInputReader : struct, IInputReader
             where TFindOptimizationsHandler : struct, IInitialStateHandler
@@ -1666,7 +1698,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// This input reader attempts to minimize overhead
         /// by handling constraints outside of the loop:
         /// 1. the position must be already valid for the input.
-        /// 2. the pattern must not to contain \Z.
+        /// 2. the pattern must not contain \Z.
         /// 3. to save memory, `maxChar` is a local variable set to the ordinal char for highest non-0 minterm
         /// </summary>
         private interface IOptimizedInputReader
@@ -1690,7 +1722,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// This reader is effectively an array lookup for the full 64k utf16 code unit mapping
+        /// This reader is effectively an array lookup for the all utf16 code units
         /// </summary>
         private readonly struct OptimizedFullInputReader : IOptimizedInputReader
         {
@@ -1703,6 +1735,10 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
+        /// <summary>
+        /// This nullability handler interface can be used in DFAs
+        /// for patterns that do not contain \Z
+        /// </summary>
         private interface IOptimizedNullabilityHandler
         {
             public static abstract bool IsNullable<TOptimizedInputReader>(SymbolicRegexMatcher<TSet> matcher,
@@ -1728,7 +1764,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 byte[] nullabilityArray, int currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
                 where TOptimizedInputReader : struct, IOptimizedInputReader
             {
-                Debug.Assert(pos < input.Length, $"input end should not be handled here {input}, pat:{matcher._dotstarredInitialStates[CharKind.General].Node}");
+                Debug.Assert(pos < input.Length, $"input end should not be handled here");
                 return nullabilityArray[currStateId] > 0 && matcher.IsNullableWithContext(currStateId, TOptimizedInputReader.GetPositionId(lookup, lookup.Length + 1, input, pos));
             }
         }
