@@ -46,6 +46,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 // With only a single minterm, the mapping is trivial: everything maps to it (ID 0).
                 _lookup = Array.Empty<byte>();
+                _maxChar = -1;
                 return;
             }
 
