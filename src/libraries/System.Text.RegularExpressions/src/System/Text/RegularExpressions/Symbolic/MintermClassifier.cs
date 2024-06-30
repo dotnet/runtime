@@ -31,6 +31,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>
         /// Maximum ordinal character for a non-0 minterm, used to conserve memory
+        /// Note: this is maximum index allowed for the lookup, the array size is _maxChar + 1
         /// </summary>
         private readonly int _maxChar;
 
@@ -53,15 +54,12 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 _maxChar = Math.Max(_maxChar, (int)BDDRangeConverter.ToRanges(minterms[mintermId])[^1].Item2);
             }
-            // increment by 1 to fit the highest character code in the 0-based array as well
-            _maxChar += 1;
-
             // the trade-off is somewhere around 5% performance for a higher initial allocation.
             // past a certain threshold where the maxChar is already large,
             // the full 64k can be allocated and OptimizedFullInputReader can be used
             if (_maxChar > 32_000)
             {
-                _maxChar = ushort.MaxValue + 1;
+                _maxChar = ushort.MaxValue;
             }
 
             // It's incredibly rare for a regex to use more than a hundred or two minterms,
@@ -69,7 +67,7 @@ namespace System.Text.RegularExpressions.Symbolic
             if (minterms.Length > 255)
             {
                 // over 255 unique sets also means it's never ascii only
-                int[] lookup = new int[_maxChar];
+                int[] lookup = new int[_maxChar + 1];
                 for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
                 {
                     // precompute all assigned minterm categories
@@ -85,7 +83,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             else
             {
-                byte[] lookup = new byte[_maxChar];
+                byte[] lookup = new byte[_maxChar + 1];
                 for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
                 {
                     // precompute all assigned minterm categories
@@ -134,5 +132,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsFullLookup() => _lookup is not null && _lookup.Length == ushort.MaxValue + 1;
+
+        /// <summary>
+        /// Maximum ordinal character for a non-0 minterm, used to conserve memory
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int MaxChar() => _maxChar;
     }
 }
