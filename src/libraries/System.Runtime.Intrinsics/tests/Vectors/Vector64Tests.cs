@@ -4291,34 +4291,18 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void FusedMultiplyAddDoubleTest(double left, double right, double addend)
+        public void FusedMultiplyAddDoubleTest(double left, double right, double addend, double expectedResult)
         {
-            Vector64<double> actualResult = Vector64.FusedMultiplyAdd(Vector64.Create(left), Vector64.Create(right), Vector64.Create(addend));
-            AssertEqual(Vector64.Create(double.FusedMultiplyAdd(left, right, addend)), actualResult, Vector64<double>.Zero);
+            AssertEqual(Vector64.Create(expectedResult), Vector64.FusedMultiplyAdd(Vector64.Create(left), Vector64.Create(right), Vector64.Create(addend)), Vector64<double>.Zero);
+            AssertEqual(Vector64.Create(double.MultiplyAddEstimate(left, right, addend)), Vector64.MultiplyAddEstimate(Vector64.Create(left), Vector64.Create(right), Vector64.Create(addend)), Vector64<double>.Zero);
         }
 
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend, float expectedResult)
         {
-            Vector64<float> actualResult = Vector64.FusedMultiplyAdd(Vector64.Create(left), Vector64.Create(right), Vector64.Create(addend));
-            AssertEqual(Vector64.Create(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector64<float>.Zero);
-        }
-
-        [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void MultiplyAddEstimateDoubleTest(double left, double right, double addend)
-        {
-            Vector64<double> actualResult = Vector64.MultiplyAddEstimate(Vector64.Create(left), Vector64.Create(right), Vector64.Create(addend));
-            AssertEqual(Vector64.Create(double.MultiplyAddEstimate(left, right, addend)), actualResult, Vector64<double>.Zero);
-        }
-
-        [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
-        {
-            Vector64<float> actualResult = Vector64.MultiplyAddEstimate(Vector64.Create(left), Vector64.Create(right), Vector64.Create(addend));
-            AssertEqual(Vector64.Create(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector64<float>.Zero);
+            AssertEqual(Vector64.Create(expectedResult), Vector64.FusedMultiplyAdd(Vector64.Create(left), Vector64.Create(right), Vector64.Create(addend)), Vector64<float>.Zero);
+            AssertEqual(Vector64.Create(float.MultiplyAddEstimate(left, right, addend)), Vector64.MultiplyAddEstimate(Vector64.Create(left), Vector64.Create(right), Vector64.Create(addend)), Vector64<float>.Zero);
         }
 
         [Fact]

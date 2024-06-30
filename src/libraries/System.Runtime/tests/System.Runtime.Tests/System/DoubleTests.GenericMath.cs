@@ -119,9 +119,9 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.Log2Double), MemberType = typeof(GenericMathTestMemberData))]
-        public static void Log2Test(double value, double expectedResult)
+        public static void Log2Test(double value, double expectedResult, double allowedVariance)
         {
-            AssertExtensions.Equal(expectedResult, BinaryNumberHelper<double>.Log2(value));
+            AssertExtensions.Equal(expectedResult, BinaryNumberHelper<double>.Log2(value), allowedVariance);
         }
 
         //

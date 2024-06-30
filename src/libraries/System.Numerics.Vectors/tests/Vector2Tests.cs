@@ -1325,18 +1325,10 @@ namespace System.Numerics.Tests
 
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend, float expectedResult)
         {
-            Vector2 actualResult = Vector2.FusedMultiplyAdd(Vector2.Create(left), Vector2.Create(right), Vector2.Create(addend));
-            AssertEqual(Vector2.Create(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector2.Zero);
-        }
-
-        [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
-        {
-            Vector2 actualResult = Vector2.MultiplyAddEstimate(Vector2.Create(left), Vector2.Create(right), Vector2.Create(addend));
-            AssertEqual(Vector2.Create(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector2.Zero);
+            AssertEqual(Vector2.Create(expectedResult), Vector2.FusedMultiplyAdd(Vector2.Create(left), Vector2.Create(right), Vector2.Create(addend)), Vector2.Zero);
+            AssertEqual(Vector2.Create(float.MultiplyAddEstimate(left, right, addend)), Vector2.MultiplyAddEstimate(Vector2.Create(left), Vector2.Create(right), Vector2.Create(addend)), Vector2.Zero);
         }
 
         [Theory]

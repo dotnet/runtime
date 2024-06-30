@@ -5892,34 +5892,18 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void FusedMultiplyAddDoubleTest(double left, double right, double addend)
+        public void FusedMultiplyAddDoubleTest(double left, double right, double addend, double expectedResult)
         {
-            Vector256<double> actualResult = Vector256.FusedMultiplyAdd(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend));
-            AssertEqual(Vector256.Create(double.FusedMultiplyAdd(left, right, addend)), actualResult, Vector256<double>.Zero);
+            AssertEqual(Vector256.Create(expectedResult), Vector256.FusedMultiplyAdd(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend)), Vector256<double>.Zero);
+            AssertEqual(Vector256.Create(double.MultiplyAddEstimate(left, right, addend)), Vector256.MultiplyAddEstimate(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend)), Vector256<double>.Zero);
         }
 
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend, float expectedResult)
         {
-            Vector256<float> actualResult = Vector256.FusedMultiplyAdd(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend));
-            AssertEqual(Vector256.Create(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector256<float>.Zero);
-        }
-
-        [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void MultiplyAddEstimateDoubleTest(double left, double right, double addend)
-        {
-            Vector256<double> actualResult = Vector256.MultiplyAddEstimate(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend));
-            AssertEqual(Vector256.Create(double.MultiplyAddEstimate(left, right, addend)), actualResult, Vector256<double>.Zero);
-        }
-
-        [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
-        {
-            Vector256<float> actualResult = Vector256.MultiplyAddEstimate(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend));
-            AssertEqual(Vector256.Create(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector256<float>.Zero);
+            AssertEqual(Vector256.Create(expectedResult), Vector256.FusedMultiplyAdd(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend)), Vector256<float>.Zero);
+            AssertEqual(Vector256.Create(float.MultiplyAddEstimate(left, right, addend)), Vector256.MultiplyAddEstimate(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend)), Vector256<float>.Zero);
         }
 
         [Fact]
