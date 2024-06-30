@@ -1769,12 +1769,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsLong(simdBaseType) && (intrinsic == NI_Vector64_op_Multiply))
-            {
-                // long/ulong multiplication needs no special handling for SIMD8
-                break;
-            }
-
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
             CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
             var_types               argType  = TYP_UNKNOWN;
