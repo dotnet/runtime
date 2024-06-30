@@ -20,17 +20,19 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </remarks>
     internal sealed class MintermClassifier
     {
-        private static readonly byte[] s_emptyLookup = new byte[ushort.MaxValue + 1];
         /// <summary>An array used to map characters to minterms</summary>
         private readonly byte[]? _lookup;
-
-        /// <summary>Conserve memory if pattern is ascii-only</summary>
-        private readonly bool _isAsciiOnly;
 
         /// <summary>
         /// Fallback lookup if over 255 minterms. This is rarely used.
         /// </summary>
         private readonly int[]? _intLookup;
+
+
+        /// <summary>
+        /// Maximum ordinal character for a non-0 minterm, used to conserve memory
+        /// </summary>
+        private readonly int _maxChar;
 
         /// <summary>Create a classifier that maps a character to the ID of its associated minterm.</summary>
         /// <param name="minterms">A BDD for classifying all characters (ASCII and non-ASCII) to their corresponding minterm IDs.</param>
@@ -42,18 +44,24 @@ namespace System.Text.RegularExpressions.Symbolic
             if (minterms.Length == 1)
             {
                 // With only a single minterm, the mapping is trivial: everything maps to it (ID 0).
-                _lookup = s_emptyLookup;
+                _lookup = Array.Empty<byte>();
                 return;
             }
 
-            // ascii-only array to save memory
-            _isAsciiOnly = true;
+            // attempt to save memory in common cases by allocating only up to the highest char code
             for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
             {
-                if (BDDRangeConverter.ToRanges(minterms[mintermId])[^1].Item2 >= 128)
-                {
-                    _isAsciiOnly = false;
-                }
+                _maxChar = Math.Max(_maxChar, (int)BDDRangeConverter.ToRanges(minterms[mintermId])[^1].Item2);
+            }
+            // increment by 1 to fit the highest character code in the 0-based array as well
+            _maxChar += 1;
+
+            // the trade-off is somewhere around 5% performance for a higher initial allocation.
+            // past a certain threshold where the maxChar is already large,
+            // the full 64k can be allocated and OptimizedFullInputReader can be used
+            if (_maxChar > 32_000)
+            {
+                _maxChar = ushort.MaxValue + 1;
             }
 
             // It's incredibly rare for a regex to use more than a hundred or two minterms,
@@ -61,7 +69,7 @@ namespace System.Text.RegularExpressions.Symbolic
             if (minterms.Length > 255)
             {
                 // over 255 unique sets also means it's never ascii only
-                int[] lookup = new int[ushort.MaxValue + 1];
+                int[] lookup = new int[_maxChar];
                 for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
                 {
                     // precompute all assigned minterm categories
@@ -77,7 +85,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             else
             {
-                byte[] lookup = new byte[_isAsciiOnly ? 128 : ushort.MaxValue + 1];
+                byte[] lookup = new byte[_maxChar];
                 for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
                 {
                     // precompute all assigned minterm categories
@@ -97,23 +105,14 @@ namespace System.Text.RegularExpressions.Symbolic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetMintermID(int c)
         {
-            if (_isAsciiOnly && (c >= 128))
+            if (c > _maxChar)
             {
                 return 0;
             }
 
-            // high performance variant would use a span directly.
-            // additional memory is saved by using a byte
+            // high performance inner-loop variant uses the array directly
             return _intLookup is null ? _lookup![c] : _intLookup[c];
         }
-
-        /// <summary>
-        /// Whether to use the low memory ascii-only hot loop or the full loop
-        /// </summary>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsAsciiOnly() => _isAsciiOnly;
-
         /// <summary>
         /// Gets a quick mapping from char to minterm for the common case when there are &lt;= 255 minterms.
         /// Null if there are greater than 255 minterms.
@@ -127,5 +126,13 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int[]? IntLookup() => _intLookup;
+
+        /// <summary>
+        /// Whether the full 64K char lookup is allocated.
+        /// This accelerates the minterm mapping by removing an if-else case,
+        /// and is only considered for the common &lt;= 255 minterms case
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsFullLookup() => _lookup is not null && _lookup.Length == ushort.MaxValue + 1;
     }
 }
