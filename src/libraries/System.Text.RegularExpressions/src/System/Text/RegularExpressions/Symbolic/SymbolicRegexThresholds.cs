@@ -39,7 +39,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// This limit is chosen due to worst case NFA speed constraints, which is about 150kb/s,
         /// although it could be safely raised higher at the expense of worst-case NFA performance
         /// </summary>
-        internal const int DefaultSymbolicRegexSafeSizeThreshold = 10_000; // nfa speed constraint
+        internal const int DefaultSymbolicRegexSafeSizeThreshold = 10_000;
 
         ///<summary>The environment variable name for a value overriding the default value <see cref="DefaultSymbolicRegexSafeSizeThreshold"/></summary>
         internal const string SymbolicRegexSafeSizeThreshold_ConfigKeyName = "REGEX_NONBACKTRACKING_MAX_AUTOMATA_SIZE";

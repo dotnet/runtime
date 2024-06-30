@@ -55,9 +55,9 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 _maxChar = Math.Max(_maxChar, (int)BDDRangeConverter.ToRanges(minterms[mintermId])[^1].Item2);
             }
-            // the trade-off is somewhere around 5% performance for a higher initial allocation.
-            // past a certain threshold where the maxChar is already large,
-            // the full 64k can be allocated and OptimizedFullInputReader can be used
+            // there is an opportunity to gain around 5% performance for allocating the
+            // full 64K, past a certain threshold where maxChar is already large.
+            // TODO: what should this threshold be?
             if (_maxChar > 32_000)
             {
                 _maxChar = ushort.MaxValue;
