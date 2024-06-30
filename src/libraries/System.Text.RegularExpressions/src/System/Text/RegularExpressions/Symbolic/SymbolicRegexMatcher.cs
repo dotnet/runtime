@@ -665,8 +665,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // catastrophic backtracking.  Catastrophic backtracking is not an issue for the NonBacktracking engine, but we
                 // still check the timeout now and again to provide some semblance of the behavior a developer experiences with
                 // the backtracking engines.  We can, however, choose a large number here, since it's not actually needed for security.
-                // reach speeds low enough for this to be relevant
-                // The fallback function has lower limits due to possibly worse performance
+                // The fallback function has lower limits due to worse performance from edge cases
                 int innerLoopLength;
                 bool done;
                 if (currentState.NfaState is null)
@@ -719,10 +718,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     CheckTimeout(timeoutOccursAt);
                 }
             }
-
-            // Check whether there's a fixed-length marker for the current state.  If there is, we can
-            // use that length to optimize subsequent matching phases.
-            // matchLength = endStateId > 0 ? GetState(endStateId).FixedLength(GetCharKind<TInputReader>(input, endPos)) : -1;
             return endPos;
         }
 
@@ -1468,7 +1463,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 return false;
             }
 
-            /// <summary>Take the transition to the next DFA state without paying for the NFA structure</summary>
+            /// <summary>Transition function that only considers DFA state id</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool TryTakeDFATransition(SymbolicRegexMatcher<TSet> matcher, ref int state,
                 int mintermId, long timeoutOccursAt)

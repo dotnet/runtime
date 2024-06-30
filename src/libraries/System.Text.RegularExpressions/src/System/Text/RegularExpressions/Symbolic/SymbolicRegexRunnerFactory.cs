@@ -21,7 +21,6 @@ namespace System.Text.RegularExpressions.Symbolic
             var converter = new RegexNodeConverter(bddBuilder, regexTree.CaptureNumberSparseMapping);
 
             SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root);
-            // rootNode = RegexNodeConverter.ApplyRootRewrites(bddBuilder, rootNode);
 
             // Determine if the root node is supported for safe handling
             int threshold = SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold();
