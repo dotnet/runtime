@@ -118,7 +118,10 @@ namespace ILCompiler
                     else if (IsTypeInequals(opcode, reader, methodIL))
                         (_state, _flags) = (State.TypeEqualityCheck, _flags | Flags.TwoTokens | Flags.Inequality);
                     else
+                    {
+                        _token1 = _token2;
                         goto case State.TypeOf;
+                    }
                     return;
                 case State.TypeEqualityCheck:
                     if (opcode is ILOpcode.brfalse or ILOpcode.brfalse_s or ILOpcode.brtrue or ILOpcode.brtrue_s)
