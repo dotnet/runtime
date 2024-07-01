@@ -19,6 +19,8 @@ parameters:
   condition: succeeded()                 # optional -- condition for step to execute; defaults to succeeded()
   continueOnError: false                 # optional -- determines whether to continue the build if the step errors; defaults to false
   BuildConfig: 'checked'                 # optional -- Mostly, superpmi will be run on checked builds
+  osGroup: ''                            # required -- the OS group to run the tests on; defaults to the OS group of the build
+  archType: ''                           # required -- the architecture to run the tests on; defaults to the architecture of the build
   InputArtifacts: ''
   CollectionType: ''
   CollectionName: ''
@@ -33,6 +35,8 @@ steps:
     condition: ${{ parameters.condition }}
     shouldContinueOnError: ${{ parameters.continueOnError }}
     environment:
+      TargetOS: ${{ parameters.osGroup }}
+      TargetArchitecture: ${{ parameters.archType }}
       MchFileTag: $(MchFileTag)
       BuildConfig:  ${{ parameters.BuildConfig }}
       InputArtifacts: ${{ parameters.InputArtifacts }}

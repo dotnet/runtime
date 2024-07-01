@@ -146,6 +146,7 @@ jobs:
         ProjectFile: 'superpmi-collect.proj'
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
+        archType: ${{ parameters.archType }}
         InputArtifacts: '$(InputArtifacts)'
         CollectionType: '$(CollectionType)'
         CollectionName: '$(CollectionName)'

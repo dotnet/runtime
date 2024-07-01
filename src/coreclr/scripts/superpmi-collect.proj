@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+<Project Sdk="Microsoft.NET.Sdk;Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
   <!--
     This is useful for local testing to print the produced Helix items.
@@ -164,6 +164,20 @@
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/.dotnet:$PATH" Condition=" '$(CollectionType)' == 'crossgen2' "/>
   </ItemGroup>
   -->
+
+  <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' ">
+    <TargetOSSpec>$(TargetOS)$(TargetOSSubgroup)</TargetOSSpec>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'windows'">win-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'osx'">osx-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' ">
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>runtime</DotNetCliPackageType>
+    <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
+    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
+  </PropertyGroup>
 
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
