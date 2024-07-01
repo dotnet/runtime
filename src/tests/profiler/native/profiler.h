@@ -93,7 +93,7 @@ private:
     
 
 protected:
-    static void NotifyManagedCodeViaCallback(ICorProfilerInfo14 *pCorProfilerInfo);
+    static void NotifyManagedCodeViaCallback(ICorProfilerInfo15 *pCorProfilerInfo);
 
     String GetClassIDName(ClassID classId);
     String GetFunctionIDName(FunctionID funcId);
@@ -103,7 +103,7 @@ public:
     static Profiler *Instance;
     static void SetCallback(ProfilerCallback callback);
 
-    ICorProfilerInfo14* pCorProfilerInfo;
+    ICorProfilerInfo15* pCorProfilerInfo;
 
     Profiler();
     virtual ~Profiler();
