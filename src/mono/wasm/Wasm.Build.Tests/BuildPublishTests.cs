@@ -22,6 +22,25 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
+        public void Wasm_CannotAOT_InDebug(BuildArgs buildArgs, string config)
+        {
+            string projectName = GetTestProjectPath(prefix: "no_aot_in_debug", config: buildArgs.Config);
+            buildArgs = buildArgs with { ProjectName = projectName };
+            buildArgs = ExpandBuildArgs(buildArgs);
+            (string projectDir, string buildOutput) = BuildProject(buildArgs,
+                        id: id,
+                        new BuildProjectOptions(
+                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                        DotnetWasmFromRuntimePack: !relinked,
+                        CreateProject: true,
+                        Publish: false
+                        ));
+
+            Assert.Contains("AOT is not supported in debug configuration", buildOutput);
+        }
+
+        [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Release")]
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug")]
         public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
@@ -71,7 +90,6 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release")]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
         public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
         {
             bool testUnicode = true;
