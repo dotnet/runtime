@@ -1497,116 +1497,42 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case GT_NEG:
-        {
-            var_types   simdType        = node->TypeGet();
-            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            var_types   simdBaseType    = node->GetSimdBaseType();
-            unsigned    simdSize        = node->GetSimdSize();
-            GenTree*    op1             = node->Op(1);
-
-            GenTree* result;
-
-            if (varTypeIsFloating(simdBaseType))
-            {
-                // op1 ^ -0.0
-
-                GenTree* cns = comp->gtNewDconNode(-0.0, simdBaseType);
-                cns          = comp->gtNewSimdCreateBroadcastNode(simdType, cns, simdBaseJitType, simdSize);
-                BlockRange().InsertBefore(node, cns);
-
-                result = comp->gtNewSimdBinOpNode(GT_XOR, simdType, op1, cns, simdBaseJitType, simdSize);
-                BlockRange().InsertBefore(node, result);
-            }
-            else
-            {
-                // Zero - op1
-
-                GenTree* cns = comp->gtNewZeroConNode(simdType);
-                BlockRange().InsertBefore(node, cns);
-
-                result = comp->gtNewSimdBinOpNode(GT_SUB, simdType, cns, op1, simdBaseJitType, simdSize);
-                BlockRange().InsertBefore(node, result);
-            }
-
-            LIR::Use use;
-
-            if (BlockRange().TryGetUse(node, &use))
-            {
-                use.ReplaceWith(result);
-            }
-            else
-            {
-                result->SetUnusedValue();
-            }
-
-            BlockRange().Remove(node);
-            return LowerNode(result);
-        }
-
-        case GT_NOT:
-        {
-            var_types   simdType        = node->TypeGet();
-            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            var_types   simdBaseType    = node->GetSimdBaseType();
-            unsigned    simdSize        = node->GetSimdSize();
-            GenTree*    op1             = node->Op(1);
-
-            assert(varTypeIsSIMD(simdType));
-
-            bool isV512Supported = false;
-            if ((genTypeSize(simdBaseType) >= 4) && comp->compIsEvexOpportunisticallySupported(isV512Supported))
-            {
-                // We can't use the mask, but we can emit a ternary logic node
-                NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
-
-                if (simdSize != 64)
-                {
-                    ternaryLogicId = !isV512Supported ? NI_AVX10v1_TernaryLogic : NI_AVX512F_VL_TernaryLogic;
-                }
-
-                GenTree* op2 = comp->gtNewZeroConNode(simdType);
-                BlockRange().InsertBefore(node, op2);
-
-                GenTree* op3 = comp->gtNewZeroConNode(simdType);
-                BlockRange().InsertBefore(node, op3);
-
-                GenTree* control = comp->gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
-                BlockRange().InsertBefore(node, control);
-
-                node->ResetHWIntrinsicId(ternaryLogicId, comp, op3, op2, op1, control);
-            }
-            else
-            {
-                // op1 ^ AllBitsSet
-
-                GenTree* cns = comp->gtNewAllBitsSetConNode(simdType);
-                BlockRange().InsertBefore(node, cns);
-
-                GenTree* result = comp->gtNewSimdBinOpNode(GT_XOR, simdType, op1, cns, simdBaseJitType, simdSize);
-                BlockRange().InsertBefore(node, result);
-
-                LIR::Use use;
-
-                if (BlockRange().TryGetUse(node, &use))
-                {
-                    use.ReplaceWith(result);
-                }
-                else
-                {
-                    result->SetUnusedValue();
-                }
-
-                BlockRange().Remove(node);
-                node = result->AsHWIntrinsic();
-            }
-
-            return LowerNode(node);
-        }
-
         default:
         {
             break;
+        }
+    }
+
+    if ((oper == GT_XOR) && node->Op(2)->IsVectorAllBitsSet())
+    {
+        bool isV512Supported = false;
+        if ((genTypeSize(node->GetSimdBaseType()) >= 4) && comp->compIsEvexOpportunisticallySupported(isV512Supported))
+        {
+            var_types simdType = node->TypeGet();
+            unsigned  simdSize = node->GetSimdSize();
+            GenTree*  op1      = node->Op(1);
+            
+            // We can't use the mask, but we can emit a ternary logic node
+            NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
+
+            if (simdSize != 64)
+            {
+                ternaryLogicId = !isV512Supported ? NI_AVX10v1_TernaryLogic : NI_AVX512F_VL_TernaryLogic;
+            }
+
+            GenTree* op2 = comp->gtNewZeroConNode(simdType);
+            BlockRange().InsertBefore(node, op2);
+
+            GenTree* op3 = comp->gtNewZeroConNode(simdType);
+            BlockRange().InsertBefore(node, op3);
+
+            GenTree* control = comp->gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
+            BlockRange().InsertBefore(node, control);
+
+            node->ResetHWIntrinsicId(ternaryLogicId, comp, op3, op2, op1, control);
+            BlockRange().Remove(node->Op(2));
+
+            return LowerNode(node);
         }
     }
 

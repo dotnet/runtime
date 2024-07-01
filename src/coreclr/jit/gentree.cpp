@@ -26571,40 +26571,26 @@ GenTree* Compiler::gtNewSimdUnOpNode(
 #if defined(TARGET_XARCH)
         case GT_NEG:
         {
-            if (simdSize == 64)
+            if (varTypeIsFloating(simdBaseType))
             {
-                assert(canUseEvexEncodingDebugOnly());
-                intrinsic = NI_Vector512_op_UnaryNegation;
-            }
-            else if (simdSize == 32)
-            {
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-                intrinsic = NI_Vector256_op_UnaryNegation;
+                // op1 ^ -0.0
+                GenTree* negZero = gtNewDconNode(-0.0, simdBaseType);
+                negZero = gtNewSimdCreateBroadcastNode(type, negZero, simdBaseJitType, simdSize);
+                return gtNewSimdBinOpNode(GT_XOR, type, op1, negZero, simdBaseJitType, simdSize);
             }
             else
             {
-                intrinsic = NI_Vector128_op_UnaryNegation;
+                // Zero - op1
+                GenTree* zero = gtNewZeroConNode(type);
+                return gtNewSimdBinOpNode(GT_SUB, type, zero, op1, simdBaseJitType, simdSize);
             }
-            return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
         }
 
         case GT_NOT:
         {
-            if (simdSize == 64)
-            {
-                assert(canUseEvexEncodingDebugOnly());
-                intrinsic = NI_Vector512_op_OnesComplement;
-            }
-            else if (simdSize == 32)
-            {
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-                intrinsic = NI_Vector256_op_OnesComplement;
-            }
-            else
-            {
-                intrinsic = NI_Vector128_op_OnesComplement;
-            }
-            return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
+            // op1 ^ AllBitsSet
+            GenTree* allBitsSet = gtNewAllBitsSetConNode(type);
+            return gtNewSimdBinOpNode(GT_SUB, type, op1, allBitsSet, simdBaseJitType, simdSize);
         }
 #elif defined(TARGET_ARM64)
         case GT_NEG:
@@ -28154,16 +28140,12 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
             return GT_AND;
         }
 
-#if defined(TARGET_XARCH)
-        case NI_Vector128_op_OnesComplement:
-        case NI_Vector256_op_OnesComplement:
-        case NI_Vector512_op_OnesComplement:
-#elif defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
         case NI_AdvSimd_Not:
-#endif
         {
             return GT_NOT;
         }
+#endif
 
 #if defined(TARGET_XARCH)
         case NI_SSE_Xor:
@@ -28308,19 +28290,13 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
             return GT_MUL;
         }
 
-#if defined(TARGET_XARCH)
-        case NI_Vector128_op_UnaryNegation:
-        case NI_Vector256_op_UnaryNegation:
-        case NI_Vector512_op_UnaryNegation:
-#elif defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
         case NI_AdvSimd_Negate:
         case NI_AdvSimd_Arm64_Negate:
-#endif
         {
             return GT_NEG;
         }
 
-#if defined(TARGET_ARM64)
         case NI_AdvSimd_NegateScalar:
         case NI_AdvSimd_Arm64_NegateScalar:
         {

@@ -9946,25 +9946,46 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
         default:
         {
-            bool       isScalar = false;
-            genTreeOps oper     = node->HWOperGet(&isScalar);
+            bool       isScalar   = false;
+            genTreeOps actualOper = node->HWOperGet(&isScalar);
+            genTreeOps oper       = actualOper;
 
             if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
             {
                 GenTree* op1 = node->Op(1);
                 GenTree* op2 = (oper == GT_NOT) ? op1 : node->Op(2);
 
-                if (!op1->OperIsHWIntrinsic() || !op2->OperIsHWIntrinsic())
+                // We need both operands to be ConvertMaskToVector in
+                // order to optimize this to a direct mask operation
+
+                if (!op1->OperIsHWIntrinsic())
                 {
-                    // We need both operands to be ConvertMaskToVector in
-                    // order to optimize this to a direct mask operation
                     break;
+                }
+
+                if (!op2->OperIsHWIntrinsic())
+                {
+                    if ((oper != GT_XOR) || !op2->IsVectorAllBitsSet())
+                    {
+                        break;
+                    }
+
+                    // We want to explicitly recognize op1 ^ AllBitsSet as
+                    // some platforms don't have direct support for ~op1
+
+                    oper = GT_NOT;
+                    op2  = op1;
                 }
 
                 GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
                 GenTreeHWIntrinsic* cvtOp2 = op2->AsHWIntrinsic();
 
-                if (!cvtOp1->OperIsConvertMaskToVector() || !cvtOp2->OperIsConvertMaskToVector())
+                if (!cvtOp1->OperIsConvertMaskToVector())
+                {
+                    break;
+                }
+
+                if (!cvtOp2->OperIsConvertMaskToVector())
                 {
                     break;
                 }
@@ -10040,7 +10061,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (oper != GT_NOT)
                 {
                     node->Op(2) = cvtOp2->Op(1);
-                    DEBUG_DESTROY_NODE(op2);
+                }
+
+                if (actualOper != GT_NOT)
+                {
+                    DEBUG_DESTROY_NODE(node->Op(2));
                 }
 
                 node = gtNewSimdCvtMaskToVectorNode(retType, node, simdBaseJitType, simdSize)->AsHWIntrinsic();
@@ -10063,8 +10088,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
     switch (oper)
     {
         // Transforms:
-        // 1. (~v1 & v2) to VectorXxx.AndNot(v1, v2)
-        // 2. (v1 & ~v2) to VectorXxx.AndNot(v2, v1)
+        // 1. (~v1 & v2) to VectorXxx.AndNot(v2, v1)
+        // 2. (v1 & ~v2) to VectorXxx.AndNot(v1, v2)
         case GT_AND:
         {
             GenTree* op1 = node->Op(1);
@@ -10088,6 +10113,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     lhs = op2;
                     rhs = hw->Op(1);
                 }
+                else if ((hwOper == GT_XOR) && hw->Op(2)->IsVectorAllBitsSet())
+                {
+                    lhs = op2;
+                    rhs = hw->Op(1);
+                }
             }
 
             if ((lhs == nullptr) && op2->OperIsHWIntrinsic())
@@ -10102,6 +10132,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 if (hwOper == GT_NOT)
+                {
+                    lhs = op1;
+                    rhs = hw->Op(1);
+                }
+                else if ((hwOper == GT_XOR) && hw->Op(2)->IsVectorAllBitsSet())
                 {
                     lhs = op1;
                     rhs = hw->Op(1);
