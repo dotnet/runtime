@@ -14,7 +14,8 @@
     <MonoTaskProject Include="WasmBuildTasks\WasmBuildTasks.csproj" />
     <MonoTaskProject Include="WorkloadBuildTasks\WorkloadBuildTasks.csproj" />
 
-    <CoreCLRTaskProject Include="Crossgen2Tasks\Crossgen2Tasks.csproj" />
+    <!-- This should be CoreCLRTaskProject but Mono legs apparently need this for now -->
+    <TaskProject Include="Crossgen2Tasks\Crossgen2Tasks.csproj" />
 
     <TaskProject Include="installer.tasks\installer.tasks.csproj" />
 
