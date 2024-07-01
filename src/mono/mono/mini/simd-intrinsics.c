@@ -1658,12 +1658,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 
 		MonoInst *mul_ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
-		mul_ins->instc0 = mul_op;
-		mul_ins->instc1 = arg0_type;
+		mul_ins->inst_c0 = mul_op;
+		mul_ins->inst_c1 = arg0_type;
 
 		MonoInst *add_ins = emit_simd_ins (cfg, klass, OP_XBINOP, mul_ins->dreg, args [2]->dreg);
-		mul_ins->instc0 = add_op;
-		mul_ins->instc1 = arg0_type;
+		mul_ins->inst_c0 = add_op;
+		mul_ins->inst_c1 = arg0_type;
 
 		return add_ins;
 	}
