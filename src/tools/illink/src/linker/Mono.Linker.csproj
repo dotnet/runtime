@@ -83,10 +83,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
