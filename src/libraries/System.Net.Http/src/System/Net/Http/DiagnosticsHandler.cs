@@ -53,20 +53,48 @@ namespace System.Net.Http
                    s_diagnosticListener.IsEnabled();
         }
 
-        private static Activity? CreateActivity(HttpRequestMessage requestMessage)
+        private static Activity? StartActivity(HttpRequestMessage request)
         {
             Activity? activity = null;
             if (s_activitySource.HasListeners())
             {
-                activity = s_activitySource.CreateActivity(DiagnosticsHandlerLoggingStrings.ActivityName, ActivityKind.Client);
+                Uri? requestUri = request.RequestUri;
+                if (requestUri?.IsAbsoluteUri == false)
+                {
+                    requestUri = null;
+                }
+
+                // The following tags might be important for making sampling decisions and should be provided at span creation time.
+                // https://github.com/open-telemetry/semantic-conventions/blob/5077fd5ccf64e3ad0821866cc80d77bb24098ba2/docs/http/http-spans.md?plain=1#L213-L219
+                KeyValuePair<string, object?>[] tags = requestUri is not null
+                    ? new KeyValuePair<string, object?>[4]
+                    : new KeyValuePair<string, object?>[1];
+
+                tags[0] = DiagnosticsHelper.GetMethodTag(request.Method);
+                if (requestUri is not null)
+                {
+                    tags[1] = new("server.address", requestUri.Host);
+                    tags[2] = new("server.port", requestUri.Port);
+                    tags[3] = new("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
+                }
+
+                activity = s_activitySource.StartActivity(ActivityKind.Client, name: DiagnosticsHandlerLoggingStrings.ActivityName, tags: tags);
             }
 
-            if (activity is null)
+            if (activity is null &&
+                (Activity.Current is not null ||
+                s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request)))
             {
-                if (Activity.Current is not null || s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, requestMessage))
+                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+                KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method);
+                activity.SetTag(methodTag.Key, methodTag.Value);
+                if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
                 {
-                    activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+                    activity.SetTag("server.address", requestUri.Host);
+                    activity.SetTag("server.port", requestUri.Port);
+                    activity.SetTag("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
                 }
+                activity.Start();
             }
 
             return activity;
@@ -109,27 +137,10 @@ namespace System.Net.Http
             DiagnosticListener diagnosticListener = s_diagnosticListener;
 
             Guid loggingRequestId = Guid.Empty;
-            Activity? activity = CreateActivity(request);
+            Activity? activity = StartActivity(request);
 
-            // Start activity anyway if it was created.
             if (activity is not null)
             {
-                activity.Start();
-
-                if (activity.IsAllDataRequested)
-                {
-                    // Set tags known at activity start
-                    if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
-                    {
-                        activity.SetTag("server.address", requestUri.Host);
-                        activity.SetTag("server.port", requestUri.Port);
-                        activity.SetTag("uri.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
-                    }
-
-                    KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method);
-                    activity.SetTag(methodTag.Key, methodTag.Value);
-                }
-
                 // Only send start event to users who subscribed for it.
                 if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
                 {

@@ -379,41 +379,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString(), idFormat.ToString()).DisposeAsync();
         }
 
-        [Fact]
-        public async Task SendAsync_DoNotSampleAllData_NoTagsRecorded()
-        {
-            await RemoteExecutor.Invoke(static async (useVersion, testAsync) =>
-            {
-                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-                Activity? activity = null;
-                using ActivityListener listener = new ActivityListener()
-                {
-                    ShouldListenTo = s => s.Name is "System.Net.Http",
-                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.PropagationData,
-                    ActivityStopped = a =>
-                    {
-                        activity = a;
-                        activityStopTcs.SetResult();
-                    }
-                };
-                ActivitySource.AddActivityListener(listener);
-
-                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
-                            async uri =>
-                            {
-
-                                await GetAsync(useVersion, testAsync, uri);
-                                await activityStopTcs.Task;
-                            },
-                            async server =>
-                            {
-                                _ = await server.AcceptConnectionSendResponseAndCloseAsync();
-                            });
-
-                Assert.NotNull(activity);
-                Assert.Empty(activity.TagObjects);
-            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
-        }
+        
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(200)]
@@ -442,11 +408,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotNull(activity);
                     Assert.Equal(parentActivity, Activity.Current.Parent);
                     IEnumerable<KeyValuePair<string, object?>> tags = activity.TagObjects;
-
-                    VerifyTag(tags, "server.address", currentUri.Host);
-                    VerifyTag(tags, "server.port", currentUri.Port);
-                    VerifyTag(tags, "http.request.method", "GET");
-                    VerifyTag(tags, "uri.full", expectedUriFull);
+                    VerifyRequestTags(tags, currentUri, expectedUriFull);
 
                     if (kvp.Key.EndsWith(".Stop"))
                     {
@@ -488,6 +450,59 @@ namespace System.Net.Http.Functional.Tests
                         });
                 }
             }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString()).DisposeAsync();
+        }
+
+        [Fact]
+        public async Task SendAsync_ExpectedRequestTagsAvailableForSampling()
+        {
+            string useVersion = UseVersion.ToString();
+            string testAsync = TestAsync.ToString();
+            await RemoteExecutor.Invoke(static async (useVersion, testAsync) =>
+            {
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                Activity? activity = null;
+                bool sampled = false;
+                Uri currentUri = null;
+                using ActivityListener listener = new ActivityListener()
+                {
+                    ShouldListenTo = s => s.Name is "System.Net.Http",
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) =>
+                    {
+                        sampled = true;
+                        VerifyRequestTags(options.Tags, currentUri, currentUri.AbsoluteUri);
+                        return ActivitySamplingResult.AllData;
+                    },
+                    ActivityStopped = a =>
+                    {
+                        activity = a;
+                        activityStopTcs.SetResult();
+                    }
+                };
+                ActivitySource.AddActivityListener(listener);
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                            async uri =>
+                            {
+                                currentUri = uri;
+                                await GetAsync(useVersion, testAsync, uri);
+                                await activityStopTcs.Task;
+                            },
+                            async server =>
+                            {
+                                _ = await server.AcceptConnectionSendResponseAndCloseAsync();
+                            });
+
+                Assert.NotNull(activity);
+                Assert.True(sampled);
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
+        }
+
+        protected static void VerifyRequestTags(IEnumerable<KeyValuePair<string, object?>> tags, Uri uri, string expectedUriFull)
+        {
+            VerifyTag(tags, "server.address", uri.Host);
+            VerifyTag(tags, "server.port", uri.Port);
+            VerifyTag(tags, "http.request.method", "GET");
+            VerifyTag(tags, "url.full", expectedUriFull);
         }
 
         protected static void VerifyTag<T>(KeyValuePair<string, object?>[] tags, string name, T value)
@@ -1113,7 +1128,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity)
         {
             string parameters = $"{currentActivitySet},{diagnosticListenerActivityEnabled},{activitySourceCreatesActivity}";
-
             await RemoteExecutor.Invoke(async (useVersion, testAsync, parametersString) =>
             {
                 bool?[] parameters = parametersString.Split(',').Select(p => p.Length == 0 ? (bool?)null : bool.Parse(p)).ToArray();
