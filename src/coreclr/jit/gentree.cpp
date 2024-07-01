@@ -29484,9 +29484,45 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
     }
     else if (OperIsHWIntrinsic())
     {
-        // TODO-XARCH-AVX512 Use VPBLENDM* and take input directly from K registers if cond is from
-        // MoveMaskToVectorSpecial.
-        return HWIntrinsicInfo::ReturnsPerElementMask(AsHWIntrinsic()->GetHWIntrinsicId());
+        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = intrinsic->GetHWIntrinsicId();
+
+        if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsicId))
+        {
+            // We directly return a per-element mask
+            return true;
+        }
+
+        bool       isScalar = false;
+        genTreeOps oper     = intrinsic->HWOperGet(&isScalar);
+        assert(!isScalar);
+
+        switch (oper)
+        {
+            case GT_AND:
+            case GT_AND_NOT:
+            case GT_OR:
+            case GT_XOR:
+            {
+                // We are a binary bitwise operation where both inputs are per-element masks
+                return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize) &&
+                       intrinsic->Op(2)->IsVectorPerElementMask(simdBaseType, simdSize);
+            }
+
+            case GT_NOT:
+            {
+                // We are an unary bitwise operation where the input is a per-element mask
+                return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize);
+            }
+
+            default:
+            {
+                assert(!GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper));
+                break;
+            }
+        }
+
+        return false;
     }
 #endif // FEATURE_SIMD
 
