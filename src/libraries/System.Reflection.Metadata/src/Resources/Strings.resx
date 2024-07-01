@@ -432,4 +432,7 @@
   <data name="InvalidAssemblyName" xml:space="preserve">
     <value>The given assembly name was invalid.</value>
   </data>
+  <data name="Arg_NotSimpleTypeName" xml:space="preserve">
+    <value>MakeGenericTypeName may only be called on a type name for which TypeName.IsSimple is true, for '{0}' it's not.</value>
+  </data>
 </root>
