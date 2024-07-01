@@ -180,28 +180,23 @@ namespace System.Collections.Tests
             Assert.False(hashSet.TryGetAlternateLookup<string, int>(out _));
         }
 
+        public static IEnumerable<object[]> Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary_MemberData()
+        {
+            yield return new object[] { EqualityComparer<string>.Default };
+            yield return new object[] { StringComparer.Ordinal };
+            yield return new object[] { StringComparer.OrdinalIgnoreCase };
+            yield return new object[] { StringComparer.InvariantCulture };
+            yield return new object[] { StringComparer.InvariantCultureIgnoreCase };
+            yield return new object[] { StringComparer.CurrentCulture };
+            yield return new object[] { StringComparer.CurrentCultureIgnoreCase };
+        }
+
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(3)]
-        [InlineData(4)]
-        [InlineData(5)]
-        [InlineData(6)]
-        public void Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary(int mode)
+        [MemberData(nameof(Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary_MemberData))]
+        public void Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary(IEqualityComparer<string> comparer)
         {
             // Test with a variety of comparers to ensure that the alternate lookup is consistent with the underlying dictionary
-            Dictionary<string, int> dictionary = new(mode switch
-            {
-                0 => EqualityComparer<string>.Default,
-                1 => StringComparer.Ordinal,
-                2 => StringComparer.OrdinalIgnoreCase,
-                3 => StringComparer.InvariantCulture,
-                4 => StringComparer.InvariantCultureIgnoreCase,
-                5 => StringComparer.CurrentCulture,
-                6 => StringComparer.CurrentCultureIgnoreCase,
-                _ => throw new ArgumentOutOfRangeException(nameof(mode))
-            });
+            Dictionary<string, int> dictionary = new(comparer);
             Dictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> lookup = dictionary.GetAlternateLookup<string, int, ReadOnlySpan<char>>();
             Assert.Same(dictionary, lookup.Dictionary);
             Assert.Same(lookup.Dictionary, lookup.Dictionary);
