@@ -297,9 +297,10 @@ LEAF_END RhpAssignRef, _TEXT
         ld.d  $t0, $a0, 0
         beq  $t0, $t1, 12
         ori  $t1, $t0, 0
-        b  8
+        b  EndOfExchange
         st.d  $a1, $a0, 0
 
+EndOfExchange:
         bne  $a2, $t1, CmpXchgNoUpdate
 
 DoCardsCmpXchg:
