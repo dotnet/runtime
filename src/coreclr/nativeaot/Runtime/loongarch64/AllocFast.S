@@ -80,7 +80,7 @@ RhpNewFast_RarePath:
         // Preserve the MethodTable in s0
         ori  $s0, $a0, 0
 
-        addi.w  $a2, $zero, 0 // numElements
+        ori  $a2, $zero, 0 // numElements
 
         // Call the rest of the allocation helper.
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
@@ -111,13 +111,13 @@ NewOutOfMemory:
 //  a1 == element/character count
     LEAF_ENTRY RhNewString, _TEXT
         // Make sure computing the overall allocation size wont overflow
-        lu12i.w  $a2, 0x3ffff       // (MAX_STRING_LENGTH >> 12) & 0xFFFFF
-        ori  $a2, $a2, 0xfdf        // MAX_STRING_LENGTH & 0xFFF
+        lu12i.w  $a2, ((MAX_STRING_LENGTH >> 12) & 0xFFFFF)
+        ori  $a2, $a2, (MAX_STRING_LENGTH & 0xFFF)
         bltu  $a2, $a1, StringSizeOverflow
 
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
-        addi.w  $a2, $zero, STRING_COMPONENT_SIZE
-        ori  $a3, $zero, 29         // STRING_BASE_SIZE + 7
+        ori  $a2, $zero, STRING_COMPONENT_SIZE
+        ori  $a3, $zero, (STRING_BASE_SIZE + 7)
         mulw.d.w  $a2, $a1, $a2
         add.d  $a2, $a2, $a3        // a2 = (a1[31:0] * a2[31:0])[64:0] + a3
         srli.d  $a2, $a2, 3

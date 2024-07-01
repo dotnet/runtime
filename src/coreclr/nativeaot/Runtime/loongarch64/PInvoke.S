@@ -26,8 +26,7 @@ PTFF_THREAD_ABORT_BIT   = 36
 NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         st.d  $fp, $a0, OFFSETOF__PInvokeTransitionFrame__m_FramePointer
         st.d  $ra, $a0, OFFSETOF__PInvokeTransitionFrame__m_RIP
-        ori  $t0, $sp, 0
-        st.d  $t0, $a0, OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs
+        st.d  $sp, $a0, OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs
         ori  $t0, $zero, PTFF_SAVE_SP
         st.d  $t0, $a0, OFFSETOF__PInvokeTransitionFrame__m_Flags
 
@@ -47,8 +46,7 @@ NESTED_END RhpPInvoke, _TEXT
 
 LEAF_ENTRY RhpPInvokeReturn, _TEXT
         ld.d  $t0, $a0, OFFSETOF__PInvokeTransitionFrame__m_pThread
-        ori  $t1, $zero, 0
-        st.d  $t1, $t0, OFFSETOF__Thread__m_pTransitionFrame
+        st.d  $zero, $t0, OFFSETOF__Thread__m_pTransitionFrame
 
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a5
 
