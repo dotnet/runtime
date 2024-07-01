@@ -4622,6 +4622,25 @@ amd64_handle_varargs_call (MonoCompile *cfg, guint8 *code, MonoCallInst *call, g
 #endif
 }
 
+static guint8*
+amd64_handle_swift_indirect_result (MonoCompile *cfg, guint8 *code, MonoCallInst *call)
+{
+	// Ideally, this should be in mono_arch_emit_prolog, but RAX may be used for the call, and it is required to free RAX.
+	if (mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL) && 
+		cfg->arch.cinfo->swift_indirect_result_index > -1) {
+
+		MonoInst *ins = (MonoInst*)call;
+		if (ins->sreg1 == AMD64_RAX) {
+			amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
+			ins->sreg1 = AMD64_R11;
+		}
+		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_R10, 8);
+	}
+
+	return code;
+}
+
+
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -5607,6 +5626,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			// FIXME Just like NT the direct cases are are not ideal.
 			amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RAX, 8);
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			code = amd64_handle_swift_indirect_result (cfg, code, call);
+#endif
 			amd64_jump_membase (code, AMD64_RSP, -8);
 #endif
 			ins->flags |= MONO_INST_GC_CALLSITE;
@@ -5632,6 +5654,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			code = amd64_handle_swift_indirect_result (cfg, code, call);
+#endif
 			code = emit_call (cfg, call, code, MONO_JIT_ICALL_ZeroIsReserved);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = GPTRDIFF_TO_INT (code - cfg->native_code);
@@ -5652,13 +5677,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			code = amd64_handle_varargs_call (cfg, code, call, TRUE);
-
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
-			// Ideally, this would be in mono_arch_emit_prolog, but amd64_handle_varargs_call is required before the move to free RAX.
-			if (mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL) && 
-			    cfg->arch.cinfo->swift_indirect_result_index > -1) {
-				amd64_mov_reg_reg (code, AMD64_RAX, AMD64_R10, 8);
-			}
+			code = amd64_handle_swift_indirect_result (cfg, code, call);
 #endif
 			amd64_call_reg (code, ins->sreg1);
 			ins->flags |= MONO_INST_GC_CALLSITE;
