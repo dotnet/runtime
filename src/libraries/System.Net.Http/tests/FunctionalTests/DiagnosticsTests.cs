@@ -379,10 +379,46 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString(), idFormat.ToString()).DisposeAsync();
         }
 
+        [Fact]
+        public async Task SendAsync_DoNotSampleAllData_NoTagsRecorded()
+        {
+            await RemoteExecutor.Invoke(static async (useVersion, testAsync) =>
+            {
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                Activity? activity = null;
+                using ActivityListener listener = new ActivityListener()
+                {
+                    ShouldListenTo = s => s.Name is "System.Net.Http",
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.PropagationData,
+                    ActivityStopped = a =>
+                    {
+                        activity = a;
+                        activityStopTcs.SetResult();
+                    }
+                };
+                ActivitySource.AddActivityListener(listener);
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                            async uri =>
+                            {
+
+                                await GetAsync(useVersion, testAsync, uri);
+                                await activityStopTcs.Task;
+                            },
+                            async server =>
+                            {
+                                _ = await server.AcceptConnectionSendResponseAndCloseAsync();
+                            });
+
+                Assert.NotNull(activity);
+                Assert.Empty(activity.TagObjects);
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(200)]
         [InlineData(404)]
-        public async Task SendAsync_ExpectedTagsLogged(int statusCode)
+        public async Task SendAsync_ExpectedTagsRecorded(int statusCode)
         {
             await RemoteExecutor.Invoke(async (useVersion, testAsync, statusCodeStr) =>
             {

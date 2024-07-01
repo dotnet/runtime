@@ -116,16 +116,19 @@ namespace System.Net.Http
             {
                 activity.Start();
 
-                // Set tags known at activity start
-                if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
+                if (activity.IsAllDataRequested)
                 {
-                    activity.SetTag("server.address", requestUri.Host);
-                    activity.SetTag("server.port", requestUri.Port);
-                    activity.SetTag("uri.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
-                }
+                    // Set tags known at activity start
+                    if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
+                    {
+                        activity.SetTag("server.address", requestUri.Host);
+                        activity.SetTag("server.port", requestUri.Port);
+                        activity.SetTag("uri.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
+                    }
 
-                KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method);
-                activity.SetTag(methodTag.Key, methodTag.Value);
+                    KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method);
+                    activity.SetTag(methodTag.Key, methodTag.Value);
+                }
 
                 // Only send start event to users who subscribed for it.
                 if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
@@ -189,16 +192,19 @@ namespace System.Net.Http
                 {
                     activity.SetEndTime(DateTime.UtcNow);
 
-                    // Set tags known at activity Stop.
-                    if (response is not null)
+                    if (activity.IsAllDataRequested)
                     {
-                        activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
-                        activity.SetTag("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
-                    }
+                        // Set tags known at activity Stop.
+                        if (response is not null)
+                        {
+                            activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
+                            activity.SetTag("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
+                        }
 
-                    if (DiagnosticsHelper.TryGetErrorType(response, exception, out string? errorType))
-                    {
-                        activity.SetTag("error.type", errorType);
+                        if (DiagnosticsHelper.TryGetErrorType(response, exception, out string? errorType))
+                        {
+                            activity.SetTag("error.type", errorType);
+                        }
                     }
 
                     // Only send stop event to users who subscribed for it.
