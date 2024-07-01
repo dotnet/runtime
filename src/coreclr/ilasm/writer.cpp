@@ -10,6 +10,155 @@
 
 #include "ceefilegenwriter.h"
 
+#include <stdlib.h>
+#include <memory.h>
+
+#define SHA256_BLOCK_SIZE 32
+
+typedef struct {
+	BYTE data[64];
+	UINT datalen;
+	unsigned long long bitlen;
+	UINT state[8];
+} SHA256_CTX;
+
+#define ROTLEFT(a,b) (((a) << (b)) | ((a) >> (32-(b))))
+#define ROTRIGHT(a,b) (((a) >> (b)) | ((a) << (32-(b))))
+
+#define CH(x,y,z) (((x) & (y)) ^ (~(x) & (z)))
+#define MAJ(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+#define EP0(x) (ROTRIGHT(x,2) ^ ROTRIGHT(x,13) ^ ROTRIGHT(x,22))
+#define EP1(x) (ROTRIGHT(x,6) ^ ROTRIGHT(x,11) ^ ROTRIGHT(x,25))
+#define SIG0(x) (ROTRIGHT(x,7) ^ ROTRIGHT(x,18) ^ ((x) >> 3))
+#define SIG1(x) (ROTRIGHT(x,17) ^ ROTRIGHT(x,19) ^ ((x) >> 10))
+
+static const unsigned int k[64] = {
+	0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+	0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+	0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+	0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+	0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+	0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+	0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+	0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+};
+
+void sha256_transform(SHA256_CTX *ctx, const BYTE data[])
+{
+	WORD a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
+
+	for (i = 0, j = 0; i < 16; ++i, j += 4)
+		m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) | (data[j + 3]);
+	for ( ; i < 64; ++i)
+		m[i] = (WORD)SIG1((UINT)(m[i - 2])) + m[i - 7] + (WORD)SIG0((UINT)(m[i - 15])) + m[i - 16];
+
+	a = (WORD)ctx->state[0];
+	b = (WORD)ctx->state[1];
+	c = (WORD)ctx->state[2];
+	d = (WORD)ctx->state[3];
+	e = (WORD)ctx->state[4];
+	f = (WORD)ctx->state[5];
+	g = (WORD)ctx->state[6];
+	h = (WORD)ctx->state[7];
+
+	for (i = 0; i < 64; ++i) {
+		t1 = (WORD)(h + (WORD)EP1((UINT)e) + CH(e,f,g) + k[i] + m[i]);
+		t2 = (WORD)EP0((UINT)a) + MAJ(a,b,c);
+		h = g;
+		g = f;
+		f = e;
+		e = d + t1;
+		d = c;
+		c = b;
+		b = a;
+		a = t1 + t2;
+	}
+
+	ctx->state[0] += a;
+	ctx->state[1] += b;
+	ctx->state[2] += c;
+	ctx->state[3] += d;
+	ctx->state[4] += e;
+	ctx->state[5] += f;
+	ctx->state[6] += g;
+	ctx->state[7] += h;
+}
+
+void sha256_init(SHA256_CTX *ctx)
+{
+	ctx->datalen = 0;
+	ctx->bitlen = 0;
+	ctx->state[0] = 0x6a09e667;
+	ctx->state[1] = 0xbb67ae85;
+	ctx->state[2] = 0x3c6ef372;
+	ctx->state[3] = 0xa54ff53a;
+	ctx->state[4] = 0x510e527f;
+	ctx->state[5] = 0x9b05688c;
+	ctx->state[6] = 0x1f83d9ab;
+	ctx->state[7] = 0x5be0cd19;
+}
+
+void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len)
+{
+	WORD i;
+
+	for (i = 0; i < len; ++i) {
+		ctx->data[ctx->datalen] = data[i];
+		ctx->datalen++;
+		if (ctx->datalen == 64) {
+			sha256_transform(ctx, ctx->data);
+			ctx->bitlen += 512;
+			ctx->datalen = 0;
+		}
+	}
+}
+
+void sha256_final(SHA256_CTX *ctx, BYTE hash[])
+{
+	WORD i;
+
+	i = (WORD)ctx->datalen;
+
+	// Pad whatever data is left in the buffer.
+	if (ctx->datalen < 56) {
+		ctx->data[i++] = 0x80;
+		while (i < 56)
+			ctx->data[i++] = 0x00;
+	}
+	else {
+		ctx->data[i++] = 0x80;
+		while (i < 64)
+			ctx->data[i++] = 0x00;
+		sha256_transform(ctx, ctx->data);
+		memset(ctx->data, 0, 56);
+	}
+
+	// Append to the padding the total message's length in bits and transform.
+	ctx->bitlen += ctx->datalen * 8;
+	ctx->data[63] = (BYTE)ctx->bitlen;
+	ctx->data[62] = (BYTE)(ctx->bitlen >> 8);
+	ctx->data[61] = (BYTE)(ctx->bitlen >> 16);
+	ctx->data[60] = (BYTE)(ctx->bitlen >> 24);
+	ctx->data[59] = (BYTE)(ctx->bitlen >> 32);
+	ctx->data[58] = (BYTE)(ctx->bitlen >> 40);
+	ctx->data[57] = (BYTE)(ctx->bitlen >> 48);
+	ctx->data[56] = (BYTE)(ctx->bitlen >> 56);
+	sha256_transform(ctx, ctx->data);
+
+	// Since this implementation uses little endian byte ordering and SHA uses big endian,
+	// reverse all the bytes when copying the final state to the output hash.
+	for (i = 0; i < 4; ++i) {
+		hash[i]      = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 4]  = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 8]  = (ctx->state[2] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 12] = (ctx->state[3] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 16] = (ctx->state[4] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 20] = (ctx->state[5] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 24] = (ctx->state[6] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 28] = (ctx->state[7] >> (24 - i * 8)) & 0x000000ff;
+	}
+}
+
 #ifndef _MSC_VER
 //cloned definition from ntimage.h that is removed for non MSVC builds
 typedef VOID
@@ -51,10 +200,44 @@ HRESULT Assembler::InitMetaData()
     if(FAILED(hr = m_pEmitter->QueryInterface(IID_IMetaDataImport2, (void**)&m_pImporter)))
         goto exit;
 
+    if (m_fDeterministic)
+    {
+        //
+        // In deterministic mode, the MVID will need to be stabilized for the metadata scope that
+        // was created above, and the ChangeMvid service that makes this possible is only available
+        // on the IMDInternalEmit interface.
+        //
+        // When the CLSID_CorMetaDataDispenser instance above has activated against a current
+        // clr.dll (which is the only supported configuration for the determinism feature), it is
+        // guaranteed that "m_pEmitter" is implemented by the RegMeta object that was created
+        // during the DefineScope call above, and it is guaranteed that this same RegMeta object
+        // also implements the required IMDInternalEmit interface.
+        //
+        // Any failure is unexpected and catastrophic, so print a noisy message and return an
+        // error (which generally fails the entire ilasm operation) if any failure occurs.
+        //
+
+        hr = m_pEmitter->QueryInterface(IID_IMDInternalEmit, (void**)&m_pInternalEmitForDeterministicMvid);
+
+        if (FAILED(hr) || (m_pInternalEmitForDeterministicMvid == NULL))
+        {
+            fprintf(stderr, "Unexpected: Failed to query the required MVID determinism interface: %X\n",hr);
+            hr = E_FAIL;
+            goto exit;
+        }
+    }
+
     if (m_fGeneratePDB)
     {
         m_pPortablePdbWriter = new PortablePdbWriter();
         if (FAILED(hr = m_pPortablePdbWriter->Init(m_pDisp))) goto exit;
+
+        if (m_fDeterministic)
+        {
+            // Default values for determinism.
+            m_pPortablePdbWriter->SetGuid(GUID());
+            m_pPortablePdbWriter->SetTimestamp(0);
+        }
     }
 
     //m_Parser = new AsmParse(m_pEmitter);
@@ -200,128 +383,259 @@ HRESULT Assembler::CreateTLSDirectory() {
     return(hr);
 }
 
-HRESULT Assembler::CreateDebugDirectory()
+HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
 {
-    HRESULT hr = S_OK;
-    HCEESECTION sec = m_pILSection;
-    BYTE *de;
-    ULONG deOffset;
-
     // Only emit this if we're also emitting debug info.
-    if (!m_fGeneratePDB)
-        return S_OK;
+    _ASSERTE(m_fGeneratePDB);
 
-    IMAGE_DEBUG_DIRECTORY  debugDirIDD;
-    struct Param
+    struct DebugDirectoryEntry
     {
-    DWORD                  debugDirDataSize;
-        BYTE              *debugDirData;
-    } param;
-    param.debugDirData = NULL;
+        IMAGE_DEBUG_DIRECTORY debugDirIDD;
+        DWORD                 debugDirDataSize;
+        BYTE*                 debugDirData;
+    };
 
+    // Arbitrary amount; should not need this many.
+    const int maxEntries = 8;
+
+    DebugDirectoryEntry entries[maxEntries];
+    int numEntries = 0;
+
+    auto addEntry = [&](
+                        DWORD characteristics,
+                        DWORD timeDateStamp,
+                        WORD majorVersion,
+                        WORD minorVersion,
+                        DWORD type,
+                        DWORD sizeOfData,
+                        BYTE* data){
+        _ASSERTE(numEntries >= 0);
+        _ASSERTE(numEntries < maxEntries);
+
+        HRESULT hr = S_OK;
+
+        IMAGE_DEBUG_DIRECTORY debugDirIDD;
+        struct Param
+        {
+            DWORD debugDirDataSize;
+            BYTE* debugDirData;
+        } param;
+        param.debugDirData = NULL;
+
+        debugDirIDD.Characteristics = characteristics;
+        debugDirIDD.TimeDateStamp = timeDateStamp;
+        debugDirIDD.MajorVersion = majorVersion;
+        debugDirIDD.MinorVersion = minorVersion;
+        debugDirIDD.Type = type;
+        debugDirIDD.SizeOfData = sizeOfData;
+        debugDirIDD.AddressOfRawData = 0; // will be updated later
+        debugDirIDD.PointerToRawData = 0; // will be updated later
+
+        param.debugDirDataSize = sizeOfData;
+
+        if ((sizeOfData > 0) && (data != NULL))
+        {
+            // Make some room for the data.
+            PAL_TRY(Param*, pParam, &param) {
+                pParam->debugDirData = new BYTE[pParam->debugDirDataSize];
+            } PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
+                hr = E_FAIL;
+            } PAL_ENDTRY
+
+            if (FAILED(hr)) return hr;
+        }
+
+        param.debugDirData = data;
+
+        DebugDirectoryEntry entry = {};
+        entry.debugDirIDD = debugDirIDD;
+        entry.debugDirDataSize = param.debugDirDataSize;
+        entry.debugDirData = param.debugDirData;
+        entries[numEntries] = entry;
+
+        numEntries++;
+        return S_OK;
+    };
+
+    HRESULT hr = S_OK;
+
+    /* BEGIN CODEVIEW */
     // get module ID
     DWORD rsds = VAL32(0x53445352);
     DWORD pdbAge = VAL32(0x1);
     GUID pdbGuid = *m_pPortablePdbWriter->GetGuid();
     SwapGuid(&pdbGuid);
-    DWORD len = sizeof(rsds) + sizeof(GUID) + sizeof(pdbAge) + (DWORD)strlen(m_szPdbFileName) + 1;
-    BYTE* dbgDirData = new BYTE[len];
+    DWORD codeViewSize = sizeof(rsds) + sizeof(GUID) + sizeof(pdbAge) + (DWORD)strlen(m_szPdbFileName) + 1;
+    BYTE* codeViewData = new BYTE[codeViewSize];
 
-    DWORD offset = 0;
-    memcpy_s(dbgDirData + offset, len, &rsds, sizeof(rsds));                            // RSDS
-    offset += sizeof(rsds);
-    memcpy_s(dbgDirData + offset, len, &pdbGuid, sizeof(GUID));                         // PDB GUID
-    offset += sizeof(GUID);
-    memcpy_s(dbgDirData + offset, len, &pdbAge, sizeof(pdbAge));                        // PDB AGE
-    offset += sizeof(pdbAge);
-    memcpy_s(dbgDirData + offset, len, m_szPdbFileName, strlen(m_szPdbFileName) + 1);   // PDB PATH
+    DWORD codeViewOffset = 0;
+    memcpy_s(codeViewData + codeViewOffset, codeViewSize, &rsds, sizeof(rsds));                            // RSDS
+    codeViewOffset += sizeof(rsds);
+    memcpy_s(codeViewData + codeViewOffset, codeViewSize, &pdbGuid, sizeof(GUID));                         // PDB GUID
+    codeViewOffset += sizeof(GUID);
+    memcpy_s(codeViewData + codeViewOffset, codeViewSize, &pdbAge, sizeof(pdbAge));                        // PDB AGE
+    codeViewOffset += sizeof(pdbAge);
+    memcpy_s(codeViewData + codeViewOffset, codeViewSize, m_szPdbFileName, strlen(m_szPdbFileName) + 1);   // PDB PATH
+    /* END CODEVIEW */
 
-    debugDirIDD.Characteristics = 0;
-    debugDirIDD.TimeDateStamp = VAL32(m_pPortablePdbWriter->GetTimestamp());
-    debugDirIDD.MajorVersion = VAL16(0x100);
-    debugDirIDD.MinorVersion = VAL16(0x504d);
-    debugDirIDD.Type = VAL32(IMAGE_DEBUG_TYPE_CODEVIEW);
-    debugDirIDD.SizeOfData = VAL32(len);
-    debugDirIDD.AddressOfRawData = 0; // will be updated bellow
-    debugDirIDD.PointerToRawData = 0; // will be updated bellow
+    /* BEGIN PDB CHECKSUM */
+    _ASSERTE(sizeof(pdbChecksum) == 32);
 
-    param.debugDirDataSize = len;
+    // Algorithm name is case sensitive.
+    const char* algoName = "SHA256";
+    DWORD pdbChecksumSize = (DWORD)strlen(algoName) + 1 + sizeof(pdbChecksum);
+    BYTE* pdbChecksumData = new BYTE[pdbChecksumSize];
 
-    // Make some room for the data.
-    PAL_TRY(Param*, pParam, &param) {
-        pParam->debugDirData = new BYTE[pParam->debugDirDataSize];
-    } PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
-        hr = E_FAIL;
-    } PAL_ENDTRY
+    DWORD pdbChecksumOffset = 0;
+    memcpy_s(pdbChecksumData + pdbChecksumOffset, pdbChecksumSize, algoName, strlen(algoName));       // AlgorithmName
+    pdbChecksumOffset += (DWORD)strlen(algoName) + 1;
+    memcpy_s(pdbChecksumData + pdbChecksumOffset, pdbChecksumSize, &pdbChecksum, sizeof(pdbChecksum)); // Checksum
+    /* END PDB CHECKSUM */
 
-    if (FAILED(hr)) return hr;
+    auto finish = 
+        [&](HRESULT hr) {
+            if (codeViewData)
+            {
+                delete [] codeViewData;
+            }
+            if (pdbChecksumData)
+            {
+                delete [] pdbChecksumData;
+            }
+            return hr;
+        };
 
-    param.debugDirData = dbgDirData;
+    // CodeView Entry
+    hr =
+        addEntry(
+            /* characteristics */ VAL32(0),
+            /* timeDateStamp */   VAL32(m_pPortablePdbWriter->GetTimestamp()),
+            /* majorVersion */    VAL16(0x100),
+            /* minorVersion */    VAL16(0x504d),
+            /* type */            VAL32(IMAGE_DEBUG_TYPE_CODEVIEW),
+            /* sizeOfData */      VAL32(codeViewSize),
+            /* data */            codeViewData
+        );
+    if (FAILED(hr))
+        return finish(hr);
+
+    // Pdb Checksum Entry
+    hr =
+        addEntry(
+            /* characteristics */ VAL32(0),
+            /* timeDateStamp */   VAL32(0),
+            /* majorVersion */    VAL16(1),
+            /* minorVersion */    VAL16(0),
+            /* type */            VAL32(/* PDB Checksum Debug Directory Entry */ 19),
+            /* sizeOfData */      VAL32(pdbChecksumSize),
+            /* data */            pdbChecksumData
+        );
+    if (FAILED(hr))
+        return finish(hr);
+
+    if (m_fDeterministic)
+    {
+        // Deterministic Entry
+        hr =
+            addEntry(
+                /* characteristics */ VAL32(0),
+                /* timeDateStamp */   VAL32(0),
+                /* majorVersion */    VAL16(0),
+                /* minorVersion */    VAL16(0),
+                /* type */            VAL32(/* Deterministic Debug Directory Entry */ 16),
+                /* sizeOfData */      VAL32(0),
+                /* data */            NULL
+            );
+        if (FAILED(hr))
+            return finish(hr);
+    }
+
+    HCEESECTION sec = m_pILSection;
+    BYTE *de;
+    ULONG deOffset;
+
+    ULONG totalDataSize = 0;
+    for (int i = 0; i < numEntries; i++)
+    {
+        totalDataSize += entries[i].debugDirDataSize;
+    }
+    ULONG totalEntrySize = (sizeof(IMAGE_DEBUG_DIRECTORY) * numEntries);
+    ULONG totalSize = (totalEntrySize + totalDataSize);
 
     // Grab memory in the section for our stuff.
     // Note that UpdateResource doesn't work correctly if the debug directory is
     // in the data section.  So instead we put it in the text section (same as
     // cs compiler).
     if (FAILED(hr = m_pCeeFileGen->GetSectionBlock(sec,
-                                                   sizeof(debugDirIDD) +
-                                                   param.debugDirDataSize,
+                                                   totalSize,
                                                    4,
                                                    (void**) &de)))
-        goto ErrExit;
+        return finish(hr);
 
     // Where did we get that memory?
     if (FAILED(hr = m_pCeeFileGen->GetSectionDataLen(sec,
                                                      &deOffset)))
-        goto ErrExit;
+        return finish(hr);
 
-    deOffset -= (sizeof(debugDirIDD) + param.debugDirDataSize);
+    deOffset -= totalSize;
 
-    // Setup a reloc so that the address of the raw
-    // data is setup correctly.
-    debugDirIDD.PointerToRawData = VAL32(deOffset + sizeof(debugDirIDD));
-
-    if (FAILED(hr = m_pCeeFileGen->AddSectionReloc(
-                                          sec,
-                                          deOffset +
-                                          offsetof(IMAGE_DEBUG_DIRECTORY,
-                                                   PointerToRawData),
-                                          sec, srRelocFilePos)))
-        goto ErrExit;
-
-    debugDirIDD.AddressOfRawData = VAL32(deOffset + sizeof(debugDirIDD));
-
-    if (FAILED(hr = m_pCeeFileGen->AddSectionReloc(
-                                          sec,
-                                          deOffset +
-                                          offsetof(IMAGE_DEBUG_DIRECTORY,
-                                                   AddressOfRawData),
-                                          sec, srRelocAbsolute)))
-        goto ErrExit;
     // Emit the directory entry.
     if (FAILED(hr = m_pCeeFileGen->SetDirectoryEntry(m_pCeeFile,
                                                      sec,
                                                      IMAGE_DIRECTORY_ENTRY_DEBUG,
-                                                     sizeof(debugDirIDD),
+                                                     totalEntrySize,
                                                      deOffset)))
-        goto ErrExit;
+        return finish(hr);
 
-    // Copy the debug directory into the section.
-    memcpy(de, &debugDirIDD, sizeof(debugDirIDD));
-    memcpy(de + sizeof(debugDirIDD), param.debugDirData,
-           param.debugDirDataSize);
+    ULONG rawDataOffset = deOffset + totalEntrySize;
 
-    if (param.debugDirData)
+    ULONG dataOffset = 0;
+    for (int i = 0; i < numEntries; i++)
     {
-        delete [] param.debugDirData;
-    }
-    return S_OK;
+        DebugDirectoryEntry* entry = &entries[i];
 
-ErrExit:
-    if (param.debugDirData)
-    {
-        delete [] param.debugDirData;
+        ULONG imageOffset = (i * sizeof(IMAGE_DEBUG_DIRECTORY));
+
+        if ((entry->debugDirDataSize > 0) && (entry->debugDirData != NULL))
+        {
+            // Setup a reloc so that the address of the raw
+            // data is setup correctly.
+            entry->debugDirIDD.PointerToRawData = VAL32(rawDataOffset + dataOffset);
+            entry->debugDirIDD.AddressOfRawData = VAL32(rawDataOffset + dataOffset);
+
+            dataOffset += entry->debugDirDataSize;
+
+            if (FAILED(hr = m_pCeeFileGen->AddSectionReloc(
+                                                  sec,
+                                                  deOffset + imageOffset +
+                                                  offsetof(IMAGE_DEBUG_DIRECTORY,
+                                                           PointerToRawData),
+                                                  sec, srRelocFilePos)))
+                return finish(hr);
+
+            if (FAILED(hr = m_pCeeFileGen->AddSectionReloc(
+                                                  sec,
+                                                  deOffset + imageOffset +
+                                                  offsetof(IMAGE_DEBUG_DIRECTORY,
+                                                           AddressOfRawData),
+                                                  sec, srRelocAbsolute)))
+                return finish(hr);
+        }
+
+        // Copy the debug directory into the section.
+        memcpy(de + imageOffset, &entry->debugDirIDD, sizeof(IMAGE_DEBUG_DIRECTORY));
     }
-    return hr;
+
+    dataOffset = 0;
+    for (int i = 0; i < numEntries; i++)
+    {
+        DebugDirectoryEntry entry = entries[i];
+
+        memcpy(de + totalEntrySize + dataOffset, entry.debugDirData, entry.debugDirDataSize);
+        dataOffset += entry.debugDirDataSize;
+    }
+
+    return finish(hr);
 }
 //#ifdef EXPORT_DIR_ENABLED
 HRESULT Assembler::CreateExportDirectory()
@@ -1289,7 +1603,24 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
     if (FAILED(hr=CreateTLSDirectory())) goto exit;
 
-    if (FAILED(hr=CreateDebugDirectory())) goto exit;
+    if (m_fGeneratePDB)
+    {
+        mdMethodDef entryPoint;
+
+        if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
+        if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
+
+        BYTE pdbChecksum[32];
+        if (FAILED(hr = m_pPortablePdbWriter->ComputeSha256PdbStreamChecksum(pdbChecksum))) goto exit;
+
+        if (m_fDeterministic)
+        {
+            GUID pdbGuid = *((GUID*)&pdbChecksum);
+            if (FAILED(hr = m_pPortablePdbWriter->ChangePdbStreamGuid(pdbGuid))) goto exit;
+        }
+
+        if (FAILED(hr=CreateDebugDirectory(pdbChecksum))) goto exit;
+    }
 
     if (FAILED(hr=m_pCeeFileGen->SetOutputFileName(m_pCeeFile, pwzOutputFilename))) goto exit;
 
@@ -1514,6 +1845,18 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         if (FAILED(hr)) goto exit;
     }
 
+    if (m_fDeterministic)
+    {
+        // In deterministic mode, the MVID needs to be stabilized for the metadata scope that was
+        // created in Assembler::InitMetaData, and it is guaranteed that the IMDInternalEmit for
+        // that scope was already acquired immediately after that scope was created.
+        _ASSERTE(m_pInternalEmitForDeterministicMvid != NULL);
+        GUID mvid;
+        hr = Sha256Hash(metaData, metaDataSize, (BYTE*)&mvid, sizeof(GUID));
+        if (FAILED(hr)) goto exit;
+        m_pInternalEmitForDeterministicMvid->ChangeMvid(mvid);
+    }
+
     if(bClock) bClock->cFilegenBegin = GetTickCount();
     // actually output the meta-data
     if (FAILED(hr=m_pCeeFileGen->EmitMetaDataAt(m_pCeeFile, m_pEmitter, m_pILSection, metaDataOffset, metaData, metaDataSize))) goto exit;
@@ -1598,6 +1941,21 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 exit:
     return hr;
 }
+
+HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
+{
+    BYTE hash[SHA256_BLOCK_SIZE];
+	SHA256_CTX ctx;
+
+	sha256_init(&ctx);
+	sha256_update(&ctx, pSrc, srcSize);
+	sha256_final(&ctx, hash);
+
+    memcpy(pDst, hash, std::min((DWORD)SHA256_BLOCK_SIZE, dstSize));
+
+    return S_OK;
+}
+
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif

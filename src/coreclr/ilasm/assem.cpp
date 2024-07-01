@@ -28,6 +28,7 @@ Assembler::Assembler()
 {
     m_pDisp = NULL;
     m_pEmitter = NULL;
+    m_pInternalEmitForDeterministicMvid = NULL;
     m_pImporter = NULL;
 
     char* pszFQN = new char[16];
@@ -107,6 +108,7 @@ Assembler::Assembler()
     m_fGeneratePDB = FALSE;
     m_fIsMscorlib = FALSE;
     m_fOptimize = FALSE;
+    m_fDeterministic = FALSE;
     m_tkSysObject = 0;
     m_tkSysString = 0;
     m_tkSysValue = 0;
@@ -207,6 +209,11 @@ Assembler::~Assembler()
         m_pEmitter->Release();
         m_pEmitter = NULL;
     }
+    if (m_pInternalEmitForDeterministicMvid != NULL)
+    {
+        m_pInternalEmitForDeterministicMvid->Release();
+        m_pInternalEmitForDeterministicMvid = NULL;
+    }
     if (m_pPortablePdbWriter != NULL)
     {
         delete m_pPortablePdbWriter;
@@ -232,6 +239,11 @@ BOOL Assembler::Init(BOOL generatePdb)
     }
 
     if (FAILED(CreateICeeFileGen(&m_pCeeFileGen))) return FALSE;
+
+    if (m_fDeterministic)
+    {
+        m_dwCeeFileFlags |= ICEE_CREATE_FILE_DET;
+    }
 
     if (FAILED(m_pCeeFileGen->CreateCeeFileEx(&m_pCeeFile,(ULONG)m_dwCeeFileFlags))) return FALSE;
 
