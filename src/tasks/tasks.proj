@@ -1,12 +1,26 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)**\*.csproj" />
+    <MonoTaskProject Include="AndroidAppBuilder\AndroidAppBuilder.csproj" />
+    <MonoTaskProject Include="AotCompilerTask\MonoAOTCompiler.csproj" />
+    <MonoTaskProject Include="AppleAppBuilder\AppleAppBuilder.csproj" />
+    <MonoTaskProject Include="LibraryBuilder\LibraryBuilder.csproj" />
+    <MonoTaskProject Include="Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+    <MonoTaskProject Include="Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
+    <MonoTaskProject Include="MobileBuildTasks\MobileBuildTasks.csproj" />
+    <MonoTaskProject Include="MonoTargetsTasks\MonoTargetsTasks.csproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
+    <MonoTaskProject Include="MonoTargetsTasks\ILStrip\AssemblyStripper\AssemblyStripper.csproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
+    <MonoTaskProject Include="TestExclusionListTasks\TestExclusionListTasks.csproj" />
+    <MonoTaskProject Include="WasmAppBuilder\WasmAppBuilder.csproj" />
+    <MonoTaskProject Include="WasmBuildTasks\WasmBuildTasks.csproj" />
+    <MonoTaskProject Include="WorkloadBuildTasks\WorkloadBuildTasks.csproj" />
 
-    <!-- These projects do not need to be built during source-build. -->
-    <!-- For example, they may take dependencies on pre-built packages that aren't build-from-source. e.g. 'Microsoft.DotNet.CilStrip.Sources' -->
-    <ProjectReference Remove="MonoTargetsTasks\MonoTargetsTasks.csproj;
-                              MonoTargetsTasks\ILStrip\AssemblyStripper\AssemblyStripper.csproj"
-                      Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
+    <CoreCLRTaskProject Include="Crossgen2Tasks\Crossgen2Tasks.csproj" />
+
+    <TaskProject Include="installer.tasks\installer.tasks.csproj" />
+
+    <ProjectReference Include="@(MonoTaskProject)" Condition="'$(RuntimeFlavor)' == 'Mono'" />
+    <ProjectReference Include="@(CoreCLRTaskProject)" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
+    <ProjectReference Include="@(TaskProject)" />
   </ItemGroup>
 
   <!--
