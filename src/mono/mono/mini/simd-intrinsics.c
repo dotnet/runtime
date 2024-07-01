@@ -2215,7 +2215,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			arg0 = emit_simd_ins (cfg, op_klass, OP_XCAST, arg0->dreg, -1);
 		}
 
-		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, op_klass, SN_LessThan, arg0_type, args [0], emit_xzero (cfg, op_klass));
+		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, op_klass, SN_LessThan, arg0_type, arg0, emit_xzero (cfg, op_klass));
 
 		if (op_klass != NULL) {
 			ins = emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
@@ -2244,7 +2244,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			arg0 = emit_simd_ins (cfg, op_klass, OP_XCAST, arg0->dreg, -1);
 		}
 
-		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, op_klass, SN_GreaterThanOrEqual, arg0_type, args [0], emit_xzero (cfg, op_klass));
+		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, op_klass, SN_GreaterThanOrEqual, arg0_type, arg0, emit_xzero (cfg, op_klass));
 
 		if (op_klass != NULL) {
 			ins = emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
