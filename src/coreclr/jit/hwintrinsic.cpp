@@ -1885,6 +1885,19 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 assert(!isScalar);
                 retNode =
                     gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
+
+                switch (intrinsic)
+                {
+#if defined(TARGET_ARM64)
+                    case NI_Sve_Scatter:
+                        assert(varTypeIsSIMD(op3->TypeGet()));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                        break;
+#endif
+
+                    default:
+                        break;
+                }
                 break;
             }
 
