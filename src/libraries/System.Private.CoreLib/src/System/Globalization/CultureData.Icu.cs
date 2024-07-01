@@ -364,32 +364,59 @@ namespace System.Globalization
                 char current = icuFormatString[i];
                 switch (current)
                 {
+                    case '\\':
+                        // The ICU format does not use backslashes to escape while the .NET format does
+                        result[resultPos++] = '\\';
+                        result[resultPos++] = '\\';
+                        break;
                     case '\'':
-                        result[resultPos++] = icuFormatString[i++];
-                        while (i < icuFormatString.Length)
+                        static bool HandleQuoteLiteral(ReadOnlySpan<char> icuFormatString, ref int i, Span<char> result, ref int resultPos)
+                        {
+                            if (i + 1 < icuFormatString.Length && icuFormatString[i + 1] == '\'')
+                            {
+                                result[resultPos++] = '\\';
+                                result[resultPos++] = '\'';
+                                i++;
+                                return true;
+                            }
+                            result[resultPos++] = '\'';
+                            return false;
+                        }
+
+                        if (HandleQuoteLiteral(icuFormatString, ref i, result, ref resultPos))
+                        {
+                            break;
+                        }
+                        i++;
+                        for (; i < icuFormatString.Length; i++)
                         {
                             current = icuFormatString[i];
-                            result[resultPos++] = current;
                             if (current == '\'')
                             {
+                                if (HandleQuoteLiteral(icuFormatString, ref i, result, ref resultPos))
+                                {
+                                    continue;
+                                }
                                 break;
                             }
-                            i++;
+                            if (current == '\\')
+                            {
+                                // The same backslash escaping mentioned above
+                                result[resultPos++] = '\\';
+                            }
+                            result[resultPos++] = current;
                         }
                         break;
 
-                    case ':':
-                    case '.':
                     case 'H':
                     case 'h':
                     case 'm':
                     case 's':
-                    case ' ':
-                    case '\u00A0': // no-break space
-                    case '\u202F': // narrow no-break space
                         result[resultPos++] = current;
                         break;
                     case 'a': // AM/PM
+                    case 'b': // am, pm, noon, midnight
+                    case 'B': // flexible day periods
                         if (!amPmAdded)
                         {
                             amPmAdded = true;
@@ -398,6 +425,13 @@ namespace System.Globalization
                         }
                         break;
 
+                    default:
+                        // Characters that are not ASCII letters are literal texts
+                        if (!char.IsAsciiLetter(current))
+                        {
+                            result[resultPos++] = current;
+                        }
+                        break;
                 }
             }
 
@@ -487,12 +521,11 @@ namespace System.Globalization
                 bufferLength = Interop.Globalization.GetLocalesNative(null, 0);
             }
             else
+#endif
             {
                 bufferLength = Interop.Globalization.GetLocales(null, 0);
             }
-#else
-            bufferLength = Interop.Globalization.GetLocales(null, 0);
-#endif
+
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();
@@ -506,12 +539,11 @@ namespace System.Globalization
                 bufferLength = Interop.Globalization.GetLocalesNative(chars, bufferLength);
             }
             else
+#endif
             {
                 bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
             }
-#else
-            bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
-#endif
+
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();

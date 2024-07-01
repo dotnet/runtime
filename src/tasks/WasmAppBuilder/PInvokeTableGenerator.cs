@@ -181,7 +181,8 @@ internal sealed class PInvokeTableGenerator
         if (pinvoke.WasmLinkage)
         {
             // We mangle the name to avoid collisions with symbols in other modules
-            return _fixupSymbolName($"{pinvoke.Module}#{pinvoke.EntryPoint}");
+            string namespaceName = pinvoke.Method.DeclaringType?.Namespace ?? string.Empty;
+            return _fixupSymbolName($"{namespaceName}#{pinvoke.Module}#{pinvoke.EntryPoint}");
         }
         return _fixupSymbolName(pinvoke.EntryPoint);
     }
@@ -295,8 +296,13 @@ internal sealed class PInvokeTableGenerator
         }
 
         var method = export.Method;
-        // EntryPoint wasn't specified generate a name for the entry point
-        return _fixupSymbolName($"wasm_native_to_interp_{method.DeclaringType!.Module!.Assembly!.GetName()!.Name!}_{method.DeclaringType.Name}_{method.Name}");
+        string namespaceName = method.DeclaringType?.Namespace ?? string.Empty;
+        string assemblyName = method.DeclaringType?.Module?.Assembly?.GetName()?.Name ?? string.Empty;
+        string declaringTypeName = method.DeclaringType?.Name ?? string.Empty;
+
+        string entryPoint = $"wasm_native_to_interp_{namespaceName}_{assemblyName}_{declaringTypeName}_{method.Name}";
+
+        return _fixupSymbolName(entryPoint);
     }
 
     private string DelegateKey(PInvokeCallback export)
@@ -390,10 +396,11 @@ internal sealed class PInvokeTableGenerator
             sb.Append($"  if (!(WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) {{\n");
             var assemblyFullName = cb.Method.DeclaringType == null ? "" : cb.Method.DeclaringType.Assembly.FullName;
             var assemblyName = assemblyFullName != null && assemblyFullName.Split(',').Length > 0 ? assemblyFullName.Split(',')[0].Trim() : "";
-            var typeName = cb.Method.DeclaringType == null  || cb.Method.DeclaringType.FullName == null ? "" : cb.Method.DeclaringType.FullName;
+            var namespaceName = cb.Method.DeclaringType == null ? "" : cb.Method.DeclaringType.Namespace;
+            var typeName = cb.Method.DeclaringType == null  || cb.Method.DeclaringType.Name == null ? "" : cb.Method.DeclaringType.Name;
             var methodName = cb.Method.Name;
             int numParams = method.GetParameters().Length;
-            sb.Append($"   mono_wasm_marshal_get_managed_wrapper (\"{assemblyName}\", \"{typeName}\", \"{methodName}\", {numParams});\n");
+            sb.Append($"   mono_wasm_marshal_get_managed_wrapper (\"{assemblyName}\",\"{namespaceName}\", \"{typeName}\", \"{methodName}\", {numParams});\n");
             sb.Append($"  }}\n");
 
             sb.Append($"  ((WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) (");

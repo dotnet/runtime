@@ -2989,7 +2989,6 @@ void FreeExceptionData(ExceptionData *pedata)
     if (pedata->bstrHelpFile)
         SysFreeString(pedata->bstrHelpFile);
 }
-#endif // FEATURE_COMINTEROP
 
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable)
 {
@@ -3005,7 +3004,6 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedTh
     // Initialize
     *pProtectedThrowable = NULL;
 
-#if defined(FEATURE_COMINTEROP)
     if (pErrInfo != NULL)
     {
         // If this represents a managed object...
@@ -3039,7 +3037,6 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedTh
             (*pProtectedThrowable) = ex.GetThrowable();
         }
     }
-#endif // defined(FEATURE_COMINTEROP)
 
     // If we made it here and we don't have an exception object, we didn't have a valid IErrorInfo
     // so we'll create an exception based solely on the hresult.
@@ -3056,20 +3053,32 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
     {
         THROWS;
         GC_TRIGGERS;        // because of IErrorInfo
-        MODE_ANY;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
     // Get an IErrorInfo if one is available.
     IErrorInfo *pErrInfo = NULL;
-#ifdef FEATURE_COMINTEROP
     if (SafeGetErrorInfo(&pErrInfo) != S_OK)
         pErrInfo = NULL;
-#endif // FEATURE_COMINTEROP
 
     GetExceptionForHR(hr, pErrInfo, pProtectedThrowable);
 }
+#else
+void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        NOTHROW;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
+    EEMessageException ex(hr);
+    (*pProtectedThrowable) = ex.GetThrowable();
+}
+#endif // FEATURE_COMINTEROP
 
 //
 // Maps a Win32 fault to a COM+ Exception enumeration code
@@ -4828,7 +4837,7 @@ lDone: ;
 #ifdef _DEBUG
         char buffer[200];
         sprintf_s(buffer, 200, "\nInternal error: Uncaught exception was thrown from IP = %p in UnhandledExceptionFilter_Worker on thread 0x%08x\n",
-                param.ExceptionEIP, ((GetThreadNULLOk() == NULL) ? NULL : GetThread()->GetThreadId()));
+                param.ExceptionEIP, ((GetThreadNULLOk() == NULL) ? 0 : GetThread()->GetThreadId()));
         PrintToStdErrA(buffer);
         _ASSERTE(!"Unexpected exception in UnhandledExceptionFilter_Worker");
 #endif
@@ -7892,8 +7901,8 @@ LONG NotifyOfCHFFilterWrapper(
         if (pThread)
         {
             LOG((LF_EH, LL_INFO1000, ", Thread SP: %p, Exception SP: %p",
-                 pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : NULL,
-                 pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : NULL ));
+                 pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : (TADDR)NULL,
+                 pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : (TADDR)NULL ));
         }
         LOG((LF_EH, LL_INFO1000, "\n"));
         return ret;
@@ -10938,7 +10947,7 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 
         // If the exception has been caught in native code, then alongwith not having address of the handler to be
         // invoked, we also wont have the IL clause for the catch block and resume stack frame will be NULL as well.
-        _ASSERTE((pCurEHTracker->GetCatchToCallPC() == NULL) &&
+        _ASSERTE((pCurEHTracker->GetCatchToCallPC() == 0) &&
             (pCurEHTracker->GetCatchHandlerExceptionClauseToken() == NULL) &&
                  (pCurEHTracker->GetResumeStackFrame().IsNull()));
 
@@ -11202,6 +11211,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 //==========================================================================
 // Throw a runtime exception based on an HResult
 //==========================================================================
+#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exception * pInnerException)
 {
     CONTRACTL
@@ -11224,7 +11234,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
     //_ASSERTE((hr != COR_E_EXECUTIONENGINE) ||
     //         !"ExecutionEngineException shouldn't be thrown. Use EEPolicy to failfast or a better exception. The caller of this function should modify their code.");
 
-#ifdef FEATURE_COMINTEROP
     // check for complus created IErrorInfo pointers
     if (pErrInfo != NULL)
     {
@@ -11238,9 +11247,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
             GCPROTECT_END ();
         }
     }
-#endif // FEATURE_COMINTEROP
 
-    _ASSERTE((pErrInfo == NULL) || !"pErrInfo should always be null when FEATURE_COMINTEROP is disabled.");
     if (pInnerException == NULL)
     {
         EX_THROW(EEMessageException, (hr));
@@ -11272,8 +11279,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     RealCOMPlusThrowHR(hr, (IErrorInfo*)NULL);
 }
 
-
-#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
 {
     CONTRACTL
@@ -11292,6 +11297,19 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
 
     // Throw the exception.
     RealCOMPlusThrowHR(hr, pErrInfo);
+}
+#else // FEATURE_COMINTEROP
+VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
+{
+    CONTRACTL
+    {
+        THROWS;
+        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    EX_THROW(EEMessageException, (hr));
 }
 #endif // FEATURE_COMINTEROP
 

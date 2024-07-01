@@ -855,6 +855,9 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 
 #else
         killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH.GetFloatRegSet(), FloatRegisterType);
+#if defined(TARGET_ARM64)
+        killMask.RemoveRegsetForType(RBM_MSK_CALLEE_TRASH.GetPredicateRegSet(), MaskRegisterType);
+#endif // TARGET_ARM64
 #endif // TARGET_XARCH
     }
 #ifdef TARGET_ARM
@@ -1148,8 +1151,8 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                     {
                         continue;
                     }
-                Interval*        interval     = getIntervalForLocalVar(varIndex);
-                const bool       isCallKill   = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
+                Interval*  interval   = getIntervalForLocalVar(varIndex);
+                const bool isCallKill = ((killMask.getLow() == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
                 SingleTypeRegSet regsKillMask = killMask.GetRegSetForType(interval->registerType);
 
                 if (isCallKill)
@@ -4430,27 +4433,11 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
         numPlacedArgLocals++;
     }
 
-#ifdef TARGET_ARM
-    // If type of node is `long` then it is actually `double`.
-    // The actual `long` types must have been transformed as a field list with two fields.
-    if (node->TypeGet() == TYP_LONG)
+    RefPosition* def = BuildDef(node, argMask);
+    if (isSpecialPutArg)
     {
-        srcCount++;
-        SingleTypeRegSet argMaskHi = genSingleTypeRegMask(REG_NEXT(argReg));
-        assert(genRegArgNext(argReg) == REG_NEXT(argReg));
-        use = BuildUse(op1, argMaskHi, 1);
-        BuildDef(node, argMask, 0);
-        BuildDef(node, argMaskHi, 1);
-    }
-    else
-#endif // TARGET_ARM
-    {
-        RefPosition* def = BuildDef(node, argMask);
-        if (isSpecialPutArg)
-        {
-            def->getInterval()->isSpecialPutArg = true;
-            def->getInterval()->assignRelatedInterval(use->getInterval());
-        }
+        def->getInterval()->isSpecialPutArg = true;
+        def->getInterval()->assignRelatedInterval(use->getInterval());
     }
 
     return srcCount;

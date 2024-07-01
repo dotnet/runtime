@@ -437,8 +437,10 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
 #if defined(TARGET_XARCH)
     , m_simd32CnsMap(nullptr)
     , m_simd64CnsMap(nullptr)
-    , m_simdMaskCnsMap(nullptr)
 #endif // TARGET_XARCH
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    , m_simdMaskCnsMap(nullptr)
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
     , m_VNFunc0Map(nullptr)
     , m_VNFunc1Map(nullptr)
@@ -1711,13 +1713,15 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                     m_defs = new (alloc) Alloc<TYP_SIMD64>::Type[ChunkSize];
                     break;
                 }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                 case TYP_MASK:
                 {
                     m_defs = new (alloc) Alloc<TYP_MASK>::Type[ChunkSize];
                     break;
                 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
                 default:
@@ -1881,12 +1885,14 @@ ValueNum ValueNumStore::VNForSimd64Con(const simd64_t& cnsVal)
 {
     return VnForConst(cnsVal, GetSimd64CnsMap(), TYP_SIMD64);
 }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 ValueNum ValueNumStore::VNForSimdMaskCon(const simdmask_t& cnsVal)
 {
     return VnForConst(cnsVal, GetSimdMaskCnsMap(), TYP_MASK);
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 ValueNum ValueNumStore::VNForGenericCon(var_types typ, uint8_t* cnsVal)
@@ -1987,12 +1993,15 @@ ValueNum ValueNumStore::VNForGenericCon(var_types typ, uint8_t* cnsVal)
             READ_VALUE(simd64_t);
             return VNForSimd64Con(val);
         }
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             READ_VALUE(simdmask_t);
             return VNForSimdMaskCon(val);
         }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
         default:
             unreached();
@@ -2106,12 +2115,14 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         {
             return VNForSimd64Con(simd64_t::Zero());
         }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             return VNForSimdMaskCon(simdmask_t::Zero());
         }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
         // These should be unreached.
@@ -2201,12 +2212,14 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
         {
             return VNForSimd64Con(simd64_t::AllBitsSet());
         }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             return VNForSimdMaskCon(simdmask_t::AllBitsSet());
         }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
         default:
@@ -2319,11 +2332,14 @@ ValueNum ValueNumStore::VNBroadcastForSimdType(var_types simdType, var_types sim
             return VNForSimd64Con(result);
         }
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             unreached();
         }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         default:
         {
@@ -2390,12 +2406,14 @@ bool ValueNumStore::VNIsVectorNaN(var_types simdType, var_types simdBaseType, Va
             memcpy(&vector, &tmp, genTypeSize(simdType));
             break;
         }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             unreached();
         }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         default:
         {
@@ -3925,7 +3943,9 @@ simd64_t ValueNumStore::GetConstantSimd64(ValueNum argVN)
 
     return ConstantValue<simd64_t>(argVN);
 }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 // Given a simdmask constant value number return its value as a simdmask.
 //
 simdmask_t ValueNumStore::GetConstantSimdMask(ValueNum argVN)
@@ -3935,7 +3955,7 @@ simdmask_t ValueNumStore::GetConstantSimdMask(ValueNum argVN)
 
     return ConstantValue<simdmask_t>(argVN);
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 // Compute the proper value number when the VNFunc has all constant arguments
@@ -8553,61 +8573,108 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(GenTreeHWIntrinsic* tree,
     var_types      baseType = tree->GetSimdBaseType();
     NamedIntrinsic ni       = tree->GetHWIntrinsicId();
 
-    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) && IsVNConstant(arg2VN))
+    switch (ni)
     {
-        switch (ni)
-        {
-            case NI_Vector128_WithElement:
-#ifdef TARGET_ARM64
-            case NI_Vector64_WithElement:
-#else
-            case NI_Vector256_WithElement:
-            case NI_Vector512_WithElement:
+        case NI_Vector128_ConditionalSelect:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_ConditionalSelect:
+        case NI_Vector512_ConditionalSelect:
+#elif defined(TARGET_ARM64)
+        case NI_Vector64_ConditionalSelect:
+        case NI_Sve_ConditionalSelect:
 #endif
+        {
+            if (IsVNConstant(arg0VN))
             {
-                int32_t index = GetConstantInt32(arg1VN);
+                // Handle `0 ? x : y`
+                ValueNum zeroVN = VNZeroForType(type);
 
-                if (static_cast<uint32_t>(index) >= GenTreeVecCon::ElementCount(genTypeSize(type), baseType))
+                if (arg0VN == zeroVN)
                 {
-                    // Nothing to fold for out of range indexes
-                    break;
+                    return arg2VN;
                 }
 
-                if (varTypeIsFloating(baseType))
-                {
-                    double value;
+                // Handle `AllBitsSet ? x : y`
+                ValueNum allBitsVN = VNAllBitsForType(type);
 
-                    if (baseType == TYP_FLOAT)
-                    {
-                        value = GetConstantSingle(arg2VN);
-                    }
-                    else
-                    {
-                        value = GetConstantDouble(arg2VN);
-                    }
-                    return EvaluateSimdWithElementFloating(this, type, baseType, arg0VN, index, value);
+                if (arg0VN == allBitsVN)
+                {
+                    return arg1VN;
                 }
-                else
-                {
-                    assert(varTypeIsIntegral(baseType));
-                    int64_t value;
 
-                    if (varTypeIsLong(baseType))
-                    {
-                        value = GetConstantInt64(arg2VN);
-                    }
-                    else
-                    {
-                        value = GetConstantInt32(arg2VN);
-                    }
-                    return EvaluateSimdWithElementIntegral(this, type, baseType, arg0VN, index, value);
+                if (IsVNConstant(arg1VN) && IsVNConstant(arg2VN))
+                {
+                    // (y & x) | (z & ~x)
+
+                    ValueNum trueVN  = EvaluateBinarySimd(this, GT_AND, false, type, baseType, arg1VN, arg0VN);
+                    ValueNum falseVN = EvaluateBinarySimd(this, GT_AND_NOT, false, type, baseType, arg2VN, arg0VN);
+
+                    return EvaluateBinarySimd(this, GT_OR, false, type, baseType, trueVN, falseVN);
                 }
             }
+            else if (arg1VN == arg2VN)
+            {
+                // Handle `x ? y : y`
+                return arg1VN;
+            }
+            break;
+        }
 
-            default:
+        case NI_Vector128_WithElement:
+#ifdef TARGET_ARM64
+        case NI_Vector64_WithElement:
+#else
+        case NI_Vector256_WithElement:
+        case NI_Vector512_WithElement:
+#endif
+        {
+            if (!IsVNConstant(arg0VN) || !IsVNConstant(arg1VN) || !IsVNConstant(arg2VN))
             {
                 break;
             }
+
+            int32_t index = GetConstantInt32(arg1VN);
+
+            if (static_cast<uint32_t>(index) >= GenTreeVecCon::ElementCount(genTypeSize(type), baseType))
+            {
+                // Nothing to fold for out of range indexes
+                break;
+            }
+
+            if (varTypeIsFloating(baseType))
+            {
+                double value;
+
+                if (baseType == TYP_FLOAT)
+                {
+                    value = GetConstantSingle(arg2VN);
+                }
+                else
+                {
+                    value = GetConstantDouble(arg2VN);
+                }
+                return EvaluateSimdWithElementFloating(this, type, baseType, arg0VN, index, value);
+            }
+            else
+            {
+                assert(varTypeIsIntegral(baseType));
+                int64_t value;
+
+                if (varTypeIsLong(baseType))
+                {
+                    value = GetConstantInt64(arg2VN);
+                }
+                else
+                {
+                    value = GetConstantInt32(arg2VN);
+                }
+                return EvaluateSimdWithElementIntegral(this, type, baseType, arg0VN, index, value);
+            }
+        }
+
+        default:
+        {
+            break;
         }
     }
 
@@ -9486,14 +9553,16 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                     cnsVal.u64[6], cnsVal.u64[7]);
                 break;
             }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             case TYP_MASK:
             {
                 simdmask_t cnsVal = GetConstantSimdMask(vn);
                 printf("SimdMaskCns[0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1]);
                 break;
             }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             // These should be unreached.
@@ -10934,7 +11003,9 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             tree->gtVNPair.SetBoth(vnStore->VNForSimd64Con(simd64Val));
             break;
         }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             simdmask_t simdmaskVal;
@@ -10943,7 +11014,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             tree->gtVNPair.SetBoth(vnStore->VNForSimdMaskCon(simdmaskVal));
             break;
         }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
         case TYP_FLOAT:

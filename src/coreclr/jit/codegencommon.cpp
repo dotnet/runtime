@@ -7445,6 +7445,109 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genCallPlaceRegArgs: Place all arguments into their initial (ABI-decided)
+// registers in preparation for a GT_CALL node.
+//
+// Arguments:
+//   call - The GT_CALL node
+//
+void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
+{
+    // Consume all the arg regs
+    for (CallArg& arg : call->gtArgs.LateArgs())
+    {
+        ABIPassingInformation& abiInfo = arg.NewAbiInfo;
+        GenTree*               argNode = arg.GetLateNode();
+
+#if FEATURE_MULTIREG_ARGS
+        // Deal with multi register passed struct args.
+        if (argNode->OperIs(GT_FIELD_LIST))
+        {
+            GenTreeFieldList::Use* use = argNode->AsFieldList()->Uses().begin().GetUse();
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& seg = abiInfo.Segment(i);
+                if (!seg.IsPassedInRegister())
+                {
+                    continue;
+                }
+
+                assert(use != nullptr);
+                GenTree* putArgRegNode = use->GetNode();
+                assert(putArgRegNode->OperIs(GT_PUTARG_REG));
+
+                genConsumeReg(putArgRegNode);
+                inst_Mov(genActualType(putArgRegNode), seg.GetRegister(), putArgRegNode->GetRegNum(),
+                         /* canSkip */ true);
+
+                use = use->GetNext();
+            }
+
+            assert(use == nullptr);
+            continue;
+        }
+#endif
+
+#if FEATURE_ARG_SPLIT
+        if (argNode->OperIs(GT_PUTARG_SPLIT))
+        {
+            assert(compFeatureArgSplit());
+            genConsumeArgSplitStruct(argNode->AsPutArgSplit());
+            unsigned regIndex = 0;
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& seg = abiInfo.Segment(i);
+                if (!seg.IsPassedInRegister())
+                {
+                    continue;
+                }
+
+                regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(regIndex);
+                var_types type     = argNode->AsPutArgSplit()->GetRegType(regIndex);
+                inst_Mov(genActualType(type), seg.GetRegister(), allocReg, /* canSkip */ true);
+
+                regIndex++;
+            }
+
+            continue;
+        }
+#endif
+
+        if (abiInfo.HasExactlyOneRegisterSegment())
+        {
+            regNumber argReg = abiInfo.Segment(0).GetRegister();
+            genConsumeReg(argNode);
+            inst_Mov(genActualType(argNode), argReg, argNode->GetRegNum(), /* canSkip */ true);
+            continue;
+        }
+
+        // Should be a stack argument then.
+        assert(!abiInfo.HasAnyRegisterSegment());
+    }
+
+#ifdef WINDOWS_AMD64_ABI
+    // On win-x64, for varargs, if we placed any arguments in float registers
+    // they must also be placed in corresponding integer registers.
+    if (call->IsVarargs())
+    {
+        for (CallArg& arg : call->gtArgs.Args())
+        {
+            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
+                {
+                    regNumber targetReg = compiler->getCallArgIntRegister(seg.GetRegister());
+                    inst_Mov(TYP_LONG, targetReg, seg.GetRegister(), /* canSkip */ false,
+                             emitActualTypeSize(TYP_I_IMPL));
+                }
+            }
+        }
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
 // genJmpPlaceArgs: Place all parameters into their initial (ABI-decided)
 // registers in preparation for a GT_JMP node.
 //
@@ -8135,23 +8238,7 @@ void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
     }
     else
     {
-#ifdef TARGET_ARM
-        if (compiler->opts.compUseSoftFP && (targetType == TYP_LONG))
-        {
-            // This is a special arm-softFP case when a TYP_LONG node was introduced during lowering
-            // for a call argument,  so it was not handled by decomposelongs phase as all other TYP_LONG nodes.
-            // Example foo(double LclVar V01), LclVar V01 has to be passed in general registers r0, r1,
-            // so lowering will add `BITCAST long(LclVar double V01)` and codegen has to support it here.
-            const regNumber srcReg   = op1->GetRegNum();
-            const regNumber otherReg = treeNode->AsMultiRegOp()->gtOtherReg;
-            assert(otherReg != REG_NA);
-            inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, srcReg, EA_8BYTE);
-        }
-        else
-#endif // TARGET_ARM
-        {
-            genBitCast(targetType, targetReg, op1->TypeGet(), op1->GetRegNum());
-        }
+        genBitCast(targetType, targetReg, op1->TypeGet(), op1->GetRegNum());
     }
     genProduceReg(treeNode);
 }

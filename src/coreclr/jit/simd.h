@@ -292,7 +292,9 @@ struct simd64_t
     }
 };
 static_assert_no_msg(sizeof(simd64_t) == 64);
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 struct simdmask_t
 {
     union
@@ -342,7 +344,9 @@ struct simdmask_t
     }
 };
 static_assert_no_msg(sizeof(simdmask_t) == 8);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
+#if defined(TARGET_XARCH)
 typedef simd64_t simd_t;
 #else
 typedef simd16_t simd_t;
@@ -1015,6 +1019,7 @@ void BroadcastConstantToSimd(TSimd* result, TBase arg0)
 #define SHUFFLE_XYZW 0x1B // 00 01 10 11
 #define SHUFFLE_YXYX 0x44 // 01 00 01 00
 #define SHUFFLE_YWXZ 0x72 // 01 11 00 10
+#define SHUFFLE_YWXW 0x73 // 01 11 00 11
 #define SHUFFLE_YYZZ 0x5A // 01 01 10 10
 #define SHUFFLE_ZXXX 0x80 // 10 00 00 00
 #define SHUFFLE_ZXXY 0x81 // 10 00 00 01
