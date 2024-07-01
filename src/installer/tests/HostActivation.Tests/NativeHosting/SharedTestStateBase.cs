@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             _baseDirArtifact = TestArtifact.Create("nativeHosting");
             BaseDirectory = _baseDirArtifact.Location;
 
-            string nativeHostName = Binaries.GetExeFileNameForCurrentPlatform("nativehost");
+            string nativeHostName = Binaries.GetExeName("nativehost");
             NativeHostPath = Path.Combine(BaseDirectory, nativeHostName);
 
             // Copy over native host

@@ -116,7 +116,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     }
                 }
 
-                string comsxsName = Binaries.GetExeFileNameForCurrentPlatform("comsxs");
+                string comsxsName = Binaries.GetExeName("comsxs");
                 ComSxsPath = Path.Combine(comsxsDirectory, comsxsName);
                 File.Copy(
                     Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, comsxsName),

@@ -22,11 +22,11 @@ namespace HostActivation.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         [InlineData ("a/b/SymlinkToApphost")]
         [InlineData ("a/SymlinkToApphost")]
         public void Run_apphost_behind_symlink(string symlinkRelativePath)
         {
+            symlinkRelativePath = Binaries.GetExeName(symlinkRelativePath);
             using (var testDir = TestArtifact.Create("symlink"))
             {
                 Directory.CreateDirectory(Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath)));
@@ -43,13 +43,14 @@ namespace HostActivation.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         [InlineData ("a/b/FirstSymlink", "c/d/SecondSymlink")]
         [InlineData ("a/b/FirstSymlink", "c/SecondSymlink")]
         [InlineData ("a/FirstSymlink", "c/d/SecondSymlink")]
         [InlineData ("a/FirstSymlink", "c/SecondSymlink")]
         public void Run_apphost_behind_transitive_symlinks(string firstSymlinkRelativePath, string secondSymlinkRelativePath)
         {
+            firstSymlinkRelativePath = Binaries.GetExeName(firstSymlinkRelativePath);
+            secondSymlinkRelativePath = Binaries.GetExeName(secondSymlinkRelativePath);
             using (var testDir = TestArtifact.Create("symlink"))
             {
                 // second symlink -> apphost
@@ -71,15 +72,14 @@ namespace HostActivation.Tests
             }
         }
 
-        //[Theory]
-        //[InlineData("a/b/SymlinkToFrameworkDependentApp")]
-        //[InlineData("a/SymlinkToFrameworkDependentApp")]
-        [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
+        [Theory]
+        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        [InlineData("a/SymlinkToFrameworkDependentApp")]
+        [SkipOnPlatform(TestPlatforms.OSX, "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
             "CI failing to use stat on symbolic links on Linux (permission denied).")]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
-        public void Run_framework_dependent_app_behind_symlink(/*string symlinkRelativePath*/)
+        public void Run_framework_dependent_app_behind_symlink(string symlinkRelativePath)
         {
-            var symlinkRelativePath = string.Empty;
+            symlinkRelativePath = Binaries.GetExeName(symlinkRelativePath);
 
             using (var testDir = TestArtifact.Create("symlink"))
             {
@@ -96,14 +96,14 @@ namespace HostActivation.Tests
             }
         }
 
-        [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
-                     "CI failing to use stat on symbolic links on Linux (permission denied).")]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.OSX, "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
+            "CI failing to use stat on symbolic links on Linux (permission denied).")]
         public void Run_framework_dependent_app_with_runtime_behind_symlink()
         {
             using (var testDir = TestArtifact.Create("symlink"))
             {
-                var dotnetSymlink = Path.Combine(testDir.Location, "dotnet");
+                var dotnetSymlink = Path.Combine(testDir.Location, Binaries.GetExeName("dotnet"));
 
                 using var symlink = new SymLink(dotnetSymlink, TestContext.BuiltDotNet.BinPath);
                 Command.Create(sharedTestState.FrameworkDependentApp.AppExe)
@@ -117,7 +117,6 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_app_directory_behind_symlink()
         {
             var app = sharedTestState.SelfContainedApp.Copy();
@@ -138,7 +137,6 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_dotnet_behind_symlink()
         {
             using (var testDir = TestArtifact.Create("symlink"))
@@ -156,7 +154,6 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_app_directory_behind_symlink_and_use_dotnet()
         {
             var app = sharedTestState.SelfContainedApp.Copy();
@@ -177,7 +174,6 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_satellite_assembly_behind_symlink()
         {
             var app = sharedTestState.LocalizedApp.Copy();
