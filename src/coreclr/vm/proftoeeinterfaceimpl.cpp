@@ -7655,9 +7655,11 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
         return CORPROF_E_RUNTIME_UNINITIALIZED;
     }
 
+    bool ownEESuspension = FALSE;
     if (!ThreadSuspend::SysIsSuspendInProgress() && (ThreadSuspend::GetSuspensionThread() == 0))
     {
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
+        ownEESuspension = TRUE;
     }
 
     // Suspending EE ensures safe object inspection. We permit the GC Heap walk callback to
@@ -7682,7 +7684,10 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
 
     g_profControlBlock.fGCInProgress = FALSE;
 
-    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+    if (ownEESuspension)
+    {
+        ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+    }
 
     return S_OK;
 }
