@@ -7735,6 +7735,19 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             }
             break;
 
+        case GT_STOREIND:
+            if (op1->OperIs(GT_FIELD_ADDR) && varTypeIsGC(tree))
+            {
+                CORINFO_FIELD_HANDLE fieldHandle = op1->AsFieldAddr()->gtFldHnd;
+                if (eeIsByrefLike(info.compCompHnd->getFieldClass(fieldHandle)))
+                {
+                    JITDUMP("Marking [%06u] STOREIND as GTF_IND_TGT_NOT_HEAP: field's owner is a byref-like struct\n",
+                            dspTreeID(tree));
+                    tree->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                }
+            }
+            break;
+
         case GT_DIV:
             // Replace "val / dcon" with "val * (1.0 / dcon)" if dcon is a power of two.
             // Powers of two within range are always exactly represented,
@@ -9923,13 +9936,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
             {
-                if (oper == GT_NOT)
-                {
-                    break;
-                }
-
                 GenTree* op1 = node->Op(1);
-                GenTree* op2 = node->Op(2);
+                GenTree* op2 = (oper == GT_NOT) ? op1 : node->Op(2);
 
                 if (!op1->OperIsHWIntrinsic() || !op2->OperIsHWIntrinsic())
                 {
@@ -9977,6 +9985,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                     }
 
+                    case GT_NOT:
+                    {
+                        maskIntrinsicId = NI_EVEX_NotMask;
+                        break;
+                    }
+
                     case GT_OR:
                     {
                         maskIntrinsicId = NI_EVEX_OrMask;
@@ -10012,8 +10026,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 node->Op(1) = cvtOp1->Op(1);
                 DEBUG_DESTROY_NODE(op1);
 
-                node->Op(2) = cvtOp2->Op(1);
-                DEBUG_DESTROY_NODE(op2);
+                if (oper != GT_NOT)
+                {
+                    node->Op(2) = cvtOp2->Op(1);
+                    DEBUG_DESTROY_NODE(op2);
+                }
 
                 node = gtNewSimdCvtMaskToVectorNode(simdType, node, simdBaseJitType, simdSize)->AsHWIntrinsic();
 
