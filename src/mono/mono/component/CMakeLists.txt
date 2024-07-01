@@ -228,7 +228,11 @@ if (ENABLE_PERFTRACING AND "${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}" IN_LIST 
     # Link the diagnostics_tracing component to the EventPipe and DiagnosticServer libraries.
     if (TARGET ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects)
         target_sources(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
-        list(APPEND mono-components-objects $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
+        # If we are going to link the diagnostics component via mono-components-objects, link in the supporting object libraries as well.
+        string(REPLACE
+          "$<TARGET_OBJECTS:${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects>"
+          "$<TARGET_OBJECTS:${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects>;$<TARGET_OBJECTS:eventpipe-mono-objects>;$<TARGET_OBJECTS:dn-containers>"
+          mono-components-objects "${mono-components-objects}")
     endif()
     if (TARGET mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-static)
         # We don't add dn-containers here as any scenario that uses this target will also use the monosgen-static target,
