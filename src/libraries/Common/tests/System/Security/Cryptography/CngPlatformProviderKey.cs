@@ -14,13 +14,17 @@ namespace Test.Cryptography
             string keySuffix = null,
             [CallerMemberName] string testName = null,
             params CngProperty[] additionalParameters)
+            : this(algorithm, CreateDefaultParameters(), keySuffix, testName, additionalParameters)
         {
-            CngKeyCreationParameters cngCreationParameters = new CngKeyCreationParameters
-            {
-                Provider = CngProvider.MicrosoftPlatformCryptoProvider,
-                KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
-            };
+        }
 
+        public CngPlatformProviderKey(
+            CngAlgorithm algorithm,
+            CngKeyCreationParameters cngCreationParameters,
+            string keySuffix = null,
+            [CallerMemberName] string testName = null,
+            params CngProperty[] additionalParameters)
+        {
             foreach (CngProperty parameter in additionalParameters)
             {
                 cngCreationParameters.Parameters.Add(parameter);
@@ -28,6 +32,13 @@ namespace Test.Cryptography
 
             Key = CngKey.Create(algorithm, $"{testName}{algorithm.Algorithm}{keySuffix}", cngCreationParameters);
         }
+
+        private static CngKeyCreationParameters CreateDefaultParameters() =>
+            new CngKeyCreationParameters
+            {
+                Provider = CngProvider.MicrosoftPlatformCryptoProvider,
+                KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
+            };
 
         internal CngKey Key { get; }
 

@@ -64,6 +64,45 @@ namespace Test.Cryptography
             }
         }
 
+        private static bool CheckIfVbsAvailable()
+        {
+#if !NETFRAMEWORK
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return false;
+            }
+#endif
+
+            CngKey key = null;
+
+            try
+            {
+                const CngKeyCreationOptions RequireVbs = (CngKeyCreationOptions)0x00020000;
+#if !NETFRAMEWORK
+                Assert.Equal(CngKeyCreationOptions.RequireVbs, RequireVbs);
+#endif
+
+                key = CngKey.Create(
+                        CngAlgorithm.ECDsaP256,
+                        $"{nameof(CheckIfVbsAvailable)}{CngAlgorithm.ECDsaP256.Algorithm}Key",
+                    new CngKeyCreationParameters
+                    {
+                        Provider = new CngProvider("Microsoft Software Key Storage Provider"),
+                        KeyCreationOptions = RequireVbs | CngKeyCreationOptions.OverwriteExistingKey,
+                    });
+
+                return true;
+            }
+            catch (CryptographicException)
+            {
+                return false;
+            }
+            finally
+            {
+                key?.Delete();
+            }
+        }
+
         // Platforms that use Apple Cryptography
         internal const TestPlatforms AppleCrypto = TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst;
         internal const TestPlatforms MobileAppleCrypto = TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst;
@@ -83,5 +122,8 @@ namespace Test.Cryptography
         internal static bool PlatformCryptoProviderFunctionalP256 => PlatformCryptoProviderFunctional(CngAlgorithm.ECDsaP256);
         internal static bool PlatformCryptoProviderFunctionalP384 => PlatformCryptoProviderFunctional(CngAlgorithm.ECDsaP384);
         internal static bool PlatformCryptoProviderFunctionalRsa => PlatformCryptoProviderFunctional(CngAlgorithm.Rsa);
+
+        private static bool? s_isVbsAvailable;
+        internal static bool IsVbsAvailable => s_isVbsAvailable ??= CheckIfVbsAvailable();
     }
 }

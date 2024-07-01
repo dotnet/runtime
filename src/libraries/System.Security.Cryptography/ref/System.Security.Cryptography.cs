@@ -427,6 +427,9 @@ namespace System.Security.Cryptography
         None = 0,
         MachineKey = 32,
         OverwriteExistingKey = 128,
+        PreferVbs = 65536,
+        RequireVbs = 131072,
+        UsePerBootKey = 262144,
     }
     public sealed partial class CngKeyCreationParameters
     {
