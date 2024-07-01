@@ -1510,7 +1510,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             var_types simdType = node->TypeGet();
             unsigned  simdSize = node->GetSimdSize();
-            GenTree*  op1      = node->Op(1);
+
+            GenTree* op1 = node->Op(1);
+            BlockRange().Remove(node->Op(2));
 
             // We can't use the mask, but we can emit a ternary logic node
             NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
@@ -1530,8 +1532,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             BlockRange().InsertBefore(node, control);
 
             node->ResetHWIntrinsicId(ternaryLogicId, comp, op3, op2, op1, control);
-            BlockRange().Remove(node->Op(2));
-
             return LowerNode(node);
         }
     }
