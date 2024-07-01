@@ -460,8 +460,8 @@ namespace System.Net.Http
                 else
                 {
                     _stream.CompleteWrites();
+                    await _stream.WritesClosed.ConfigureAwait(false);
                 }
-                await _stream.WritesClosed.ConfigureAwait(false);
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(bytesWritten);
             }
@@ -527,6 +527,10 @@ namespace System.Net.Http
         {
             await _stream.WriteAsync(_sendBuffer.ActiveMemory, endStream, cancellationToken).ConfigureAwait(false);
             _sendBuffer.Discard(_sendBuffer.ActiveLength);
+            if (endStream)
+            {
+                await _stream.WritesClosed.ConfigureAwait(false);
+            }
 
             await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
