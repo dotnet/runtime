@@ -380,6 +380,20 @@ namespace System.Text.Json.Nodes.Tests
             JsonNodeTests.AssertNotDeepEqual(JsonValue.Create(10), JsonValue.Create("10"));
         }
 
+        [Theory]
+        [InlineData("1", "1.0", true)]
+        [InlineData("-0.0", "0", true)]
+        [InlineData("-1.1e3", "-1100", true)]
+        [InlineData("79228162514264337593543950336", "792281625142643375935439503360e-1", false)] // Not equal since it exceeds decimal.MaxValue
+        [InlineData("1.75e+300", "1.75E+300", false)] // Not equal due to case difference in exponent
+        public static void DeepEqualsNumericType(string leftStr, string rightStr, bool areEqual)
+        {
+            JsonNode left = JsonNode.Parse(leftStr);
+            JsonNode right = JsonNode.Parse(rightStr);
+
+            Assert.Equal(areEqual, JsonNode.DeepEquals(left, right));
+        }
+
         [Fact]
         public static void DeepEqualsJsonElement()
         {

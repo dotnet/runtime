@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -1241,8 +1242,17 @@ namespace System.Text.Json
                     return true;
 
                 case JsonValueKind.Number:
-                    // JSON numbers are equal if their raw representations are equal.
-                    return left.GetRawValue().Span.SequenceEqual(right.GetRawValue().Span);
+                    ReadOnlySpan<byte> leftRawValue = left.GetRawValue().Span;
+                    ReadOnlySpan<byte> rightRawValue = right.GetRawValue().Span;
+
+                    int bytesConsumed;
+                    if (Utf8Parser.TryParse(leftRawValue, out decimal leftNumber, out bytesConsumed) && bytesConsumed == leftRawValue.Length &&
+                        Utf8Parser.TryParse(rightRawValue, out decimal rightNumber, out bytesConsumed) && bytesConsumed == rightRawValue.Length)
+                    {
+                        return leftNumber == rightNumber;
+                    }
+
+                    return leftRawValue.SequenceEqual(rightRawValue);
 
                 case JsonValueKind.String:
                     if (right.ValueIsEscaped)
