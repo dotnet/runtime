@@ -87,21 +87,6 @@ extern uint32_t SamplingDistributionMean;
 
 struct RuntimeThreadLocals
 {
-    uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
-    uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
-    PInvokeTransitionFrame* m_pTransitionFrame;
-    PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
-    PInvokeTransitionFrame* m_pCachedTransitionFrame;
-    PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
-    HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
-#ifdef FEATURE_HIJACK
-    void **                 m_ppvHijackedReturnAddressLocation;
-    void *                  m_pvHijackedReturnAddress;
-    uintptr_t               m_uHijackedReturnValueFlags;
-#endif // FEATURE_HIJACK
-    PTR_ExInfo              m_pExInfoStackHead;
-    Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
-
     // Any allocation that would overlap combined_limit needs to be handled by the allocation slow path.
     // combined_limit is the minimum of:
     //  - gc_alloc_context.alloc_limit (the end of the current AC)
@@ -124,7 +109,21 @@ struct RuntimeThreadLocals
     //   This occurs either because the sampling feature is disabled, or because the randomized selection
     //   of sampled bytes didn't select a byte in this AC.
     // - if combined_limit < alloc_limit there is a sample limit in the AC. sample_limit = combined_limit.
-    uint8_t* m_combined_limit;
+    uint8_t*                m_combined_limit;
+    uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
+    uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
+    PInvokeTransitionFrame* m_pTransitionFrame;
+    PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
+    PInvokeTransitionFrame* m_pCachedTransitionFrame;
+    PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
+    HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
+#ifdef FEATURE_HIJACK
+    void **                 m_ppvHijackedReturnAddressLocation;
+    void *                  m_pvHijackedReturnAddress;
+    uintptr_t               m_uHijackedReturnValueFlags;
+#endif // FEATURE_HIJACK
+    PTR_ExInfo              m_pExInfoStackHead;
+    Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
 
 #ifdef TARGET_X86
     PCODE                   m_LastRedirectIP;
