@@ -14,6 +14,9 @@ public class WasmTestRunner : WasmApplicationEntryPoint
 
     public static async Task<int> Main(string[] args)
     {
+
+        Console.WriteLine("Pavel memory stats before: {0}", GC.GetTotalMemory(false));
+
         if (args.Length == 0)
         {
             Console.WriteLine($"No args given");
@@ -94,6 +97,7 @@ public class WasmTestRunner : WasmApplicationEntryPoint
         }
         while(res == 0 && untilFailed);
 
+        Console.WriteLine("Pavel memory stats after: {0}", GC.GetTotalMemory(false));
         return res;
     }
 
