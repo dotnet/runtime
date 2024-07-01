@@ -497,7 +497,7 @@ PEAssembly* PEAssembly::LoadAssembly(mdAssemblyRef kAssemblyRef)
 
     AssemblySpec spec;
 
-    spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(this));
+    spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(this)->GetAssembly());
 
     RETURN GetAppDomain()->BindAssemblySpec(&spec, TRUE);
 }
@@ -574,7 +574,7 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
                 return FALSE;
 
             AssemblySpec spec;
-            spec.InitializeSpec(mdLinkRef, GetMDImport(), pAssembly->GetDomainAssembly());
+            spec.InitializeSpec(mdLinkRef, GetMDImport(), pAssembly);
             DomainAssembly* pDomainAssembly = spec.LoadDomainAssembly(FILE_LOADED);
 
             if (dwLocation) {

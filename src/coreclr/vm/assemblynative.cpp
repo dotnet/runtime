@@ -63,10 +63,6 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
         {
             pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
         }
-        if (pRefAssembly)
-        {
-            pParentAssembly = pRefAssembly->GetDomainAssembly();
-        }
     }
 
     AssemblySpec spec;
@@ -93,8 +89,8 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
     spec.Init(ssName.GetUTF8(), &asmInfo,
         pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
 
-    if (pParentAssembly != NULL)
-        spec.SetParentAssembly(pParentAssembly);
+    if (pRefAssembly != NULL)
+        spec.SetParentAssembly(pRefAssembly);
 
     // Have we been passed the reference to the binder against which this load should be triggered?
     // If so, then use it to set the fallback load context binder.
@@ -138,7 +134,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
 
     // Set the caller's assembly to be CoreLib
-    DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
+    Assembly *pCallersAssembly = SystemDomain::System()->SystemAssembly();
 
     // Initialize the AssemblySpec
     AssemblySpec spec;
@@ -692,7 +688,7 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
         GCX_COOP();
 
         if (pReferencedAssembly)
-            retAssembly.Set(pReferencedAssembly->GetDomainAssembly()->GetExposedAssemblyObject());
+            retAssembly.Set(pReferencedAssembly->GetExposedObject());
 
         rv = dwLocation;
     }
