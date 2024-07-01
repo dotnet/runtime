@@ -30548,6 +30548,130 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 break;
             }
 
+            case GT_EQ:
+            {
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    // Handle `(x == NaN) == false` and `(NaN == x) == false` for floating-point types
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        int64_t zero = 0;
+                        cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case GT_GT:
+            {
+                if (varTypeIsUnsigned(simdBaseType))
+                {
+                    // Handle `(0 > x) == false` for unsigned types.
+                    if ((cnsNode == op1) && cnsNode->IsVectorZero())
+                    {
+                        int64_t zero = 0;
+                        cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                else if (varTypeIsFloating(simdBaseType))
+                {
+                    // Handle `(x > NaN) == false` and `(NaN > x) == false` for floating-point types
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        int64_t zero = 0;
+                        cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case GT_GE:
+            {
+                if (varTypeIsUnsigned(simdBaseType))
+                {
+                    // Handle `x >= 0 == true` for unsigned types.
+                    if ((cnsNode == op2) && cnsNode->IsVectorZero())
+                    {
+                        int64_t allBitsSet = -1;
+                        cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, allBitsSet);
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                else if (varTypeIsFloating(simdBaseType))
+                {
+                    // Handle `(x >= NaN) == false` and `(NaN >= x) == false` for floating-point types
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        int64_t zero = 0;
+                        cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case GT_LT:
+            {
+                if (varTypeIsUnsigned(simdBaseType))
+                {
+                    // Handle `x < 0 == false` for unsigned types.
+                    if ((cnsNode == op2) && cnsNode->IsVectorZero())
+                    {
+                        int64_t zero = 0;
+                        cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                else if (varTypeIsFloating(simdBaseType))
+                {
+                    // Handle `(x < NaN) == false` and `(NaN < x) == false` for floating-point types
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        int64_t zero = 0;
+                        cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case GT_LE:
+            {
+                if (varTypeIsUnsigned(simdBaseType))
+                {
+                    // Handle `0 <= x == true` for unsigned types.
+                    if ((cnsNode == op1) && cnsNode->IsVectorZero())
+                    {
+                        int64_t allBitsSet = -1;
+                        cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, allBitsSet);
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                else if (varTypeIsFloating(simdBaseType))
+                {
+                    // Handle `(x <= NaN) == false` and `(NaN <= x) == false` for floating-point types
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        int64_t zero = 0;
+                        cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                break;
+            }
+
             case GT_MUL:
             {
                 if (!varTypeIsFloating(simdBaseType))
@@ -30586,6 +30710,22 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 if (cnsNode->AsVecCon()->IsScalarOne(simdBaseType))
                 {
                     resultNode = otherNode;
+                }
+                break;
+            }
+
+            case GT_NE:
+            {
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    // Handle `(x != NaN) == true` and `(NaN != x) == true` for floating-point types
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        int64_t allBitsSet = -1;
+                        cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, allBitsSet);
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
                 }
                 break;
             }
