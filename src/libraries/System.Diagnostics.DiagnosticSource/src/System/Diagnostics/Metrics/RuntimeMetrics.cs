@@ -111,13 +111,23 @@ namespace System.Diagnostics.Metrics
 
         // Thread Pool Metrics
 
-        //private static readonly ObservableCounter<long> s_threadPoolThreadCount = s_meter.CreateObservableCounter(
-        //    "dotnet.thread_pool.thread_count",
-        //    () => (long)ThreadPool.ThreadCount,
-        //    unit: "{thread}",
-        //    description: "The number of thread pool threads that currently exist.");
+        private static readonly ObservableCounter<long> s_threadPoolThreadCount = s_meter.CreateObservableCounter(
+            "dotnet.thread_pool.thread.count",
+            () => (long)ThreadPool.ThreadCount,
+            unit: "{thread}",
+            description: "The number of thread pool threads that currently exist.");
 
-        // TODO
+        private static readonly ObservableCounter<long> s_threadPoolCompletedWorkItems = s_meter.CreateObservableCounter(
+            "dotnet.thread_pool.work_item.count",
+            () => ThreadPool.CompletedWorkItemCount,
+            unit: "{work_item}",
+            description: "The number of work items that the thread pool has completed since the process has started.");
+
+        private static readonly ObservableCounter<long> s_threadPoolQueueLength = s_meter.CreateObservableCounter(
+            "dotnet.thread_pool.queue.length",
+            () => ThreadPool.PendingWorkItemCount,
+            unit: "{work_item}",
+            description: "The number of work items that are currently queued to be processed by the thread pool.");
 
         // Timer Metrics
 
@@ -139,6 +149,20 @@ namespace System.Diagnostics.Metrics
             unit: "{exception}",
             description: "The number of exceptions that have been thrown in managed code.");
 
+        // CPU Metrics
+
+        private static readonly ObservableUpDownCounter<long> s_cpuCount = s_meter.CreateObservableUpDownCounter(
+            "dotnet.cpu.count",
+            () => (long)Environment.ProcessorCount,
+            unit: "{cpu}",
+            description: "The number of processors available to the process.");
+
+        private static readonly ObservableCounter<double> s_cpuTime = s_meter.CreateObservableCounter<double>(
+            "dotnet.cpu.time",
+            GetCpuTime,
+            unit: "s",
+            description: "The number of work items that are currently queued to be processed by the thread pool.");
+
         public static bool IsEnabled()
         {
             return s_gcCollectionsCounter.Enabled
@@ -154,9 +178,14 @@ namespace System.Diagnostics.Metrics
                 || s_jitCompilationTime.Enabled
                 || s_monitorLockContention.Enabled
                 || s_timerCount.Enabled
+                || s_threadPoolThreadCount.Enabled
+                || s_threadPoolCompletedWorkItems.Enabled
+                || s_threadPoolQueueLength.Enabled
 #endif
                 || s_assemblyCount.Enabled
-                || s_exceptionCount.Enabled;
+                || s_exceptionCount.Enabled
+                || s_cpuCount.Enabled
+                || s_cpuTime.Enabled;
         }
 
         private static IEnumerable<Measurement<long>> GetGarbageCollectionCounts()
@@ -166,9 +195,22 @@ namespace System.Diagnostics.Metrics
             for (int gen = 2; gen >= 0; --gen)
             {
                 long collectionsFromThisGeneration = GC.CollectionCount(gen);
-                yield return new(collectionsFromThisGeneration - collectionsFromHigherGeneration, new KeyValuePair<string, object?>("generation", s_genNames[gen]));
+                yield return new(collectionsFromThisGeneration - collectionsFromHigherGeneration, new KeyValuePair<string, object?>("gc.heap.generation", s_genNames[gen]));
                 collectionsFromHigherGeneration = collectionsFromThisGeneration;
             }
+        }
+
+        private static IEnumerable<Measurement<double>> GetCpuTime()
+        {
+#if !NETFRAMEWORK && !NETSTANDARD
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsTvOS() || OperatingSystem.IsIOS())
+                yield break;
+#endif
+
+            Process process = Process.GetCurrentProcess();
+
+            yield return new(process.UserProcessorTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "user")]);
+            yield return new(process.PrivilegedProcessorTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "system")]);
         }
 
 #if !NETFRAMEWORK && !NETSTANDARD
@@ -181,7 +223,7 @@ namespace System.Diagnostics.Metrics
 
             for (int i = 0; i < s_maxGenerations; ++i)
             {
-                yield return new(gcInfo.GenerationInfo[i].SizeAfterBytes, new KeyValuePair<string, object?>("generation", s_genNames[i]));
+                yield return new(gcInfo.GenerationInfo[i].SizeAfterBytes, new KeyValuePair<string, object?>("gc.heap.generation", s_genNames[i]));
             }
         }
 
@@ -194,7 +236,7 @@ namespace System.Diagnostics.Metrics
 
             for (int i = 0; i < s_maxGenerations; ++i)
             {
-                yield return new(gcInfo.GenerationInfo[i].FragmentationAfterBytes, new KeyValuePair<string, object?>("generation", s_genNames[i]));
+                yield return new(gcInfo.GenerationInfo[i].FragmentationAfterBytes, new KeyValuePair<string, object?>("gc.heap.generation", s_genNames[i]));
             }
         }
 #endif
