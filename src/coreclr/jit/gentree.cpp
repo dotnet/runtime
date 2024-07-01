@@ -26590,7 +26590,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(
         {
             // op1 ^ AllBitsSet
             GenTree* allBitsSet = gtNewAllBitsSetConNode(type);
-            return gtNewSimdBinOpNode(GT_SUB, type, op1, allBitsSet, simdBaseJitType, simdSize);
+            return gtNewSimdBinOpNode(GT_XOR, type, op1, allBitsSet, simdBaseJitType, simdSize);
         }
 #elif defined(TARGET_ARM64)
         case GT_NEG:
