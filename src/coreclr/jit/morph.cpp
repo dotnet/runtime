@@ -2145,12 +2145,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     assert(arg.NewAbiInfo.NumSegments == 1);
                     structBaseType = arg.NewAbiInfo.Segment(0).GetRegisterType();
                 }
-
-                for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; ++i)
-                {
-                    arg.AbiInfo.StructFloatFieldType[i]   = arg.NewAbiInfo.Segment(i).GetRegisterType();
-                    arg.AbiInfo.StructFloatFieldOffset[i] = arg.NewAbiInfo.Segment(i).Offset;
-                }
             }
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             arg.AbiInfo.PassedByRef = howToPassStruct == Compiler::SPK_ByReference;
@@ -2657,8 +2651,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             {
                                 argObj->SetOper(GT_LCL_FLD);
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-                                // TODO: Replace with NewAbiInfo seg offset
-                                argObj->AsLclFld()->SetLclOffs(arg.AbiInfo.StructFloatFieldOffset[0]);
+                                // Single-field structs passed according to floating-point calling convention may have
+                                // padding in front of the field passed in a register
+                                assert(arg.NewAbiInfo.HasExactlyOneRegisterSegment());
+                                argObj->AsLclFld()->SetLclOffs(arg.NewAbiInfo.Segment(0).Offset);
 #endif
                             }
                             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
