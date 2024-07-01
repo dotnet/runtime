@@ -1266,14 +1266,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     {
         assert(!varTypeIsFloating(op2Type));
         var_types cmpType = (op1Type == op2Type) ? op1Type : TYP_INT;
-
-        // When comparing to constant zero, and descendant node (op1) set the flags, we can skip emitting the cmp
-        bool skipGenCmp = ((op1->gtFlags & GTF_SET_FLAGS) != 0) && op2->IsIntegralConst(0);
-
-        if (!skipGenCmp)
-        {
-            emit->emitInsBinary(INS_cmp, emitTypeSize(cmpType), op1, op2);
-        }
+        emit->emitInsBinary(INS_cmp, emitTypeSize(cmpType), op1, op2);
     }
 
     // Are we evaluating this into a register?
