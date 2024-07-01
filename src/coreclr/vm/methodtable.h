@@ -447,6 +447,7 @@ public:
 
     inline BOOL IsClassInited() const
     {
+        LIMITED_METHOD_DAC_CONTRACT;
         return VolatileLoad(&m_dwFlags) & enum_flag_Initialized;
     }
 
@@ -1049,11 +1050,19 @@ public:
         }
     }
 
+private:
     void AttemptToPreinit();
+public:
+    // Is the MethodTable current initialized, and/or can the runtime initialize the MethodTable
+    // without running any user code. (This function may allocate memory, and may throw OutOfMemory)
+    BOOL IsClassInitedOrPreinited();
 #endif
 
+    // Is the MethodTable current known to be initialized
+    // If you want to know if it is initialized and allocation/throwing is permitted, call IsClassInitedOrPreinited instead
     BOOL  IsClassInited()
     {
+        LIMITED_METHOD_DAC_CONTRACT;
         return GetAuxiliaryDataForWrite()->IsClassInited();
     }
 

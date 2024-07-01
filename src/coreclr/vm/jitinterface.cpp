@@ -1210,10 +1210,9 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
 {
     STANDARD_VM_CONTRACT;
 
-    pFieldMT->AttemptToPreinit();
     bool GCStatic = (pField->GetFieldType() == ELEMENT_TYPE_CLASS ||
                   pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE);
-    bool noCtor = pFieldMT->IsClassInited();
+    bool noCtor = pFieldMT->IsClassInitedOrPreinited();
     bool threadStatic = pField->IsThreadStatic();
     bool isInexactMT = pFieldMT->IsSharedByGenericInstantiations();
     bool isCollectible = pFieldMT->Collectible();
@@ -1451,7 +1450,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             }
 
             // We are not going through a helper. The constructor has to be triggered explicitly.
-            if (!pFieldMT->IsClassInited())
+            if (!pFieldMT->IsClassInitedOrPreinited())
                 fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
         }
         else
@@ -1536,10 +1535,9 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 // Allocate space for the local class if necessary, but don't trigger
                 // class construction.
                 pFieldMT->EnsureStaticDataAllocated();
-                pFieldMT->AttemptToPreinit();
 
                 // We are not going through a helper. The constructor has to be triggered explicitly.
-                if (!pFieldMT->IsClassInited())
+                if (!pFieldMT->IsClassInitedOrPreinited())
                     fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
 
                 GCX_COOP();
@@ -3884,8 +3882,7 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     MethodTable *pTypeToInitMT = typeToInitTH.AsMethodTable();
 
-    pTypeToInitMT->AttemptToPreinit();
-    if (pTypeToInitMT->IsClassInited())
+    if (pTypeToInitMT->IsClassInitedOrPreinited())
     {
         // If the type is initialized there really is nothing to do.
         result = CORINFO_INITCLASS_INITIALIZED;
@@ -11725,7 +11722,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
     // class construction.
     pEnclosingMT->EnsureStaticDataAllocated();
 
-    if (!field->IsThreadStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
+    if (!field->IsThreadStatic() && pEnclosingMT->IsClassInitedOrPreinited() && IsFdInitOnly(field->GetAttributes()))
     {
         if (field->IsObjRef())
         {
@@ -11913,7 +11910,7 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE
             VALIDATEOBJECTREF(fieldObj);
 
             // Check for initialization before looking at the value
-            isClassInitialized = !!pEnclosingMT->IsClassInited();
+            isClassInitialized = !!pEnclosingMT->IsClassInitedOrPreinited();
 
             if (fieldObj != NULL)
             {

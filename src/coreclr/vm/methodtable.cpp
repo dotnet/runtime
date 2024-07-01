@@ -3795,6 +3795,24 @@ void MethodTable::EnsureStaticDataAllocated()
     pAuxiliaryData->SetIsStaticDataAllocated();
 }
 
+BOOL MethodTable::IsClassInitedOrPreinited()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    if (IsClassInited())
+        return TRUE;
+    
+    AttemptToPreinit();
+
+    return IsClassInited();
+}
+
 void MethodTable::AttemptToPreinit()
 {
     CONTRACTL
