@@ -1950,7 +1950,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     retNode->AsHWIntrinsic()->Op(3) =
                         gtNewSimdCvtVectorToMaskNode(TYP_MASK, op3, simdBaseJitType, simdSize);
                 }
+                break;
             }
+
+            default:
+                break;
         }
 
         if (!varTypeIsMask(op1))
