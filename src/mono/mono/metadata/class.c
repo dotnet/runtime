@@ -2001,7 +2001,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 
 		return m_class_get_interface_offsets_packed (klass) [found];
 	} else if (has_variance) {
-		MonoVarianceSearchEntry *vst;
+		MonoClass **vst;
 		int vst_count;
 		MonoClass *current = klass;
 
@@ -2009,22 +2009,27 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		while (current) {
 			mono_class_get_variance_search_table (current, &vst, &vst_count);
 
-			// Exact match pass
+			// Exact match pass: Is there an exact match at this level of the type hierarchy?
+			// If so, we can use the interface_offset we computed earlier, since we're walking from most derived to least.
 			for (i = 0; i < vst_count; i++) {
-				if (itf != vst [i].klass)
+				if (itf != vst [i])
 					continue;
 
 				*non_exact_match = FALSE;
-				return vst [i].interface_offset;
+				return exact_match;
 			}
 
-			// Variance pass
+			// Inexact match (variance) pass:
+			// Is any interface at this level of the type hierarchy variantly compatible with the desired interface?
+			// If so, select the first compatible one we find.
 			for (i = 0; i < vst_count; i++) {
-				if (!mono_class_is_variant_compatible (itf, vst [i].klass, FALSE))
+				if (!mono_class_is_variant_compatible (itf, vst [i], FALSE))
 					continue;
 
-				*non_exact_match = (vst [i].interface_offset != exact_match);
-				return vst [i].interface_offset;
+				int inexact_match = mono_class_interface_offset (klass, vst[i]);
+				g_assert (inexact_match != exact_match);
+				*non_exact_match = TRUE;
+				return inexact_match;
 			}
 
 			// Now check base class if present
