@@ -372,13 +372,13 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>92051d4c24bc13ff58232104a647910bf22cd105</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24313.1">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24324.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>52913b28e20a224a5f6d56fe0b84b13210e274b0</Sha>
+      <Sha>43709af7570da7140fb3e9a5237f55ffb24677e7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.24313.1">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.24324.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>52913b28e20a224a5f6d56fe0b84b13210e274b0</Sha>
+      <Sha>43709af7570da7140fb3e9a5237f55ffb24677e7</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
     <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.11.0-3.24329.1">
