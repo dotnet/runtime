@@ -1192,7 +1192,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     // ungracefully. This check is an attempt to recognize that case
     // and avoid the impending hang when attempting to get the helper
     // thread to do things for us.
-    if ((g_pDebugInterface != NULL) && g_fProcessDetach)
+    if ((g_pDebugInterface != NULL) && IsAtProcessExit())
         g_pDebugInterface->EarlyHelperThreadDeath();
 #endif // DEBUGGING_SUPPORTED
 
@@ -1209,7 +1209,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // Indicate the EE is the shut down phase.
         g_fEEShutDown |= ShutDown_Start;
 
-        if (!g_fProcessDetach && !g_fFastExitProcess)
+        if (!IsAtProcessExit() && !g_fFastExitProcess)
         {
             g_fEEShutDown |= ShutDown_Finalize1;
 
@@ -1219,7 +1219,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         }
 
         // Ok.  Let's stop the EE.
-        if (!g_fProcessDetach)
+        if (!IsAtProcessExit())
         {
             // Convert key locks into "shutdown" mode. A lock in shutdown mode means:
             // - Only the finalizer/helper/shutdown threads will be able to take the lock.
@@ -1321,7 +1321,7 @@ part2:
         // are already in use, then skip phase 2. This will happen only when those locks
         // are orphaned. In Vista, the penalty for attempting to enter such locks is
         // instant process termination.
-        if (g_fProcessDetach)
+        if (IsAtProcessExit())
         {
             // The assert below is a bit too aggressive and has generally brought cases that have been race conditions
             // and not easily reproed to validate a bug. A typical race scenario is when there are two threads,
@@ -1387,7 +1387,7 @@ part2:
     EX_END_CATCH(SwallowAllExceptions);
 
     ClrFlsClearThreadType(ThreadType_Shutdown);
-    if (!g_fProcessDetach)
+    if (!IsAtProcessExit())
     {
         g_pEEShutDownEvent->Set();
     }

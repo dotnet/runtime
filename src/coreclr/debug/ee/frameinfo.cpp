@@ -1899,7 +1899,7 @@ bool ShouldSendUMLeafChain(Thread * pThread)
     // If we're in shutodown, don't bother trying to sniff for an UM leaf chain.
     // @todo - we'd like to never even be trying to stack trace on shutdown, this
     // comes up when we do helper thread duty on shutdown.
-    if (g_fProcessDetach)
+    if (IsAtProcessExit())
     {
         return false;
     }

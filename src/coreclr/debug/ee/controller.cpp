@@ -1109,7 +1109,7 @@ void DebuggerController::DisableAll()
         // thus leaving the patchtable in an inconsistent state such that we may fail trying to walk it.
         // Since we're exiting anyways, leaving int3 in the code can't harm anybody.
         //
-        if (!g_fProcessDetach)
+        if (!IsAtProcessExit())
         {
             HASHFIND f;
             for (DebuggerControllerPatch *patch = g_patches->GetFirstPatch(&f);
