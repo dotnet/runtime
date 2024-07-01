@@ -6627,6 +6627,7 @@ private:
 #if defined(FEATURE_HW_INTRINSICS)
     GenTree* fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree);
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
+    GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
