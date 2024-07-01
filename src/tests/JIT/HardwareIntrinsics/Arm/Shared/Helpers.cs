@@ -168,7 +168,43 @@ namespace JIT.HardwareIntrinsics.Arm
             return -1;
         }
 
+        public static int LastActiveElement(sbyte[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(short[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         public static int LastActiveElement(ushort[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(int[] v)
         {
             for (var i = v.Length - 1; i >= 0; i--)
             {
@@ -192,11 +228,47 @@ namespace JIT.HardwareIntrinsics.Arm
             return -1;
         }
 
+        public static int LastActiveElement(long[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         public static int LastActiveElement(ulong[] v)
         {
             for (var i = v.Length - 1; i >= 0; i--)
             {
                 if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static int LastActiveElement(float[] v)
+        {
+            for (int i = v.Length - 1; i >= 0; i--)
+            {
+                if (Unsafe.BitCast<float, int>(v[i]) != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static int LastActiveElement(double[] v)
+        {
+            for (int i = v.Length - 1; i >= 0; i--)
+            {
+                if (Unsafe.BitCast<double, long>(v[i]) != 0)
                 {
                     return i;
                 }
@@ -7578,18 +7650,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
         }
 
-        private static int LastActiveElement(byte[] mask) {
-            for (int i = mask.Length - 1; i >= 0; i--)
-            {
-                if (mask[i] != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
         private static byte ConditionalExtract(byte[] op1, byte op2, byte[] op3, bool after)
         {
             int last = LastActiveElement(op1);
@@ -7669,18 +7729,6 @@ namespace JIT.HardwareIntrinsics.Arm
         public static byte[] ConditionalExtractLastActiveElementAndReplicate(byte[] op1, byte[] op2, byte[] op3)
         {
             return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static int LastActiveElement(sbyte[] mask) {
-            for (int i = mask.Length - 1; i >= 0; i--)
-            {
-                if (mask[i] != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
 
         private static sbyte ConditionalExtract(sbyte[] op1, sbyte op2, sbyte[] op3, bool after)
@@ -7764,18 +7812,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
         }
 
-        private static int LastActiveElement(short[] mask) {
-            for (int i = mask.Length - 1; i >= 0; i--)
-            {
-                if (mask[i] != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
         private static short ConditionalExtract(short[] op1, short op2, short[] op3, bool after)
         {
             int last = LastActiveElement(op1);
@@ -7855,18 +7891,6 @@ namespace JIT.HardwareIntrinsics.Arm
         public static short[] ConditionalExtractLastActiveElementAndReplicate(short[] op1, short[] op2, short[] op3)
         {
             return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static int LastActiveElement(ushort[] mask) {
-            for (int i = mask.Length - 1; i >= 0; i--)
-            {
-                if (mask[i] != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
 
         private static ushort ConditionalExtract(ushort[] op1, ushort op2, ushort[] op3, bool after)
@@ -7950,18 +7974,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
         }
 
-        private static int LastActiveElement(int[] mask) {
-            for (int i = mask.Length - 1; i >= 0; i--)
-            {
-                if (mask[i] != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
         private static int ConditionalExtract(int[] op1, int op2, int[] op3, bool after)
         {
             int last = LastActiveElement(op1);
@@ -8043,18 +8055,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
         }
 
-        private static int LastActiveElement(uint[] mask) {
-            for (int i = mask.Length - 1; i >= 0; i--)
-            {
-                if (mask[i] != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
         private static uint ConditionalExtract(uint[] op1, uint op2, uint[] op3, bool after)
         {
             int last = LastActiveElement(op1);
@@ -8134,18 +8134,6 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint[] ConditionalExtractLastActiveElementAndReplicate(uint[] op1, uint[] op2, uint[] op3)
         {
             return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static int LastActiveElement(long[] mask) {
-            for (int i = mask.Length - 1; i >= 0; i--)
-            {
-                if (mask[i] != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
 
         private static long ConditionalExtract(long[] op1, long op2, long[] op3, bool after)
@@ -8234,18 +8222,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return ConditionalExtract(op1, op2, op3, /* after = */ true);
         }
 
-        private static int LastActiveElement(ulong[] mask) {
-            for (int i = mask.Length - 1; i >= 0; i--)
-            {
-                if (mask[i] != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
         private static ulong ConditionalExtract(ulong[] op1, ulong op2, ulong[] op3, bool after)
         {
             int last = LastActiveElement(op1);
@@ -8320,18 +8296,6 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ulong[] ConditionalExtractLastActiveElementAndReplicate(ulong[] op1, ulong[] op2, ulong[] op3)
         {
             return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static int LastActiveElement(float[] mask) {
-            for (int i = mask.Length - 1; i >= 0; i--)
-            {
-                if (Unsafe.BitCast<float, int>(mask[i]) != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
 
         private static float ConditionalExtract(float[] op1, float op2, float[] op3, bool after)
@@ -8413,18 +8377,6 @@ namespace JIT.HardwareIntrinsics.Arm
         public static float[] ConditionalExtractLastActiveElementAndReplicate(float[] op1, float[] op2, float[] op3)
         {
             return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static int LastActiveElement(double[] mask) {
-            for (int i = mask.Length - 1; i >= 0; i--)
-            {
-                if (Unsafe.BitCast<double, long>(mask[i]) != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
 
         private static double ConditionalExtract(double[] op1, double op2, double[] op3, bool after)
