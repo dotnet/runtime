@@ -1433,12 +1433,12 @@ void EEJitManager::SetCpuInfo()
         {
             CPUCompileFlags.Set(InstructionSet_EVEX);
             CPUCompileFlags.Set(InstructionSet_AVX10v1);
-        }
-    }
 
-    if ((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0)
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
+            if((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
+            {
+                CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
+            }
+        }
     }
 #elif defined(TARGET_ARM64)
 
@@ -1514,9 +1514,9 @@ void EEJitManager::SetCpuInfo()
         uint32_t maxVectorTLength = (maxVectorTBitWidth / 8);
         uint64_t sveLengthFromOS = GetSveLengthFromOS();
 
-        // For now, enable SVE only when the system vector length is 128-bits
+        // For now, enable SVE only when the system vector length is 16 bytes (128-bits)
         // TODO: https://github.com/dotnet/runtime/issues/101477
-        if (sveLengthFromOS == 128)
+        if (sveLengthFromOS == 16)
         // if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
         {
             CPUCompileFlags.Set(InstructionSet_Sve);

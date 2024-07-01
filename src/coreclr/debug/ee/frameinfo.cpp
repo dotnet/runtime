@@ -1562,9 +1562,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     {
         _ASSERTE(md->IsDynamicMethod());
         DynamicMethodDesc* dMD = md->AsDynamicMethodDesc();
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
         use |= dMD->IsMulticastStub();
-#endif
         use |= dMD->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget;
 
         if (use)
@@ -1757,28 +1755,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
                 }
             }
 
-            break;
-
-        // Put frames we want to ignore here:
-        case Frame::TYPE_MULTICAST:
-            LOG((LF_CORDB, LL_INFO100000, "DWSP: Frame type is TYPE_MULTICAST.\n"));
-            if (d->ShouldIgnoreNonmethodFrames())
-            {
-                // Multicast frames exist only to gc protect the arguments
-                // between invocations of a delegate.  They don't have code that
-                // we can (currently) show the user (we could change this with
-                // work, but why bother?  It's an internal stub, and even if the
-                // user could see it, they can't modify it).
-                LOG((LF_CORDB, LL_INFO100000, "DWSP: Skipping frame 0x%x b/c it's "
-                    "a multicast frame!\n", frame));
-                use = false;
-            }
-            else
-            {
-                LOG((LF_CORDB, LL_INFO100000, "DWSP: NOT Skipping frame 0x%x even thought it's "
-                    "a multicast frame!\n", frame));
-                INTERNAL_FRAME_ACTION(d, use);
-            }
             break;
 
         default:
