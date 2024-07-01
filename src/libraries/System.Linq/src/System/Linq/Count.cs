@@ -60,6 +60,19 @@ namespace System.Linq
             }
 
             int count = 0;
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
+            {
+                foreach (TSource element in span)
+                {
+                    if (predicate(element))
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+
             foreach (TSource element in source)
             {
                 checked
