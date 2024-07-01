@@ -1641,8 +1641,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		int mul_op;
 		int add_op;
 
-		if (type_enum_is_float (arg0_type))
-		{
+		if (type_enum_is_float (arg0_type)) {
 			mul_op = OP_FMUL;
 			add_op = OP_FADD;
 		} else {
@@ -1664,8 +1663,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		mul_ins->inst_c1 = arg0_type;
 
 		MonoInst *add_ins = emit_simd_ins (cfg, klass, OP_XBINOP, mul_ins->dreg, args [2]->dreg);
-		mul_ins->inst_c0 = add_op;
-		mul_ins->inst_c1 = arg0_type;
+		add_ins->inst_c0 = add_op;
+		add_ins->inst_c1 = arg0_type;
 
 		return add_ins;
 	}
