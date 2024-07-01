@@ -521,14 +521,6 @@ RELEASE_CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 0)
 RELEASE_CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 1)
 #endif // !defined(DEBUG) && !defined(_DEBUG)
 
-// Track GC roots
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-#define JitMinOptsTrackGCrefs_Default 0 // Not tracking GC refs in MinOpts is new behavior
-#else
-#define JitMinOptsTrackGCrefs_Default 1
-#endif
-RELEASE_CONFIG_INTEGER(JitMinOptsTrackGCrefs, W("JitMinOptsTrackGCrefs"), JitMinOptsTrackGCrefs_Default)
-
 // The following should be wrapped inside "#if MEASURE_MEM_ALLOC / #endif", but
 // some files include this one without bringing in the definitions from "jit.h"
 // so we don't always know what the "true" value of that flag should be. For now
@@ -654,7 +646,10 @@ RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyProfScale, W("JitExtDefaultPolicyProfS
 RELEASE_CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 RELEASE_CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
 RELEASE_CONFIG_INTEGER(JitInlinePolicyProfileThreshold, W("JitInlinePolicyProfileThreshold"), 40)
-RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 0)
+CONFIG_STRING(JitObjectStackAllocationRange, W("JitObjectStackAllocationRange"))
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 1)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationRefClass, W("JitObjectStackAllocationRefClass"), 1)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationBoxedValueClass, W("JitObjectStackAllocationBoxedValueClass"), 1)
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, W("JitEECallTimingInfo"), 0)
 

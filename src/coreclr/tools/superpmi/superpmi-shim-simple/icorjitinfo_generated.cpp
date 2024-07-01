@@ -458,6 +458,12 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBox(
     return original_ICorJitInfo->getTypeForBox(cls);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->getTypeForBoxOnStack(cls);
+}
+
 CorInfoHelpFunc interceptor_ICJI::getBoxHelper(
           CORINFO_CLASS_HANDLE cls)
 {

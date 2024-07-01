@@ -58,8 +58,23 @@ namespace System.Net.Http.Tests
             }, rawProxyString, rawInsecureUri ?? string.Empty, rawSecureUri ?? string.Empty).DisposeAsync();
         }
 
+        public static TheoryData<string, string, string> ProxyParsingData =>
+           new TheoryData<string, string, string>
+           {
+                { "http://proxy.secure-and-insecure.com", secureAndInsecureProxyUri, secureAndInsecureProxyUri },
+                { "http=http://proxy.insecure.com", insecureProxyUri, null },
+                { "http=proxy.insecure.com", insecureProxyUri, null },
+                { "http=http://proxy.insecure.com", insecureProxyUri, null },
+                { "https://proxy.secure.com", secureProxyUri, secureProxyUri },
+                { "https=proxy.secure.com", null, secureProxyUri },
+                { "https=https://proxy.secure.com", null, secureProxyUri },
+                { "http=https://proxy.secure.com", secureProxyUri, null },
+                { "https=http://proxy.insecure.com", null, insecureProxyUri },
+                { "proxy.secure-and-insecure.com", secureAndInsecureProxyUri, secureAndInsecureProxyUri },
+           };
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [MemberData(nameof(ProxyParsingData))]
+        [MemberData(nameof(ProxyPacParsingData))]
         public async Task HttpProxy_WindowsProxy_PAC_Loaded(string rawProxyString, string rawInsecureUri, string rawSecureUri)
         {
             await RemoteExecutor.Invoke((proxyString, insecureProxy, secureProxy) =>
@@ -91,7 +106,7 @@ namespace System.Net.Http.Tests
             }, rawProxyString, rawInsecureUri ?? string.Empty, rawSecureUri ?? string.Empty).DisposeAsync();
         }
 
-        public static TheoryData<string, string, string> ProxyParsingData =>
+        public static TheoryData<string, string, string> ProxyPacParsingData =>
             new TheoryData<string, string, string>
             {
                 { "http://proxy.insecure.com", insecureProxyUri, null },
@@ -237,34 +252,22 @@ namespace System.Net.Http.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpProxy_Multi_Data))]
-        public async Task HttpProxy_Multi_Success(bool manualConfig, string proxyConfig, string url, string expected)
+        public async Task HttpProxy_Multi_Success(string proxyConfig, string url, string expected)
         {
-            await RemoteExecutor.Invoke((manualConfigValue, proxyConfigValue, urlValue, expectedValue) =>
+            await RemoteExecutor.Invoke((proxyConfigValue, urlValue, expectedValue) =>
             {
-                bool manual = bool.Parse(manualConfigValue);
                 Uri requestUri = new Uri(urlValue);
                 string[] expectedUris = expectedValue.Split(';', StringSplitOptions.RemoveEmptyEntries);
 
                 TestControl.ResetAll();
-
-                if (manual)
-                {
-                    FakeRegistry.WinInetProxySettings.Proxy = proxyConfigValue;
-                }
-                else
-                {
-                    FakeRegistry.WinInetProxySettings.AutoConfigUrl = "http://dummy.com";
-                }
+                FakeRegistry.WinInetProxySettings.AutoConfigUrl = "http://dummy.com";
 
                 Assert.True(HttpWindowsProxy.TryCreate(out IWebProxy p));
                 HttpWindowsProxy wp = Assert.IsType<HttpWindowsProxy>(p);
 
-                if (!manual)
-                {
-                    // Now that HttpWindowsProxy has been constructed to use autoconfig,
-                    // set Proxy which will be used by Fakes for all the per-URL calls.
-                    FakeRegistry.WinInetProxySettings.Proxy = proxyConfigValue;
-                }
+                // Now that HttpWindowsProxy has been constructed to use autoconfig,
+                // set Proxy which will be used by Fakes for all the per-URL calls.
+                FakeRegistry.WinInetProxySettings.Proxy = proxyConfigValue;
 
                 MultiProxy multi = wp.GetMultiProxy(requestUri);
 
@@ -277,19 +280,16 @@ namespace System.Net.Http.Tests
                 }
 
                 Assert.False(multi.ReadNext(out _, out _));
-            }, manualConfig.ToString(), proxyConfig, url, expected).DisposeAsync();
+            }, proxyConfig, url, expected).DisposeAsync();
         }
 
         public static IEnumerable<object[]> HttpProxy_Multi_Data()
         {
-            for (int i = 0; i < 2; ++i)
-            {
-                yield return new object[] { i == 0, "http://proxy.com", "http://request.com", "http://proxy.com" };
-                yield return new object[] { i == 0, "http://proxy.com https://secure-proxy.com", "http://request.com", "http://proxy.com" };
-                yield return new object[] { i == 0, "http://proxy-a.com https://secure-proxy.com http://proxy-b.com", "http://request.com", "http://proxy-a.com;http://proxy-b.com" };
-                yield return new object[] { i == 0, "http://proxy-a.com https://secure-proxy.com http://proxy-b.com", "https://request.com", "http://secure-proxy.com" };
-                yield return new object[] { i == 0, "http://proxy-a.com https://secure-proxy-a.com http://proxy-b.com  https://secure-proxy-b.com  https://secure-proxy-c.com", "https://request.com", "http://secure-proxy-a.com;http://secure-proxy-b.com;http://secure-proxy-c.com" };
-            }
+           yield return new object[] { "http://proxy.com", "http://request.com", "http://proxy.com" };
+           yield return new object[] { "http://proxy.com https://secure-proxy.com", "http://request.com", "http://proxy.com" };
+           yield return new object[] { "http://proxy-a.com https://secure-proxy.com http://proxy-b.com", "http://request.com", "http://proxy-a.com;http://proxy-b.com" };
+           yield return new object[] { "http://proxy-a.com https://secure-proxy.com http://proxy-b.com", "https://request.com", "http://secure-proxy.com" };
+           yield return new object[] { "http://proxy-a.com https://secure-proxy-a.com http://proxy-b.com  https://secure-proxy-b.com  https://secure-proxy-c.com", "https://request.com", "http://secure-proxy-a.com;http://secure-proxy-b.com;http://secure-proxy-c.com" };
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

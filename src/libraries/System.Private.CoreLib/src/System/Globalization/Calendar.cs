@@ -28,19 +28,6 @@ namespace System.Globalization
 
     public abstract class Calendar : ICloneable
     {
-        // Number of 100ns (10E-7 second) ticks per time unit
-        internal const long TicksPerMillisecond = 10000;
-        internal const long TicksPerSecond = TicksPerMillisecond * 1000;
-        internal const long TicksPerMinute = TicksPerSecond * 60;
-        internal const long TicksPerHour = TicksPerMinute * 60;
-        internal const long TicksPerDay = TicksPerHour * 24;
-
-        // Number of milliseconds per time unit
-        internal const int MillisPerSecond = 1000;
-        internal const int MillisPerMinute = MillisPerSecond * 60;
-        internal const int MillisPerHour = MillisPerMinute * 60;
-        internal const int MillisPerDay = MillisPerHour * 24;
-
         // Number of days in a non-leap year
         internal const int DaysPerYear = 365;
         // Number of days in 4 years
@@ -53,7 +40,7 @@ namespace System.Globalization
         // Number of days from 1/1/0001 to 1/1/10000
         internal const int DaysTo10000 = DaysPer400Years * 25 - 366;
 
-        internal const long MaxMillis = (long)DaysTo10000 * MillisPerDay;
+        internal const long MaxMillis = (long)DaysTo10000 * TimeSpan.MillisecondsPerDay;
 
         private int _currentEraValue = -1;
 
@@ -156,7 +143,7 @@ namespace System.Globalization
             }
 
             long millis = (long)tempMillis;
-            long ticks = time.Ticks + millis * TicksPerMillisecond;
+            long ticks = time.Ticks + millis * TimeSpan.TicksPerMillisecond;
             CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
@@ -182,7 +169,7 @@ namespace System.Globalization
         /// </summary>
         public virtual DateTime AddDays(DateTime time, int days)
         {
-            return Add(time, days, MillisPerDay);
+            return Add(time, days, (int)TimeSpan.MillisecondsPerDay);
         }
 
         /// <summary>
@@ -194,7 +181,7 @@ namespace System.Globalization
         /// </summary>
         public virtual DateTime AddHours(DateTime time, int hours)
         {
-            return Add(time, hours, MillisPerHour);
+            return Add(time, hours, (int)TimeSpan.MillisecondsPerHour);
         }
 
         /// <summary>
@@ -206,7 +193,7 @@ namespace System.Globalization
         /// </summary>
         public virtual DateTime AddMinutes(DateTime time, int minutes)
         {
-            return Add(time, minutes, MillisPerMinute);
+            return Add(time, minutes, (int)TimeSpan.MillisecondsPerMinute);
         }
 
         /// <summary>
@@ -238,7 +225,7 @@ namespace System.Globalization
         /// </summary>
         public virtual DateTime AddSeconds(DateTime time, int seconds)
         {
-            return Add(time, seconds, MillisPerSecond);
+            return Add(time, seconds, (int)TimeSpan.MillisecondsPerSecond);
         }
 
         // Returns the DateTime resulting from adding a number of
@@ -695,16 +682,16 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
-            if ((uint)millisecond >= MillisPerSecond)
+            if ((uint)millisecond >= TimeSpan.MillisecondsPerSecond)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(millisecond),
                     millisecond,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
+                    SR.Format(SR.ArgumentOutOfRange_Range, 0, TimeSpan.MillisecondsPerSecond - 1));
             }
 
             int totalSeconds = hour * 3600 + minute * 60 + second;
-            return totalSeconds * TicksPerSecond + millisecond * TicksPerMillisecond;
+            return totalSeconds * TimeSpan.TicksPerSecond + millisecond * TimeSpan.TicksPerMillisecond;
         }
 
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
