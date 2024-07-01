@@ -1635,7 +1635,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_MultiplyAddEstimate: {
-		
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+
 		int mul_op;
 		int add_op;
 
