@@ -48,7 +48,7 @@ static bool DetectCPUFeatures();
 
 extern RhConfig * g_pRhConfig;
 
-#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
 // This field is inspected from the generated code to determine what intrinsics are available.
 EXTERN_C int g_cpuFeatures;
 int g_cpuFeatures = 0;
@@ -177,7 +177,7 @@ static bool InitDLL(HANDLE hPalInstance)
 
 bool DetectCPUFeatures()
 {
-#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
     g_cpuFeatures = minipal_getcpufeatures();
 
     if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
@@ -185,7 +185,7 @@ bool DetectCPUFeatures()
         PalPrintFatalError("\nThe required instruction sets are not supported by the current CPU.\n");
         RhFailFast();
     }
-#endif // HOST_X86|| HOST_AMD64 || HOST_ARM64 || HOST_LOONGARCH64
+#endif // HOST_X86|| HOST_AMD64 || HOST_ARM64
 
     return true;
 }
