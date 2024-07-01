@@ -43,6 +43,7 @@ namespace test2
         /// </summary>
         [Fact]
         [OuterLoop]
+        [SkipOnCoreClr("WaitForPendingFinalizers() not supported with GCStress", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {
             int[] ar = new int[] { 1, 2, 3, 4, 5 };

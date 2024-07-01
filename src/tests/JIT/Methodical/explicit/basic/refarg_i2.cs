@@ -53,6 +53,7 @@ namespace Test_refarg_i2_cs
 
         [Fact]
         [OuterLoop]
+        [SkipOnCoreClr("WaitForPendingFinalizers() not supported with GCStress", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {
             s_aa.self = new AA();

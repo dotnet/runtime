@@ -17,6 +17,7 @@ namespace GCTest_gcarr_cs
 
         [Fact]
         [OuterLoop]
+        [SkipOnCoreClr("WaitForPendingFinalizers() not supported with GCStress", RuntimeTestModes.AnyGCStress)]
         public static void TestEntryPoint()
         {
             Test[] arr = new Test[97];
