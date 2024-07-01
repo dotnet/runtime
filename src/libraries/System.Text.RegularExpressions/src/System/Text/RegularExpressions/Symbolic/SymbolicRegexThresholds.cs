@@ -24,7 +24,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// to create a new node and the graph is already or newly beyond this threshold.
         /// This limit is chosen due to memory usage constraints, the worst possible allocation is currently approx. 50 MB;
         /// There is some motivation to make this configurable, as it can exchange upfront costs with potentially
-        /// significant search-time performance gains
+        /// significant search-time performance gains.
         /// </remarks>
         internal const int NfaThreshold = 25_000;
 
