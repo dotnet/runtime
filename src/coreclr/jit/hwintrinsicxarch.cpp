@@ -601,7 +601,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarGreaterThanOrEqual : NI_SSE2_CompareScalarGreaterThanOrEqual;
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarGreaterThanOrEqual
+                                                   : NI_SSE2_CompareScalarGreaterThanOrEqual;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -641,7 +642,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarLessThanOrEqual : NI_SSE2_CompareScalarLessThanOrEqual;
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarLessThanOrEqual
+                                                   : NI_SSE2_CompareScalarLessThanOrEqual;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -681,7 +683,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotGreaterThan : NI_SSE2_CompareScalarNotGreaterThan;
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotGreaterThan
+                                                   : NI_SSE2_CompareScalarNotGreaterThan;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -701,7 +704,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotGreaterThanOrEqual : NI_SSE2_CompareScalarNotGreaterThanOrEqual;
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotGreaterThanOrEqual
+                                                   : NI_SSE2_CompareScalarNotGreaterThanOrEqual;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -710,7 +714,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareNotGreaterThanOrEqual;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotGreaterThanOrEqual : NI_SSE2_CompareNotGreaterThanOrEqual;
+            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotGreaterThanOrEqual
+                                               : NI_SSE2_CompareNotGreaterThanOrEqual;
         }
 
         case FloatComparisonMode::UnorderedNotLessThanSignaling:
@@ -741,7 +746,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotLessThanOrEqual : NI_SSE2_CompareScalarNotLessThanOrEqual;
+                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotLessThanOrEqual
+                                                   : NI_SSE2_CompareScalarNotLessThanOrEqual;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -4574,7 +4580,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (op3->IsCnsIntOrI())
             {
                 FloatComparisonMode mode = static_cast<FloatComparisonMode>(op3->AsIntConCommon()->IntegralValue());
-                NamedIntrinsic      id   = HWIntrinsicInfo::lookupIdForFloatComparisonMode(intrinsic, mode, simdBaseType, simdSize);
+                NamedIntrinsic      id =
+                    HWIntrinsicInfo::lookupIdForFloatComparisonMode(intrinsic, mode, simdBaseType, simdSize);
 
                 if (id != intrinsic)
                 {
