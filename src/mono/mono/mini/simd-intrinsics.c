@@ -2202,23 +2202,23 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 
 		MonoInst *arg0 = args [0];
-		MonoClass *cast_klass = NULL;
+		MonoClass *op_klass = klass;
 
 		if (type_enum_is_float (arg0_type)) {
 			if (arg0_type == MONO_TYPE_R4) {
 				arg0_type = MONO_TYPE_I4;
-				cast_klass = mono_defaults.int32_class;
+				op_klass = mono_defaults.int32_class;
 			} else {
 				arg0_type = MONO_TYPE_I8;
-				cast_klass = mono_defaults.int64_class;
+				op_klass = mono_defaults.int64_class;
 			}
-			cast_klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (cast_klass));
-			arg0 = emit_simd_ins (cfg, cast_klass, OP_XCAST, arg0->dreg, -1);
+			op_klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (op_klass));
+			arg0 = emit_simd_ins (cfg, op_klass, OP_XCAST, arg0->dreg, -1);
 		}
 
-		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, klass, SN_LessThan, arg0_type, args [0], emit_xzero (cfg, klass));
+		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, op_klass, SN_LessThan, arg0_type, args [0], emit_xzero (cfg, op_klass));
 
-		if (cast_klass != NULL) {
+		if (op_klass != NULL) {
 			ins = emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
 		}
 		return ins;
@@ -2231,23 +2231,23 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 
 		MonoInst *arg0 = args [0];
-		MonoClass *cast_klass = NULL;
+		MonoClass *op_klass = klass;
 
 		if (type_enum_is_float (arg0_type)) {
 			if (arg0_type == MONO_TYPE_R4) {
 				arg0_type = MONO_TYPE_I4;
-				cast_klass = mono_defaults.int32_class;
+				op_klass = mono_defaults.int32_class;
 			} else {
 				arg0_type = MONO_TYPE_I8;
-				cast_klass = mono_defaults.int64_class;
+				op_klass = mono_defaults.int64_class;
 			}
-			cast_klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (cast_klass));
-			arg0 = emit_simd_ins (cfg, cast_klass, OP_XCAST, arg0->dreg, -1);
+			op_klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (op_klass));
+			arg0 = emit_simd_ins (cfg, op_klass, OP_XCAST, arg0->dreg, -1);
 		}
 
-		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, klass, SN_GreaterThanOrEqual, arg0_type, args [0], emit_xzero (cfg, klass));
+		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, op_klass, SN_GreaterThanOrEqual, arg0_type, args [0], emit_xzero (cfg, op_klass));
 
-		if (cast_klass != NULL) {
+		if (op_klass != NULL) {
 			ins = emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
 		}
 		return ins;
