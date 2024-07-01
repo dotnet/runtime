@@ -10173,6 +10173,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
+#if defined(TARGET_ARM64)
+            // xarch doesn't have a native GT_NEG representation for integers and itself uses (Zero - v1)
+
             if (varTypeIsIntegral(simdBaseType) && op1->IsVectorZero())
             {
                 GenTree* negNode = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize);
@@ -10183,6 +10186,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 return negNode;
             }
+#endif // TARGET_ARM64
             break;
         }
 
@@ -10194,6 +10198,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
+#if defined(TARGET_ARM64)
+            // xarch doesn't have a native GT_NOT representation and itself uses (v1 ^ AllBitsSet)
+
             if (op2->IsVectorAllBitsSet())
             {
                 GenTree* notNode = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize);
@@ -10204,6 +10211,10 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 return notNode;
             }
+#endif // TARGET_ARM64
+
+#if defined(TARGET_ARM64)
+            // xarch doesn't have a native GT_NEG representation for floating-point and itself uses (v1 ^ -0.0)
 
             if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
             {
@@ -10215,6 +10226,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 return negNode;
             }
+#endif // TARGET_ARM64
             break;
         }
 
