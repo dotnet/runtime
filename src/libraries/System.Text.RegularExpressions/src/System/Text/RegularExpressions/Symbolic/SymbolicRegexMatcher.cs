@@ -84,7 +84,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Dead end state to quickly return NoMatch, this could potentially be a constant</summary>
         private readonly int _deadStateId;
 
-        /// <summary>Initial state used to for vectorization</summary>
+        /// <summary>Initial state used for vectorization</summary>
         private readonly int _initialStateId;
 
         /// <summary>Whether the pattern contains any anchor</summary>
@@ -785,7 +785,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // If the state is nullable for the next character, we found a potential end state.
-                    if (TOptimizedNullabilityHandler.IsNullable<TOptimizedInputReader>(this, _nullabilityArray, currStateId, mtlookup, input, pos))
+                    if (TOptimizedNullabilityHandler.IsNullable<TOptimizedInputReader>(this, _nullabilityArray, currStateId, mtlookup,
+                            maxChar, input, pos))
                     {
                         endPos = pos;
                         // A match is known to exist.  If that's all we need to know, we're done.
@@ -1738,16 +1739,20 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             public static abstract bool IsNullable<TOptimizedInputReader>(SymbolicRegexMatcher<TSet> matcher,
                 byte[] nullabilityArray, int
-                    currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
+                    currStateId, byte[] lookup, int maxChar, ReadOnlySpan<char> input, int pos)
                 where TOptimizedInputReader : struct, IOptimizedInputReader;
         }
 
         private readonly struct NoAnchorOptimizedNullabilityHandler : IOptimizedNullabilityHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsNullable<TOptimizedInputReader>(SymbolicRegexMatcher<TSet> matcher, byte[] nullabilityArray, int currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
+            public static bool IsNullable<TOptimizedInputReader>(SymbolicRegexMatcher<TSet> matcher, byte[] nullabilityArray, int currStateId, byte[] lookup,
+                int maxChar, ReadOnlySpan<char> input, int pos)
                 where TOptimizedInputReader : struct, IOptimizedInputReader
             {
+                Debug.Assert(pos < input.Length, "input end should not be handled here");
+                Debug.Assert(currStateId < nullabilityArray.Length,
+                    "nullabilityArray grown but the reference is not up to date");
                 return nullabilityArray[currStateId] > 0;
             }
         }
@@ -1756,11 +1761,13 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsNullable<TOptimizedInputReader>(SymbolicRegexMatcher<TSet> matcher,
-                byte[] nullabilityArray, int currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
+                byte[] nullabilityArray, int currStateId, byte[] lookup, int maxChar, ReadOnlySpan<char> input, int pos)
                 where TOptimizedInputReader : struct, IOptimizedInputReader
             {
-                Debug.Assert(pos < input.Length, $"input end should not be handled here");
-                return nullabilityArray[currStateId] > 0 && matcher.IsNullableWithContext(currStateId, TOptimizedInputReader.GetPositionId(lookup, lookup.Length + 1, input, pos));
+                Debug.Assert(pos < input.Length, "input end should not be handled here");
+                Debug.Assert(currStateId < nullabilityArray.Length, "nullabilityArray grown but the reference is not up to date");
+                return nullabilityArray[currStateId] > 0 && matcher.IsNullableWithContext(currStateId, TOptimizedInputReader.GetPositionId(lookup,
+                    maxChar, input, pos));
             }
         }
 
