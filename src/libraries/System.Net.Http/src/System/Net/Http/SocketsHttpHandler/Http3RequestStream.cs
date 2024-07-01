@@ -527,12 +527,13 @@ namespace System.Net.Http
         {
             await _stream.WriteAsync(_sendBuffer.ActiveMemory, endStream, cancellationToken).ConfigureAwait(false);
             _sendBuffer.Discard(_sendBuffer.ActiveLength);
+
+            await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+
             if (endStream)
             {
                 await _stream.WritesClosed.ConfigureAwait(false);
             }
-
-            await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private async ValueTask DrainContentLength0Frames(CancellationToken cancellationToken)
