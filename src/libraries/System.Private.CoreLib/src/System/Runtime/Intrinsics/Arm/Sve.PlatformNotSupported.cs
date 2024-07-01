@@ -869,6 +869,26 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<int> ConvertToInt32(Vector<float> value) { throw new PlatformNotSupportedException(); }
 
 
+        ///  ConvertToInt64 : Floating-point convert
+
+        /// <summary>
+        /// svint64_t svcvt_s64[_f64]_m(svint64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FCVTZS Ztied.D, Pg/M, Zop.D
+        /// svint64_t svcvt_s64[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FCVTZS Ztied.D, Pg/M, Ztied.D
+        /// svint64_t svcvt_s64[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<long> ConvertToInt64(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svcvt_s64[_f32]_m(svint64_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FCVTZS Ztied.D, Pg/M, Zop.S
+        /// svint64_t svcvt_s64[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FCVTZS Ztied.D, Pg/M, Ztied.S
+        /// svint64_t svcvt_s64[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<long> ConvertToInt64(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
         ///  ConvertToUInt32 : Floating-point convert
 
         /// <summary>
@@ -888,6 +908,27 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svcvt_u32[_f32]_z(svbool_t pg, svfloat32_t op)
         /// </summary>
         public static unsafe Vector<uint> ConvertToUInt32(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  ConvertToUInt64 : Floating-point convert
+
+        /// <summary>
+        /// svuint64_t svcvt_u64[_f64]_m(svuint64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FCVTZU Ztied.D, Pg/M, Zop.D
+        /// svuint64_t svcvt_u64[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FCVTZU Ztied.D, Pg/M, Ztied.D
+        /// svuint64_t svcvt_u64[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<ulong> ConvertToUInt64(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svcvt_u64[_f32]_m(svuint64_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FCVTZU Ztied.D, Pg/M, Zop.S
+        /// svuint64_t svcvt_u64[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FCVTZU Ztied.D, Pg/M, Ztied.S
+        /// svuint64_t svcvt_u64[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<ulong> ConvertToUInt64(Vector<float> value) { throw new PlatformNotSupportedException(); }
 
 
         ///  Count16BitElements : Count the number of 16-bit elements in a vector
@@ -1207,6 +1248,79 @@ namespace System.Runtime.Intrinsics.Arm
         ///   PFALSE Presult.B
         /// </summary>
         public static unsafe Vector<ulong> CreateFalseMaskUInt64() { throw new PlatformNotSupportedException(); }
+
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<byte> CreateMaskForFirstActiveElement(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<short> CreateMaskForFirstActiveElement(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<int> CreateMaskForFirstActiveElement(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<long> CreateMaskForFirstActiveElement(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateMaskForFirstActiveElement(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<ushort> CreateMaskForFirstActiveElement(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<uint> CreateMaskForFirstActiveElement(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svpfirst[_b](svbool_t pg, svbool_t op)
+        ///   PFIRST Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<ulong> CreateMaskForFirstActiveElement(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svpnext_b8(svbool_t pg, svbool_t op)
+        ///   PNEXT Ptied.B, Pg, Ptied.B
+        /// </summary>
+        public static unsafe Vector<byte> CreateMaskForNextActiveElement(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svpnext_b16(svbool_t pg, svbool_t op)
+        ///   PNEXT Ptied.H, Pg, Ptied.H
+        /// </summary>
+        public static unsafe Vector<ushort> CreateMaskForNextActiveElement(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svpnext_b32(svbool_t pg, svbool_t op)
+        ///   PNEXT Ptied.S, Pg, Ptied.S
+        /// </summary>
+        public static unsafe Vector<uint> CreateMaskForNextActiveElement(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svpnext_b64(svbool_t pg, svbool_t op)
+        ///   PNEXT Ptied.D, Pg, Ptied.D
+        /// </summary>
+        public static unsafe Vector<ulong> CreateMaskForNextActiveElement(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
 
 
         ///  CreateTrueMaskByte : Set predicate elements to true
