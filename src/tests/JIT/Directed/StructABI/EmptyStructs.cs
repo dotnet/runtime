@@ -8,10 +8,40 @@ using Xunit;
 
 public static class Program
 {
+	public static bool IsSystemV =>
+		(RuntimeInformation.ProcessArchitecture == Architecture.X64) &&
+		!RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+	public static bool IsRiscV64 => (RuntimeInformation.ProcessArchitecture == Architecture.RiscV64);
+	public const string SystemVPassNoClassEightbytes = "https://github.com/dotnet/runtime/issues/104098";
+	public const string RiscVClangEmptyStructsIgnored = "https://github.com/llvm/llvm-project/issues/97285";
+
 	public struct Empty
 	{
 	}
 
+#region Empty_SanityTests
+	[DllImport("EmptyStructsLib")]
+	public static extern int Echo_Empty_Sanity(int i0, float f0, Empty e, int i1, float f1);
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static int Echo_Empty_Sanity_Managed(int i0, float f0, Empty e, int i1, float f1)
+	{
+		return i0 + (int)f0 + i1 + (int)f1;
+	}
+
+	[Fact]
+	[ActiveIssue(RiscVClangEmptyStructsIgnored, typeof(Program), nameof(IsRiscV64))]
+	[ActiveIssue(SystemVPassNoClassEightbytes, typeof(Program), nameof(IsSystemV))]
+	public static void Test_Empty_Sanity()
+	{
+		Empty empty = new Empty{};
+		int native = Echo_Empty_Sanity(-2, 3f, empty, -3, 2f);
+		int managed = Echo_Empty_Sanity_Managed(-2, 3f, empty, -3, 2f);
+
+		Assert.Equal(0, native);
+		Assert.Equal(0, managed);
+	}
+#endregion
 
 #region IntEmpty_SystemVTests
 	public struct IntEmpty
@@ -172,12 +202,6 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 #endregion
-
-	public static bool IsSystemV =>
-		(RuntimeInformation.ProcessArchitecture == Architecture.X64) &&
-		!RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-	public const string SystemVPassNoClassEightbytes = "https://github.com/dotnet/runtime/issues/104098";
-
 
 	public struct Eight<T>
 	{

@@ -15,6 +15,12 @@ struct Empty
 static_assert(sizeof(Empty) == 1, "Empty struct must be sized like in .NET");
 
 
+extern "C" DLLEXPORT int Echo_Empty_Sanity(int i0, float f0, Empty e, int i1, float f1)
+{
+	return i0 + (int)f0 + i1 + (int)f1;
+}
+
+
 struct IntEmpty
 {
 	int32_t Int0;
