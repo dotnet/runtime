@@ -270,8 +270,10 @@ typedef struct {
 	gboolean sign;
 	gboolean gsharedvt;
 	gboolean hfa;
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 	/* ArgSwiftVtypeLoweredRet */
-	ArgStorage lowered_fields [4]; // TODO better encoding of int and floats
+	ArgStorage struct_storage [4];
+#endif
 } ArgInfo;
 
 struct CallInfo {

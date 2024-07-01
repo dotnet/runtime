@@ -625,9 +625,9 @@ add_return_valuetype_swiftcall (MonoMethodSignature *sig, ArgInfo *ainfo, MonoTy
 	// The structs that cannot be lowered, we pass them by reference
 	if (lowered_swift_struct.by_reference) {
 		ainfo->storage = ArgValuetypeAddrInIReg;
-		struct_size = ALIGN_TO (struct_size, 8);
-		ainfo->offset = GINT32_TO_INT16 (*stack_size);
-		*stack_size += struct_size;
+		//struct_size = ALIGN_TO (struct_size, 8); // TODO
+		//ainfo->offset = GINT32_TO_INT16 (*stack_size);
+		//*stack_size += struct_size;
 		/* 
 		 * On x64, Swift calls expect the return buffer to be passed in RAX.
 		 * However, since RAX is used as a scracth register in the mono runtime,
@@ -1982,6 +1982,15 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			}
 			break;
 		case ArgSwiftValuetypeLoweredRet:
+			cfg->ret->opcode = OP_REGOFFSET;
+			cfg->ret->inst_basereg = cfg->frame_reg;
+			if (cfg->arch.omit_fp) {
+				cfg->ret->inst_offset = offset;
+				offset += cinfo->ret.arg_size;
+			} else {
+				offset += cinfo->ret.arg_size;
+				cfg->ret->inst_offset = - offset;
+			}	
 			break;
 		default:
 			g_assert_not_reached ();
@@ -4456,7 +4465,6 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 			}
 			break;
 		}
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
 		case ArgSwiftValuetypeLoweredRet: {
 			MonoInst *loc = cfg->arch.vret_addr_loc;
 			int i;
@@ -4483,7 +4491,6 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 			}
 			break;
 		}
-#endif /* MONO_ARCH_HAVE_SWIFTCALL */
 		}
 		break;
 	}

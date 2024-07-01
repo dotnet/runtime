@@ -1637,9 +1637,62 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
 	return TRUE;
 }
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+static void
+add_return_valuetype_swiftcall (MonoMethodSignature *sig, ArgInfo *ainfo, CallInfo *cinfo, MonoType *type)
+{
+	guint32 align;
+	int size = mini_type_stack_size_full (type, &align, cinfo->pinvoke);
+	SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (type, FALSE);
+	// The structs that cannot be lowered, we pass them by reference
+	if (lowered_swift_struct.by_reference) {
+		ainfo->storage = ArgVtypeByRef;
+		return;
+	}
+
+	g_assert (lowered_swift_struct.num_lowered_elements > 0 && lowered_swift_struct.num_lowered_elements <= 4);
+
+	ainfo->storage = ArgSwiftVtypeLoweredRet;
+	ainfo->nregs = lowered_swift_struct.num_lowered_elements;
+	ainfo->size = size;
+
+	// Record the lowered elements of the struct
+	for (uint32_t idx_lowered_elem = 0; idx_lowered_elem < lowered_swift_struct.num_lowered_elements; ++idx_lowered_elem) {
+		MonoTypeEnum lowered_elem = lowered_swift_struct.lowered_elements [idx_lowered_elem]->type;
+		if (lowered_elem == MONO_TYPE_R4) {
+			ainfo->struct_storage [idx_lowered_elem] = ArgInFRegR4;
+			++cinfo->fr;
+		} else if (lowered_elem == MONO_TYPE_R8) {
+			ainfo->struct_storage [idx_lowered_elem] = ArgInFReg;
+			++cinfo->fr;
+		} else {
+			ainfo->struct_storage [idx_lowered_elem] = ArgInIReg;
+			++cinfo->gr;
+		}
+		ainfo->offsets [idx_lowered_elem] = GUINT32_TO_UINT8 (lowered_swift_struct.offsets [idx_lowered_elem]);
+	}
+	/*
+	* Verify that we didn't exceed the number of available registers.
+	* This should never happen because we are lowering the struct to a maximum of 4 registers
+	* and we only do the lowering here for the return value.
+	*/ 
+	g_assert (cinfo->fr <= FP_PARAM_REGS);
+	g_assert (cinfo->gr <= PARAM_REGS);
+	return;
+}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
+
 static void
 add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return, MonoMethodSignature *sig)
 {
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	// Handle Swift struct lowering in function returns
+	if (is_return && sig && sig->pinvoke && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		add_return_valuetype_swiftcall (sig, ainfo, cinfo, t);
+		return;
+	}
+#endif
+
 	int i, size, align_size, nregs, nfields, esize;
 	int field_offsets [16];
 	guint32 align;
@@ -1656,49 +1709,6 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return,
 		ainfo->nregs = 1;
 		ainfo->size = size;
 		cinfo->fr ++;
-		return;
-	}
-#endif
-
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-	// Handle Swift struct lowering in function returns
-	if (sig && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && is_return && sig->pinvoke) {
-		SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (t, FALSE);
-		// The structs that cannot be lowered, we pass them by reference
-		if (lowered_swift_struct.by_reference) {
-			ainfo->storage = ArgVtypeByRef;
-			ainfo->size = size;
-			return;
-		}
-
-		g_assert (lowered_swift_struct.num_lowered_elements > 0 && lowered_swift_struct.num_lowered_elements <= 4);
-
-		ainfo->storage = ArgSwiftVtypeLoweredRet;
-		ainfo->nregs = lowered_swift_struct.num_lowered_elements;
-		ainfo->size = size;
-
-		// Record the lowered elements of the struct
-		for (uint32_t idx_lowered_elem = 0; idx_lowered_elem < lowered_swift_struct.num_lowered_elements; ++idx_lowered_elem) {
-			MonoTypeEnum lowered_elem = lowered_swift_struct.lowered_elements [idx_lowered_elem]->type;
-			if (lowered_elem == MONO_TYPE_R4) {
-				ainfo->lowered_fields [idx_lowered_elem] = ArgInFRegR4;
-				++cinfo->fr;
-			} else if (lowered_elem == MONO_TYPE_R8) {
-				ainfo->lowered_fields [idx_lowered_elem] = ArgInFReg;
-				++cinfo->fr;
-			} else {
-				ainfo->lowered_fields [idx_lowered_elem] = ArgInIReg;
-				++cinfo->gr;
-			}
-			ainfo->offsets [idx_lowered_elem] = GUINT32_TO_UINT8 (lowered_swift_struct.offsets [idx_lowered_elem]);
-		}
-		/*
-		 * Verify that we didn't exceed the number of available registers.
-		 * This should never happen because we are lowering the struct to a maximum of 4 registers
-		 * and we only do the lowering here for the return value.
-		 */ 
-		g_assert (cinfo->fr <= FP_PARAM_REGS);
-		g_assert (cinfo->gr <= PARAM_REGS);
 		return;
 	}
 #endif
@@ -2011,12 +2021,13 @@ arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
 			}
 			break;
 		}
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 		case ArgSwiftVtypeLoweredRet: {
 			int i;
             int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
 			char *storage = (char*)dest;
             for (i = 0; i < ainfo->nregs; ++i) {
-                switch (ainfo->lowered_fields [i]) {
+                switch (ainfo->struct_storage [i]) {
                     case ArgInIReg:
                         *(gsize*)(storage + ainfo->offsets [i]) = ccontext->gregs [gr++];
                         break;
@@ -2032,6 +2043,7 @@ arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
             }
 			break;
 		}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
 		default:
 			g_assert_not_reached ();
 	}
@@ -2856,7 +2868,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->ret->opcode = OP_REGOFFSET;
 		cfg->ret->inst_basereg = cfg->frame_reg;
 		cfg->ret->inst_offset = offset;
-		offset += 16;
+		offset += cinfo->ret.size;
 		break;
 	}
 	default:
@@ -3884,6 +3896,7 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 		}
 		break;
 	}
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 	case ArgSwiftVtypeLoweredRet: {
 		MonoInst *loc = cfg->arch.vret_addr_loc;
 		int i;
@@ -3893,7 +3906,7 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 		g_assert (loc && loc->opcode == OP_REGOFFSET);
 		code = emit_ldrx (code, ARMREG_LR, loc->inst_basereg, GTMREG_TO_INT (loc->inst_offset));
 		for (i = 0; i < cinfo->ret.nregs; ++i) {
-			switch (cinfo->ret.lowered_fields [i]) {
+			switch (cinfo->ret.struct_storage [i]) {
 				case ArgInIReg:
 					code = emit_strx (code, gr++, ARMREG_LR, cinfo->ret.offsets [i]);
 					break;
@@ -3909,6 +3922,7 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 		}
 		break;
 	}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
 	case ArgVtypeByRef:
 		break;
 	default:
