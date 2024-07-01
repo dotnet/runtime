@@ -7,7 +7,6 @@
 
 #ifdef HOST_UNIX
 #define EX_TRY_HOLDER                                   \
-    HardwareExceptionHolder                             \
     NativeExceptionHolderCatchAll __exceptionHolder;    \
     __exceptionHolder.Push();                           \
 

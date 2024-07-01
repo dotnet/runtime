@@ -274,13 +274,6 @@ SEHProcessException(PAL_SEHException* exception)
                 // The exception was a single step or a breakpoint and it was not handled by the debugger.
             }
         }
-
-        if (CatchHardwareExceptionHolder::IsEnabled())
-        {
-            EnsureExceptionRecordsOnHeap(exception);
-            exception->IsExternal = true;
-            PAL_ThrowExceptionFromContext(exception->GetContextRecord(), exception);
-        }
     }
 
     // Unhandled hardware exception pointers->ExceptionRecord->ExceptionCode at pointers->ExceptionRecord->ExceptionAddress
@@ -335,36 +328,6 @@ PAL_ERROR SEHDisable(CPalThread *pthrCurrent)
 #else // HAVE_MACH_EXCEPTIONS
 #error not yet implemented
 #endif // HAVE_MACH_EXCEPTIONS
-}
-
-/*++
-
-  CatchHardwareExceptionHolder implementation
-
---*/
-
-extern "C"
-void
-PALAPI
-PAL_CatchHardwareExceptionHolderEnter()
-{
-    CPalThread *pThread = InternalGetCurrentThread();
-    pThread->IncrementHardwareExceptionHolderCount();
-}
-
-extern "C"
-void
-PALAPI
-PAL_CatchHardwareExceptionHolderExit()
-{
-    CPalThread *pThread = InternalGetCurrentThread();
-    pThread->DecrementHardwareExceptionHolderCount();
-}
-
-bool CatchHardwareExceptionHolder::IsEnabled()
-{
-    CPalThread *pThread = GetCurrentPalThread();
-    return pThread ? pThread->IsHardwareExceptionsEnabled() : false;
 }
 
 /*++
