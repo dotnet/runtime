@@ -2238,7 +2238,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve_CreateBreakAfterMask: 
+            case NI_Sve_CreateBreakAfterMask:
             case NI_Sve_CreateBreakBeforeMask:
             {
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, INS_OPTS_SCALABLE_B);
@@ -2251,7 +2251,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitInsSve_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, INS_OPTS_SCALABLE_B);
                 break;
             }
-            
+
             case NI_Sve_CreateMaskForFirstActiveElement:
             {
                 assert(isRMW);
