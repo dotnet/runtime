@@ -19,17 +19,13 @@ if (CLR_CMAKE_TARGET_WIN32)
     # Needed to include AsmOffsets.inc
     include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
     preprocess_files(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
-    if (CMAKE_GENERATOR MATCHES "Visual Studio")
-      # Replaces .asm files in RUNTIME_SOURCES_ARCH_ASM with the corresponding .obj files
-      compile_asm(TARGET Runtime.WorkstationGC ASM_FILES ${RUNTIME_SOURCES_ARCH_ASM} OUTPUT_OBJECTS RUNTIME_ARCH_ASM_OBJECTS)
-    endif()
   endif()
 endif (CLR_CMAKE_TARGET_WIN32)
 
-add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${RUNTIME_ARCH_ASM_OBJECTS})
+add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES}  ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
 
-add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
+add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.ServerGC aot_eventing_headers)
 
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
@@ -57,7 +53,7 @@ if (CLR_CMAKE_TARGET_WIN32)
   set_target_properties(standalonegc-enabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
   add_dependencies(standalonegc-enabled.GuardCF aot_eventing_headers)
   add_dependencies(standalonegc-enabled.GuardCF aot_etw_headers)
-  add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
+  add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
   target_compile_definitions(Runtime.ServerGC.GuardCF PRIVATE -DFEATURE_SVR_GC)
   set_target_properties(Runtime.ServerGC.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
 
@@ -101,14 +97,17 @@ set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc" PROPERT
 # Runtime.WorkstationGC and Runtime.ServerGC share AsmOffsets.inc and assembler helpers (for Windows ARM/ARM64).
 # Avoid a race condition by adding this target as a dependency for both libraries.
 add_custom_target(
-  RuntimeAsmHelpers
-  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc" "${RUNTIME_ARCH_ASM_OBJECTS}"
+  RuntimeAsmOffsets
+  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
 )
 
-add_dependencies(Runtime.WorkstationGC RuntimeAsmHelpers)
-add_dependencies(Runtime.ServerGC RuntimeAsmHelpers)
+add_library(Runtime.AsmHelpers OBJECT ${RUNTIME_SOURCES_ARCH_ASM})
+add_dependencies(Runtime.AsmHelpers RuntimeAsmOffsets)
+
+target_link_libraries(Runtime.WorkstationGC PRIVATE Runtime.AsmHelpers)
+target_link_libraries(Runtime.ServerGC PRIVATE Runtime.AsmHelpers)
 if (CLR_CMAKE_TARGET_WIN32)
-  add_dependencies(Runtime.ServerGC.GuardCF RuntimeAsmHelpers)
+target_link_libraries(Runtime.ServerGC.GuardCF PRIVATE Runtime.AsmHelpers)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 install_static_library(Runtime.WorkstationGC aotsdk nativeaot)

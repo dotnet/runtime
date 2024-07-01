@@ -24,7 +24,7 @@ Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs (
 
 Install the following packages for the toolchain:
 
-* CMake 3.20 or newer
+* CMake 3.26 or newer
 * llvm
 * lld
 * clang
@@ -48,7 +48,7 @@ python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
 libssl-dev libkrb5-dev zlib1g-dev ninja-build
 ```
 
-**NOTE**: As of now, Ubuntu's `apt` only has until CMake version 3.16.3 if you're using Ubuntu 20.04 LTS (less in older Ubuntu versions), and version 3.18.4 in Debian 11 (less in older Debian versions). This is lower than the required 3.20, which in turn makes it incompatible with the repo. For this case, we can use the `snap` package manager or the _Kitware APT feed_ to get a new enough version of CMake.
+**NOTE**: As of now, Ubuntu's `apt` only has until CMake version 3.22 if you're using Ubuntu 22.04 LTS (less in older Ubuntu versions), and version 3.25.1 in Debian 12 (less in older Debian versions). This is lower than the required 3.26, which in turn makes it incompatible with the repo. For this case, we can use the `snap` package manager or the _Kitware APT feed_ to get a new enough version of CMake.
 
 For snap:
 
