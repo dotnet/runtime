@@ -116,7 +116,7 @@ INST3(cmovge,           "cmovge",           IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(cmovle,           "cmovle",           IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004E,                                INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2)
 INST3(cmovg,            "cmovg",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F004F,                                INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF | Encoding_REX2)
 
-INST3(xchg,             "xchg",             IUM_RW, 0x000086,     BAD_CODE,     0x000086,                                INS_TT_NONE,    INS_FLAGS_Has_Wbit)
+INST3(xchg,             "xchg",             IUM_RW, 0x000086,     BAD_CODE,     0x000086,                                INS_TT_NONE,    INS_FLAGS_Has_Wbit | Encoding_REX2)
 INST3(imul,             "imul",             IUM_RW, 0x0F00AC,     BAD_CODE,     0x0F00AF,                                INS_TT_NONE,    Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Sbit)
 
 //    id                nm                  um      mr            mi            rm                                       tt              flags
@@ -961,7 +961,7 @@ INST1(not,              "not",              IUM_RW, 0x0010F6,                   
 
 INST1(cwde,             "cwde",             IUM_RD, 0x000098,                                                            INS_TT_NONE,    INS_FLAGS_None)
 INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_TT_NONE,    INS_FLAGS_None)
-INST1(idiv,             "idiv",             IUM_RD, 0x0038F6,                                                            INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  | INS_FLAGS_Has_Wbit)
+INST1(idiv,             "idiv",             IUM_RD, 0x0038F6,                                                            INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  | INS_FLAGS_Has_Wbit | Encoding_REX2)
 INST1(imulEAX,          "imul",             IUM_RD, 0x0028F6,                                                            INS_TT_NONE,    Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Wbit)
 INST1(div,              "div",              IUM_RD, 0x0030F6,                                                            INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  | INS_FLAGS_Has_Wbit)
 INST1(mulEAX,           "mul",              IUM_RD, 0x0020F6,                                                            INS_TT_NONE,    Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Wbit)
