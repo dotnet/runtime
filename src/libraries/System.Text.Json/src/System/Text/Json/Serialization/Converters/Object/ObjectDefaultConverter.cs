@@ -326,14 +326,14 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!state.SupportContinuation)
             {
+                jsonTypeInfo.OnSerializing?.Invoke(obj);
+
                 writer.WriteStartObject();
 
                 if (state.CurrentContainsMetadata && CanHaveMetadata)
                 {
                     JsonSerializer.WriteMetadataForObject(this, ref state, writer);
                 }
-
-                jsonTypeInfo.OnSerializing?.Invoke(obj);
 
                 foreach (JsonPropertyInfo jsonPropertyInfo in jsonTypeInfo.PropertyCache)
                 {
