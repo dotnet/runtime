@@ -94,14 +94,6 @@
     }
 
     .method public hidebysig
-        instance object BoxAsObject(!T) cil managed
-    {
-        ldarg.1
-        box !T
-        ret
-    }
-
-    .method public hidebysig
         instance bool BoxUnboxAny(!T) cil managed
     {
         ldarg.1
@@ -363,17 +355,6 @@
     {
         ldc.i4.1
         newarr !T
-        ldnull
-        cgt.un
-        ret
-    }
-
-    .method public hidebysig
-        instance bool AllocMultiDimArrayOfT() cil managed
-    {
-        ldc.i4.1
-        ldc.i4.1
-        newobj instance void !T[0..., 0...]::.ctor(int32, int32)
         ldnull
         cgt.un
         ret
@@ -724,18 +705,10 @@
     }
 
     .method public hidebysig static
-        object BoxAsObject() cil managed
+        object BoxAsObject<byreflike Y>(!!Y) cil managed noinlining
     {
-        .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        )
-
-        ldloca.s 0
-        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        ldloca.s 0
-        ldloc 0
-        ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
-        call instance object valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxAsObject(!0)
+        ldarg.0
+        box !!Y
         ret
     }
 
@@ -937,32 +910,23 @@
     }
 
     .method public hidebysig static
-        void AllocArrayOfT_Invalid() cil managed
+        bool AllocArray<byreflike Y>() cil managed noinlining
     {
-        .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        )
-
-        ldloca.s 0
-        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        ldloca.s 0
-        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::AllocArrayOfT()
-        pop
+        ldc.i4.1
+        newarr !!Y
+        ldnull
+        cgt.un
         ret
     }
 
     .method public hidebysig static
-        void AllocMultiDimArrayOfT_Invalid() cil managed
+        bool AllocMultiDimArray<byreflike Y>() cil managed noinlining
     {
-        .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        )
-
-        ldloca.s 0
-        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        ldloca.s 0
-        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::AllocMultiDimArrayOfT()
-        pop
+        ldc.i4.1
+        ldc.i4.1
+        newobj instance void !!Y[0..., 0...]::.ctor(int32, int32)
+        ldnull
+        cgt.un
         ret
     }
 
@@ -971,6 +935,15 @@
     {
         ldtoken class InvalidCSharp.GenericClass_WithStaticField`1<valuetype ByRefLikeType>
         call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        string CallStringOnObject<byreflike T>(!!T t) cil managed noinlining
+    {
+        ldarga.s 0
+        constrained. !!T
         callvirt instance string [System.Runtime]System.Object::ToString()
         ret
     }

@@ -9,13 +9,14 @@ Using ByRefLike types in Generic parameters is possible by building upon support
 
 Supporting ByRefLike type as Generic parameters will impact the following IL instructions:
 
+Throws `InvalidProgramException`:
 - `box` &ndash; Types with ByRefLike parameters used in fields cannot be boxed.
+- `constrained.callvirt` &ndash; When applied to a ByRefLike instance, if this IL sequence resolves to a method implemented on `object` or a default interface method, an error will occur during the attempt to box the ByRefLike instance.
+
+Throws `TypeLoadException`:
 - `stsfld` / `ldsfld` &ndash; Type fields of a ByRefLike parameter cannot be marked `static`.
 - `newarr` / `stelem` / `ldelem` / `ldelema` &ndash; Arrays are not able to contain ByRefLike types.
     - `newobj` &ndash; For multi-dimensional array construction.
-- `constrained.callvirt` &ndash; When applied to a ByRefLike instance, if this IL sequence resolves to a method implemented on `object` or a default interface method, an error will occur during the attempt to box the ByRefLike instance.
-
-If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`.
 
 The following instructions are already set up to support this feature since their behavior will fail as currently defined due to the inability to box a ByRefLike type.
 
