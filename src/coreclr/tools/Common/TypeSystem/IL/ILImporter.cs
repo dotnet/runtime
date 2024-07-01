@@ -114,8 +114,9 @@ namespace Internal.IL
                 MarkInstructionBoundary();
 
                 ILOpcode opCode = (ILOpcode)ReadILByte();
+                if (opCode == ILOpcode.prefix1)
+                    opCode = (ILOpcode)(0x100 + ReadILByte());
 
-            again:
                 switch (opCode)
                 {
                     case ILOpcode.ldarg_s:
@@ -179,9 +180,6 @@ namespace Internal.IL
                     case ILOpcode.sizeof_:
                         SkipIL(4);
                         break;
-                    case ILOpcode.prefix1:
-                        opCode = (ILOpcode)(0x100 + ReadILByte());
-                        goto again;
                     case ILOpcode.br_s:
                     case ILOpcode.leave_s:
                         {
@@ -304,15 +302,22 @@ namespace Internal.IL
 
         private void MarkBasicBlock(BasicBlock basicBlock)
         {
+            MarkBasicBlock(basicBlock, ref _pendingBasicBlocks);
+        }
+
+        private static void MarkBasicBlock(BasicBlock basicBlock, ref BasicBlock list)
+        {
             if (basicBlock.State == BasicBlock.ImportState.Unmarked)
             {
                 // Link
-                basicBlock.Next = _pendingBasicBlocks;
-                _pendingBasicBlocks = basicBlock;
+                basicBlock.Next = list;
+                list = basicBlock;
 
                 basicBlock.State = BasicBlock.ImportState.IsPending;
             }
         }
+
+        partial void StartImportingInstruction(ILOpcode opcode);
 
         private void ImportBasicBlock(BasicBlock basicBlock)
         {
@@ -324,8 +329,11 @@ namespace Internal.IL
                 StartImportingInstruction();
 
                 ILOpcode opCode = (ILOpcode)ReadILByte();
+                if (opCode == ILOpcode.prefix1)
+                    opCode = (ILOpcode)(0x100 + ReadILByte());
 
-            again:
+                StartImportingInstruction(opCode);
+
                 switch (opCode)
                 {
                     case ILOpcode.nop:
@@ -814,9 +822,6 @@ namespace Internal.IL
                     case ILOpcode.conv_u:
                         ImportConvert(WellKnownType.UIntPtr, false, true);
                         break;
-                    case ILOpcode.prefix1:
-                        opCode = (ILOpcode)(0x100 + ReadILByte());
-                        goto again;
                     case ILOpcode.arglist:
                         ImportArgList();
                         break;
