@@ -1402,7 +1402,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             // This constant must be at least as large as the one in the implementation that sets the maximum number
             // of innermost loop iterations between timeout checks.
-            const int CharsToTriggerTimeoutCheck = 25000;
+            const int CharsToTriggerTimeoutCheck = 100000;
             // Check that it is indeed large enough to trigger timeouts. If this fails the constant above needs to be larger.
             Assert.Throws<RegexMatchTimeoutException>(() => new Regex("a*", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromTicks(1))
                 .Match(new string('a', CharsToTriggerTimeoutCheck)));
