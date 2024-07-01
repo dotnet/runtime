@@ -17,30 +17,118 @@ internal unsafe class TargetTestHelpers
     private const uint JsonDescriptorAddr = 0xdddddddd;
     private const uint PointerDataAddr = 0xeeeeeeee;
 
+    internal struct HeapFragment
+    {
+        public ulong Address;
+        public byte[] Data;
+        public string? Name;
+    }
+
+    /// <summary>
+    ///  Helper to build a context for reading from a target.
+    /// </summary>
+    /// <remarks>
+    /// All the spans should be stackalloc or pinned while the context is being used.
+    /// </remarks>
+    internal unsafe ref struct ContextBuilder
+    {
+        private bool _created = false;
+        private byte* _descriptor = null;
+        private int _descriptorLength = 0;
+        private byte* _json = null;
+        private int _jsonLength = 0;
+        private byte* _pointerData = null;
+        private int _pointerDataLength = 0;
+        private List<HeapFragment> _heapFragments = new();
+
+        public ContextBuilder()
+        {
+
+        }
+
+        public ContextBuilder SetDescriptor(scoped ReadOnlySpan<byte> descriptor)
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            _descriptor = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(descriptor));
+            _descriptorLength = descriptor.Length;
+            return this;
+        }
+
+        public ContextBuilder SetJson(scoped ReadOnlySpan<byte> json)
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            _json = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(json));
+            _jsonLength = json.Length;
+            return this;
+        }
+
+        public ContextBuilder SetPointerData(scoped ReadOnlySpan<byte> pointerData)
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            if (pointerData.Length >= 0)
+            {
+                _pointerData = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(pointerData));
+                _pointerDataLength = pointerData.Length;
+            }
+            return this;
+        }
+
+        public ContextBuilder AddHeapFragment(HeapFragment fragment)
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            _heapFragments.Add(fragment);
+            return this;
+        }
+
+        public ContextBuilder AddHeapFragments(IEnumerable<HeapFragment> fragments)
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            _heapFragments.AddRange(fragments);
+            return this;
+        }
+
+        public ReadContext Create()
+        {
+            if (_created)
+                throw new InvalidOperationException("Context already created");
+            GCHandle fragmentReaderHandle = default; ;
+            if (_heapFragments.Count > 0)
+            {
+                fragmentReaderHandle = GCHandle.Alloc(new HeapFragmentReader(_heapFragments));
+            }
+            ReadContext context = new ReadContext
+            {
+                ContractDescriptor = _descriptor,
+                ContractDescriptorLength = _descriptorLength,
+                JsonDescriptor = _json,
+                JsonDescriptorLength = _jsonLength,
+                PointerData = _pointerData,
+                PointerDataLength = _pointerDataLength,
+                HeapFragmentReader = GCHandle.ToIntPtr(fragmentReaderHandle)
+            };
+            _created = true;
+            return context;
+        }
+    }
+
     // Note: all the spans should be stackalloc or pinned.
     public static ReadContext CreateContext(ReadOnlySpan<byte> descriptor, ReadOnlySpan<byte> json, ReadOnlySpan<byte> pointerData = default)
     {
-        return new ReadContext
-        {
-            ContractDescriptor = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(descriptor)),
-            ContractDescriptorLength = descriptor.Length,
-            JsonDescriptor = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(json)),
-            JsonDescriptorLength = json.Length,
-            PointerData = pointerData.Length > 0 ? (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(pointerData)) : (byte*)null,
-            PointerDataLength = pointerData.Length
-        };
+        ContextBuilder builder = new ContextBuilder()
+        .SetJson(json)
+        .SetDescriptor(descriptor)
+        .SetPointerData(pointerData);
+        return builder.Create();
     }
 
     public static bool TryCreateTarget(ReadContext* context, out Target? target)
     {
         return Target.TryCreate(ContractDescriptorAddr, &ReadFromTarget, context, out target);
-    }
-
-    // FIXME: make somethign more usable
-    public static void AddHeapCallback(ref ReadContext context, delegate*<ulong, byte*, uint, void*, int> callback, void* callbackContext)
-    {
-        context.HeapCallback = callback;
-        context.HeapCallbackContext = callbackContext;
     }
 
     internal static class ContractDescriptor
@@ -163,16 +251,17 @@ internal unsafe class TargetTestHelpers
             return 0;
         }
 
-        if (readContext->HeapCallback != null)
+        HeapFragmentReader? heapFragmentReader = GCHandle.FromIntPtr(readContext->HeapFragmentReader).Target as HeapFragmentReader;
+        if (heapFragmentReader is not null)
         {
-            return readContext->HeapCallback(address, buffer, length, readContext->HeapCallbackContext);
+            return heapFragmentReader.ReadFragment(address, span);
         }
 
         return -1;
     }
 
     // Used by ReadFromTarget to return the appropriate bytes
-    internal ref struct ReadContext
+    internal ref struct ReadContext : IDisposable
     {
         public byte* ContractDescriptor;
         public int ContractDescriptorLength;
@@ -183,9 +272,116 @@ internal unsafe class TargetTestHelpers
         public byte* PointerData;
         public int PointerDataLength;
 
-        public delegate*<ulong, byte*, uint, void*, int> HeapCallback;
+        public IntPtr HeapFragmentReader;
 
-        public void* HeapCallbackContext;
+        public void Dispose()
+        {
+            if (HeapFragmentReader != IntPtr.Zero)
+            {
+                GCHandle.FromIntPtr(HeapFragmentReader).Free();
+                HeapFragmentReader = IntPtr.Zero;
+            }
+        }
     }
+
+    private class HeapFragmentReader
+    {
+        private readonly IReadOnlyList<HeapFragment> _fragments;
+        public HeapFragmentReader(IReadOnlyList<HeapFragment> fragments)
+        {
+            _fragments = fragments;
+        }
+
+        public int ReadFragment(ulong address, Span<byte> buffer)
+        {
+            foreach (var fragment in _fragments)
+            {
+                if (address >= fragment.Address && address < fragment.Address + (ulong)fragment.Data.Length)
+                {
+                    int offset = (int)(address - fragment.Address);
+                    int availableLength = fragment.Data.Length - offset;
+                    if (availableLength >= buffer.Length)
+                    {
+                        fragment.Data.AsSpan(offset, buffer.Length).CopyTo(buffer);
+                        return 0;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Not enough data in fragment at {fragment.Address:X} ('{fragment.Name}') to read {buffer.Length} bytes at {address:X} (only {availableLength} bytes available)");
+                    }
+                }
+            }
+            return -1;
+        }
+    }
+
+    private static string GetTypeJson(string name, Target.TypeInfo info)
+    {
+        string ret = string.Empty;
+        List<string> fields = info.Size is null ? [] : [$"\"!\":{info.Size}"];
+        fields.AddRange(info.Fields.Select(f => $"\"{f.Key}\":{(f.Value.TypeName is null ? f.Value.Offset : $"[{f.Value.Offset},\"{f.Value.TypeName}\"]")}"));
+        return $"\"{name}\":{{{string.Join(',', fields)}}}";
+    }
+
+    public static string MakeTypesJson(IEnumerable<(DataType Type, Target.TypeInfo Info)> types)
+    {
+        return string.Join(',', types.Select(t => GetTypeJson(t.Type.ToString(), t.Info)));
+    }
+
+    public static string MakeGlobalsJson(IEnumerable<(string Name, ulong Value, string? Type)> globals)
+    {
+        return string.Join(',', globals.Select(i => $"\"{i.Name}\": {(i.Type is null ? i.Value.ToString() : $"[{i.Value}, \"{i.Type}\"]")}"));
+    }
+
+    internal static void WritePointer(Span<byte> dest, ulong value, bool isLittleEndian, int pointerSize)
+    {
+        if (pointerSize == sizeof(ulong))
+        {
+            if (isLittleEndian)
+            {
+                BinaryPrimitives.WriteUInt64LittleEndian(dest, value);
+            }
+            else
+            {
+                BinaryPrimitives.WriteUInt64BigEndian(dest, value);
+            }
+        }
+        else if (pointerSize == sizeof(uint))
+        {
+            if (isLittleEndian)
+            {
+                BinaryPrimitives.WriteUInt32LittleEndian(dest, (uint)value);
+            }
+            else
+            {
+                BinaryPrimitives.WriteUInt32BigEndian(dest, (uint)value);
+            }
+        }
+    }
+
+    internal static int SizeOfPrimitive(DataType type, bool is64Bit)
+    {
+        return type switch
+        {
+            DataType.uint8 or DataType.int8 => sizeof(byte),
+            DataType.uint16 or DataType.int16 => sizeof(ushort),
+            DataType.uint32 or DataType.int32 => sizeof(uint),
+            DataType.uint64 or DataType.int64 => sizeof(ulong),
+            DataType.pointer or DataType.nint or DataType.nuint => is64Bit ? sizeof(ulong) : sizeof(uint),
+            _ => throw new InvalidOperationException($"Not a primitive: {type}"),
+        };
+    }
+
+    internal static int SizeOfTypeInfo(bool is64Bit, Target.TypeInfo info)
+    {
+        int size = 0;
+        foreach (var (_, field) in info.Fields)
+        {
+            size = Math.Max(size, field.Offset + SizeOfPrimitive(field.Type, is64Bit));
+        }
+
+        return size;
+    }
+
 
 }

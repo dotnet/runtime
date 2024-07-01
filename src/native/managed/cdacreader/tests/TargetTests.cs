@@ -44,21 +44,21 @@ public unsafe class TargetTests
     [InlineData(false, false)]
     public void GetTypeInfo(bool isLittleEndian, bool is64Bit)
     {
-        string typesJson = string.Join(',', TestTypes.Select(t => GetTypeJson(t.Type.ToString(), t.Info)));
+        string typesJson = TargetTestHelpers.MakeTypesJson(TestTypes);
         byte[] json = Encoding.UTF8.GetBytes($$"""
-        {
-            "version": 0,
-            "baseline": "empty",
-            "contracts": {},
-            "types": { {{typesJson}} },
-            "globals": {}
-        }
-        """);
+    {
+        "version": 0,
+        "baseline": "empty",
+        "contracts": {},
+        "types": { {{typesJson}} },
+        "globals": {}
+    }
+    """);
         Span<byte> descriptor = stackalloc byte[TargetTestHelpers.ContractDescriptor.Size(is64Bit)];
         TargetTestHelpers.ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, 0);
         fixed (byte* jsonPtr = json)
         {
-            TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json);
+            using TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json);
 
             bool success = TargetTestHelpers.TryCreateTarget(&context, out Target? target);
             Assert.True(success);
@@ -78,14 +78,6 @@ public unsafe class TargetTests
                     Assert.Equal(info.Fields, actual.Fields);
                 }
             }
-        }
-
-        static string GetTypeJson(string name, Target.TypeInfo info)
-        {
-            string ret = string.Empty;
-            List<string> fields = info.Size is null ? [] : [$"\"!\":{info.Size}"];
-            fields.AddRange(info.Fields.Select(f => $"\"{f.Key}\":{(f.Value.TypeName is null ? f.Value.Offset : $"[{f.Value.Offset},\"{f.Value.TypeName}\"]")}"));
-            return $"\"{name}\":{{{string.Join(',', fields)}}}";
         }
     }
 
@@ -112,7 +104,7 @@ public unsafe class TargetTests
     [InlineData(false, false)]
     public void ReadGlobalValue(bool isLittleEndian, bool is64Bit)
     {
-        string globalsJson = string.Join(',', TestGlobals.Select(i => $"\"{i.Name}\": {(i.Type is null ? i.Value.ToString() : $"[{i.Value}, \"{i.Type}\"]")}"));
+        string globalsJson = TargetTestHelpers.MakeGlobalsJson(TestGlobals);
         byte[] json = Encoding.UTF8.GetBytes($$"""
         {
             "version": 0,
@@ -126,7 +118,7 @@ public unsafe class TargetTests
         TargetTestHelpers.ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, 0);
         fixed (byte* jsonPtr = json)
         {
-            TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json);
+            using TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json);
 
             bool success = TargetTestHelpers.TryCreateTarget(&context, out Target? target);
             Assert.True(success);
@@ -147,7 +139,7 @@ public unsafe class TargetTests
         for (int i = 0; i < TestGlobals.Length; i++)
         {
             var (_, value, _) = TestGlobals[i];
-            WritePointer(pointerData.Slice(i * pointerSize), value, isLittleEndian, pointerSize);
+            TargetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value, isLittleEndian, pointerSize);
         }
 
         string globalsJson = string.Join(',', TestGlobals.Select((g, i) => $"\"{g.Name}\": {(g.Type is null ? $"[{i}]" : $"[[{i}], \"{g.Type}\"]")}"));
@@ -164,7 +156,7 @@ public unsafe class TargetTests
         TargetTestHelpers.ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, pointerData.Length / pointerSize);
         fixed (byte* jsonPtr = json)
         {
-            TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json, pointerData);
+            using TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json, pointerData);
 
             bool success = TargetTestHelpers.TryCreateTarget(&context, out Target? target);
             Assert.True(success);
@@ -175,32 +167,6 @@ public unsafe class TargetTests
                 : TestGlobals.Select(g => (g.Name, g.Value & 0xffffffff, g.Type)).ToArray();
 
             ValidateGlobals(target, expected);
-        }
-    }
-
-    private static void WritePointer(Span<byte> dest, ulong value, bool isLittleEndian, int pointerSize)
-    {
-        if (pointerSize == sizeof(ulong))
-        {
-            if (isLittleEndian)
-            {
-                BinaryPrimitives.WriteUInt64LittleEndian(dest, value);
-            }
-            else
-            {
-                BinaryPrimitives.WriteUInt64BigEndian(dest, value);
-            }
-        }
-        else if (pointerSize == sizeof(uint))
-        {
-            if (isLittleEndian)
-            {
-                BinaryPrimitives.WriteUInt32LittleEndian(dest, (uint)value);
-            }
-            else
-            {
-                BinaryPrimitives.WriteUInt32BigEndian(dest, (uint)value);
-            }
         }
     }
 
