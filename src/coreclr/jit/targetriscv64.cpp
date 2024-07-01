@@ -125,10 +125,6 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             assert(info.flags != FpStruct::UseIntCallConv);
             assert((info.flags & FpStruct::OnlyOne) == 0);
 
-            unsigned firstSize  = (info.SizeShift1st() == 3) ? 8 : 4;
-            unsigned secondSize = (info.SizeShift2nd() == 3) ? 8 : 4;
-            unsigned offset = max(firstSize, secondSize); // TODO: cover empty fields and custom offsets / alignments
-
             bool isFirstFloat  = (info.flags & (FpStruct::BothFloat | FpStruct::FloatInt)) != 0;
             bool isSecondFloat = (info.flags & (FpStruct::BothFloat | FpStruct::IntFloat)) != 0;
             assert(isFirstFloat || isSecondFloat);
