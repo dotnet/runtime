@@ -5386,8 +5386,8 @@ HRESULT ClrDataAccess::GetGlobalAllocationContext(
     }
 
     SOSDacEnter();
-    *allocPtr = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_ptr);
-    *allocLimit = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_limit);
+    *allocPtr = (CLRDATA_ADDRESS)(g_global_alloc_context->alloc_ptr);
+    *allocLimit = (CLRDATA_ADDRESS)(g_global_alloc_context->alloc_limit);
     SOSDacLeave();
     return hr;
 }

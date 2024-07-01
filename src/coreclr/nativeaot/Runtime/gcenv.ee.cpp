@@ -136,6 +136,7 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
 {
     FOREACH_THREAD(thread)
     {
+        // TODO: update the combined limit is needed
         (*fn) (thread->GetAllocContext(), param);
     }
     END_FOREACH_THREAD

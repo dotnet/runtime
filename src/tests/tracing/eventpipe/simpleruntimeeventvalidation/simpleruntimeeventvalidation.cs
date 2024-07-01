@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing;
-using Tracing.Tests.Common;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.NETCore.Client;
+using Tracing.Tests.Common;
 using Xunit;
 
 namespace Tracing.Tests.SimpleRuntimeEventValidation
@@ -24,28 +26,30 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             var ret = IpcTraceTest.RunAndValidateEventCounts(
                 // Validation is done with _DoesTraceContainEvents
                 new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", -1 }},
-                _eventGeneratingActionForGC, 
-                // GCKeyword (0x1): 0b1, GCAllocationTick requries Verbose level
+                _eventGeneratingActionForGC,
+                // GCKeyword (0x1): 0b1, GCAllocationTick requires Verbose level
                 new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Verbose, 0b1)},
                 1024, _DoesTraceContainGCEvents, enableRundownProvider:false);
+            if (ret != 100)
+                return ret;
 
             // Run the 2nd test scenario only if the first one passes
-            if(ret== 100)
+            if (ret == 100)
             {
                 ret = IpcTraceTest.RunAndValidateEventCounts(
-                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-DotNETCore-EventPipe", 1 }}, 
-                    _eventGeneratingActionForExceptions, 
+                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-DotNETCore-EventPipe", 1 }},
+                    _eventGeneratingActionForExceptions,
                     // ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
-                    new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000)}, 
+                    new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000)},
                     1024, _DoesTraceContainExceptionEvents, enableRundownProvider:false);
 
-                if(ret == 100)
+                if (ret == 100)
                 {
-                ret = IpcTraceTest.RunAndValidateEventCounts(
-                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", -1}}, 
-                    _eventGeneratingActionForFinalizers, 
-                    new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)}, 
-                    1024, _DoesTraceContainFinalizerEvents, enableRundownProvider:false);
+                    ret = IpcTraceTest.RunAndValidateEventCounts(
+                        new Dictionary<string, ExpectedEventCount>() { { "Microsoft-Windows-DotNETRuntime", -1 } },
+                        _eventGeneratingActionForFinalizers,
+                        new List<EventPipeProvider>() { new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1) },
+                        1024, _DoesTraceContainFinalizerEvents, enableRundownProvider: false);
                 }
             }
 
@@ -55,7 +59,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 return 100;
         }
 
-        private static Action _eventGeneratingActionForGC = () => 
+        private static Action _eventGeneratingActionForGC = () =>
         {
             for (int i = 0; i < 50; i++)
             {
@@ -70,7 +74,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             }
         };
 
-        private static Action _eventGeneratingActionForExceptions = () => 
+        private static Action _eventGeneratingActionForExceptions = () =>
         {
             for (int i = 0; i < 10; i++)
             {
@@ -110,7 +114,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             int GCRestartEEStartEvents = 0;
             int GCRestartEEStopEvents = 0;
             source.Clr.GCRestartEEStart += (eventData) => GCRestartEEStartEvents += 1;
-            source.Clr.GCRestartEEStop += (eventData) => GCRestartEEStopEvents += 1;            
+            source.Clr.GCRestartEEStop += (eventData) => GCRestartEEStopEvents += 1;
 
             int GCSuspendEEEvents = 0;
             int GCSuspendEEEndEvents = 0;
@@ -148,7 +152,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
         private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainExceptionEvents = (source) =>
         {
             int ExStartEvents = 0;
-            source.Clr.ExceptionStart += (eventData) => 
+            source.Clr.ExceptionStart += (eventData) =>
             {
                 if(eventData.ToString().IndexOf("System.ArgumentNullException")>=0)
                     ExStartEvents += 1;

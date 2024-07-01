@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef __thread_inl__
+#define __thread_inl__
+
+// TODO: try to find out where the events symbols are defined
+//#include "eventtracebase.h"
+//#include "ClrEtwAll.h"
+
+#include "thread.h"
+
+
 #ifndef DACCESS_COMPILE
 // Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame
 // in assembly code. Do not use anywhere else.
@@ -63,6 +73,12 @@ inline gc_alloc_context* Thread::GetAllocContext()
 {
     return (gc_alloc_context*)m_rgbAllocContextBuffer;
 }
+
+inline uint8_t** Thread::GetCombinedLimit()
+{
+    return &m_combined_limit;
+}
+
 
 inline bool Thread::IsStateSet(ThreadStateFlags flags)
 {
@@ -156,3 +172,5 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame* pFrame
 
     return true;
 }
+
+#endif // __thread_inl__
