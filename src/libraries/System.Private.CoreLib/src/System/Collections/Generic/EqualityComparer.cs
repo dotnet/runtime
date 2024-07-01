@@ -265,7 +265,7 @@ namespace System.Collections.Generic
 
     // This class exists to be EqualityComparer<string>.Default. It can't just use the GenericEqualityComparer<string>,
     // as it needs to also implement IAlternateEqualityComparer<ReadOnlySpan<char>, string>, and it can't be
-    // StringComparer.Ordinal, as that doesn't derive from the abstract EqualityComparer<T>.
+    // StringComparer.Ordinal, as that doesn't derive from the required abstract EqualityComparer<T> base class.
     [Serializable]
     internal sealed partial class StringEqualityComparer :
         EqualityComparer<string>,
@@ -274,12 +274,24 @@ namespace System.Collections.Generic
     {
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            // This type was introduced after BinaryFormatter was deprecated. BinaryFormatter serializes
-            // types from System.Private.CoreLib without an assembly name, and then on deserialization assumes
-            // "mscorlib". To support such roundtripping, this type would need to be public and type-forwarded from
-            // the mscorlib shim. Instead, we serialize this instead as a GenericEqualityComparer<string>. The
-            // resulting behavior is the same, except it won't implement IAlternateEqualityComparer, and so functionality
-            // that relies on that interface (which was also introduced after BinaryFormatter was deprecated) won't work.
+            // This type is added as an internal implementation detail in .NET 9. Even though as of .NET 9 BinaryFormatter has been
+            // deprecated, for back compat we still need to support serializing this type, especially when EqualityComparer<string>.Default
+            // is used as part of a collection, like Dictionary<string, TValue>.
+            //
+            // BinaryFormatter treats types in the core library as being special, in that it doesn't include the assembly as part of the
+            // serialized data, and then on deserialization it assumes the type is in mscorlib. We could make the type public and type forward
+            // it from the mscorlib shim, which would enable roundtripping on .NET 9+, but because this type doesn't exist downlevel, it would
+            // break serializing on .NET 9+ and deserializing downlevel. Therefore, we need to serialize as something that exists downlevel.
+
+            // We could serialize as OrdinalComparer, which does exist downlevel, and which has the nice property that it also implements
+            // IAlternateEqualityComparer<ReadOnlySpan<char>, string>, which means serializing an instance on .NET 9+ and deserializing it
+            // on .NET 9+ would continue to support span-based lookups. However, OrdinalComparer is not an EqualityComparer<string>, which
+            // means the type's public ancestry would not be retained, which could lead to strange casting-related errors, including downlevel.
+
+            // Instead, we can serialize as a GenericEqualityComparer<string>. This exists downlevel and also derives from EqualityComparer<string>,
+            // but doesn't implement IAlternateEqualityComparer<ReadOnlySpan<char>, string>. This means that upon deserializing on .NET 9+,
+            // the comparer loses its ability to handle span-based lookups. As BinaryFormatter is deprecated on .NET 9+, this is a readonable tradeoff.
+
             info.SetType(typeof(GenericEqualityComparer<string>));
         }
 

@@ -8922,8 +8922,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     // string
     if (elemTypeHnd.IsString())
     {
-        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__STRING_EQUALITYCOMPARER)).Instantiate(inst);
-        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
+        return CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__STRING_EQUALITYCOMPARER));
     }
 
     // Nullable<T>
