@@ -1760,7 +1760,7 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
     DISPSTMT(initStmt);
 
     GenTree* nextValue =
-        m_comp->gtNewOperNode(GT_ADD, stepValue->TypeGet(), m_comp->gtNewLclVarNode(newPrimaryIV, iv->Type), stepValue);
+        m_comp->gtNewOperNode(GT_ADD, iv->Type, m_comp->gtNewLclVarNode(newPrimaryIV, iv->Type), stepValue);
     GenTree*   stepStore = m_comp->gtNewTempStore(newPrimaryIV, nextValue);
     Statement* stepStmt  = m_comp->fgNewStmtFromTree(stepStore);
     m_comp->fgInsertStmtNearEnd(insertionPoint, stepStmt);
