@@ -625,9 +625,6 @@ add_return_valuetype_swiftcall (MonoMethodSignature *sig, ArgInfo *ainfo, MonoTy
 	// The structs that cannot be lowered, we pass them by reference
 	if (lowered_swift_struct.by_reference) {
 		ainfo->storage = ArgValuetypeAddrInIReg;
-		//struct_size = ALIGN_TO (struct_size, 8); // TODO
-		//ainfo->offset = GINT32_TO_INT16 (*stack_size);
-		//*stack_size += struct_size;
 		/* 
 		 * On x64, Swift calls expect the return buffer to be passed in RAX.
 		 * However, since RAX is used as a scracth register in the mono runtime,

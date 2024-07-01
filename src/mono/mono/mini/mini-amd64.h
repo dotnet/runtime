@@ -252,7 +252,7 @@ static const AMD64_XMM_Reg_No float_param_regs[] = {AMD64_XMM0, AMD64_XMM1, AMD6
 
 static const AMD64_Reg_No return_regs [] = {AMD64_RAX, AMD64_RDX};
 static const AMD64_XMM_Reg_No float_return_regs [] = {AMD64_XMM0, AMD64_XMM1};
-#else MONO_ARCH_HAVE_SWIFTCALL
+#else
 #define SWIFT_RETURN_BUFFER_REG AMD64_RAX
 #define RETURN_REGS 4
 #define FLOAT_RETURN_REGS 4
