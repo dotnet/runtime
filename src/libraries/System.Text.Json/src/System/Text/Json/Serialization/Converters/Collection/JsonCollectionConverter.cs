@@ -263,8 +263,8 @@ namespace System.Text.Json.Serialization
                             if (options.AllowOutOfOrderMetadataProperties)
                             {
                                 Debug.Assert(JsonSerializer.IsMetadataPropertyName(reader.GetUnescapedSpan(), (state.Current.BaseJsonTypeInfo ?? jsonTypeInfo).PolymorphicTypeResolver), "should only be hit if metadata property.");
-                                bool buffered = reader.TrySkipPartial(reader.CurrentDepth - 1); // skip to the end of the object
-                                Debug.Assert(buffered, "Metadata reader must have buffered all contents.");
+                                bool result = reader.TrySkipPartial(reader.CurrentDepth - 1); // skip to the end of the object
+                                Debug.Assert(result, "Metadata reader must have buffered all contents.");
                                 Debug.Assert(reader.TokenType is JsonTokenType.EndObject);
                             }
                             else
@@ -277,9 +277,9 @@ namespace System.Text.Json.Serialization
             }
 
             ConvertCollection(ref state, options);
-            object result = state.Current.ReturnValue!;
-            value = (TCollection)result;
-            jsonTypeInfo.OnDeserialized?.Invoke(result);
+            object returnValue = state.Current.ReturnValue!;
+            value = (TCollection)returnValue;
+            jsonTypeInfo.OnDeserialized?.Invoke(returnValue);
 
             return true;
         }
