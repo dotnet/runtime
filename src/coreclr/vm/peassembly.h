@@ -204,10 +204,9 @@ public:
     void *GetVTable(RVA rva);
 
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
-                     PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
+                     PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
                      LPCSTR *szFileName, DWORD *dwLocation,
-                     BOOL fSkipRaiseResolveEvent, DomainAssembly* pDomainAssembly,
-                     AppDomain* pAppDomain);
+                     Assembly* pAssembly);
 
 #ifndef DACCESS_COMPILE
     PTR_CVOID GetMetadata(COUNT_T *pSize);

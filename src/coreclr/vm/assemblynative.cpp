@@ -650,9 +650,9 @@ extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAs
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
 
-    pAssembly->GetResource(pNameUTF8, length,
+    pAssembly->GetPEAssembly()->GetResource(pNameUTF8, length,
                            &pbInMemoryResource, NULL, NULL,
-                           NULL, FALSE);
+                           NULL, pAssembly->GetAssembly());
 
     END_QCALL;
 
@@ -679,12 +679,12 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
 
-    DomainAssembly * pReferencedAssembly = NULL;
+    Assembly * pReferencedAssembly = NULL;
     LPCSTR pFileName = NULL;
     DWORD dwLocation = 0;
 
-    if (pAssembly->GetResource(pNameUTF8, NULL, NULL, &pReferencedAssembly, &pFileName,
-                              &dwLocation, FALSE))
+    if (pAssembly->GetPEAssembly()->GetResource(pNameUTF8, NULL, NULL, &pReferencedAssembly, &pFileName,
+                              &dwLocation, pAssembly->GetAssembly()))
     {
         if (pFileName)
             retFileName.Set(pFileName);
@@ -692,7 +692,7 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
         GCX_COOP();
 
         if (pReferencedAssembly)
-            retAssembly.Set(pReferencedAssembly->GetExposedAssemblyObject());
+            retAssembly.Set(pReferencedAssembly->GetDomainAssembly()->GetExposedAssemblyObject());
 
         rv = dwLocation;
     }
