@@ -595,7 +595,7 @@ bool emitter::emitGenNoGCLst(Callback& cb)
             assert(id != nullptr);
             assert(id->idCodeSize() > 0);
             if (!cb(ig->igFuncIdx, ig->igOffs, ig->igSize, id->idCodeSize(),
-                    ig->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)))
+                    ig->igFlags & (IGF_FUNCLET_PROLOG)))
             {
                 return false;
             }
