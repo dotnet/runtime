@@ -128,9 +128,9 @@ struct FloatEmpty8Float
 };
 
 extern "C" DLLEXPORT FloatEmpty8Float Echo_FloatEmpty8Float_RiscV(
-	int a0, float fa0, FloatEmpty8Float fa1_fa2, int a1, float fa3)
+	int a0, float fa0, FloatEmpty8Float fa1_fa2, int a1, float fa2)
 {
-	fa1_fa2.Float1 += (float)a1 + fa3;
+	fa1_fa2.Float1 += (float)a1 + fa2;
 	return fa1_fa2;
 }
 
@@ -161,6 +161,38 @@ extern "C" DLLEXPORT FloatEmpty8Float Echo_FloatEmpty8Float_OnStack_RiscV(
 	return stack0_stack1;
 }
 
+
+struct FloatEmptyShort
+{
+	float Float0;
+	Empty Empty0;
+	short Short0;
+};
+
+extern "C" DLLEXPORT FloatEmptyShort Echo_FloatEmptyShort_RiscV(
+	int a0, float fa0, FloatEmptyShort fa1_a1, int a1, float fa2)
+{
+	fa1_a1.Short0 += (short)(a1 + (int)fa2);
+	return fa1_a1;
+}
+
+extern "C" DLLEXPORT FloatEmptyShort Echo_FloatEmptyShort_InIntegerRegs_RiscV(
+	int a0,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+	FloatEmptyShort a1_a2, int a3, float a4)
+{
+	a1_a2.Short0 += (short)(a3 + (int)a4);
+	return a1_a2;
+}
+
+extern "C" DLLEXPORT FloatEmptyShort Echo_FloatEmptyShort_OnStack_RiscV(
+	int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+	FloatEmptyShort stack0, int stack1, float stack2)
+{
+	stack0.Short0 += (short)(stack1 + (int)stack2);
+	return stack0;
+}
 
 struct EmptyFloatEmpty5Sbyte
 {

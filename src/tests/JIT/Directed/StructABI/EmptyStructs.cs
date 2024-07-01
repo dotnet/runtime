@@ -12,6 +12,7 @@ public static class Program
 	{
 	}
 
+
 #region IntEmpty_SystemVTests
 	public struct IntEmpty
 	{
@@ -400,9 +401,9 @@ public static class Program
 	{
 		FloatEmpty8Float expected = FloatEmpty8Float.Get();
 		FloatEmpty8Float native = Echo_FloatEmpty8Float_Split_RiscV(
-			0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+			0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, -2, 2f);
 		FloatEmpty8Float managed = Echo_FloatEmpty8Float_Split_RiscV_Managed(
-			0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+			0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, -2, 2f);
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -429,9 +430,108 @@ public static class Program
 	{
 		FloatEmpty8Float expected = FloatEmpty8Float.Get();
 		FloatEmpty8Float native = Echo_FloatEmpty8Float_OnStack_RiscV(
-			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 3, -3f);
 		FloatEmpty8Float managed = Echo_FloatEmpty8Float_OnStack_RiscV_Managed(
-			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 3, -3f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+#endregion
+
+#region FloatEmptyShort_RiscVTests
+	public struct FloatEmptyShort
+	{
+		public float Float0;
+		public Empty Empty0;
+		public short Short0;
+
+		public static FloatEmptyShort Get()
+			=> new FloatEmptyShort { Float0 = 2.71828f, Short0 = 0x1dea };
+
+		public bool Equals(FloatEmptyShort other)
+			=> Float0 == other.Float0 && Short0 == other.Short0;
+
+		public override string ToString()
+			=> $"{{Float0:{Float0}, Short0:{Short0}}}";
+	}
+
+	[DllImport("EmptyStructsLib")]
+	public static extern FloatEmptyShort Echo_FloatEmptyShort_RiscV(
+		int a0, float fa0, FloatEmptyShort fa1_a1, int a1, float fa2);
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static FloatEmptyShort Echo_FloatEmptyShort_RiscV_Managed(
+		int a0, float fa0, FloatEmptyShort fa1_a1, int a1, float fa2)
+	{
+		fa1_a1.Short0 += (short)(a1 + (int)fa2);
+		return fa1_a1;
+	}
+
+	[Fact]
+	public static void Test_FloatEmptyShort_RiscV()
+	{
+		FloatEmptyShort expected = FloatEmptyShort.Get();
+		FloatEmptyShort native = Echo_FloatEmptyShort_RiscV(0, 0f, expected, -1, 1f);
+		FloatEmptyShort managed = Echo_FloatEmptyShort_RiscV_Managed(0, 0f, expected, -1, 1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[DllImport("EmptyStructsLib")]
+	public static extern FloatEmptyShort Echo_FloatEmptyShort_InIntegerRegs_RiscV(
+		int a0,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+		FloatEmptyShort a1_a2, int a3, float a4);
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static FloatEmptyShort Echo_FloatEmptyShort_InIntegerRegs_RiscV_Managed(
+		int a0,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+		FloatEmptyShort a1_a2, int a3, float a4)
+	{
+		a1_a2.Short0 += (short)(a3 + (int)a4);
+		return a1_a2;
+	}
+
+	[Fact]
+	public static void Test_FloatEmptyShort_InIntegerRegs_RiscV()
+	{
+		FloatEmptyShort expected = FloatEmptyShort.Get();
+		FloatEmptyShort native = Echo_FloatEmptyShort_InIntegerRegs_RiscV(
+			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+		FloatEmptyShort managed = Echo_FloatEmptyShort_InIntegerRegs_RiscV_Managed(
+			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[DllImport("EmptyStructsLib")]
+	public static extern FloatEmptyShort Echo_FloatEmptyShort_OnStack_RiscV(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+		FloatEmptyShort stack0, int stack1, float stack2);
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static FloatEmptyShort Echo_FloatEmptyShort_OnStack_RiscV_Managed(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+		FloatEmptyShort stack0, int stack1, float stack2)
+	{
+		stack0.Short0 += (short)(stack1 + (int)stack2);
+		return stack0;
+	}
+
+	[Fact]
+	public static void Test_FloatEmptyShort_OnStack_RiscV()
+	{
+		FloatEmptyShort expected = FloatEmptyShort.Get();
+		FloatEmptyShort native = Echo_FloatEmptyShort_OnStack_RiscV(
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 2, -2f);
+		FloatEmptyShort managed = Echo_FloatEmptyShort_OnStack_RiscV_Managed(
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 2, -2f);
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);

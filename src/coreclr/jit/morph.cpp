@@ -2649,8 +2649,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
                                 // Single-field structs passed according to floating-point calling convention may have
                                 // padding in front of the field passed in a register
-                                assert(arg.NewAbiInfo.HasExactlyOneRegisterSegment());
-                                argObj->AsLclFld()->SetLclOffs(arg.NewAbiInfo.Segment(0).Offset);
+                                assert(arg.NewAbiInfo.NumSegments == 1);
+                                // Single-slot structs passed according to integer calling convention also go through
+                                // here but since they always have zero offset nothing should change
+                                ABIPassingSegment seg = arg.NewAbiInfo.Segment(0);
+                                assert((seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister())) ||
+                                       (seg.Offset == 0));
+                                argObj->AsLclFld()->SetLclOffs(seg.Offset);
 #endif
                             }
                             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
