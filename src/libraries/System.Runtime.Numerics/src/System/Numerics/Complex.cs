@@ -288,49 +288,7 @@ namespace System.Numerics
 
         public static double Abs(Complex value)
         {
-            return Hypot(value.m_real, value.m_imaginary);
-        }
-
-        private static double Hypot(double a, double b)
-        {
-#if NET7_0_OR_GREATER
-            return double.Hypot(a, b);
-#else
-            // Using
-            //   sqrt(a^2 + b^2) = |a| * sqrt(1 + (b/a)^2)
-            // we can factor out the larger component to dodge overflow even when a * a would overflow.
-
-            a = Math.Abs(a);
-            b = Math.Abs(b);
-
-            double small, large;
-            if (a < b)
-            {
-                small = a;
-                large = b;
-            }
-            else
-            {
-                small = b;
-                large = a;
-            }
-
-            if (small == 0.0)
-            {
-                return (large);
-            }
-            else if (double.IsPositiveInfinity(large) && !double.IsNaN(small))
-            {
-                // The NaN test is necessary so we don't return +inf when small=NaN and large=+inf.
-                // NaN in any other place returns NaN without any special handling.
-                return (double.PositiveInfinity);
-            }
-            else
-            {
-                double ratio = small / large;
-                return (large * Math.Sqrt(1.0 + ratio * ratio));
-            }
-#endif
+            return double.Hypot(value.m_real, value.m_imaginary);
         }
 
         private static double Log1P(double x)
@@ -602,8 +560,8 @@ namespace System.Numerics
             }
             else
             {
-                double r = Hypot((x + 1.0), y);
-                double s = Hypot((x - 1.0), y);
+                double r = double.Hypot((x + 1.0), y);
+                double s = double.Hypot((x - 1.0), y);
 
                 double a = (r + s) * 0.5;
                 b = x / a;
@@ -746,12 +704,12 @@ namespace System.Numerics
             double x, y;
             if (realCopy >= 0.0)
             {
-                x = Math.Sqrt((Hypot(realCopy, imaginaryCopy) + realCopy) * 0.5);
+                x = Math.Sqrt((double.Hypot(realCopy, imaginaryCopy) + realCopy) * 0.5);
                 y = imaginaryCopy / (2.0 * x);
             }
             else
             {
-                y = Math.Sqrt((Hypot(realCopy, imaginaryCopy) - realCopy) * 0.5);
+                y = Math.Sqrt((double.Hypot(realCopy, imaginaryCopy) - realCopy) * 0.5);
                 if (imaginaryCopy < 0.0) y = -y;
                 x = imaginaryCopy / (2.0 * y);
             }
