@@ -1026,8 +1026,6 @@ namespace System.Runtime.Intrinsics.Arm
 
 
         /// <summary>
-        /// svbool_t svbrka[_b]_m(svbool_t inactive, svbool_t pg, svbool_t op)
-        ///   BRKA Ptied.B, Pg/M, Pop.B
         /// svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)
         ///   BRKA Presult.B, Pg/Z, Pop.B
         /// </summary>
@@ -1148,8 +1146,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> CreateBreakBeforeMask(Vector<long> mask, Vector<long> srcMask) => CreateBreakBeforeMask(mask, srcMask);
 
         /// <summary>
-        /// svbool_t svbrkb[_b]_m(svbool_t inactive, svbool_t pg, svbool_t op)
-        ///   BRKB Ptied.B, Pg/M, Pop.B
         /// svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)
         ///   BRKB Presult.B, Pg/Z, Pop.B
         /// </summary>
