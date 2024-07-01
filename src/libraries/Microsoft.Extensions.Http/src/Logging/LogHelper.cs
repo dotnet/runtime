@@ -151,9 +151,16 @@ namespace Microsoft.Extensions.Http.Logging
                 return null;
             }
 
-            string uriString = uri.IsAbsoluteUri
-                ? uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.UserInfo, UriFormat.UriEscaped)
-                : uri.ToString();
+            if (!uri.IsAbsoluteUri)
+            {
+                // We cannot guarantee the redaction of UserInfo for relative Uris without implementing some subset of Uri parsing in this package.
+                // To avoid this, we redact the whole Uri. Seeing a relative Uri in LoggingHttpMessageHandler or LoggingScopeHttpMessageHandler
+                // requires a custom handler chain with custom expansion logic implemented by the user's HttpMessageHandler.
+                // In such advanced scenarios we recommend users to log the Uri in their handler.
+                return "*";
+            }
+
+            string uriString = uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.UserInfo, UriFormat.UriEscaped);
 
             if (s_disableUriQueryRedaction)
             {
