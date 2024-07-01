@@ -7303,6 +7303,280 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void Scatter(Vector<ulong> mask, ulong* address, Vector<ulong> indicies, Vector<ulong> data) => Scatter(mask, address, indicies, data);
 
 
+        //  Truncate to 16 bits and store
+
+        // <summary>
+        // void svst1h_scatter[_u32base_s32](svbool_t pg, svuint32_t bases, svint32_t data)
+        //   ST1H Zdata.S, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void Scatter16BitNarrowing(Vector<int> mask, Vector<uint> addresses, Vector<int> data) => Scatter16BitNarrowing(mask, addresses, data);
+
+        // <summary>
+        // void svst1h_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        //   ST1H Zdata.D, Pg, [Zbases.D, #0]
+        // </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) => Scatter16BitNarrowing(mask, addresses, data);
+
+        // <summary>
+        // void svst1h_scatter[_u32base_u32](svbool_t pg, svuint32_t bases, svuint32_t data)
+        //   ST1H Zdata.S, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void Scatter16BitNarrowing(Vector<uint> mask, Vector<uint> addresses, Vector<uint> data) => Scatter16BitNarrowing(mask, addresses, data);
+
+        // <summary>
+        // void svst1h_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        //   ST1H Zdata.D, Pg, [Zbases.D, #0]
+        // </summary>
+        public static unsafe void Scatter16BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter16BitNarrowing(mask, addresses, data);
+
+
+        //  Truncate to 16 bits and store
+
+        // <summary>
+        // void svst1h_scatter_[s32]offset[_s32](svbool_t pg, int16_t *base, svint32_t offsets, svint32_t data)
+        //   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        // </summary>
+        public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<int> mask, short* address, Vector<int> offsets, Vector<int> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1h_scatter_[u32]offset[_s32](svbool_t pg, int16_t *base, svuint32_t offsets, svint32_t data)
+        //   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        // </summary>
+        public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<int> mask, short* address, Vector<uint> offsets, Vector<int> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1h_scatter_[s32]index[_s32](svbool_t pg, int16_t *base, svint32_t indices, svint32_t data)
+        //   ST1H Zdata.S, Pg, [Xbase, Zindices.S, SXTW #1]
+        // </summary>
+        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<int> mask, short* address, Vector<int> indices, Vector<int> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+        // <summary>
+        // void svst1h_scatter_[u32]index[_s32](svbool_t pg, int16_t *base, svuint32_t indices, svint32_t data)
+        //   ST1H Zdata.S, Pg, [Xbase, Zindices.S, UXTW #1]
+        // </summary>
+        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<int> mask, short* address, Vector<uint> indices, Vector<int> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+        // <summary>
+        // void svst1h_scatter_[s64]offset[_s64](svbool_t pg, int16_t *base, svint64_t offsets, svint64_t data)
+        //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<long> mask, short* address, Vector<long> offsets, Vector<long> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1h_scatter_[u64]offset[_s64](svbool_t pg, int16_t *base, svuint64_t offsets, svint64_t data)
+        //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<long> mask, short* address, Vector<ulong> offsets, Vector<long> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1h_scatter_[s64]index[_s64](svbool_t pg, int16_t *base, svint64_t indices, svint64_t data)
+        //   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        // </summary>
+        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<long> mask, short* address, Vector<long> indices, Vector<long> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+        // <summary>
+        // void svst1h_scatter_[u64]index[_s64](svbool_t pg, int16_t *base, svuint64_t indices, svint64_t data)
+        //   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        // </summary>
+        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<long> mask, short* address, Vector<ulong> indices, Vector<long> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+        // <summary>
+        // void svst1h_scatter_[s32]offset[_u32](svbool_t pg, uint16_t *base, svint32_t offsets, svuint32_t data)
+        //   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        // </summary>
+        public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<uint> mask, ushort* address, Vector<int> offsets, Vector<uint> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1h_scatter_[u32]offset[_u32](svbool_t pg, uint16_t *base, svuint32_t offsets, svuint32_t data)
+        //   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        // </summary>
+        public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<uint> mask, ushort* address, Vector<uint> offsets, Vector<uint> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1h_scatter_[s32]index[_u32](svbool_t pg, uint16_t *base, svint32_t indices, svuint32_t data)
+        //   ST1H Zdata.S, Pg, [Xbase, Zindices.S, SXTW #1]
+        // </summary>
+        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<uint> mask, ushort* address, Vector<int> indices, Vector<uint> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+        // <summary>
+        // void svst1h_scatter_[u32]index[_u32](svbool_t pg, uint16_t *base, svuint32_t indices, svuint32_t data)
+        //   ST1H Zdata.S, Pg, [Xbase, Zindices.S, UXTW #1]
+        // </summary>
+        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<uint> mask, ushort* address, Vector<uint> indices, Vector<uint> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+        // <summary>
+        // void svst1h_scatter_[s64]offset[_u64](svbool_t pg, uint16_t *base, svint64_t offsets, svuint64_t data)
+        //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<ulong> mask, ushort* address, Vector<long> offsets, Vector<ulong> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1h_scatter_[u64]offset[_u64](svbool_t pg, uint16_t *base, svuint64_t offsets, svuint64_t data)
+        //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<ulong> mask, ushort* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1h_scatter_[s64]index[_u64](svbool_t pg, uint16_t *base, svint64_t indices, svuint64_t data)
+        //   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        // </summary>
+        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<ulong> mask, ushort* address, Vector<long> indices, Vector<ulong> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+        // <summary>
+        // void svst1h_scatter_[u64]index[_u64](svbool_t pg, uint16_t *base, svuint64_t indices, svuint64_t data)
+        //   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
+        // </summary>
+        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<ulong> mask, ushort* address, Vector<ulong> indices, Vector<ulong> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+
+        //  Truncate to 32 bits and store
+
+        // <summary>
+        // void svst1w_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        //   ST1W Zdata.D, Pg, [Zbases.D, #0]
+        // </summary>
+        public static unsafe void Scatter32BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) => Scatter32BitNarrowing(mask, addresses, data);
+
+        // <summary>
+        // void svst1w_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        //   ST1W Zdata.D, Pg, [Zbases.D, #0]
+        // </summary>
+        public static unsafe void Scatter32BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter32BitNarrowing(mask, addresses, data);
+
+
+        //  Truncate to 32 bits and store
+
+        // <summary>
+        // void svst1w_scatter_[s64]offset[_s64](svbool_t pg, int32_t *base, svint64_t offsets, svint64_t data)
+        //   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<long> mask, int* address, Vector<long> offsets, Vector<long> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1w_scatter_[u64]offset[_s64](svbool_t pg, int32_t *base, svuint64_t offsets, svint64_t data)
+        //   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<long> mask, int* address, Vector<ulong> offsets, Vector<long> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1w_scatter_[s64]index[_s64](svbool_t pg, int32_t *base, svint64_t indices, svint64_t data)
+        //   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        // </summary>
+        // public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<long> mask, int* address, Vector<long> indices, Vector<long> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+        // <summary>
+        // void svst1w_scatter_[u64]index[_s64](svbool_t pg, int32_t *base, svuint64_t indices, svint64_t data)
+        //   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        // </summary>
+        // public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<long> mask, int* address, Vector<ulong> indices, Vector<long> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+        // <summary>
+        // void svst1w_scatter_[s64]offset[_u64](svbool_t pg, uint32_t *base, svint64_t offsets, svuint64_t data)
+        //   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<ulong> mask, uint* address, Vector<long> offsets, Vector<ulong> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1w_scatter_[u64]offset[_u64](svbool_t pg, uint32_t *base, svuint64_t offsets, svuint64_t data)
+        //   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<ulong> mask, uint* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1w_scatter_[s64]index[_u64](svbool_t pg, uint32_t *base, svint64_t indices, svuint64_t data)
+        //   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        // </summary>
+        // public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<ulong> mask, uint* address, Vector<long> indices, Vector<ulong> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+        // <summary>
+        // void svst1w_scatter_[u64]index[_u64](svbool_t pg, uint32_t *base, svuint64_t indices, svuint64_t data)
+        //   ST1W Zdata.D, Pg, [Xbase, Zindices.D, LSL #2]
+        // </summary>
+        // public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<ulong> mask, uint* address, Vector<ulong> indices, Vector<ulong> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, indices, data);
+
+
+        //  Truncate to 8 bits and store
+
+        // <summary>
+        // void svst1b_scatter[_u32base_s32](svbool_t pg, svuint32_t bases, svint32_t data)
+        //   ST1B Zdata.S, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void Scatter8BitNarrowing(Vector<int> mask, Vector<uint> addresses, Vector<int> data) => Scatter8BitNarrowing(mask, addresses, data);
+
+        // <summary>
+        // void svst1b_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        //   ST1B Zdata.D, Pg, [Zbases.D, #0]
+        // </summary>
+        public static unsafe void Scatter8BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) => Scatter8BitNarrowing(mask, addresses, data);
+
+        // <summary>
+        // void svst1b_scatter[_u32base_u32](svbool_t pg, svuint32_t bases, svuint32_t data)
+        //   ST1B Zdata.S, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void Scatter8BitNarrowing(Vector<uint> mask, Vector<uint> addresses, Vector<uint> data) => Scatter8BitNarrowing(mask, addresses, data);
+
+        // <summary>
+        // void svst1b_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        //   ST1B Zdata.D, Pg, [Zbases.D, #0]
+        // </summary>
+        public static unsafe void Scatter8BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter8BitNarrowing(mask, addresses, data);
+
+
+        //  Truncate to 8 bits and store
+
+        // <summary>
+        // void svst1b_scatter_[s32]offset[_s32](svbool_t pg, int8_t *base, svint32_t offsets, svint32_t data)
+        //   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        // </summary>
+        public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<int> mask, sbyte* address, Vector<int> offsets, Vector<int> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1b_scatter_[u32]offset[_s32](svbool_t pg, int8_t *base, svuint32_t offsets, svint32_t data)
+        //   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        // </summary>
+        public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<int> mask, sbyte* address, Vector<uint> offsets, Vector<int> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1b_scatter_[s64]offset[_s64](svbool_t pg, int8_t *base, svint64_t offsets, svint64_t data)
+        //   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<long> mask, sbyte* address, Vector<long> offsets, Vector<long> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1b_scatter_[u64]offset[_s64](svbool_t pg, int8_t *base, svuint64_t offsets, svint64_t data)
+        //   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<long> mask, sbyte* address, Vector<ulong> offsets, Vector<long> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1b_scatter_[s32]offset[_u32](svbool_t pg, uint8_t *base, svint32_t offsets, svuint32_t data)
+        //   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        // </summary>
+        public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<uint> mask, byte* address, Vector<int> offsets, Vector<uint> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1b_scatter_[u32]offset[_u32](svbool_t pg, uint8_t *base, svuint32_t offsets, svuint32_t data)
+        //   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        // </summary>
+        public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<uint> mask, byte* address, Vector<uint> offsets, Vector<uint> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1b_scatter_[s64]offset[_u64](svbool_t pg, uint8_t *base, svint64_t offsets, svuint64_t data)
+        //   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<ulong> mask, byte* address, Vector<long> offsets, Vector<ulong> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+        // <summary>
+        // void svst1b_scatter_[u64]offset[_u64](svbool_t pg, uint8_t *base, svuint64_t offsets, svuint64_t data)
+        //   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<ulong> mask, byte* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
+
+
         ///  Logical shift left
 
         /// <summary>

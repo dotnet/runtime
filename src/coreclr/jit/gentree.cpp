@@ -26833,6 +26833,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
             case NI_SSE2_MaskMove:
                 addr = Op(3);
                 break;
+
 #elif defined(TARGET_ARM64)
             case NI_Sve_StoreAndZip:
             case NI_Sve_StoreAndZipx2:
@@ -26844,9 +26845,14 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
                 break;
 
             case NI_Sve_Scatter:
+            case NI_Sve_Scatter16BitNarrowing:
+            case NI_Sve_Scatter16BitWithByteOffsetsNarrowing:
+            case NI_Sve_Scatter32BitNarrowing:
+            case NI_Sve_Scatter32BitWithByteOffsetsNarrowing:
+            case NI_Sve_Scatter8BitNarrowing:
+            case NI_Sve_Scatter8BitWithByteOffsetsNarrowing:
                 addr = Op(2);
                 break;
-
 #endif // TARGET_ARM64
 
             default:
