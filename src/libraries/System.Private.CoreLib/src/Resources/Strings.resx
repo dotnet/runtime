@@ -3018,7 +3018,7 @@
     <value>This operation is invalid on overlapping buffers.</value>
   </data>
   <data name="NotSupported_StackTraceSupportDisabled" xml:space="preserve">
-    <value>Unable to retreive stack trace information when StackTraceSupport feature switch is set to false.</value>
+    <value>Unable to retrieve stack trace information when StackTraceSupport feature switch is set to false.</value>
   </data>
   <data name="InvalidOperation_TimeProviderNullLocalTimeZone" xml:space="preserve">
     <value>The operation cannot be performed when TimeProvider.LocalTimeZone is null.</value>
