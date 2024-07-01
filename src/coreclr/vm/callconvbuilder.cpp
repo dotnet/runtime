@@ -452,7 +452,7 @@ HRESULT CallConv::TryGetCallingConventionFromUnmanagedCallConv(
     callConvsArg.Init("CallConvs", SERIALIZATION_TYPE_SZARRAY, callConvsType);
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
-    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
+    Assembly* assembly = pMD->GetLoaderModule()->GetAssembly();
     IfFailThrow(Attribute::ParseArgumentValues(
         pData,
         cData,
@@ -461,7 +461,7 @@ HRESULT CallConv::TryGetCallingConventionFromUnmanagedCallConv(
         0,
         &callConvsArg,
         1,
-        domainAssembly));
+        assembly ));
 
     // Value isn't defined
     if (callConvsArg.val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
@@ -527,7 +527,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
     namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
-    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
+    Assembly* assembly = pMD->GetLoaderModule()->GetAssembly();
     IfFailThrow(Attribute::ParseArgumentValues(
         pData,
         cData,
@@ -536,7 +536,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
         0,
         namedArgs,
         ARRAY_SIZE(namedArgs),
-        domainAssembly));
+        assembly));
 
     // If the value isn't defined, then return without setting anything.
     if (namedArgs[0].val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
