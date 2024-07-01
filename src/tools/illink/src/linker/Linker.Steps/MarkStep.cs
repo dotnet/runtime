@@ -3492,8 +3492,11 @@ namespace Mono.Linker.Steps
 			if (!Annotations.MarkProcessed (prop, reason))
 				return;
 
-			PropertyDefinitionNode propertyNode = _nodeFactory.GetPropertyNode (prop);
-			_dependencyGraph.AddRoot (propertyNode, reason.Kind.ToString ());
+			var propertyOrigin = new MessageOrigin (prop);
+
+			// Consider making this more similar to MarkEvent method?
+			MarkCustomAttributes (prop, new DependencyInfo (DependencyKind.CustomAttribute, prop), propertyOrigin);
+			DoAdditionalPropertyProcessing (prop);
 		}
 
 		protected internal virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason, MessageOrigin origin)
