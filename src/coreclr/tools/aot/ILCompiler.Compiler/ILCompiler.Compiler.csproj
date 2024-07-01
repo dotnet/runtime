@@ -668,6 +668,7 @@
     <Compile Include="Compiler\Logging\UnconditionalSuppressMessageAttributeState.cs" />
     <Compile Include="Compiler\XmlObjectDumper.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
+    <Compile Include="IL\TypeEqualityPatternAnalyzer.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.Sorting.cs" />
