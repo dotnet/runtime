@@ -10052,10 +10052,18 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                node->ChangeHWIntrinsicId(maskIntrinsicId);
-                node->gtType = TYP_MASK;
+                if (oper == actualOper)
+                {
+                    node->ChangeHWIntrinsicId(maskIntrinsicId);
+                    node->Op(1) = cvtOp1->Op(1);
+                }
+                else
+                {
+                    assert(oper == GT_NOT);
+                    node->ResetHWIntrinsicId(maskIntrinsicId, this, cvtOp1->Op(1));
+                }
 
-                node->Op(1) = cvtOp1->Op(1);
+                node->gtType = TYP_MASK;
                 DEBUG_DESTROY_NODE(op1);
 
                 if (oper != GT_NOT)
@@ -10108,16 +10116,19 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     return node;
                 }
 
+#if defined(TARGET_ARM64)
                 if (hwOper == GT_NOT)
                 {
                     lhs = op2;
                     rhs = hw->Op(1);
                 }
-                else if ((hwOper == GT_XOR) && hw->Op(2)->IsVectorAllBitsSet())
+#elif defined(TARGET_XARCH)
+                if ((hwOper == GT_XOR) && hw->Op(2)->IsVectorAllBitsSet())
                 {
                     lhs = op2;
                     rhs = hw->Op(1);
                 }
+#endif // !TARGET_ARM64 && !TARGET_XARCH
             }
 
             if ((lhs == nullptr) && op2->OperIsHWIntrinsic())
@@ -10131,16 +10142,19 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     return node;
                 }
 
+#if defined(TARGET_ARM64)
                 if (hwOper == GT_NOT)
                 {
                     lhs = op1;
                     rhs = hw->Op(1);
                 }
-                else if ((hwOper == GT_XOR) && hw->Op(2)->IsVectorAllBitsSet())
+#elif defined(TARGET_XARCH)
+                if ((hwOper == GT_XOR) && hw->Op(2)->IsVectorAllBitsSet())
                 {
                     lhs = op1;
                     rhs = hw->Op(1);
                 }
+#endif // !TARGET_ARM64 && !TARGET_XARCH
             }
 
             if (lhs == nullptr)
@@ -10166,18 +10180,84 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             return andnNode;
         }
 
+#if defined(TARGET_ARM64)
+        // Transforms:
+        // 1. -(-v1) to v1
+        case GT_NEG:
+        {
+            GenTree* op1 = node->Op(1);
+
+            if (op1->OperIsHWIntrinsic())
+            {
+                GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
+                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+
+                if (isScalar)
+                {
+                    return node;
+                }
+
+                if (varTypeToSigned(simdBaseType) != varTypeToSigned(hw->GetSimdBaseType()))
+                {
+                    // We need the base types to be of the same kind and size
+                    // that is, we can't mix floating-point and integers or int and long
+                    // but we can mix int and uint or long and ulong.
+                    return node;
+                }
+
+                if (hwOper == GT_NEG)
+                {
+                    GenTree* result = hw->Op(1);
+                    DEBUG_DESTROY_NODE(hw);
+                    DEBUG_DESTROY_NODE(node);
+                    return result;
+                }
+            }
+            break;
+        }
+#endif // TARGET_ARM64
+
+#if defined(TARGET_ARM64)
+        // Transforms:
+        // 1. ~(~v1) to v1
+        case GT_NOT:
+        {
+            GenTree* op1 = node->Op(1);
+
+            if (op1->OperIsHWIntrinsic())
+            {
+                GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
+                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+
+                if (isScalar)
+                {
+                    return node;
+                }
+
+                if (hwOper == GT_NOT)
+                {
+                    GenTree* result = hw->Op(1);
+                    DEBUG_DESTROY_NODE(hw);
+                    DEBUG_DESTROY_NODE(node);
+                    return result;
+                }
+            }
+            break;
+        }
+#endif // TARGET_ARM64
+
         // Transforms:
         // 1. (Zero - v1) to VectorXxx.Negate(v1); for integers
+        // 2. (Zero - (Zero - v1)) to v1; for integers
         case GT_SUB:
         {
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
-#if defined(TARGET_ARM64)
-            // xarch doesn't have a native GT_NEG representation for integers and itself uses (Zero - v1)
-
             if (varTypeIsIntegral(simdBaseType) && op1->IsVectorZero())
             {
+#if defined(TARGET_ARM64)
+                // xarch doesn't have a native GT_NEG representation for integers and itself uses (Zero - v1)
                 GenTree* negNode = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize);
 
                 DEBUG_DESTROY_NODE(op1);
@@ -10185,8 +10265,41 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 INDEBUG(negNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
                 return negNode;
+#elif defined(TARGET_XARCH)
+                if (op2->OperIsHWIntrinsic())
+                {
+                    GenTreeHWIntrinsic* hw             = op2->AsHWIntrinsic();
+                    genTreeOps          hwOper         = hw->HWOperGet(&isScalar);
+                    var_types           hwSimdBaseType = hw->GetSimdBaseType();
+
+                    if (isScalar)
+                    {
+                        return node;
+                    }
+
+                    if (varTypeToSigned(simdBaseType) != varTypeToSigned(hwSimdBaseType))
+                    {
+                        // We need the base types to be of the same kind and size
+                        // that is, we can't mix floating-point and integers or int and long
+                        // but we can mix int and uint or long and ulong.
+                        return node;
+                    }
+
+                    if (hwOper == GT_SUB)
+                    {
+                        if (varTypeIsIntegral(hwSimdBaseType) && hw->Op(1)->IsVectorZero())
+                        {
+                            GenTree* result = hw->Op(2);
+                            DEBUG_DESTROY_NODE(hw->Op(1));
+                            DEBUG_DESTROY_NODE(hw);
+                            DEBUG_DESTROY_NODE(op1);
+                            DEBUG_DESTROY_NODE(node);
+                            return result;
+                        }
+                    }
+                }
+#endif // !TARGET_ARM64 && !TARGET_XARCH
             }
-#endif // TARGET_ARM64
             break;
         }
 
@@ -10199,10 +10312,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op2 = node->Op(2);
 
 #if defined(TARGET_ARM64)
-            // xarch doesn't have a native GT_NOT representation and itself uses (v1 ^ AllBitsSet)
-
             if (op2->IsVectorAllBitsSet())
             {
+                // xarch doesn't have a native GT_NOT representation and itself uses (v1 ^ AllBitsSet)
                 GenTree* notNode = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize);
 
                 DEBUG_DESTROY_NODE(op2);
@@ -10211,13 +10323,10 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 return notNode;
             }
-#endif // TARGET_ARM64
-
-#if defined(TARGET_ARM64)
-            // xarch doesn't have a native GT_NEG representation for floating-point and itself uses (v1 ^ -0.0)
 
             if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
             {
+                // xarch doesn't have a native GT_NEG representation for floating-point and itself uses (v1 ^ -0.0)
                 GenTree* negNode = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize);
 
                 DEBUG_DESTROY_NODE(op2);
