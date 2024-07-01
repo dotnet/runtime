@@ -1243,6 +1243,7 @@ static guint16 sri_vector_methods [] = {
 	SN_Min,
 	SN_MinNative,
 	SN_Multiply,
+	SN_MultiplyAddEstimate,
 	SN_Narrow,
 	SN_Negate,
 	SN_OnesComplement,
@@ -1632,6 +1633,39 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #else
 		return NULL;
 #endif
+	}
+	case SN_MultiplyAddEstimate: {
+		
+		int mul_op;
+		int add_op;
+
+		if (type_enum_is_float (arg0_type))
+		{
+			mul_op = OP_FMUL;
+			add_op = OP_FADD;
+		} else {
+			mul_op = OP_IMUL;
+			add_op = OP_IADD;
+
+#ifdef TARGET_ARM64
+			if (!COMPILE_LLVM (cfg) && (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_I || arg0_type == MONO_TYPE_U))
+				return NULL;
+#endif
+#ifdef TARGET_AMD64
+			if (!COMPILE_LLVM (cfg))
+				return NULL;
+#endif
+		}
+
+		MonoInst *mul_ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
+		mul_ins->instc0 = mul_op;
+		mul_ins->instc1 = arg0_type;
+
+		MonoInst *add_ins = emit_simd_ins (cfg, klass, OP_XBINOP, mul_ins->dreg, args [2]->dreg);
+		mul_ins->instc0 = add_op;
+		mul_ins->instc1 = arg0_type;
+
+		return add_ins;
 	}
 	case SN_As:
 	case SN_AsByte:
@@ -2163,8 +2197,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		if (type_enum_is_unsigned(arg0_type)) {
 			return emit_xzero (cfg, klass);
-		} else if (type_enum_is_float (arg0_type)) {
-			MonoClass* cast_klass;
+		}
+
+		MonoInst *arg0 = args [0];
+		MonoClass *cast_klass = NULL;
+
+		if (type_enum_is_float (arg0_type)) {
 			if (arg0_type == MONO_TYPE_R4) {
 				arg0_type = MONO_TYPE_I4;
 				cast_klass = mono_defaults.int32_class;
@@ -2172,17 +2210,28 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				arg0_type = MONO_TYPE_I8;
 				cast_klass = mono_defaults.int64_class;
 			}
-			klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (cast_klass));
+			cast_klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (cast_klass));
+			arg0 = emit_simd_ins (cfg, cast_klass, OP_XCAST, arg0->dreg, -1);
 		}
-		return emit_xcompare_for_intrinsic (cfg, klass, SN_LessThan, arg0_type, args [0], emit_xzero (cfg, klass));
+
+		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, klass, SN_LessThan, arg0_type, args [0], emit_xzero (cfg, klass));
+
+		if (cast_klass != NULL) {
+			ins = emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
+		}
+		return ins;
 	}
 	case SN_IsPositive: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		if (type_enum_is_unsigned(arg0_type)) {
 			return emit_xones (cfg, klass);
-		} else if (type_enum_is_float (arg0_type)) {
-			MonoClass* cast_klass;
+		}
+
+		MonoInst *arg0 = args [0];
+		MonoClass *cast_klass = NULL;
+
+		if (type_enum_is_float (arg0_type)) {
 			if (arg0_type == MONO_TYPE_R4) {
 				arg0_type = MONO_TYPE_I4;
 				cast_klass = mono_defaults.int32_class;
@@ -2190,9 +2239,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				arg0_type = MONO_TYPE_I8;
 				cast_klass = mono_defaults.int64_class;
 			}
-			klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (cast_klass));
+			cast_klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (cast_klass));
+			arg0 = emit_simd_ins (cfg, cast_klass, OP_XCAST, arg0->dreg, -1);
 		}
-		return emit_xcompare_for_intrinsic (cfg, klass, SN_GreaterThanOrEqual, arg0_type, args [0], emit_xzero (cfg, klass));
+
+		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, klass, SN_GreaterThanOrEqual, arg0_type, args [0], emit_xzero (cfg, klass));
+
+		if (cast_klass != NULL) {
+			ins = emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
+		}
+		return ins;
 	}
 	case SN_IsPositiveInfinity: {
 		if (!is_element_type_primitive (fsig->params [0]))
