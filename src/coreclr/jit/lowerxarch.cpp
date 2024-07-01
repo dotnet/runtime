@@ -1511,7 +1511,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             var_types simdType = node->TypeGet();
             unsigned  simdSize = node->GetSimdSize();
             GenTree*  op1      = node->Op(1);
-            
+
             // We can't use the mask, but we can emit a ternary logic node
             NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
 

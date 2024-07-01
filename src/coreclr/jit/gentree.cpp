@@ -26575,7 +26575,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(
             {
                 // op1 ^ -0.0
                 GenTree* negZero = gtNewDconNode(-0.0, simdBaseType);
-                negZero = gtNewSimdCreateBroadcastNode(type, negZero, simdBaseJitType, simdSize);
+                negZero          = gtNewSimdCreateBroadcastNode(type, negZero, simdBaseJitType, simdSize);
                 return gtNewSimdBinOpNode(GT_XOR, type, op1, negZero, simdBaseJitType, simdSize);
             }
             else
