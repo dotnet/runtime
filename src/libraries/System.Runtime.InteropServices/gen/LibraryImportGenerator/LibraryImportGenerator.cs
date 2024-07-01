@@ -313,6 +313,19 @@ namespace Microsoft.Interop
                 return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, explicitForwarding: true, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
             }
 
+            bool supportsTargetFramework = !pinvokeStub.LibraryImportData.SetLastError
+                || options.GenerateForwarders
+                || (pinvokeStub.TargetFramework is (TargetFramework.Net, { Major: >= 6 }));
+
+            foreach (TypePositionInfo typeInfo in pinvokeStub.SignatureContext.ElementTypeInformation)
+            {
+                if (typeInfo.MarshallingAttributeInfo is MissingSupportMarshallingInfo)
+                {
+                    supportsTargetFramework = false;
+                    break;
+                }
+            }
+
             // Generate stub code
             var stubGenerator = new PInvokeStubCodeGenerator(
                 pinvokeStub.GeneratorFactoryKey.Key.TargetFramework,
@@ -325,7 +338,7 @@ namespace Microsoft.Interop
             // Check if the generator should produce a forwarder stub - regular DllImport.
             // This is done if the signature is blittable or the target framework is not supported.
             if (stubGenerator.StubIsBasicForwarder
-                || !stubGenerator.SupportsTargetFramework)
+                || !supportsTargetFramework)
             {
                 return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, !stubGenerator.SupportsTargetFramework, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
             }
