@@ -4197,36 +4197,35 @@ mono_class_set_runtime_vtable (MonoClass *klass, MonoVTable *vtable)
 }
 
 static int
-index_of_class (MonoClass *needle, MonoVarianceSearchEntry *haystack, int haystack_size) {
+index_of_class (MonoClass *needle, MonoClass **haystack, int haystack_size) {
 	for (int i = 0; i < haystack_size; i++)
-		if (haystack[i].klass == needle)
+		if (haystack[i] == needle)
 			return i;
 
 	return -1;
 }
 
 static void
-concat_variance_search_table (MonoClass *klass, MonoVarianceSearchEntry *buf, int buf_size, int *buf_count, MonoClass *current) {
-	MonoVarianceSearchEntry *table;
+concat_variance_search_table (MonoClass *klass, MonoClass **buf, int buf_size, int *buf_count, MonoClass *current) {
+	MonoClass **table;
 	int table_size;
 	mono_class_get_variance_search_table (current, &table, &table_size);
 	if (!table_size || !table)
 		return;
 
 	for (int i = 0; i < table_size; i++) {
-		MonoClass *iface = table[i].klass;
+		MonoClass *iface = table[i];
 		if (index_of_class (iface, buf, *buf_count) >= 0)
 			continue;
 
 		g_assert (*buf_count < buf_size);
-		buf[*buf_count].klass = table[i].klass;
-		buf[*buf_count].interface_offset = mono_class_interface_offset (klass, table[i].klass);
+		buf[*buf_count] = table[i];
 		(*buf_count) += 1;
 	}
 }
 
 static void
-build_variance_search_table_inner (MonoClass *klass, MonoVarianceSearchEntry *buf, int buf_size, int *buf_count, MonoClass *current) {
+build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_size, int *buf_count, MonoClass *current) {
 	if (!m_class_is_interfaces_inited (current)) {
 		ERROR_DECL (error);
 		mono_class_setup_interfaces (current, error);
@@ -4234,11 +4233,6 @@ build_variance_search_table_inner (MonoClass *klass, MonoVarianceSearchEntry *bu
 	}
 	guint c = m_class_get_interface_count (current);
 	if (c) {
-		/*
-		char *cname = mono_type_get_full_name (current);
-		g_print ("+ %s:\n", cname);
-		*/
-
 		MonoClass **ifaces = m_class_get_interfaces (current);
 		for (guint i = 0; i < c; i++) {
 			MonoClass *iface = ifaces [i];
@@ -4246,25 +4240,14 @@ build_variance_search_table_inner (MonoClass *klass, MonoVarianceSearchEntry *bu
 			if (index_of_class (iface, buf, *buf_count) >= 0)
 				continue;
 
-			/*
-			char *iname = mono_type_get_full_name (iface);
-			g_print ("-> %s\n", iname);
-			g_free (iname);
-			*/
 			if (mono_class_has_variant_generic_params (iface)) {
 				g_assert (*buf_count < buf_size);
-				buf[*buf_count].klass = iface;
-				buf[*buf_count].interface_offset = mono_class_interface_offset (klass, iface);
+				buf[*buf_count] = iface;
 				(*buf_count) += 1;
 			}
 
 			concat_variance_search_table (klass, buf, buf_size, buf_count, iface);
 		}
-
-		/*
-		g_print ("- %s:\n", cname);
-		g_free (cname);
-		*/
 	}
 }
 
@@ -4273,13 +4256,13 @@ static void
 build_variance_search_table (MonoClass *klass) {
 	// FIXME: Is there a way to deterministically compute the right capacity?
 	int buf_size = 512, buf_count = 0;
-	MonoVarianceSearchEntry *buf = g_alloca (buf_size * sizeof(MonoVarianceSearchEntry)),
-		*result = NULL;
-	memset (buf, 0, buf_size * sizeof(MonoVarianceSearchEntry));
+	MonoClass **buf = g_alloca (buf_size * sizeof(MonoClass *)),
+		**result = NULL;
+	memset (buf, 0, buf_size * sizeof(MonoClass *));
 	build_variance_search_table_inner (klass, buf, buf_size, &buf_count, klass);
 
 	if (buf_count) {
-		guint bytes = buf_count * sizeof(MonoVarianceSearchEntry);
+		guint bytes = buf_count * sizeof(MonoClass *);
 		result = g_malloc (bytes);
 		memcpy (result, buf, bytes);
 	}
@@ -4291,7 +4274,7 @@ build_variance_search_table (MonoClass *klass) {
 }
 
 void
-mono_class_get_variance_search_table (MonoClass *klass, MonoVarianceSearchEntry **table, int *table_size) {
+mono_class_get_variance_search_table (MonoClass *klass, MonoClass ***table, int *table_size) {
 	g_assert (klass);
 	g_assert (table);
 	g_assert (table_size);
@@ -4303,7 +4286,7 @@ mono_class_get_variance_search_table (MonoClass *klass, MonoVarianceSearchEntry 
 		mono_loader_unlock ();
 	}
 
-	*table = (MonoVarianceSearchEntry *)klass->variant_search_table;
+	*table = (MonoClass **)klass->variant_search_table;
 	*table_size = klass->variant_search_table_length;
 }
 

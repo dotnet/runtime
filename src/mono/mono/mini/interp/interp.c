@@ -627,11 +627,11 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 				"interface_offset_with_variance failure for %s and %s\n",
 				vtname, mname
 			);
-			MonoVarianceSearchEntry *table;
+			MonoClass **table;
 			int table_size;
 			mono_class_get_variance_search_table (vtable->klass, &table, &table_size);
 			for (int i = 0; i < table_size; i++) {
-				char *tyname = mono_type_get_full_name (table[i].klass);
+				char *tyname = mono_type_get_full_name (table[i]);
 				g_print (
 					"#%d: %s\n",
 					i, tyname
