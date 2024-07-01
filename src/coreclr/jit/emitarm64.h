@@ -1205,6 +1205,11 @@ inline static bool isHighPredicateRegister(regNumber reg)
     return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
 }
 
+inline static bool isMaskReg(regNumber reg)
+{
+    return isPredicateRegister(reg);
+}
+
 inline static bool isEvenRegister(regNumber reg)
 {
     if (isGeneralRegister(reg))

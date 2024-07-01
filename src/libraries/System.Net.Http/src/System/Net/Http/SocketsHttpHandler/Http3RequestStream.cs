@@ -17,9 +17,9 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
+    [SupportedOSPlatform("windows")]
     internal sealed class Http3RequestStream : IHttpStreamHeadersHandler, IAsyncDisposable, IDisposable
     {
         private readonly HttpRequestMessage _request;

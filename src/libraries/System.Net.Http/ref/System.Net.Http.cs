@@ -424,6 +424,7 @@ namespace System.Net.Http
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public System.Net.ICredentials? DefaultProxyCredentials { get { throw null; } set { } }
         public bool EnableMultipleHttp2Connections { get { throw null; } set { } }
+        public bool EnableMultipleHttp3Connections { get { throw null; } set { } }
         public System.TimeSpan Expect100ContinueTimeout { get { throw null; } set { } }
         public int InitialHttp2StreamWindowSize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]

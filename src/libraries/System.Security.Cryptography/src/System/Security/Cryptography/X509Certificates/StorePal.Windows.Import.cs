@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -21,7 +20,7 @@ namespace System.Security.Cryptography.X509Certificates
             return FromBlobOrFile(null, fileName, password, keyStorageFlags);
         }
 
-        private static StorePal FromBlobOrFile(ReadOnlySpan<byte> rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        private static ILoaderPal FromBlobOrFile(ReadOnlySpan<byte> rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
@@ -34,9 +33,6 @@ namespace System.Security.Cryptography.X509Certificates
                     fixed (char* pFileName = fileName)
                     {
                         Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData), (uint)(fromFile ? 0 : rawData!.Length));
-                        bool persistKeySet = (0 != (keyStorageFlags & X509KeyStorageFlags.PersistKeySet));
-                        Interop.Crypt32.PfxCertStoreFlags certStoreFlags = MapKeyStorageFlags(keyStorageFlags);
-
                         void* pvObject = fromFile ? (void*)pFileName : (void*)&blob;
 
                         Interop.Crypt32.ContentType contentType;
@@ -64,46 +60,55 @@ namespace System.Security.Cryptography.X509Certificates
                         {
                             certStore.Dispose();
 
-                            if (fromFile)
-                            {
-                                rawData = File.ReadAllBytes(fileName!);
-                            }
-                            else
-                            {
-                                X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile: false, password.PasswordProvided);
-                            }
+                            X509Certificate2Collection coll;
 
-                            fixed (byte* pRawData2 = rawData)
+                            try
                             {
-                                Interop.Crypt32.DATA_BLOB blob2 = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData2), (uint)rawData!.Length);
-                                certStore = Interop.Crypt32.PFXImportCertStore(ref blob2, password, certStoreFlags);
-                                if (certStore == null || certStore.IsInvalid)
+                                Pkcs12LoaderLimits limits = X509Certificate.GetPkcs12Limits(fromFile, password);
+
+                                if (fromFile)
                                 {
-                                    Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
-                                    certStore?.Dispose();
-                                    throw e;
+                                    Debug.Assert(fileName is not null);
+
+                                    coll = X509CertificateLoader.LoadPkcs12CollectionFromFile(
+                                        fileName,
+                                        password.DangerousGetSpan(),
+                                        keyStorageFlags,
+                                        limits);
+                                }
+                                else
+                                {
+                                    coll = X509CertificateLoader.LoadPkcs12Collection(
+                                        rawData,
+                                        password.DangerousGetSpan(),
+                                        keyStorageFlags,
+                                        limits);
                                 }
                             }
-
-                            if (!persistKeySet)
+                            catch (Pkcs12LoadLimitExceededException e)
                             {
-                                //
-                                // If the user did not want us to persist private keys, then we should loop through all
-                                // the certificates in the collection and set our custom CERT_CLR_DELETE_KEY_PROP_ID property
-                                // so the key container will be deleted when the cert contexts will go away.
-                                //
-                                SafeCertContextHandle? pCertContext = null;
-                                while (Interop.crypt32.CertEnumCertificatesInStore(certStore, ref pCertContext))
-                                {
-                                    Interop.Crypt32.DATA_BLOB nullBlob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
-                                    if (!Interop.Crypt32.CertSetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, Interop.Crypt32.CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG, &nullBlob))
-                                    {
-                                        Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
-                                        certStore.Dispose();
-                                        throw e;
-                                    }
-                                }
+                                throw new CryptographicException(
+                                    SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                                    e);
                             }
+
+                            // The PFX-Collection loader for .NET Framework and .NET Core and .NET 5-8 assigned
+                            // CERT_CLR_DELETE_KEY_PROP_ID on any certificate loaded when PersistKeySet wasn't asserted,
+                            // which was different than the delete-tracking method utilized for single certificate PFX loads.
+                            //
+                            // The property-based approach meant that `new X509Certificate2(someCert.Handle)` would produce a
+                            // second instance that was responsible for deleting the private key, and whenever the first one
+                            // was disposed (or finalized) it would delete the key out from under the second.  Since
+                            // X509Certificate2Collection.Find produces clones, this made for some "interesting" interactions.
+                            //
+                            // X509CertificateLoader.LoadPkcs12Collection uses the same .NET/managed-only tracking, without
+                            // setting a property on the native representation.
+                            //
+                            // If, for some reason, we want the old behavior back, we have two choices:
+                            // 1) change it in X509CertificateLoader
+                            // 2) Transform the returned certificates PALs here.
+
+                            return new CollectionBasedLoader(coll);
                         }
 
                         return new StorePal(certStore);
