@@ -293,6 +293,9 @@ namespace System.Numerics
 
         private static double Hypot(double a, double b)
         {
+#if NET7_0_OR_GREATER
+            return double.Hypot(a, b);
+#else
             // Using
             //   sqrt(a^2 + b^2) = |a| * sqrt(1 + (b/a)^2)
             // we can factor out the larger component to dodge overflow even when a * a would overflow.
@@ -327,7 +330,7 @@ namespace System.Numerics
                 double ratio = small / large;
                 return (large * Math.Sqrt(1.0 + ratio * ratio));
             }
-
+#endif
         }
 
         private static double Log1P(double x)
