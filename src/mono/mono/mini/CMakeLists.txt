@@ -323,7 +323,14 @@ if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
 endif()
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
-target_link_libraries (monosgen-objects PRIVATE monoapi eglib_api utils_objects sgen_objects metadata_objects)
+
+set(MONOSGEN_OBJECTS_LINKABLE_LIBS "")
+list(APPEND MONOSGEN_OBJECTS_LINKABLE_LIBS monoapi eglib_api utils_objects sgen_objects metadata_objects)
+if (INTERNAL_ZLIB_NG)
+  list(APPEND MONOSGEN_OBJECTS_LINKABLE_LIBS zlib)
+endif()
+target_link_libraries (monosgen-objects PRIVATE ${MONOSGEN_OBJECTS_LINKABLE_LIBS})
+
 if(NOT HOST_WIN32)
     target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
 endif()
