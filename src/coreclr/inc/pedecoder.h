@@ -398,9 +398,9 @@ class PEDecoder
 
 protected:
     TADDR               m_base;
-    COUNT_T             m_size;     // size of file on disk, as opposed to OptionalHeaders.SizeOfImage
 
 private:
+    COUNT_T             m_size;     // size of file on disk, as opposed to OptionalHeaders.SizeOfImage
     ULONG               m_flags;
 
     PTR_IMAGE_NT_HEADERS   m_pNTHeaders;

@@ -185,7 +185,6 @@ CDAC_TYPE_END(PEImage)
 CDAC_TYPE_BEGIN(PEImageLayout)
 CDAC_TYPE_INDETERMINATE(PEImageLayout)
 CDAC_TYPE_FIELD(PEImageLayout, /*pointer*/, Base, cdac_offsets<PEImageLayout>::Base)
-CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Size, cdac_offsets<PEImageLayout>::Size)
 CDAC_TYPE_END(PEImageLayout)
 
 CDAC_TYPES_END()

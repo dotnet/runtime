@@ -80,7 +80,6 @@ template<>
 struct cdac_offsets<PEImageLayout>
 {
     static constexpr size_t Base = offsetof(PEImageLayout, m_base);
-    static constexpr size_t Size = offsetof(PEImageLayout, m_size);
 };
 
 typedef ReleaseHolder<PEImageLayout> PEImageLayoutHolder;

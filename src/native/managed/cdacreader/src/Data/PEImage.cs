@@ -23,12 +23,10 @@ internal sealed class PEImage : IData<PEImage>
         {
             Target.TypeInfo layoutType = target.GetTypeInfo(DataType.PEImageLayout);
             Base = target.ReadPointer(LoadedLayout + (ulong)layoutType.Fields[nameof(Base)].Offset);
-            Size = target.Read<uint>(LoadedLayout + (ulong)layoutType.Fields[nameof(Size)].Offset);
         }
     }
 
     public TargetPointer Base { get; init; } = TargetPointer.Null;
-    public uint Size { get; init; }
 
     private TargetPointer LoadedLayout { get; init; }
 
