@@ -2127,6 +2127,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_AddRotateComplex:
+                GetEmitter()->emitInsSve_R_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg,
+                                                 (intrin.id - NI_Sve_AddRotateComplex), opt,
+                                                 INS_SCALABLE_OPTS_LSL_N);
+
             case NI_Sve_TestAnyTrue:
             case NI_Sve_TestFirstTrue:
             case NI_Sve_TestLastTrue:

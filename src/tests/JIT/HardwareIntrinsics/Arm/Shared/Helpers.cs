@@ -5607,22 +5607,56 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double AddAcross(double[] op1) => Reduce(Add, op1);
 
-        public static double AddRotateComplex(double[] op1, double[] op2, int op3) {
-            for(int i = 0; i < op1.size() - 1; i+=2){
-                Complex c1 = new Complex(op1[i], op1[i+1]);
-                Complex c2 = new Complex(op2[i], op2[i+1]);
+        public static (double, double) AddRotateComplex(double op1_r, double op1_i, double op2_r, double op2_i, byte rot)
+        {
+            double dest_r;
+            double dest_i;
 
-                if(op3 == 0){
-                    c2.Phase += 90;
-                } 
-                else if (op3 == 1){
-                    c2.Phase += 270;
-                }
-
-                Complex res = Complex.Add(c1, c2);
-                op1[i] = res.Real;
-                op1[i+1] = res.Imaginary;
+            if (rot == 0)
+            {
+                //rotate 90
+                double temp = op2_r;
+                op2_r = -op2_i;
+                op2_i = temp;
             }
+            else // rot == 1
+            {
+                //rotate 270
+                double temp = op2_i;
+                op2_i = -op2_r;
+                op2_r = temp;
+            }
+
+            dest_r = op1_r + op2_r;
+            dest_i = op1_i + op2_i;
+
+            return (dest_r, dest_i);
+        }
+
+        public static (float, float) AddRotateComplex(float op1_r, float op1_i, float op2_r, float op2_i, byte rot)
+        {
+            float dest_r;
+            float dest_i;
+
+            if (rot == 0)
+            {
+                //rotate 90
+                float temp = op2_r;
+                op2_r = -op2_i;
+                op2_i = temp;
+            }
+            else // rot == 1
+            {
+                //rotate 270
+                float temp = op2_i;
+                op2_i = -op2_r;
+                op2_r = temp;
+            }
+
+            dest_r = op1_r + op2_r;
+            dest_i = op1_i + op2_i;
+
+            return (dest_r, dest_i);
         }
 
         public static double MaxAcross(double[] op1) => Reduce(Max, op1);

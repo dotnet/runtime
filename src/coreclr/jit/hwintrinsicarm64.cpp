@@ -407,6 +407,11 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
                 break;
 
+            case NI_Sve_AddRotateComplex:
+                immLowerBound = 0;
+                immUpperBound = 1;
+                break;
+
             case NI_Sve_CreateTrueMaskByte:
             case NI_Sve_CreateTrueMaskDouble:
             case NI_Sve_CreateTrueMaskInt16:
