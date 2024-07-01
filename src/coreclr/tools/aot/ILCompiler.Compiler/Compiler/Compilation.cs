@@ -436,8 +436,12 @@ namespace ILCompiler
                     return false;
 
                 // Delegate invocation never needs fat calls
-                if (owningType.IsDelegate && containingMethod.Name == "Invoke")
-                    return false;
+                if (owningType.IsDelegate)
+                {
+                    string methodName = containingMethod.Name;
+                    if (methodName == "Invoke" || methodName == "InvokeMulticastThunk")
+                        return false;
+                }
             }
 
             return true;

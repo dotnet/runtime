@@ -323,11 +323,11 @@ namespace Internal.IL.Stubs
 
             // ldarg.0 (this pointer)
             // ldfld Delegate._helperObject
-            // castclass Delegate.Wrapper[]
+            // castclass Delegate.Wrapper[] (omitted - generate unsafe cast assuming the delegate is well-formed)
             // stloc delegateArrayLocal
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
-            codeStream.Emit(ILOpcode.castclass, emitter.NewToken(invocationListArrayType));
+            // codeStream.Emit(ILOpcode.castclass, emitter.NewToken(invocationListArrayType));
             codeStream.EmitStLoc(delegateArrayLocal);
 
             // Fill in invocationCountLocal
