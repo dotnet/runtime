@@ -28616,6 +28616,15 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             assert(returnType != TYP_UNKNOWN);
             assert(returnType != TYP_STRUCT);
             m_regType[0] = returnType;
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            FpStructInRegistersInfo fpInfo = comp->GetPassFpStructInRegistersInfo(retClsHnd);
+            if (fpInfo.flags != FpStruct::UseIntCallConv)
+            {
+                assert((fpInfo.flags & FpStruct::OnlyOne) != 0);
+                m_fieldOffset[0] = fpInfo.offset1st;
+            }
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             break;
         }
 
@@ -28683,37 +28692,25 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
 
-            FpStructInRegistersInfo fpInfo    = comp->GetPassFpStructInRegistersInfo(retClsHnd);
-            BYTE                    gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
-            comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
-
-            if ((fpInfo.flags & FpStruct::BothFloat) != 0)
+            FpStructInRegistersInfo fpInfo = comp->GetPassFpStructInRegistersInfo(retClsHnd);
+            if (fpInfo.flags != FpStruct::UseIntCallConv)
             {
                 comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((fpInfo.SizeShift1st() == 3) || (fpInfo.SizeShift2nd() == 3)));
-                m_regType[0] = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if ((fpInfo.flags & FpStruct::FloatInt) != 0)
-            {
-                comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((fpInfo.SizeShift1st() == 3) || (fpInfo.SizeShift2nd() == 3)));
-                m_regType[0] = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = (fpInfo.SizeShift2nd() == 3) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
-            }
-            else if ((fpInfo.flags & FpStruct::IntFloat) != 0)
-            {
-                comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((fpInfo.SizeShift1st() == 3) || (fpInfo.SizeShift2nd() == 3)));
-                m_regType[0] = (fpInfo.SizeShift1st() == 3) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
-                m_regType[1] = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+                assert((fpInfo.flags & FpStruct::OnlyOne) == 0);
+                m_fieldOffset[0] = fpInfo.offset1st;
+                m_fieldOffset[1] = fpInfo.offset2nd;
+                Compiler::GetTypesFromFpStructInRegistersInfo(fpInfo, &m_regType[0], &m_regType[1]);
             }
             else
             {
+                BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+                comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
                 for (unsigned i = 0; i < 2; ++i)
                 {
                     m_regType[i] = comp->getJitGCType(gcPtrs[i]);
                 }
+                m_fieldOffset[0] = 0;
+                m_fieldOffset[1] = TARGET_POINTER_SIZE;
             }
 
 #elif defined(TARGET_X86)

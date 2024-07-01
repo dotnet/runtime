@@ -911,50 +911,22 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         if (fpInfo.flags != FpStruct::UseIntCallConv)
         {
             assert(varTypeIsStruct(argType));
-            int floatNum = 0;
-            if ((fpInfo.flags & FpStruct::OnlyOne) != 0)
-            {
-                assert(argSize <= 8);
-                assert(varDsc->lvExactSize() <= argSize);
+            assert(((fpInfo.flags & FpStruct::OnlyOne) != 0) || varDsc->lvExactSize() <= argSize);
+            cSlotsToEnregister = ((fpInfo.flags & FpStruct::OnlyOne) != 0) ? 1 : 2;
+            int floatNum       = ((fpInfo.flags & FpStruct::BothFloat) != 0) ? 2 : 1;
 
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
+            canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
+            if (canPassArgInRegisters && ((fpInfo.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0))
+                canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, 1);
 
-                argRegTypeInStruct1 = (varDsc->lvExactSize() == 8) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if ((fpInfo.flags & FpStruct::BothFloat) != 0)
-            {
-                floatNum              = 2;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 2);
-
-                argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-                argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if ((fpInfo.flags & FpStruct::FloatInt) != 0)
-            {
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
-                canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
-
-                argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-                argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_LONG : TYP_INT;
-            }
-            else if ((fpInfo.flags & FpStruct::IntFloat) != 0)
-            {
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
-                canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
-
-                argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_LONG : TYP_INT;
-                argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-
-            assert((floatNum == 1) || (floatNum == 2));
+            Compiler::GetTypesFromFpStructInRegistersInfo(fpInfo, &argRegTypeInStruct1, &argRegTypeInStruct2);
 
             if (!canPassArgInRegisters)
             {
-                // On LoongArch64, if there aren't any remaining floating-point registers to pass the argument,
-                // integer registers (if any) are used instead.
+                // If a struct eligible for passing according to floating-point calling convention cannot be fully
+                // enregistered, it is passed according to integer calling convention -- in up to two integer registers
+                // and/or stack slots, as a lump of bits laid out like in memory.
+                cSlotsToEnregister    = cSlots;
                 canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
 
                 argRegTypeInStruct1 = TYP_UNKNOWN;
@@ -1094,7 +1066,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
                     }
-                    else if (cSlots > 1)
+                    else if (cSlotsToEnregister > 1)
                     {
                         // Here a struct-arg which needs two registers but only one integer register available,
                         // it has to be split. But we reserved extra 8-bytes for the whole struct.

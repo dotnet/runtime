@@ -103,13 +103,20 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         // Hardware floating-point calling convention
         if ((floatFields == 1) && (intFields == 0))
         {
+            unsigned offset = 0;
             if (info.flags == FpStruct::UseIntCallConv)
+            {
                 assert(varTypeIsFloating(type)); // standalone floating-point real
+            }
             else
+            {
                 assert((info.flags & FpStruct::OnlyOne) != 0); // struct containing just one FP real
+                passedSize = info.Size1st();
+                offset     = info.offset1st;
+            }
 
-            return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
-                                                                                          passedSize));
+            ABIPassingSegment seg = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, passedSize);
+            return ABIPassingInformation::FromSegment(comp, seg);
         }
         else
         {
@@ -129,8 +136,9 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
             regNumber secondReg = (isSecondFloat ? m_floatRegs : m_intRegs).Dequeue();
 
-            return ABIPassingInformation::FromSegments(comp, ABIPassingSegment::InRegister(firstReg, 0, firstSize),
-                                                       ABIPassingSegment::InRegister(secondReg, offset, secondSize));
+            ABIPassingSegment firstSeg  = ABIPassingSegment::InRegister(firstReg, info.offset1st, info.Size1st());
+            ABIPassingSegment secondSeg = ABIPassingSegment::InRegister(secondReg, info.offset2nd, info.Size2nd());
+            return ABIPassingInformation::FromSegments(comp, firstSeg, secondSeg);
         }
     }
     else

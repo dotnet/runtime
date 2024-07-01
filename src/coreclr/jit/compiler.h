@@ -11360,6 +11360,10 @@ public:
 
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     FpStructInRegistersInfo GetPassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHandle);
+
+    static void GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info,
+                                                    var_types*              type1st,
+                                                    var_types*              type2nd);
 #endif // defined(UNIX_AMD64_ABI)
 
     void     fgMorphMultiregStructArgs(GenTreeCall* call);

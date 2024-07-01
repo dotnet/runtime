@@ -743,7 +743,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
-                // On LOONGARCH64 struct that is 1-16 bytes is passed by value in one/two register(s)
+                // On LOONGARCH64 and RISCV64 struct that is 1-16 bytes is passed by value in one/two register(s)
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
 
@@ -934,7 +934,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         if ((info.flags & FpStruct::OnlyOne) != 0)
         {
             howToReturnStruct = SPK_PrimitiveType;
-            useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;
+            useType           = (info.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
         }
         else if (info.flags != FpStruct::UseIntCallConv)
         {
@@ -8286,7 +8286,7 @@ void Compiler::GetStructTypeOffset(
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 //------------------------------------------------------------------------
 // GetPassFpStructInRegistersInfo: Gets the information on passing of a struct according to hardware floating-point
-// calling convention.
+// calling convention on on RISC-V or LoongArch.
 //
 // Arguments:
 //      structHandle - type handle
@@ -8324,6 +8324,60 @@ FpStructInRegistersInfo Compiler::GetPassFpStructInRegistersInfo(CORINFO_CLASS_H
     }
 #endif // DEBUG
     return ret;
+}
+
+//------------------------------------------------------------------------
+// GetTypesFromFpStructInRegistersInfo: Gets the field types of a struct passed in registers according to hardware
+// floating-point calling convention on RISC-V or LoongArch.
+//
+// Arguments:
+//      info - the structure contaning information about how the struct is passed
+//      type1st - out param; type of the first field
+//      type2nd - out param; type of the second field (written to iff the struct has two fields)
+//
+// Return value:
+//      None
+//
+// Notes:
+//      If the struct should be passed according to integer calling convention, none of the output pararmeters are
+//      written to.
+//
+void Compiler::GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info, var_types* type1st, var_types* type2nd)
+{
+    if ((info.flags & (FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::OnlyOne)) != 0)
+        *type1st = (info.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+
+    if ((info.flags & (FpStruct::BothFloat | FpStruct::IntFloat)) != 0)
+        *type2nd = (info.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+
+    if ((info.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0)
+    {
+        bool              isInt1st = ((info.flags & FpStruct::IntFloat) != 0);
+        FpStruct::IntKind kind     = info.IntFieldKind();
+        var_types*        intType  = isInt1st ? type1st : type2nd;
+        if (kind == FpStruct::IntKind::Integer)
+        {
+            struct IntType
+            {
+                static constexpr var_types Get(unsigned sizeShift)
+                {
+                    return (var_types)(TYP_BYTE + (sizeShift * 2));
+                }
+            };
+            static_assert(IntType::Get(0) == TYP_BYTE, "");
+            static_assert(IntType::Get(1) == TYP_SHORT, "");
+            static_assert(IntType::Get(2) == TYP_INT, "");
+            static_assert(IntType::Get(3) == TYP_LONG, "");
+
+            unsigned sizeShift = isInt1st ? info.SizeShift1st() : info.SizeShift2nd();
+            *intType           = IntType::Get(sizeShift);
+        }
+        else // GC
+        {
+            assert(kind == FpStruct::IntKind::GcRef || kind == FpStruct::IntKind::GcByRef);
+            *intType = (kind == FpStruct::IntKind::GcRef) ? TYP_REF : TYP_BYREF;
+        }
+    }
 }
 
 #endif // defined(UNIX_AMD64_ABI)
