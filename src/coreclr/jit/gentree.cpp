@@ -20213,6 +20213,12 @@ var_types GenTreeJitIntrinsic::GetSimdBaseType() const
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
+//------------------------------------------------------------------------
+// isCommutativeHWIntrinsic: Checks if the intrinsic is commutative
+//
+// Return Value:
+//     true if the intrisic is commutative
+//
 bool GenTree::isCommutativeHWIntrinsic() const
 {
     assert(gtOper == GT_HWINTRINSIC);
