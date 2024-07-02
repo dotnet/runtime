@@ -188,6 +188,11 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
 
+                if (Type.IsImmutableEnumerableType() || Type.IsImmutableDictionaryType())
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForImmutableType(Type);
+                }
+
                 _onDeserializing = value;
             }
         }

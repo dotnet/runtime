@@ -415,6 +415,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForImmutableType(Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.InvalidJsonTypeInfoOperationForImmutableType, type));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_CreateObjectConverterNotCompatible(Type type)
         {
             throw new InvalidOperationException(SR.Format(SR.CreateObjectConverterNotCompatible, type));

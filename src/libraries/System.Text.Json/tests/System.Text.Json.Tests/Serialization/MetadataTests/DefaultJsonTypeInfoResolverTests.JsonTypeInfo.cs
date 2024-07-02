@@ -1510,6 +1510,29 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => jti.OnDeserialized = (obj => { }));
         }
 
+        [Theory]
+        [InlineData(typeof(ImmutableArray<string>))]
+        [InlineData(typeof(ImmutableList<string>))]
+        [InlineData(typeof(IImmutableList<string>))]
+        [InlineData(typeof(ImmutableStack<string>))]
+        [InlineData(typeof(IImmutableStack<string>))]
+        [InlineData(typeof(ImmutableQueue<string>))]
+        [InlineData(typeof(IImmutableQueue<string>))]
+        [InlineData(typeof(ImmutableSortedSet<string>))]
+        [InlineData(typeof(ImmutableHashSet<string>))]
+        [InlineData(typeof(IImmutableSet<string>))]
+        [InlineData(typeof(ImmutableDictionary<string, string>))]
+        [InlineData(typeof(ImmutableSortedDictionary<string, string>))]
+        [InlineData(typeof(IImmutableDictionary<string, string>))]
+        public static void SettingOnDeserializingCallbackOnImmutableTypes_ThrowsInvalidOperationException(Type type)
+        {
+            var jti = JsonTypeInfo.CreateJsonTypeInfo(type, new());
+
+            Assert.NotEqual(JsonTypeInfoKind.Object, jti.Kind);
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserializing = null);
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserializing = (obj => { }));
+        }
+
         public class ClassWithCallBacks :
             IJsonOnSerializing, IJsonOnSerialized,
             IJsonOnDeserializing, IJsonOnDeserialized

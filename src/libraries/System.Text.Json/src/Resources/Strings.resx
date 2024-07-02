@@ -671,6 +671,9 @@
   <data name="InvalidJsonTypeInfoOperationForKind" xml:space="preserve">
     <value>Invalid JsonTypeInfo operation for JsonTypeInfoKind '{0}'.</value>
   </data>
+  <data name="InvalidJsonTypeInfoOperationForImmutableType" xml:space="preserve">
+    <value>Invalid JsonTypeInfo operation for immutable type '{0}'.</value>
+  </data>
   <data name="CreateObjectConverterNotCompatible" xml:space="preserve">
     <value>The converter for type '{0}' does not support setting 'CreateObject' delegates.</value>
   </data>
