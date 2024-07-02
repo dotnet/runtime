@@ -927,7 +927,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#elif defined(TARGET_RISCV64) | defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
         FpStructInRegistersInfo info = GetPassFpStructInRegistersInfo(clsHnd);
@@ -8303,23 +8303,23 @@ FpStructInRegistersInfo Compiler::GetPassFpStructInRegistersInfo(CORINFO_CLASS_H
 
     FpStructInRegistersInfo ret = info.compCompHnd->getInfoFunc(structHandle);
 #ifdef DEBUG
-    if (VERBOSE)
+    if (verbose)
     {
-        logf("**** " STRINGIFY(getInfoFunc) "(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
-             eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
+        printf("**** " STRINGIFY(getInfoFunc) "(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
+               eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
 #undef getInfoFunc
         if (ret.flags == FpStruct::UseIntCallConv)
         {
-            logf("        pass by integer calling convention\n");
+            printf("        pass by integer calling convention\n");
         }
         else
         {
             bool hasOne    = ((ret.flags & FpStruct::OnlyOne) != 0);
             long size2nd   = hasOne ? -1l : ret.Size2nd();
             long offset2nd = hasOne ? -1l : ret.offset2nd;
-            logf("        may be passed by floating-point calling convention:\n"
-                 "        flags=%#03x; %s, field sizes={%u, %li}, field offsets={%u, %li}, IntFieldKind=%s\n",
-                 ret.flags, ret.FlagName(), ret.Size1st(), size2nd, ret.offset1st, offset2nd, ret.IntFieldKindName());
+            printf("        may be passed by floating-point calling convention:\n"
+                   "        flags=%#03x; %s, field sizes={%u, %li}, field offsets={%u, %li}, IntFieldKind=%s\n",
+                   ret.flags, ret.FlagName(), ret.Size1st(), size2nd, ret.offset1st, offset2nd, ret.IntFieldKindName());
         }
     }
 #endif // DEBUG

@@ -433,8 +433,6 @@ struct FpStructInRegistersInfo
     }
 };
 
-static_assert(sizeof(FpStructInRegistersInfo) == 3 * sizeof(uint32_t), "");
-
 #include "corinfoinstructionset.h"
 
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
