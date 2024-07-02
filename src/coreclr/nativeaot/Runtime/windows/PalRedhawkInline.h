@@ -42,13 +42,6 @@ FORCEINLINE int32_t PalInterlockedExchange(_Inout_ int32_t volatile *pDst, int32
     return _InterlockedExchange((long volatile *)pDst, iValue);
 }
 
-EXTERN_C int64_t _InterlockedExchange64(int64_t volatile *, int64_t);
-#pragma intrinsic(_InterlockedExchange64)
-FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
-{
-    return _InterlockedExchange64(pDst, iValue);
-}
-
 EXTERN_C long __PN__MACHINECALL_CDECL_OR_DEFAULT _InterlockedCompareExchange(long volatile *, long, long);
 #pragma intrinsic(_InterlockedCompareExchange)
 FORCEINLINE int32_t PalInterlockedCompareExchange(_Inout_ int32_t volatile *pDst, int32_t iValue, int32_t iComparand)
@@ -62,6 +55,26 @@ FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pD
 {
     return _InterlockedCompareExchange64(pDst, iValue, iComparand);
 }
+
+#ifdef HOST_X86
+FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
+{
+    int64_t iOldValue;
+    do {
+        iOldValue = *pDst;
+    } while (PalInterlockedCompareExchange64(Target,
+                                          iValue,
+                                          iOldValue) != iOldValue);
+    return iOldValue;
+}
+#else // HOST_X86
+EXTERN_C int64_t _InterlockedExchange64(int64_t volatile *, int64_t);
+#pragma intrinsic(_InterlockedExchange64)
+FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
+{
+    return _InterlockedExchange64(pDst, iValue);
+}
+#endif // HOST_X86
 
 #if defined(HOST_AMD64) || defined(HOST_ARM64)
 EXTERN_C uint8_t _InterlockedCompareExchange128(int64_t volatile *, int64_t, int64_t, int64_t *);
