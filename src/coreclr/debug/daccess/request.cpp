@@ -2239,12 +2239,11 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
     SOSDacEnter();
 
     PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
-    PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // More fields later?
-    if (!pPEAssembly->IsReflectionEmit())
+    if (!pModule->IsReflectionEmit())
     {
-        *base = TO_CDADDR(dac_cast<TADDR>(pPEAssembly->GetLoadedLayout()->GetBase()));
+        *base = TO_CDADDR(dac_cast<TADDR>(pModule->m_baseAddress));
     }
     else
     {

@@ -616,6 +616,8 @@ private:
         IS_PROFILER_NOTIFIED        = 0x00000010,
         IS_ETW_NOTIFIED             = 0x00000020,
 
+        IS_REFLECTION_EMIT          = 0x00000040,
+
         //
         // Note: The values below must match the ones defined in
         // cordbpriv.h for DebuggerAssemblyControlFlags when shifted
@@ -887,7 +889,7 @@ protected:
     CodeVersionManager * GetCodeVersionManager();
 #endif
 
-    BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsReflectionEmit(); }
+    BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return (m_dwTransientFlags & IS_REFLECTION_EMIT) != 0; }
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
     // Returns true iff the debugger can see this module.
     BOOL IsVisibleToDebugger();
