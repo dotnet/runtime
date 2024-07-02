@@ -311,6 +311,7 @@ LoadLibraryExWrapper(
         {
             LongFile::NormalizeDirectorySeparators(path);
 
+
             ret = LoadLibraryExW(path.GetUnicode(), hFile, dwFlags);
         }
 
