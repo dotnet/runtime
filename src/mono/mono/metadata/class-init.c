@@ -4286,7 +4286,7 @@ mono_class_get_variance_search_table (MonoClass *klass, MonoClass ***table, int 
 		mono_loader_unlock ();
 	}
 
-	*table = (MonoClass **)klass->variant_search_table;
+	*table = klass->variant_search_table;
 	*table_size = klass->variant_search_table_length;
 }
 
