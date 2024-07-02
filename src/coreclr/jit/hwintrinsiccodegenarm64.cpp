@@ -609,6 +609,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_Sve_ShiftRightArithmeticForDivide:
                             hasShift = true;
                             break;
+
+                        default:
+                            break;
                     }
 
                     auto emitInsHelper = [&](regNumber reg1, regNumber reg2, regNumber reg3) {
