@@ -1639,9 +1639,8 @@ emitter::code_t emitter::AddRex2Prefix(instruction ins, code_t code)
     // TODO-apx: need some workaround in instrDesc settings and definition.
     assert(IsRex2EncodableInstruction(ins));
 
-    // Shouldn't have already added REX2 prefix
-    // Note that there are cases that some register field might be filled before adding prefix.
-    assert(!hasRex2Prefix(code));
+    // Note that there are cases that some register field might be filled before adding prefix,
+    // So we don't check if the code has REX2 prefix already or not.
 
     code |= DEFAULT_2BYTE_REX2_PREFIX;
     if(IsLegacyMap1(code)) // 2-byte opcode on Map-1
@@ -2090,8 +2089,7 @@ emitter::code_t emitter::AddRexRPrefix(const instrDesc* id, code_t code)
         assert(IsRex2EncodableInstruction(ins));
 
         // TODO-xarch-apx: there is no overlapping between REX2 and VEX/EVEX instructions so it should be fine to have the paths in this way.
-        assert(hasRex2Prefix(code));
-        return code |= 0x000400000000ULL; // REX2.B3
+        return code |= 0xD50400000000ULL; // REX2.B3
     }
 
     return code | 0x4400000000ULL;
@@ -2125,8 +2123,7 @@ emitter::code_t emitter::AddRexXPrefix(const instrDesc* id, code_t code)
     else if (TakesRex2Prefix(id) && IsRex2EncodableInstruction(ins))
     {
         // TODO-apx: there is no overlapping between REX2 and VEX/EVEX instructions so it should be fine to have the paths in this way.
-        assert(hasRex2Prefix(code));
-        return code |= 0x000200000000ULL; // REX2.B3
+        return code |= 0xD50200000000ULL; // REX2.B3
     }
 
     return code | 0x4200000000ULL;
@@ -2160,8 +2157,7 @@ emitter::code_t emitter::AddRexBPrefix(const instrDesc* id, code_t code)
     else if (TakesRex2Prefix(id) && IsRex2EncodableInstruction(ins))
     {
         // TODO-apx: there is no overlapping between REX2 and VEX/EVEX instructions so it should be fine to have the paths in this way.
-        assert(hasRex2Prefix(code));
-        return code |= 0x000100000000ULL; // REX2.B3
+        return code |= 0xD50100000000ULL; // REX2.B3
     }
 
     return code | 0x4100000000ULL;
@@ -16043,11 +16039,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         // This is INS_mov and will not take VEX prefix
         assert(!TakesVexPrefix(ins));
 
-        // TODO-xarch-apx: May consider using AddX86PrefixIfNeeded?
-        if(TakesRex2Prefix(id))
-        {
-            code = AddRex2Prefix(ins, code);
-        }
+        code = AddX86PrefixIfNeededAndNotPresent(id, code, size);
 
         if (TakesRexWPrefix(id))
         {
@@ -17600,8 +17592,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = insCodeMR(ins);
                 // Emit the VEX prefix if it exists
                 code = AddX86PrefixIfNeeded(id, code, size);
-                if(size == EA_2BYTE)
+                if((size == EA_2BYTE) && TakesRex2Prefix(id))
                 {
+                    // REX2 needs explicit pp prefix.
                     dst += emitOutputByte(dst, 0x66);
                 }
                 code = insEncodeMRreg(id, code);
