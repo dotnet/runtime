@@ -690,7 +690,8 @@ public:
     unsigned char lvSingleDefDisqualifyReason = 'H';
 #endif
 
-    unsigned char lvAllDefsAreNoGc : 1; // For pinned locals: true if all defs of this local are no-gc
+    unsigned char lvAllDefsAreNoGc    : 1; // For pinned locals: true if all defs of this local are no-gc
+    unsigned char lvStackAllocatedBox : 1; // Local is a stack allocated box
 
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
@@ -803,6 +804,11 @@ public:
     bool lvIsMultiRegArgOrRet()
     {
         return lvIsMultiRegArg || lvIsMultiRegRet;
+    }
+
+    bool IsStackAllocatedBox() const
+    {
+        return lvStackAllocatedBox;
     }
 
 #if defined(DEBUG)
@@ -3523,7 +3529,7 @@ public:
 
     GenTree* gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* lookupTree);
 
-    GenTreeIndir* gtNewMethodTableLookup(GenTree* obj);
+    GenTreeIndir* gtNewMethodTableLookup(GenTree* obj, bool onStack = false);
 
     //------------------------------------------------------------------------
     // Other GenTree functions
@@ -4679,6 +4685,7 @@ protected:
                                 unsigned             immNumber,
                                 var_types            simdBaseType,
                                 CorInfoType          simdBaseJitType,
+                                CORINFO_CLASS_HANDLE op1ClsHnd,
                                 CORINFO_CLASS_HANDLE op2ClsHnd,
                                 CORINFO_CLASS_HANDLE op3ClsHnd,
                                 unsigned*            immSimdSize,
@@ -8166,6 +8173,7 @@ public:
     // Get the flags
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 

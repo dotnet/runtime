@@ -4317,13 +4317,50 @@ namespace System.Runtime.Intrinsics.Arm
 
         public static System.Numerics.Vector<int> ConvertToInt32(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<int> ConvertToInt32(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<long> ConvertToInt64(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<long> ConvertToInt64(System.Numerics.Vector<float> value) { throw null; }
         public static System.Numerics.Vector<uint> ConvertToUInt32(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<uint> ConvertToUInt32(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ConvertToUInt64(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ConvertToUInt64(System.Numerics.Vector<float> value) { throw null; }
 
         public static ulong Count16BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count32BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count64BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count8BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+
+        public static System.Numerics.Vector<byte> CreateBreakAfterMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static System.Numerics.Vector<short> CreateBreakAfterMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static System.Numerics.Vector<int> CreateBreakAfterMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static System.Numerics.Vector<long> CreateBreakAfterMask(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateBreakAfterMask(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateBreakAfterMask(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static System.Numerics.Vector<uint> CreateBreakAfterMask(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateBreakAfterMask(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static System.Numerics.Vector<byte> CreateBreakAfterPropagateMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> CreateBreakAfterPropagateMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> CreateBreakAfterPropagateMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> CreateBreakAfterPropagateMask(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateBreakAfterPropagateMask(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateBreakAfterPropagateMask(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateBreakAfterPropagateMask(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateBreakAfterPropagateMask(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateBreakBeforeMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static System.Numerics.Vector<short> CreateBreakBeforeMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static System.Numerics.Vector<int> CreateBreakBeforeMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static System.Numerics.Vector<long> CreateBreakBeforeMask(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateBreakBeforeMask(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateBreakBeforeMask(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static System.Numerics.Vector<uint> CreateBreakBeforeMask(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateBreakBeforeMask(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static System.Numerics.Vector<byte> CreateBreakBeforePropagateMask(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> CreateBreakBeforePropagateMask(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> CreateBreakBeforePropagateMask(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> CreateBreakBeforePropagateMask(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateBreakBeforePropagateMask(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateBreakBeforePropagateMask(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateBreakBeforePropagateMask(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateBreakBeforePropagateMask(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
         public static System.Numerics.Vector<byte> CreateFalseMaskByte() { throw null; }
         public static System.Numerics.Vector<double> CreateFalseMaskDouble() { throw null; }
@@ -4335,6 +4372,20 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> CreateFalseMaskUInt16() { throw null; }
         public static System.Numerics.Vector<uint> CreateFalseMaskUInt32() { throw null; }
         public static System.Numerics.Vector<ulong> CreateFalseMaskUInt64() { throw null; }
+
+        public static unsafe System.Numerics.Vector<byte> CreateMaskForFirstActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static unsafe System.Numerics.Vector<short> CreateMaskForFirstActiveElement(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static unsafe System.Numerics.Vector<int> CreateMaskForFirstActiveElement(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static unsafe System.Numerics.Vector<long> CreateMaskForFirstActiveElement(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static unsafe System.Numerics.Vector<sbyte> CreateMaskForFirstActiveElement(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> CreateMaskForFirstActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> CreateMaskForFirstActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> CreateMaskForFirstActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static unsafe System.Numerics.Vector<byte> CreateMaskForNextActiveElement(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> CreateMaskForNextActiveElement(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> CreateMaskForNextActiveElement(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> CreateMaskForNextActiveElement(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+
         public static System.Numerics.Vector<byte> CreateTrueMaskByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<double> CreateTrueMaskDouble([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<short> CreateTrueMaskInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
@@ -4390,6 +4441,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<long> DotProductBySelectedScalar(System.Numerics.Vector<long> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
         public static System.Numerics.Vector<uint> DotProductBySelectedScalar(System.Numerics.Vector<uint> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte rightIndex) { throw null; }
         public static System.Numerics.Vector<ulong> DotProductBySelectedScalar(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
+
+        public static System.Numerics.Vector<byte> DuplicateSelectedScalarToVector(System.Numerics.Vector<byte> data, [ConstantExpected(Min = 0, Max = (byte)(63))] byte index) { throw null; }
+        public static System.Numerics.Vector<double> DuplicateSelectedScalarToVector(System.Numerics.Vector<double> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw null; }
+        public static System.Numerics.Vector<short> DuplicateSelectedScalarToVector(System.Numerics.Vector<short> data, [ConstantExpected(Min = 0, Max = (byte)(31))] byte index) { throw null; }
+        public static System.Numerics.Vector<int> DuplicateSelectedScalarToVector(System.Numerics.Vector<int> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) { throw null; }
+        public static System.Numerics.Vector<long> DuplicateSelectedScalarToVector(System.Numerics.Vector<long> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw null; }
+        public static System.Numerics.Vector<sbyte> DuplicateSelectedScalarToVector(System.Numerics.Vector<sbyte> data, [ConstantExpected(Min = 0, Max = (byte)(63))] byte index) { throw null; }
+        public static System.Numerics.Vector<float> DuplicateSelectedScalarToVector(System.Numerics.Vector<float> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) { throw null; }
+        public static System.Numerics.Vector<ushort> DuplicateSelectedScalarToVector(System.Numerics.Vector<ushort> data, [ConstantExpected(Min = 0, Max = (byte)(31))] byte index) { throw null; }
+        public static System.Numerics.Vector<uint> DuplicateSelectedScalarToVector(System.Numerics.Vector<uint> data, [ConstantExpected(Min = 0, Max = (byte)(15))] byte index) { throw null; }
+        public static System.Numerics.Vector<ulong> DuplicateSelectedScalarToVector(System.Numerics.Vector<ulong> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw null; }
 
         public static unsafe System.Numerics.Vector<byte> ExtractVector(System.Numerics.Vector<byte> upper, System.Numerics.Vector<byte> lower, [ConstantExpected] byte index) { throw null; }
         public static unsafe System.Numerics.Vector<double> ExtractVector(System.Numerics.Vector<double> upper, System.Numerics.Vector<double> lower, [ConstantExpected] byte index) { throw null; }
@@ -4985,6 +5047,35 @@ namespace System.Runtime.Intrinsics.Arm
 
         public static System.Numerics.Vector<double> Scale(System.Numerics.Vector<double> left, System.Numerics.Vector<long> right) { throw null; }
         public static System.Numerics.Vector<float> Scale(System.Numerics.Vector<float> left, System.Numerics.Vector<int> right) { throw null; }
+
+        public static System.Numerics.Vector<byte> ShiftLeftLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftLeftLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<short> ShiftLeftLogical(System.Numerics.Vector<short> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<short> ShiftLeftLogical(System.Numerics.Vector<short> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<int> ShiftLeftLogical(System.Numerics.Vector<int> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<int> ShiftLeftLogical(System.Numerics.Vector<int> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<long> ShiftLeftLogical(System.Numerics.Vector<long> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftLeftLogical(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftLeftLogical(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogical(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogical(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogical(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogical(System.Numerics.Vector<uint> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftLogical(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmetic(System.Numerics.Vector<short> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmetic(System.Numerics.Vector<short> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmetic(System.Numerics.Vector<int> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmetic(System.Numerics.Vector<int> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<long> ShiftRightArithmetic(System.Numerics.Vector<long> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmetic(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmetic(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogical(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogical(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogical(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogical(System.Numerics.Vector<uint> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftRightLogical(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
         public static System.Numerics.Vector<int> SignExtend16(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend16(System.Numerics.Vector<long> value) { throw null; }

@@ -333,9 +333,6 @@ class StubLinkerCPU : public StubLinker
 #endif // FEATURE_COMINTEROP && TARGET_X86
 
 #ifndef FEATURE_STUBS_AS_IL
-        VOID EmitMethodStubProlog(TADDR pFrameVptr, int transitionBlockOffset);
-        VOID EmitMethodStubEpilog(WORD numArgBytes, int transitionBlockOffset);
-
         VOID EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset);
 #endif // !FEATURE_STUBS_AS_IL
 
@@ -378,9 +375,6 @@ class StubLinkerCPU : public StubLinker
 #endif // FEATURE_COMINTEROP && TARGET_X86
 
 #ifndef FEATURE_STUBS_AS_IL
-        //===========================================================================
-        // Computes hash code for MulticastDelegate.Invoke()
-        static UINT_PTR HashMulticastInvoke(MetaSig* pSig);
 
 #ifdef TARGET_X86
         //===========================================================================
@@ -388,11 +382,6 @@ class StubLinkerCPU : public StubLinker
         VOID EmitDelegateInvoke();
 #endif // TARGET_X86
 
-#if defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
-        //===========================================================================
-        // Emits code for MulticastDelegate.Invoke() - sig specific
-        VOID EmitMulticastInvoke(UINT_PTR hash);
-#endif // defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 #endif // !FEATURE_STUBS_AS_IL
 
         //===========================================================================

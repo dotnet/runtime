@@ -36,7 +36,7 @@ public abstract class SurrogateTests<T> : SerializationTest<T> where T : ISerial
         SurrogateSelector selector = CreateSurrogateSelector<Point>(new PointSerializationSurrogate(refUnbox: true));
 
         Point deserialized = (Point)Deserialize(stream, surrogateSelector: selector);
-        deserialized.Should().Be(point);
+        Assert.Equal(point, deserialized);
     }
 
     public class PointSerializationSurrogate : ISerializationSurrogate
@@ -76,8 +76,8 @@ public abstract class SurrogateTests<T> : SerializationTest<T> where T : ISerial
         SurrogateSelector selector = CreateSurrogateSelector<Point>(new NullSurrogate());
         Point deserialized = (Point)Deserialize(stream, surrogateSelector: selector);
 
-        deserialized.X.Should().Be(0);
-        deserialized.Y.Should().Be(0);
+        Assert.Equal(0, deserialized.X);
+        Assert.Equal(0, deserialized.Y);
     }
 
     public class NullSurrogate : ISerializationSurrogate
@@ -104,15 +104,14 @@ public abstract class SurrogateTests<T> : SerializationTest<T> where T : ISerial
     public void SerializeNonSerializableTypeWithSurrogate()
     {
         NonSerializablePair<int, string> pair = new() { Value1 = 1, Value2 = "2" };
-        pair.GetType().IsSerializable.Should().BeFalse();
-        Action action = () => Serialize(pair);
-        action.Should().Throw<SerializationException>();
+        Assert.False(pair.GetType().IsSerializable);
+        Assert.Throws<SerializationException>(() => Serialize(pair));
 
         SurrogateSelector selector = CreateSurrogateSelector<NonSerializablePair<int, string>>(new NonSerializablePairSurrogate());
 
         var deserialized = RoundTrip(pair, surrogateSelector: selector);
-        deserialized.Should().NotBeSameAs(pair);
-        deserialized.Value1.Should().Be(pair.Value1);
-        deserialized.Value2.Should().Be(pair.Value2);
+        Assert.NotSame(pair, deserialized);
+        Assert.Equal(pair.Value1, deserialized.Value1);
+        Assert.Equal(pair.Value2, deserialized.Value2);
     }
 }
