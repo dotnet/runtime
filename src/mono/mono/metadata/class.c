@@ -1946,21 +1946,25 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf)
 int
 mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match)
 {
-	int i = mono_class_interface_offset (klass, itf);
+	gboolean has_variance = mono_class_has_variant_generic_params (itf);
+	int exact_match = mono_class_interface_offset (klass, itf), i = -1;
 	*non_exact_match = FALSE;
-	if (i >= 0)
-		return i;
+
+	if (exact_match >= 0) {
+		if (!has_variance)
+			return exact_match;
+	}
 
 	int klass_interface_offsets_count = m_class_get_interface_offsets_count (klass);
 
-	if (m_class_is_array_special_interface  (itf) && m_class_get_rank (klass) < 2) {
+	if (m_class_is_array_special_interface (itf) && m_class_get_rank (klass) < 2) {
 		MonoClass *gtd = mono_class_get_generic_type_definition (itf);
 		int found = -1;
 
 		for (i = 0; i < klass_interface_offsets_count; i++) {
 			if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
 				found = i;
-				*non_exact_match = TRUE;
+				*non_exact_match = (i != exact_match);
 				break;
 			}
 
@@ -1971,7 +1975,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		for (i = 0; i < klass_interface_offsets_count; i++) {
 			if (mono_class_get_generic_type_definition (m_class_get_interfaces_packed (klass) [i]) == gtd) {
 				found = i;
-				*non_exact_match = TRUE;
+				*non_exact_match = (i != exact_match);
 				break;
 			}
 		}
@@ -1980,16 +1984,45 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 			return -1;
 
 		return m_class_get_interface_offsets_packed (klass) [found];
-	}
+	} else if (has_variance) {
+		MonoClass **vst;
+		int vst_count;
+		MonoClass *current = klass;
 
-	if (!mono_class_has_variant_generic_params (itf))
-		return -1;
+		// Perform two passes per class, then check the base class
+		while (current) {
+			mono_class_get_variance_search_table (current, &vst, &vst_count);
 
-	for (i = 0; i < klass_interface_offsets_count; i++) {
-		if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
-			*non_exact_match = TRUE;
-			return m_class_get_interface_offsets_packed (klass) [i];
+			// Exact match pass: Is there an exact match at this level of the type hierarchy?
+			// If so, we can use the interface_offset we computed earlier, since we're walking from most derived to least.
+			for (i = 0; i < vst_count; i++) {
+				if (itf != vst [i])
+					continue;
+
+				*non_exact_match = FALSE;
+				return exact_match;
+			}
+
+			// Inexact match (variance) pass:
+			// Is any interface at this level of the type hierarchy variantly compatible with the desired interface?
+			// If so, select the first compatible one we find.
+			for (i = 0; i < vst_count; i++) {
+				if (!mono_class_is_variant_compatible (itf, vst [i], FALSE))
+					continue;
+
+				int inexact_match = mono_class_interface_offset (klass, vst[i]);
+				g_assert (inexact_match != exact_match);
+				*non_exact_match = TRUE;
+				return inexact_match;
+			}
+
+			// Now check base class if present
+			current = m_class_get_parent (current);
 		}
+
+		// If the variance search failed to find a match, return the exact match search result (probably -1).
+		*non_exact_match = (exact_match < 0);
+		return exact_match;
 	}
 
 	return -1;

@@ -3286,7 +3286,14 @@ mono_class_setup_interface_id_nolock (MonoClass *klass)
 	    * 	a != b ==> true
 		*/
 		const char *name = m_class_get_name (klass);
-		if (!strcmp (name, "IList`1") || !strcmp (name, "ICollection`1") || !strcmp (name, "IEnumerable`1") || !strcmp (name, "IEnumerator`1"))
+		if (
+			!strcmp (name, "IList`1") ||
+			!strcmp (name, "IReadOnlyList`1") ||
+			!strcmp (name, "ICollection`1") ||
+			!strcmp (name, "IReadOnlyCollection`1") ||
+			!strcmp (name, "IEnumerable`1") ||
+			!strcmp (name, "IEnumerator`1")
+		)
 			klass->is_array_special_interface = 1;
 	}
 }
@@ -4187,6 +4194,100 @@ void
 mono_class_set_runtime_vtable (MonoClass *klass, MonoVTable *vtable)
 {
 	klass->runtime_vtable = vtable;
+}
+
+static int
+index_of_class (MonoClass *needle, MonoClass **haystack, int haystack_size) {
+	for (int i = 0; i < haystack_size; i++)
+		if (haystack[i] == needle)
+			return i;
+
+	return -1;
+}
+
+static void
+concat_variance_search_table (MonoClass *klass, MonoClass **buf, int buf_size, int *buf_count, MonoClass *current) {
+	MonoClass **table;
+	int table_size;
+	mono_class_get_variance_search_table (current, &table, &table_size);
+	if (!table_size || !table)
+		return;
+
+	for (int i = 0; i < table_size; i++) {
+		MonoClass *iface = table[i];
+		if (index_of_class (iface, buf, *buf_count) >= 0)
+			continue;
+
+		g_assert (*buf_count < buf_size);
+		buf[*buf_count] = table[i];
+		(*buf_count) += 1;
+	}
+}
+
+static void
+build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_size, int *buf_count, MonoClass *current) {
+	if (!m_class_is_interfaces_inited (current)) {
+		ERROR_DECL (error);
+		mono_class_setup_interfaces (current, error);
+		return_if_nok (error);
+	}
+	guint c = m_class_get_interface_count (current);
+	if (c) {
+		MonoClass **ifaces = m_class_get_interfaces (current);
+		for (guint i = 0; i < c; i++) {
+			MonoClass *iface = ifaces [i];
+			// Avoid adding duplicates.
+			if (index_of_class (iface, buf, *buf_count) >= 0)
+				continue;
+
+			if (mono_class_has_variant_generic_params (iface)) {
+				g_assert (*buf_count < buf_size);
+				buf[*buf_count] = iface;
+				(*buf_count) += 1;
+			}
+
+			concat_variance_search_table (klass, buf, buf_size, buf_count, iface);
+		}
+	}
+}
+
+// Only call this with the loader lock held
+static void
+build_variance_search_table (MonoClass *klass) {
+	// FIXME: Is there a way to deterministically compute the right capacity?
+	int buf_size = 512, buf_count = 0;
+	MonoClass **buf = g_alloca (buf_size * sizeof(MonoClass *)),
+		**result = NULL;
+	memset (buf, 0, buf_size * sizeof(MonoClass *));
+	build_variance_search_table_inner (klass, buf, buf_size, &buf_count, klass);
+
+	if (buf_count) {
+		guint bytes = buf_count * sizeof(MonoClass *);
+		result = g_malloc (bytes);
+		memcpy (result, buf, bytes);
+	}
+	klass->variant_search_table_length = buf_count;
+	klass->variant_search_table = result;
+	// Ensure we do not set the inited flag until we've stored the result pointer
+	mono_memory_barrier ();
+	klass->variant_search_table_inited = TRUE;
+}
+
+void
+mono_class_get_variance_search_table (MonoClass *klass, MonoClass ***table, int *table_size) {
+	g_assert (klass);
+	g_assert (table);
+	g_assert (table_size);
+
+	if (!klass->variant_search_table_inited) {
+		mono_loader_lock ();
+		if (!klass->variant_search_table_inited)
+			build_variance_search_table (klass);
+		mono_loader_unlock ();
+	}
+
+	*table = klass->variant_search_table;
+	*table_size = klass->variant_search_table_length;
 }
 
 /**
