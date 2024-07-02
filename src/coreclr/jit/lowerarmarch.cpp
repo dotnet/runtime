@@ -72,9 +72,10 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
         target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
-        emitAttr       attr   = emitActualTypeSize(childNode->TypeGet());
-        emitAttr       size   = EA_SIZE(attr);
-#ifdef TARGET_ARM
+#ifdef TARGET_ARM64
+        emitAttr attr = emitActualTypeSize(childNode->TypeGet());
+        emitAttr size = EA_SIZE(attr);
+#else
         insFlags flags = parentNode->gtSetFlags() ? INS_FLAGS_SET : INS_FLAGS_DONT_CARE;
 #endif
 
@@ -82,20 +83,30 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         {
             case GT_ADD:
             case GT_SUB:
-#ifdef TARGET_ARM64
+#ifdef TARGET_ARM
+                return emitter::emitIns_valid_imm_for_add(immVal, flags);
+#else
                 return emitter::emitIns_valid_imm_for_add(immVal, size);
+#endif
+
+#ifdef TARGET_ARM
+            case GT_XADD:
+                return emitter::emitIns_valid_imm_for_add(immVal, flags);
             case GT_CMPXCHG:
+                return emitter::emitIns_valid_imm_for_cmp(immVal, flags);
+#else
+            case GT_XADD:
             case GT_LOCKADD:
             case GT_XORR:
             case GT_XAND:
-            case GT_XADD:
                 return comp->compOpportunisticallyDependsOn(InstructionSet_Atomics)
                            ? false
                            : emitter::emitIns_valid_imm_for_add(immVal, size);
-#elif defined(TARGET_ARM)
-                return emitter::emitIns_valid_imm_for_add(immVal, flags);
-#endif
-                break;
+            case GT_CMPXCHG:
+                return comp->compOpportunisticallyDependsOn(InstructionSet_Atomics)
+                           ? false
+                           : emitter::emitIns_valid_imm_for_cmp(immVal, size);
+#endif // TARGET_ARM
 
 #ifdef TARGET_ARM64
             case GT_EQ:

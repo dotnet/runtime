@@ -570,6 +570,12 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
+        case GT_CMPXCHG:
+        case GT_XADD:
+        case GT_XCHG:
+            srcCount = BuildAtomic(tree, dstCount);
+            break;
+
         case GT_CALL:
             srcCount = BuildCall(tree->AsCall());
             if (tree->AsCall()->HasMultiRegRetVal())

@@ -61,6 +61,11 @@ bool CodeGen::genInstrWithConstant(
     {
         case INS_add:
         case INS_sub:
+            if (imm < 0)
+            {
+                imm = -imm;
+                ins = (ins == INS_add) ? INS_sub : INS_add;
+            }
             immFitsInIns = validImmForInstr(ins, (target_ssize_t)imm, flags);
             break;
 
