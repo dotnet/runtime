@@ -49,6 +49,27 @@ namespace System.Text.Json.Tests
             Assert.False(element!.Value.SniffDocument().IsDisposable());
         }
 
+        [Fact]
+        public static void ParseValue_AllowMultipleValues_TrailingJson()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             null"u8, options);
+
+            JsonElement element = JsonElement.ParseValue(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", element.GetRawText());
+        }
+
+
+        [Fact]
+        public static void ParseValue_AllowMultipleValues_TrailingContent()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             <NotJson/>"u8, options);
+
+            JsonElement element = JsonElement.ParseValue(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", element.GetRawText());
+        }
+
         public static IEnumerable<object[]> ElementParsePartialDataCases
         {
             get

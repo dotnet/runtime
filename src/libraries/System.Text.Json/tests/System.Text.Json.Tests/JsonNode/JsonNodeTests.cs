@@ -47,6 +47,27 @@ namespace System.Text.Json.Nodes.Tests
             JsonType_Deserializes_Null<JsonObject>();
         }
 
+        [Fact]
+        public static void Parse_AllowMultipleValues_TrailingJson()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             null"u8, options);
+
+            JsonNode node = JsonNode.Parse(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", node.ToJsonString());
+        }
+
+
+        [Fact]
+        public static void Parse_AllowMultipleValues_TrailingContent()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             <NotJson/>"u8, options);
+
+            JsonNode node = JsonNode.Parse(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", node.ToJsonString());
+        }
+
         private static void JsonType_Deserializes_Null<TNode>() where TNode : JsonNode
         {
             Assert.Null(JsonSerializer.Deserialize<TNode>("null"));
