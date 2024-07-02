@@ -5754,6 +5754,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			if (call->signature->pinvoke && mono_method_signature_has_ext_callconv (call->signature, MONO_EXT_CALLCONV_SWIFTCALL))
+				amd64_mov_reg_reg (code, SWIFT_RETURN_BUFFER_REG, AMD64_R10, 8);
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
 			code = emit_call (cfg, call, code, MONO_JIT_ICALL_ZeroIsReserved);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = GPTRDIFF_TO_INT (code - cfg->native_code);
@@ -5775,8 +5779,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			code = amd64_handle_varargs_call (cfg, code, call, TRUE);
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
-			MonoMethodSignature *sig = call->signature;
-			if (sig->pinvoke && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL))
+			if (call->signature->pinvoke && mono_method_signature_has_ext_callconv (call->signature, MONO_EXT_CALLCONV_SWIFTCALL))
 				amd64_mov_reg_reg (code, SWIFT_RETURN_BUFFER_REG, AMD64_R10, 8);
 #endif /* MONO_ARCH_HAVE_SWIFTCALL */
 			amd64_call_reg (code, ins->sreg1);
