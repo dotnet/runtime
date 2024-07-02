@@ -1242,17 +1242,7 @@ namespace System.Text.Json
                     return true;
 
                 case JsonValueKind.Number:
-                    ReadOnlySpan<byte> leftRawValue = left.GetRawValue().Span;
-                    ReadOnlySpan<byte> rightRawValue = right.GetRawValue().Span;
-
-                    int bytesConsumed;
-                    if (Utf8Parser.TryParse(leftRawValue, out decimal leftNumber, out bytesConsumed) && bytesConsumed == leftRawValue.Length &&
-                        Utf8Parser.TryParse(rightRawValue, out decimal rightNumber, out bytesConsumed) && bytesConsumed == rightRawValue.Length)
-                    {
-                        return leftNumber == rightNumber;
-                    }
-
-                    return leftRawValue.SequenceEqual(rightRawValue);
+                    return JsonHelpers.AreEqualJsonNumbers(left.GetRawValue().Span, right.GetRawValue().Span);
 
                 case JsonValueKind.String:
                     if (right.ValueIsEscaped)
