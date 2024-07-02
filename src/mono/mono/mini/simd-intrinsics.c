@@ -3325,7 +3325,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins_prodx->inst_c1 = MONO_TYPE_R4;
 
 		// prody = y * amount
-		MonoInst *ins_prody = emit_simd_ins (cfg, klass, OP_XBINOP, args [1]->dreg, ins_diff->dreg);
+		MonoInst *ins_prody = emit_simd_ins (cfg, klass, OP_XBINOP, args [1]->dreg, ins_amount->dreg);
 		ins_prody->inst_c0 = OP_FMUL;
 		ins_prody->inst_c1 = MONO_TYPE_R4;
 
