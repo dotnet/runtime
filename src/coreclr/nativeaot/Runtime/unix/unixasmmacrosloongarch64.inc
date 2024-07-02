@@ -160,11 +160,12 @@ C_FUNC(\Name):
 
     // This sequence of instructions is recognized and potentially patched
     // by the linker (GD->IE/LE relaxation).
-    //la.local  $a0, \var                      //
-    //ld.d  \target, $a0, 0                    //
-    //.tlsdesccall \var                        //TODO-LOONGARCH64
-    la.tls.ie   $a0, \var
+    // TODO-LOONGARCH64: Fix once TLSDESC is supported by LLVM
+    //la.local  $a0, \var
+    //ld.d  \target, $a0, 0
+    //.tlsdesccall \var
     //jirl  $ra, \target, 0
+    la.tls.ie   $a0, \var
     // End of the sequence
 
     ori  \target, $tp, 0
