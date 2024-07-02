@@ -2242,18 +2242,15 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
         size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
     }
 
-    if (EA_IS_RELOC(size))
+    if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_SEC_RELOC(origAttr))
     {
-        if (!EA_IS_CNS_SEC_RELOC(origAttr))
-        {
-            // This emits a pair of adrp/add (two instructions) with fix-ups.
-            GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
-        }
-        else if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-        {
-            // This emits pair of `add` instructions for TLS reloc
-            GetEmitter()->emitIns_Add_Add_Tls_Reloc(size, reg, imm DEBUGARG(gtFlags));
-        }
+        // This emits pair of `add` instructions for TLS reloc
+        GetEmitter()->emitIns_Add_Add_Tls_Reloc(size, reg, imm DEBUGARG(gtFlags));
+    }
+    else if (EA_IS_RELOC(size))
+    {
+        // This emits a pair of adrp/add (two instructions) with fix-ups.
+        GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
     }
     else if (imm == 0)
     {
