@@ -3369,6 +3369,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Handle op2
                 if (op2->OperIsHWIntrinsic())
                 {
+                    const GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
+
                     if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatibleHWIntrinsic())
                     {
                         uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
@@ -3384,7 +3386,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             // Else check if this operation has an auxiliary type that matches the
                             // mask size.
-                            GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
 
                             // For now, make sure that we get here only for intrinsics that we are
                             // sure about to rely on auxiliary type's size.
@@ -3399,6 +3400,17 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 MakeSrcContained(node, op2);
                                 op2->MakeEmbMaskOp();
                             }
+                        }
+                    }
+
+                    // Handle intrinsics with embedded masks and immediate operands
+                    // (For now, just handle ShiftRightArithmeticForDivide specifically)
+                    if (embOp->GetHWIntrinsicId() == NI_Sve_ShiftRightArithmeticForDivide)
+                    {
+                        assert(embOp->GetOperandCount() == 2);
+                        if (embOp->Op(2)->IsCnsIntOrI())
+                        {
+                            MakeSrcContained(op2, embOp->Op(2));
                         }
                     }
                 }
