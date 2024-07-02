@@ -15,36 +15,25 @@ namespace System.Net.Http
         internal static string GetRedactedUriString(Uri uri)
         {
             Debug.Assert(uri.IsAbsoluteUri);
-            string uriString = uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.UserInfo, UriFormat.UriEscaped);
 
-            if (GlobalHttpSettings.DiagnosticsHandler.DisableUriQueryRedaction)
+            if (GlobalHttpSettings.DiagnosticsHandler.DisableUriRedaction)
             {
-                return uriString;
-            }
-
-            int fragmentOffset = uriString.IndexOf('#');
-            int queryOffset = uriString.IndexOf('?');
-            if (fragmentOffset >= 0 && queryOffset > fragmentOffset)
-            {
-                // Not a query delimiter, but a '?' in the fragment.
-                queryOffset = -1;
+                return uri.AbsoluteUri;
             }
 
-            if (queryOffset < 0 || queryOffset == uriString.Length - 1 || queryOffset == fragmentOffset - 1)
-            {
-                // No query or empty query.
-                return uriString;
-            }
+            string pathAndQuery = uri.PathAndQuery;
+            int queryIndex = pathAndQuery.IndexOf('?');
 
-            if (fragmentOffset < 0)
+            bool redactQuery = queryIndex >= 0 && // Query is present.
+                queryIndex < pathAndQuery.Length - 1; // Query is not empty.
+
+            return (redactQuery, uri.IsDefaultPort) switch
             {
-                return $"{uriString.AsSpan(0, queryOffset + 1)}*";
-            }
-            else
-            {
-                ReadOnlySpan<char> uriSpan = uriString.AsSpan();
-                return $"{uriSpan[..(queryOffset + 1)]}*{uriSpan[fragmentOffset..]}";
-            }
+                (true, true) => $"{uri.Scheme}://{uri.Host}{pathAndQuery.AsSpan(0, queryIndex + 1)}*",
+                (true, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{pathAndQuery.AsSpan(0, queryIndex + 1)}*",
+                (false, true) => $"{uri.Scheme}://{uri.Host}{pathAndQuery}",
+                (false, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{pathAndQuery}"
+            };
         }
 
         internal static KeyValuePair<string, object?> GetMethodTag(HttpMethod method)

@@ -15,9 +15,9 @@ namespace System.Net.Http
                 "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION",
                 true);
 
-            public static bool DisableUriQueryRedaction { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
-                "System.Net.Http.DisableUriQueryRedaction",
-                "DOTNET_SYSTEM_NET_HTTP_DISABLEURIQUERYREDACTION",
+            public static bool DisableUriRedaction { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
+                "System.Net.Http.DisableUriRedaction",
+                "DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION",
                 false);
         }
 

@@ -436,8 +436,8 @@ namespace System.Net.Http.Functional.Tests
                     await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            uri = new Uri($"{uri.Scheme}://user:pass@{uri.Authority}/1/2/?a=1&b=2#fragment");
-                            expectedUriFull = $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}?*{uri.Fragment}";
+                            uri = new Uri($"{uri.Scheme}://user:pass@{uri.Authority}/1/2/?a=1&b=2");
+                            expectedUriFull = $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}?*";
                             currentUri = uri;
                             await GetAsync(useVersion, testAsync, uri);
                             await activityStopTcs.Task;

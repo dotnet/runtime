@@ -4,6 +4,7 @@
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Diagnostics.Runtime.Utilities;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -14,36 +15,36 @@ namespace System.Net.Http.Tests
         public static readonly TheoryData<string, string> GetRedactedUriString_Data = new TheoryData<string, string>()
         {
             { "http://q.app/foo", "http://q.app/foo" },
+            { "http://q.app:123/foo", "http://q.app:123/foo" },
             { "http://user:xxx@q.app/foo", "http://q.app/foo" }, // has user info
             { "http://q.app/foo?", "http://q.app/foo?" },
             { "http://q.app/foo?XXX", "http://q.app/foo?*" },
             { "http://q.app/a/b/c?a=b%20c&x=1", "http://q.app/a/b/c?*" },
-            { "http://q.app/#", "http://q.app/#" }, // Has empty fragment.
-            { "http://q.app#f", "http://q.app/#f" }, // Has fragment.
-            { "http://q.app#f?a=b", "http://q.app/#f?a=b" }, // Has fragment with a '?'.
-            { "http://q.app/?a=b#f?a=b", "http://q.app/?*#f?a=b" }, // Has query and fragment with a '?'.
-            { "http://q.app?#f", "http://q.app/?#f" }, // Has empty query and fragment.
+            { "http://q.app:4242/a/b/c?a=b%20c&x=1", "http://q.app:4242/a/b/c?*" },
         };
 
         [Theory]
         [MemberData(nameof(GetRedactedUriString_Data))]
-        public void GetRedactedUriString(string original, string expected)
+        public void GetRedactedUriString_RedactsUriByDefault(string original, string expected)
         {
             string redacted = DiagnosticsHelper.GetRedactedUriString(new Uri(original));
             Assert.Equal(expected, redacted);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task GetRedactedUriString_DisableUriQueryRedaction_RedactsOnlyUserInfo()
+        public async Task GetRedactedUriString_DisableUriRedaction_DoesNotRedactUri()
         {
             await RemoteExecutor.Invoke(() =>
             {
-                AppContext.SetSwitch("System.Net.Http.DisableUriQueryRedaction", true);
-                Uri uri = new("http://user:xxx@q.app/foo?a=1&b=2");
+                AppContext.SetSwitch("System.Net.Http.DisableUriRedaction", true);
 
-                string redacted = DiagnosticsHelper.GetRedactedUriString(uri);
+                Uri[] uris = GetRedactedUriString_Data.Select(a => a[0] == null ? null : new Uri((string)a[0], UriKind.RelativeOrAbsolute)).ToArray();
 
-                Assert.Equal("http://q.app/foo?a=1&b=2", redacted);
+                foreach (Uri uri in uris)
+                {
+                    string actual = DiagnosticsHelper.GetRedactedUriString(uri);
+                    Assert.Equal(uri.AbsoluteUri, actual);
+                }
             }).DisposeAsync();
         }
 
