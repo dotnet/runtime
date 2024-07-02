@@ -8034,6 +8034,7 @@ interp_parse_options (const char *options)
 			}
 		}
 	}
+	g_strfreev (args);
 }
 
 /*

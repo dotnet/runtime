@@ -242,7 +242,7 @@ FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, 
     return NULL;
 }
 
-FORCEINLINE static void *GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, ComPlusCallInfo *pComInfo)
+FORCEINLINE static void *GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, CLRToCOMCallInfo *pComInfo)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -262,7 +262,7 @@ NOINLINE static IUnknown* GetCOMIPFromRCWHelper(LPVOID pFCall, OBJECTREF pSrc, M
 
     SafeComHolder<IUnknown> pRetUnk;
 
-    ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
+    CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
     pRetUnk = ComObject::GetComIPFromRCWThrowing(&pSrc, pComInfo->m_pInterfaceMT);
 
     *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
@@ -294,14 +294,14 @@ FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(pMD->IsComPlusCall() || pMD->IsEEImpl());
+        PRECONDITION(pMD->IsCLRToCOMCall() || pMD->IsEEImpl());
     }
     CONTRACTL_END;
 
     OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
     *pfNeedsRelease = false;
 
-    ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
+    CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
     RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
@@ -622,7 +622,7 @@ FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
         if (pMD != NULL)
         {
             // Retrieve the interface method table.
-            MethodTable *pItfMT = ComPlusCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
+            MethodTable *pItfMT = CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
 
             // Get IUnknown pointer for this interface on this object
             IUnknown* pUnk = ComObject::GetComIPFromRCW(&oref, pItfMT);
@@ -807,32 +807,6 @@ FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
     return VARARGS::CalcVaListSize(varargs);
 }
 FCIMPLEND
-
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-NOINLINE static void ArrayTypeCheckSlow(Object* element, PtrArray* arr)
-{
-    FC_INNER_PROLOG(StubHelpers::ArrayTypeCheck);
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    if (!ObjIsInstanceOf(element, arr->GetArrayElementTypeHandle()))
-        COMPlusThrow(kArrayTypeMismatchException);
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-FCIMPL2(void, StubHelpers::ArrayTypeCheck, Object* element, PtrArray* arr)
-{
-    FCALL_CONTRACT;
-
-    if (ObjIsInstanceOfCached(element, arr->GetArrayElementTypeHandle()) == TypeHandle::CanCast)
-        return;
-
-    FC_INNER_RETURN_VOID(ArrayTypeCheckSlow(element, arr));
-}
-FCIMPLEND
-#endif // FEATURE_ARRAYSTUB_AS_IL
 
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
 FCIMPL2(void, StubHelpers::MulticastDebuggerTraceHelper, Object* element, INT32 count)

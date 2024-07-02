@@ -16,5 +16,11 @@ namespace System.Text.Json
                 switchName: "System.Text.Json.Serialization.RespectNullableAnnotationsDefault",
                 isEnabled: out bool value)
             ? value : false;
+
+        public static bool RespectRequiredConstructorParametersDefault { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "System.Text.Json.Serialization.RespectRequiredConstructorParametersDefault",
+                isEnabled: out bool value)
+            ? value : false;
     }
 }

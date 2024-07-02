@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Sockets;
 #if !NETFRAMEWORK
 using System.Net.Quic;
 #endif
@@ -989,7 +988,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true, true, true)]
         [InlineData(true, true, false)]
         [InlineData(true, false, false)]
@@ -999,11 +998,6 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming, bool slowChunks)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/91757");
-            }
-
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
@@ -1675,7 +1669,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(HttpStatusCode responseStatusCode)
         {
@@ -1916,7 +1910,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -2024,22 +2018,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request()
         {
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 1));
-            Assert.Equal(new Version(1, 1), receivedRequestVersion);
-        }
-
-        [SkipOnPlatform(TestPlatforms.Browser, "Version is not supported on Browser")]
-        [Fact]
-        public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
-        {
-            // SocketsHttpHandler treats 0.0 as a bad version, and throws.
-            if (!IsWinHttpHandler)
-            {
-                return;
-            }
-
-            // The default value for HttpRequestMessage.Version is Version(1,1).
-            // So, we need to set something different (0,0), to test the "unknown" version.
-            Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(0, 0));
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 

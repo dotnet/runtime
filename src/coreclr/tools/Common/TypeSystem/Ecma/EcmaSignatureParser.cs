@@ -380,6 +380,9 @@ namespace Internal.TypeSystem.Ecma
             if (!header.IsInstance)
                 flags |= MethodSignatureFlags.Static;
 
+            if (header.HasExplicitThis)
+                flags |= MethodSignatureFlags.ExplicitThis;
+
             int arity = header.IsGeneric ? _reader.ReadCompressedInteger() : 0;
 
             int count = _reader.ReadCompressedInteger();

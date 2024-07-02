@@ -26,23 +26,12 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_Lzcnt = 0x1000,
     XArchIntrinsicConstants_AvxVnni = 0x2000,
     XArchIntrinsicConstants_Movbe = 0x4000,
-    XArchIntrinsicConstants_Avx512f = 0x8000,
-    XArchIntrinsicConstants_Avx512f_vl = 0x10000,
-    XArchIntrinsicConstants_Avx512bw = 0x20000,
-    XArchIntrinsicConstants_Avx512bw_vl = 0x40000,
-    XArchIntrinsicConstants_Avx512cd = 0x80000,
-    XArchIntrinsicConstants_Avx512cd_vl = 0x100000,
-    XArchIntrinsicConstants_Avx512dq = 0x200000,
-    XArchIntrinsicConstants_Avx512dq_vl = 0x400000,
-    XArchIntrinsicConstants_Avx512Vbmi = 0x800000,
-    XArchIntrinsicConstants_Avx512Vbmi_vl = 0x1000000,
-    XArchIntrinsicConstants_Serialize = 0x2000000,
-    XArchIntrinsicConstants_VectorT128 = 0x4000000,
-    XArchIntrinsicConstants_VectorT256 = 0x8000000,
-    XArchIntrinsicConstants_VectorT512 = 0x10000000,
-    XArchIntrinsicConstants_Avx10v1 = 0x20000000,
-    XArchIntrinsicConstants_Avx10v1_V256 = 0x40000000,
-    XArchIntrinsicConstants_Avx10v1_V512 = 0x80000000,
+    XArchIntrinsicConstants_Avx512 = 0x8000,
+    XArchIntrinsicConstants_Avx512Vbmi = 0x10000,
+    XArchIntrinsicConstants_Serialize = 0x20000,
+    XArchIntrinsicConstants_Avx10v1 = 0x40000,
+    XArchIntrinsicConstants_Avx10v1_V512 = 0x80000,
+    XArchIntrinsicConstants_Evex = 0x100000,
 };
 #endif // HOST_X86 || HOST_AMD64
 
@@ -58,9 +47,8 @@ enum ARM64IntrinsicConstants
     ARM64IntrinsicConstants_Sha256 = 0x0040,
     ARM64IntrinsicConstants_Atomics = 0x0080,
     ARM64IntrinsicConstants_Rcpc = 0x0100,
-    ARM64IntrinsicConstants_VectorT128 = 0x0200,
-    ARM64IntrinsicConstants_Rcpc2 = 0x0400,
-    ARM64IntrinsicConstants_Sve = 0x0800,
+    ARM64IntrinsicConstants_Rcpc2 = 0x0200,
+    ARM64IntrinsicConstants_Sve = 0x0400,
 };
 
 #include <assert.h>

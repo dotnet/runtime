@@ -121,7 +121,11 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__GSCookie == sizeof(GSCookie));
 #define SIZEOF__Frame                 0x10
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 
+#if !defined(HOST_WINDOWS)
+#define SIZEOF__CONTEXT               0x3e0
+#else
 #define SIZEOF__CONTEXT               0x390
+#endif
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
 
@@ -191,11 +195,13 @@ ASMCONSTANTS_C_ASSERT(MethodDesc_ALIGNMENT_SHIFT == MethodDesc::ALIGNMENT_SHIFT)
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext == offsetof(ResolveCacheElem, pNext));
 
-#define DomainLocalModule__m_pDataBlob 0x30
-#define DomainLocalModule__m_pGCStatics 0x20
-ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pDataBlob == offsetof(DomainLocalModule, m_pDataBlob));
-ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pGCStatics == offsetof(DomainLocalModule, m_pGCStatics));
+#define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
+                    == offsetof(DynamicStaticsInfo, m_pNonGCStatics));
 
+#define                OFFSETOF__DynamicStaticsInfo__m_pGCStatics 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
+                    == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x08

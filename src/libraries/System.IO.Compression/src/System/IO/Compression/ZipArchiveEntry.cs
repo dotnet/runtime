@@ -469,7 +469,7 @@ namespace System.IO.Compression
 
             bool zip64Needed = false;
 
-            if (SizesTooLarge()
+            if (AreSizesTooLarge
 #if DEBUG_FORCE_ZIP64
                 || _archive._forceZip64
 #endif
@@ -490,7 +490,7 @@ namespace System.IO.Compression
             }
 
 
-            if (_offsetOfLocalHeader > uint.MaxValue
+            if (IsOffsetTooLarge
 #if DEBUG_FORCE_ZIP64
                 || _archive._forceZip64
 #endif
@@ -692,7 +692,7 @@ namespace System.IO.Compression
             if (_everOpenedForWrite)
                 throw new IOException(SR.CreateModeWriteOnceAndOneEntryAtATime);
 
-            // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderIfNeeed
+            // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderAndDataIfNeeded
             _archive.DebugAssertIsStillArchiveStreamOwner(this);
 
             _everOpenedForWrite = true;
@@ -797,7 +797,7 @@ namespace System.IO.Compression
             return true;
         }
 
-        private bool SizesTooLarge() => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
+        private bool AreSizesTooLarge => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
 
         private static CompressionLevel MapCompressionLevel(BitFlagValues generalPurposeBitFlag, CompressionMethodValues compressionMethod)
         {
@@ -839,6 +839,10 @@ namespace System.IO.Compression
             return (BitFlagValues)(((int)generalPurposeBitFlag & ~0x6) | deflateCompressionOptions);
         }
 
+        private bool IsOffsetTooLarge => _offsetOfLocalHeader > uint.MaxValue;
+
+        private bool ShouldUseZIP64 => AreSizesTooLarge || IsOffsetTooLarge;
+
         // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
         private bool WriteLocalFileHeader(bool isEmptyFile)
         {
@@ -852,6 +856,9 @@ namespace System.IO.Compression
             Zip64ExtraField zip64ExtraField = default;
             bool zip64Used = false;
             uint compressedSizeTruncated, uncompressedSizeTruncated;
+
+            // save offset
+            _offsetOfLocalHeader = writer.BaseStream.Position;
 
             // if we already know that we have an empty file don't worry about anything, just do a straight shot of the header
             if (isEmptyFile)
@@ -880,7 +887,7 @@ namespace System.IO.Compression
                 {
                     // We are in seekable mode so we will not need to write a data descriptor
                     _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
-                    if (SizesTooLarge()
+                    if (ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
                         || (_archive._forceZip64 && _archive.Mode == ZipArchiveMode.Update)
 #endif
@@ -904,9 +911,6 @@ namespace System.IO.Compression
                     }
                 }
             }
-
-            // save offset
-            _offsetOfLocalHeader = writer.BaseStream.Position;
 
             // calculate extra field. if zip64 stuff + original extraField aren't going to fit, dump the original extraField, because this is more important
             int bigExtraFieldLength = (zip64Used ? zip64ExtraField.TotalSize : 0)
@@ -1004,7 +1008,7 @@ namespace System.IO.Compression
             long finalPosition = _archive.ArchiveStream.Position;
             BinaryWriter writer = new BinaryWriter(_archive.ArchiveStream);
 
-            bool zip64Needed = SizesTooLarge()
+            bool zip64Needed = ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
                 || _archive._forceZip64
 #endif
@@ -1088,7 +1092,7 @@ namespace System.IO.Compression
 
             writer.Write(ZipLocalFileHeader.DataDescriptorSignature);
             writer.Write(_crc32);
-            if (SizesTooLarge())
+            if (AreSizesTooLarge)
             {
                 writer.Write(_compressedSize);
                 writer.Write(_uncompressedSize);

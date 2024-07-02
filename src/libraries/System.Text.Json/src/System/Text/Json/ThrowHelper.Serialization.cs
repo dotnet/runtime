@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO.Pipelines;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -292,15 +293,11 @@ namespace System.Text.Json
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
 
-            Debug.Assert(parent.PropertyCache != null);
-
             // Soft cut-off length - once message becomes longer than that we won't be adding more elements
-            const int CutOffLength = 50;
+            const int CutOffLength = 60;
 
-            foreach (KeyValuePair<string, JsonPropertyInfo> kvp in parent.PropertyCache.List)
+            foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                JsonPropertyInfo property = kvp.Value;
-
                 if (!property.IsRequired || requiredPropertiesSet[property.RequiredPropertyIndex])
                 {
                     continue;
@@ -312,7 +309,9 @@ namespace System.Text.Json
                     listOfMissingPropertiesBuilder.Append(' ');
                 }
 
+                listOfMissingPropertiesBuilder.Append('\'');
                 listOfMissingPropertiesBuilder.Append(property.Name);
+                listOfMissingPropertiesBuilder.Append('\'');
                 first = false;
 
                 if (listOfMissingPropertiesBuilder.Length >= CutOffLength)
@@ -587,9 +586,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException(ref WriteStack state, NotSupportedException ex)
+        public static void ThrowNotSupportedException(ref WriteStack state, Exception innerException)
         {
-            string message = ex.Message;
+            string message = innerException.Message;
 
             // The caller should check to ensure path is not already set.
             Debug.Assert(!message.Contains(" Path: "));
@@ -609,7 +608,7 @@ namespace System.Text.Json
 
             message += $" Path: {state.PropertyPath()}.";
 
-            throw new NotSupportedException(message, ex);
+            throw new NotSupportedException(message, innerException);
         }
 
         [DoesNotReturn]
@@ -929,9 +928,21 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowOperationCanceledException_PipeWriteCompleted()
+        public static void ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(PipeWriter pipeWriter)
         {
-            throw new OperationCanceledException(SR.PipeWriterCompleted);
+            throw new InvalidOperationException(SR.Format(SR.PipeWriter_DoesNotImplementUnflushedBytes, pipeWriter.GetType().Name));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_JsonSchemaExporterDoesNotSupportReferenceHandlerPreserve()
+        {
+            throw new NotSupportedException(SR.JsonSchemaExporter_ReferenceHandlerPreserve_NotSupported);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonSchemaExporterDepthTooLarge()
+        {
+            throw new InvalidOperationException(SR.JsonSchemaExporter_DepthTooLarge);
         }
     }
 }

@@ -20,6 +20,7 @@
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="SurrogateSelectorTests.cs" />
     <Compile Include="TargetFrameworkMoniker.cs" />
+    <Compile Include="TestConfiguration.cs" />
     <Compile Include="TypeSerializableValue.cs" />
     <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
              Link="Common\System\Drawing\Helpers.cs" />
@@ -47,6 +48,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Packaging\src\System.IO.Packaging.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

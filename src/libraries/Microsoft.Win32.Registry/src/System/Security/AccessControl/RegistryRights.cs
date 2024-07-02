@@ -5,7 +5,7 @@ namespace System.Security.AccessControl
 {
     // We derived this enum from the definitions of KEY_READ and such from
     // winnt.h and from MSDN, plus some experimental validation with regedit.
-    // https://docs.microsoft.com/en-us/windows/desktop/SysInfo/registry-key-security-and-access-rights
+    // https://learn.microsoft.com/windows/desktop/SysInfo/registry-key-security-and-access-rights
     [Flags]
     public enum RegistryRights
     {

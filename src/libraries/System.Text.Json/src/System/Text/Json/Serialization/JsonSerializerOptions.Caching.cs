@@ -508,6 +508,7 @@ namespace System.Text.Json
                     left._allowOutOfOrderMetadataProperties == right._allowOutOfOrderMetadataProperties &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
                     left._respectNullableAnnotations == right._respectNullableAnnotations &&
+                    left._respectRequiredConstructorParameters == right._respectRequiredConstructorParameters &&
                     left._ignoreNullValues == right._ignoreNullValues &&
                     left._ignoreReadOnlyProperties == right._ignoreReadOnlyProperties &&
                     left._ignoreReadonlyFields == right._ignoreReadonlyFields &&
@@ -567,6 +568,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._allowOutOfOrderMetadataProperties);
                 AddHashCode(ref hc, options._allowTrailingCommas);
                 AddHashCode(ref hc, options._respectNullableAnnotations);
+                AddHashCode(ref hc, options._respectRequiredConstructorParameters);
                 AddHashCode(ref hc, options._ignoreNullValues);
                 AddHashCode(ref hc, options._ignoreReadOnlyProperties);
                 AddHashCode(ref hc, options._ignoreReadonlyFields);

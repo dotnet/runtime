@@ -502,7 +502,7 @@ HRESULT ReJitManager::UpdateActiveILVersions(
             continue;
         }
 
-        if (pModule->IsReflection())
+        if (pModule->IsReflectionEmit())
         {
             ReportReJITError(pModule, rgMethodDefs[i], NULL, CORPROF_E_MODULE_IS_DYNAMIC);
             continue;

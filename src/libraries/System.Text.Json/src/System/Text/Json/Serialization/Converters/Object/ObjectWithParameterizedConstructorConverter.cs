@@ -341,7 +341,7 @@ namespace System.Text.Json.Serialization.Converters
                         if (argumentState.FoundProperties == null)
                         {
                             argumentState.FoundProperties =
-                                ArrayPool<FoundProperty>.Shared.Rent(Math.Max(1, state.Current.JsonTypeInfo.PropertyCache!.Count));
+                                ArrayPool<FoundProperty>.Shared.Rent(Math.Max(1, state.Current.JsonTypeInfo.PropertyCache.Length));
                         }
                         else if (argumentState.FoundPropertyCount == argumentState.FoundProperties.Length)
                         {
@@ -537,7 +537,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (argumentState.FoundPropertiesAsync == null)
             {
-                argumentState.FoundPropertiesAsync = ArrayPool<FoundPropertyAsync>.Shared.Rent(Math.Max(1, state.Current.JsonTypeInfo.PropertyCache!.Count));
+                argumentState.FoundPropertiesAsync = ArrayPool<FoundPropertyAsync>.Shared.Rent(Math.Max(1, state.Current.JsonTypeInfo.PropertyCache.Length));
             }
             else if (argumentState.FoundPropertyCount == argumentState.FoundPropertiesAsync!.Length)
             {
@@ -570,7 +570,7 @@ namespace System.Text.Json.Serialization.Converters
 
             jsonTypeInfo.ValidateCanBeUsedForPropertyMetadataSerialization();
 
-            if (jsonTypeInfo.ParameterCount != jsonTypeInfo.ParameterCache!.Count)
+            if (jsonTypeInfo.ParameterCount != jsonTypeInfo.ParameterCache.Length)
             {
                 ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(Type);
             }
@@ -610,7 +610,7 @@ namespace System.Text.Json.Serialization.Converters
             // For case insensitive and missing property support of JsonPath, remember the value on the temporary stack.
             state.Current.JsonPropertyName = utf8PropertyName;
 
-            jsonParameterInfo = jsonPropertyInfo.ParameterInfo;
+            jsonParameterInfo = jsonPropertyInfo.AssociatedParameter;
             if (jsonParameterInfo != null)
             {
                 state.Current.JsonPropertyInfo = null;

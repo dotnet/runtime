@@ -1546,7 +1546,7 @@ PInvokeCalliFrame::PInvokeCalliFrame(TransitionBlock * pTransitionBlock, VASigCo
 #ifdef FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
-ComPlusMethodFrame::ComPlusMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
+CLRToCOMMethodFrame::CLRToCOMMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
     : FramedMethodFrame(pTransitionBlock, pMD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1554,11 +1554,11 @@ ComPlusMethodFrame::ComPlusMethodFrame(TransitionBlock * pTransitionBlock, Metho
 #endif // #ifndef DACCESS_COMPILE
 
 //virtual
-void ComPlusMethodFrame::GcScanRoots(promote_func* fn, ScanContext* sc)
+void CLRToCOMMethodFrame::GcScanRoots(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
 
-    // ComPlusMethodFrame is only used in the event call / late bound call code path where we do not have IL stub
+    // CLRToCOMMethodFrame is only used in the event call / late bound call code path where we do not have IL stub
     // so we need to promote the arguments and return value manually.
 
     FramedMethodFrame::GcScanRoots(fn, sc);
@@ -1586,7 +1586,7 @@ void ComPlusMethodFrame::GcScanRoots(promote_func* fn, ScanContext* sc)
 
 #if defined (_DEBUG) && !defined (DACCESS_COMPILE)
 // For IsProtectedByGCFrame, we need to know whether a given object ref is protected
-// by a ComPlusMethodFrame or a ComMethodFrame. Since GCScanRoots for those frames are
+// by a CLRToCOMMethodFrame or a ComMethodFrame. Since GCScanRoots for those frames are
 // quite complicated, we don't want to duplicate their logic so we call GCScanRoots with
 // IsObjRefProtected (a fake promote function) and an extended ScanContext to do the checking.
 
@@ -2044,7 +2044,7 @@ void FakePromote(PTR_PTR_Object ppObj, ScanContext *pSC, uint32_t dwFlags)
 
     CORCOMPILE_GCREFMAP_TOKENS newToken = (dwFlags & GC_CALL_INTERIOR) ? GCREFMAP_INTERIOR : GCREFMAP_REF;
 
-    _ASSERTE((*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == NULL) || (*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == newToken));
+    _ASSERTE((*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == 0) || (*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == newToken));
 
     *(CORCOMPILE_GCREFMAP_TOKENS *)ppObj = newToken;
 }

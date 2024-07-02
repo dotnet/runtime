@@ -1958,7 +1958,7 @@ BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers)
         // Cache the handle to the dll with the handler pushed by ExecuteHandler2.
         if (!ExecuteHandler2ModuleInited)
         {
-            ExecuteHandler2Module = WszGetModuleHandle(W("ntdll.dll"));
+            ExecuteHandler2Module = GetModuleHandle(W("ntdll.dll"));
             ExecuteHandler2ModuleInited = TRUE;
         }
 

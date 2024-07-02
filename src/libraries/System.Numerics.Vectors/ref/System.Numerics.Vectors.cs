@@ -207,6 +207,16 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Add<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> AndNot<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<TTo> As<TFrom, TTo>(this System.Numerics.Vector<TFrom> vector) { throw null; }
+        public static System.Numerics.Plane AsPlane(this System.Numerics.Vector4 value) { throw null; }
+        public static System.Numerics.Quaternion AsQuaternion(this System.Numerics.Vector4 value) { throw null; }
+        public static System.Numerics.Vector2 AsVector2(this System.Numerics.Vector4 value) { throw null; }
+        public static System.Numerics.Vector3 AsVector3(this System.Numerics.Vector4 value) { throw null; }
+        public static System.Numerics.Vector4 AsVector4(this System.Numerics.Plane value) { throw null; }
+        public static System.Numerics.Vector4 AsVector4(this System.Numerics.Quaternion value) { throw null; }
+        public static System.Numerics.Vector4 AsVector4(this System.Numerics.Vector2 value) { throw null; }
+        public static System.Numerics.Vector4 AsVector4(this System.Numerics.Vector3 value) { throw null; }
+        public static System.Numerics.Vector4 AsVector4Unsafe(this System.Numerics.Vector2 value) { throw null; }
+        public static System.Numerics.Vector4 AsVector4Unsafe(this System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector<System.Byte> AsVectorByte<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<System.Double> AsVectorDouble<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<System.Int16> AsVectorInt16<T>(System.Numerics.Vector<T> value) { throw null; }
@@ -249,6 +259,8 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.UInt64> ConvertToUInt64(System.Numerics.Vector<System.Double> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.UInt64> ConvertToUInt64Native(System.Numerics.Vector<System.Double> value) { throw null; }
+        public static System.Numerics.Vector<T> Create<T>(T value) { throw null; }
+        public static System.Numerics.Vector<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Numerics.Vector<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, T right) { throw null; }
@@ -426,6 +438,9 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Abs(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Add(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 Clamp(System.Numerics.Vector2 value1, System.Numerics.Vector2 min, System.Numerics.Vector2 max) { throw null; }
+        public static System.Numerics.Vector2 Create(float value) { throw null; }
+        public static System.Numerics.Vector2 Create(float x, float y) { throw null; }
+        public static System.Numerics.Vector2 Create(System.ReadOnlySpan<float> values) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }
@@ -490,6 +505,10 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Abs(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Add(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 Clamp(System.Numerics.Vector3 value1, System.Numerics.Vector3 min, System.Numerics.Vector3 max) { throw null; }
+        public static System.Numerics.Vector3 Create(float value) { throw null; }
+        public static System.Numerics.Vector3 Create(System.Numerics.Vector2 vector, float z) { throw null; }
+        public static System.Numerics.Vector3 Create(float x, float y, float z) { throw null; }
+        public static System.Numerics.Vector3 Create(System.ReadOnlySpan<float> values) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }
@@ -556,6 +575,11 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Abs(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Add(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 Clamp(System.Numerics.Vector4 value1, System.Numerics.Vector4 min, System.Numerics.Vector4 max) { throw null; }
+        public static System.Numerics.Vector4 Create(float value) { throw null; }
+        public static System.Numerics.Vector4 Create(System.Numerics.Vector2 vector, float z, float w) { throw null; }
+        public static System.Numerics.Vector4 Create(System.Numerics.Vector3 vector, float w) { throw null; }
+        public static System.Numerics.Vector4 Create(float x, float y, float z, float w) { throw null; }
+        public static System.Numerics.Vector4 Create(System.ReadOnlySpan<float> values) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }

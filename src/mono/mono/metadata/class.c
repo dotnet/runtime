@@ -50,6 +50,8 @@
 #include <mono/utils/unlocked.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/checked-build.h>
+// for dn_simdhash_ght_t
+#include "../native/containers/dn-simdhash-specializations.h"
 
 MonoStats mono_stats;
 

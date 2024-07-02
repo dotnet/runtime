@@ -689,7 +689,7 @@ namespace System.Numerics.Tests
         {
             Vector3 v = new Vector3(1.0f, 2.0f, 3.0f);
             Quaternion q = new Quaternion();
-            Vector3 expected = v;
+            Vector3 expected = Vector3.Zero;
 
             Vector3 actual = Vector3.Transform(v, q);
             Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Transform did not return the expected value.");

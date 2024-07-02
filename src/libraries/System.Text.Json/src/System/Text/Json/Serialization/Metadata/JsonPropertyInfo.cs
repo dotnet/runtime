@@ -155,7 +155,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
         /// </exception>
         /// <remarks>
-        /// When resolving metadata via <see cref="DefaultJsonTypeInfoResolver"/> this
+        /// When resolving metadata via the built-in resolvers this
         /// will be populated with the underlying <see cref="MemberInfo" /> of the serialized property or field.
         ///
         /// Setting a custom attribute provider will have no impact on the contract model,
@@ -165,37 +165,30 @@ namespace System.Text.Json.Serialization.Metadata
         {
             get
             {
-                ICustomAttributeProvider attributeProvider = _attributeProvider ?? InitializeAttributeProvider();
-                return ReferenceEquals(attributeProvider, s_nullAttributeProvider) ? null : attributeProvider;
+                Func<ICustomAttributeProvider>? attributeProviderFactory = Volatile.Read(ref AttributeProviderFactory);
+                ICustomAttributeProvider? attributeProvider = _attributeProvider;
+
+                if (attributeProvider is null && attributeProviderFactory is not null)
+                {
+                    _attributeProvider = attributeProvider = attributeProviderFactory();
+                    Volatile.Write(ref AttributeProviderFactory, null);
+                }
+
+                return attributeProvider;
             }
             set
             {
                 VerifyMutable();
 
-                _attributeProvider = value ?? s_nullAttributeProvider;
+                _attributeProvider = value;
+                Volatile.Write(ref AttributeProviderFactory, null);
             }
         }
 
-        // Because the getter can initialize its own backing field, we want to avoid races between the getter and setter.
-        // This is done using CAS on the single _attributeProvider field which employs the following encoding:
-        // null: not initialized, s_nullAttributeProvider: null, otherwise: _attributeProvider
+        // Metadata emanating from the source generator use delayed attribute provider initialization
+        // ensuring that reflection metadata resolution remains pay-for-play and is trimmable.
+        internal Func<ICustomAttributeProvider>? AttributeProviderFactory;
         private ICustomAttributeProvider? _attributeProvider;
-        private static readonly ICustomAttributeProvider s_nullAttributeProvider = typeof(NullAttributeProviderPlaceholder);
-        private sealed class NullAttributeProviderPlaceholder;
-
-        [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
-            Justification = "Looks up members that are already being referenced by the source generator.")]
-        private ICustomAttributeProvider InitializeAttributeProvider()
-        {
-            // If the property is source generated, perform a reflection lookup of its MemberInfo.
-            // Avoids overhead of reflection at startup and makes this method trimmable if unused.
-            ICustomAttributeProvider? provider = IsSourceGenerated && MemberName != null
-                ? DefaultJsonTypeInfoResolver.LookupMemberInfo(DeclaringType, MemberType, MemberName)
-                : null;
-
-            provider ??= s_nullAttributeProvider;
-            return Interlocked.CompareExchange(ref _attributeProvider, provider, null) ?? provider;
-        }
 
         /// <summary>
         /// Gets or sets a value indicating if the property or field should be replaced or populated during deserialization.
@@ -231,7 +224,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal string? MemberName { get; set; }
         internal MemberTypes MemberType { get; set; }
         internal bool IsVirtual { get; set; }
-        internal bool IsSourceGenerated { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether the return type of the getter is annotated as nullable.
@@ -302,17 +294,11 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_PropertyTypeNotNullable(this);
                 }
 
-                if (ParameterInfo != null)
-                {
-                    // Ensure the new setting is reflected in the associated parameter.
-                    ParameterInfo.IsNullable = value;
-                }
-
                 _isSetNullable = value;
             }
         }
 
-        private bool _isSetNullable;
+        private protected bool _isSetNullable;
 
         /// <summary>
         /// Specifies whether the current property is a special extension data property.
@@ -370,9 +356,20 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private bool _isRequired;
+        private protected bool _isRequired;
 
-        internal JsonParameterInfo? ParameterInfo { get; private set; }
+        /// <summary>
+        /// Gets the constructor parameter associated with the current property.
+        /// </summary>
+        /// <remarks>
+        /// Returns the <see cref="JsonParameterInfo"/> metadata for the parameter in the
+        /// deserialization constructor that has been associated with the current property.
+        ///
+        /// A constructor parameter is matched to a property or field if they are of the
+        /// same type and have the same name, up to case insensitivity. Each constructor
+        /// parameter must be matched to exactly one property of field.
+        /// </remarks>
+        public JsonParameterInfo? AssociatedParameter { get; internal set; }
 
         internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? declaringTypeInfo, JsonSerializerOptions options)
         {
@@ -398,6 +395,11 @@ namespace System.Text.Json.Serialization.Metadata
 
             return info;
         }
+
+        /// <summary>
+        /// Gets the declaring type of the property.
+        /// </summary>
+        public Type DeclaringType { get; }
 
         /// <summary>
         /// Gets the type of the current property.
@@ -446,7 +448,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (IsRequired)
             {
-                if (!CanDeserialize)
+                if (!CanDeserialize &&
+                    !(AssociatedParameter?.IsRequiredParameter is true &&
+                      Options.RespectRequiredConstructorParameters))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndNotDeserializable(this);
                 }
@@ -676,19 +680,6 @@ namespace System.Text.Json.Serialization.Metadata
             EffectiveObjectCreationHandling = effectiveObjectCreationHandling;
         }
 
-        private void DetermineParameterInfo()
-        {
-            Debug.Assert(DeclaringTypeInfo?.IsConfigured is false);
-            ParameterInfo = DeclaringTypeInfo.CreateMatchingParameterInfo(this);
-            if (ParameterInfo != null)
-            {
-                // Given that we have associated a constructor parameter to this property,
-                // deserialization is no longer governed by the property setter.
-                // Ensure nullability configuration is copied over from the parameter to the property.
-                _isSetNullable = ParameterInfo.IsNullable;
-            }
-        }
-
         private bool NumberHandingIsApplicable()
         {
             if (EffectiveConverter.IsInternalConverterForNumberType)
@@ -734,31 +725,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates a <see cref="JsonPropertyInfo"/> instance whose type matches that of the current property.
         /// </summary>
-        internal abstract JsonParameterInfo CreateJsonParameterInfo(JsonParameterInfoValues parameterInfoValues);
+        internal abstract void AddJsonParameterInfo(JsonParameterInfoValues parameterInfoValues);
 
         internal abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         internal abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
         internal abstract object? GetValueAsObject(object obj);
-
-#if DEBUG
-        internal string GetDebugInfo(int indent = 0)
-        {
-            string ind = new string(' ', indent);
-            StringBuilder sb = new();
-
-            sb.AppendLine($"{ind}{{");
-            sb.AppendLine($"{ind}  Name: {Name},");
-            sb.AppendLine($"{ind}  NameAsUtf8.Length: {(NameAsUtf8Bytes?.Length ?? -1)},");
-            sb.AppendLine($"{ind}  IsConfigured: {IsConfigured},");
-            sb.AppendLine($"{ind}  IsIgnored: {IsIgnored},");
-            sb.AppendLine($"{ind}  CanSerialize: {CanSerialize},");
-            sb.AppendLine($"{ind}  CanDeserialize: {CanDeserialize},");
-            sb.AppendLine($"{ind}}}");
-
-            return sb.ToString();
-        }
-#endif
 
         internal bool HasGetter => _untypedGet is not null;
         internal bool HasSetter => _untypedSet is not null;
@@ -949,7 +921,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_JsonPropertyInfoIsBoundToDifferentJsonTypeInfo(this);
             }
 
-            DetermineParameterInfo();
+            DeclaringTypeInfo.ResolveMatchingParameterInfo(this);
         }
 
         /// <summary>
@@ -969,8 +941,6 @@ namespace System.Text.Json.Serialization.Metadata
             state.Current.IsPopulating = value != null;
             return value != null;
         }
-
-        internal Type DeclaringType { get; }
 
         internal JsonTypeInfo JsonTypeInfo
         {
@@ -1054,7 +1024,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Number handling after considering options and declaring type number handling
         /// </summary>
-        internal JsonNumberHandling? EffectiveNumberHandling { get; set; }
+        internal JsonNumberHandling? EffectiveNumberHandling { get; private set; }
 
         //  Whether the property type can be null.
         internal abstract bool PropertyTypeCanBeNull { get; }

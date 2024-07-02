@@ -24,7 +24,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [Fact]
         public static void {TestName}()
         {
-            var test = new Storex2Test__{TestName}();
+            var test = new StoreAndZipx2Test__{TestName}();
 
             if (test.IsSupported)
             {
@@ -65,7 +65,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class Storex2Test__{TestName}
+    public sealed unsafe class StoreAndZipx2Test__{TestName}
     {
         private struct DataTable
         {
@@ -140,14 +140,12 @@ namespace JIT.HardwareIntrinsics.Arm
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
-                var rnd        = new Random();
 
                 for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
                 for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp1}; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld2), ref Unsafe.As<{Op1BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-                for (var i = 0; i < MaskElementCount; i++) { _maskData[i] = ({Op1BaseType})1; }
-                for (var i = 0; i < MaskElementCount / 2; i++) { _maskData[rnd.Next(MaskElementCount)] = ({Op1BaseType})0; }
+                for (var i = 0; i < MaskElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueOp1} % 2); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._storeMask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
                 ulong alignment  = (ulong)LargestVectorSize;
@@ -164,7 +162,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 _outHandle.Free();
             }
 
-            public void RunStructFldScenario(Storex2Test__{TestName} testClass)
+            public void RunStructFldScenario(StoreAndZipx2Test__{TestName} testClass)
             {
                 Sve.{Method}(_storeMask, ({Op1BaseType}*) _outArrayPtr, (_fld1, _fld2));
 
@@ -185,15 +183,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        public Storex2Test__{TestName}()
+        public StoreAndZipx2Test__{TestName}()
         {
             Succeeded = true;
-            var rnd   = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp1}; }
-            for (var i = 0; i < MaskElementCount; i++) { _maskData[i] = ({Op1BaseType})1; }
-            for (var i = 0; i < MaskElementCount / 2; i++) { _maskData[rnd.Next(MaskElementCount)] = ({Op1BaseType})0; }
+            for (var i = 0; i < MaskElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueOp1} % 2); }
 
             _dataTable = new DataTable(_data1, _data2, new {RetBaseType}[RetElementCount], _maskData, LargestVectorSize);
         }

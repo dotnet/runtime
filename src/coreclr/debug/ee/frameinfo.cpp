@@ -107,8 +107,7 @@ struct DebuggerFrameData
         this->info.fIsFilter  = false;
 #endif // FEATURE_EH_FUNCLETS
 
-        // Look strange?  Go to definition of this field.  I dare you.
-        this->info.fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric = false;
+        this->info.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = false;
 
 #if defined(_DEBUG)
         this->previousFP = LEAF_MOST_FRAME;
@@ -1191,17 +1190,17 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
 
 #ifdef FEATURE_COMINTEROP
         if ((frame != NULL) &&
-            (frame->GetVTablePtr() == ComPlusMethodFrame::GetMethodFrameVPtr()))
+            (frame->GetVTablePtr() == CLRToCOMMethodFrame::GetMethodFrameVPtr()))
         {
             // This condition is part of the fix for 650903. (See
             // code:ControllerStackInfo::WalkStack and code:DebuggerStepper::TrapStepOut
             // for the other parts.) Here, we know that the frame we're looking it may be
-            // a ComPlusMethodFrameGeneric (this info is not otherwise plubmed down into
+            // a CLRToCOMMethodFrameGeneric (this info is not otherwise plubmed down into
             // the walker; even though the walker does get to see "f.frame", that may not
             // be "frame"). Given this, if the walker chooses to ignore these frames
             // (while doing a Step Out during managed-only debugging), then it can ignore
             // this frame.
-            f.fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric = true;
+            f.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = true;
         }
 #endif // FEATURE_COMINTEROP
 

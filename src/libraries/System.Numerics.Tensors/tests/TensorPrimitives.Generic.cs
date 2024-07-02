@@ -2087,6 +2087,81 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.CopySign(array.AsSpan(1, 2), default(T), array.AsSpan(2, 2)));
         }
         #endregion
+
+        #region HammingBitDistance
+        [Fact]
+        public void HammingBitDistance_ThrowsForMismatchedLengths()
+        {
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.HammingBitDistance<int>(new int[1], new int[2]));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.HammingBitDistance<int>(new int[2], new int[1]));
+        }
+
+        [Fact]
+        public void HammingBitDistance_AllLengths()
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<T> y = CreateAndFillTensor(tensorLength);
+
+                long expected = 0;
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    expected += long.CreateTruncating(T.PopCount(x[i] ^ y[i]));
+                }
+
+                Assert.Equal(expected, TensorPrimitives.HammingBitDistance<T>(x.Span, y.Span));
+            });
+        }
+
+        [Fact]
+        public void HammingBitDistance_KnownValues()
+        {
+            T value42 = T.CreateTruncating(42);
+            T value84 = T.CreateTruncating(84);
+
+            T[] values1 = new T[100];
+            T[] values2 = new T[100];
+
+            Array.Fill(values1, value42);
+            Array.Fill(values2, value84);
+
+            Assert.Equal(0, TensorPrimitives.HammingBitDistance<T>(values1, values1));
+            Assert.Equal(600, TensorPrimitives.HammingBitDistance<T>(values1, values2));
+            Assert.Equal(0, TensorPrimitives.HammingBitDistance<T>(values2, values2));
+        }
+        #endregion
+
+        #region PopCount
+        [Fact]
+        public void PopCount_AllLengths()
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+
+                long expected = 0;
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    expected += long.CreateTruncating(T.PopCount(x[i]));
+                }
+
+                Assert.Equal(expected, TensorPrimitives.PopCount<T>(x.Span));
+            });
+        }
+
+        [Fact]
+        public void PopCount_KnownValues()
+        {
+            T[] values = new T[255];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = T.CreateTruncating(i);
+            }
+
+            Assert.Equal(1016, TensorPrimitives.PopCount<T>(values));
+        }
+        #endregion
     }
 
     public unsafe abstract class GenericNumberTensorPrimitivesTests<T> : TensorPrimitivesTests<T>
@@ -2267,6 +2342,37 @@ namespace System.Numerics.Tensors.Tests
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(default, array.AsSpan(4, 2), array.AsSpan(3, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(default, array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
+        #endregion
+
+        #region HammingDistance
+        [Fact]
+        public void HammingDistance_ThrowsForMismatchedLengths()
+        {
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.HammingDistance<int>(new int[1], new int[2]));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.HammingDistance<int>(new int[2], new int[1]));
+        }
+
+        [Fact]
+        public void HammingDistance_AllLengths()
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<T> y = CreateAndFillTensor(tensorLength);
+
+                int expected = 0;
+                ReadOnlySpan<T> xSpan = x, ySpan = y;
+                for (int i = 0; i < xSpan.Length; i++)
+                {
+                    if (xSpan[i] != ySpan[i])
+                    {
+                        expected++;
+                    }
+                }
+
+                Assert.Equal(expected, TensorPrimitives.HammingDistance<T>(x, y));
+            });
         }
         #endregion
     }

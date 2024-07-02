@@ -481,37 +481,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory]
-        [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountNotExceedingDefaultLimit_AndNullOrEmptyPassword_MemberData), MemberType = typeof(PfxIterationCountTests))]
-        public static void TestIterationCounter(string name, bool usesPbes2, byte[] blob, int iterationCount, bool usesRC2)
-        {
-            _ = iterationCount;
-
-            MethodInfo method = typeof(X509Certificate).GetMethod("GetIterationCount", BindingFlags.Static | BindingFlags.NonPublic);
-            GetIterationCountDelegate target = method.CreateDelegate<GetIterationCountDelegate>();
-
-            if (usesPbes2 && !Pkcs12PBES2Supported)
-            {
-                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
-            }
-
-            if (usesRC2 && !PlatformSupport.IsRC2Supported)
-            {
-                throw new SkipTestException(name + " uses RC2, which is not supported on this platform.");
-            }
-
-            try
-            {
-                long count = (long)target(blob, out int bytesConsumed);
-                Assert.Equal(iterationCount, count);
-                Assert.Equal(blob.Length, bytesConsumed); // we currently don't have any cert with trailing data.
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"There's an error on certificate {name}, see inner exception for details", e);
-            }
-        }
-
         internal static bool IsPkcs12IterationCountAllowed(long iterationCount, long allowedIterations)
         {
             if (allowedIterations == UnlimitedIterations)

@@ -69,7 +69,7 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.SetCreateObjectIfCompatible(createObject);
             typeInfo.CreateObjectForExtensionDataProperty = createObject;
 
-            if (typeInfo.Kind is JsonTypeInfoKind.Object)
+            if (typeInfo is { Kind: JsonTypeInfoKind.Object, IsNullable: false })
             {
                 NullabilityInfoContext nullabilityCtx = new();
 
@@ -81,6 +81,8 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 PopulateProperties(typeInfo, nullabilityCtx);
+
+                typeInfo.ConstructorAttributeProvider = typeInfo.Converter.ConstructorInfo;
             }
 
             // Plug in any converter configuration -- should be run last.
@@ -132,26 +134,6 @@ namespace System.Text.Json.Serialization.Metadata
             BindingFlags.NonPublic |
             BindingFlags.DeclaredOnly;
 
-        /// <summary>
-        /// Looks up the type for a member matching the given name and member type.
-        /// </summary>
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal static MemberInfo? LookupMemberInfo(Type type, MemberTypes memberType, string name)
-        {
-            Debug.Assert(memberType is MemberTypes.Field or MemberTypes.Property);
-
-            // Walk the type hierarchy starting from the current type up to the base type(s)
-            foreach (Type t in type.GetSortedTypeHierarchy())
-            {
-                MemberInfo[] members = t.GetMember(name, memberType, AllInstanceMembers);
-                if (members.Length > 0)
-                {
-                    return members[0];
-                }
-            }
-
-            return null;
-        }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
@@ -326,9 +308,7 @@ namespace System.Text.Json.Serialization.Metadata
                     Position = reflectionInfo.Position,
                     HasDefaultValue = reflectionInfo.HasDefaultValue,
                     DefaultValue = reflectionInfo.GetDefaultValue(),
-                    IsNullable =
-                        reflectionInfo.ParameterType.IsNullableType() &&
-                        DetermineParameterNullability(reflectionInfo, nullabilityCtx) is not NullabilityState.NotNull,
+                    IsNullable = DetermineParameterNullability(reflectionInfo, nullabilityCtx) is not NullabilityState.NotNull,
                 };
 
                 jsonParameters[i] = jsonInfo;
@@ -513,6 +493,10 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static NullabilityState DetermineParameterNullability(ParameterInfo parameterInfo, NullabilityInfoContext nullabilityCtx)
         {
+            if (!parameterInfo.ParameterType.IsNullableType())
+            {
+                return NullabilityState.NotNull;
+            }
 #if NET8_0
             // Workaround for https://github.com/dotnet/runtime/issues/92487
             // The fix has been incorporated into .NET 9 (and the polyfilled implementations in netfx).
