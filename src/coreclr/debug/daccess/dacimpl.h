@@ -1232,6 +1232,7 @@ public:
     HRESULT GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData);
     HRESULT GetThreadStoreDataImpl(struct DacpThreadStoreData *data);
     HRESULT GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException);
+    HRESULT GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
 
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
 #ifndef TARGET_UNIX
@@ -1421,6 +1422,7 @@ public:
 
     CDAC m_cdac;
     NonVMComHolder<ISOSDacInterface> m_cdacSos;
+    NonVMComHolder<ISOSDacInterface2> m_cdacSos2;
     NonVMComHolder<ISOSDacInterface9> m_cdacSos9;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
