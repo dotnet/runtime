@@ -2798,4 +2798,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryPlusOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnsignedNumber.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WASI\WasiEventLoop.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WASI\WasiPoll.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WASI\WasiPollWorld.wit.imports.wasi.io.v0_2_0.IPoll.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WASI\WasiPollWorld.wit.imports.wasi.io.v0_2_0.PollInterop.cs" />
+  </ItemGroup>
 </Project>

@@ -10,6 +10,18 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+#if TARGET_WASI
+        internal static System.Threading.Tasks.Task RegisterPollable(int handle)
+        {
+            return WasiEventLoop.RegisterPollable(handle);
+        }
+
+        internal static void DispatchWasiEventLoop()
+        {
+            WasiEventLoop.Dispatch();
+        }
+#endif
+
         // the closest analog to Sleep(0) on Unix is sched_yield
         internal static void UninterruptibleSleep0() => Thread.Yield();
 
