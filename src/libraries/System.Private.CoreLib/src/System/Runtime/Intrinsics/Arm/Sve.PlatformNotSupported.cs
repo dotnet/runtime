@@ -1939,6 +1939,115 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorByteZeroExtend(Vector<ulong> mask, byte* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
 
 
+        /// <summary>
+        /// svfloat64_t svldff1_gather_[s64]index[_f64](svbool_t pg, const float64_t *base, svint64_t indices)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorFirstFaulting(Vector<double> mask, double* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svldff1_gather[_u64base]_f64(svbool_t pg, svuint64_t bases)
+        ///   LDFF1D Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorFirstFaulting(Vector<double> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svldff1_gather_[u64]index[_f64](svbool_t pg, const float64_t *base, svuint64_t indices)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorFirstFaulting(Vector<double> mask, double* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svldff1_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        ///   LDFF1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorFirstFaulting(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svldff1_gather_[s32]index[_s32](svbool_t pg, const int32_t *base, svint32_t indices)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zindices.S, SXTW #2]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorFirstFaulting(Vector<int> mask, int* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svldff1_gather_[u32]index[_s32](svbool_t pg, const int32_t *base, svuint32_t indices)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zindices.S, UXTW #2]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorFirstFaulting(Vector<int> mask, int* address, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldff1_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LDFF1D Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorFirstFaulting(Vector<long> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldff1_gather_[s64]index[_s64](svbool_t pg, const int64_t *base, svint64_t indices)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorFirstFaulting(Vector<long> mask, long* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldff1_gather_[u64]index[_s64](svbool_t pg, const int64_t *base, svuint64_t indices)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorFirstFaulting(Vector<long> mask, long* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svldff1_gather_[s32]index[_f32](svbool_t pg, const float32_t *base, svint32_t indices)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zindices.S, SXTW #2]
+        /// </summary>
+        public static unsafe Vector<float> GatherVectorFirstFaulting(Vector<float> mask, float* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svldff1_gather[_u32base]_f32(svbool_t pg, svuint32_t bases)
+        ///   LDFF1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        /// </summary>
+        public static unsafe Vector<float> GatherVectorFirstFaulting(Vector<float> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svldff1_gather_[u32]index[_f32](svbool_t pg, const float32_t *base, svuint32_t indices)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zindices.S, UXTW #2]
+        /// </summary>
+        public static unsafe Vector<float> GatherVectorFirstFaulting(Vector<float> mask, float* address, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldff1_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        ///   LDFF1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorFirstFaulting(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldff1_gather_[s32]index[_u32](svbool_t pg, const uint32_t *base, svint32_t indices)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zindices.S, SXTW #2]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorFirstFaulting(Vector<uint> mask, uint* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldff1_gather_[u32]index[_u32](svbool_t pg, const uint32_t *base, svuint32_t indices)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zindices.S, UXTW #2]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorFirstFaulting(Vector<uint> mask, uint* address, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LDFF1D Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorFirstFaulting(Vector<ulong> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1_gather_[s64]index[_u64](svbool_t pg, const uint64_t *base, svint64_t indices)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorFirstFaulting(Vector<ulong> mask, ulong* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1_gather_[u64]index[_u64](svbool_t pg, const uint64_t *base, svuint64_t indices)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorFirstFaulting(Vector<ulong> mask, ulong* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+
         ///  Load 16-bit data and sign-extend
 
         /// <summary>
@@ -2604,6 +2713,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong GetActiveElementCount(Vector<ulong> mask, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
 
 
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static unsafe Vector<byte> GetFfr() { throw new PlatformNotSupportedException(); }
+
+
         ///  Insert scalar into shifted vector
 
         /// <summary>
@@ -3087,6 +3203,67 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LD1B Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorByteZeroExtendToUInt64(Vector<ulong> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+
+        /// <summary>
+        /// svuint8_t svldff1[_u8](svbool_t pg, const uint8_t *base)
+        ///   LDFF1B Zresult.B, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<byte> LoadVectorFirstFaulting(Vector<byte> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svldff1[_f64](svbool_t pg, const float64_t *base)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, XZR, LSL #3]
+        /// </summary>
+        public static unsafe Vector<double> LoadVectorFirstFaulting(Vector<double> mask, double* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svldff1[_s16](svbool_t pg, const int16_t *base)
+        ///   LDFF1H Zresult.H, Pg/Z, [Xbase, XZR, LSL #1]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorFirstFaulting(Vector<short> mask, short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svldff1[_s32](svbool_t pg, const int32_t *base)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, XZR, LSL #2]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorFirstFaulting(Vector<int> mask, int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldff1[_s64](svbool_t pg, const int64_t *base)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, XZR, LSL #3]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorFirstFaulting(Vector<long> mask, long* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svldff1[_s8](svbool_t pg, const int8_t *base)
+        ///   LDFF1B Zresult.B, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<sbyte> LoadVectorFirstFaulting(Vector<sbyte> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svldff1[_f32](svbool_t pg, const float32_t *base)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, XZR, LSL #2]
+        /// </summary>
+        public static unsafe Vector<float> LoadVectorFirstFaulting(Vector<float> mask, float* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svldff1[_u16](svbool_t pg, const uint16_t *base)
+        ///   LDFF1H Zresult.H, Pg/Z, [Xbase, XZR, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorFirstFaulting(Vector<ushort> mask, ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldff1[_u32](svbool_t pg, const uint32_t *base)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, XZR, LSL #2]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorFirstFaulting(Vector<uint> mask, uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1[_u64](svbool_t pg, const uint64_t *base)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, XZR, LSL #3]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorFirstFaulting(Vector<ulong> mask, ulong* address) { throw new PlatformNotSupportedException(); }
 
 
         ///  LoadVectorInt16SignExtendToInt32 : Load 16-bit data and sign-extend
@@ -5652,6 +5829,55 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat32_t svscale[_f32]_z(svbool_t pg, svfloat32_t op1, svint32_t op2)
         /// </summary>
         public static unsafe Vector<float> Scale(Vector<float> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+
+        /// <summary>
+        /// void svwrffr(svbool_t op)
+        ///   WRFFR Pop.B
+        /// </summary>
+        public static unsafe void SetFfr(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svwrffr(svbool_t op)
+        ///   WRFFR Pop.B
+        /// </summary>
+        public static unsafe void SetFfr(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svwrffr(svbool_t op)
+        ///   WRFFR Pop.B
+        /// </summary>
+        public static unsafe void SetFfr(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svwrffr(svbool_t op)
+        ///   WRFFR Pop.B
+        /// </summary>
+        public static unsafe void SetFfr(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svwrffr(svbool_t op)
+        ///   WRFFR Pop.B
+        /// </summary>
+        public static unsafe void SetFfr(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svwrffr(svbool_t op)
+        ///   WRFFR Pop.B
+        /// </summary>
+        public static unsafe void SetFfr(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svwrffr(svbool_t op)
+        ///   WRFFR Pop.B
+        /// </summary>
+        public static unsafe void SetFfr(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svwrffr(svbool_t op)
+        ///   WRFFR Pop.B
+        /// </summary>
+        public static unsafe void SetFfr(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
 
         ///  Logical shift left
