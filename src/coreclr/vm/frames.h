@@ -199,7 +199,6 @@ FRAME_TYPE_NAME(HelperMethodFrame_2OBJ)
 FRAME_TYPE_NAME(HelperMethodFrame_3OBJ)
 FRAME_TYPE_NAME(HelperMethodFrame_PROTECTOBJ)
 FRAME_ABSTRACT_TYPE_NAME(FramedMethodFrame)
-FRAME_TYPE_NAME(MulticastFrame)
 #ifdef FEATURE_COMINTEROP
 FRAME_ABSTRACT_TYPE_NAME(UnmanagedToManagedFrame)
 FRAME_TYPE_NAME(ComMethodFrame)
@@ -487,7 +486,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         TADDR ptr = GetReturnAddressPtr();
-        _ASSERTE(ptr != NULL);
+        _ASSERTE(ptr != (TADDR)NULL);
         *(TADDR*)ptr = val;
     }
 #endif // #ifndef DACCESS_COMPILE
@@ -551,7 +550,6 @@ public:
         TYPE_SECURITY,
         TYPE_CALL,
         TYPE_FUNC_EVAL,
-        TYPE_MULTICAST,
 
         // HMFs and derived classes should use this so the profiling API knows it needs
         // to ensure HMF-specific lazy initialization gets done w/out re-entering to the host.
@@ -1747,69 +1745,6 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
     }
-};
-
-//------------------------------------------------------------------------
-// This represents a call Multicast.Invoke. It's only used to gc-protect
-// the arguments during the iteration.
-//------------------------------------------------------------------------
-
-class MulticastFrame : public TransitionFrame
-{
-    VPTR_VTABLE_CLASS(MulticastFrame, TransitionFrame)
-
-    PTR_MethodDesc m_pMD;
-    TransitionBlock m_TransitionBlock;
-
-public:
-
-    virtual MethodDesc* GetFunction()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pMD;
-    }
-
-    virtual TADDR GetTransitionBlock()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return PTR_HOST_MEMBER_TADDR(MulticastFrame, this,
-                                     m_TransitionBlock);
-    }
-
-    static int GetOffsetOfTransitionBlock()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return offsetof(MulticastFrame, m_TransitionBlock);
-    }
-
-    virtual void GcScanRoots(promote_func *fn, ScanContext* sc)
-    {
-        WRAPPER_NO_CONTRACT;
-        TransitionFrame::GcScanRoots(fn, sc);
-        PromoteCallerStack(fn, sc);
-    }
-
-    int GetFrameType()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TYPE_MULTICAST;
-    }
-
-    // For the debugger:
-    // Our base class, FramedMethodFrame, is a M2U transition;
-    // but Delegate.Invoke isn't. So override and fix it here.
-    // If we didn't do this, we'd see a Managed/Unmanaged transition in debugger's stack trace.
-    virtual ETransitionType GetTransitionType()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TT_NONE;
-    }
-
-    virtual BOOL TraceFrame(Thread *thread, BOOL fromPatch,
-                            TraceDestination *trace, REGDISPLAY *regs);
-
-    // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(MulticastFrame)
 };
 
 

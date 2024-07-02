@@ -267,18 +267,24 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             if (strncmp(className + 6, "128", 3) == 0)
             {
-                assert((className[9] == '\0') || (strcmp(className + 9, "`1") == 0));
-                return InstructionSet_Vector128;
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector128;
+                }
             }
             else if (strncmp(className + 6, "256", 3) == 0)
             {
-                assert((className[9] == '\0') || (strcmp(className + 9, "`1") == 0));
-                return InstructionSet_Vector256;
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector256;
+                }
             }
             else if (strncmp(className + 6, "512", 3) == 0)
             {
-                assert((className[9] == '\0') || (strcmp(className + 9, "`1") == 0));
-                return InstructionSet_Vector512;
+                if ((className[9] == '\0') || (strcmp(className + 9, "`1") == 0))
+                {
+                    return InstructionSet_Vector512;
+                }
             }
         }
         else if (strcmp(className, "VL") == 0)
@@ -2744,17 +2750,25 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsLong(simdBaseType))
             {
-                if (simdSize != 64 && !canUseEvexEncoding())
+                if (TARGET_POINTER_SIZE == 4)
                 {
-                    // TODO-XARCH-CQ: We should support long/ulong multiplication
+                    // TODO-XARCH-CQ: 32bit support
                     break;
                 }
-                // else if simdSize == 64 then above assert would check if baseline isa supported
 
-#if defined(TARGET_X86)
-                // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
-                break;
-#endif // TARGET_X86
+                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
+                }
+                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
+                }
+                else
+                {
+                    // Software fallback
+                    break;
+                }
             }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;

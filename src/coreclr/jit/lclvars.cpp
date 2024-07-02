@@ -2572,6 +2572,13 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
 
     if (varDsc->GetLayout()->IsBlockLayout())
     {
+        JITDUMP("  struct promotion of V%02u is disabled because it has block layout\n", lclNum);
+        return false;
+    }
+
+    if (varDsc->lvStackAllocatedBox)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it is a stack allocated box\n", lclNum);
         return false;
     }
 
@@ -3212,10 +3219,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("opts.compFlags & CLFLG_REGVAR is not set\n");
             assert(!compEnregLocals());
             break;
-        case DoNotEnregisterReason::MinOptsGC:
-            JITDUMP("it is a GC Ref and we are compiling MinOpts\n");
-            assert(!JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()));
-            break;
 #if !defined(TARGET_64BIT)
         case DoNotEnregisterReason::LongParamField:
             JITDUMP("it is a decomposed field of a long parameter\n");
@@ -3362,6 +3365,8 @@ bool Compiler::lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const
 // TODO-Throughput: This does a lookup on the class handle, and in the outgoing arg context
 // this information is already available on the CallArgABIInformation, and shouldn't need to be
 // recomputed.
+//
+// Also seems like this info could be cached in the layout.
 //
 bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
 {
@@ -4146,11 +4151,6 @@ void Compiler::lvaSortByRefCount()
 #ifdef JIT32_GCENCODER
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
 #endif
-        }
-        if (opts.MinOpts() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
-        {
-            varDsc->lvTracked = 0;
-            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::MinOptsGC));
         }
         if (!compEnregLocals())
         {
@@ -5602,7 +5602,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *  Doing this all in one pass is 'hard'.  So instead we do it in 2 basic passes:
  *    1. Assign all the offsets relative to the Virtual '0'. Offsets above (the
  *      incoming arguments) are positive. Offsets below (everything else) are
- *      negative.  This pass also calcuates the total frame size (between Caller's
+ *      negative.  This pass also calculates the total frame size (between Caller's
  *      SP/return address and the Ambient SP).
  *    2. Figure out where to place the frame pointer, and then adjust the offsets
  *      as needed for the final stack size and whether the offset is frame pointer

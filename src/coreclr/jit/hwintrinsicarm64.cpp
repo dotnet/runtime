@@ -153,6 +153,31 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
 }
 
 //------------------------------------------------------------------------
+// lookupIval: Gets a the implicit immediate value for the given intrinsic
+//
+// Arguments:
+//    id           - The intrinsic for which to get the ival
+//
+// Return Value:
+//    The immediate value for the given intrinsic or -1 if none exists
+int HWIntrinsicInfo::lookupIval(NamedIntrinsic id)
+{
+    switch (id)
+    {
+        case NI_Sve_Compute16BitAddresses:
+            return 1;
+        case NI_Sve_Compute32BitAddresses:
+            return 2;
+        case NI_Sve_Compute64BitAddresses:
+            return 3;
+        case NI_Sve_Compute8BitAddresses:
+            return 0;
+        default:
+            unreached();
+    }
+    return -1;
+}
+//------------------------------------------------------------------------
 // isFullyImplementedIsa: Gets a value that indicates whether the InstructionSet is fully implemented
 //
 // Arguments:
@@ -267,6 +292,7 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
 //    immNumber                -- Which immediate to use (1 for most intrinsics)
 //    simdBaseType             -- base type of the intrinsic
 //    simdType                 -- vector size of the intrinsic
+//    op1ClsHnd                -- cls handler for op1
 //    op2ClsHnd                -- cls handler for op2
 //    op2ClsHnd                -- cls handler for op3
 //    immSimdSize [IN/OUT]     -- Size of the immediate to override
@@ -277,6 +303,7 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
                                       unsigned             immNumber,
                                       var_types            simdBaseType,
                                       CorInfoType          simdBaseJitType,
+                                      CORINFO_CLASS_HANDLE op1ClsHnd,
                                       CORINFO_CLASS_HANDLE op2ClsHnd,
                                       CORINFO_CLASS_HANDLE op3ClsHnd,
                                       unsigned*            immSimdSize,
@@ -292,7 +319,12 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
         var_types   indexedElementBaseType;
         *immSimdSize = 0;
 
-        if (sig->numArgs == 3)
+        if (sig->numArgs == 2)
+        {
+            indexedElementBaseJitType = getBaseJitTypeAndSizeOfSIMDType(op1ClsHnd, immSimdSize);
+            indexedElementBaseType    = JitType2PreciseVarType(indexedElementBaseJitType);
+        }
+        else if (sig->numArgs == 3)
         {
             indexedElementBaseJitType = getBaseJitTypeAndSizeOfSIMDType(op2ClsHnd, immSimdSize);
             indexedElementBaseType    = JitType2PreciseVarType(indexedElementBaseJitType);
@@ -377,7 +409,15 @@ void HWIntrinsicInfo::lookupImmBounds(
     }
     else if (category == HW_Category_SIMDByIndexedElement)
     {
-        immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+        if (intrinsic == NI_Sve_DuplicateSelectedScalarToVector)
+        {
+            // For SVE_DUP, the upper bound on index does not depend on the vector length.
+            immUpperBound = (512 / (BITS_PER_BYTE * genTypeSize(baseType))) - 1;
+        }
+        else
+        {
+            immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+        }
     }
     else
     {
@@ -403,6 +443,7 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+            case NI_Sve_ExtractVector:
                 immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
                 break;
 
@@ -1406,6 +1447,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 0);
             retNode = gtNewAllBitsSetConNode(retType);
+            break;
+        }
+
+        case NI_Vector64_get_Indices:
+        case NI_Vector128_get_Indices:
+        {
+            assert(sig->numArgs == 0);
+            retNode = gtNewSimdGetIndicesNode(retType, simdBaseJitType, simdSize);
             break;
         }
 
