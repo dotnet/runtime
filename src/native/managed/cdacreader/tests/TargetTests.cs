@@ -38,12 +38,10 @@ public unsafe class TargetTests
     ];
 
     [Theory]
-    [InlineData(true, true)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(false, false)]
-    public void GetTypeInfo(bool isLittleEndian, bool is64Bit)
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetTypeInfo(MockTarget.Architecture arch)
     {
+        TargetTestHelpers targetTestHelpers = new(arch);
         string typesJson = TargetTestHelpers.MakeTypesJson(TestTypes);
         byte[] json = Encoding.UTF8.GetBytes($$"""
     {
@@ -54,13 +52,13 @@ public unsafe class TargetTests
         "globals": {}
     }
     """);
-        Span<byte> descriptor = stackalloc byte[TargetTestHelpers.ContractDescriptor.Size(is64Bit)];
-        TargetTestHelpers.ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, 0);
+        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
+        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, 0);
         fixed (byte* jsonPtr = json)
         {
-            using TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json);
+            using MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
 
-            bool success = TargetTestHelpers.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
             Assert.True(success);
 
             foreach ((DataType type, Target.TypeInfo info) in TestTypes)
@@ -98,12 +96,10 @@ public unsafe class TargetTests
     ];
 
     [Theory]
-    [InlineData(true, true)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(false, false)]
-    public void ReadGlobalValue(bool isLittleEndian, bool is64Bit)
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadGlobalValue(MockTarget.Architecture arch)
     {
+        TargetTestHelpers targetTestHelpers = new(arch);
         string globalsJson = TargetTestHelpers.MakeGlobalsJson(TestGlobals);
         byte[] json = Encoding.UTF8.GetBytes($$"""
         {
@@ -114,13 +110,13 @@ public unsafe class TargetTests
             "globals": { {{globalsJson}} }
         }
         """);
-        Span<byte> descriptor = stackalloc byte[TargetTestHelpers.ContractDescriptor.Size(is64Bit)];
-        TargetTestHelpers.ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, 0);
+        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
+        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, 0);
         fixed (byte* jsonPtr = json)
         {
-            using TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json);
+            using MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json);
 
-            bool success = TargetTestHelpers.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
             Assert.True(success);
 
             ValidateGlobals(target, TestGlobals);
@@ -128,18 +124,16 @@ public unsafe class TargetTests
     }
 
     [Theory]
-    [InlineData(true, true)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(false, false)]
-    public void ReadIndirectGlobalValue(bool isLittleEndian, bool is64Bit)
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadIndirectGlobalValue(MockTarget.Architecture arch)
     {
-        int pointerSize = is64Bit ? sizeof(ulong) : sizeof(uint);
+        TargetTestHelpers targetTestHelpers = new(arch);
+        int pointerSize = targetTestHelpers.PointerSize;
         Span<byte> pointerData = stackalloc byte[TestGlobals.Length * pointerSize];
         for (int i = 0; i < TestGlobals.Length; i++)
         {
             var (_, value, _) = TestGlobals[i];
-            TargetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value, isLittleEndian, pointerSize);
+            targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
         }
 
         string globalsJson = string.Join(',', TestGlobals.Select((g, i) => $"\"{g.Name}\": {(g.Type is null ? $"[{i}]" : $"[[{i}], \"{g.Type}\"]")}"));
@@ -152,17 +146,17 @@ public unsafe class TargetTests
             "globals": { {{globalsJson}} }
         }
         """);
-        Span<byte> descriptor = stackalloc byte[TargetTestHelpers.ContractDescriptor.Size(is64Bit)];
-        TargetTestHelpers.ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, pointerData.Length / pointerSize);
+        Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
+        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, pointerData.Length / pointerSize);
         fixed (byte* jsonPtr = json)
         {
-            using TargetTestHelpers.ReadContext context = TargetTestHelpers.CreateContext(descriptor, json, pointerData);
+            using MockMemorySpace.ReadContext context = MockMemorySpace.CreateContext(descriptor, json, pointerData);
 
-            bool success = TargetTestHelpers.TryCreateTarget(&context, out Target? target);
+            bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
             Assert.True(success);
 
             // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
-            var expected = is64Bit
+            var expected = arch.Is64Bit
                 ? TestGlobals
                 : TestGlobals.Select(g => (g.Name, g.Value & 0xffffffff, g.Type)).ToArray();
 
