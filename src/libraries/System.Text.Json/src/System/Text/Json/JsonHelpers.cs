@@ -341,10 +341,14 @@ namespace System.Text.Json
                 out int exponent)
             {
                 // Parses a JSON number into its integral, fractional, and exponent parts.
-                // The returned components use a normal-form representation wherein two numbers
-                // are equal if and only if the sign and exponent are equal and additionally the
-                // concatenation of the integral and fractional parts are sequence equal.
-                // Under this scheme the number 0 is represented by a pair of empty spans.
+                // The returned components use a normal-form decimal representation:
+                //
+                //   Number := sign * <integral + fractional> * 10^exponent
+                //
+                // where integral and fractional are sequences of digits whose concatenation
+                // represents the signifand of the number without leading or trailing zeros.
+                // Two such normal-form numbers are treated as equal if and only if they have
+                // equal signs, significands, and exponents.
 
                 bool neg;
                 ReadOnlySpan<byte> intg;
@@ -402,9 +406,6 @@ namespace System.Text.Json
                 {
                     Debug.Assert(intg.Length == 1, "Leading zeros not permitted in JSON numbers.");
 
-                    // Normalize "0" to the empty span.
-                    intg = default;
-
                     if (IndexOfLastLeadingZero(frac) is >= 0 and int lz)
                     {
                         // Trim leading zeros from the fractional part
@@ -413,6 +414,9 @@ namespace System.Text.Json
                         frac = frac.Slice(lz + 1);
                         exp -= lz + 1;
                     }
+
+                    // Normalize "0" to the empty span.
+                    intg = default;
                 }
 
                 if (IndexOfFirstTrailingZero(frac) is >= 0 and int iz)
