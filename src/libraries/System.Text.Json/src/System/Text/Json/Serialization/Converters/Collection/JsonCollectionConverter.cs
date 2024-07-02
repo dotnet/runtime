@@ -61,7 +61,8 @@ namespace System.Text.Json.Serialization
             scoped ref ReadStack state,
             [MaybeNullWhen(false)] out TCollection value)
         {
-            JsonTypeInfo elementTypeInfo = state.Current.JsonTypeInfo.ElementTypeInfo!;
+            JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
+            JsonTypeInfo elementTypeInfo = jsonTypeInfo.ElementTypeInfo!;
 
             if (!state.SupportContinuation && !state.Current.CanContainMetadata)
             {
@@ -73,6 +74,8 @@ namespace System.Text.Json.Serialization
                 }
 
                 CreateCollection(ref reader, ref state, options);
+
+                jsonTypeInfo.OnDeserializing?.Invoke(state.Current.ReturnValue!);
 
                 state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 JsonConverter<TElement> elementConverter = GetElementConverter(elementTypeInfo);
@@ -112,8 +115,6 @@ namespace System.Text.Json.Serialization
             else
             {
                 // Slower path that supports continuation and reading metadata.
-                JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-
                 if (state.Current.ObjectState == StackFrameObjectState.None)
                 {
                     if (reader.TokenType == JsonTokenType.StartArray)
@@ -182,6 +183,8 @@ namespace System.Text.Json.Serialization
                         state.ReferenceResolver.AddReference(state.ReferenceId, state.Current.ReturnValue);
                         state.ReferenceId = null;
                     }
+
+                    jsonTypeInfo.OnDeserializing?.Invoke(state.Current.ReturnValue!);
 
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
                 }
@@ -274,7 +277,10 @@ namespace System.Text.Json.Serialization
             }
 
             ConvertCollection(ref state, options);
-            value = (TCollection)state.Current.ReturnValue!;
+            object returnValue = state.Current.ReturnValue!;
+            value = (TCollection)returnValue;
+            jsonTypeInfo.OnDeserialized?.Invoke(returnValue);
+
             return true;
         }
 
@@ -293,9 +299,13 @@ namespace System.Text.Json.Serialization
             }
             else
             {
+                JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
+
                 if (!state.Current.ProcessedStartToken)
                 {
                     state.Current.ProcessedStartToken = true;
+
+                    jsonTypeInfo.OnSerializing?.Invoke(value);
 
                     if (state.CurrentContainsMetadata && CanHaveMetadata)
                     {
@@ -304,7 +314,7 @@ namespace System.Text.Json.Serialization
 
                     // Writing the start of the array must happen after any metadata
                     writer.WriteStartArray();
-                    state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
+                    state.Current.JsonPropertyInfo = jsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
                 }
 
                 success = OnWriteResume(writer, value, options, ref state);
@@ -321,6 +331,8 @@ namespace System.Text.Json.Serialization
                             writer.WriteEndObject();
                         }
                     }
+
+                    jsonTypeInfo.OnSerialized?.Invoke(value);
                 }
             }
 
