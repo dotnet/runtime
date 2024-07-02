@@ -20,7 +20,12 @@ namespace System
     /// int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
     /// </code>
     /// </remarks>
-    public readonly struct Range : IEquatable<Range>
+#if SYSTEM_PRIVATE_CORELIB || MICROSOFT_BCL_MEMORY
+    public
+#else
+    internal
+#endif
+    readonly struct Range : IEquatable<Range>
     {
         /// <summary>Represent the inclusive start index of the Range.</summary>
         public Index Start { get; }

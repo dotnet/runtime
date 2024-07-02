@@ -4,6 +4,7 @@
     <TargetFrameworks>netstandard2.0;netstandard2.1;$(NetFrameworkMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
+    <DefineConstants>MICROSOFT_BCL_MEMORY;$(DefineConstants)</DefineConstants>
     <!-- Disabling baseline validation since this is a brand new package.
          Once this package has shipped a stable version, the following line
          should be removed in order to re-enable validation. -->
