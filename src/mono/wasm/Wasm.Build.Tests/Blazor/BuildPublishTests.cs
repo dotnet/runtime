@@ -48,15 +48,14 @@ public class BuildPublishTests : BlazorWasmTestBase
             data.Add("Debug", false);
         }
         data.Add("Release", false); // Release relinks by default
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
-        if (!isAot && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            data.Add("Debug", true); // for aot:true on Windows, it fails
-        }
 
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
+            if (!isAot)
+            {
+                data.Add("Debug", true);
+            }
             data.Add("Release", true);
         }
         return data;
