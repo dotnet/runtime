@@ -432,15 +432,15 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 //
                 BasicBlock* const oldTryEntry  = HBtab->ebdTryBeg;
                 BasicBlock*       tryEntryPrev = oldTryEntry->Prev();
-                while ((tryEntryPrev != nullptr) && tryEntryPrev->HasFlag(BBF_REMOVED))
+                assert(tryEntryPrev != nullptr);
+                while (tryEntryPrev->HasFlag(BBF_REMOVED))
                 {
                     tryEntryPrev = tryEntryPrev->Prev();
+                    // Because we've added an unremovable scratch block as
+                    // fgFirstBB, this backwards walk should always find
+                    // some block.
+                    assert(tryEntryPrev != nullptr);
                 }
-
-                // Because we've added an unremovable scratch block as
-                // fgFirstBB, this backwards walk should always find
-                // some block.
-                assert(tryEntryPrev != nullptr);
 
                 // If there is a next block of this prev block, and that block is
                 // contained in the current try, we'd like to make that block
