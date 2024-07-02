@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// Writes the log message to the specified TextWriter.
         /// </summary>
         /// <remarks>
-        /// if the formatter wants to write colors to the console, it can do so by embedding ANSI color codes into the string
+        /// If the formatter wants to write colors to the console, it can do so by embedding ANSI color codes into the string
         /// </remarks>
         /// <param name="logEntry">The log entry.</param>
         /// <param name="scopeProvider">The provider of scope data.</param>

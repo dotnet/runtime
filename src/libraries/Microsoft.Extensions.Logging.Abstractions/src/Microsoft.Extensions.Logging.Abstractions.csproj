@@ -53,6 +53,7 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
     <ProjectReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj"
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\src\System.Diagnostics.DiagnosticSource.csproj" /> 
   </ItemGroup>
 
 </Project>
