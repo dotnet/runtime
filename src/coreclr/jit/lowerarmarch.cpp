@@ -1267,13 +1267,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 unsigned  simdSize     = node->GetSimdSize();
                 var_types simdBaseType = node->GetSimdBaseType();
                 var_types simdType     = Compiler::getSIMDTypeForSize(simdSize);
-                unsigned  scale        = genTypeSize(simdBaseType);
-                ssize_t   offset       = 0;
 
                 // We're either already loading from memory or we need to since
                 // we don't know what actual index is going to be retrieved.
 
-                unsigned lclNum = BAD_VAR_NUM;
+                unsigned lclNum  = BAD_VAR_NUM;
+                unsigned lclOffs = 0;
 
                 if (!isContainableMemory)
                 {
@@ -1291,8 +1290,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     // We're an existing local that is loaded from memory
                     GenTreeLclVarCommon* lclVar = op1->AsLclVarCommon();
 
-                    lclNum = lclVar->GetLclNum();
-                    offset = lclVar->GetLclOffs();
+                    lclNum  = lclVar->GetLclNum();
+                    lclOffs = lclVar->GetLclOffs();
 
                     BlockRange().Remove(op1);
                 }
@@ -1300,7 +1299,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (lclNum != BAD_VAR_NUM)
                 {
                     // We need to get the address of the local
-                    op1 = comp->gtNewLclVarAddrNode(lclNum, TYP_BYREF);
+                    op1 = comp->gtNewLclAddrNode(lclNum, lclOffs, TYP_BYREF);
                     BlockRange().InsertBefore(node, op1);
                     LowerNode(op1);
                 }
@@ -1314,22 +1313,34 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     op1 = addr;
                 }
 
-                // Now that we have a memory op, we need to offset it by op2 * scale
+                GenTree* offset;
+
                 if (op2->OperIsConst())
                 {
-                    offset = offset + (op2->AsIntCon()->IconValue() * scale);
-                    scale  = 0;
+                    // We have a constant index, so scale it up directly
+                    GenTreeIntConCommon* index = op2->AsIntCon();
+                    index->SetIconValue(index->IconValue() * genTypeSize(simdBaseType));
+                    offset = index;
+                }
+                else
+                {
+                    // We have a non-constant index, so scale it up via mul
 
-                    BlockRange().Remove(op2);
-                    op2 = nullptr;
+                    GenTreeIntConCommon* scale = comp->gtNewIconNode(genTypeSize(simdBaseType));
+                    BlockRange().InsertBefore(node, scale);
+                    LowerNode(scale);
+
+                    offset = comp->gtNewOperNode(GT_MUL, op2->TypeGet(), op2, scale);
+                    BlockRange().InsertBefore(node, offset);
+                    LowerNode(offset);
                 }
 
-                GenTree* addrMode = new (comp, GT_LEA) GenTreeAddrMode(op1->TypeGet(), op1, op2, scale, offset);
-                BlockRange().InsertBefore(node, addrMode);
-                LowerNode(addrMode);
+                GenTree* addr = comp->gtNewOperNode(GT_ADD, op1->TypeGet(), op1, offset);
+                BlockRange().InsertBefore(node, addr);
+                LowerNode(addr);
 
                 // Finally we can indirect the memory address to get the actual value
-                GenTreeIndir* indir = comp->gtNewIndir(simdBaseType, addrMode);
+                GenTreeIndir* indir = comp->gtNewIndir(simdBaseType, addr);
                 BlockRange().InsertBefore(node, indir);
 
                 LIR::Use use;
