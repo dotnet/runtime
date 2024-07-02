@@ -187,7 +187,7 @@ export function mono_interp_invoke_wasm_jit_call_trampoline (
         thunk(ret_sp, sp, ftndesc, thrown);
     } catch (exc: any) {
         receiveWorkerHeapViews();
-        const exceptionTag = (<any>Module)["asm"]["__cpp_exception"];
+        const exceptionTag = (<any>Module)["wasmExports"]["__cpp_exception"];
         const haveTag = exceptionTag instanceof (<any>WebAssembly).Tag;
         if (
             !haveTag || (

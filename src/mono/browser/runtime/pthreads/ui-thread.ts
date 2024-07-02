@@ -291,6 +291,7 @@ function allocateUnusedWorker (): PThreadWorker {
     const workerNumber = loaderHelpers.workerNextNumber++;
     const worker = new Worker(uri, {
         name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
+        type: "module",
     }) as PThreadWorker;
     getUnusedWorkerPool().push(worker);
     worker.loaded = false;
