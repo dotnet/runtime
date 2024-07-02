@@ -16,14 +16,14 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/GenericInterfaceImplementedRecursively.il" })]
 	[SkipILVerify]
+	[KeptInterfaceOnTypeInAssembly ("library.dll", "Program/IMiddle`1", "library.dll", "Program/IBase`1<T>")]
+	[KeptInterfaceOnTypeInAssembly ("library.dll", "Program/IDerived`1", "library.dll", "Program/IMiddle`1<T>")]
+	[KeptInterfaceOnTypeInAssembly ("library.dll", "Program/C", "library.dll", "Program/IDerived`1<System.Int32>")]
 #if IL_ASSEMBLY_AVAILABLE
 	[KeptTypeInAssembly ("library.dll", typeof(Program.IBase<>))]
 	[KeptTypeInAssembly ("library.dll", typeof(Program.IMiddle<>))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", "Program/IMiddle`1", "library.dll", "Program/IBase`1<T>")]
 	[KeptTypeInAssembly ("library.dll", typeof(Program.IDerived<>))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", "Program/IDerived`1", "library.dll", "Program/IMiddle`1<T>")]
 	[KeptTypeInAssembly ("library.dll", typeof(Program.C))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", "Program/C", "library.dll", "Program/IDerived`1<System.Int32>")]
 #endif
 	/// <summary>
 	/// This test case is to verify that the linker will keep all the metadata necessary for C to implement IBase when an interfaceImpl isn't directly on C.
