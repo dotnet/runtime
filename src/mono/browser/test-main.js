@@ -323,6 +323,7 @@ async function run() {
         configureRuntime(dotnet, runArgs);
 
         App.runtime = await dotnet.create();
+        console.log("Pavel linear memory before " + App.runtime.Module.HEAPU8.length);
         App.runArgs = runArgs
 
         // after console proxy was setup, see https://github.com/dotnet/runtime/issues/101169
@@ -369,7 +370,9 @@ async function run() {
                 const app_args = runArgs.applicationArguments.slice(2);
                 const result = await App.runtime.runMain(main_assembly_name, app_args);
                 console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result}`);
+                console.log("Pavel linear memory after1 " + App.runtime.Module.HEAPU8.length);
                 mono_exit(result);
+                console.log("Pavel linear memory after2 " + App.runtime.Module.HEAPU8.length);
             } catch (error) {
                 if (error.name != "ExitStatus") {
                     mono_exit(1, error);
