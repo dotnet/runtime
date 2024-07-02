@@ -20,81 +20,124 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </remarks>
     internal sealed class MintermClassifier
     {
-        /// <summary>An array used when there's a single minterm, in order to map every ASCII character to it trivially.</summary>
-        private static readonly int[] AllAsciiIsZeroMintermArray = new int[128];
+        /// <summary>An array used to map characters to minterms</summary>
+        private readonly byte[]? _lookup;
 
-        /// <summary>Array providing fast mapping from an ASCII character (the array index) to its corresponding minterm ID.</summary>
-        private readonly int[] _ascii;
-        /// <summary>A multi-terminal BDD for mapping any non-ASCII character to its associated minterm ID.</summary>
-        /// <remarks>
-        /// The use of a multi-terminal BDD here is an implementation detail.  Should we decide its important to optimize non-ASCII inputs further,
-        /// or to consolidate the mechanism with the other engines, an alternatie lookup algorithm / data structure could be employed.
-        /// </remarks>
-        private readonly BDD _nonAscii;
+        /// <summary>
+        /// Fallback lookup if over 255 minterms. This is rarely used.
+        /// </summary>
+        private readonly int[]? _intLookup;
+
+
+        /// <summary>
+        /// Maximum ordinal character for a non-0 minterm, used to conserve memory
+        /// Note: this is maximum index allowed for the lookup, the array size is _maxChar + 1
+        /// </summary>
+        private readonly int _maxChar;
 
         /// <summary>Create a classifier that maps a character to the ID of its associated minterm.</summary>
         /// <param name="minterms">A BDD for classifying all characters (ASCII and non-ASCII) to their corresponding minterm IDs.</param>
-        /// <param name="solver">The character set solver to use.</param>
-        public MintermClassifier(BDD[] minterms, CharSetSolver solver)
+        public MintermClassifier(BDD[] minterms)
         {
             Debug.Assert(minterms.Length > 0, "Requires at least");
+
 
             if (minterms.Length == 1)
             {
                 // With only a single minterm, the mapping is trivial: everything maps to it (ID 0).
-                // For ASCII, use an array containing all zeros.  For non-ASCII, use a BDD that maps everything to 0.
-                _ascii = AllAsciiIsZeroMintermArray;
-                _nonAscii = solver.ReplaceTrue(BDD.True, 0);
+                _lookup = Array.Empty<byte>();
+                _maxChar = -1;
                 return;
             }
 
-            // Create a multi-terminal BDD for mapping any character to its associated minterm.
-            BDD anyCharacterToMintermId = BDD.False;
-            for (int i = 0; i < minterms.Length; i++)
+            // attempt to save memory in common cases by allocating only up to the highest char code
+            for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
             {
-                // Each supplied minterm BDD decides whether a given character maps to it or not.
-                // We need to combine all of those into a multi-terminal BDD that decides which
-                // minterm a character maps to.  To do that, we take each minterm BDD and replace
-                // its True result with the ID of the minterm, such that a character that would
-                // have returned True for that BDD now returns the minterm ID.
-                BDD charToTargetMintermId = solver.ReplaceTrue(minterms[i], i);
-
-                // Now union this BDD with the multi-terminal BDD we've built up thus far. Unioning
-                // is valid because every character belongs to exactly one minterm and thus will
-                // only map to an ID instead of False in exactly one of the input BDDs.
-                anyCharacterToMintermId = solver.Or(anyCharacterToMintermId, charToTargetMintermId);
+                _maxChar = Math.Max(_maxChar, (int)BDDRangeConverter.ToRanges(minterms[mintermId])[^1].Item2);
+            }
+            // there is an opportunity to gain around 5% performance for allocating the
+            // full 64K, past a certain threshold where maxChar is already large.
+            // TODO: what should this threshold be?
+            if (_maxChar > 32_000)
+            {
+                _maxChar = ushort.MaxValue;
             }
 
-            // Now that we have our mapping that supports any input character, we want to optimize for
-            // ASCII inputs.  Rather than forcing every input ASCII character to consult the BDD at match
-            // time, we precompute a lookup table, where each ASCII character can be used to index into the
-            // array to determine the ID for its corresponding minterm.
-            var ascii = new int[128];
-            for (int i = 0; i < ascii.Length; i++)
+            // It's incredibly rare for a regex to use more than a hundred or two minterms,
+            // but we need a fallback just in case.
+            if (minterms.Length > 255)
             {
-                ascii[i] = anyCharacterToMintermId.Find(i);
+                // over 255 unique sets also means it's never ascii only
+                int[] lookup = new int[_maxChar + 1];
+                for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
+                {
+                    // precompute all assigned minterm categories
+                    (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
+                    foreach ((uint start, uint end) in mintermRanges)
+                    {
+                        // assign character ranges in bulk
+                        Span<int> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
+                        slice.Fill(mintermId);
+                    }
+                }
+                _intLookup = lookup;
             }
-            _ascii = ascii;
-
-            // We can also further optimize the BDD in two ways:
-            // 1. We can now remove the ASCII characters from it, as we'll always consult the lookup table first
-            //    for ASCII inputs and thus will never use the BDD for them.  While optional (skipping this step will not
-            //    affect correctness), removing the ASCII values from the BDD reduces the size of the multi-terminal BDD.
-            // 2. We can check if every character now maps to the same minterm ID (the same terminal in the
-            //    multi-terminal BDD).  This can be relatively common after (1) above is applied, as many
-            //    patterns don't distinguish between any non-ASCII characters (e.g. "[0-9]*").  If every character
-            //    in the BDD now maps to the same minterm, we can replace the BDD with a much simpler/faster/smaller one.
-            BDD nonAsciiBDD = solver.And(anyCharacterToMintermId, solver.NonAscii);
-            nonAsciiBDD = nonAsciiBDD.IsEssentiallyBoolean(out BDD? singleTerminalBDD) ? singleTerminalBDD : nonAsciiBDD;
-            _nonAscii = nonAsciiBDD;
+            else
+            {
+                byte[] lookup = new byte[_maxChar + 1];
+                for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
+                {
+                    // precompute all assigned minterm categories
+                    (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
+                    foreach ((uint start, uint end) in mintermRanges)
+                    {
+                        // assign character ranges in bulk
+                        Span<byte> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
+                        slice.Fill((byte)mintermId);
+                    }
+                }
+                _lookup = lookup;
+            }
         }
 
-        /// <summary>Gets the ID of the minterm associated with the specified character.</summary>
+        /// <summary>Gets the ID of the minterm associated with the specified character. </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetMintermID(int c)
         {
-            int[] ascii = _ascii;
-            return (uint)c < (uint)ascii.Length ? ascii[c] : _nonAscii.Find(c);
+            if (c > _maxChar)
+            {
+                return 0;
+            }
+
+            // high performance inner-loop variant uses the array directly
+            return _intLookup is null ? _lookup![c] : _intLookup[c];
         }
+        /// <summary>
+        /// Gets a quick mapping from char to minterm for the common case when there are &lt;= 255 minterms.
+        /// Null if there are greater than 255 minterms.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public byte[]? ByteLookup() => _lookup;
+
+        /// <summary>
+        /// Gets a mapping from char to minterm for the rare case when there are &gt;= 255 minterms.
+        /// Null in the common case where there are fewer than 255 minterms.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int[]? IntLookup() => _intLookup;
+
+        /// <summary>
+        /// Whether the full 64K char lookup is allocated.
+        /// This accelerates the minterm mapping by removing an if-else case,
+        /// and is only considered for the common &lt;= 255 minterms case
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsFullLookup() => _lookup is not null && _lookup.Length == ushort.MaxValue + 1;
+
+        /// <summary>
+        /// Maximum ordinal character for a non-0 minterm, used to conserve memory
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int MaxChar() => _maxChar;
     }
 }

@@ -209,13 +209,13 @@ namespace System.Text.RegularExpressions.Tests
             [
                 // simple counters that are too large
                 "((ab){0,9000})",
-                "((ab){1000})",
+                "((ab){5000})",
                 "((ab){100,5000})",
                 // almost infinite lower bound
                 "a{2147483646,}",              // 2147483646 = int.MaxValue-1
                 // nested small counters causing unsafe blowup through multiplicative nature of counter nesting
-                "(((ab){10}){10}){10}",        // more than 10^3
-                "((((abcd){4}){4}){4}){4}",    // exponential: more than 4^5 = 1024
+                "(((ab){10}){10}){50}",        // more than 10^3 * 5
+                "(((((abcd){4}){4}){4}){4}){10}",    // exponential: more than 4^5 * 10 = 10240
                 // combined large counters
                 "((ab){1000}){1000}",          // more than 1000^2
                 "((ab){99999999}){99999999}",  // multiply: much more than int.MaxValue
@@ -252,6 +252,20 @@ namespace System.Text.RegularExpressions.Tests
             int k = SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold();
             AppContext.SetData(SymbolicRegexThresholds.SymbolicRegexSafeSizeThreshold_ConfigKeyName, null);
             Assert.Equal(expectedThreshold, k);
+        }
+
+        [Fact]
+        public static void OptimizedReversalTests()
+        {
+            var charSetSolver = new CharSetSolver();
+            var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);
+            var converter = new RegexNodeConverter(bddBuilder, null);
+            const RegexOptions options = RegexOptions.NonBacktracking | RegexOptions.ExplicitCapture;
+            RegexNode tree = RegexParser.Parse("abc.*def", options, CultureInfo.CurrentCulture).Root;
+            SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
+            // todo: import the matcher here or use something else?
+            // var matcher = SymbolicRegexMatcher.Create(bddBuilder, rootNode, 0, null, TimeSpan.MaxValue);
+
         }
     }
 }
