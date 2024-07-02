@@ -9,9 +9,8 @@ namespace System.Globalization.Tests
     public class CultureInfoEnglishName
     {
         // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-        // Browser uses JS to get the NativeName that is missing in ICU (in the singlethreaded runtime only)
-        public static bool SupportFullGlobalizationData =>
-            (!PlatformDetection.IsWasi || PlatformDetection.IsHybridGlobalizationOnApplePlatform) && !PlatformDetection.IsWasmThreadingSupported;
+        // Browser uses JS to get the NativeName that is missing in ICU
+        public static bool SupportFullGlobalizationData => !PlatformDetection.IsWasi || PlatformDetection.IsHybridGlobalizationOnApplePlatform;
 
         public static IEnumerable<object[]> EnglishName_TestData()
         {

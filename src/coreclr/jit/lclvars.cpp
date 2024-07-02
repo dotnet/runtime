@@ -73,8 +73,9 @@ void Compiler::lvaInit()
     lvaRetAddrVar       = BAD_VAR_NUM;
 
 #ifdef SWIFT_SUPPORT
-    lvaSwiftSelfArg  = BAD_VAR_NUM;
-    lvaSwiftErrorArg = BAD_VAR_NUM;
+    lvaSwiftSelfArg           = BAD_VAR_NUM;
+    lvaSwiftIndirectResultArg = BAD_VAR_NUM;
+    lvaSwiftErrorArg          = BAD_VAR_NUM;
 #endif
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
@@ -1443,6 +1444,34 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         return true;
     }
 
+    if ((strcmp(className, "SwiftIndirectResult") == 0) &&
+        (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+    {
+        if (argIsByrefOrPtr)
+        {
+            BADCODE("Expected SwiftIndirectResult struct, got pointer/reference");
+        }
+
+        if (info.compRetType != TYP_VOID)
+        {
+            BADCODE("Functions with SwiftIndirectResult parameters must return void");
+        }
+
+        if (lvaSwiftIndirectResultArg != BAD_VAR_NUM)
+        {
+            BADCODE("Duplicate SwiftIndirectResult parameter");
+        }
+
+        LclVarDsc* const varDsc = varDscInfo->varDsc;
+        varDsc->SetArgReg(theFixedRetBuffReg(CorInfoCallConvExtension::Swift));
+        varDsc->lvIsRegArg = true;
+
+        compArgSize += TARGET_POINTER_SIZE;
+
+        lvaSwiftIndirectResultArg = varDscInfo->varNum;
+        return true;
+    }
+
     if ((strcmp(className, "SwiftError") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
     {
         if (!argIsByrefOrPtr)
@@ -1692,7 +1721,8 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
 template <typename Classifier>
 void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 {
-    lvaParameterPassingInfo = new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
+    lvaParameterPassingInfo =
+        info.compArgsCount == 0 ? nullptr : new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
 
     for (unsigned i = 0; i < info.compArgsCount; i++)
     {
@@ -1708,6 +1738,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         else if (i == lvaSwiftSelfArg)
         {
             wellKnownArg = WellKnownArg::SwiftSelf;
+        }
+        else if (i == lvaSwiftIndirectResultArg)
+        {
+            wellKnownArg = WellKnownArg::RetBuffer;
         }
         else if (i == lvaSwiftErrorArg)
         {
@@ -1735,11 +1769,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 //
 void Compiler::lvaClassifyParameterABI()
 {
-    if (info.compArgsCount == 0)
-    {
-        return;
-    }
-
     ClassifierInfo cInfo;
     cInfo.CallConv   = info.compCallConv;
     cInfo.IsVarArgs  = info.compIsVarArgs;
@@ -1776,10 +1805,10 @@ void Compiler::lvaClassifyParameterABI()
             else
             {
                 assert(abiInfo.NumSegments == 1);
-                if (abiInfo.Segments[0].IsPassedInRegister())
+                if (abiInfo.Segment(0).IsPassedInRegister())
                 {
                     dsc->lvIsRegArg = true;
-                    dsc->SetArgReg(abiInfo.Segments[0].GetRegister());
+                    dsc->SetArgReg(abiInfo.Segment(0).GetRegister());
                     dsc->SetOtherArgReg(REG_NA);
                 }
                 else
@@ -1787,13 +1816,13 @@ void Compiler::lvaClassifyParameterABI()
                     dsc->lvIsRegArg = false;
                     dsc->SetArgReg(REG_STK);
                     dsc->SetOtherArgReg(REG_NA);
-                    dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
+                    dsc->SetStackOffset(abiInfo.Segment(0).GetStackOffset());
                 }
             }
 
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 if (segment.IsPassedInRegister())
                 {
                     argRegs |= segment.GetRegisterMask();
@@ -1854,7 +1883,7 @@ void Compiler::lvaClassifyParameterABI()
 
         for (unsigned i = 0; i < numSegmentsToCompare; i++)
         {
-            const ABIPassingSegment& expected = abiInfo.Segments[i];
+            const ABIPassingSegment& expected = abiInfo.Segment(i);
             regNumber                reg      = REG_NA;
             if (i == 0)
             {
@@ -1901,19 +1930,19 @@ void Compiler::lvaClassifyParameterABI()
 
         if (lvaIsImplicitByRefLocal(lclNum))
         {
-            assert((abiInfo.NumSegments == 1) && (abiInfo.Segments[0].Size == TARGET_POINTER_SIZE));
+            assert((abiInfo.NumSegments == 1) && (abiInfo.Segment(0).Size == TARGET_POINTER_SIZE));
         }
         else
         {
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 assert(segment.Size > 0);
                 assert(segment.Offset + segment.Size <= lvaLclExactSize(lclNum));
 
                 if (i > 0)
                 {
-                    assert(segment.Offset > abiInfo.Segments[i - 1].Offset);
+                    assert(segment.Offset > abiInfo.Segment(i - 1).Offset);
                 }
 
                 for (unsigned j = 0; j < abiInfo.NumSegments; j++)
@@ -1923,7 +1952,7 @@ void Compiler::lvaClassifyParameterABI()
                         continue;
                     }
 
-                    const ABIPassingSegment& otherSegment = abiInfo.Segments[j];
+                    const ABIPassingSegment& otherSegment = abiInfo.Segment(j);
                     assert((segment.Offset + segment.Size <= otherSegment.Offset) ||
                            (segment.Offset >= otherSegment.Offset + otherSegment.Size));
                 }
@@ -2543,6 +2572,13 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
 
     if (varDsc->GetLayout()->IsBlockLayout())
     {
+        JITDUMP("  struct promotion of V%02u is disabled because it has block layout\n", lclNum);
+        return false;
+    }
+
+    if (varDsc->lvStackAllocatedBox)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it is a stack allocated box\n", lclNum);
         return false;
     }
 
@@ -3183,10 +3219,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("opts.compFlags & CLFLG_REGVAR is not set\n");
             assert(!compEnregLocals());
             break;
-        case DoNotEnregisterReason::MinOptsGC:
-            JITDUMP("it is a GC Ref and we are compiling MinOpts\n");
-            assert(!JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()));
-            break;
 #if !defined(TARGET_64BIT)
         case DoNotEnregisterReason::LongParamField:
             JITDUMP("it is a decomposed field of a long parameter\n");
@@ -3333,6 +3365,8 @@ bool Compiler::lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const
 // TODO-Throughput: This does a lookup on the class handle, and in the outgoing arg context
 // this information is already available on the CallArgABIInformation, and shouldn't need to be
 // recomputed.
+//
+// Also seems like this info could be cached in the layout.
 //
 bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
 {
@@ -4117,11 +4151,6 @@ void Compiler::lvaSortByRefCount()
 #ifdef JIT32_GCENCODER
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
 #endif
-        }
-        if (opts.MinOpts() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
-        {
-            varDsc->lvTracked = 0;
-            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::MinOptsGC));
         }
         if (!compEnregLocals())
         {
@@ -5573,7 +5602,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *  Doing this all in one pass is 'hard'.  So instead we do it in 2 basic passes:
  *    1. Assign all the offsets relative to the Virtual '0'. Offsets above (the
  *      incoming arguments) are positive. Offsets below (everything else) are
- *      negative.  This pass also calcuates the total frame size (between Caller's
+ *      negative.  This pass also calculates the total frame size (between Caller's
  *      SP/return address and the Ambient SP).
  *    2. Figure out where to place the frame pointer, and then adjust the offsets
  *      as needed for the final stack size and whether the offset is frame pointer
@@ -6021,30 +6050,13 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
 
     for (unsigned i = 0; i < abiInfo.NumSegments; i++)
     {
-        const ABIPassingSegment& segment = abiInfo.Segments[i];
+        const ABIPassingSegment& segment = abiInfo.Segment(i);
         if (!segment.IsPassedOnStack())
         {
 #if defined(WINDOWS_AMD64_ABI)
-            switch (segment.GetRegister())
+            if (ABIPassingInformation::GetShadowSpaceCallerOffsetForReg(segment.GetRegister(), offset))
             {
-                case REG_ECX:
-                case REG_XMM0:
-                    *offset = 0;
-                    return true;
-                case REG_EDX:
-                case REG_XMM1:
-                    *offset = 8;
-                    return true;
-                case REG_R8:
-                case REG_XMM2:
-                    *offset = 16;
-                    return true;
-                case REG_R9:
-                case REG_XMM3:
-                    *offset = 24;
-                    return true;
-                default:
-                    break;
+                return true;
             }
 #elif defined(TARGET_ARM)
             regMaskTP prespills = codeGen->regSet.rsMaskPreSpillRegs(true);
@@ -6694,22 +6706,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            // This should be low on the stack. Hence, it will be assigned later.
-            if (lclNum == lvaStubArgumentVar)
-            {
-#ifdef JIT32_GCENCODER
-                noway_assert(codeGen->isFramePointerUsed());
-#endif
-                continue;
-            }
-
-            // This should be low on the stack. Hence, it will be assigned later.
-            if (lclNum == lvaInlinedPInvokeFrameVar)
-            {
-                noway_assert(codeGen->isFramePointerUsed());
-                continue;
-            }
-
             if (varDsc->lvIsParam)
             {
 #ifdef TARGET_ARM64
@@ -6851,25 +6847,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
      *
      *-------------------------------------------------------------------------
      */
-
-    // lvaInlinedPInvokeFrameVar and lvaStubArgumentVar need to be assigned last
-    // Important: The stack walker depends on lvaStubArgumentVar immediately
-    // following lvaInlinedPInvokeFrameVar in the frame.
-
-    if (lvaStubArgumentVar != BAD_VAR_NUM)
-    {
-#ifdef JIT32_GCENCODER
-        noway_assert(codeGen->isFramePointerUsed());
-#endif
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaStubArgumentVar, lvaLclSize(lvaStubArgumentVar), stkOffs);
-    }
-
-    if (lvaInlinedPInvokeFrameVar != BAD_VAR_NUM)
-    {
-        noway_assert(codeGen->isFramePointerUsed());
-        stkOffs =
-            lvaAllocLocalAndSetVirtualOffset(lvaInlinedPInvokeFrameVar, lvaLclSize(lvaInlinedPInvokeFrameVar), stkOffs);
-    }
 
 #ifdef JIT32_GCENCODER
     // JIT32 encoder cannot handle GS cookie at fp+0 since NO_GS_COOKIE == 0.

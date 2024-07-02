@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -19,6 +20,8 @@ namespace System.Text.Json.Reflection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNullableOfT(this Type type) =>
             type.IsGenericType && type.GetGenericTypeDefinition() == s_nullableType;
+
+        public static bool IsNullableType(this Type type) => !type.IsValueType || IsNullableOfT(type);
 
         /// <summary>
         /// Returns <see langword="true" /> when the given type is assignable from <paramref name="from"/> including support
@@ -112,6 +115,54 @@ namespace System.Text.Json.Reflection
 
             return result;
 #endif
+        }
+
+        public static ParameterInfo GetGenericParameterDefinition(this ParameterInfo parameter)
+        {
+            if (parameter.Member is { DeclaringType.IsConstructedGenericType: true }
+                                 or MethodInfo { IsGenericMethod: true, IsGenericMethodDefinition: false })
+            {
+                var genericMethod = (MethodBase)parameter.Member.GetGenericMemberDefinition()!;
+                return genericMethod.GetParameters()[parameter.Position];
+            }
+
+            return parameter;
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2075:'this' argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method. The return value of the source method does not have matching annotations.",
+            Justification = "Looking up the generic member definition of the provided member.")]
+        public static MemberInfo GetGenericMemberDefinition(this MemberInfo member)
+        {
+            if (member is Type type)
+            {
+                return type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : type;
+            }
+
+            if (member.DeclaringType!.IsConstructedGenericType)
+            {
+                const BindingFlags AllMemberFlags =
+                    BindingFlags.Static | BindingFlags.Instance |
+                    BindingFlags.Public | BindingFlags.NonPublic;
+
+                Type genericTypeDef = member.DeclaringType.GetGenericTypeDefinition();
+                foreach (MemberInfo genericMember in genericTypeDef.GetMember(member.Name, AllMemberFlags))
+                {
+                    if (genericMember.MetadataToken == member.MetadataToken)
+                    {
+                        return genericMember;
+                    }
+                }
+
+                Debug.Fail("Unreachable code");
+                throw new Exception();
+            }
+
+            if (member is MethodInfo { IsGenericMethod: true, IsGenericMethodDefinition: false } method)
+            {
+                return method.GetGenericMethodDefinition();
+            }
+
+            return member;
         }
     }
 }

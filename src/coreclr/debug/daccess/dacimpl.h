@@ -1088,8 +1088,8 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetModuleData(CLRDATA_ADDRESS moduleAddr, struct DacpModuleData *data);
     virtual HRESULT STDMETHODCALLTYPE TraverseModuleMap(ModuleMapType mmt, CLRDATA_ADDRESS moduleAddr, MODULEMAPTRAVERSE pCallback, LPVOID token);
     virtual HRESULT STDMETHODCALLTYPE GetMethodDescFromToken(CLRDATA_ADDRESS moduleAddr, mdToken token, CLRDATA_ADDRESS *methodDesc);
-    virtual HRESULT STDMETHODCALLTYPE GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base);
-    virtual HRESULT STDMETHODCALLTYPE GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base);
+    virtual HRESULT STDMETHODCALLTYPE GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyModuleList(CLRDATA_ADDRESS assembly, unsigned int count, CLRDATA_ADDRESS modules[], unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetGCHeapData(struct DacpGcHeapData *data);
     virtual HRESULT STDMETHODCALLTYPE GetGCHeapList(unsigned int count, CLRDATA_ADDRESS heaps[], unsigned int *pNeeded);
@@ -1229,7 +1229,9 @@ public:
 
     HRESULT Initialize(void);
 
+    HRESULT GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData);
     HRESULT GetThreadStoreDataImpl(struct DacpThreadStoreData *data);
+    HRESULT GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException);
 
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
 #ifndef TARGET_UNIX
@@ -2056,7 +2058,7 @@ public:
 
 private:
     static StackWalkAction Callback(CrawlFrame *pCF, VOID *pData);
-    static void GCEnumCallback(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
+    static void GCEnumCallbackFunc(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
     static void GCReportCallback(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
 
     CLRDATA_ADDRESS ReadPointer(TADDR addr);
@@ -3860,7 +3862,7 @@ HRESULT GetServerHeaps(CLRDATA_ADDRESS pGCHeaps[], ICorDebugDataTarget* pTarget)
 
 #pragma warning( disable: 4035 )        /* Don't complain about lack of return value */
 
-__inline unsigned __int64 GetCycleCount ()
+__inline uint64_t GetCycleCount ()
 {
 __asm   _emit   0x0F
 __asm   _emit   0x31    /* rdtsc */
@@ -3884,7 +3886,7 @@ __asm   pop     EDX
 
 #define CCNT_OVERHEAD    0 // Don't know
 
-__inline unsigned __int64 GetCycleCount()
+__inline uint64_t GetCycleCount()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -3895,16 +3897,16 @@ __inline unsigned __int64 GetCycleCount()
 
 #endif  // #if defined(TARGET_X86)
 
-extern unsigned __int64 g_nTotalTime;
-extern unsigned __int64 g_nStackTotalTime;
-extern unsigned __int64 g_nReadVirtualTotalTime;
-extern unsigned __int64 g_nFindTotalTime;
-extern unsigned __int64 g_nFindHashTotalTime;
-extern unsigned __int64 g_nFindHits;
-extern unsigned __int64 g_nFindCalls;
-extern unsigned __int64 g_nFindFails;
-extern unsigned __int64 g_nStackWalk;
-extern unsigned __int64 g_nFindStackTotalTime;
+extern uint64_t g_nTotalTime;
+extern uint64_t g_nStackTotalTime;
+extern uint64_t g_nReadVirtualTotalTime;
+extern uint64_t g_nFindTotalTime;
+extern uint64_t g_nFindHashTotalTime;
+extern uint64_t g_nFindHits;
+extern uint64_t g_nFindCalls;
+extern uint64_t g_nFindFails;
+extern uint64_t g_nStackWalk;
+extern uint64_t g_nFindStackTotalTime;
 
 #endif // #if defined(DAC_MEASURE_PERF)
 

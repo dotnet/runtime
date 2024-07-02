@@ -171,6 +171,15 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
         return CLRLoadLibrary(libFilePath);
     }
 
+    //
+    // This is not a security feature.
+    // The libFileName originates either from an environment variable or from the runtimeconfig.json
+    // These are trusted locations, and therefore even if it is a relative path, there is no security risk.
+    //
+    // However, users often don't know the absolute path to their coreclr module, especially on production.
+    // Therefore we allow referencing it from an arbitrary location through libFilePath instead. Users, however
+    // are warned that they should keep the file in a secure location such that it cannot be tampered.
+    //
     if (!ValidateModuleName(libFileName))
     {
         LOG((LF_GC, LL_INFO100, "Invalid GC name found %s\n", libFileName));

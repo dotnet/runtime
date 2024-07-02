@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics.Tensors
 {
@@ -87,20 +88,30 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    if (AdvSimd.IsSupported && typeof(T) == typeof(float))
-                    {
-                        return AdvSimd.MinNumber(x.AsSingle(), y.AsSingle()).As<float, T>();
-                    }
+                    // We can't use AdvSimd.MinNumber here because it doesn't correctly
+                    // handle sNaN (it converts it to qNaN as per the now deprecated
+                    // minNum function defined by IEEE 754:2008, but which is not inline
+                    // with the minimumNumber function that replaces it in IEEE 754:2019)
 
-                    if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(double))
+                    Vector128<T> min;
+
+                    if (Sse.IsSupported && typeof(T) == typeof(float))
                     {
-                        return AdvSimd.Arm64.MinNumber(x.AsDouble(), y.AsDouble()).As<double, T>();
+                        min = Sse.Min(x.AsSingle(), y.AsSingle()).As<float, T>();
+                    }
+                    else if (Sse2.IsSupported && typeof(T) == typeof(double))
+                    {
+                        min = Sse2.Min(x.AsDouble(), y.AsDouble()).As<double, T>();
+                    }
+                    else
+                    {
+                        min = Vector128.ConditionalSelect(Vector128.LessThan(x, y), x, y);
                     }
 
                     return
                         Vector128.ConditionalSelect(Vector128.Equals(x, y),
                             Vector128.ConditionalSelect(IsNegative(x), x, y),
-                            Vector128.ConditionalSelect(Vector128.Equals(y, y), Vector128.Min(x, y), x));
+                            Vector128.ConditionalSelect(Vector128.Equals(y, y), min, x));
                 }
 
                 return Vector128.Min(x, y);
@@ -111,10 +122,25 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
+                    Vector256<T> min;
+
+                    if (Avx.IsSupported && typeof(T) == typeof(float))
+                    {
+                        min = Avx.Min(x.AsSingle(), y.AsSingle()).As<float, T>();
+                    }
+                    else if (Avx.IsSupported && typeof(T) == typeof(double))
+                    {
+                        min = Avx.Min(x.AsDouble(), y.AsDouble()).As<double, T>();
+                    }
+                    else
+                    {
+                        min = Vector256.ConditionalSelect(Vector256.LessThan(x, y), x, y);
+                    }
+
                     return
                         Vector256.ConditionalSelect(Vector256.Equals(x, y),
                             Vector256.ConditionalSelect(IsNegative(x), x, y),
-                            Vector256.ConditionalSelect(Vector256.Equals(y, y), Vector256.Min(x, y), x));
+                            Vector256.ConditionalSelect(Vector256.Equals(y, y), min, x));
                 }
 
                 return Vector256.Min(x, y);
@@ -125,10 +151,25 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
+                    Vector512<T> min;
+
+                    if (Avx512F.IsSupported && typeof(T) == typeof(float))
+                    {
+                        min = Avx512F.Min(x.AsSingle(), y.AsSingle()).As<float, T>();
+                    }
+                    else if (Avx512F.IsSupported && typeof(T) == typeof(double))
+                    {
+                        min = Avx512F.Min(x.AsDouble(), y.AsDouble()).As<double, T>();
+                    }
+                    else
+                    {
+                        min = Vector512.ConditionalSelect(Vector512.LessThan(x, y), x, y);
+                    }
+
                     return
                         Vector512.ConditionalSelect(Vector512.Equals(x, y),
                             Vector512.ConditionalSelect(IsNegative(x), x, y),
-                            Vector512.ConditionalSelect(Vector512.Equals(y, y), Vector512.Min(x, y), x));
+                            Vector512.ConditionalSelect(Vector512.Equals(y, y), min, x));
                 }
 
                 return Vector512.Min(x, y);

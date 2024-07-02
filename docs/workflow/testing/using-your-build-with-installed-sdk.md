@@ -30,13 +30,13 @@ This guide focuses on the first of the bullet points described above. For the ot
 
 ### Acquire the latest development .NET SDK
 
-The [installer repo](https://github.com/dotnet/installer) has downloads to all nightly builds for all the currently supported platforms. Find the one that matches your machine and download it.
+The [sdk repo](https://github.com/dotnet/sdk#installing-the-sdk) has downloads to all nightly builds for all the currently supported platforms. Find the one that matches your machine and download it.
 
 To setup the nightly SDK, you can either install it to your machine or use a portable build. If you downloaded the _installer_, then just follow the usual installation instructions, and you're done.
 
 To use a portable build (check the note above though), first extract somewhere the _zip/tar.gz_ you downloaded at the beginning of this section. Then, you can either add the path where you extracted it to your `PATH` environment variable, or always fully qualify the path to the `dotnet` you extracted (e.g. `/path/to/nightly/build/dotnet`).
 
-After setting up dotnet you can verify you are using the newer version by issuing the `dotnet --version` command on it. At the time of writing, the version must be equal or greater than `8.0.100-*`.
+After setting up dotnet you can verify you are using the newer version by issuing the `dotnet --version` command on it. At the time of writing, the version must be equal or greater than `9.0.100-*`.
 
 <!-- TODO: It feels like this link may or may not be more appropriate elsewhere. Need to dig deeper into the documentation, so leaving it here for the time being. -->
 For another small walkthrough see [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/main/docs/project/dogfooding.md).
@@ -93,7 +93,7 @@ dotnet publish --self-contained
 </configuration>
 ```
 
-After you publish successfully, you will find all the binaries needed to run your application under `bin\Debug\net8.0\win-x64\publish`.
+After you publish successfully, you will find all the binaries needed to run your application under `bin\Debug\net9.0\win-x64\publish`.
 
 **But we are not done yet, you need to replace the published runtime files with the files from your local build!**
 
@@ -105,12 +105,12 @@ The publishing step described above creates a directory that has all the files n
 * `System.Private.CoreLib.dll`: If you modified managed C# code, it will end up here.
 * `clrjit.dll`: The JIT compiler. It is also required you copy this one to your published app.
 
-Now, here comes the main deal to test your build. Once you have your self-contained app published, and CoreCLR built, you will replace the binaries listed above with the generated artifacts. Copy them from `artifacts/bin/coreclr/<OS>.<arch>.<configuration>/` to your app's publication directory, which by default is `your-app-folder/bin/<configuration>/net8.0/<os-code>-<arch>/publish`.
+Now, here comes the main deal to test your build. Once you have your self-contained app published, and CoreCLR built, you will replace the binaries listed above with the generated artifacts. Copy them from `artifacts/bin/coreclr/<OS>.<arch>.<configuration>/` to your app's publication directory, which by default is `your-app-folder/bin/<configuration>/net9.0/<os-code>-<arch>/publish`.
 
 In our previous example this would be:
 
 * From: `artifacts/bin/coreclr/windows.x64.Debug/`
-* To: `HelloWorld/bin/Debug/net8.0/win-x64/publish/`
+* To: `HelloWorld/bin/Debug/net9.0/win-x64/publish/`
 
 ## Confirm that the app used your new runtime (Optional)
 
@@ -129,8 +129,8 @@ Console.WriteLine($"System.Private.CoreLib.dll is located at: {typeof(object).As
 That should tell you the version, and which user and machine built the assembly, as well as the _commit hash_ of the code at the time of building:
 
 ```text
-Core Runtime Info: 8.0.0-dev
-System.Private.CoreLib.dll is located at: /path/to/your/app/bin/Debug/net8.0/win-x64/publish/System.Private.CoreLib.dll
+Core Runtime Info: 9.0.0-dev
+System.Private.CoreLib.dll is located at: /path/to/your/app/bin/Debug/net9.0/win-x64/publish/System.Private.CoreLib.dll
 ```
 
 What you are looking for here is that the core runtime used is labelled as `-dev`. This means it is indeed using the one you built in the runtime repo. Also, ensure that the picked _System.Private.CoreLib.dll_ is indeed the one in your `publish` folder.
@@ -144,7 +144,7 @@ Here are a few very common errors you might encounter, and how to fix them.
 Make sure you are running the executable directly.
 
 ```cmd
-.\bin\Debug\net8.0\win-x64\publish\HelloWorld.exe
+.\bin\Debug\net9.0\win-x64\publish\HelloWorld.exe
 ```
 
 If you use `dotnet run` it will overwrite your custom binaries before executing the app.

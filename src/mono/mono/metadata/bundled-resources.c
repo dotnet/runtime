@@ -8,8 +8,11 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/bundled-resources-internals.h>
 #include <mono/metadata/webcil-loader.h>
+#include "../native/containers/dn-simdhash-specializations.h"
+#include "../native/containers/dn-simdhash-utils.h"
 
-static GHashTable *bundled_resources = NULL;
+static dn_simdhash_ght_t *bundled_resources = NULL;
+static dn_simdhash_ptr_ptr_t *bundled_resource_key_lookup_table = NULL;
 static bool bundled_resources_contains_assemblies = false;
 static bool bundled_resources_contains_satellite_assemblies = false;
 
@@ -31,8 +34,10 @@ mono_bundled_resources_free (void)
 {
 	g_assert (mono_runtime_is_shutting_down ());
 
-	g_hash_table_destroy (bundled_resources);
+	dn_simdhash_free (bundled_resources);
+	dn_simdhash_free (bundled_resource_key_lookup_table);
 	bundled_resources = NULL;
+	bundled_resource_key_lookup_table = NULL;
 
 	bundled_resources_contains_assemblies = false;
 	bundled_resources_contains_satellite_assemblies = false;
@@ -50,6 +55,12 @@ bundled_resources_value_destroy_func (void *resource)
 	MonoBundledResource *value = (MonoBundledResource *)resource;
 	if (value->free_func)
 		value->free_func (resource, value->free_data);
+
+	char *key;
+	if (dn_simdhash_ptr_ptr_try_get_value (bundled_resource_key_lookup_table, (void *)value->id, (void **)&key)) {
+		dn_simdhash_ptr_ptr_try_remove (bundled_resource_key_lookup_table, (void *)value->id);
+		g_free (key);
+	}
 }
 
 static bool
@@ -62,47 +73,50 @@ bundled_resources_is_known_assembly_extension (const char *ext)
 #endif
 }
 
+// If a bundled resource has a known assembly extension, we strip the extension from its name
+// This ensures that lookups for foo.dll will work even if the assembly is in a webcil container
+static char *
+key_from_id (const char *id, char *buffer, guint buffer_len)
+{
+	size_t id_length = strlen (id),
+		extension_offset = -1;
+	const char *extension = g_memrchr (id, '.', id_length);
+	if (extension)
+		extension_offset = extension - id;
+	if (!buffer) {
+		// Add space for .dll and null terminator
+		buffer_len = (guint)(id_length + 6);
+		buffer = g_malloc (buffer_len);
+	}
+	buffer[0] = 0;
+
+	if (extension_offset && bundled_resources_is_known_assembly_extension (extension)) {
+		// Subtract from buffer_len to make sure we have space for .dll
+		g_strlcpy (buffer, id, MIN(buffer_len - 4, extension_offset + 2));
+		strcat (buffer, "dll");
+	} else {
+		g_strlcpy (buffer, id, MIN(buffer_len, id_length + 1));
+	}
+
+	return buffer;
+}
+
 static gboolean
-bundled_resources_resource_id_equal (const char *id_one, const char *id_two)
+bundled_resources_resource_id_equal (const char *key_one, const char *key_two)
 {
-	const char *extension_one = strrchr (id_one, '.');
-	const char *extension_two = strrchr (id_two, '.');
-	if (extension_one && extension_two && bundled_resources_is_known_assembly_extension (extension_one) && bundled_resources_is_known_assembly_extension (extension_two)) {
-		size_t len_one = extension_one - id_one;
-		size_t len_two = extension_two - id_two;
-		return (len_one == len_two) && !strncmp (id_one, id_two, len_one);
-	}
-
-	return !strcmp (id_one, id_two);
+	return strcmp (key_one, key_two) == 0;
 }
 
-static guint
-bundled_resources_resource_id_hash (const char *id)
+static guint32
+bundled_resources_resource_id_hash (const char *key)
 {
-	const char *current = id;
-	const char *extension = NULL;
-	guint previous_hash = 0;
-	guint hash = 0;
-
-	while (*current) {
-		hash = (hash << 5) - (hash + *current);
-		if (*current == '.') {
-			extension = current;
-			previous_hash = hash;
-		}
-		current++;
-	}
-
-	// alias all extensions to .dll
-	if (extension && bundled_resources_is_known_assembly_extension (extension)) {
-		hash = previous_hash;
-		hash = (hash << 5) - (hash + 'd');
-		hash = (hash << 5) - (hash + 'l');
-		hash = (hash << 5) - (hash + 'l');
-	}
-
-	return hash;
+	// FIXME: Seed
+	// FIXME: We should cache the hash code so rehashes are cheaper
+	return MurmurHash3_32_streaming ((const uint8_t *)key, 0);
 }
+
+static MonoBundledResource *
+bundled_resources_get (const char *id);
 
 //---------------------------------------------------------------------------------------
 //
@@ -126,11 +140,12 @@ bundled_resources_resource_id_hash (const char *id)
 void
 mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len)
 {
-	MonoDomain *domain = mono_get_root_domain ();
-	g_assert (!domain);
-
 	if (!bundled_resources)
-		bundled_resources = g_hash_table_new_full ((GHashFunc)bundled_resources_resource_id_hash, (GEqualFunc)bundled_resources_resource_id_equal, NULL, bundled_resources_value_destroy_func);
+		// FIXME: Choose a good initial capacity to avoid rehashes during startup. I picked one at random
+		bundled_resources = dn_simdhash_ght_new_full ((GHashFunc)bundled_resources_resource_id_hash, (GEqualFunc)bundled_resources_resource_id_equal, NULL, bundled_resources_value_destroy_func, 2048, NULL);
+
+	if (!bundled_resource_key_lookup_table)
+		bundled_resource_key_lookup_table = dn_simdhash_ptr_ptr_new (2048, NULL);
 
 	bool assemblyAdded = false;
 	bool satelliteAssemblyAdded = false;
@@ -143,7 +158,13 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 		if (resource_to_bundle->type == MONO_BUNDLED_SATELLITE_ASSEMBLY)
 			satelliteAssemblyAdded = true;
 
-		g_hash_table_insert (bundled_resources, (gpointer) resource_to_bundle->id, resource_to_bundle);
+		// Generate the hash key for the id (strip certain extensions) and store it
+		//  so that we can free it later when freeing the bundled data
+		char *key = key_from_id (resource_to_bundle->id, NULL, 0);
+		dn_simdhash_ptr_ptr_try_add (bundled_resource_key_lookup_table, (void *)resource_to_bundle->id, key);
+
+		g_assert (dn_simdhash_ght_try_add (bundled_resources, (gpointer) key, resource_to_bundle));
+		// g_assert (bundled_resources_get (resource_to_bundle->id) == resource_to_bundle);
 	}
 
 	if (assemblyAdded)
@@ -172,7 +193,12 @@ bundled_resources_get (const char *id)
 	if (!bundled_resources)
 		return NULL;
 
-	return g_hash_table_lookup (bundled_resources, id);
+	char key_buffer[1024];
+	key_from_id(id, key_buffer, sizeof(key_buffer));
+
+	MonoBundledResource *result = NULL;
+	dn_simdhash_ght_try_get_value (bundled_resources, key_buffer, (void **)&result);
+	return result;
 }
 
 //---------------------------------------------------------------------------------------
@@ -364,9 +390,7 @@ bool
 mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out)
 {
 	MonoBundledDataResource *bundled_data_resource = bundled_resources_get_data_resource (id);
-	if (!bundled_data_resource ||
-		!bundled_data_resource->data.data ||
-		bundled_data_resource->data.size == 0)
+	if (!bundled_data_resource || !bundled_data_resource->data.data)
 		return false;
 
 	if (data_out)

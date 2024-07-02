@@ -672,6 +672,7 @@ debugger_agent_parse_options (char *options)
 			exit (1);
 		}
 	}
+	g_strfreev (args);
 
 	if (agent_config.server && !agent_config.suspend) {
 		/* Waiting for deferred attachment */
@@ -3286,6 +3287,7 @@ dbg_path_get_basename (const char *filename)
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (hidden_klass, "System.Diagnostics", "DebuggerHiddenAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (step_through_klass, "System.Diagnostics", "DebuggerStepThroughAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (non_user_klass, "System.Diagnostics", "DebuggerNonUserCodeAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (intptr_klass, "System", "IntPtr")
 
 static void
 init_jit_info_dbg_attrs (MonoJitInfo *ji)
@@ -5578,6 +5580,7 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 	int ret = 0;
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
 		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
+		!(t->type == MONO_TYPE_I && type == MONO_TYPE_I8) &&
 		!(type == VALUE_TYPE_ID_FIXED_ARRAY) &&
 		!(type == MDBGPROT_VALUE_TYPE_ID_NULL) &&
 		!(t->type == MONO_TYPE_U && type == MONO_TYPE_VALUETYPE) &&
@@ -5640,7 +5643,13 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 		/* We send these as vtypes, so we get them back as such */
-		g_assert (type == MONO_TYPE_VALUETYPE);
+		if (type == MONO_TYPE_I8)
+		{
+			ret += sizeof(guint64);
+			goto end;
+		}
+		else
+			g_assert (type == MONO_TYPE_VALUETYPE);
 		/* Fall through */
 		handle_vtype:
 	case MONO_TYPE_VALUETYPE:
@@ -5697,6 +5706,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
 		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
+		!(t->type == MONO_TYPE_I && type == MONO_TYPE_I8) &&
 		!(type == VALUE_TYPE_ID_FIXED_ARRAY) &&
 		!(t->type == MONO_TYPE_U && type == MONO_TYPE_VALUETYPE) &&
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
@@ -5769,8 +5779,31 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		break;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-		/* We send these as vtypes, so we get them back as such */
-		g_assert (type == MONO_TYPE_VALUETYPE);
+		if (type == MONO_TYPE_I8) //sometimes we send as a PTR because it's a IntPtr then the debugger will send back as I8
+		{
+			MonoClassField *f = NULL;
+			gpointer iter = NULL;
+			MonoClass *intptr_klass = mono_class_try_get_intptr_klass_class ();
+			while ((f = mono_class_get_fields_internal (intptr_klass, &iter))) {
+				if (G_UNLIKELY (!f->type)) {
+					ERROR_DECL(error);
+					mono_field_resolve_type (f, error);
+					mono_error_cleanup (error);
+					if (!f->type)
+						continue;
+				}
+				if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
+					continue;
+				if (mono_field_is_deleted (f))
+					continue;
+				guint8 * fieldAddr = mono_vtype_get_field_addr (addr, f);
+				*(gint64*)fieldAddr = decode_long (buf, &buf, limit);
+			}
+			*endbuf = buf;
+			return ERR_NONE;
+		}
+		else /* We send these as vtypes, so we get them back as such */
+			g_assert (type == MONO_TYPE_VALUETYPE);
 		/* Fall through */
 		handle_vtype:
 	case MONO_TYPE_VALUETYPE:

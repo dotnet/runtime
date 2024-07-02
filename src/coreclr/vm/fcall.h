@@ -865,7 +865,7 @@ private:
 #endif
     bool          didGCPoll;            // GC poll was done
     bool          notNeeded;            // GC poll not needed
-    unsigned __int64 startTicks;        // tick count at beginning of FCall
+    uint64_t startTicks;        // tick count at beginning of FCall
 };
 
         // FC_COMMON_PROLOG is used for both FCalls and HCalls

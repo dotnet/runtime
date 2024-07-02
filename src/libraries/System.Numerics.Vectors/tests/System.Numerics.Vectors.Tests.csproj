@@ -18,5 +18,6 @@
     <Compile Include="Matrix4x4Tests.cs" />
     <Compile Include="PlaneTests.cs" />
     <Compile Include="QuaternionTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Intrinsics\VectorTestMemberData.cs" Link="Common\System\Runtime\Intrinsics\VectorTestMemberData.cs" />
   </ItemGroup>
 </Project>

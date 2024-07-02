@@ -88,7 +88,7 @@ class BranchInstructionFormat : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
@@ -96,7 +96,7 @@ class BranchInstructionFormat : public InstructionFormat
             {
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
 
-                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+                int64_t dataOffset = pDataBuffer - pOutBufferRW;
 
                 if ((dataOffset < -(0x80000000L)) || (dataOffset > 0x7fffffff))
                     COMPlusThrow(kNotSupportedException);
@@ -119,13 +119,13 @@ class BranchInstructionFormat : public InstructionFormat
                     *(DWORD*)(pOutBufferRW + 12) = 0x00030067 ;// jalr  x0, t1,0
                 }
 
-                *((__int64*)pDataBuffer) = fixedUpReference + (__int64)pOutBufferRX;
+                *((int64_t*)pDataBuffer) = fixedUpReference + (int64_t)pOutBufferRX;
             }
             else
             {
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
 
-                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+                int64_t dataOffset = pDataBuffer - pOutBufferRW;
 
                 if ((dataOffset < -(0x80000000L)) || (dataOffset > 0x7fffffff))
                     COMPlusThrow(kNotSupportedException);
@@ -146,9 +146,9 @@ class BranchInstructionFormat : public InstructionFormat
                     *(DWORD*)(pOutBufferRW + 8) = 0x00030067 ;// jalr  x0, t1,0
                 }
 
-                if (!ClrSafeInt<__int64>::addition(fixedUpReference, (__int64)pOutBufferRX, fixedUpReference))
+                if (!ClrSafeInt<int64_t>::addition(fixedUpReference, (int64_t)pOutBufferRX, fixedUpReference))
                     COMPlusThrowArithmetic();
-                *((__int64*)pDataBuffer) = fixedUpReference;
+                *((int64_t*)pDataBuffer) = fixedUpReference;
             }
         }
 };
@@ -827,6 +827,7 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
+            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
         }
@@ -1070,7 +1071,7 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
     if (high31 & 0x800)
     {
         // EmitAddImm does not allow negative immediate values, so use EmitSubImm.
-        EmitSubImm(reg, reg, ~high31 + 1 & 0xFFF);
+        EmitSubImm(reg, reg, (~high31 + 1) & 0xFFF);
     }
     else
     {

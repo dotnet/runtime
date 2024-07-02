@@ -16,6 +16,7 @@
   <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.pkgproj" />
     <ProjectReference Include="..\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
+    <ProjectReference Include="Microsoft.NET.Sdk.WebAssembly.Pack\Microsoft.NET.Sdk.WebAssembly.Pack.pkgproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetsiOSSimulator)' == 'true'">

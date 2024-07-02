@@ -137,7 +137,8 @@ IF_DEF(SVE_2BS, IS_NONE, NONE) // Instruction has 2  possible encoding types, ty
 *           x       -- element size
 *****************************************************************************/
 
-IF_DEF(SVE_AA_3A,   IS_NONE, NONE) // SVE_AA_3A  ........xx...... ...gggmmmmmddddd  -- SVE bitwise logical operations + SVE integer add/subtract/multiply vectors + SVE integer min/max/difference + SVE bitwise shift by vector + SVE2 integer halving add/subtract + SVE2 integer pairwise arithmetic + SVE2 saturating add/subtract + SVE2 saturating/rounding bitwise shift left (predicated)
+// SVE_AA_3A  ........xx...... ...gggmmmmmddddd  -- SVE bitwise logical operations + SVE integer add/subtract/multiply vectors + SVE integer min/max/difference + SVE bitwise shift by vector + SVE2 integer halving add/subtract + SVE2 integer pairwise arithmetic + SVE2 saturating add/subtract + SVE2 saturating/rounding bitwise shift left (predicated)
+IF_DEF(SVE_AA_3A,   IS_NONE, NONE)
 IF_DEF(SVE_AB_3B,   IS_NONE, NONE) // SVE_AB_3B  ................ ...gggmmmmmddddd  -- SVE integer add/subtract vectors (predicated)
 IF_DEF(SVE_AC_3A,   IS_NONE, NONE) // SVE_AC_3A  ........xx...... ...gggmmmmmddddd  -- SVE integer divide vectors (predicated)
 IF_DEF(SVE_AF_3A,   IS_NONE, NONE) // SVE_AF_3A  ........xx...... ...gggnnnnnddddd  -- SVE bitwise logical reduction (predicated)
@@ -153,7 +154,8 @@ IF_DEF(SVE_AP_3A,   IS_NONE, NONE) // SVE_AP_3A  ........xx...... ...gggnnnnnddd
 IF_DEF(SVE_AQ_3A,   IS_NONE, NONE) // SVE_AQ_3A  ........xx...... ...gggnnnnnddddd  -- SVE integer unary operations (predicated)
 IF_DEF(SVE_AR_4A,   IS_NONE, NONE) // SVE_AR_4A  ........xx.mmmmm ...gggnnnnnddddd  -- SVE integer multiply-accumulate writing addend (predicated)
 IF_DEF(SVE_AS_4A,   IS_NONE, NONE) // SVE_AS_4A  ........xx.mmmmm ...gggaaaaaddddd  -- SVE integer multiply-add writing multiplicand (predicated)
-IF_DEF(SVE_AT_3A,   IS_NONE, NONE) // SVE_AT_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE integer add/subtract vectors (unpredicated) + SVE2 integer multiply vectors (unpredicated) + SVE2 signed saturating doubling multiply high (unpredicated) + SVE floating-point trig select coefficient + SVE permute vector segments + sve_int_perm_tbxquads + SVE integer clamp + SVE2 bitwise exclusive-or interleaved + SVE2 bitwise permute + SVE FP clamp + SVE floating-point arithmetic (unpredicated)
+// SVE_AT_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE integer add/subtract vectors (unpredicated) + SVE2 integer multiply vectors (unpredicated) + SVE2 signed saturating doubling multiply high (unpredicated) + SVE floating-point trig select coefficient + SVE permute vector segments + sve_int_perm_tbxquads + SVE integer clamp + SVE2 bitwise exclusive-or interleaved + SVE2 bitwise permute + SVE FP clamp + SVE floating-point arithmetic (unpredicated)
+IF_DEF(SVE_AT_3A,   IS_NONE, NONE)
 IF_DEF(SVE_AT_3B,   IS_NONE, NONE) // SVE_AT_3B  ...........mmmmm ......nnnnnddddd  -- SVE integer add/subtract vectors (unpredicated)
 IF_DEF(SVE_AU_3A,   IS_NONE, NONE) // SVE_AU_3A  ...........mmmmm ......nnnnnddddd  -- SVE bitwise logical operations (unpredicated)
 IF_DEF(SVE_AV_3A,   IS_NONE, NONE) // SVE_AV_3A  ...........mmmmm ......kkkkkddddd  -- SVE2 bitwise ternary operations
@@ -219,7 +221,7 @@ IF_DEF(SVE_CR_3A,   IS_NONE, NONE) // SVE_CR_3A  ........xx...... ...gggnnnnnddd
 IF_DEF(SVE_CS_3A,   IS_NONE, NONE) // SVE_CS_3A  ........xx...... ...gggnnnnnddddd  -- SVE extract element to general register
 IF_DEF(SVE_CT_3A,   IS_NONE, NONE) // SVE_CT_3A  ................ ...gggnnnnnddddd  -- SVE reverse doublewords
 IF_DEF(SVE_CU_3A,   IS_NONE, NONE) // SVE_CU_3A  ........xx...... ...gggnnnnnddddd  -- SVE reverse within elements
-IF_DEF(SVE_CV_3A,   IS_NONE, NONE) // SVE_CV_3A  ........xx...... ...VVVnnnnnddddd  -- SVE vector splice (destructive)
+IF_DEF(SVE_CV_3A,   IS_NONE, NONE) // SVE_CV_3A  ........xx...... ...VVVnnnnnddddd  -- SVE vector splice (constructive)
 IF_DEF(SVE_CV_3B,   IS_NONE, NONE) // SVE_CV_3B  ........xx...... ...VVVmmmmmddddd  -- SVE vector splice (destructive)
 IF_DEF(SVE_CW_4A,   IS_NONE, NONE) // SVE_CW_4A  ........xx.mmmmm ..VVVVnnnnnddddd  -- SVE select vector elements (predicated)
 IF_DEF(SVE_CX_4A,   IS_NONE, NONE) // SVE_CX_4A  ........xx.mmmmm ...gggnnnnn.DDDD  -- SVE integer compare vectors
@@ -271,10 +273,9 @@ IF_DEF(SVE_EH_3A,   IS_NONE, NONE) // SVE_EH_3A  ........xx.mmmmm ......nnnnnddd
 IF_DEF(SVE_EI_3A,   IS_NONE, NONE) // SVE_EI_3A  ...........mmmmm ......nnnnnddddd  -- SVE mixed sign dot product
 IF_DEF(SVE_EJ_3A,   IS_NONE, NONE) // SVE_EJ_3A  ........xx.mmmmm ....rrnnnnnddddd  -- SVE2 complex integer dot product
 IF_DEF(SVE_EK_3A,   IS_NONE, NONE) // SVE_EK_3A  ........xx.mmmmm ....rrnnnnnddddd  -- SVE2 complex integer multiply-add
-IF_DEF(SVE_EL_3A,   IS_NONE, NONE) // SVE_EL_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 integer multiply-add long
+// SVE_EL_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 integer multiply-add long + SVE2 saturating multiply-add interleaved long + SVE2 saturating multiply-add long + SVE2 integer absolute difference and accumulate long
+IF_DEF(SVE_EL_3A,   IS_NONE, NONE)
 IF_DEF(SVE_EM_3A,   IS_NONE, NONE) // SVE_EM_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 saturating multiply-add high
-IF_DEF(SVE_EN_3A,   IS_NONE, NONE) // SVE_EN_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 saturating multiply-add interleaved long
-IF_DEF(SVE_EO_3A,   IS_NONE, NONE) // SVE_EO_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 saturating multiply-add long
 IF_DEF(SVE_EQ_3A,   IS_NONE, NONE) // SVE_EQ_3A  ........xx...... ...gggnnnnnddddd  -- SVE2 integer pairwise add and accumulate long
 IF_DEF(SVE_ES_3A,   IS_NONE, NONE) // SVE_ES_3A  ........xx...... ...gggnnnnnddddd  -- SVE2 integer unary operations (predicated)
 IF_DEF(SVE_EW_3A,   IS_NONE, NONE) // SVE_EW_3A  ...........mmmmm ......nnnnnddddd  -- SVE2 multiply-add (checked pointer)
@@ -309,18 +310,16 @@ IF_DEF(SVE_FJ_3B,   IS_NONE, NONE) // SVE_FJ_3B  ...........immmm ....i.nnnnnddd
 IF_DEF(SVE_FK_3A,   IS_NONE, NONE) // SVE_FK_3A  .........i.iimmm ......nnnnnddddd  -- SVE2 saturating multiply-add high (indexed)
 IF_DEF(SVE_FK_3B,   IS_NONE, NONE) // SVE_FK_3B  ...........iimmm ......nnnnnddddd  -- SVE2 saturating multiply-add high (indexed)
 IF_DEF(SVE_FK_3C,   IS_NONE, NONE) // SVE_FK_3C  ...........immmm ......nnnnnddddd  -- SVE2 saturating multiply-add high (indexed)
-IF_DEF(SVE_FL_3A,   IS_NONE, NONE) // SVE_FL_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 integer add/subtract long
+// SVE_FL_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 integer add/subtract long + SVE2 integer multiply long + SVE2 integer add/subtract interleaved long
+IF_DEF(SVE_FL_3A,   IS_NONE, NONE)
 IF_DEF(SVE_FM_3A,   IS_NONE, NONE) // SVE_FM_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 integer add/subtract wide
-IF_DEF(SVE_FN_3A,   IS_NONE, NONE) // SVE_FN_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 integer multiply long
 IF_DEF(SVE_FN_3B,   IS_NONE, NONE) // SVE_FN_3B  ...........mmmmm ......nnnnnddddd  -- SVE2 integer multiply long
 IF_DEF(SVE_FO_3A,   IS_NONE, NONE) // SVE_FO_3A  ...........mmmmm ......nnnnnddddd  -- SVE integer matrix multiply accumulate
 IF_DEF(SVE_FR_2A,   IS_NONE, NONE) // SVE_FR_2A  .........x.xxiii ......nnnnnddddd  -- SVE2 bitwise shift left long
-IF_DEF(SVE_FS_3A,   IS_NONE, NONE) // SVE_FS_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 integer add/subtract interleaved long
 IF_DEF(SVE_FT_2A,   IS_NONE, NONE) // SVE_FT_2A  ........xx.xxiii ......nnnnnddddd  -- SVE2 bitwise shift and insert
 IF_DEF(SVE_FU_2A,   IS_NONE, NONE) // SVE_FU_2A  ........xx.xxiii ......nnnnnddddd  -- SVE2 bitwise shift right and accumulate
 IF_DEF(SVE_FV_2A,   IS_NONE, NONE) // SVE_FV_2A  ........xx...... .....rmmmmmddddd  -- SVE2 complex integer add
 IF_DEF(SVE_FW_3A,   IS_NONE, NONE) // SVE_FW_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 integer absolute difference and accumulate
-IF_DEF(SVE_FX_3A,   IS_NONE, NONE) // SVE_FX_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 integer absolute difference and accumulate long
 IF_DEF(SVE_FY_3A,   IS_NONE, NONE) // SVE_FY_3A  .........x.mmmmm ......nnnnnddddd  -- SVE2 integer add/subtract long with carry
 IF_DEF(SVE_FZ_2A,   IS_NONE, NONE) // SVE_FZ_2A  ................ ......nnnn.ddddd  -- SME2 multi-vec extract narrow
 IF_DEF(SVE_GA_2A,   IS_NONE, NONE) // SVE_GA_2A  ............iiii ......nnnn.ddddd  -- SME2 multi-vec shift narrow

@@ -518,7 +518,7 @@ int __cdecl main(int argc, char* argv[])
                 {
                     if (o.indexCount == -1)
                         LogInfo("HINT: to repro add '-c %d' to cmdline", reader->GetMethodContextIndex());
-                    __debugbreak();
+                    DEBUG_BREAK;
                 }
             }
 

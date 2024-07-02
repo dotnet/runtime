@@ -90,6 +90,11 @@ if(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET
   add_definitions(-DXSTATE_SUPPORTED)
 endif(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
 
+if(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
+  # Currently the _xstate is not available on Alpine Linux
+  add_definitions(-DXSTATE_SUPPORTED)
+endif(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
+
 if(CLR_CMAKE_TARGET_LINUX_MUSL)
   # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
   add_definitions(-DDONT_SET_RLIMIT_NOFILE)
@@ -144,8 +149,8 @@ set(SOURCES
   init/sxs.cpp
   loader/module.cpp
   locale/unicode.cpp
-  locale/unicodedata.cpp
   ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
+  ${CLR_SRC_NATIVE_DIR}/minipal/unicodedata.c
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
@@ -185,8 +190,6 @@ set(SOURCES
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
   safecrt/wmakepath_s.cpp
-  safecrt/xtoa_s.cpp
-  safecrt/xtow_s.cpp
   sharedmemory/sharedmemory.cpp
   shmemory/shmemory.cpp
   sync/cs.cpp

@@ -31,7 +31,7 @@ export function mock (script: MockScript): Mock {
             class MockScriptEngineSocketImpl implements MockRemoteSocket {
                 constructor (private readonly engine: MockScriptEngineImpl) { }
                 send (data: string | ArrayBuffer): void {
-                    mono_log_debug(`mock ${this.engine.ident} client sent: `, data);
+                    mono_log_debug(() => `mock ${this.engine.ident} client sent: ${data}`);
                     let event: MessageEvent<string | ArrayBuffer> | null = null;
                     if (typeof data === "string") {
                         event = new MessageEvent("message", { data });
@@ -46,15 +46,15 @@ export function mock (script: MockScript): Mock {
                 }
                 addEventListener<T extends keyof WebSocketEventMap>(event: T, listener: (event: WebSocketEventMap[T]) => any, options?: boolean | AddEventListenerOptions): void;
                 addEventListener (event: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void {
-                    mono_log_debug(`mock ${this.engine.ident} client added listener for ${event}`);
+                    mono_log_debug(() => `mock ${this.engine.ident} client added listener for ${event}`);
                     this.engine.eventTarget.addEventListener(event, listener, options);
                 }
                 removeEventListener (event: string, listener: EventListenerOrEventListenerObject): void {
-                    mono_log_debug(`mock ${this.engine.ident} client removed listener for ${event}`);
+                    mono_log_debug(() => `mock ${this.engine.ident} client removed listener for ${event}`);
                     this.engine.eventTarget.removeEventListener(event, listener);
                 }
                 close (): void {
-                    mono_log_debug(`mock ${this.engine.ident} client closed`);
+                    mono_log_debug(() => `mock ${this.engine.ident} client closed`);
                     this.engine.mockReplyEventTarget.dispatchEvent(new CloseEvent("close"));
                 }
                 dispatchEvent (ev: Event): boolean {
@@ -73,7 +73,7 @@ export function mock (script: MockScript): Mock {
                 }
 
                 reply (data: ArrayBuffer | Uint8Array) {
-                    mono_log_debug(`mock ${this.ident} reply:`, data);
+                    mono_log_debug(() => `mock ${this.ident} reply:${data}`);
                     let sendData: ArrayBuffer;
                     if (typeof data === "object" && data instanceof ArrayBuffer) {
                         sendData = new ArrayBuffer(data.byteLength);
@@ -92,7 +92,7 @@ export function mock (script: MockScript): Mock {
                 }
 
                 processSend (onMessage: (data: ArrayBuffer) => any): Promise<void> {
-                    mono_log_debug(`mock ${this.ident} processSend`);
+                    mono_log_debug(() => `mock ${this.ident} processSend`);
 
                     return new Promise<void>((resolve, reject) => {
                         this.mockReplyEventTarget.addEventListener("close", () => {
@@ -105,7 +105,7 @@ export function mock (script: MockScript): Mock {
                                 reject(new Error("mock script connection received string data"));
                             }
 
-                            mono_log_debug(`mock ${this.ident} processSend got:`, data.byteLength);
+                            mono_log_debug(() => `mock ${this.ident} processSend got: ${data.byteLength}`);
 
                             onMessage(data);
                         });
@@ -113,7 +113,7 @@ export function mock (script: MockScript): Mock {
                 }
 
                 async waitForSend<T = void> (filter: (data: ArrayBuffer) => boolean, extract?: (data: ArrayBuffer) => T): Promise<T> {
-                    mono_log_debug(`mock ${this.ident} waitForSend`);
+                    mono_log_debug(() => `mock ${this.ident} waitForSend`);
 
                     const data = await new Promise<ArrayBuffer>((resolve) => {
                         this.mockReplyEventTarget.addEventListener("message", (event: any) => {
@@ -122,7 +122,7 @@ export function mock (script: MockScript): Mock {
                                 mono_log_warn(`mock ${this.ident} waitForSend got string:`, data);
                                 throw new Error("mock script connection received string data");
                             }
-                            mono_log_debug(`mock ${this.ident} waitForSend got:`, data.byteLength);
+                            mono_log_debug(() => `mock ${this.ident} waitForSend got:${data.byteLength}`);
 
                             resolve(data);
                         }, { once: true });
@@ -153,7 +153,7 @@ export function mock (script: MockScript): Mock {
                 }
                 open (): MockRemoteSocket {
                     const i = this.openCount++;
-                    mono_log_debug(`mock ${i} open`);
+                    mono_log_debug(() => `mock ${i} open`);
                     return this.engines[i].socket;
                 }
 

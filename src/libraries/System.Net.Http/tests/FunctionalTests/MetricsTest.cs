@@ -364,13 +364,13 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("System.Net.Http.HttpRequestOut.Start")]
         [InlineData("System.Net.Http.Request")]
         [InlineData("System.Net.Http.HttpRequestOut.Stop")]
-        public void RequestDuration_CustomTags_DiagnosticListener_Recorded(string eventName)
+        public async Task RequestDuration_CustomTags_DiagnosticListener_Recorded(string eventName)
         {
-            RemoteExecutor.Invoke(static async (testClassName, eventNameInner) =>
+            await RemoteExecutor.Invoke(static async (testClassName, eventNameInner) =>
             {
                 using HttpMetricsTest test = (HttpMetricsTest)Activator.CreateInstance(Type.GetType(testClassName), (ITestOutputHelper)null);
                 await test.RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(eventNameInner);
-            }, GetType().FullName, eventName).Dispose();
+            }, GetType().FullName, eventName).DisposeAsync();
         }
 
         private async Task RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(string eventName)
@@ -1025,8 +1025,8 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public class HttpMetricsTest_Http30 : HttpMetricsTest
     {
         protected override Version UseVersion => HttpVersion.Version30;
@@ -1051,9 +1051,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void ActiveRequests_Success_Recorded()
+        public async Task ActiveRequests_Success_Recorded()
         {
-            RemoteExecutor.Invoke(static async Task () =>
+            await RemoteExecutor.Invoke(static async Task () =>
             {
                 using HttpMetricsTest_DefaultMeter test = new(null);
                 await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1072,7 +1072,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionSendResponseAndCloseAsync();
                 });
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         public static bool RemoteExecutorAndSocketsHttpHandlerSupported => RemoteExecutor.IsSupported && SocketsHttpHandler.IsSupported;
@@ -1130,9 +1130,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void RequestDuration_Success_Recorded()
+        public async Task RequestDuration_Success_Recorded()
         {
-            RemoteExecutor.Invoke(static async Task () =>
+            await RemoteExecutor.Invoke(static async Task () =>
             {
                 using HttpMetricsTest_DefaultMeter test = new(null);
                 await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1148,7 +1148,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK);
                 });
-            }).Dispose();
+            }).DisposeAsync();
         }
     }
 

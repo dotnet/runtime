@@ -165,7 +165,8 @@
 // (Though some of these may be labeled "illegal").
 enum VNFunc
 {
-    // Implicitly, elements of genTreeOps here.
+#define GTNODE(en, st, cm, ivn, ok) VNF_##en,
+#include "gtlist.h"
     VNF_Boundary = GT_COUNT,
 #define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic, extra) VNF_##nm,
 #include "valuenumfuncs.h"
@@ -366,10 +367,12 @@ public:
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
 #if defined(TARGET_XARCH)
-    simd32_t   GetConstantSimd32(ValueNum argVN);
-    simd64_t   GetConstantSimd64(ValueNum argVN);
-    simdmask_t GetConstantSimdMask(ValueNum argVN);
+    simd32_t GetConstantSimd32(ValueNum argVN);
+    simd64_t GetConstantSimd64(ValueNum argVN);
 #endif // TARGET_XARCH
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    simdmask_t GetConstantSimdMask(ValueNum argVN);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 private:
@@ -446,14 +449,16 @@ public:
     ValueNum VNForByrefCon(target_size_t byrefVal);
 
 #if defined(FEATURE_SIMD)
-    ValueNum VNForSimd8Con(simd8_t cnsVal);
-    ValueNum VNForSimd12Con(simd12_t cnsVal);
-    ValueNum VNForSimd16Con(simd16_t cnsVal);
+    ValueNum VNForSimd8Con(const simd8_t& cnsVal);
+    ValueNum VNForSimd12Con(const simd12_t& cnsVal);
+    ValueNum VNForSimd16Con(const simd16_t& cnsVal);
 #if defined(TARGET_XARCH)
-    ValueNum VNForSimd32Con(simd32_t cnsVal);
-    ValueNum VNForSimd64Con(simd64_t cnsVal);
-    ValueNum VNForSimdMaskCon(simdmask_t cnsVal);
+    ValueNum VNForSimd32Con(const simd32_t& cnsVal);
+    ValueNum VNForSimd64Con(const simd64_t& cnsVal);
 #endif // TARGET_XARCH
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    ValueNum VNForSimdMaskCon(const simdmask_t& cnsVal);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
     ValueNum VNForGenericCon(var_types typ, uint8_t* cnsVal);
 
@@ -552,11 +557,20 @@ public:
     ValueNum VNAllBitsForType(var_types typ);
 
 #ifdef FEATURE_SIMD
+    // Returns the value number broadcast of the given "simdType" and "simdBaseType".
+    ValueNum VNBroadcastForSimdType(var_types simdType, var_types simdBaseType, ValueNum valVN);
+
     // Returns the value number for one of the given "simdType" and "simdBaseType".
     ValueNum VNOneForSimdType(var_types simdType, var_types simdBaseType);
 
     // A helper function for constructing VNF_SimdType VNs.
     ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
+
+    // Returns if a value number represents NaN in all elements
+    bool VNIsVectorNaN(var_types simdType, var_types simdBaseType, ValueNum valVN);
+
+    // Returns if a value number represents negative zero in all elements
+    bool VNIsVectorNegativeZero(var_types simdType, var_types simdBaseType, ValueNum valVN);
 #endif // FEATURE_SIMD
 
     // Create or return the existimg value number representing a singleton exception set
@@ -1210,32 +1224,25 @@ public:
                             EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));
     }
 
-    ValueNum EvalHWIntrinsicFunUnary(var_types      type,
-                                     var_types      baseType,
-                                     NamedIntrinsic ni,
-                                     VNFunc         func,
-                                     ValueNum       arg0VN,
-                                     bool           encodeResultType,
-                                     ValueNum       resultTypeVN);
+#if defined(FEATURE_HW_INTRINSICS)
+    ValueNum EvalHWIntrinsicFunUnary(
+        GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN);
 
-    ValueNum EvalHWIntrinsicFunBinary(var_types      type,
-                                      var_types      baseType,
-                                      NamedIntrinsic ni,
-                                      VNFunc         func,
-                                      ValueNum       arg0VN,
-                                      ValueNum       arg1VN,
-                                      bool           encodeResultType,
-                                      ValueNum       resultTypeVN);
+    ValueNum EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
+                                      VNFunc              func,
+                                      ValueNum            arg0VN,
+                                      ValueNum            arg1VN,
+                                      bool                encodeResultType,
+                                      ValueNum            resultTypeVN);
 
-    ValueNum EvalHWIntrinsicFunTernary(var_types      type,
-                                       var_types      baseType,
-                                       NamedIntrinsic ni,
-                                       VNFunc         func,
-                                       ValueNum       arg0VN,
-                                       ValueNum       arg1VN,
-                                       ValueNum       arg2VN,
-                                       bool           encodeResultType,
-                                       ValueNum       resultTypeVN);
+    ValueNum EvalHWIntrinsicFunTernary(GenTreeHWIntrinsic* tree,
+                                       VNFunc              func,
+                                       ValueNum            arg0VN,
+                                       ValueNum            arg1VN,
+                                       ValueNum            arg2VN,
+                                       bool                encodeResultType,
+                                       ValueNum            resultTypeVN);
+#endif // FEATURE_HW_INTRINSICS
 
     // Returns "true" iff "vn" represents a function application.
     bool IsVNFunc(ValueNum vn);
@@ -1581,7 +1588,7 @@ private:
     {
         static bool Equals(double x, double y)
         {
-            return *(__int64*)&x == *(__int64*)&y;
+            return *(int64_t*)&x == *(int64_t*)&y;
         }
     };
 
@@ -1610,12 +1617,12 @@ private:
 #if defined(FEATURE_SIMD)
     struct Simd8PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd8_t>
     {
-        static bool Equals(simd8_t x, simd8_t y)
+        static bool Equals(const simd8_t& x, const simd8_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simd8_t val)
+        static unsigned GetHashCode(const simd8_t& val)
         {
             unsigned hash = 0;
 
@@ -1639,12 +1646,12 @@ private:
 
     struct Simd12PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd12_t>
     {
-        static bool Equals(simd12_t x, simd12_t y)
+        static bool Equals(const simd12_t& x, const simd12_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simd12_t val)
+        static unsigned GetHashCode(const simd12_t& val)
         {
             unsigned hash = 0;
 
@@ -1669,12 +1676,12 @@ private:
 
     struct Simd16PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd16_t>
     {
-        static bool Equals(simd16_t x, simd16_t y)
+        static bool Equals(const simd16_t& x, const simd16_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simd16_t val)
+        static unsigned GetHashCode(const simd16_t& val)
         {
             unsigned hash = 0;
 
@@ -1701,12 +1708,12 @@ private:
 #if defined(TARGET_XARCH)
     struct Simd32PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd32_t>
     {
-        static bool Equals(simd32_t x, simd32_t y)
+        static bool Equals(const simd32_t& x, const simd32_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simd32_t val)
+        static unsigned GetHashCode(const simd32_t& val)
         {
             unsigned hash = 0;
 
@@ -1736,12 +1743,12 @@ private:
 
     struct Simd64PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd64_t>
     {
-        static bool Equals(simd64_t x, simd64_t y)
+        static bool Equals(const simd64_t& x, const simd64_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simd64_t val)
+        static unsigned GetHashCode(const simd64_t& val)
         {
             unsigned hash = 0;
 
@@ -1776,15 +1783,17 @@ private:
         }
         return m_simd64CnsMap;
     }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     struct SimdMaskPrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmask_t>
     {
-        static bool Equals(simdmask_t x, simdmask_t y)
+        static bool Equals(const simdmask_t& x, const simdmask_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simdmask_t val)
+        static unsigned GetHashCode(const simdmask_t& val)
         {
             unsigned hash = 0;
 
@@ -1805,7 +1814,7 @@ private:
         }
         return m_simdMaskCnsMap;
     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
     template <size_t NumArgs>
@@ -1988,14 +1997,16 @@ struct ValueNumStore::VarTypConv<TYP_SIMD64>
     typedef simd64_t Type;
     typedef simd64_t Lang;
 };
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
 struct ValueNumStore::VarTypConv<TYP_MASK>
 {
     typedef simdmask_t Type;
     typedef simdmask_t Lang;
 };
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 template <>
@@ -2071,14 +2082,16 @@ FORCEINLINE simd64_t ValueNumStore::SafeGetConstantValue<simd64_t>(Chunk* c, uns
     assert(c->m_typ == TYP_SIMD64);
     return reinterpret_cast<VarTypConv<TYP_SIMD64>::Lang*>(c->m_defs)[offset];
 }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
 FORCEINLINE simdmask_t ValueNumStore::SafeGetConstantValue<simdmask_t>(Chunk* c, unsigned offset)
 {
     assert(c->m_typ == TYP_MASK);
     return reinterpret_cast<VarTypConv<TYP_MASK>::Lang*>(c->m_defs)[offset];
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <>
 FORCEINLINE simd8_t ValueNumStore::ConstantValueInternal<simd8_t>(ValueNum vn DEBUGARG(bool coerce))
@@ -2150,7 +2163,9 @@ FORCEINLINE simd64_t ValueNumStore::ConstantValueInternal<simd64_t>(ValueNum vn 
 
     return SafeGetConstantValue<simd64_t>(c, offset);
 }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
 FORCEINLINE simdmask_t ValueNumStore::ConstantValueInternal<simdmask_t>(ValueNum vn DEBUGARG(bool coerce))
 {
@@ -2164,7 +2179,7 @@ FORCEINLINE simdmask_t ValueNumStore::ConstantValueInternal<simdmask_t>(ValueNum
 
     return SafeGetConstantValue<simdmask_t>(c, offset);
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 // Inline functions.

@@ -64,12 +64,12 @@ By default, the above command will also build the tests before running them. To 
 
 If all tests have not been previously run, make sure the [test context](#test-context) is set up for the test library.
 
-Tests from a specific test project can be run using [`dotnet test`](https://docs.microsoft.com/dotnet/core/tools/dotnet-test) targeting the built test binary. For example:
+Tests from a specific test project can be run using [`dotnet test`](https://learn.microsoft.com/dotnet/core/tools/dotnet-test) targeting the built test binary. For example:
 ```
 dotnet test artifacts/bin/HostActivation.Tests/Debug/net6.0/HostActivation.Tests.dll --filter category!=failing
 ```
 
-To filter to specific tests within the test library, use the [filter options](https://docs.microsoft.com/dotnet/core/tools/dotnet-test#filter-option-details) available for `dotnet test`. For example:
+To filter to specific tests within the test library, use the [filter options](https://learn.microsoft.com/dotnet/core/tools/dotnet-test#filter-option-details) available for `dotnet test`. For example:
 ```
 dotnet test artifacts/bin/HostActivation.Tests/Debug/net6.0/HostActivation.Tests.dll --filter "DependencyResolution&category!=failing"
 ```

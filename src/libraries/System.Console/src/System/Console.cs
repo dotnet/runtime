@@ -871,7 +871,7 @@ namespace System
         /// <param name="format">A composite format string.</param>
         /// <param name="arg">A span of objects to write using format.</param>
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             Out.WriteLine(format, arg);
         }
@@ -909,7 +909,7 @@ namespace System
         /// <param name="format">A composite format string.</param>
         /// <param name="arg">A span of objects to write using format.</param>
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> arg)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             Out.Write(format, arg);
         }

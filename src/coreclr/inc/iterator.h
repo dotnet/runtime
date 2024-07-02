@@ -201,32 +201,32 @@ class IndexerBasePrototype
     SCOUNT_T Subtract(const IndexerBasePrototype &i) const;
     CHECK DoCheck(SCOUNT_T delta) const;
 };
-
 };
-
 
 template <typename CONTAINER>
 class CheckedIteratorBase
 {
+  DEFINE_MEMBER_EXISTENCE_CHECK(m_revision);
   protected:
 #if defined(_DEBUG)
     const CONTAINER *m_container;
     int m_revision;
 #endif
 
-    CHECK CheckRevision() const
+    template<typename Dummy = CONTAINER>
+    typename std::enable_if<has_m_revision<Dummy>::value, CHECK>::type CheckRevision() const
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-#if defined(_DEBUG) && (defined(_MSC_VER) || defined(__llvm__))
-        __if_exists(CONTAINER::m_revision)
-        {
-            CHECK_MSG(m_revision == m_container->m_revision,
-                      "Use of Iterator after container has been modified");
-        }
+#if defined(_DEBUG)
+        CHECK_MSG(m_revision == m_container->m_revision,
+                    "Use of Iterator after container has been modified");
 #endif
         CHECK_OK;
     }
+
+    template<typename Dummy = CONTAINER>
+    typename std::enable_if<!has_m_revision<Dummy>::value, CHECK>::type CheckRevision() const { CHECK_OK; }
 
     CheckedIteratorBase()
     {
@@ -238,29 +238,33 @@ class CheckedIteratorBase
 
     CheckedIteratorBase(const CONTAINER *container)
     {
-        LIMITED_METHOD_CONTRACT;
 #if defined(_DEBUG)
         m_container = container;
-#if defined(_MSC_VER) || defined(__llvm__)
-        __if_exists(CONTAINER::m_revision)
-        {
-            m_revision = m_container->m_revision;
-        }
-#endif
+        Init(container, has_m_revision<CONTAINER>());
 #endif
     }
 
-    void Resync(const CONTAINER *container)
+    void Init(const CONTAINER *container, std::true_type)
+    {
+#if defined(_DEBUG)
+        m_revision = container->m_revision;
+#endif
+    }
+
+    void Init(const CONTAINER *container, std::false_type) { /* No-op */ }
+
+    template<typename Dummy = CONTAINER>
+    typename std::enable_if<has_m_revision<Dummy>::value, void>::type Resync(const CONTAINER *container)
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-#if defined(_DEBUG) && (defined(_MSC_VER) || defined(__llvm__))
-        __if_exists(CONTAINER::m_revision)
-        {
-            m_revision = m_container->m_revision;
-        }
+#if defined(_DEBUG)
+        m_revision = m_container->m_revision;
 #endif
     }
+
+    template<typename Dummy = CONTAINER>
+    typename std::enable_if<!has_m_revision<Dummy>::value, void>::type Resync(const CONTAINER *container) { /* No-op */ }
 
 #if defined(_DEBUG)
     const CONTAINER *GetContainerDebug() const

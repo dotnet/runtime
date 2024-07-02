@@ -1198,6 +1198,7 @@ void SsaBuilder::RenameVariables()
         assert(varDsc->lvTracked);
 
         if (varDsc->lvIsParam || m_pCompiler->info.compInitMem || varDsc->lvMustInit ||
+            (varTypeIsGC(varDsc) && !varDsc->lvHasExplicitInit) ||
             VarSetOps::IsMember(m_pCompiler, m_pCompiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
             unsigned ssaNum = varDsc->lvPerSsaData.AllocSsaNum(m_allocator);

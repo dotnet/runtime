@@ -1628,7 +1628,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //
         //  void Caller() => DoNothing(42); // 42 is going to be boxed at the call site.
         //
-        multiplier += 0.5;
+        multiplier += 0.5 * m_ArgIsBoxedAtCallsite;
         JITDUMP("\nCallsite is going to box %d arguments.  Multiplier increased to %g.", m_ArgIsBoxedAtCallsite,
                 multiplier);
     }

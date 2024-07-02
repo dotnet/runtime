@@ -1303,7 +1303,7 @@ namespace System.Net.Sockets.Tests
                     Assert.Throws<SocketException>(() =>
                     {
                         // This is a false start.
-                        // https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.socket.receivemessagefrom
+                        // https://learn.microsoft.com/dotnet/api/system.net.sockets.socket.receivemessagefrom
                         // "...the returned IPPacketInformation object will only be valid for packets which arrive at the
                         // local computer after the socket option has been set. If a socket is sent packets between when
                         // it is bound to a local endpoint (explicitly by the Bind method or implicitly by one of the Connect,

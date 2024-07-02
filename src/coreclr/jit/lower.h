@@ -175,7 +175,8 @@ private:
                                       GenTreeCall* callNode);
     void     InsertProfTailCallHook(GenTreeCall* callNode, GenTree* insertionPoint);
     GenTree* FindEarliestPutArg(GenTreeCall* call);
-    size_t   MarkPutArgNodes(GenTree* node);
+    size_t   MarkCallPutArgAndFieldListNodes(GenTreeCall* call);
+    size_t   MarkPutArgAndFieldListNodes(GenTree* node);
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
@@ -186,6 +187,7 @@ private:
     GenTree* LowerFloatArg(GenTree** pArg, CallArg* callArg);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
+    void LegalizeArgPlacement(GenTreeCall* call);
 
     void     InsertPInvokeCallProlog(GenTreeCall* call);
     void     InsertPInvokeCallEpilog(GenTreeCall* call);
@@ -345,13 +347,13 @@ private:
     bool GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const;
 
     // Per tree node member functions
-    void     LowerStoreIndirCommon(GenTreeStoreInd* ind);
+    GenTree* LowerStoreIndirCommon(GenTreeStoreInd* ind);
     GenTree* LowerIndir(GenTreeIndir* ind);
-    bool     OptimizeForLdp(GenTreeIndir* ind);
+    bool     OptimizeForLdpStp(GenTreeIndir* ind);
     bool     TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir);
     void     MarkTree(GenTree* root);
     void     UnmarkTree(GenTree* root);
-    void     LowerStoreIndir(GenTreeStoreInd* node);
+    GenTree* LowerStoreIndir(GenTreeStoreInd* node);
     void     LowerStoreIndirCoalescing(GenTreeIndir* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);

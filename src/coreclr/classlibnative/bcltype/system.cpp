@@ -180,13 +180,13 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 
     if (message == NULL || message[0] == W('\0'))
     {
-        WszOutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
+        OutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
     }
     else
     {
-        WszOutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
-        WszOutputDebugString(message);
-        WszOutputDebugString(W("\r\n"));
+        OutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
+        OutputDebugString(message);
+        OutputDebugString(W("\r\n"));
     }
 
     LPCWSTR argExceptionString = NULL;

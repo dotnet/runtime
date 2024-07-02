@@ -87,7 +87,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
         /// <returns>An immutable array containing the specified items.</returns>
-        public static ImmutableArray<T> Create<T>(/*params*/ ReadOnlySpan<T> items)
+        public static ImmutableArray<T> Create<T>(params ReadOnlySpan<T> items)
         {
             if (items.IsEmpty)
             {
@@ -337,6 +337,9 @@ namespace System.Collections.Immutable
         /// the source array.
         /// </remarks>
         public static ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(ImmutableArray<TSource> items, Func<TSource, TArg, TResult> selector, TArg arg)
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
         {
             Requires.NotNull(selector, nameof(selector));
 
@@ -370,6 +373,9 @@ namespace System.Collections.Immutable
         /// included in the resulting array.
         /// </remarks>
         public static ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(ImmutableArray<TSource> items, int start, int length, Func<TSource, TArg, TResult> selector, TArg arg)
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
         {
             int itemsLength = items.Length;
 

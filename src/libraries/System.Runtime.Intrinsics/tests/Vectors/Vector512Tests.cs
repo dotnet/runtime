@@ -5322,107 +5322,118 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
         }
 
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddDoubleTest(double left, double right, double addend)
+        {
+            Vector512<double> actualResult = Vector512.FusedMultiplyAdd(Vector512.Create(left), Vector512.Create(right), Vector512.Create(addend));
+            AssertEqual(Vector512.Create(double.FusedMultiplyAdd(left, right, addend)), actualResult, Vector512<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        {
+            Vector512<float> actualResult = Vector512.FusedMultiplyAdd(Vector512.Create(left), Vector512.Create(right), Vector512.Create(addend));
+            AssertEqual(Vector512.Create(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector512<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateDoubleTest(double left, double right, double addend)
+        {
+            Vector512<double> actualResult = Vector512.MultiplyAddEstimate(Vector512.Create(left), Vector512.Create(right), Vector512.Create(addend));
+            AssertEqual(Vector512.Create(double.MultiplyAddEstimate(left, right, addend)), actualResult, Vector512<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
+        {
+            Vector512<float> actualResult = Vector512.MultiplyAddEstimate(Vector512.Create(left), Vector512.Create(right), Vector512.Create(addend));
+            AssertEqual(Vector512.Create(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector512<float>.Zero);
+        }
+
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt32Test()
         {
-            Assert.Equal(Vector512.Create(int.MinValue), Vector512.ConvertToInt32(Vector512.Create(float.MinValue)));
-            Assert.Equal(Vector512.Create(2), Vector512.ConvertToInt32(Vector512.Create(2.6f)));
-            Assert.Equal(Vector512.Create(int.MaxValue), Vector512.ConvertToInt32(Vector512.Create(float.MaxValue)));
+            Assert.Equal(Vector512.Create(float.ConvertToInteger<int>(float.MinValue)), Vector512.ConvertToInt32(Vector512.Create(float.MinValue)));
+            Assert.Equal(Vector512.Create(float.ConvertToInteger<int>(2.6f)), Vector512.ConvertToInt32(Vector512.Create(2.6f)));
+            Assert.Equal(Vector512.Create(float.ConvertToInteger<int>(float.MaxValue)), Vector512.ConvertToInt32(Vector512.Create(float.MaxValue)));
         }
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt32NativeTest()
         {
-            if (Vector128.IsHardwareAccelerated && Sse2.IsSupported)
-            {
-                Assert.Equal(Vector512.Create(int.MinValue), Vector512.ConvertToInt32Native(Vector512.Create(float.MaxValue)));
-            }
-            else
-            {
-                Assert.Equal(Vector512.Create(int.MaxValue), Vector512.ConvertToInt32Native(Vector512.Create(float.MaxValue)));
-            }
-            Assert.Equal(Vector512.Create(int.MinValue), Vector512.ConvertToInt32Native(Vector512.Create(float.MinValue)));
-            Assert.Equal(Vector512.Create(2), Vector512.ConvertToInt32Native(Vector512.Create(2.6f)));
+            Assert.Equal(Vector512.Create(float.ConvertToIntegerNative<int>(float.MinValue)), Vector512.ConvertToInt32Native(Vector512.Create(float.MinValue)));
+            Assert.Equal(Vector512.Create(float.ConvertToIntegerNative<int>(2.6f)), Vector512.ConvertToInt32Native(Vector512.Create(2.6f)));
+            Assert.Equal(Vector512.Create(float.ConvertToIntegerNative<int>(float.MaxValue)), Vector512.ConvertToInt32Native(Vector512.Create(float.MaxValue)));
         }
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt64Test()
         {
-            Assert.Equal(Vector512.Create(long.MinValue), Vector512.ConvertToInt64(Vector512.Create(double.MinValue)));
-            Assert.Equal(Vector512.Create(2L), Vector512.ConvertToInt64(Vector512.Create(2.6)));
-            Assert.Equal(Vector512.Create(long.MaxValue), Vector512.ConvertToInt64(Vector512.Create(double.MaxValue)));
+            Assert.Equal(Vector512.Create(double.ConvertToInteger<long>(double.MinValue)), Vector512.ConvertToInt64(Vector512.Create(double.MinValue)));
+            Assert.Equal(Vector512.Create(double.ConvertToInteger<long>(2.6)), Vector512.ConvertToInt64(Vector512.Create(2.6)));
+            Assert.Equal(Vector512.Create(double.ConvertToInteger<long>(double.MaxValue)), Vector512.ConvertToInt64(Vector512.Create(double.MaxValue)));
         }
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt64NativeTest()
         {
-            if (Vector128.IsHardwareAccelerated && Avx512DQ.VL.IsSupported)
-            {
-                Assert.Equal(Vector512.Create(long.MinValue), Vector512.ConvertToInt64Native(Vector512.Create(double.MaxValue)));
-            }
-            else
-            {
-                Assert.Equal(Vector512.Create(long.MaxValue), Vector512.ConvertToInt64Native(Vector512.Create(double.MaxValue)));
-            }
+            Assert.Equal(Vector512.Create(double.ConvertToIntegerNative<long>(double.MinValue)), Vector512.ConvertToInt64Native(Vector512.Create(double.MinValue)));
+            Assert.Equal(Vector512.Create(double.ConvertToIntegerNative<long>(2.6)), Vector512.ConvertToInt64Native(Vector512.Create(2.6)));
 
-            Assert.Equal(Vector512.Create(long.MinValue), Vector512.ConvertToInt64Native(Vector512.Create(double.MinValue)));
-            Assert.Equal(Vector512.Create(2L), Vector512.ConvertToInt64Native(Vector512.Create(2.6)));
+            if (Environment.Is64BitProcess)
+            {
+                // This isn't accelerated on all 32-bit systems today and may fallback to ConvertToInteger behavior
+                Assert.Equal(Vector512.Create(double.ConvertToIntegerNative<long>(double.MaxValue)), Vector512.ConvertToInt64Native(Vector512.Create(double.MaxValue)));
+            }
         }
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt32Test()
         {
-            Assert.Equal(Vector512.Create(uint.MinValue), Vector512.ConvertToUInt32(Vector512.Create(float.MinValue)));
-            Assert.Equal(Vector512.Create(2u), Vector512.ConvertToUInt32(Vector512.Create(2.6f)));
-            Assert.Equal(Vector512.Create(uint.MaxValue), Vector512.ConvertToUInt32(Vector512.Create(float.MaxValue)));
+            Assert.Equal(Vector512.Create(float.ConvertToInteger<uint>(float.MinValue)), Vector512.ConvertToUInt32(Vector512.Create(float.MinValue)));
+            Assert.Equal(Vector512.Create(float.ConvertToInteger<uint>(2.6f)), Vector512.ConvertToUInt32(Vector512.Create(2.6f)));
+            Assert.Equal(Vector512.Create(float.ConvertToInteger<uint>(float.MaxValue)), Vector512.ConvertToUInt32(Vector512.Create(float.MaxValue)));
         }
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt32NativeTest()
         {
-            if (Vector128.IsHardwareAccelerated && Avx512F.VL.IsSupported)
-            {
-                Assert.Equal(Vector512.Create(uint.MaxValue), Vector512.ConvertToUInt32Native(Vector512.Create(float.MinValue)));
-            }
-            else
-            {
-                Assert.Equal(Vector512.Create(uint.MinValue), Vector512.ConvertToUInt32Native(Vector512.Create(float.MinValue)));
-            }
-
-            Assert.Equal(Vector512.Create(2u), Vector512.ConvertToUInt32Native(Vector512.Create(2.6f)));
-            Assert.Equal(Vector512.Create(uint.MaxValue), Vector512.ConvertToUInt32Native(Vector512.Create(float.MaxValue)));
+            Assert.Equal(Vector512.Create(float.ConvertToIntegerNative<uint>(float.MinValue)), Vector512.ConvertToUInt32Native(Vector512.Create(float.MinValue)));
+            Assert.Equal(Vector512.Create(float.ConvertToIntegerNative<uint>(2.6f)), Vector512.ConvertToUInt32Native(Vector512.Create(2.6f)));
+            Assert.Equal(Vector512.Create(float.ConvertToIntegerNative<uint>(float.MaxValue)), Vector512.ConvertToUInt32Native(Vector512.Create(float.MaxValue)));
         }
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt64Test()
         {
-            Assert.Equal(Vector512.Create(ulong.MinValue), Vector512.ConvertToUInt64(Vector512.Create(double.MinValue)));
-            Assert.Equal(Vector512.Create(2UL), Vector512.ConvertToUInt64(Vector512.Create(2.6)));
-            Assert.Equal(Vector512.Create(ulong.MaxValue), Vector512.ConvertToUInt64(Vector512.Create(double.MaxValue)));
+            Assert.Equal(Vector512.Create(double.ConvertToInteger<ulong>(double.MinValue)), Vector512.ConvertToUInt64(Vector512.Create(double.MinValue)));
+            Assert.Equal(Vector512.Create(double.ConvertToInteger<ulong>(2.6)), Vector512.ConvertToUInt64(Vector512.Create(2.6)));
+            Assert.Equal(Vector512.Create(double.ConvertToInteger<ulong>(double.MaxValue)), Vector512.ConvertToUInt64(Vector512.Create(double.MaxValue)));
         }
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt64NativeTest()
         {
-            if (Vector128.IsHardwareAccelerated && Avx512DQ.VL.IsSupported)
+            if (Environment.Is64BitProcess)
             {
-                Assert.Equal(Vector512.Create(ulong.MaxValue), Vector512.ConvertToUInt64Native(Vector512.Create(double.MinValue)));
-            }
-            else
-            {
-                Assert.Equal(Vector512.Create(ulong.MinValue), Vector512.ConvertToUInt64Native(Vector512.Create(double.MinValue)));
+                // This isn't accelerated on all 32-bit systems today and may fallback to ConvertToInteger behavior
+                Assert.Equal(Vector512.Create(double.ConvertToIntegerNative<ulong>(double.MinValue)), Vector512.ConvertToUInt64Native(Vector512.Create(double.MinValue)));
             }
 
-            Assert.Equal(Vector512.Create(2UL), Vector512.ConvertToUInt64Native(Vector512.Create(2.6)));
-            Assert.Equal(Vector512.Create(ulong.MaxValue), Vector512.ConvertToUInt64Native(Vector512.Create(double.MaxValue)));
+            Assert.Equal(Vector512.Create(double.ConvertToIntegerNative<ulong>(2.6)), Vector512.ConvertToUInt64Native(Vector512.Create(2.6)));
+            Assert.Equal(Vector512.Create(double.ConvertToIntegerNative<ulong>(double.MaxValue)), Vector512.ConvertToUInt64Native(Vector512.Create(double.MaxValue)));
         }
     }
 }

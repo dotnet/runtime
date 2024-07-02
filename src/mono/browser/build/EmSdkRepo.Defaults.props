@@ -13,8 +13,8 @@
     <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
   </PropertyGroup>
 
-  <!-- Emscripten uses system python on Linux, so we don't need $(EmscriptenPythonToolsPath) -->
-  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('linux'))">
+  <!-- Emscripten uses system python on Linux and macos, so we don't need $(EmscriptenPythonToolsPath) -->
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('OSX'))">
     <EmscriptenPythonToolsPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)python))</EmscriptenPythonToolsPath>
 
     <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>

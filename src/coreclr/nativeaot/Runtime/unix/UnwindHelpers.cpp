@@ -777,7 +777,7 @@ libunwind::v128 Registers_REGDISPLAY::getVectorRegister(int num) const
 {
     num -= UNW_ARM64_D8;
 
-    if (num < 0 || num >= sizeof(D) / sizeof(uint64_t))
+    if (num < 0 || (size_t)num >= sizeof(D) / sizeof(uint64_t))
     {
         PORTABILITY_ASSERT("unsupported arm64 vector register");
     }
@@ -796,7 +796,7 @@ void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 {
     num -= UNW_ARM64_D8;
 
-    if (num < 0 || num >= sizeof(D) / sizeof(uint64_t))
+    if (num < 0 || (size_t)num >= sizeof(D) / sizeof(uint64_t))
     {
         PORTABILITY_ASSERT("unsupported arm64 vector register");
     }
