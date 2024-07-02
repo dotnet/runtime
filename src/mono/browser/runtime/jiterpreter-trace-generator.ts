@@ -1263,6 +1263,7 @@ export function generateWasmBody (
             // TODO: Verify that this isn't worse. I think these may only show up in wrappers?
             // case MintOpcode.MINT_JIT_CALL:
             case MintOpcode.MINT_CALLI:
+            case MintOpcode.MINT_CALLI_MONOMETHOD:
             case MintOpcode.MINT_CALLI_NAT:
             case MintOpcode.MINT_CALLI_NAT_DYNAMIC:
             case MintOpcode.MINT_CALLI_NAT_FAST:
