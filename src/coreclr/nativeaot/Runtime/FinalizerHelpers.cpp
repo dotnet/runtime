@@ -46,11 +46,6 @@ uint32_t WINAPI FinalizerStart(void* pContext)
 
     g_pFinalizerThread = PTR_Thread(pThread);
 
-    if (YieldProcessorNormalization::IsMeasurementScheduled())
-    {
-        YieldProcessorNormalization::PerformMeasurement();
-    }
-
     // Wait for a finalization request.
     uint32_t uResult = PalWaitForSingleObjectEx(hFinalizerEvent, INFINITE, FALSE);
     ASSERT(uResult == WAIT_OBJECT_0);

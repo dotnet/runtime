@@ -15,4 +15,6 @@
 #include "volatile.h"
 #include "yieldprocessornormalized.h"
 
+#include "../../utilcode/yieldprocessornormalized.cpp"
+
 #include "../../vm/yieldprocessornormalizedshared.cpp"

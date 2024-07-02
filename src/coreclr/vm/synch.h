@@ -134,7 +134,6 @@ public:
 };
 
 
-#ifndef FEATURE_NATIVEAOT
 // CLREventStatic
 //   Same as CLREvent, but intended to be used for global variables.
 //   Instances may leak their handle, because of the order in which
@@ -143,7 +142,6 @@ public:
 class CLREventStatic : public CLREventBase
 {
 };
-#endif
 
 BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, DWORD *pStatus);
 #endif

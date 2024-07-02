@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef FEATURE_NATIVEAOT
-#include "finalizerthread.h"
-#endif
-
 enum class NormalizationState : uint8_t
 {
     Uninitialized,
@@ -25,8 +21,6 @@ static double s_nsPerYieldMeasurements[NsPerYieldMeasurementCount];
 static int s_nextMeasurementIndex;
 static double s_establishedNsPerYield = YieldProcessorNormalization::TargetNsPerNormalizedYield;
 
-static LARGE_INTEGER li;
-
 void RhEnableFinalization();
 
 inline unsigned int GetTickCountPortable()
@@ -43,6 +37,7 @@ static uint64_t GetPerformanceCounter()
 #ifdef FEATURE_NATIVEAOT
     return PalQueryPerformanceCounter();
 #else
+    LARGE_INTEGER li;
     QueryPerformanceCounter(&li);
     return li.QuadPart;
 #endif
