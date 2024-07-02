@@ -36,11 +36,11 @@ namespace System.Net.Security
     }
 
     [StructLayout(LayoutKind.Auto)]
-    internal readonly ref struct InputSecurityBuffer
+    internal ref struct InputSecurityBuffer
     {
-        public readonly SecurityBufferType Type;
-        public readonly ReadOnlySpan<byte> Token;
-        public readonly SafeHandle? UnmanagedToken;
+        public SecurityBufferType Type;
+        public ReadOnlySpan<byte> Token;
+        public SafeHandle? UnmanagedToken;
 
         public InputSecurityBuffer(ReadOnlySpan<byte> data, SecurityBufferType tokentype)
         {
