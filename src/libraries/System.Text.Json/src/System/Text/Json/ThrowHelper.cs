@@ -598,6 +598,9 @@ namespace System.Text.Json
                 case ExceptionResource.CannotWriteValueAfterPrimitiveOrClose:
                     message = SR.Format(SR.CannotWriteValueAfterPrimitiveOrClose, tokenType);
                     break;
+                case ExceptionResource.CannotWriteWithinString:
+                    message = SR.Format(SR.CannotWriteWithinString, tokenType);
+                    break;
                 default:
                     Debug.Fail($"The ExceptionResource enum value: {resource} is not part of the switch. Add the appropriate case and exception message.");
                     break;
@@ -758,6 +761,7 @@ namespace System.Text.Json
         ExpectedOneCompleteToken,
         NotEnoughData,
         InvalidLeadingZeroInNumber,
+        CannotWriteWithinString,
     }
 
     internal enum NumericType

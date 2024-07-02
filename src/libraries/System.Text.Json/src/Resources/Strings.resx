@@ -755,4 +755,7 @@
   <data name="JsonSchemaExporter_DepthTooLarge" xml:space="preserve">
     <value>The depth of the generated JSON schema exceeds the JsonSerializerOptions.MaxDepth setting.</value>
   </data>
+	<data name="CannotWriteWithinString" xml:space="preserve">
+    <value>The current JSON string must be finalized before a token of type '{0}' can be added.</value>
+  </data>
 </root>

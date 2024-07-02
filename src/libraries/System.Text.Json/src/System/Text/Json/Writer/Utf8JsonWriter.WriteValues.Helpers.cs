@@ -10,9 +10,28 @@ namespace System.Text.Json
 {
     public sealed partial class Utf8JsonWriter
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ValidateNotWithinUnfinalizedString()
+        {
+            if (_tokenType == StringSegmentSentinel)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ValidateWritingComment()
+        {
+            // Make sure a new comment is not attempted within an unfinalized string.
+            ValidateNotWithinUnfinalizedString();
+        }
+
         private void ValidateWritingValue()
         {
             Debug.Assert(!_options.SkipValidation);
+
+            // Make sure a new value is not attempted within an unfinalized string.
+            ValidateNotWithinUnfinalizedString();
 
             if (_inObject)
             {

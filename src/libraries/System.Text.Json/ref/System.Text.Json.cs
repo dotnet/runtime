@@ -663,6 +663,8 @@ namespace System.Text.Json
         public void WriteStringValue(System.ReadOnlySpan<char> value) { }
         public void WriteStringValue(string? value) { }
         public void WriteStringValue(System.Text.Json.JsonEncodedText value) { }
+        public void WriteStringValueSegment(System.ReadOnlySpan<byte> utf8Value, bool isFinalSegment) { }
+        public void WriteStringValueSegment(ReadOnlySpan<char> value, bool isFinalSegment) { }
     }
 }
 namespace System.Text.Json.Nodes
