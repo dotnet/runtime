@@ -603,6 +603,7 @@ private:
     PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
 
     PTR_PEAssembly          m_pPEAssembly;
+    PTR_VOID                m_baseAddress; // Cached base address for easier diagnostics
 
     enum {
         // These are the values set in m_dwTransientFlags.

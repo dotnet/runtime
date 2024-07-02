@@ -1775,7 +1775,7 @@ ClrDataAccess::GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *Mo
     COUNT_T metadataSize = 0;
     if (!pModule->IsReflectionEmit())
     {
-        ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedLayout()->GetBase()));
+        ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->m_baseAddress));
     }
 
     ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
