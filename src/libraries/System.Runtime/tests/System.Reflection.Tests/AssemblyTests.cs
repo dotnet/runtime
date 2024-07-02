@@ -725,11 +725,19 @@ namespace System.Reflection.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(GetCallingAssembly_TestData))]
         public void GetCallingAssembly(Assembly assembly1, Assembly assembly2, bool expected)
         {
             Assert.Equal(expected, assembly1.Equals(assembly2));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        public void GetCallingAssemblyThroughDelegate()
+        {
+            Func<Assembly> del = static () => Assembly.GetCallingAssembly();
+            Assert.Equal(Assembly.GetExecutingAssembly(), del());
+            Assert.Equal(typeof(System.Reflection.TestAssembly.ClassToInvoke).Assembly, System.Reflection.TestAssembly.ClassToInvoke.InvokeDelegate(del));
         }
 
         [Fact]

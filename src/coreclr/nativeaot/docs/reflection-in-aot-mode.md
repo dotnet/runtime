@@ -83,8 +83,6 @@ Native AOT libraries have configuration settings (shims) that enable replacing s
 
 ### Simulated calling assembly
 
-`Assembly.GetCallingAssembly` is not supported in Native AOT and throws `PlatformNotSupportedException` by default.
-
 `Assembly.GetCallingAssembly` can be in certain situations simulated by `Assembly.GetEntryAssembly`.
 
 To enable simulated `Assembly.GetCallingAssembly`, you will need:

@@ -1104,12 +1104,10 @@ namespace Internal.JitInterface
             if (method.IsPInvoke)
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
 
-#if READYTORUN
             if (method.RequireSecObject)
             {
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE_CALLER;
             }
-#endif
 
             if (method.IsAggressiveOptimization)
             {
@@ -1175,6 +1173,40 @@ namespace Internal.JitInterface
 #pragma warning restore CA1822 // Mark members as static
         {
             // TODO: Inlining
+        }
+
+        private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
+        {
+            if (!fIsTailPrefix)
+            {
+                MethodDesc caller = HandleToObject(callerHnd);
+
+                // Do not tailcall out of the entry point as it results in a confusing debugger experience.
+                if (caller is EcmaMethod em && em.Module.EntryPoint == caller)
+                {
+                    return false;
+                }
+
+                // Do not tailcall from methods that are marked as noinline (people often use no-inline
+                // to mean "I want to always see this method in stacktrace")
+                if (caller.IsNoInlining)
+                {
+                    return false;
+                }
+
+                // Methods with StackCrawlMark depend on finding their caller on the stack.
+                // If we tail call one of these guys, they get confused.  For lack of
+                // a better way of identifying them, we use DynamicSecurity attribute to identify
+                // them.
+                //
+                MethodDesc callee = exactCalleeHnd == null ? null : HandleToObject(exactCalleeHnd);
+                if (callee != null && callee.RequireSecObject)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void getMethodSig(CORINFO_METHOD_STRUCT_* ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_STRUCT_* memberParent)
