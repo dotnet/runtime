@@ -57,6 +57,8 @@ else()
         pal_signal_wasi.c
         pal_threading_wasi.c
         pal_uid_wasi.c
+        pal_cabi_wasi.h
+        pal_cabi_wasi.c
     )
 endif()
 
