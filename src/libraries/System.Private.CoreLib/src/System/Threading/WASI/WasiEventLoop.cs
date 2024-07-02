@@ -11,7 +11,7 @@ namespace System.Threading
     {
         private static List<(IPoll.Pollable, TaskCompletionSource)> pollables = new();
 
-        internal static Task RegisterPollable(int handle)
+        internal static Task Register(int handle)
         {
             var source = new TaskCompletionSource(TaskCreationOptions.AttachedToParent);
             pollables.Add((new IPoll.Pollable(new IPoll.Pollable.THandle(handle)), source));

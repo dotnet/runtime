@@ -13,7 +13,7 @@ namespace System.Threading
 #if TARGET_WASI
         internal static System.Threading.Tasks.Task RegisterPollable(int handle)
         {
-            return WasiEventLoop.RegisterPollable(handle);
+            return WasiEventLoop.Register(handle);
         }
 
         internal static void DispatchWasiEventLoop()
