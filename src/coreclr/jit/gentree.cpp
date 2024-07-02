@@ -3779,7 +3779,7 @@ bool GenTreeOp::IsValidLongMul()
     GenTree* op1 = gtGetOp1();
     GenTree* op2 = gtGetOp2();
 
-    if (!TypeIs(TYP_LONG) || !op1->TypeIs(TYP_LONG) || op2->TypeIs(TYP_LONG))
+    if (!TypeIs(TYP_LONG) || !op1->TypeIs(TYP_LONG) || !op2->TypeIs(TYP_LONG))
     {
         return false;
     }
