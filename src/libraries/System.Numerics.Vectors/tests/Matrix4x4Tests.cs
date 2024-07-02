@@ -46,7 +46,6 @@ namespace System.Numerics.Tests
         [InlineData(1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f)]
         [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f)]
         [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/104232", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Matrix4x4IndexerGetTest(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44)
         {
             var matrix = new Matrix4x4(m11, m12, m13, m14, m21, m22, m23, m24, m31, m32, m33, m34, m41, m42, m43, m44);
@@ -78,7 +77,6 @@ namespace System.Numerics.Tests
         [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f)]
         [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80876", TestPlatforms.iOS | TestPlatforms.tvOS)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/104232", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Matrix4x4IndexerSetTest(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44)
         {
             var matrix = new Matrix4x4(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);

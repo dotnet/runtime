@@ -3317,15 +3317,17 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     MakeSrcContained(node, intrin.op2);
                 }
 
-                if (IsContainableMemoryOp(intrin.op1) && IsSafeToContainMem(node, intrin.op1))
-                {
-                    MakeSrcContained(node, intrin.op1);
-
-                    if (intrin.op1->OperIs(GT_IND))
-                    {
-                        intrin.op1->AsIndir()->Addr()->ClearContained();
-                    }
-                }
+                // TODO: Codegen isn't currently handling this correctly
+                //
+                // if (IsContainableMemoryOp(intrin.op1) && IsSafeToContainMem(node, intrin.op1))
+                // {
+                //     MakeSrcContained(node, intrin.op1);
+                //
+                //     if (intrin.op1->OperIs(GT_IND))
+                //     {
+                //         intrin.op1->AsIndir()->Addr()->ClearContained();
+                //     }
+                // }
                 break;
             }
 
