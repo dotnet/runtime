@@ -42,10 +42,10 @@ if(ENABLE_PERFTRACING)
         
         set(EPTEST_LINKABLE_LIBS "")
         list(APPEND EPTEST_LINKABLE_LIBS eglib_api monosgen-static ${OS_LIBS} ${LLVM_LIBS} monoapi)
-        if (INTERNAL_ZLIB_NG)
-            list(APPEND EPTEST_LINKABLE_LIBS ${EPTEST_LINKABLE_LIBS} zlib)
-        else()
+        if (CLR_CMAKE_USE_SYSTEM_ZLIB)
             list(APPEND EPTEST_LINKABLE_LIBS ${EPTEST_LINKABLE_LIBS} ${Z_LIBS})
+        else()
+            list(APPEND EPTEST_LINKABLE_LIBS ${EPTEST_LINKABLE_LIBS} zlib)
         endif()
         target_link_libraries(ep-test PRIVATE ${EPTEST_LINKABLE_LIBS})
         

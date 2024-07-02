@@ -2,7 +2,7 @@ project(System.IO.Compression.Native C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
-if (INTERNAL_ZLIB_NG)
+if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
 endif()
 
@@ -102,7 +102,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         ${NATIVECOMPRESSION_SOURCES}
     )
 
-    if (INTERNAL_ZLIB_NG)
+    if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
         target_link_libraries(System.IO.Compression.Native-Static PRIVATE zlibstatic)
     endif()
 
@@ -121,7 +121,7 @@ else ()
             ${VERSION_FILE_RC_PATH}
         )
 
-        if (INTERNAL_ZLIB_NG)
+        if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
             target_link_libraries(System.IO.Compression.Native PRIVATE zlib)
         endif()
     endif ()
@@ -135,7 +135,7 @@ else ()
         ${NATIVECOMPRESSION_SOURCES}
     )
 
-    if (INTERNAL_ZLIB_NG)
+    if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
         target_link_libraries(System.IO.Compression.Native-Static PRIVATE zlibstatic)
     endif()
 
@@ -145,7 +145,7 @@ else ()
             ${NATIVECOMPRESSION_SOURCES}
         )
 
-        if (INTERNAL_ZLIB_NG)
+        if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
             target_link_libraries(System.IO.Compression.Native.Aot PRIVATE zlibstatic)
         endif()
 
@@ -157,7 +157,7 @@ else ()
             ${NATIVECOMPRESSION_SOURCES}
         )
 
-        if (INTERNAL_ZLIB_NG)
+        if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
             target_link_libraries(System.IO.Compression.Native.Aot.GuardCF PRIVATE zlibstatic)
         endif()
 
@@ -183,7 +183,7 @@ else ()
 
 endif ()
 
-if(INTERNAL_ZLIB_NG AND STATIC_LIBS_ONLY)
+if((NOT CLR_CMAKE_USE_SYSTEM_ZLIB) AND STATIC_LIBS_ONLY)
     install_static_library(zlib aotsdk nativeaot)
 endif()
 
