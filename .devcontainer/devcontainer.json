@@ -39,7 +39,7 @@
 	// Add the locally installed dotnet to the path to ensure that it is activated
 	// This allows developers to just use 'dotnet build' on the command-line, and the local dotnet version will be used.
 	"remoteEnv": {
-		"PATH": "${containerWorkspaceFolder}/.dotnet:${containerEnv:PATH}",
+		"PATH": "${containerWorkspaceFolder}/.dotnet/linux-x64:${containerEnv:PATH}",
 		"DOTNET_MULTILEVEL_LOOKUP": "0"
 	},
 

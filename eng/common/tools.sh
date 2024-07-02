@@ -145,6 +145,11 @@ function InitializeDotNetCli {
     dotnet_root="$DOTNET_INSTALL_DIR"
   else
     dotnet_root="${repo_root}.dotnet"
+    if [[ "${DOTNET_USE_ARCH_IN_INSTALL_PATH:-}" == "1" ]]; then
+      . "$_script_dir/native/init-os-and-arch.sh"
+      if (ldd --version 2>&1 || true) | grep -q musl; then os="${os}-musl"; fi
+      dotnet_root="${dotnet_root}/${os}-${arch}"
+    fi
 
     export DOTNET_INSTALL_DIR="$dotnet_root"
 
