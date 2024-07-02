@@ -2,13 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
@@ -37,7 +33,7 @@ internal unsafe static class MockMemorySpace
     }
 
     /// <summary>
-    ///  Helper to build a context (virtual memory space) for reading from a target.
+    ///  Helper to populate a virtual memory space for reading from a target.
     /// </summary>
     /// <remarks>
     /// All the spans should be stackalloc or pinned while the context is being used.

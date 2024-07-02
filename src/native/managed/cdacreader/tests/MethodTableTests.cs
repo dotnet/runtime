@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Xunit;
@@ -63,15 +58,24 @@ public unsafe class MethodTableTests
         ]);
     }
 
-#if false
-    private static TargetTestHelpers.ContextBuilder AddEEClass(MockTarget.Architecture arch, TargetTestHelpers.ContextBuilder builder, TargetPointer eeClassPtr, TargetPointer canonMTPtr, uint attr, ushort numMethods)
+    private static MockMemorySpace.Builder AddEEClass(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer eeClassPtr, string name, TargetPointer canonMTPtr, uint attr, ushort numMethods)
     {
-        TargetTestHelpers.HeapFragment eeClassFragment = new() { Name = "EEClass", Address = eeClassPtr, Data = new byte[TargetTestHelpers.SizeOfTypeInfo(arch.Is64Bit, EEClassTypeInfo)] };
+        MockMemorySpace.HeapFragment eeClassFragment = new() { Name = $"EEClass '{name}'", Address = eeClassPtr, Data = new byte[targetTestHelpers.SizeOfTypeInfo(EEClassTypeInfo)] };
         Span<byte> dest = eeClassFragment.Data;
-        TargetTestHelpers.WritePointer(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.MethodTable)].Offset), canonMTPtr, arch.IsLittleEndian, arch.Is64Bit ? 8 : 4);
+        targetTestHelpers.WritePointer(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.MethodTable)].Offset), canonMTPtr);
+        // TODO: fill in the rest of the fields
         return builder.AddHeapFragment(eeClassFragment);
+
     }
-#endif
+
+    private static MockMemorySpace.Builder AddMethodTable(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer methodTablePtr, string name, TargetPointer eeClassOrCanonMT, uint mtflags, uint mtflags2, uint baseSize)
+    {
+        MockMemorySpace.HeapFragment methodTableFragment = new() { Name = $"MethodTable '{name}'", Address = methodTablePtr, Data = new byte[targetTestHelpers.SizeOfTypeInfo(MethodTableTypeInfo)] };
+        Span<byte> dest = methodTableFragment.Data;
+        targetTestHelpers.WritePointer(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.EEClassOrCanonMT)].Offset), eeClassOrCanonMT);
+        // TODO fill in the rest of the fields
+        return builder.AddHeapFragment(methodTableFragment);
+    }
 
     // a delegate for adding more heap fragments to the context builder
     private delegate MockMemorySpace.Builder ConfigureContextBuilder(MockTarget.Architecture arch, MockMemorySpace.Builder builder);
@@ -153,17 +157,19 @@ public unsafe class MethodTableTests
         MetadataContractHelper(arch,
         (arch, builder) =>
         {
-#if false
-            builder = AddEEClass(arch, builder, systemObjectEEClassPtr, systemObjectMethodTablePtr, default, default);
-            builder = AddMethodTable(builder, systemObjectMethodTablePtr, default);
-#endif
+            TargetTestHelpers targetTestHelpers = new(arch);
+            builder = AddEEClass(targetTestHelpers, builder, systemObjectEEClassPtr, "System.Object", systemObjectMethodTablePtr, attr: default, numMethods: default);
+            builder = AddMethodTable(targetTestHelpers, builder, systemObjectMethodTablePtr, "System.Object", systemObjectEEClassPtr, mtflags: default, mtflags2: default, baseSize: default);
             return builder;
         },
-        static (arch, target) =>
+        (arch, target) =>
         {
+            TargetTestHelpers targetTestHelpers = new(arch);
             Contracts.IMetadata metadataContract = target.Contracts.Metadata;
             Assert.NotNull(metadataContract);
-
+            Contracts.MethodTableHandle systemObjectMethodTableHandle = metadataContract.GetMethodTableHandle(systemObjectMethodTablePtr);
+            Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectMethodTableHandle.Address.Value);
+            Assert.False(metadataContract.IsFreeObjectMethodTable(systemObjectMethodTableHandle));
         });
     }
 }
