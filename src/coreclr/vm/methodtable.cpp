@@ -6762,7 +6762,7 @@ void MethodTable::MethodDataObject::InvalidateCachedVirtualSlot(UINT32 slotNumbe
 MethodDesc *MethodTable::MethodDataInterface::GetDeclMethodDesc(UINT32 slotNumber)
 {
     WRAPPER_NO_CONTRACT;
-    return m_pDeclMT->GetMethodDescForSlot(slotNumber);
+    return m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber);
 }
 
 //==========================================================================================
