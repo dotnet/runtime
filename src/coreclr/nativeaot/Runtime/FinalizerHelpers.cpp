@@ -48,8 +48,10 @@ uint32_t WINAPI FinalizerStart(void* pContext)
 
     g_pFinalizerThread = PTR_Thread(pThread);
 
-    // We have some time until the first finalization request - use the time to calibrate normalized waits.
-    EnsureYieldProcessorNormalizedInitialized();
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        YieldProcessorNormalization::PerformMeasurement();
+    }
 
     // Wait for a finalization request.
     uint32_t uResult = PalWaitForSingleObjectEx(hFinalizerEvent, INFINITE, FALSE);
@@ -184,6 +186,11 @@ EXTERN_C void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fcount)
 {
     FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
     g_FinalizerDoneEvent.Set();
+
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        YieldProcessorNormalization::PerformMeasurement();
+    }
 }
 
 //
