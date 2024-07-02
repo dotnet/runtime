@@ -169,6 +169,7 @@ namespace System.Text.Json
         public static System.Text.Json.JsonNamingPolicy KebabCaseUpper { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy SnakeCaseLower { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy SnakeCaseUpper { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy PascalCase { get { throw null; } }
         public abstract string ConvertName(string name);
     }
     public readonly partial struct JsonProperty
@@ -1025,6 +1026,7 @@ namespace System.Text.Json.Serialization
         SnakeCaseUpper = 3,
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
+        PascalCase = 6,
     }
     public sealed partial class JsonNumberEnumConverter<TEnum> : System.Text.Json.Serialization.JsonConverterFactory where TEnum : struct, System.Enum
     {
