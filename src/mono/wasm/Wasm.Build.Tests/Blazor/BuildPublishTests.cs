@@ -42,17 +42,20 @@ public class BuildPublishTests : BlazorWasmTestBase
     public static TheoryData<string, bool> TestDataForDefaultTemplate_WithWorkload(bool isAot)
     {
         var data = new TheoryData<string, bool>();
-        data.Add("Debug", false);
-        data.Add("Release", false); // Release relinks by default
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
-        if (!isAot || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!isAot)
         {
-            data.Add("Debug", true); // for aot:true on Windows, it fails
+            // AOT does not support managed debugging, is disabled by design
+            data.Add("Debug", false);
         }
+        data.Add("Release", false); // Release relinks by default
 
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
+            if (!isAot)
+            {
+                data.Add("Debug", true);
+            }
             data.Add("Release", true);
         }
         return data;
@@ -196,5 +199,19 @@ public class BuildPublishTests : BlazorWasmTestBase
         string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");
 
         WasmTemplateTests.TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
+    }
+
+    [Theory]
+    [InlineData("Debug")]
+    public void BlazorWasm_CannotAOT_InDebug(string config)
+    {
+        string id = $"blazorwasm_{config}_aot_{GetRandomId()}";
+        CreateBlazorWasmTemplateProject(id);
+        AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
+                                    extraItems: null,
+                                    extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
+
+        (CommandResult res, _) = BlazorPublish(new BlazorBuildOptions(id, config, ExpectSuccess: false));
+        Assert.Contains("AOT is not supported in debug configuration", res.Output);
     }
 }

@@ -96,7 +96,8 @@ public class WasiTemplateTests : BuildTestBase
                         CreateProject: false,
                         Publish: true,
                         TargetFramework: BuildTestBase.DefaultTargetFramework,
-                        UseCache: false));
+                        UseCache: false,
+                        ExpectSuccess: !(config == "Debug" && aot)));
     }
 
     [Theory]
