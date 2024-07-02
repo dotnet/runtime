@@ -314,11 +314,6 @@ namespace System.Net.Quic.Tests
         [ConditionalFact]
         public async Task UntrustedClientCertificateFails()
         {
-            if (PlatformDetection.IsWindows10Version20348OrLower)
-            {
-                throw new SkipTestException("Client certificates are not supported on Windows Server 2022.");
-            }
-
             var listenerOptions = new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
@@ -663,11 +658,6 @@ namespace System.Net.Quic.Tests
         [InlineData(true, ClientCertSource.CertificateContext)]
         public async Task ConnectWithClientCertificate(bool sendCertificate, ClientCertSource clientCertSource)
         {
-            if (PlatformDetection.IsWindows10Version20348OrLower)
-            {
-                throw new SkipTestException("Client certificates are not supported on Windows Server 2022.");
-            }
-
             bool clientCertificateOK = false;
 
             var listenerOptions = new QuicListenerOptions()
