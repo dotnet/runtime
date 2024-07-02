@@ -445,7 +445,7 @@ namespace System.Text.Json
                     }
 #if NET
                     int firstNonZero = span.IndexOfAnyExcept((byte)'0');
-                    return firstNonZero == -1 ? span.Length - 1 : firstNonZero - 1;
+                    return firstNonZero < 0 ? span.Length - 1 : firstNonZero - 1;
 #else
                     for (int i = 0; i < span.Length; i++)
                     {
