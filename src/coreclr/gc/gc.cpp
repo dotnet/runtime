@@ -3326,7 +3326,7 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
                     }
                 }
 #endif //!MULTIPLE_HEAPS
-                size_t fr = generation_unusable_fragmentation (generation_of (gen_number));
+                size_t fr = generation_unusable_fragmentation (generation_of (gen_number), heap_number);
                 ret = (fr > dd_fragmentation_limit(dd));
                 if (ret)
                 {
@@ -21263,6 +21263,68 @@ bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
     return true;
 }
 #endif //USE_REGIONS
+
+// The following 2 methods Use integer division to prevent potential floating point exception.
+// FPE may occur if we use floating point division because of speculative execution.
+//
+// Return the percentage of efficiency (between 0 and 100) of the allocator. 
+inline
+size_t gc_heap::generation_allocator_efficiency_percent (generation* inst)
+{
+#ifdef DYNAMIC_HEAP_COUNT
+    if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+    {
+        uint64_t total_plan_allocated = generation_total_plan_allocated (inst);
+        uint64_t condemned_allocated = generation_condemned_allocated (inst);
+        return ((total_plan_allocated == 0) ? 0 : (100 * (total_plan_allocated - condemned_allocated) / total_plan_allocated));
+    }
+    else
+#endif //DYNAMIC_HEAP_COUNT
+    {
+        uint64_t free_obj_space = generation_free_obj_space (inst);
+        uint64_t free_list_allocated = generation_free_list_allocated (inst);
+        if ((free_list_allocated + free_obj_space) == 0)
+            return 0;
+        return (size_t)((100 * free_list_allocated) / (free_list_allocated + free_obj_space));
+    }
+}
+
+inline
+size_t gc_heap::generation_unusable_fragmentation (generation* inst, int hn)
+{
+#ifdef DYNAMIC_HEAP_COUNT
+    if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+    {
+        uint64_t total_plan_allocated = generation_total_plan_allocated (inst);
+        uint64_t condemned_allocated = generation_condemned_allocated (inst);
+        uint64_t unusable_frag = 0;
+        size_t fo_space = (((ptrdiff_t)generation_free_obj_space (inst) < 0) ? 0 : generation_free_obj_space (inst));
+
+        if (total_plan_allocated != 0)
+        {
+            unusable_frag = fo_space + (condemned_allocated * generation_free_list_space (inst) / total_plan_allocated);
+        }
+
+        dprintf (6666, ("h%d g%d FLa: %Id, ESa: %Id, Ca: %Id | FO: %Id, FL %Id, fl effi %.3f, unusable fl is %Id",
+            hn, inst->gen_num,
+            generation_free_list_allocated (inst), generation_end_seg_allocated (inst), (size_t)condemned_allocated,
+            fo_space, generation_free_list_space (inst),
+            ((total_plan_allocated == 0) ? 1.0 : ((float)(total_plan_allocated - condemned_allocated) / (float)total_plan_allocated)),
+            (size_t)unusable_frag));
+
+        return (size_t)unusable_frag;
+    }
+    else
+#endif //DYNAMIC_HEAP_COUNT
+    {
+        uint64_t free_obj_space = generation_free_obj_space (inst);
+        uint64_t free_list_allocated = generation_free_list_allocated (inst);
+        uint64_t free_list_space = generation_free_list_space (inst);
+        if ((free_list_allocated + free_obj_space) == 0)
+            return 0;
+        return (size_t)(free_obj_space + (free_obj_space * free_list_space) / (free_list_allocated + free_obj_space));
+    }
+}
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -43735,6 +43797,24 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
     size_t total_gen_size = generation_size (gen_number);
     //keep track of fragmentation
     dd_fragmentation (dd) = generation_free_list_space (gen) + generation_free_obj_space (gen);
+
+    // We need to reset the condemned alloc for the condemned generation because it will participate in the free list efficiency
+    // calculation. And if a generation is condemned, it means all the allocations into this generation during that GC will be
+    // condemned and it wouldn't make sense to use this value to calculate the FL efficiency since at this point the FL hasn't
+    // been built.
+    generation_condemned_allocated (gen) = 0;
+
+    if (settings.concurrent)
+    {
+        // For BGC we could have non zero values due to gen1 FGCs. We reset all 3 allocs to start anew.
+        generation_free_list_allocated (gen) = 0;
+        generation_end_seg_allocated (gen) = 0;
+    }
+    else
+    {
+        assert (generation_free_list_allocated (gen) == 0);
+        assert (generation_end_seg_allocated (gen) == 0);
+    }
 
     // make sure the subtraction below doesn't overflow
     if (dd_fragmentation (dd) <= total_gen_size)
