@@ -422,7 +422,7 @@ namespace Microsoft.Interop
                 .AddAttributeLists(
                     AttributeList(
                         SingletonSeparatedList(
-                            CreateForwarderDllImport(pinvokeData))));
+                            CreateDllImportAttribute(pinvokeData))));
 
             MemberDeclarationSyntax toPrint = stub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(stubMethod);
 
@@ -438,6 +438,15 @@ namespace Microsoft.Interop
         {
             Debug.Assert(!options.GenerateForwarders, "GenerateForwarders should have already been handled to use a forwarder stub");
 
+            // StringMarshalling.Utf16 is the only value that has a supported analogue in DllImportAttribute.CharSet. If it's not Utf16, consider StringMarshalling unset
+            var stringMarshallingMask = libraryImportData.StringMarshalling == StringMarshalling.Utf16 ? InteropAttributeMember.All : ~InteropAttributeMember.StringMarshalling;
+            var dllImportData = libraryImportData with
+            {
+                // If setLastError was set in LibraryImport, we will call the Marshal API to handle that, the DllImport should not.
+                IsUserDefined = libraryImportData.IsUserDefined & ~InteropAttributeMember.SetLastError & stringMarshallingMask,
+                EntryPoint = libraryImportData.EntryPoint ?? stubMethodName
+            };
+
             (ParameterListSyntax parameterList, TypeSyntax returnType, AttributeListSyntax returnTypeAttributes) = stubGenerator.GenerateTargetMethodSignatureData();
             LocalFunctionStatementSyntax localDllImport = LocalFunctionStatement(returnType, stubTargetName)
                 .AddModifiers(
@@ -445,30 +454,8 @@ namespace Microsoft.Interop
                     Token(SyntaxKind.ExternKeyword),
                     Token(SyntaxKind.UnsafeKeyword))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
-                .WithAttributeLists(
-                    SingletonList(AttributeList(
-                        SingletonSeparatedList(
-                                Attribute(
-                                    NameSyntaxes.DllImportAttribute,
-                                    AttributeArgumentList(
-                                        SeparatedList(
-                                            new[]
-                                            {
-                                                AttributeArgument(LiteralExpression(
-                                                        SyntaxKind.StringLiteralExpression,
-                                                        Literal(libraryImportData.ModuleName))),
-                                                AttributeArgument(
-                                                    NameEquals(nameof(DllImportAttribute.EntryPoint)),
-                                                    null,
-                                                    LiteralExpression(
-                                                        SyntaxKind.StringLiteralExpression,
-                                                        Literal(libraryImportData.EntryPoint ?? stubMethodName))),
-                                                AttributeArgument(
-                                                    NameEquals(nameof(DllImportAttribute.ExactSpelling)),
-                                                    null,
-                                                    LiteralExpression(SyntaxKind.TrueLiteralExpression))
-                                            }
-                                            )))))))
+                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
+                    CreateDllImportAttribute(dllImportData)))))
                 .WithParameterList(parameterList);
             if (returnTypeAttributes is not null)
             {
@@ -477,7 +464,7 @@ namespace Microsoft.Interop
             return localDllImport;
         }
 
-        private static AttributeSyntax CreateForwarderDllImport(LibraryImportData target)
+        private static AttributeSyntax CreateDllImportAttribute(LibraryImportData target)
         {
             var newAttributeArgs = new List<AttributeArgumentSyntax>
             {
