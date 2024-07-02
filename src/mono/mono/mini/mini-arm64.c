@@ -1868,8 +1868,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				guint32 align;
 				MonoType *ptype = mini_get_underlying_type (sig->params [pindex]);
 				int size = mini_type_stack_size_full (ptype, &align, cinfo->pinvoke);
-				g_assert (size == 8);
-
+				g_assert (size == SIZEOF_VOID_P);
 				ainfo->storage = ArgVtypeInIRegs;
 				ainfo->reg = ARMREG_R20;
 				ainfo->nregs = 1;
