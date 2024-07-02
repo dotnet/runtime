@@ -1497,104 +1497,42 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case GT_NOT:
-        {
-            var_types simdType     = node->TypeGet();
-            var_types simdBaseType = node->GetSimdBaseType();
-            unsigned  simdSize     = node->GetSimdSize();
-            GenTree*  op1          = node->Op(1);
-
-            assert(varTypeIsSIMD(simdType));
-
-            bool isV512Supported = false;
-            if ((genTypeSize(simdBaseType) >= 4) && comp->compIsEvexOpportunisticallySupported(isV512Supported))
-            {
-                // We can't use the mask, but we can emit a ternary logic node
-                NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
-
-                if (simdSize != 64)
-                {
-                    ternaryLogicId = !isV512Supported ? NI_AVX10v1_TernaryLogic : NI_AVX512F_VL_TernaryLogic;
-                }
-
-                GenTree* op2 = comp->gtNewZeroConNode(simdType);
-                BlockRange().InsertBefore(node, op2);
-
-                GenTree* op3 = comp->gtNewZeroConNode(simdType);
-                BlockRange().InsertBefore(node, op3);
-
-                GenTree* control = comp->gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
-                BlockRange().InsertBefore(node, control);
-
-                node->ResetHWIntrinsicId(ternaryLogicId, comp, op3, op2, op1, control);
-            }
-            else
-            {
-                NamedIntrinsic xorId;
-
-                if (simdSize == 64)
-                {
-                    assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
-
-                    if (varTypeIsFloating(simdBaseType))
-                    {
-                        xorId = NI_AVX512DQ_Xor;
-                    }
-                    else
-                    {
-                        xorId = NI_AVX512F_Xor;
-                    }
-                }
-                else if (simdSize == 32)
-                {
-                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
-
-                    if (varTypeIsFloating(simdBaseType))
-                    {
-                        xorId = NI_AVX_Xor;
-                    }
-                    else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                    {
-                        xorId = NI_AVX2_Xor;
-                    }
-                    else
-                    {
-                        // Since this is a bitwise operation, we can still support it by lying
-                        // about the type and doing the operation using a supported instruction
-
-                        xorId = NI_AVX_Xor;
-
-                        if (varTypeIsLong(simdBaseType))
-                        {
-                            node->SetSimdBaseJitType(CORINFO_TYPE_DOUBLE);
-                        }
-                        else
-                        {
-                            node->SetSimdBaseJitType(CORINFO_TYPE_FLOAT);
-                        }
-                    }
-                }
-                else if (simdBaseType == TYP_FLOAT)
-                {
-                    xorId = NI_SSE_Xor;
-                }
-                else
-                {
-                    xorId = NI_SSE2_Xor;
-                }
-
-                GenTree* cns = comp->gtNewAllBitsSetConNode(simdType);
-                BlockRange().InsertBefore(node, cns);
-
-                node->ResetHWIntrinsicId(xorId, op1, cns);
-            }
-
-            return LowerNode(node);
-        }
-
         default:
         {
             break;
+        }
+    }
+
+    if ((oper == GT_XOR) && node->Op(2)->IsVectorAllBitsSet())
+    {
+        bool isV512Supported = false;
+        if ((genTypeSize(node->GetSimdBaseType()) >= 4) && comp->compIsEvexOpportunisticallySupported(isV512Supported))
+        {
+            var_types simdType = node->TypeGet();
+            unsigned  simdSize = node->GetSimdSize();
+
+            GenTree* op1 = node->Op(1);
+            BlockRange().Remove(node->Op(2));
+
+            // We can't use the mask, but we can emit a ternary logic node
+            NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
+
+            if (simdSize != 64)
+            {
+                ternaryLogicId = !isV512Supported ? NI_AVX10v1_TernaryLogic : NI_AVX512F_VL_TernaryLogic;
+            }
+
+            GenTree* op2 = comp->gtNewZeroConNode(simdType);
+            BlockRange().InsertBefore(node, op2);
+
+            GenTree* op3 = comp->gtNewZeroConNode(simdType);
+            BlockRange().InsertBefore(node, op3);
+
+            GenTree* control = comp->gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
+            BlockRange().InsertBefore(node, control);
+
+            node->ResetHWIntrinsicId(ternaryLogicId, comp, op3, op2, op1, control);
+            return LowerNode(node);
         }
     }
 
