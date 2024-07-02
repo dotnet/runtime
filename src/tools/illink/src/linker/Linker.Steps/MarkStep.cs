@@ -45,10 +45,6 @@ using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 using Mono.Linker.Dataflow;
 
-using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
-using TypeName = System.Reflection.Metadata.TypeName;
-using TypeNameParseOptions = System.Reflection.Metadata.TypeNameParseOptions;
-
 namespace Mono.Linker.Steps
 {
 
