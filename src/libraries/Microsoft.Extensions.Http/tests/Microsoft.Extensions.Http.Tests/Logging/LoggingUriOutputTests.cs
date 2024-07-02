@@ -29,22 +29,19 @@ namespace Microsoft.Extensions.Http.Tests.Logging
         {
             { null, null },
             { "http://q.app/foo", "http://q.app/foo" },
+            { "http://q.app:123/foo", "http://q.app:123/foo" },
             { "http://user:xxx@q.app/foo", "http://q.app/foo" }, // has user info
             { "http://q.app/foo?", "http://q.app/foo?" },
             { "http://q.app/foo?XXX", "http://q.app/foo?*" },
             { "http://q.app/a/b/c?a=b%20c&x=1", "http://q.app/a/b/c?*" },
-            { "http://q.app/#", "http://q.app/#" }, // Has empty fragment.
-            { "http://q.app#f", "http://q.app/#f" }, // Has fragment.
-            { "http://q.app#f?a=b", "http://q.app/#f?a=b" }, // Has fragment with a '?'.
-            { "http://q.app/?a=b#f?a=b", "http://q.app/?*#f?a=b" }, // Has query and fragment with a '?'.
-            { "http://q.app?#f", "http://q.app/?#f" }, // Has empty query and fragment.
+            { "http://q.app:4242/a/b/c?a=b%20c&x=1", "http://q.app:4242/a/b/c?*" },
             { "/cat/1/2", "*" }, // Relative Uris are fully redacted.
             { "/cat/1/2?a=b%20c&x=1", "*" },
         };
 
         [Theory]
         [MemberData(nameof(GetRedactedUriString_Data))]
-        public void GetRedactedUriString(string original, string expected)
+        public void GetRedactedUriString_RedactsUriByDefault(string original, string expected)
         {
             Uri? uri = original != null ? new Uri(original, UriKind.RelativeOrAbsolute) : null;
             string? actual = LogHelper.GetRedactedUriString(uri);
@@ -52,46 +49,48 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             Assert.Equal(expected, actual);
         }
 
-        public static TheoryData<bool, bool, string> Handlers_LogExpectedUri_Data()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("AppCtx")]     // AppContext switch System.Net.Http.DisableUriRedaction = true
+        [InlineData("EnvVar1")]    // Env. var DOTNET_SYSTEM_NET_DISABLEURIREDACTION = "1"
+        [InlineData("EnvVarTrue")] // Env. var DOTNET_SYSTEM_NET_DISABLEURIREDACTION = "true"
+        public void GetRedactedUriString_DisableUriRedaction_DoesNotRedactUri(string queryRedactionDisabler)
         {
-            TheoryData<bool, bool, string> result = new();
-            bool[] booleans = { true, false };
-            bool[] syncApiVals =
-#if NET
-                booleans;
-#else
-                { false };
-#endif
-            foreach (bool syncApi in syncApiVals)
+            RemoteExecutor.Invoke(static queryRedactionDisabler =>
             {
-                foreach (bool scopeHandler in booleans)
+                switch (queryRedactionDisabler)
                 {
-                    // valid values for logQueryStringEnabler:
-                    // ""           - Do not enable query string logging.
-                    // "AppCtx"     - Enable via AppContext switch.
-                    // "EnvVarTrue" - Enable by setting the environment *_DISABLEURIQUERYREDACTION variable to 'true'.
-                    // "EnvVar1"    - Enable by setting the environment *DISABLEURIQUERYREDACTION variable to '1'.
-                    string[] lqs = ["", "AppCtx"];
-                    foreach (string queryRedactionDisabler in lqs)
-                    {
-                        result.Add(syncApi, scopeHandler, queryRedactionDisabler);
-                    }
+                    case "AppCtx":
+                        AppContext.SetSwitch("System.Net.Http.DisableUriRedaction", true);
+                        break;
+                    case "EnvVarTrue":
+                        Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", "true");
+                        break;
+                    case "EnvVar1":
+                        Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", "1");
+                        break;
                 }
-            }
 
-            result.Add(false, false, "EnvVarTrue");
-            result.Add(false, false, "EnvVar1");
-            result.Add(false, true, "EnvVarTrue");
-            result.Add(false, true, "EnvVar1");
+                Uri[] uris = GetRedactedUriString_Data.Select(a => a[0] == null ? null : new Uri((string)a[0], UriKind.RelativeOrAbsolute)).ToArray();
 
-            return result;
+                foreach (Uri uri in uris)
+                {
+                    string? expected = uri != null ? uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString() : null;
+                    string? actual = LogHelper.GetRedactedUriString(uri);
+                    Assert.Equal(expected, actual);
+                }
+            }, queryRedactionDisabler).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [MemberData(nameof(Handlers_LogExpectedUri_Data))]
-        public async Task Handlers_LogExpectedUri(bool syncApi, bool scopeHandler, string queryRedactionDisabler)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+#if NET
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+#endif
+        public async Task Handlers_LogExpectedUri(bool syncApi, bool scopeHandler)
         {
-            await RemoteExecutor.Invoke(static async (syncApiStr, scopeHandlerStr, queryRedactionDisabler) =>
+            await RemoteExecutor.Invoke(static async (syncApiStr, scopeHandlerStr) =>
             {
                 bool syncApi = bool.Parse(syncApiStr);
                 bool scopeHandler = bool.Parse(scopeHandlerStr);
@@ -99,19 +98,6 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                 string baseUri = "http://api.example.com/search";
                 const string queryString = "term=Western%20Australia";
                 string destinationUri = $"{baseUri}?{queryString}";
-
-                switch (queryRedactionDisabler)
-                {
-                    case "AppCtx":
-                        AppContext.SetSwitch("Microsoft.Extensions.Http.DisableUriQueryRedaction", true);
-                        break;
-                    case "EnvVarTrue":
-                        Environment.SetEnvironmentVariable("DOTNET_MICROSOFT_EXTENSIONS_HTTP_DISABLEURIQUERYREDACTION", "True");
-                        break;
-                    case "EnvVar1":
-                        Environment.SetEnvironmentVariable("DOTNET_MICROSOFT_EXTENSIONS_HTTP_DISABLEURIQUERYREDACTION", "1");
-                        break;
-                }
 
                 var sink = new TestSink();
                 var logger = new TestLogger("test", sink, enabled: true);
@@ -134,20 +120,18 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                     _ = await invoker.SendAsync(request, default);
                 }
 
-                string expectedUri = !string.IsNullOrEmpty(queryRedactionDisabler) ? destinationUri : $"{baseUri}?*";
-
                 if (scopeHandler)
                 {
                     var pipelineStartMessage = Assert.Single(sink.Writes.Where(m => m.EventId == EventIds.PipelineStart));
-                    Assert.Equal($"HTTP GET {expectedUri}", pipelineStartMessage.Scope.ToString());
-                    Assert.Equal($"Start processing HTTP request GET {expectedUri}", pipelineStartMessage.Message);
+                    Assert.Equal($"HTTP GET {baseUri}?*", pipelineStartMessage.Scope.ToString());
+                    Assert.Equal($"Start processing HTTP request GET {baseUri}?*", pipelineStartMessage.Message);
                 }
                 else
                 {
                     var requestStartMessage = Assert.Single(sink.Writes.Where(m => m.EventId == EventIds.RequestStart));
-                    Assert.Equal($"Sending HTTP request GET {expectedUri}", requestStartMessage.Message);
+                    Assert.Equal($"Sending HTTP request GET {baseUri}?*", requestStartMessage.Message);
                 }
-            }, syncApi.ToString(), scopeHandler.ToString(), queryRedactionDisabler).DisposeAsync();
+            }, syncApi.ToString(), scopeHandler.ToString()).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -170,7 +154,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
 
                 if (disableUriQueryRedaction)
                 {
-                    AppContext.SetSwitch("Microsoft.Extensions.Http.DisableUriQueryRedaction", true);
+                    AppContext.SetSwitch("System.Net.Http.DisableUriRedaction", true);
                 }
 
                 var sink = new TestSink();

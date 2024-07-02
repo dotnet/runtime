@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Http.Logging
     internal static class LogHelper
     {
         private static readonly LogDefineOptions s_skipEnabledCheckLogDefineOptions = new LogDefineOptions() { SkipEnabledCheck = true };
-        private static readonly bool s_disableUriQueryRedaction = GetDisableUriQueryRedactionSettingValue();
+        private static readonly bool s_disableUriRedaction = GetDisableUriRedactionSettingValue();
 
         private static class EventIds
         {
@@ -54,14 +54,14 @@ namespace Microsoft.Extensions.Http.Logging
             EventIds.PipelineEnd,
             "End processing HTTP request after {ElapsedMilliseconds}ms - {StatusCode}");
 
-        private static bool GetDisableUriQueryRedactionSettingValue()
+        private static bool GetDisableUriRedactionSettingValue()
         {
-            if (AppContext.TryGetSwitch("Microsoft.Extensions.Http.DisableUriQueryRedaction", out bool value))
+            if (AppContext.TryGetSwitch("System.Net.Http.DisableUriRedaction", out bool value))
             {
                 return value;
             }
 
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_MICROSOFT_EXTENSIONS_HTTP_DISABLEURIQUERYREDACTION");
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION");
 
             if (bool.TryParse(envVar, out value))
             {
@@ -151,6 +151,11 @@ namespace Microsoft.Extensions.Http.Logging
                 return null;
             }
 
+            if (s_disableUriRedaction)
+            {
+                return uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString();
+            }
+
             if (!uri.IsAbsoluteUri)
             {
                 // We cannot guarantee the redaction of UserInfo for relative Uris without implementing some subset of Uri parsing in this package.
@@ -160,45 +165,25 @@ namespace Microsoft.Extensions.Http.Logging
                 return "*";
             }
 
-            string uriString = uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.UserInfo, UriFormat.UriEscaped);
+            string pathAndQuery = uri.PathAndQuery;
+            int queryIndex = pathAndQuery.IndexOf('?');
 
-            if (s_disableUriQueryRedaction)
-            {
-                return uriString;
-            }
+            bool redactQuery = queryIndex >= 0 && // Query is present.
+                queryIndex < pathAndQuery.Length - 1; // Query is not empty.
 
-            int fragmentOffset = uriString.IndexOf('#');
-            int queryOffset = uriString.IndexOf('?');
-            if (fragmentOffset >= 0 && queryOffset > fragmentOffset)
+            return (redactQuery, uri.IsDefaultPort) switch
             {
-                // Not a query delimiter, but a '?' in the fragment.
-                queryOffset = -1;
-            }
+                (true, true) => $"{uri.Scheme}://{uri.Host}{GetPath(pathAndQuery, queryIndex)}*",
+                (true, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{GetPath(pathAndQuery, queryIndex)}*",
+                (false, true) => $"{uri.Scheme}://{uri.Host}{pathAndQuery}",
+                (false, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{pathAndQuery}"
+            };
 
-            if (queryOffset < 0 || queryOffset == uriString.Length - 1 || queryOffset == fragmentOffset - 1)
-            {
-                // No query or empty query.
-                return uriString;
-            }
-
-            if (fragmentOffset < 0)
-            {
 #if NET
-                return $"{uriString.AsSpan(0, queryOffset + 1)}*";
+            static ReadOnlySpan<char> GetPath(string pathAndQuery, int queryIndex) => pathAndQuery.AsSpan(0, queryIndex + 1);
 #else
-                return $"{uriString.Substring(0, queryOffset + 1)}*";
+            static string GetPath(string pathAndQuery, int queryIndex) => pathAndQuery.Substring(0, queryIndex + 1);
 #endif
-            }
-            else
-            {
-#if NET
-                ReadOnlySpan<char> uriSpan = uriString.AsSpan();
-                return $"{uriSpan[..(queryOffset + 1)]}*{uriSpan[fragmentOffset..]}";
-#else
-                return $"{uriString.Substring(0, queryOffset + 1)}*{uriString.Substring(fragmentOffset)}";
-#endif
-            }
-
         }
     }
 }
