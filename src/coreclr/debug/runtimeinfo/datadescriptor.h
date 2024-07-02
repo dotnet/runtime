@@ -174,7 +174,7 @@ CDAC_TYPE_BEGIN(EEClass)
 CDAC_TYPE_INDETERMINATE(EEClass)
 CDAC_TYPE_FIELD(EEClass, /*pointer*/, MethodTable, cdac_offsets<EEClass>::MethodTable)
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumMethods, cdac_offsets<EEClass>::NumMethods)
-CDAC_TYPE_FIELD(EEClass, /*uint32*/, AttrClass, cdac_offsets<EEClass>::AttrClass)
+CDAC_TYPE_FIELD(EEClass, /*uint32*/, CorTypeAttr, cdac_offsets<EEClass>::CorTypeAttr)
 CDAC_TYPE_END(EEClass)
 
 CDAC_TYPES_END()

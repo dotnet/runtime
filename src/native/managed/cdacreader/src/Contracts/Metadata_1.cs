@@ -113,7 +113,8 @@ internal partial struct Metadata_1 : IMetadata
     private readonly Target _target;
     private readonly TargetPointer _freeObjectMethodTablePointer;
 
-    // FIXME: we mutate this dictionary - copies of the Metadata_1 struct share this instance
+    // TODO(cdac): we mutate this dictionary - copies of the Metadata_1 struct share this instance.
+    // If we need to invalidate our view of memory, we shoudl clear this dictionary.
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables = new();
 
     [Flags]
@@ -132,7 +133,7 @@ internal partial struct Metadata_1 : IMetadata
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
 
-    private NonValidatedMethodTable_1 GetUntrustedMethodTableData(TargetPointer methodTablePointer)
+    private NonValidatedMethodTable_1 GetNonValidatedMethodTableData(TargetPointer methodTablePointer)
     {
         return new NonValidatedMethodTable_1(_target, methodTablePointer);
     }
@@ -159,7 +160,7 @@ internal partial struct Metadata_1 : IMetadata
         }
 
         // Otherwse, get ready to validate
-        NonValidatedMethodTable_1 nonvalidatedMethodTable = GetUntrustedMethodTableData(methodTablePointer);
+        NonValidatedMethodTable_1 nonvalidatedMethodTable = GetNonValidatedMethodTableData(methodTablePointer);
 
         // if it's the free object method table, we trust it to be valid
         if (methodTablePointer == FreeObjectMethodTablePointer)
@@ -225,7 +226,7 @@ internal partial struct Metadata_1 : IMetadata
             }
             if (methodTable.Flags.HasInstantiation || methodTable.Flags.IsArray)
             {
-                NonValidatedMethodTable_1 methodTableFromClass = GetUntrustedMethodTableData(methodTablePtrFromClass);
+                NonValidatedMethodTable_1 methodTableFromClass = GetNonValidatedMethodTableData(methodTablePtrFromClass);
                 TargetPointer classFromMethodTable = GetClassWithPossibleAV(methodTableFromClass);
                 return classFromMethodTable == eeClassPtr;
             }
@@ -261,7 +262,7 @@ internal partial struct Metadata_1 : IMetadata
         else
         {
             TargetPointer canonicalMethodTablePtr = methodTable.CanonMT;
-            NonValidatedMethodTable_1 umt = GetUntrustedMethodTableData(canonicalMethodTablePtr);
+            NonValidatedMethodTable_1 umt = GetNonValidatedMethodTableData(canonicalMethodTablePtr);
             return umt.EEClass;
         }
     }
@@ -326,7 +327,7 @@ internal partial struct Metadata_1 : IMetadata
 
     public ushort GetNumInterfaces(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].NumInterfaces;
 
-    public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).AttrClass;
+    public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).CorTypeAttr;
 
     public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
 

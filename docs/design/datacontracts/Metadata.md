@@ -53,6 +53,8 @@ The `MethodTable` inspection APIs are implemented in terms of the following flag
 ``` csharp
 internal partial struct Metadata_1
 {
+    // The lower 16-bits of the MTFlags field are used for these flags,
+    // if WFLAGS_HIGH.HasComponentSize is unset
     [Flags]
     internal enum WFLAGS_LOW : uint
     {
@@ -62,6 +64,7 @@ internal partial struct Metadata_1
         StringArrayValues = GenericsMask_NonGeneric,
     }
 
+    // Upper bits of MTFlags
     [Flags]
     internal enum WFLAGS_HIGH : uint
     {
@@ -69,8 +72,9 @@ internal partial struct Metadata_1
         Category_Array = 0x00080000,
         Category_Array_Mask = 0x000C0000,
         Category_Interface = 0x000C0000,
-        ContainsPointers = 0x01000000, // Contains object references
-        HasComponentSize = 0x80000000, // This is set if component size is used for flags.
+        ContainsGCPointers = 0x01000000,
+        HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
+                                       // otherwise the lower bits are used for WFLAGS_LOW
     }
 
     [Flags]
@@ -82,10 +86,14 @@ internal partial struct Metadata_1
     // Encapsulates the MethodTable flags v1 uses
     internal struct MethodTableFlags
     {
-        public WFLAGS_LOW GetFlag(WFLAGS_LOW mask) { ... }
-        public WFLAGS_HIGH GetFlag(WFLAGS_HIGH mask) { ... }
+        public uint MTFlags { get; }
+        public uint MTFlags2 { get; }
+        public uint BaseSize { get; }
 
-        public WFLAGS2_ENUM GetFlag(WFLAGS2_ENUM mask) { ... }
+        public WFLAGS_LOW GetFlag(WFLAGS_LOW mask) { ... /* mask & lower 16 bits of MTFlags */ }
+        public WFLAGS_HIGH GetFlag(WFLAGS_HIGH mask) { ... /* mask & upper 16 bits of MTFlags */ }
+
+        public WFLAGS2_ENUM GetFlag(WFLAGS2_ENUM mask) { ... /* mask & MTFlags2*/ }
         public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
         public bool IsString => HasComponentSize && !IsArray && RawGetComponentSize() == 2;
 
@@ -94,7 +102,7 @@ internal partial struct Metadata_1
         public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
 
         public bool IsStringOrArray => HasComponentSize;
-        public ushort RawGetComponentSize() => (ushort)(MTFlags >> 16);
+        public ushort RawGetComponentSize() => (ushort)(MTFlags & 0x0000ffff);
 
         private bool TestFlagWithMask(WFLAGS_LOW mask, WFLAGS_LOW flag)
         {
@@ -211,7 +219,7 @@ The contract additionally depends on the `EEClass` data descriptor.
 
     public ushort GetNumInterfaces(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].NumInterfaces;
 
-    public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).AttrClass;
+    public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).CorTypeAttr;
 
     public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
 ```

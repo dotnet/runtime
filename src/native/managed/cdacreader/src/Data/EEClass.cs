@@ -14,10 +14,10 @@ public sealed class EEClass : IData<EEClass>
 
         MethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset);
         NumMethods = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumMethods)].Offset);
-        AttrClass = target.Read<uint>(address + (ulong)type.Fields[nameof(AttrClass)].Offset);
+        CorTypeAttr = target.Read<uint>(address + (ulong)type.Fields[nameof(CorTypeAttr)].Offset);
     }
 
     public TargetPointer MethodTable { get; init; }
     public ushort NumMethods { get; init; }
-    public uint AttrClass { get; init; }
+    public uint CorTypeAttr { get; init; }
 }

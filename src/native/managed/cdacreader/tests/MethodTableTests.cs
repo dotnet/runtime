@@ -3,6 +3,7 @@
 
 using System;
 using System.Text;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Xunit;
 
@@ -31,7 +32,7 @@ public unsafe class MethodTableTests
     {
         Fields = {
             { nameof (Data.EEClass.MethodTable), new () { Offset = 8, Type = DataType.pointer}},
-            { nameof (Data.EEClass.AttrClass), new () { Offset = 16, Type = DataType.uint32}},
+            { nameof (Data.EEClass.CorTypeAttr), new () { Offset = 16, Type = DataType.uint32}},
             { nameof (Data.EEClass.NumMethods), new () { Offset = 20, Type = DataType.uint16}},
         }
     };
@@ -63,24 +64,34 @@ public unsafe class MethodTableTests
         MockMemorySpace.HeapFragment eeClassFragment = new() { Name = $"EEClass '{name}'", Address = eeClassPtr, Data = new byte[targetTestHelpers.SizeOfTypeInfo(EEClassTypeInfo)] };
         Span<byte> dest = eeClassFragment.Data;
         targetTestHelpers.WritePointer(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.MethodTable)].Offset), canonMTPtr);
-        // TODO: fill in the rest of the fields
+        targetTestHelpers.Write(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.CorTypeAttr)].Offset), attr);
+        targetTestHelpers.Write(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.NumMethods)].Offset), numMethods);
         return builder.AddHeapFragment(eeClassFragment);
 
     }
 
-    private static MockMemorySpace.Builder AddMethodTable(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer methodTablePtr, string name, TargetPointer eeClassOrCanonMT, uint mtflags, uint mtflags2, uint baseSize)
+    private static MockMemorySpace.Builder AddMethodTable(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer methodTablePtr, string name, TargetPointer eeClassOrCanonMT, uint mtflags, uint mtflags2, uint baseSize,
+                                                        TargetPointer module, TargetPointer parentMethodTable, ushort numInterfaces, ushort numVirtuals)
     {
         MockMemorySpace.HeapFragment methodTableFragment = new() { Name = $"MethodTable '{name}'", Address = methodTablePtr, Data = new byte[targetTestHelpers.SizeOfTypeInfo(MethodTableTypeInfo)] };
         Span<byte> dest = methodTableFragment.Data;
         targetTestHelpers.WritePointer(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.EEClassOrCanonMT)].Offset), eeClassOrCanonMT);
+        targetTestHelpers.Write(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.MTFlags)].Offset), mtflags);
+        targetTestHelpers.Write(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.MTFlags2)].Offset), mtflags2);
+        targetTestHelpers.Write(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.BaseSize)].Offset), baseSize);
+        targetTestHelpers.WritePointer(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.Module)].Offset), module);
+        targetTestHelpers.WritePointer(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.ParentMethodTable)].Offset), parentMethodTable);
+        targetTestHelpers.Write(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.NumInterfaces)].Offset), numInterfaces);
+        targetTestHelpers.Write(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.NumVirtuals)].Offset), numVirtuals);
+
         // TODO fill in the rest of the fields
         return builder.AddHeapFragment(methodTableFragment);
     }
 
     // a delegate for adding more heap fragments to the context builder
-    private delegate MockMemorySpace.Builder ConfigureContextBuilder(MockTarget.Architecture arch, MockMemorySpace.Builder builder);
+    private delegate MockMemorySpace.Builder ConfigureContextBuilder(MockMemorySpace.Builder builder);
 
-    private static void MetadataContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<MockTarget.Architecture, Target> testCase)
+    private static void MetadataContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
         string metadataTypesJson = TargetTestHelpers.MakeTypesJson(MetadataTypes);
@@ -119,7 +130,7 @@ public unsafe class MethodTableTests
 
             if (configure != null)
             {
-                builder = configure(arch, builder);
+                builder = configure(builder);
             }
 
             using MockMemorySpace.ReadContext context = builder.Create();
@@ -127,7 +138,7 @@ public unsafe class MethodTableTests
             bool success = MockMemorySpace.TryCreateTarget(&context, out Target? target);
             Assert.True(success);
 
-            testCase(arch, target);
+            testCase(target);
         }
         GC.KeepAlive(json);
     }
@@ -136,7 +147,7 @@ public unsafe class MethodTableTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void HasMetadataContract(MockTarget.Architecture arch)
     {
-        MetadataContractHelper(arch, default, static (arch, target) =>
+        MetadataContractHelper(arch, default, (target) =>
         {
             Contracts.IMetadata metadataContract = target.Contracts.Metadata;
             Assert.NotNull(metadataContract);
@@ -144,6 +155,18 @@ public unsafe class MethodTableTests
             Assert.NotEqual(TargetPointer.Null, handle.Address);
             Assert.True(metadataContract.IsFreeObjectMethodTable(handle));
         });
+    }
+
+    private static MockMemorySpace.Builder AddSystemObject(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer systemObjectMethodTablePtr, TargetPointer systemObjectEEClassPtr)
+    {
+        System.Reflection.TypeAttributes typeAttributes = System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class;
+        const int numMethods = 8; // System.Object has 8 methods
+        const int numVirtuals = 3; // System.Object has 3 virtual methods
+        builder = AddEEClass(targetTestHelpers, builder, systemObjectEEClassPtr, "System.Object", systemObjectMethodTablePtr, attr: (uint)typeAttributes, numMethods: numMethods);
+        builder = AddMethodTable(targetTestHelpers, builder, systemObjectMethodTablePtr, "System.Object", systemObjectEEClassPtr,
+                                mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
+                                module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: numVirtuals);
+        return builder;
     }
 
     [Theory]
@@ -154,22 +177,60 @@ public unsafe class MethodTableTests
         const ulong SystemObjectEEClassAddress = 0x00000000_7c0000d0;
         TargetPointer systemObjectMethodTablePtr = new TargetPointer(SystemObjectMethodTableAddress);
         TargetPointer systemObjectEEClassPtr = new TargetPointer(SystemObjectEEClassAddress);
+        TargetTestHelpers targetTestHelpers = new(arch);
         MetadataContractHelper(arch,
-        (arch, builder) =>
+        (builder) =>
         {
-            TargetTestHelpers targetTestHelpers = new(arch);
-            builder = AddEEClass(targetTestHelpers, builder, systemObjectEEClassPtr, "System.Object", systemObjectMethodTablePtr, attr: default, numMethods: default);
-            builder = AddMethodTable(targetTestHelpers, builder, systemObjectMethodTablePtr, "System.Object", systemObjectEEClassPtr, mtflags: default, mtflags2: default, baseSize: default);
+            builder = AddSystemObject(targetTestHelpers, builder, systemObjectMethodTablePtr, systemObjectEEClassPtr);
             return builder;
         },
-        (arch, target) =>
+        (target) =>
         {
-            TargetTestHelpers targetTestHelpers = new(arch);
             Contracts.IMetadata metadataContract = target.Contracts.Metadata;
             Assert.NotNull(metadataContract);
             Contracts.MethodTableHandle systemObjectMethodTableHandle = metadataContract.GetMethodTableHandle(systemObjectMethodTablePtr);
             Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectMethodTableHandle.Address.Value);
             Assert.False(metadataContract.IsFreeObjectMethodTable(systemObjectMethodTableHandle));
+        });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateSystemStringMethodTable(MockTarget.Architecture arch)
+    {
+        const ulong SystemObjectMethodTableAddress = 0x00000000_7c000010;
+        const ulong SystemObjectEEClassAddress = 0x00000000_7c0000d0;
+        TargetPointer systemObjectMethodTablePtr = new TargetPointer(SystemObjectMethodTableAddress);
+        TargetPointer systemObjectEEClassPtr = new TargetPointer(SystemObjectEEClassAddress);
+
+        const ulong SystemStringMethodTableAddress = 0x00000000_7c002010;
+        const ulong SystemStringEEClassAddress = 0x00000000_7c0020d0;
+        TargetPointer systemStringMethodTablePtr = new TargetPointer(SystemStringMethodTableAddress);
+        TargetPointer systemStringEEClassPtr = new TargetPointer(SystemStringEEClassAddress);
+        TargetTestHelpers targetTestHelpers = new(arch);
+        MetadataContractHelper(arch,
+        (builder) =>
+        {
+            builder = AddSystemObject(targetTestHelpers, builder, systemObjectMethodTablePtr, systemObjectEEClassPtr);
+            System.Reflection.TypeAttributes typeAttributes = System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Sealed;
+            const int numMethods = 37; // Arbitrary. Not trying to exactly match  the real System.String
+            const int numInterfaces = 8; // Arbitrary
+            const int numVirtuals = 3; // at least as many as System.Object
+            uint mtflags = (uint)Metadata_1.WFLAGS_HIGH.HasComponentSize | /*componentSize: */2;
+            builder = AddEEClass(targetTestHelpers, builder, systemStringEEClassPtr, "System.String", systemStringMethodTablePtr, attr: (uint)typeAttributes, numMethods: numMethods);
+            builder = AddMethodTable(targetTestHelpers, builder, systemStringMethodTablePtr, "System.String", systemStringEEClassPtr,
+                                    mtflags: mtflags, mtflags2: default, baseSize: targetTestHelpers.StringBaseSize,
+                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: numInterfaces, numVirtuals: numVirtuals);
+            return builder;
+        },
+        (target) =>
+        {
+            Contracts.IMetadata metadataContract = target.Contracts.Metadata;
+            Assert.NotNull(metadataContract);
+            Contracts.MethodTableHandle systemStringMethodTableHandle = metadataContract.GetMethodTableHandle(systemStringMethodTablePtr);
+            Assert.Equal(systemStringMethodTablePtr.Value, systemStringMethodTableHandle.Address.Value);
+            Assert.False(metadataContract.IsFreeObjectMethodTable(systemStringMethodTableHandle));
+            Assert.True(metadataContract.IsString(systemStringMethodTableHandle));
         });
     }
 }

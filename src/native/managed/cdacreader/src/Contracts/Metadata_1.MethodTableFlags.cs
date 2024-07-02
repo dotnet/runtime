@@ -7,6 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal partial struct Metadata_1
 {
+    // The lower 16-bits of the MTFlags field are used for these flags,
+    // if WFLAGS_HIGH.HasComponentSize is unset
     [Flags]
     internal enum WFLAGS_LOW : uint
     {
@@ -18,6 +20,7 @@ internal partial struct Metadata_1
             0,
     }
 
+    // Upper bits of MTFlags
     [Flags]
     internal enum WFLAGS_HIGH : uint
     {
@@ -25,8 +28,9 @@ internal partial struct Metadata_1
         Category_Array = 0x00080000,
         Category_Array_Mask = 0x000C0000,
         Category_Interface = 0x000C0000,
-        ContainsGCPointers = 0x01000000, // Contains object references
-        HasComponentSize = 0x80000000, // This is set if component size is used for flags.
+        ContainsGCPointers = 0x01000000,
+        HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
+                                       // otherwise the lower bits are used for WFLAGS_LOW
     }
 
     [Flags]
@@ -44,7 +48,6 @@ internal partial struct Metadata_1
         public uint BaseSize { get; init; }
 
         private const int MTFlags2TypeDefRidShift = 8;
-        private const int MTFlagsComponentSizeShift = 16;
         private WFLAGS_HIGH FlagsHigh => (WFLAGS_HIGH)MTFlags;
         private WFLAGS_LOW FlagsLow => (WFLAGS_LOW)MTFlags;
         public int GetTypeDefRid() => (int)(MTFlags2 >> MTFlags2TypeDefRidShift);
@@ -61,7 +64,7 @@ internal partial struct Metadata_1
         public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
 
         public bool IsStringOrArray => HasComponentSize;
-        public ushort RawGetComponentSize() => (ushort)(MTFlags >> MTFlagsComponentSizeShift);
+        public ushort RawGetComponentSize() => (ushort)(MTFlags & 0x0000ffff);
 
         private bool TestFlagWithMask(WFLAGS_LOW mask, WFLAGS_LOW flag)
         {

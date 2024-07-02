@@ -147,6 +147,55 @@ internal unsafe class TargetTestHelpers
 
     #region Mock memory initialization
 
+    internal uint ObjHeaderSize => (uint)(Arch.Is64Bit ? 2 * sizeof(uint) /*alignpad + syncblock*/: sizeof(uint) /* syncblock */);
+    internal uint ObjectSize => (uint)PointerSize /* methtab */;
+
+    internal uint ObjectBaseSize => ObjHeaderSize + ObjectSize;
+
+    internal uint ArrayBaseSize => Arch.Is64Bit ? ObjectSize + sizeof(uint) /* numComponents */ + sizeof(uint) /* pad*/ : ObjectSize + sizeof(uint) /* numComponents */;
+
+    internal uint ArrayBaseBaseSize => ObjHeaderSize + ArrayBaseSize;
+
+    internal uint StringBaseSize => ObjectBaseSize + sizeof(uint) /* length */ + sizeof(char) /* nul terminator */;
+
+    internal void Write(Span<byte> dest, byte b) => dest[0] = b;
+    internal void Write(Span<byte> dest, ushort u)
+    {
+        if (Arch.IsLittleEndian)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(dest, u);
+        }
+        else
+        {
+            BinaryPrimitives.WriteUInt16BigEndian(dest, u);
+        }
+    }
+
+    internal void Write(Span<byte> dest, uint u)
+    {
+        if (Arch.IsLittleEndian)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(dest, u);
+        }
+        else
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(dest, u);
+        }
+    }
+
+    internal void Write(Span<byte> dest, ulong u)
+    {
+        if (Arch.IsLittleEndian)
+        {
+            BinaryPrimitives.WriteUInt64LittleEndian(dest, u);
+        }
+        else
+        {
+            BinaryPrimitives.WriteUInt64BigEndian(dest, u);
+        }
+    }
+
+
     internal void WritePointer(Span<byte> dest, ulong value)
     {
         if (Arch.Is64Bit)
