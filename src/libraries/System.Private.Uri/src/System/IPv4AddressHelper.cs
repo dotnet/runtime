@@ -38,10 +38,10 @@ namespace System.Net
         //
         private static bool Parse(ReadOnlySpan<char> name, Span<byte> numbers)
         {
-            // "name" parameter includes ports, so bytesConsumed may be different from span length
+            // "name" parameter includes ports, so charsConsumed may be different from span length
             long result = ParseNonCanonical(name, out _, true);
 
-            Debug.Assert(result != Invalid, $"Failed to parse after already validated: {string.Join(string.Empty, name.ToArray())}");
+            Debug.Assert(result != Invalid, $"Failed to parse after already validated: {name}");
 
             BinaryPrimitives.WriteUInt32BigEndian(numbers, (uint)result);
 

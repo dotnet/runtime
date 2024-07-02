@@ -251,8 +251,8 @@ namespace System.Net
         }
 
         /// <inheritdoc/>
-        static bool IUtf8SpanParsable<IPAddress>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [NotNullWhen(true)] out IPAddress? result)
-            => TryParse(utf8Text, out result);
+        static bool IUtf8SpanParsable<IPAddress>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [NotNullWhen(true)] out IPAddress? result) =>
+            TryParse(utf8Text, out result);
 
         /// <inheritdoc/>
         static bool IParsable<IPAddress>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [NotNullWhen(true)] out IPAddress? result) =>

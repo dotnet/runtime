@@ -328,7 +328,7 @@ namespace System.Net
         public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Net.IPNetwork result) { throw null; }
         public static bool TryParse(string? s, out System.Net.IPNetwork result) { throw null; }
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out IPNetwork result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out IPNetwork result) { throw null; }
     }
     public partial interface IWebProxy
     {

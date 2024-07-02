@@ -222,7 +222,7 @@ namespace System.Net
         /// <param name="utf8Text">A UTF-8 character span that defines an IP network in CIDR notation.</param>
         /// <param name="result">When the method returns, contains an <see cref="IPNetwork"/> instance if the conversion succeeds.</param>
         /// <returns><see langword="true"/> if the conversion was successful; otherwise, <see langword="false"/>.</returns>
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [MaybeNullWhen(false)] out IPNetwork result)
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out IPNetwork result)
         {
             int separatorIndex = utf8Text.LastIndexOf((byte)'/');
             if (separatorIndex >= 0)

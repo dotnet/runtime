@@ -3861,9 +3861,9 @@ namespace System
                 }
             }
             else if (char.IsAsciiDigit(ch) && syntax.InFact(UriSyntaxFlags.AllowIPv4Host) &&
-                IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), out int bytesConsumed, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
+                IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), out int charsConsumed, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
             {
-                end = start + bytesConsumed;
+                end = start + charsConsumed;
                 flags |= Flags.IPv4HostType;
 
                 if (hasUnicode)

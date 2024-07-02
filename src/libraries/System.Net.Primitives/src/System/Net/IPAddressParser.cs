@@ -18,7 +18,7 @@ namespace System.Net
         {
             Debug.Assert(typeof(TChar) == typeof(byte) || typeof(TChar) == typeof(char));
 
-            if (ipSpan.Contains(TChar.CreateChecked(':')))
+            if (ipSpan.Contains(TChar.CreateTruncating(':')))
             {
                 // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
                 // we don't support/parse a port specification at the end of an IPv4 address.
@@ -45,9 +45,7 @@ namespace System.Net
         private static bool TryParseIpv4<TChar>(ReadOnlySpan<TChar> ipSpan, out long address)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            long tmpAddr;
-
-            tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, out int end, notImplicitFile: true);
+            long tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, out int end, notImplicitFile: true);
 
             if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
             {
@@ -68,10 +66,8 @@ namespace System.Net
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
 
-            bool isValid = IPv6AddressHelper.IsValidStrict(ipSpan);
-
             scope = 0;
-            if (isValid)
+            if (IPv6AddressHelper.IsValidStrict(ipSpan))
             {
                 IPv6AddressHelper.Parse(ipSpan, numbers, out ReadOnlySpan<TChar> scopeIdSpan);
 
