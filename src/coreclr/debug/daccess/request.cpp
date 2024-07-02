@@ -2142,32 +2142,7 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _In
     }
     else if (!pPEAssembly->IsReflectionEmit())
     {
-        StackSString displayName;
-        pPEAssembly->GetDisplayName(displayName, 0);
-
-        if (displayName.IsEmpty())
-        {
-            if (fileName)
-                fileName[0] = 0;
-
-            if (pNeeded)
-                *pNeeded = 1;
-        }
-        else
-        {
-            unsigned int len = displayName.GetCount()+1;
-
-            if (fileName)
-            {
-                wcsncpy_s(fileName, count, displayName.GetUnicode(), _TRUNCATE);
-
-                if (count < len)
-                    len = count;
-            }
-
-            if (pNeeded)
-                *pNeeded = len;
-        }
+        hr = E_NOTIMPL;
     }
     else
     {
@@ -2711,19 +2686,7 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _In
     }
     else if (!pAssembly->GetPEAssembly()->IsReflectionEmit())
     {
-        StackSString displayName;
-        pAssembly->GetPEAssembly()->GetDisplayName(displayName, 0);
-
-        const WCHAR *val = displayName.GetUnicode();
-
-        if (pNeeded)
-            *pNeeded = displayName.GetCount() + 1;
-
-        if (name && count)
-        {
-            wcsncpy_s(name, count, val, _TRUNCATE);
-            name[count-1] = 0;
-        }
+        hr = E_NOTIMPL;
     }
     else
     {
