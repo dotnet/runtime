@@ -325,10 +325,8 @@ export function init_c_exports (): void {
         if (lazyOrSkip === true || maybeSkip) {
             // lazy init on first run
             wf[name] = function (...args: any[]) {
-                if (!runtimeHelpers.emscriptenBuildOptions.enableAotProfiler) {
-                    const isNotSkipped = !maybeSkip || !lazyOrSkip();
-                    mono_assert(isNotSkipped, () => `cwrap ${name} should not be called when binding was skipped`);
-                }
+                const isNotSkipped = !maybeSkip || !lazyOrSkip();
+                mono_assert(isNotSkipped, () => `cwrap ${name} should not be called when binding was skipped`);
                 const fce = cwrap(name, returnType, argTypes, opts);
                 wf[name] = fce;
                 return fce(...args);
