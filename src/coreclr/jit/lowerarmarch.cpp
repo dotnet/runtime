@@ -1254,6 +1254,102 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicDot(node);
         }
 
+        case NI_Vector64_GetElement:
+        case NI_Vector128_GetElement:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            bool isContainableMemory = IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1);
+
+            if (isContainableMemory || !op2->OperIsConst())
+            {
+                unsigned  simdSize     = node->GetSimdSize();
+                var_types simdBaseType = node->GetSimdBaseType();
+                var_types simdType     = Compiler::getSIMDTypeForSize(simdSize);
+                unsigned  scale        = genTypeSize(simdBaseType);
+                ssize_t   offset       = 0;
+
+                // We're either already loading from memory or we need to since
+                // we don't know what actual index is going to be retrieved.
+
+                unsigned lclNum = BAD_VAR_NUM;
+
+                if (!isContainableMemory)
+                {
+                    // We aren't already in memory, so we need to spill there
+
+                    comp->getSIMDInitTempVarNum(simdType);
+                    lclNum = comp->lvaSIMDInitTempVarNum;
+
+                    GenTree* storeLclVar = comp->gtNewStoreLclVarNode(lclNum, op1);
+                    BlockRange().InsertBefore(node, storeLclVar);
+                    LowerNode(storeLclVar);
+                }
+                else if (op1->IsLocal())
+                {
+                    // We're an existing local that is loaded from memory
+                    GenTreeLclVarCommon* lclVar = op1->AsLclVarCommon();
+
+                    lclNum = lclVar->GetLclNum();
+                    offset = lclVar->GetLclOffs();
+
+                    BlockRange().Remove(op1);
+                }
+
+                if (lclNum != BAD_VAR_NUM)
+                {
+                    // We need to get the address of the local
+                    op1 = comp->gtNewLclVarAddrNode(lclNum, TYP_BYREF);
+                    BlockRange().InsertBefore(node, op1);
+                    LowerNode(op1);
+                }
+                else
+                {
+                    assert(op1->isIndir());
+
+                    // We need to get the underlying address
+                    GenTree* addr = op1->AsIndir()->Addr();
+                    BlockRange().Remove(op1);
+                    op1 = addr;
+                }
+
+                // Now that we have a memory op, we need to offset it by op2 * scale
+                if (op2->OperIsConst())
+                {
+                    offset = offset + (op2->AsIntCon()->IconValue() * scale);
+                    scale  = 0;
+
+                    BlockRange().Remove(op2);
+                    op2 = nullptr;
+                }
+
+                GenTree* addrMode = new (comp, GT_LEA) GenTreeAddrMode(op1->TypeGet(), op1, op2, scale, offset);
+                BlockRange().InsertBefore(node, addrMode);
+                LowerNode(addrMode);
+
+                // Finally we can indirect the memory address to get the actual value
+                GenTreeIndir* indir = comp->gtNewIndir(simdBaseType, addrMode);
+                BlockRange().InsertBefore(node, indir);
+
+                LIR::Use use;
+                if (BlockRange().TryGetUse(node, &use))
+                {
+                    use.ReplaceWith(indir);
+                }
+                else
+                {
+                    indir->SetUnusedValue();
+                }
+
+                BlockRange().Remove(node);
+                return LowerNode(indir);
+            }
+
+            assert(op2->OperIsConst());
+            break;
+        }
+
         case NI_Vector64_op_Equality:
         case NI_Vector128_op_Equality:
         {
@@ -3310,24 +3406,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector64_GetElement:
             case NI_Vector128_GetElement:
             {
-                assert(varTypeIsIntegral(intrin.op2));
+                assert(!IsContainableMemoryOp(intrin.op1) || !IsSafeToContainMem(node, intrin.op1));
+                assert(intrin.op2->OperIsConst());
 
-                if (intrin.op2->IsCnsIntOrI())
-                {
-                    MakeSrcContained(node, intrin.op2);
-                }
-
-                // TODO: Codegen isn't currently handling this correctly
-                //
-                // if (IsContainableMemoryOp(intrin.op1) && IsSafeToContainMem(node, intrin.op1))
-                // {
-                //     MakeSrcContained(node, intrin.op1);
-                //
-                //     if (intrin.op1->OperIs(GT_IND))
-                //     {
-                //         intrin.op1->AsIndir()->Addr()->ClearContained();
-                //     }
-                // }
+                // Loading a constant index from register
+                MakeSrcContained(node, intrin.op2);
                 break;
             }
 
