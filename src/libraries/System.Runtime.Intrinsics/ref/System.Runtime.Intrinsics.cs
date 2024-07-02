@@ -5036,6 +5036,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<long> ShiftRightArithmetic(System.Numerics.Vector<long> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<sbyte> ShiftRightArithmetic(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<sbyte> ShiftRightArithmetic(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmeticForDivide(System.Numerics.Vector<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte control) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmeticForDivide(System.Numerics.Vector<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte control) { throw null; }
+        public static System.Numerics.Vector<long> ShiftRightArithmeticForDivide(System.Numerics.Vector<long> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte control) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmeticForDivide(System.Numerics.Vector<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte control) { throw null; }
         public static System.Numerics.Vector<byte> ShiftRightLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<byte> ShiftRightLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<ushort> ShiftRightLogical(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }

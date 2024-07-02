@@ -5902,6 +5902,45 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<sbyte> ShiftRightArithmetic(Vector<sbyte> left, Vector<ulong> right) => ShiftRightArithmetic(left, right);
 
 
+        ///  Arithmetic shift right for divide by immediate
+
+        /// <summary>
+        /// svint16_t svasrd[_n_s16]_m(svbool_t pg, svint16_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.H, Pg/M, Ztied1.H, #imm2
+        /// svint16_t svasrd[_n_s16]_x(svbool_t pg, svint16_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.H, Pg/M, Ztied1.H, #imm2
+        /// svint16_t svasrd[_n_s16]_z(svbool_t pg, svint16_t op1, uint64_t imm2)
+        /// </summary>
+        public static unsafe Vector<short> ShiftRightArithmeticForDivide(Vector<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte control) => ShiftRightArithmeticForDivide(value, control);
+
+        /// <summary>
+        /// svint32_t svasrd[_n_s32]_m(svbool_t pg, svint32_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.S, Pg/M, Ztied1.S, #imm2
+        /// svint32_t svasrd[_n_s32]_x(svbool_t pg, svint32_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.S, Pg/M, Ztied1.S, #imm2
+        /// svint32_t svasrd[_n_s32]_z(svbool_t pg, svint32_t op1, uint64_t imm2)
+        /// </summary>
+        public static unsafe Vector<int> ShiftRightArithmeticForDivide(Vector<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte control) => ShiftRightArithmeticForDivide(value, control);
+
+        /// <summary>
+        /// svint64_t svasrd[_n_s64]_m(svbool_t pg, svint64_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.D, Pg/M, Ztied1.D, #imm2
+        /// svint64_t svasrd[_n_s64]_x(svbool_t pg, svint64_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.D, Pg/M, Ztied1.D, #imm2
+        /// svint64_t svasrd[_n_s64]_z(svbool_t pg, svint64_t op1, uint64_t imm2)
+        /// </summary>
+        public static unsafe Vector<long> ShiftRightArithmeticForDivide(Vector<long> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte control) => ShiftRightArithmeticForDivide(value, control);
+
+        /// <summary>
+        /// svint8_t svasrd[_n_s8]_m(svbool_t pg, svint8_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.B, Pg/M, Ztied1.B, #imm2
+        /// svint8_t svasrd[_n_s8]_x(svbool_t pg, svint8_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.B, Pg/M, Ztied1.B, #imm2
+        /// svint8_t svasrd[_n_s8]_z(svbool_t pg, svint8_t op1, uint64_t imm2)
+        /// </summary>
+        public static unsafe Vector<sbyte> ShiftRightArithmeticForDivide(Vector<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte control) => ShiftRightArithmeticForDivide(value, control);
+
+
         ///  Logical shift right
 
         /// <summary>

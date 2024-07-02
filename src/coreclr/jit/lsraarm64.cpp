@@ -1353,159 +1353,162 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         dstCount = 1;
     }
 
-    const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
+    // We may need to allocate an additional general-purpose register when an intrinsic has a non-const immediate
+    // operand and the intrinsic does not have an alternative non-const fallback form.
+    // However, for a case when the operand can take only two possible values - zero and one
+    // the codegen can use cbnz to do conditional branch, so such register is not needed.
+    auto needsBranchTargetReg = [this](const HWIntrinsic& intrinsic, const GenTreeHWIntrinsic* tree) -> bool {
+        assert(tree != nullptr);
+        assert(intrinsic.id == tree->GetHWIntrinsicId());
+        bool result = false;
 
-    if (hasImmediateOperand && !HWIntrinsicInfo::NoJmpTableImm(intrin.id))
+        if (HWIntrinsicInfo::HasImmediateOperand(intrinsic.id) && !HWIntrinsicInfo::NoJmpTableImm(intrinsic.id))
+        {
+            int immLowerBound = 0;
+            int immUpperBound = 0;
+
+            if (intrinsic.category == HW_Category_SIMDByIndexedElement)
+            {
+                var_types indexedElementOpType;
+
+                if (intrinsic.numOperands == 2)
+                {
+                    indexedElementOpType = intrinsic.op1->TypeGet();
+                }
+                else if (intrinsic.numOperands == 3)
+                {
+                    indexedElementOpType = intrinsic.op2->TypeGet();
+                }
+                else
+                {
+                    assert(intrinsic.numOperands == 4);
+                    indexedElementOpType = intrinsic.op3->TypeGet();
+                }
+
+                assert(varTypeIsSIMD(indexedElementOpType));
+
+                const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
+                HWIntrinsicInfo::lookupImmBounds(intrinsic.id, indexedElementSimdSize, intrinsic.baseType, 1,
+                                                 &immLowerBound, &immUpperBound);
+            }
+            else
+            {
+                HWIntrinsicInfo::lookupImmBounds(intrinsic.id, tree->GetSimdSize(), intrinsic.baseType, 1,
+                                                 &immLowerBound, &immUpperBound);
+            }
+
+            if ((immLowerBound != 0) || (immUpperBound != 1))
+            {
+                if ((intrinsic.category == HW_Category_SIMDByIndexedElement) ||
+                    (intrinsic.category == HW_Category_ShiftLeftByImmediate) ||
+                    (intrinsic.category == HW_Category_ShiftRightByImmediate))
+                {
+                    switch (intrinsic.numOperands)
+                    {
+                        case 4:
+                            result = !intrinsic.op4->isContainedIntOrIImmed();
+                            break;
+
+                        case 3:
+                            result = !intrinsic.op3->isContainedIntOrIImmed();
+                            break;
+
+                        case 2:
+                            result = !intrinsic.op2->isContainedIntOrIImmed();
+                            break;
+
+                        default:
+                            unreached();
+                    }
+                }
+                else
+                {
+                    switch (intrinsic.id)
+                    {
+                        case NI_AdvSimd_DuplicateSelectedScalarToVector64:
+                        case NI_AdvSimd_DuplicateSelectedScalarToVector128:
+                        case NI_AdvSimd_Extract:
+                        case NI_AdvSimd_Insert:
+                        case NI_AdvSimd_InsertScalar:
+                        case NI_AdvSimd_LoadAndInsertScalar:
+                        case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+                        case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+                        case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+                        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+                        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+                        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+                        case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+                            result = !intrinsic.op2->isContainedIntOrIImmed();
+                            break;
+
+                        case NI_AdvSimd_ExtractVector64:
+                        case NI_AdvSimd_ExtractVector128:
+                        case NI_AdvSimd_StoreSelectedScalar:
+                        case NI_AdvSimd_Arm64_StoreSelectedScalar:
+                        case NI_Sve_PrefetchBytes:
+                        case NI_Sve_PrefetchInt16:
+                        case NI_Sve_PrefetchInt32:
+                        case NI_Sve_PrefetchInt64:
+                        case NI_Sve_ExtractVector:
+                            result = !intrinsic.op3->isContainedIntOrIImmed();
+                            break;
+
+                        case NI_AdvSimd_Arm64_InsertSelectedScalar:
+                            assert(intrinsic.op2->isContainedIntOrIImmed());
+                            assert(intrinsic.op4->isContainedIntOrIImmed());
+                            break;
+
+                        case NI_Sve_CreateTrueMaskByte:
+                        case NI_Sve_CreateTrueMaskDouble:
+                        case NI_Sve_CreateTrueMaskInt16:
+                        case NI_Sve_CreateTrueMaskInt32:
+                        case NI_Sve_CreateTrueMaskInt64:
+                        case NI_Sve_CreateTrueMaskSByte:
+                        case NI_Sve_CreateTrueMaskSingle:
+                        case NI_Sve_CreateTrueMaskUInt16:
+                        case NI_Sve_CreateTrueMaskUInt32:
+                        case NI_Sve_CreateTrueMaskUInt64:
+                        case NI_Sve_Count16BitElements:
+                        case NI_Sve_Count32BitElements:
+                        case NI_Sve_Count64BitElements:
+                        case NI_Sve_Count8BitElements:
+                            result = !intrinsic.op1->isContainedIntOrIImmed();
+                            break;
+
+                        case NI_Sve_SaturatingDecrementBy16BitElementCount:
+                        case NI_Sve_SaturatingDecrementBy32BitElementCount:
+                        case NI_Sve_SaturatingDecrementBy64BitElementCount:
+                        case NI_Sve_SaturatingDecrementBy8BitElementCount:
+                        case NI_Sve_SaturatingIncrementBy16BitElementCount:
+                        case NI_Sve_SaturatingIncrementBy32BitElementCount:
+                        case NI_Sve_SaturatingIncrementBy64BitElementCount:
+                        case NI_Sve_SaturatingIncrementBy8BitElementCount:
+                        case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+                        case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+                        case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+                        case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+                        case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+                        case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+                            // Can only avoid generating a table if both immediates are constant.
+                            assert(intrinsic.op2->isContainedIntOrIImmed() == intrinsic.op3->isContainedIntOrIImmed());
+                            result = !intrinsic.op2->isContainedIntOrIImmed();
+                            // Ensure that internal does not collide with desination.
+                            this->setInternalRegsDelayFree = true;
+                            break;
+
+                        default:
+                            unreached();
+                    }
+                }
+            }
+        }
+
+        return result;
+    };
+
+    if (needsBranchTargetReg(intrin, intrinsicTree))
     {
-        // We may need to allocate an additional general-purpose register when an intrinsic has a non-const immediate
-        // operand and the intrinsic does not have an alternative non-const fallback form.
-        // However, for a case when the operand can take only two possible values - zero and one
-        // the codegen can use cbnz to do conditional branch, so such register is not needed.
-
-        bool needBranchTargetReg = false;
-
-        int immLowerBound = 0;
-        int immUpperBound = 0;
-
-        if (intrin.category == HW_Category_SIMDByIndexedElement)
-        {
-            var_types indexedElementOpType;
-
-            if (intrin.numOperands == 2)
-            {
-                indexedElementOpType = intrin.op1->TypeGet();
-            }
-            else if (intrin.numOperands == 3)
-            {
-                indexedElementOpType = intrin.op2->TypeGet();
-            }
-            else
-            {
-                assert(intrin.numOperands == 4);
-                indexedElementOpType = intrin.op3->TypeGet();
-            }
-
-            assert(varTypeIsSIMD(indexedElementOpType));
-
-            const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
-            HWIntrinsicInfo::lookupImmBounds(intrin.id, indexedElementSimdSize, intrin.baseType, 1, &immLowerBound,
-                                             &immUpperBound);
-        }
-        else
-        {
-            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->GetSimdSize(), intrin.baseType, 1,
-                                             &immLowerBound, &immUpperBound);
-        }
-
-        if ((immLowerBound != 0) || (immUpperBound != 1))
-        {
-            if ((intrin.category == HW_Category_SIMDByIndexedElement) ||
-                (intrin.category == HW_Category_ShiftLeftByImmediate) ||
-                (intrin.category == HW_Category_ShiftRightByImmediate))
-            {
-                switch (intrin.numOperands)
-                {
-                    case 4:
-                        needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
-                        break;
-
-                    case 3:
-                        needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
-                        break;
-
-                    case 2:
-                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
-                        break;
-
-                    default:
-                        unreached();
-                }
-            }
-            else
-            {
-                switch (intrin.id)
-                {
-                    case NI_AdvSimd_DuplicateSelectedScalarToVector64:
-                    case NI_AdvSimd_DuplicateSelectedScalarToVector128:
-                    case NI_AdvSimd_Extract:
-                    case NI_AdvSimd_Insert:
-                    case NI_AdvSimd_InsertScalar:
-                    case NI_AdvSimd_LoadAndInsertScalar:
-                    case NI_AdvSimd_LoadAndInsertScalarVector64x2:
-                    case NI_AdvSimd_LoadAndInsertScalarVector64x3:
-                    case NI_AdvSimd_LoadAndInsertScalarVector64x4:
-                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
-                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
-                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-                    case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
-                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
-                        break;
-
-                    case NI_AdvSimd_ExtractVector64:
-                    case NI_AdvSimd_ExtractVector128:
-                    case NI_AdvSimd_StoreSelectedScalar:
-                    case NI_AdvSimd_Arm64_StoreSelectedScalar:
-                    case NI_Sve_PrefetchBytes:
-                    case NI_Sve_PrefetchInt16:
-                    case NI_Sve_PrefetchInt32:
-                    case NI_Sve_PrefetchInt64:
-                    case NI_Sve_ExtractVector:
-                        needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
-                        break;
-
-                    case NI_AdvSimd_Arm64_InsertSelectedScalar:
-                        assert(intrin.op2->isContainedIntOrIImmed());
-                        assert(intrin.op4->isContainedIntOrIImmed());
-                        break;
-
-                    case NI_Sve_CreateTrueMaskByte:
-                    case NI_Sve_CreateTrueMaskDouble:
-                    case NI_Sve_CreateTrueMaskInt16:
-                    case NI_Sve_CreateTrueMaskInt32:
-                    case NI_Sve_CreateTrueMaskInt64:
-                    case NI_Sve_CreateTrueMaskSByte:
-                    case NI_Sve_CreateTrueMaskSingle:
-                    case NI_Sve_CreateTrueMaskUInt16:
-                    case NI_Sve_CreateTrueMaskUInt32:
-                    case NI_Sve_CreateTrueMaskUInt64:
-                    case NI_Sve_Count16BitElements:
-                    case NI_Sve_Count32BitElements:
-                    case NI_Sve_Count64BitElements:
-                    case NI_Sve_Count8BitElements:
-                        needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
-                        break;
-
-                    case NI_Sve_SaturatingDecrementBy16BitElementCount:
-                    case NI_Sve_SaturatingDecrementBy32BitElementCount:
-                    case NI_Sve_SaturatingDecrementBy64BitElementCount:
-                    case NI_Sve_SaturatingDecrementBy8BitElementCount:
-                    case NI_Sve_SaturatingIncrementBy16BitElementCount:
-                    case NI_Sve_SaturatingIncrementBy32BitElementCount:
-                    case NI_Sve_SaturatingIncrementBy64BitElementCount:
-                    case NI_Sve_SaturatingIncrementBy8BitElementCount:
-                    case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
-                    case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
-                    case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
-                    case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
-                    case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
-                    case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
-                        // Can only avoid generating a table if both immediates are constant.
-                        assert(intrin.op2->isContainedIntOrIImmed() == intrin.op3->isContainedIntOrIImmed());
-                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
-                        // Ensure that internal does not collide with desination.
-                        setInternalRegsDelayFree = true;
-                        break;
-
-                    default:
-                        unreached();
-                }
-            }
-        }
-
-        if (needBranchTargetReg)
-        {
-            buildInternalIntRegisterDefForNode(intrinsicTree);
-        }
+        buildInternalIntRegisterDefForNode(intrinsicTree);
     }
 
     // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
@@ -1662,6 +1665,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // "MLA (by element)") have encoding that restricts what registers that can be used for the indexed element when
         // the element size is H (i.e. 2 bytes).
         assert(intrin.op2 != nullptr);
+        const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
 
         if ((intrin.op4 != nullptr) || ((intrin.op3 != nullptr) && !hasImmediateOperand))
         {
@@ -1906,6 +1910,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         else
         {
             assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3));
+
+            if (needsBranchTargetReg(intrinEmb, embOp2Node))
+            {
+                buildInternalIntRegisterDefForNode(embOp2Node);
+            }
+
             tgtPrefUse = BuildUse(embOp2Node->Op(1));
             srcCount += 1;
 
