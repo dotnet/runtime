@@ -37,7 +37,7 @@ switch (testCase) {
             let alreadyFailed = [];
             dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity, behavior) => {
                 if (type === "dotnetjs") {
-                    // loadBootResource could return string with unqualified name of resource. 
+                    // loadBootResource could return string with unqualified name of resource.
                     // It assumes that we resolve it with document.baseURI
                     // we test it here
                     return `_framework/${name}`;
@@ -78,12 +78,27 @@ switch (testCase) {
             },
         });
         break;
+    case "InterpPgoTest":
+        dotnet
+            .withConsoleForwarding()
+            .withRuntimeOptions(['--interp-pgo-logging'])
+            .withInterpreterPgo(true);
+        break;
+    case "DownloadThenInit":
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (url, fetchArgs) => {
+            testOutput("fetching " + url);
+            return originalFetch(url, fetchArgs);
+        };
+        await dotnet.download();
+        testOutput("download finished");
+        break;
 }
 
-const { getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
-const assemblyExtension = config.resources.assembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
+const assemblyExtension = config.resources.coreAssembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
 
 // Run the test case
 try {
@@ -114,6 +129,22 @@ try {
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
+            exit(0);
+            break;
+        case "InterpPgoTest":
+            setModuleImports('main.js', {
+                window: {
+                    location: {
+                        href: () => globalThis.window.location.href
+                    }
+                }
+            });
+            const iterationCount = params.get("iterationCount") ?? "70";
+            exports.InterpPgoTest.TryToTier(parseInt(iterationCount));
+            await INTERNAL.interp_pgo_save_data();
+            exit(0);
+            break;
+        case "DownloadThenInit":
             exit(0);
             break;
         default:

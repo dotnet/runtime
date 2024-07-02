@@ -443,27 +443,6 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR Formatting Job
-      # Only when CoreCLR is changed, and only in the 'main' branch (no release branches;
-      # both Rolling and PR builds).
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
-          platforms:
-          - linux_x64
-          - windows_x64
-          jobParameters:
-            condition: >-
-              and(
-                or(
-                  eq(variables['Build.SourceBranchName'], 'main'),
-                  eq(variables['System.PullRequest.TargetBranch'], 'main')),
-                or(
-                  eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr_jit.containsChange'], true),
-                  eq(variables['isRollingBuild'], true)))
-
-      #
       # Build CoreCLR with no R2R
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -498,7 +477,7 @@ extends:
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR_NonPortable
-            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages -c $(_BuildConfig) /p:PortableBuild=false
+            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages --outputrid tizen.9.0.0-armel -c $(_BuildConfig) /p:PortableBuild=false
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -567,7 +546,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release /p:RunAnalyzers=false
+            buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
@@ -606,7 +585,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 180
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs.native+libs.sfx -rc $(_BuildConfig) -lc Release -hc Release /p:RunAnalyzers=false
+            buildArgs: -s clr.aot+libs.native+libs.sfx -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
@@ -651,7 +630,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release -hc Release /p:RunAnalyzers=false
+            buildArgs: -s clr.aot+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
@@ -688,7 +667,7 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Libraries
-            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true /p:RunAnalyzers=false
+            buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true /p:RunAnalyzers=false
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
             postBuildSteps:
@@ -713,7 +692,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: CLR_Tools_Tests
-            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests -c $(_BuildConfig) -test
+            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests+tools.cdacreadertests -c $(_BuildConfig) -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
@@ -721,6 +700,7 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdacreader.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
       #
       # Build CrossDacs
@@ -753,8 +733,7 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
-          templatePath: 'templates'
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
           - android_x64
@@ -763,8 +742,26 @@ extends:
           - tvos_arm64
           - ios_arm64
           - maccatalyst_x64
+          variables:
+            - name: _osParameter
+              value: -os linux
+            - name: _archParameter
+              value: -arch x64
           jobParameters:
-            isOfficialBuild: false
+            nameSuffix: MonoAOTOffsets
+            buildArgs: -s mono.aotcross -c $(_BuildConfig) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
+            postBuildSteps:
+              # Upload offset files
+              - task: CopyFiles@2
+                displayName: Collect offset files
+                inputs:
+                  sourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/'
+                  contents: '**/offsets-*.h'
+                  targetFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles/'
+
+              - publish: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
+                artifact: Mono_Offsets_$(osGroup)$(osSubGroup)
+                displayName: Upload offset files
             # needed by crossaot
             condition: >-
               or(
@@ -823,8 +820,9 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
-            - normal
-            - WasmTestOnBrowser
+            - WasmTestOnV8
+            - WasmTestOnChrome
+            - WasmTestOnFirefox
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
@@ -833,7 +831,7 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
-            - WasmTestOnBrowser
+            - WasmTestOnChrome
 
       # Library tests with full threading
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -843,10 +841,12 @@ extends:
             #- browser_wasm_win
           nameSuffix: _Threading
           extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraHelixArguments: /p:WasmEnableThreads=true
           alwaysRun: ${{ variables.isRollingBuild }}
           shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           scenarios:
-            - WasmTestOnBrowser
+            - WasmTestOnChrome
+            - WasmTestOnFirefox
             #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
       # EAT Library tests - only run on linux
@@ -867,7 +867,6 @@ extends:
             - browser_wasm
             - browser_wasm_win
             - wasi_wasm
-            - wasi_wasm_win
           nameSuffix: _Smoke_AOT
           runAOT: true
           shouldRunSmokeOnly: true
@@ -935,7 +934,7 @@ extends:
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
-            - normal
+            - WasmTestOnWasmtime
 
       - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
         parameters:
@@ -1009,7 +1008,8 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
-            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=true
+            # Tracking issue: https://github.com/dotnet/runtime/issues/82637
+            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=false
             timeoutInMinutes: 480
             condition: >-
               or(
@@ -1245,9 +1245,9 @@ extends:
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
-            - mono_android_offsets
-            - mono_browser_offsets
-            - mono_wasi_offsets
+            - build_android_x64_release_MonoAOTOffsets
+            - build_browser_wasm_linux_release_MonoAOTOffsets
+            - build_wasi_wasm_linux_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
@@ -1272,9 +1272,9 @@ extends:
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
-            - mono_android_offsets
-            - mono_browser_offsets
-            - mono_wasi_offsets
+            - build_android_x64_release_MonoAOTOffsets
+            - build_browser_wasm_linux_release_MonoAOTOffsets
+            - build_wasi_wasm_linux_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
@@ -1303,12 +1303,12 @@ extends:
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
-            - mono_android_offsets
-            - mono_browser_offsets
-            - mono_wasi_offsets
-            - mono_tvos_offsets
-            - mono_ios_offsets
-            - mono_maccatalyst_offsets
+            - build_android_x64_release_MonoAOTOffsets
+            - build_browser_wasm_linux_release_MonoAOTOffsets
+            - build_wasi_wasm_linux_release_MonoAOTOffsets
+            - build_tvos_arm64_release_MonoAOTOffsets
+            - build_ios_arm64_release_MonoAOTOffsets
+            - build_maccatalyst_x64_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser

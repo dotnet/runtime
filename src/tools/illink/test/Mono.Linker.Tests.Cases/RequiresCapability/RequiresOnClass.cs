@@ -59,7 +59,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				// This warning doesn't get suppressed since the declaring type NestedClass is not annotated with Requires
 				[ExpectedWarning ("IL2026", "RequiresOnClass.RequiresOnMethod.MethodWithRequires()", "MethodWithRequires")]
-				[ExpectedWarning ("IL3050", "RequiresOnClass.RequiresOnMethod.MethodWithRequires()", "MethodWithRequires", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "RequiresOnClass.RequiresOnMethod.MethodWithRequires()", "MethodWithRequires", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 				public static void CallMethodWithRequires () => RequiresOnMethod.MethodWithRequires ();
 			}
 
@@ -101,7 +101,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 			// This method contains implicit call to ClassWithRequires.ctor()
 			[ExpectedWarning ("IL2026")]
-			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 			public DerivedWithoutRequires () { }
 
 			public static void StaticMethodInInheritedClass () { }
@@ -155,7 +155,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.StaticCtor.StaticCtor()", "Message for --StaticCtor--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.StaticCtor.StaticCtor()", "Message for --StaticCtor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.StaticCtor.StaticCtor()", "Message for --StaticCtor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestStaticCctorRequires ()
 		{
 			_ = new StaticCtor ();
@@ -174,14 +174,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--")]
-		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestStaticCtorMarkingIsTriggeredByFieldAccessWrite ()
 		{
 			StaticCtorTriggeredByFieldAccess.field = 1;
 		}
 
 		[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--")]
-		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestStaticCtorMarkingTriggeredOnSecondAccessWrite ()
 		{
 			StaticCtorTriggeredByFieldAccess.field = 2;
@@ -209,7 +209,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "StaticCCtorTriggeredByFieldAccessRead.field", "Message for --StaticCCtorTriggeredByFieldAccessRead--")]
-		[ExpectedWarning ("IL3050", "StaticCCtorTriggeredByFieldAccessRead.field", "Message for --StaticCCtorTriggeredByFieldAccessRead--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "StaticCCtorTriggeredByFieldAccessRead.field", "Message for --StaticCCtorTriggeredByFieldAccessRead--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestStaticCtorMarkingIsTriggeredByFieldAccessRead ()
 		{
 			var _ = StaticCCtorTriggeredByFieldAccessRead.field;
@@ -229,7 +229,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "StaticCtorTriggeredByCtorCalls.StaticCtorTriggeredByCtorCalls()")]
-		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByCtorCalls.StaticCtorTriggeredByCtorCalls()", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByCtorCalls.StaticCtorTriggeredByCtorCalls()", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestStaticCtorTriggeredByCtorCall ()
 		{
 			new StaticCtorTriggeredByCtorCalls ();
@@ -243,7 +243,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "ClassWithInstanceField.ClassWithInstanceField()")]
-		[ExpectedWarning ("IL3050", "ClassWithInstanceField.ClassWithInstanceField()", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "ClassWithInstanceField.ClassWithInstanceField()", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestInstanceFieldCallDontWarn ()
 		{
 			ClassWithInstanceField instance = new ClassWithInstanceField ();
@@ -260,7 +260,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "Calling the constructor is dangerous")]
-		[ExpectedWarning ("IL3050", "Calling the constructor is dangerous", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "Calling the constructor is dangerous", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestInstanceFieldSuppression ()
 		{
 			_ = new ClassWithInstanceFieldWhichInitsDangerousClass ();
@@ -310,7 +310,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				// This method contains implicit call to ClassWithRequires.ctor()
 				[ExpectedWarning ("IL2026")]
-				[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 				public DerivedNestedClass () { }
 
 				public static void NestedStaticMethod () { }
@@ -389,14 +389,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestRequiresInClassAccessedByStaticMethod ()
 		{
 			ClassWithRequires.StaticMethod ();
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestRequiresInClassAccessedByCctor ()
 		{
 			var classObject = new ClassWithRequires ();
@@ -408,12 +408,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		// Although we suppress the warning from RequiresOnMethod.MethodWithRequires () we still get a warning because we call CallRequiresMethod() which is an static method on a type with RUC
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.CallMethodWithRequires()", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.CallMethodWithRequires()", "--ClassWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.CallMethodWithRequires()", "--ClassWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		[ExpectedWarning ("IL2026", "ClassWithRequires.Instance", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "ClassWithRequires.Instance", "--ClassWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "ClassWithRequires.Instance", "--ClassWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestRequiresOnBaseButNotOnDerived ()
 		{
 			var a = new DerivedWithoutRequires (); // Must instantiate to force checks on the base type (otherwise base type is non-interesting)
@@ -429,7 +429,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires.StaticMethodInInheritedClass()", "--DerivedWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.DerivedWithRequires.StaticMethodInInheritedClass()", "--DerivedWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.DerivedWithRequires.StaticMethodInInheritedClass()", "--DerivedWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestRequiresOnDerivedButNotOnBase ()
 		{
 			DerivedWithRequires.StaticMethodInInheritedClass ();
@@ -439,9 +439,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires2.StaticMethodInInheritedClass()", "--DerivedWithRequires2--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.DerivedWithRequires2.StaticMethodInInheritedClass()", "--DerivedWithRequires2--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.DerivedWithRequires2.StaticMethodInInheritedClass()", "--DerivedWithRequires2--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestRequiresOnBaseAndDerived ()
 		{
 			DerivedWithRequires2.StaticMethodInInheritedClass ();
@@ -452,7 +452,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.TestSuppressions(", "Type[])")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.TestSuppressions(", "Type[])", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.TestSuppressions(", "Type[])", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestSuppressionsOnClass ()
 		{
 			ClassWithRequires.TestSuppressions (new[] { typeof (ClassWithRequires) });
@@ -496,11 +496,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "MemberTypesWithRequires.field")]
-		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.field", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.field", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Property.set")]
-		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.Property.set", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.Property.set", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove")]
-		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.Event.remove", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
 		static void TestOtherMemberTypesWithRequires ()
 		{
 			MemberTypesWithRequires.field = 1;
@@ -519,25 +519,25 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class ReflectionAccessOnMethod
 		{
 			[ExpectedWarning ("IL2026", "BaseWithRequiresOnType.Method()")]
-			[ExpectedWarning ("IL3050", "BaseWithRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "BaseWithRequiresOnType.Method()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "BaseWithRequiresOnType.Method()")]
-			[ExpectedWarning ("IL3050", "BaseWithRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "BaseWithRequiresOnType.Method()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
-			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
-			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnType.Method()")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnType.Method()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)")]
-			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method(Int32)", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method(Int32)", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()")]
-			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()")]
-			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method(Int32)")]
-			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method(Int32)", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method(Int32)", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()", Tool.NativeAot, "")]
 			static void TestDAMAccess ()
 			{
 				// Warns because BaseWithoutRequiresOnType.Method has Requires on the method
@@ -563,17 +563,17 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "BaseWithRequiresOnType.Method()")]
-			[ExpectedWarning ("IL3050", "BaseWithRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "BaseWithRequiresOnType.Method()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
-			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)")]
-			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method(Int32)", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method(Int32)", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()")]
-			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()")]
-			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method(Int32)")]
-			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method(Int32)", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method(Int32)", Tool.NativeAot, "")]
 			static void TestDirectReflectionAccess ()
 			{
 				// Requires on the method itself
@@ -609,7 +609,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			class DerivedWithoutRequires : BaseWithRequires
 			{
 				[ExpectedWarning ("IL2026", "--BaseWithRequires--")] // The body has direct call to the base.ctor()
-				[ExpectedWarning ("IL3050", "--BaseWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "--BaseWithRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning")]
 				public DerivedWithoutRequires () { }
 			}
 
@@ -631,15 +631,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()")]
-			[ExpectedWarning ("IL3050", "BaseWithRequires.BaseWithRequires()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "BaseWithRequires.BaseWithRequires()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()")]
-			[ExpectedWarning ("IL3050", "BaseWithRequires.BaseWithRequires()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "BaseWithRequires.BaseWithRequires()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", Tool.NativeAot, "")]
 			static void TestDAMAccess ()
 			{
 				// Warns because the type has Requires
@@ -656,11 +656,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()")]
-			[ExpectedWarning ("IL3050", "BaseWithRequires.BaseWithRequires()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "BaseWithRequires.BaseWithRequires()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", Tool.NativeAot, "")]
 			static void TestDirectReflectionAccess ()
 			{
 				typeof (BaseWithRequires).GetConstructor (Type.EmptyTypes);
@@ -708,15 +708,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticField", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticField", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticField", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticField", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticField", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticField", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticField")]
-			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticField", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticField", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticField", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticField", Tool.NativeAot, "")]
 			static void TestDAMAccess ()
 			{
 				typeof (WithRequires).RequiresPublicFields ();
@@ -727,11 +727,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticField", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticField", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticField")]
-			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticField", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticField", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticField", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticField", Tool.NativeAot, "")]
 			static void TestDirectReflectionAccess ()
 			{
 				typeof (WithRequires).GetField (nameof (WithRequires.StaticField));
@@ -742,17 +742,17 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof (DerivedWithRequires).GetField (nameof (DerivedWithRequires.DerivedStaticField));
 			}
 
-			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticField", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticField", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticField", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticField", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticField", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticField", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticField", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticField", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticField", Tool.NativeAot, "")]
 			[DynamicDependency (nameof (WithRequires.StaticField), typeof (WithRequires))]
 			[DynamicDependency (nameof (WithRequires.InstanceField), typeof (WithRequires))] // Doesn't warn
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithoutRequires))] // Doesn't warn
-			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticField", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticField", Tool.NativeAot, "")]
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithRequires))]
 			static void TestDynamicDependencyAccess ()
 			{
@@ -768,13 +768,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
 			[RequiresUnreferencedCode ("This class is dangerous")]
 			[RequiresDynamicCode ("This class is dangerous")]
-			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseField", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseField", Tool.Trimmer | Tool.NativeAot, "")]
 			class DAMAnnotatedClass : BaseForDAMAnnotatedClass
 			{
-				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicField", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicField", Tool.Trimmer | Tool.NativeAot, "")]
 				public static int publicField;
 
-				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privatefield", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privatefield", Tool.Trimmer | Tool.NativeAot, "")]
 				static int privatefield;
 			}
 
@@ -786,7 +786,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			class DAMAnnotatedClassAccessedFromRUCScope
 			{
-				[ExpectedWarning ("IL2112", "DAMAnnotatedClassAccessedFromRUCScope.RUCMethod", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+				[ExpectedWarning ("IL2112", "DAMAnnotatedClassAccessedFromRUCScope.RUCMethod", Tool.Trimmer | Tool.NativeAot, "")]
 				[RequiresUnreferencedCode ("--RUCMethod--")]
 				public static void RUCMethod () { }
 			}
@@ -807,14 +807,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--")]
-			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", Tool.NativeAot, "")]
 			static void TestDAMAccessOnOpenGeneric ()
 			{
 				typeof (GenericTypeWithRequires<>).RequiresPublicFields ();
 			}
 
 			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--")]
-			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", Tool.NativeAot, "")]
 			static void TestDAMAccessOnInstantiatedGeneric ()
 			{
 				typeof (GenericTypeWithRequires<int>).RequiresPublicFields ();
@@ -835,30 +835,200 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class ReflectionAccessOnEvents
 		{
-			// Most of the tests in this run into https://github.com/dotnet/runtime/issues/100499
-			// So for now keeping just a very simple test
-
 			[RequiresUnreferencedCode ("--WithRequires--")]
 			[RequiresDynamicCode ("--WithRequires--")]
 			class WithRequires
 			{
 				public static event EventHandler StaticEvent;
+				public event EventHandler InstanceEvent;
+				private event EventHandler PrivateInstanceEvent;
+			}
+
+			[RequiresUnreferencedCode ("--DerivedRequires--")]
+			[RequiresDynamicCode ("--DerivedRequires--")]
+			class DerivedRequires : WithRequires
+			{
+				public static event EventHandler DerivedStaticEvent;
+				public event EventHandler DerivedInstanceEvent;
+				private event EventHandler DerivedPrivateInstanceEvent;
+			}
+
+			[ExpectedWarning ("IL2109", "ReflectionAccessOnEvents.DerivedWithoutRequires", "ReflectionAccessOnEvents.WithRequires")]
+			class DerivedWithoutRequires : WithRequires
+			{
+				public static event EventHandler DerivedStaticEvent;
+				public event EventHandler DerivedInstanceEvent;
+				private event EventHandler DerivedPrivateInstanceEvent;
 			}
 
 			[ExpectedWarning ("IL2026", "StaticEvent.add")]
-			[ExpectedWarning ("IL3050", "StaticEvent.add", ProducedBy = Tool.NativeAot)]
-			// https://github.com/dotnet/runtime/issues/100499
-			[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL3050", "StaticEvent.add", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "StaticEvent.remove")]
-			[ExpectedWarning ("IL3050", "StaticEvent.remove", ProducedBy = Tool.NativeAot)]
-			static void TestDirectReflectionAccess ()
+			[ExpectedWarning ("IL3050", "StaticEvent.remove", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "DerivedStaticEvent.add")]
+			[ExpectedWarning ("IL3050", "DerivedStaticEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "DerivedStaticEvent.remove")]
+			[ExpectedWarning ("IL3050", "DerivedStaticEvent.remove", Tool.NativeAot, "")]
+			static void ReflectOverSingleEvent ()
 			{
 				typeof (WithRequires).GetEvent (nameof (WithRequires.StaticEvent));
+				typeof (DerivedRequires).GetEvent (nameof (DerivedRequires.DerivedStaticEvent));
+				typeof (DerivedWithoutRequires).GetEvent (nameof (DerivedWithoutRequires.DerivedStaticEvent));
+			}
+
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.remove", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "PrivateInstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "PrivateInstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "PrivateInstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "PrivateInstanceEvent.remove", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.remove", Tool.NativeAot, "")]
+			static void ReflectOverAllEvents ()
+			{
+				typeof (WithRequires).GetEvents (BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+			}
+
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.remove", Tool.NativeAot, "")]
+			[UnexpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.add", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[UnexpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.remove", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[UnexpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.add", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[UnexpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.remove", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedStaticEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedStaticEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedStaticEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedStaticEvent.remove", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedInstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedInstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedInstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedInstanceEvent.remove", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.remove", Tool.NativeAot, "")]
+			static void DerivedReflectOverAllEvents ()
+			{
+				typeof (DerivedRequires).GetEvents (BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+			}
+
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.remove", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "PrivateInstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "PrivateInstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "PrivateInstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "PrivateInstanceEvent.remove", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.remove", Tool.NativeAot, "")]
+			static void RequiresAllEvents ()
+			{
+				RequiresAllEvents (typeof (WithRequires));
+
+				static void RequiresAllEvents ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)] Type t)
+				{ }
+			}
+
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.remove", Tool.NativeAot, "")]
+			[UnexpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.add", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[UnexpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.remove", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[UnexpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.add", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[UnexpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.remove", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedStaticEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedStaticEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedStaticEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedStaticEvent.remove", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedInstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedInstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedInstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedInstanceEvent.remove", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.remove", Tool.NativeAot, "")]
+			static void DerivedRequiresAllEvents ()
+			{
+				RequiresAllEvents (typeof (DerivedRequires));
+
+				static void RequiresAllEvents ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)] Type t)
+				{ }
+			}
+
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.remove", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.remove", Tool.NativeAot, "")]
+			static void RequiresPublicEvents ()
+			{
+				typeof (WithRequires).RequiresPublicEvents ();
+			}
+
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "InstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "InstanceEvent.remove", Tool.NativeAot, "")]
+			[UnexpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.add", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[UnexpectedWarning ("IL2026", nameof (WithRequires), "StaticEvent.remove", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[UnexpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.add", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[UnexpectedWarning ("IL3050", nameof (WithRequires), "StaticEvent.remove", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedStaticEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedStaticEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedStaticEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedStaticEvent.remove", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedInstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedInstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedInstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedInstanceEvent.remove", Tool.NativeAot, "")]
+			static void DerivedRequiresPublicEvents ()
+			{
+				typeof (DerivedRequires).RequiresPublicEvents ();
+			}
+
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "PrivateInstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "PrivateInstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (WithRequires), "PrivateInstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (WithRequires), "PrivateInstanceEvent.remove", Tool.NativeAot, "")]
+			static void RequiresNonPublicEvents ()
+			{
+				typeof (WithRequires).RequiresNonPublicEvents ();
+			}
+
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.add")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.add", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.remove")]
+			[ExpectedWarning ("IL3050", nameof (DerivedRequires), "DerivedPrivateInstanceEvent.remove", Tool.NativeAot, "")]
+			static void DerivedRequiresNonPublicEvents ()
+			{
+				typeof (DerivedRequires).RequiresNonPublicEvents ();
 			}
 
 			public static void Test ()
 			{
-				TestDirectReflectionAccess ();
+				ReflectOverSingleEvent ();
+				ReflectOverAllEvents ();
+				RequiresAllEvents ();
+				RequiresPublicEvents ();
+				RequiresNonPublicEvents ();
+				DerivedReflectOverAllEvents ();
+				DerivedRequiresPublicEvents ();
+				DerivedRequiresNonPublicEvents ();
+				DerivedRequiresAllEvents ();
 			}
 		}
 
@@ -894,41 +1064,41 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequiresOnlyInstanceProperties.InstanceProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequiresOnlyInstanceProperties.InstanceProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequiresOnlyInstanceProperties.InstanceProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequiresOnlyInstanceProperties.InstanceProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequiresOnlyInstanceProperties.InstanceProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequiresOnlyInstanceProperties.InstanceProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.set", Tool.NativeAot, "")]
 			static void TestDAMAccess ()
 			{
 				typeof (WithRequires).RequiresPublicProperties ();
@@ -939,25 +1109,25 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequires.PrivateStaticProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequiresOnlyInstanceProperties.InstanceProperty.get")]
-			[ExpectedWarning ("IL3050", "WithRequiresOnlyInstanceProperties.InstanceProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequiresOnlyInstanceProperties.InstanceProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "WithRequiresOnlyInstanceProperties.InstanceProperty.set")]
-			[ExpectedWarning ("IL3050", "WithRequiresOnlyInstanceProperties.InstanceProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "WithRequiresOnlyInstanceProperties.InstanceProperty.set", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.get", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.get", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set")]
-			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.set", Tool.NativeAot, "")]
 			static void TestDirectReflectionAccess ()
 			{
 				typeof (WithRequires).GetProperty (nameof (WithRequires.StaticProperty));
@@ -968,37 +1138,37 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof (DerivedWithRequires).GetProperty (nameof (DerivedWithRequires.DerivedStaticProperty));
 			}
 
-			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.get", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.InstanceProperty.set", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.get", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "WithRequires.StaticProperty.set", Tool.NativeAot, "")]
 			[DynamicDependency (nameof (WithRequires.StaticProperty), typeof (WithRequires))]
 			[DynamicDependency (nameof (WithRequires.InstanceProperty), typeof (WithRequires))] // Doesn't warn
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicProperties, typeof (DerivedWithoutRequires))] // Doesn't warn
-			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.get", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.set", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.get", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "DerivedWithRequires.DerivedStaticProperty.set", Tool.NativeAot, "")]
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicProperties, typeof (DerivedWithRequires))]
 			static void TestDynamicDependencyAccess ()
 			{
@@ -1014,21 +1184,21 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 			[RequiresUnreferencedCode ("This class is dangerous")]
 			[RequiresDynamicCode ("This class is dangerous")]
-			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.get", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.set", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
 			class DAMAnnotatedClass : BaseForDAMAnnotatedClass
 			{
 				public static int publicProperty {
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.get", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
 					get;
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.set", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
 					set;
 				}
 
 				static int privateProperty {
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.get", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
 					get;
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.set", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
 					set;
 				}
 			}
@@ -1064,7 +1234,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		[AttributeWithRequires (PropertyOnAttribute = 42)]
 		[ExpectedWarning ("IL2026", "AttributeWithRequires.AttributeWithRequires()")]
-		[ExpectedWarning ("IL3050", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "AttributeWithRequires.AttributeWithRequires()", Tool.Analyzer | Tool.NativeAot, "")]
 		static void KeepFieldOnAttributeInner () { }
 
 		static void KeepFieldOnAttribute ()
@@ -1114,7 +1284,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026")]
-			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", Tool.Analyzer | Tool.NativeAot, "")]
 			public static void Test ()
 			{
 				TestClass.Test ();
@@ -1140,17 +1310,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				public static RequiresAll<T> field;
 
-				// https://github.com/dotnet/linker/issues/3142
 				// Instance fields get generic warnings but static fields don't.
-				[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer)]
+				[UnexpectedWarning ("IL2091", Tool.Trimmer, "https://github.com/dotnet/linker/issues/3142")]
 				public RequiresAll<T> instanceField;
 
 				[RequiresOnCtor]
 				public static int fieldWithAttribute;
 
-				// https://github.com/dotnet/linker/issues/3140
 				// Instance fields get attribute warnings but static fields don't.
-				[ExpectedWarning ("IL2026", "--RequiresOnCtorAttribute--", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2026", "--RequiresOnCtorAttribute--", Tool.Trimmer, "https://github.com/dotnet/linker/issues/3140")]
 				[RequiresOnCtor]
 				public int instanceFieldWithAttribute;
 
@@ -1183,23 +1351,20 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// This warning should ideally be suppressed by the RUC on the type:
-			// https://github.com/dotnet/linker/issues/3142
-			[ExpectedWarning ("IL2091")]
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
 			[RequiresUnreferencedCode ("--GenericClassWithWarningWithRequires--")]
 			public class GenericClassWithWarningWithRequires<U> : RequiresAll<U>
 			{
 			}
 
 			// This warning should ideally be suppressed by the RUC on the type:
-			// https://github.com/dotnet/linker/issues/3142
-			[ExpectedWarning ("IL2091")]
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
 			[RequiresUnreferencedCode ("--ClassWithWarningWithRequires--")]
 			public class ClassWithWarningWithRequires : RequiresAll<T>
 			{
 			}
 
-			// https://github.com/dotnet/linker/issues/3142
-			[ExpectedWarning ("IL2091")]
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
 			[RequiresUnreferencedCode ("--GenericAnnotatedWithWarningWithRequires--")]
 			public class GenericAnnotatedWithWarningWithRequires<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields> : RequiresAll<TFields>
 			{
@@ -1212,7 +1377,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "--GenericClassWithWarningWithRequires--")]
 			[ExpectedWarning ("IL2026", "--ClassWithWarningWithRequires--")]
 			[ExpectedWarning ("IL2026", "--GenericAnnotatedWithWarningWithRequires--")]
-			[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2091", Tool.Trimmer, "")]
 			public static void Test (ClassWithRequires inst = null)
 			{
 				var f = ClassWithRequires.field;
@@ -1244,7 +1409,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method))]
-			[ExpectedWarning ("IL3050", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method), Tool.Analyzer | Tool.NativeAot, "")]
 			static void TestClassWithRequires ()
 			{
 				var a = ConstClassWithRequires.Message;
@@ -1263,7 +1428,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Method))]
-			[ExpectedWarning ("IL3050", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Method), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Method), Tool.Analyzer | Tool.NativeAot, "")]
 			static void TestClassUsingFieldInAttribute ()
 			{
 				ConstClassWithRequiresUsingField.Method ();

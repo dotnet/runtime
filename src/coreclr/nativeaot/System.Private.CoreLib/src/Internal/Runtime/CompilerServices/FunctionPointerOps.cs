@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-using Internal.Runtime.Augments;
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime.CompilerServices
 {
@@ -56,6 +56,8 @@ namespace Internal.Runtime.CompilerServices
 
         public static unsafe IntPtr GetGenericMethodFunctionPointer(IntPtr canonFunctionPointer, IntPtr instantiationArgument)
         {
+            Debug.Assert(canonFunctionPointer != IntPtr.Zero);
+
             if (instantiationArgument == IntPtr.Zero)
                 return canonFunctionPointer;
 
@@ -79,7 +81,7 @@ namespace Internal.Runtime.CompilerServices
                     // Generate new chunk if existing chunks are insufficient
                     if (s_genericFunctionPointerCollection.Count <= newChunkIndex)
                     {
-                        System.Diagnostics.Debug.Assert(newSubChunkIndex == 0);
+                        Debug.Assert(newSubChunkIndex == 0);
 
                         // New generic descriptors are allocated on the native heap and not tracked in the GC.
                         IntPtr pNewMem = (IntPtr)NativeMemory.Alloc(c_genericDictionaryChunkSize, (nuint)sizeof(GenericMethodDescriptor));
@@ -100,8 +102,8 @@ namespace Internal.Runtime.CompilerServices
                 uint subChunkIndex = index % c_genericDictionaryChunkSize;
                 GenericMethodDescriptor* genericFunctionPointer = &((GenericMethodDescriptor*)s_genericFunctionPointerCollection[chunkIndex])[subChunkIndex];
 
-                System.Diagnostics.Debug.Assert(canonFunctionPointer == genericFunctionPointer->MethodFunctionPointer);
-                System.Diagnostics.Debug.Assert(instantiationArgument == genericFunctionPointer->InstantiationArgument);
+                Debug.Assert(canonFunctionPointer == genericFunctionPointer->MethodFunctionPointer);
+                Debug.Assert(instantiationArgument == genericFunctionPointer->InstantiationArgument);
 
                 return (IntPtr)((byte*)genericFunctionPointer + FatFunctionPointerOffset);
             }

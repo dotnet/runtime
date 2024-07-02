@@ -414,13 +414,7 @@ namespace System.Numerics
 
         public static Complex Sin(Complex value)
         {
-            // We need both sinh and cosh of imaginary part. To avoid multiple calls to Math.Exp with the same value,
-            // we compute them both here from a single call to Math.Exp.
-            double p = Math.Exp(value.m_imaginary);
-            double q = 1.0 / p;
-            double sinh = (p - q) * 0.5;
-            double cosh = (p + q) * 0.5;
-            return new Complex(Math.Sin(value.m_real) * cosh, Math.Cos(value.m_real) * sinh);
+            return new Complex(Math.Sin(value.m_real) * Math.Cosh(value.m_imaginary), Math.Cos(value.m_real) * Math.Sinh(value.m_imaginary));
             // There is a known limitation with this algorithm: inputs that cause sinh and cosh to overflow, but for
             // which sin or cos are small enough that sin * cosh or cos * sinh are still representable, nonetheless
             // produce overflow. For example, Sin((0.01, 711.0)) should produce (~3.0E306, PositiveInfinity), but
@@ -457,11 +451,7 @@ namespace System.Numerics
 
         public static Complex Cos(Complex value)
         {
-            double p = Math.Exp(value.m_imaginary);
-            double q = 1.0 / p;
-            double sinh = (p - q) * 0.5;
-            double cosh = (p + q) * 0.5;
-            return new Complex(Math.Cos(value.m_real) * cosh, -Math.Sin(value.m_real) * sinh);
+            return new Complex(Math.Cos(value.m_real) * Math.Cosh(value.m_imaginary), -Math.Sin(value.m_real) * Math.Sinh(value.m_imaginary));
         }
 
         public static Complex Cosh(Complex value)
@@ -504,14 +494,11 @@ namespace System.Numerics
 
             double x2 = 2.0 * value.m_real;
             double y2 = 2.0 * value.m_imaginary;
-            double p = Math.Exp(y2);
-            double q = 1.0 / p;
-            double cosh = (p + q) * 0.5;
+            double cosh = Math.Cosh(y2);
             if (Math.Abs(value.m_imaginary) <= 4.0)
             {
-                double sinh = (p - q) * 0.5;
                 double D = Math.Cos(x2) + cosh;
-                return new Complex(Math.Sin(x2) / D, sinh / D);
+                return new Complex(Math.Sin(x2) / D, Math.Sinh(y2) / D);
             }
             else
             {
@@ -1466,6 +1453,23 @@ namespace System.Numerics
             return y;
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static Complex INumberBase<Complex>.MultiplyAddEstimate(Complex left, Complex right, Complex addend)
+        {
+            // Multiplication:  (a + bi)(c + di) = (ac - bd) + (bc + ad)i
+            // Addition:        (a + bi) + (c + di) = (a + c) + (b + d)i
+
+            double result_realpart = addend.m_real;
+            result_realpart = double.MultiplyAddEstimate(-left.m_imaginary, right.m_imaginary, result_realpart);
+            result_realpart = double.MultiplyAddEstimate(left.m_real, right.m_real, result_realpart);
+
+            double result_imaginarypart = addend.m_imaginary;
+            result_imaginarypart = double.MultiplyAddEstimate(left.m_real, right.m_imaginary, result_imaginarypart);
+            result_imaginarypart = double.MultiplyAddEstimate(left.m_imaginary, right.m_real, result_imaginarypart);
+
+            return new Complex(result_realpart, result_imaginarypart);
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?)" />
         public static Complex Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
         {
@@ -2224,8 +2228,8 @@ namespace System.Numerics
             {
                 int realChars;
                 if (typeof(TChar) == typeof(char) ?
-                    m_real.TryFormat(MemoryMarshal.Cast<TChar, char>(destination.Slice(1)), out realChars, format, provider) :
-                    m_real.TryFormat(MemoryMarshal.Cast<TChar, byte>(destination.Slice(1)), out realChars, format, provider))
+                    m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(1)), out realChars, format, provider) :
+                    m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(1)), out realChars, format, provider))
                 {
                     destination[0] = TChar.CreateTruncating('<');
                     destination = destination.Slice(1 + realChars); // + 1 for <
@@ -2235,8 +2239,8 @@ namespace System.Numerics
                     {
                         int imaginaryChars;
                         if (typeof(TChar) == typeof(char) ?
-                            m_imaginary.TryFormat(MemoryMarshal.Cast<TChar, char>(destination.Slice(2)), out imaginaryChars, format, provider) :
-                            m_imaginary.TryFormat(MemoryMarshal.Cast<TChar, byte>(destination.Slice(2)), out imaginaryChars, format, provider))
+                            m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(2)), out imaginaryChars, format, provider) :
+                            m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(2)), out imaginaryChars, format, provider))
                         {
                             // We have 1 more character for: >
                             if ((uint)(2 + imaginaryChars) < (uint)destination.Length)

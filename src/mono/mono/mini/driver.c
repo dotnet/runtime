@@ -189,10 +189,8 @@ parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 				exit (1);
 			}
 		}
-
-		g_free (arg);
 	}
-	g_free (parts);
+	g_strfreev (parts);
 
 	return opt;
 }
@@ -1597,21 +1595,15 @@ mini_usage (void)
 		"    --help-devel           Shows more options available to developers\n"
 		"\n"
 		"Runtime:\n"
-		"    --config FILE          Loads FILE as the Mono config\n"
 		"    --verbose, -v          Increases the verbosity level\n"
 		"    --help, -h             Show usage information\n"
 		"    --version, -V          Show version information\n"
 		"    --version=number       Show version number\n"
-		"    --runtime=VERSION      Use the VERSION runtime, instead of autodetecting\n"
 		"    --optimize=OPT         Turns on or off a specific optimization\n"
 		"                           Use --list-opt to get a list of optimizations\n"
 		"    --attach=OPTIONS       Pass OPTIONS to the attach agent in the runtime.\n"
 		"                           Currently the only supported option is 'disable'.\n"
 		"    --llvm, --nollvm       Controls whenever the runtime uses LLVM to compile code.\n"
-	        "    --gc=[sgen,boehm]      Select SGen or Boehm GC (runs mono or mono-sgen)\n"
-#ifdef TARGET_OSX
-		"    --arch=[32,64]         Select architecture (runs mono32 or mono64)\n"
-#endif
 		"    --handlers             Install custom handlers, use --help-handlers for details.\n"
 		"    --aot-path=PATH        List of additional directories to search for AOT images.\n"
 		"    --path=DIR             Add DIR to the list of directories to search for assemblies.\n"
@@ -1879,34 +1871,6 @@ mono_set_use_smp (int use_smp)
 }
 
 static void
-switch_gc (char* argv[], const char* target_gc)
-{
-	GString *path;
-
-	if (!strcmp (mono_gc_get_gc_name (), target_gc)) {
-		return;
-	}
-
-	path = g_string_new (argv [0]);
-
-	/*Running mono without any argument*/
-	if (strstr (argv [0], "-sgen"))
-		g_string_truncate (path, path->len - 5);
-	else if (strstr (argv [0], "-boehm"))
-		g_string_truncate (path, path->len - 6);
-
-	g_string_append_c (path, '-');
-	g_string_append (path, target_gc);
-
-#ifdef HAVE_EXECVP
-	execvp (path->str, argv);
-	fprintf (stderr, "Error: Failed to switch to %s gc. mono-%s is not installed.\n", target_gc, target_gc);
-#else
-	fprintf (stderr, "Error: --gc=<NAME> option not supported on this platform.\n");
-#endif
-}
-
-static void
 increase_descriptor_limit (void)
 {
 #if defined(HAVE_GETRLIMIT) && !defined(DONT_SET_RLIMIT_NOFILE)
@@ -1926,37 +1890,6 @@ increase_descriptor_limit (void)
 	}
 #endif
 }
-
-#ifdef TARGET_OSX
-
-static void
-switch_arch (char* argv[], const char* target_arch)
-{
-	GString *path;
-	gsize arch_offset;
-
-	if ((strcmp (target_arch, "32") == 0 && strcmp (MONO_ARCHITECTURE, "x86") == 0) ||
-		(strcmp (target_arch, "64") == 0 && strcmp (MONO_ARCHITECTURE, "amd64") == 0)) {
-		return; /* matching arch loaded */
-	}
-
-	path = g_string_new (argv [0]);
-	arch_offset = path->len -2; /* last two characters */
-
-	/* Remove arch suffix if present */
-	if (strstr (&path->str[arch_offset], "32") || strstr (&path->str[arch_offset], "64")) {
-		g_string_truncate (path, arch_offset);
-	}
-
-	g_string_append (path, target_arch);
-
-	if (execvp (path->str, argv) < 0) {
-		fprintf (stderr, "Error: --arch=%s Failed to switch to '%s'.\n", target_arch, path->str);
-		exit (1);
-	}
-}
-
-#endif
 
 #define MONO_HANDLERS_ARGUMENT "--handlers="
 #define MONO_HANDLERS_ARGUMENT_LEN STRING_LENGTH(MONO_HANDLERS_ARGUMENT)
@@ -2174,28 +2107,19 @@ mono_main (int argc, char* argv[])
 			guint32 bisect_opt = parse_optimizations (0, bisect_opt_string, FALSE);
 			g_free (bisect_opt_string);
 			mono_set_bisect_methods (bisect_opt, sep + 1);
-		} else if (strcmp (argv [i], "--gc=sgen") == 0) {
-			switch_gc (argv, "sgen");
-		} else if (strcmp (argv [i], "--gc=boehm") == 0) {
-			switch_gc (argv, "boehm");
+		} else if (strncmp (argv [i], "--gc=", 5) == 0) {
+			// ignore
 		} else if (strncmp (argv[i], "--gc-params=", 12) == 0) {
 			mono_gc_params_set (argv[i] + 12);
 		} else if (strncmp (argv[i], "--gc-debug=", 11) == 0) {
 			mono_gc_debug_set (argv[i] + 11);
 		}
-#ifdef TARGET_OSX
-		else if (strcmp (argv [i], "--arch=32") == 0) {
-			switch_arch (argv, "32");
-		} else if (strcmp (argv [i], "--arch=64") == 0) {
-			switch_arch (argv, "64");
+		else if (strncmp (argv [i], "--arch=", 7) == 0) {
+			// ignore
 		}
-#endif
 		else if (strcmp (argv [i], "--config") == 0) {
-			if (i +1 >= argc){
-				fprintf (stderr, "error: --config requires a filename argument\n");
-				return 1;
-			}
 			++i;
+			// ignore
 #ifndef DISABLE_JIT
 		} else if (strcmp (argv [i], "--ncompile") == 0) {
 			if (i + 1 >= argc){
@@ -2282,15 +2206,13 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--apply-bindings=", 17) == 0) {
 			extra_bindings_config_file = &argv[i][17];
 		} else if (strncmp (argv [i], "--aot-path=", 11) == 0) {
-			char **split;
+			char **split, **ptr;
 
 			split = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
-			while (*split) {
-				char *tmp = *split;
-				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (tmp));
-				g_free (tmp);
-				split++;
+			for (ptr = split; ptr && *ptr; ptr++) {
+				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (*ptr));
 			}
+			g_strfreev (split);
 		} else if (strncmp (argv [i], "--path=", 7) == 0) {
 			paths = g_list_append (paths, argv [i] + 7);
 		} else if (strncmp (argv [i], "--compile-all=", 14) == 0) {

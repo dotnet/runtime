@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (section.Value is string value)
                 {
-                    instance.Add(ParseInt(value, () => section.Path));
+                    instance.Add(ParseInt(value, section.Path));
                 }
             }
         }
@@ -98,14 +98,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.MyString = value0;
             }
+            else if (defaultValueIfNotFound)
+            {
+                var currentValue = instance.MyString;
+                if (currentValue is not null)
+                {
+                    instance.MyString = currentValue;
+                }
+            }
 
             if (configuration["MyInt"] is string value1)
             {
-                instance.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
+                instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
             }
             else if (defaultValueIfNotFound)
             {
-                instance.MyInt = default;
+                instance.MyInt = instance.MyInt;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section2)
@@ -165,7 +173,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return null;
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
+        public static int ParseInt(string value, string? path)
         {
             try
             {
@@ -173,7 +181,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
         #endregion Core binding extensions.

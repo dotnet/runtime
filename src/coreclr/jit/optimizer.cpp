@@ -234,7 +234,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
     for (BasicBlock* const curBlk : BasicBlockRangeList(begBlk, endBlk))
     {
         // Don't change the block weight if it came from profile data.
-        if (curBlk->hasProfileWeight() && fgHaveProfileData())
+        if (curBlk->hasProfileWeight() && fgHaveProfileWeights())
         {
             reportBlockWeight(curBlk, "; unchanged: has profile weight");
             continue;
@@ -872,8 +872,8 @@ bool Compiler::optComputeLoopRep(int        constInit,
 {
     noway_assert(genActualType(iterOperType) == TYP_INT);
 
-    __int64 constInitX;
-    __int64 constLimitX;
+    int64_t constInitX;
+    int64_t constLimitX;
 
     unsigned loopCount;
     int      iterSign;
@@ -953,7 +953,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
 
     switch (testOper)
     {
-        __int64 iterAtExitX;
+        int64_t iterAtExitX;
 
         case GT_EQ:
             // Something like "for (i=init; i == lim; i++)" doesn't make any sense.
@@ -2315,54 +2315,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
                 weightTop);
         bTest->inheritWeight(bTop);
 
-        // Determine the new edge weights.
-        //
-        // We project the next/jump ratio for block and bTest by using
-        // the original likelihoods out of bTest.
-        //
-        // Note "next" is the loop top block, not bTest's bbNext,
-        // we'll call this latter block "after".
-        //
-        weight_t const testToNextLikelihood  = min(1.0, weightTop / weightTest);
-        weight_t const testToAfterLikelihood = 1.0 - testToNextLikelihood;
-
-        // Adjust edges out of bTest (which now has weight weightTop)
-        //
-        weight_t const testToNextWeight  = weightTop * testToNextLikelihood;
-        weight_t const testToAfterWeight = weightTop * testToAfterLikelihood;
-
-        FlowEdge* const edgeTestToNext  = bTest->GetTrueEdge();
-        FlowEdge* const edgeTestToAfter = bTest->GetFalseEdge();
-
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum, bTop->bbNum,
-                testToNextWeight);
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (exit loop)\n", bTest->bbNum,
-                bTest->Next()->bbNum, testToAfterWeight);
-
-        edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTop);
-        edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->GetFalseTarget());
-
-        // Adjust edges out of block, using the same distribution.
-        //
-        JITDUMP("Profile weight of " FMT_BB " remains unchanged at " FMT_WT "\n", block->bbNum, weightBlock);
-
-        weight_t const blockToNextLikelihood  = testToNextLikelihood;
-        weight_t const blockToAfterLikelihood = testToAfterLikelihood;
-
-        weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
-        weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
-
-        FlowEdge* const edgeBlockToNext  = bNewCond->GetFalseEdge();
-        FlowEdge* const edgeBlockToAfter = bNewCond->GetTrueEdge();
-
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
-                bNewCond->GetFalseTarget()->bbNum, blockToNextWeight);
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (avoid loop)\n", bNewCond->bbNum,
-                bNewCond->GetTrueTarget()->bbNum, blockToAfterWeight);
-
-        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, bNewCond->GetFalseTarget());
-        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->GetTrueTarget());
-
 #ifdef DEBUG
         // If we're checking profile data, see if profile for the two target blocks is consistent.
         //
@@ -2527,8 +2479,24 @@ PhaseStatus Compiler::optOptimizePostLayout()
         {
             GenTree* const test = block->lastNode();
             assert(test->OperIsConditionalJump());
-            GenTree* const cond = gtReverseCond(test);
-            assert(cond == test); // Ensure `gtReverseCond` did not create a new node
+
+            if (test->OperIs(GT_JTRUE))
+            {
+                // Flip GT_JTRUE node's conditional operand, and handle any new nodes this may introduce
+                GenTree* const cond    = test->gtGetOp1();
+                GenTree* const newCond = gtReverseCond(cond);
+                if (cond != newCond)
+                {
+                    LIR::AsRange(block).InsertAfter(cond, newCond);
+                    test->AsUnOp()->gtOp1 = newCond;
+                }
+            }
+            else
+            {
+                // gtReverseCond can handle other conditional jumps without introducing a new node
+                GenTree* const cond = gtReverseCond(test);
+                assert(cond == test);
+            }
 
             FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
             FlowEdge* const oldFalseEdge = block->GetFalseEdge();
@@ -3233,91 +3201,6 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 }
 
 //-----------------------------------------------------------------------------
-// optEstimateEdgeLikelihood: Given a block "from" that may transfer control to
-// "to", estimate the likelihood that this will happen taking profile into
-// account if available.
-//
-// Parameters:
-//   from        - From block
-//   to          - To block
-//   fromProfile - [out] Whether or not the estimate is based on profile data
-//
-// Returns:
-//   Estimated likelihood of the edge being taken.
-//
-weight_t Compiler::optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, bool* fromProfile)
-{
-    *fromProfile = (from->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY) && (to->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY);
-    if (!fgIsUsingProfileWeights() || !from->HasFlag(BBF_PROF_WEIGHT) || !to->HasFlag(BBF_PROF_WEIGHT) ||
-        from->KindIs(BBJ_ALWAYS))
-    {
-        return 1.0 / from->NumSucc(this);
-    }
-
-    bool useEdgeWeights = fgHaveValidEdgeWeights;
-
-    weight_t takenCount    = 0;
-    weight_t notTakenCount = 0;
-
-    if (useEdgeWeights)
-    {
-        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
-            *fromProfile &= succ->hasProfileWeight();
-            FlowEdge* edge       = fgGetPredForBlock(succ, from);
-            weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
-
-            if (succ == to)
-            {
-                takenCount += edgeWeight;
-            }
-            else
-            {
-                notTakenCount += edgeWeight;
-            }
-            return BasicBlockVisit::Continue;
-        });
-
-        // Watch out for cases where edge weights were not properly maintained
-        // so that it appears no profile flow goes to 'to'.
-        //
-        useEdgeWeights = !fgProfileWeightsConsistent(takenCount, BB_ZERO_WEIGHT);
-    }
-
-    if (!useEdgeWeights)
-    {
-        takenCount    = 0;
-        notTakenCount = 0;
-
-        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
-            *fromProfile &= succ->hasProfileWeight();
-            if (succ == to)
-            {
-                takenCount += succ->bbWeight;
-            }
-            else
-            {
-                notTakenCount += succ->bbWeight;
-            }
-
-            return BasicBlockVisit::Continue;
-        });
-    }
-
-    if (!*fromProfile)
-    {
-        return 1.0 / from->NumSucc(this);
-    }
-
-    if (fgProfileWeightsConsistent(takenCount, BB_ZERO_WEIGHT))
-    {
-        return 0;
-    }
-
-    weight_t likelihood = takenCount / (takenCount + notTakenCount);
-    return likelihood;
-}
-
-//-----------------------------------------------------------------------------
 // optSetWeightForPreheaderOrExit: Set the weight of a newly created preheader
 // or exit, after it has been added to the flowgraph.
 //
@@ -3327,52 +3210,34 @@ weight_t Compiler::optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, b
 //
 void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block)
 {
-    bool hasProfWeight = true;
+    bool     hasProfWeight = true;
+    weight_t newWeight     = BB_ZERO_WEIGHT;
 
-    assert(block->GetUniqueSucc() != nullptr);
-    // Inherit first estimate from the target target; optEstimateEdgeLikelihood
-    // may use it in its estimate if we do not have edge weights to estimate
-    // from (we also assume the edges into 'block' already inherited their edge
-    // weights from the previous edge).
-    block->inheritWeight(block->GetTarget());
-
-    weight_t newWeight = BB_ZERO_WEIGHT;
-    for (FlowEdge* edge : block->PredEdges())
+    for (FlowEdge* const edge : block->PredEdges())
     {
-        BasicBlock* predBlock = edge->getSourceBlock();
-
-        bool     fromProfile = false;
-        weight_t likelihood  = optEstimateEdgeLikelihood(predBlock, block, &fromProfile);
-        hasProfWeight &= fromProfile;
-
-        weight_t contribution = predBlock->bbWeight * likelihood;
-        JITDUMP("  Estimated likelihood " FMT_BB " -> " FMT_BB " to be " FMT_WT " (contribution: " FMT_WT ")\n",
-                predBlock->bbNum, block->bbNum, likelihood, contribution);
-
-        newWeight += contribution;
-
-        // Normalize pred -> new block weight
-        edge->setEdgeWeights(contribution, contribution, block);
+        newWeight += edge->getLikelyWeight();
+        hasProfWeight &= edge->getSourceBlock()->hasProfileWeight();
     }
 
-    block->RemoveFlags(BBF_PROF_WEIGHT | BBF_RUN_RARELY);
-
     block->bbWeight = newWeight;
+
     if (hasProfWeight)
     {
         block->SetFlags(BBF_PROF_WEIGHT);
+    }
+    else
+    {
+        block->RemoveFlags(BBF_PROF_WEIGHT);
     }
 
     if (newWeight == BB_ZERO_WEIGHT)
     {
         block->SetFlags(BBF_RUN_RARELY);
-        return;
     }
-
-    // Normalize block -> target weight
-    FlowEdge* const edgeFromBlock = block->GetTargetEdge();
-    assert(edgeFromBlock != nullptr);
-    edgeFromBlock->setEdgeWeights(block->bbWeight, block->bbWeight, block->GetTarget());
+    else
+    {
+        block->RemoveFlags(BBF_RUN_RARELY);
+    }
 }
 
 /*****************************************************************************
@@ -3417,8 +3282,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
             /* Constants can usually be narrowed by changing their value */
 
 #ifndef TARGET_64BIT
-            __int64 lval;
-            __int64 lmask;
+            int64_t lval;
+            int64_t lmask;
 
             case GT_CNS_LNG:
                 lval  = tree->AsIntConCommon()->LngValue();
@@ -3455,10 +3320,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 if (doit)
                 {
                     tree->BashToConst(static_cast<int32_t>(lval));
-                    if (vnStore != nullptr)
-                    {
-                        fgValueNumberTreeConst(tree);
-                    }
+                    fgUpdateConstTreeValueNumber(tree);
                 }
 
                 return true;
@@ -3507,10 +3369,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 {
                     tree->gtType                = TYP_INT;
                     tree->AsIntCon()->gtIconVal = (int)ival;
-                    if (vnStore != nullptr)
-                    {
-                        fgValueNumberTreeConst(tree);
-                    }
+
+                    fgUpdateConstTreeValueNumber(tree);
                 }
 #endif // TARGET_64BIT
 
@@ -4160,7 +4020,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         hoistCtxt->m_hoistedFPExprCount  = 0;
     }
 
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     if (!VarSetOps::IsEmpty(this, lvaMaskVars))
     {
         VARSET_TP loopMskVars(VarSetOps::Intersection(this, loopVars, lvaMaskVars));
@@ -4191,7 +4051,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         hoistCtxt->m_loopVarInOutMskCount = 0;
         hoistCtxt->m_hoistedMskExprCount  = 0;
     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     // Find the set of definitely-executed blocks.
     // Ideally, the definitely-executed blocks are the ones that post-dominate the entry block.
@@ -4313,9 +4173,9 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     optHoistLoopBlocks(loop, &defExec, hoistCtxt);
 
     unsigned numHoisted = hoistCtxt->m_hoistedFPExprCount + hoistCtxt->m_hoistedExprCount;
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     numHoisted += hoistCtxt->m_hoistedMskExprCount;
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
     return numHoisted > 0;
 }
 
@@ -4347,7 +4207,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* l
         }
 #endif
     }
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (varTypeUsesMaskReg(tree))
     {
         hoistedExprCount = hoistCtxt->m_hoistedMskExprCount;
@@ -4360,7 +4220,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* l
             availRegCount += CNT_CALLEE_TRASH_MASK - 1;
         }
     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
     else
     {
         assert(varTypeUsesFloatReg(tree));
@@ -5203,7 +5063,7 @@ void Compiler::optHoistCandidate(GenTree*              tree,
                                  FlowGraphNaturalLoop* loop,
                                  LoopHoistContext*     hoistCtxt)
 {
-    // It must pass the hoistable profitablity tests for this loop level
+    // It must pass the hoistable profitability tests for this loop level
     if (!optIsProfitableToHoistTree(tree, loop, hoistCtxt))
     {
         JITDUMP("   ... not profitable to hoist\n");
@@ -5263,12 +5123,12 @@ void Compiler::optHoistCandidate(GenTree*              tree,
         }
 #endif
     }
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (varTypeUsesMaskReg(tree))
     {
         hoistCtxt->m_hoistedMskExprCount++;
     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
     else
     {
         assert(varTypeUsesFloatReg(tree));
@@ -5467,8 +5327,6 @@ PhaseStatus Compiler::fgCanonicalizeFirstBB()
 
     assert(!fgFirstBBisScratch());
     fgEnsureFirstBBisScratch();
-    // TODO-Quirk: Remove
-    fgCanonicalizedFirstBB = true;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -5522,7 +5380,7 @@ void Compiler::optComputeInterestingVarSets()
 #ifndef TARGET_64BIT
     VarSetOps::AssignNoCopy(this, lvaLongVars, VarSetOps::MakeEmpty(this));
 #endif
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     VarSetOps::AssignNoCopy(this, lvaMaskVars, VarSetOps::MakeEmpty(this));
 #endif
 
@@ -5541,12 +5399,12 @@ void Compiler::optComputeInterestingVarSets()
                 VarSetOps::AddElemD(this, lvaLongVars, varDsc->lvVarIndex);
             }
 #endif
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
             else if (varTypeUsesMaskReg(varDsc->lvType))
             {
                 VarSetOps::AddElemD(this, lvaMaskVars, varDsc->lvVarIndex);
             }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
         }
     }
 }
@@ -6055,10 +5913,35 @@ void Compiler::optRemoveRedundantZeroInits()
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
 
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && !block->HasFlag(BBF_MARKED);
-         block             = block->GetUniqueSucc())
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->GetUniqueSucc())
     {
-        block->SetFlags(BBF_MARKED);
+        if (m_dfsTree->HasCycle())
+        {
+            // See if this block is a cycle entry
+            //
+            bool stop = false;
+            for (FlowEdge* predEdge = BlockPredsWithEH(block); predEdge != nullptr;
+                 predEdge           = predEdge->getNextPredEdge())
+            {
+                BasicBlock* const predBlock = predEdge->getSourceBlock();
+                if (m_dfsTree->IsAncestor(block, predBlock))
+                {
+                    JITDUMP(FMT_BB " is part of a cycle, stopping the block scan\n", block->bbNum);
+                    stop = true;
+                    break;
+                }
+            }
+
+            // If so, stop looking for redundant zero inits
+            //
+            if (stop)
+            {
+                break;
+            }
+        }
+
+        JITDUMP("Analyzing " FMT_BB "\n", block->bbNum);
+
         CompAllocator   allocator(getAllocator(CMK_ZeroInit));
         LclVarRefCounts defsInBlock(allocator);
         bool            removedTrackedDefs = false;
@@ -6069,12 +5952,8 @@ void Compiler::optRemoveRedundantZeroInits()
             Statement* next = stmt->GetNextStmt();
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (((tree->gtFlags & GTF_CALL) != 0))
-                {
-                    hasGCSafePoint = true;
-                }
-
                 hasImplicitControlFlow |= hasEHSuccs && ((tree->gtFlags & GTF_EXCEPT) != 0);
+                hasGCSafePoint |= IsPotentialGCSafePoint(tree);
 
                 switch (tree->gtOper)
                 {
@@ -6179,7 +6058,7 @@ void Compiler::optRemoveRedundantZeroInits()
 
                         if (tree->Data()->IsIntegralConst(0))
                         {
-                            bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
+                            bool bbInALoop  = false;
                             bool bbIsReturn = block->KindIs(BBJ_RETURN);
 
                             if (!bbInALoop || bbIsReturn)
@@ -6224,9 +6103,10 @@ void Compiler::optRemoveRedundantZeroInits()
                             (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->lvLiveInOutOfHndlr)))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
-                            // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
-                            if (!lclDsc->HasGCPtr() ||
-                                (!GetInterruptible() && !hasGCSafePoint && !compMethodRequiresPInvokeFrame()))
+                            // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.
+                            assert(emitter::emitNoGChelper(CORINFO_HELP_INIT_PINVOKE_FRAME));
+
+                            if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !hasGCSafePoint))
                             {
                                 // The local hasn't been used and won't be reported to the gc between
                                 // the prolog and this explicit initialization. Therefore, it doesn't
@@ -6255,12 +6135,6 @@ void Compiler::optRemoveRedundantZeroInits()
                 }
             }
         }
-    }
-
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && block->HasFlag(BBF_MARKED);
-         block             = block->GetUniqueSucc())
-    {
-        block->RemoveFlags(BBF_MARKED);
     }
 }
 

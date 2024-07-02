@@ -114,8 +114,9 @@ namespace Internal.IL
                 MarkInstructionBoundary();
 
                 ILOpcode opCode = (ILOpcode)ReadILByte();
+                if (opCode == ILOpcode.prefix1)
+                    opCode = (ILOpcode)(0x100 + ReadILByte());
 
-            again:
                 switch (opCode)
                 {
                     case ILOpcode.ldarg_s:
@@ -179,19 +180,13 @@ namespace Internal.IL
                     case ILOpcode.sizeof_:
                         SkipIL(4);
                         break;
-                    case ILOpcode.prefix1:
-                        opCode = (ILOpcode)(0x100 + ReadILByte());
-                        goto again;
                     case ILOpcode.br_s:
                     case ILOpcode.leave_s:
                         {
                             int delta = (sbyte)ReadILByte();
                             int target = _currentOffset + delta;
                             if ((uint)target < (uint)_basicBlocks.Length)
-                            {
                                 CreateBasicBlock(target);
-                                OnLeaveTargetCreated(target);
-                            }
                             else
                                 ReportInvalidBranchTarget(target);
                         }
@@ -224,10 +219,7 @@ namespace Internal.IL
                             int delta = (int)ReadILUInt32();
                             int target = _currentOffset + delta;
                             if ((uint)target < (uint)_basicBlocks.Length)
-                            {
                                 CreateBasicBlock(target);
-                                OnLeaveTargetCreated(target);
-                            }
                             else
                                 ReportInvalidBranchTarget(target);
                         }
@@ -276,8 +268,6 @@ namespace Internal.IL
             }
         }
 
-        partial void OnLeaveTargetCreated(int target);
-
         private void FindEHTargets()
         {
             for (int i = 0; i < _exceptionRegions.Length; i++)
@@ -322,6 +312,8 @@ namespace Internal.IL
             }
         }
 
+        partial void StartImportingInstruction(ILOpcode opcode);
+
         private void ImportBasicBlock(BasicBlock basicBlock)
         {
             _currentBasicBlock = basicBlock;
@@ -332,8 +324,11 @@ namespace Internal.IL
                 StartImportingInstruction();
 
                 ILOpcode opCode = (ILOpcode)ReadILByte();
+                if (opCode == ILOpcode.prefix1)
+                    opCode = (ILOpcode)(0x100 + ReadILByte());
 
-            again:
+                StartImportingInstruction(opCode);
+
                 switch (opCode)
                 {
                     case ILOpcode.nop:
@@ -822,9 +817,6 @@ namespace Internal.IL
                     case ILOpcode.conv_u:
                         ImportConvert(WellKnownType.UIntPtr, false, true);
                         break;
-                    case ILOpcode.prefix1:
-                        opCode = (ILOpcode)(0x100 + ReadILByte());
-                        goto again;
                     case ILOpcode.arglist:
                         ImportArgList();
                         break;

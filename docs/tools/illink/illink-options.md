@@ -110,7 +110,7 @@ Each feature can be controlled independently using `--feature NAME value` option
 The list of available feature names is framework-dependent and can vary between different
 framework versions.
 
-The list of controllable features for .NET Core is available at https://docs.microsoft.com/en-us/dotnet/core/run-time-config/.
+The list of controllable features for .NET Core is available at https://learn.microsoft.com/dotnet/core/run-time-config/.
 
 ### Using custom substitutions
 

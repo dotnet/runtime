@@ -23,11 +23,15 @@
 #include "dwreport.h"
 #include "primitives.h"
 #include "dbgutil.h"
+#include "cdac.h"
+#include <clrconfignocache.h>
 
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
 #else
 extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+// cDAC depends on symbol lookup to find the contract descriptor
+#define CAN_USE_CDAC
 #endif
 
 #include "dwbucketmanager.hpp"
@@ -97,7 +101,7 @@ ConvertUtf8(_In_ LPCUTF8 utf8,
 {
     if (nameLen)
     {
-        *nameLen = WszMultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+        *nameLen = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
         if (!*nameLen)
         {
             return HRESULT_FROM_GetLastError();
@@ -106,7 +110,7 @@ ConvertUtf8(_In_ LPCUTF8 utf8,
 
     if (buffer && bufLen)
     {
-        if (!WszMultiByteToWideChar(CP_UTF8, 0, utf8, -1, buffer, bufLen))
+        if (!MultiByteToWideChar(CP_UTF8, 0, utf8, -1, buffer, bufLen))
         {
             return HRESULT_FROM_GetLastError();
         }
@@ -120,7 +124,7 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
           ULONG32 srcChars,
           _Outptr_ LPUTF8* utf8)
 {
-    ULONG32 chars = WszWideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
+    ULONG32 chars = WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
                                            NULL, 0, NULL, NULL);
     if (!chars)
     {
@@ -142,7 +146,7 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
         return E_OUTOFMEMORY;
     }
 
-    if (!WszWideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
+    if (!WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
                                 mem, chars, NULL, NULL))
     {
         HRESULT hr = HRESULT_FROM_GetLastError();
@@ -1748,7 +1752,7 @@ DacInstanceManager::Find(TADDR addr)
 {
 
 #if defined(DAC_MEASURE_PERF)
-    unsigned _int64 nStart, nEnd;
+    uint64_t nStart, nEnd;
     g_nFindCalls++;
     nStart = GetCycleCount();
 #endif // #if defined(DAC_MEASURE_PERF)
@@ -3034,6 +3038,7 @@ private:
 //----------------------------------------------------------------------------
 
 ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget/*=0*/)
+    : m_cdac{}
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
 
@@ -3123,7 +3128,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     // see ClrDataAccess::VerifyDlls for details.
     m_fEnableDllVerificationAsserts = false;
 #endif
-
 }
 
 ClrDataAccess::~ClrDataAccess(void)
@@ -5491,6 +5495,30 @@ ClrDataAccess::Initialize(void)
     IfFailRet(GetDacGlobalValues());
     IfFailRet(DacGetHostVtPtrs());
 
+// TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
+#ifdef CAN_USE_CDAC
+    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
+    if (enable.IsSet())
+    {
+        DWORD val;
+        if (enable.TryAsInteger(10, val) && val == 1)
+        {
+            uint64_t contractDescriptorAddr = 0;
+            if (TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            {
+                m_cdac = CDAC::Create(contractDescriptorAddr, m_pTarget);
+                if (m_cdac.IsValid())
+                {
+                    // Get SOS interfaces from the cDAC if available.
+                    IUnknown* unk = m_cdac.SosInterface();
+                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
+                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
+                }
+            }
+        }
+    }
+#endif
+
     //
     // DAC is now setup and ready to use
     //
@@ -6005,7 +6033,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
                                   CLRDATA_ADDRESS* codeStart,
                                   ULONG32* codeOffset)
 {
-    _ASSERTE((codeOffset == NULL) || (address != NULL));
+    _ASSERTE((codeOffset == NULL) || (address != (TADDR)NULL));
 
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
@@ -6922,7 +6950,7 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
         return E_INVALIDARG;
     }
 #endif
-    // On MacOS, FreeBSD or NetBSD use the RVA include file
+    // On FreeBSD, NetBSD, or SunOS use the RVA include file
     *dacTableAddress = baseAddress + DAC_TABLE_RVA;
 #else
     // Otherwise, try to get the dac table address via the export symbol
@@ -7746,6 +7774,8 @@ void CALLBACK DacHandleWalker::EnumCallback(PTR_UNCHECKED_OBJECTREF handle, uint
     data.Type = param->Type;
     if (param->Type == HNDTYPE_DEPENDENT)
         data.Secondary = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
+    else if (param->Type == HNDTYPE_WEAK_INTERIOR_POINTER)
+        data.Secondary = TO_CDADDR(HndGetHandleExtraInfo(handle.GetAddr()));
     else
         data.Secondary = 0;
     data.AppDomain = param->AppDomain;
@@ -7883,7 +7913,7 @@ void DacStackReferenceWalker::WalkStack()
     // Setup GCCONTEXT structs for the stackwalk.
     GCCONTEXT gcctx = {0};
     DacScanContext dsc(this, &mList, mResolvePointers);
-    dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallback;
+    dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallbackFunc;
     gcctx.f = DacStackReferenceWalker::GCReportCallback;
     gcctx.sc = &dsc;
 
@@ -7930,7 +7960,7 @@ CLRDATA_ADDRESS DacStackReferenceWalker::ReadPointer(TADDR addr)
 }
 
 
-void DacStackReferenceWalker::GCEnumCallback(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
+void DacStackReferenceWalker::GCEnumCallbackFunc(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
 {
     GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
     DacScanContext *dsc = (DacScanContext*)gcctx->sc;

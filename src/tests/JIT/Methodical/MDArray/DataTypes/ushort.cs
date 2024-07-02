@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@ushort;
+
 public struct VT
 {
     public ushort[,] ushort2darr;
@@ -35,6 +37,7 @@ public class ushortMDArrTest
     static ushort[][, ,] ja2_b = new ushort[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

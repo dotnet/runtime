@@ -237,9 +237,22 @@ namespace Mono.Linker
 
 						continue;
 
-					case "--dump-dependencies":
-						dumpDependencies = true;
-						continue;
+					case "--dump-dependencies": {
+							dumpDependencies = true;
+
+							string? assemblyName = GetNextStringValue ();
+							if (assemblyName != null) {
+								if (!IsValidAssemblyName (assemblyName)) {
+									context.LogError (null, DiagnosticId.InvalidAssemblyName, assemblyName);
+									return -1;
+								}
+
+								context.TraceAssembly ??= new HashSet<string> ();
+								context.TraceAssembly.Add (assemblyName);
+							}
+
+							continue;
+						}
 
 					case "--dependencies-file-format":
 						if (!GetStringParam (token, out var dependenciesFileFormat))
@@ -360,6 +373,12 @@ namespace Mono.Linker
 						}
 
 						context.SetCustomData (values[0], values[1]);
+						continue;
+
+					case "--keep-com-interfaces":
+						if (!GetBoolParam (token, l => context.KeepComInterfaces = l))
+							return -1;
+
 						continue;
 
 					case "--keep-compilers-resources":
@@ -598,6 +617,12 @@ namespace Mono.Linker
 
 							continue;
 						}
+
+					case "--preserve-symbol-paths":
+						if (!GetBoolParam (token, l => context.PreserveSymbolPaths = l))
+							return -1;
+
+						continue;
 
 					case "--version":
 						Version ();
@@ -1284,6 +1309,7 @@ namespace Mono.Linker
 			return new LinkContext (pipeline, logger ?? new ConsoleLogger (), "output") {
 				TrimAction = AssemblyAction.Link,
 				DefaultAction = AssemblyAction.Link,
+				KeepComInterfaces = true,
 			};
 		}
 
@@ -1313,12 +1339,13 @@ namespace Mono.Linker
 
 			Console.WriteLine ();
 			Console.WriteLine ("Options");
-			Console.WriteLine ("  -d PATH             Specify additional directory to search in for assembly references");
-			Console.WriteLine ("  -reference FILE     Specify additional file location used to resolve assembly references");
-			Console.WriteLine ("  -b                  Update debug symbols for all modified files. Defaults to false");
-			Console.WriteLine ("  -out PATH           Specify the output directory. Defaults to 'output'");
-			Console.WriteLine ("  -h                  Lists all {0} options", _linker);
-			Console.WriteLine ("  @FILE               Read response file for more options");
+			Console.WriteLine ("  -d PATH                  Specify additional directory to search in for assembly references");
+			Console.WriteLine ("  -reference FILE          Specify additional file location used to resolve assembly references");
+			Console.WriteLine ("  -b                       Update debug symbols for all modified files. Defaults to false");
+			Console.WriteLine ("  --preserve-symbol-paths  Preserve debug header paths to pdb files. Defaults to false");
+			Console.WriteLine ("  -out PATH                Specify the output directory. Defaults to 'output'");
+			Console.WriteLine ("  -h                       Lists all {0} options", _linker);
+			Console.WriteLine ("  @FILE                    Read response file for more options");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Actions");
@@ -1369,6 +1396,7 @@ namespace Mono.Linker
 			Console.WriteLine ("                               sealer: Any method or type which does not have override is marked as sealed");
 			Console.WriteLine ("  --explicit-reflection      Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
 			Console.WriteLine ("  --feature FEATURE VALUE    Apply any optimizations defined when this feature setting is a constant known at link time");
+			Console.WriteLine ("  --keep-com-interfaces      Keep COM interfaces implemented by kept types. Defaults to true");
 			Console.WriteLine ("  --keep-compilers-resources Keep assembly resources used for F# compilation resources. Defaults to false");
 			Console.WriteLine ("  --keep-dep-attributes      Keep attributes used for manual dependency tracking. Defaults to false");
 			Console.WriteLine ("  --keep-metadata NAME       Keep metadata which would otherwise be removed if not used");

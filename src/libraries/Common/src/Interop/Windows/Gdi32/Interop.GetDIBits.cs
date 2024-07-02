@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 
@@ -13,11 +13,11 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Gdi32)]
         internal static partial int GetDIBits(
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hdc,
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hbm, int arg1, int arg2, IntPtr arg3, ref BITMAPINFO_FLAT bmi, int arg5);

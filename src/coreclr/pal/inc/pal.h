@@ -49,6 +49,12 @@ Abstract:
 #include <sys/types.h>
 #include <unistd.h>
 #include <wctype.h>
+#if defined(__has_include)
+
+#if __has_include(<alloca.h>)
+#include <alloca.h>
+#endif // __has_include(alloca.h)
+#endif // defined(__has_include)
 
 #ifdef __cplusplus
 extern "C++"
@@ -118,20 +124,6 @@ extern bool g_arm64_atomics_present;
 #define LANG_ENGLISH                     0x09
 
 /******************* Compiler-specific glue *******************************/
-#ifndef THROW_DECL
-#if defined(_MSC_VER) || !defined(__cplusplus)
-#define THROW_DECL
-#else
-#define THROW_DECL throw()
-#endif // !_MSC_VER
-#endif // !THROW_DECL
-
-#ifdef __sun
-#define MATH_THROW_DECL
-#else
-#define MATH_THROW_DECL THROW_DECL
-#endif
-
 #if defined(_MSC_VER)
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
 #else
@@ -167,16 +159,8 @@ extern bool g_arm64_atomics_present;
 #ifndef NOOPT_ATTRIBUTE
 #if defined(__llvm__)
 #define NOOPT_ATTRIBUTE optnone
-#elif defined(__GNUC__)
+#else
 #define NOOPT_ATTRIBUTE optimize("O0")
-#endif
-#endif
-
-#ifndef NODEBUG_ATTRIBUTE
-#if defined(__llvm__)
-#define NODEBUG_ATTRIBUTE __nodebug__
-#elif defined(__GNUC__)
-#define NODEBUG_ATTRIBUTE __artificial__
 #endif
 #endif
 
@@ -1860,6 +1844,12 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000L
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000L
 
+#define CONTEXT_XSTATE (CONTEXT_ARM64 | 0x40L)
+
+#define XSTATE_SVE (0)
+
+#define XSTATE_MASK_SVE (UI64(1) << (XSTATE_SVE))
+
 //
 // This flag is set by the unwinder if it has unwound to a call
 // site, and cleared whenever it unwinds through a trap frame.
@@ -1960,7 +1950,18 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     /* +0x338 */ DWORD64 Bvr[ARM64_MAX_BREAKPOINTS];
     /* +0x378 */ DWORD Wcr[ARM64_MAX_WATCHPOINTS];
     /* +0x380 */ DWORD64 Wvr[ARM64_MAX_WATCHPOINTS];
-    /* +0x390 */
+
+    /* +0x390 */ DWORD64 XStateFeaturesMask;
+
+    //
+    // Sve Registers
+    //
+    // TODO-SVE: Support Vector register sizes >128bit
+    // For 128bit, Z and V registers fully overlap, so there is no need to load/store both.
+    /* +0x398 */ DWORD Vl;
+    /* +0x39c */ DWORD Ffr;
+    /* +0x3a0 */ DWORD P[16];
+    /* +0x3e0 */
 
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
@@ -3371,8 +3372,9 @@ EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
 /* Function multiversioning will never inline a method that is  \
    marked such. However, just to make sure that we don't see    \
    surprises, explicitely mark them as noinline. */             \
-__attribute__((target("lse")))  __attribute__((noinline))       \
-EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI Lse_##METHOD_DECL  \
+EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI                    \
+__attribute__((target("+lse")))  __attribute__((noinline))      \
+Lse_##METHOD_DECL                                               \
 {                                                               \
     return INTRINSIC_NAME;                                      \
 }                                                               \
@@ -3772,7 +3774,7 @@ PALAPI
 FlushProcessWriteBuffers();
 
 typedef void (*PAL_ActivationFunction)(CONTEXT *context);
-typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip, BOOL checkingCurrentThread);
+typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip);
 
 PALIMPORT
 VOID
@@ -3853,7 +3855,7 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 // errno_t is only defined when the Secure CRT Extensions library is available (which no standard library that we build with implements anyway)
 typedef int errno_t;
 
-PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t) THROW_DECL;
+PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t);
 PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
 PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
@@ -3862,7 +3864,6 @@ PALIMPORT DLLEXPORT int __cdecl _snprintf_s(char *, size_t, size_t, const char *
 PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
 PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
-PALIMPORT DLLEXPORT errno_t __cdecl _itow_s(int, WCHAR *, size_t, int);
 
 PALIMPORT DLLEXPORT size_t __cdecl PAL_wcslen(const WCHAR *);
 PALIMPORT DLLEXPORT int __cdecl PAL_wcscmp(const WCHAR*, const WCHAR*);
@@ -3879,7 +3880,6 @@ PALIMPORT DLLEXPORT ULONGLONG __cdecl PAL__wcstoui64(const WCHAR *, WCHAR **, in
 PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
-PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
 PALIMPORT FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 
@@ -3915,7 +3915,7 @@ inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
 }
 #endif
 
-#if !__has_builtin(_rotl)
+#if !__has_builtin(_rotl) && !defined(_rotl)
 /*++
 Function:
 _rotl
@@ -3935,7 +3935,7 @@ unsigned int __cdecl _rotl(unsigned int value, int shift)
 }
 #endif // !__has_builtin(_rotl)
 
-#if !__has_builtin(_rotr)
+#if !__has_builtin(_rotr) && !defined(_rotr)
 
 /*++
 Function:
@@ -3961,9 +3961,6 @@ PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #define ERANGE          34
-
-PALIMPORT WCHAR __cdecl PAL_ToUpperInvariant(WCHAR);
-PALIMPORT WCHAR __cdecl PAL_ToLowerInvariant(WCHAR);
 
 /****************PAL Perf functions for PInvoke*********************/
 #if PAL_PERF
@@ -4420,6 +4417,8 @@ public:
 #define PAL_CPP_CATCH_EXCEPTION(ident)  } catch (Exception *ident) {
 #define PAL_CPP_CATCH_EXCEPTION_NOARG   } catch (Exception *) {
 #define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) {
+#define PAL_CPP_CATCH_NON_DERIVED(type, ident) } catch (type ident) {
+#define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) } catch (type) {
 #define PAL_CPP_CATCH_ALL               } catch (...) {                                           \
                                             try { throw; }                                        \
                                             catch (PAL_SEHException& ex) { ex.SecondPassDone(); } \

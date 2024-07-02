@@ -440,6 +440,48 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	return ret;
 }
 
+/* LOCKING: assumes the loader lock is taken */
+static MonoReflectionType*
+mono_type_get_object_checked_alloc_helper (MonoType *type, MonoMemoryManager *memory_manager, MonoDomain *domain, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoReflectionType *res, *cached;
+	/* This is stored in vtables/JITted code so it has to be pinned */
+	MonoReflectionTypeHandle res_handle = MONO_HANDLE_CAST (MonoReflectionType, mono_object_new_pinned_handle (mono_defaults.runtimetype_class, error));
+	goto_if_nok (error, exit);
+
+	res = MONO_HANDLE_RAW (res_handle);
+
+	res->type = type;
+	if (memory_manager->collectible) {
+		MonoObject *loader_alloc = mono_gchandle_get_target_internal (mono_mem_manager_get_loader_alloc (memory_manager));
+		g_assert (loader_alloc);
+		MONO_OBJECT_SETREF_INTERNAL (res, m_keepalive, loader_alloc);
+	}
+
+	mono_mem_manager_lock (memory_manager);
+	if (memory_manager->collectible)
+		cached = (MonoReflectionType *)mono_weak_hash_table_lookup (memory_manager->weak_type_hash, type);
+	else
+		cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+	if (cached) {
+		res = cached;
+		MONO_HANDLE_ASSIGN_RAW (res_handle, res);
+	} else {
+		if (memory_manager->collectible)
+			mono_weak_hash_table_insert (memory_manager->weak_type_hash, type, res);
+		else
+			mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+		if (type->type == MONO_TYPE_VOID && !m_type_is_byref (type))
+			domain->typeof_void = (MonoObject*)res;
+	}
+	mono_mem_manager_unlock (memory_manager);
+
+exit:
+	HANDLE_FUNCTION_RETURN_OBJ (res_handle);
+}
+
 MonoReflectionType*
 mono_type_get_object_checked (MonoType *type, MonoError *error)
 {
@@ -554,33 +596,9 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		res = &mono_class_get_ref_info_raw (klass)->type; /* FIXME use handles */
 		goto leave;
 	}
-	/* This is stored in vtables/JITted code so it has to be pinned */
-	res = (MonoReflectionType *)mono_object_new_pinned (mono_defaults.runtimetype_class, error);
-	goto_if_nok (error, leave);
 
-	res->type = type;
-	if (memory_manager->collectible) {
-		MonoObject *loader_alloc = mono_gchandle_get_target_internal (mono_mem_manager_get_loader_alloc (memory_manager));
-		g_assert (loader_alloc);
-		MONO_OBJECT_SETREF_INTERNAL (res, m_keepalive, loader_alloc);
-	}
 
-	mono_mem_manager_lock (memory_manager);
-	if (memory_manager->collectible)
-		cached = (MonoReflectionType *)mono_weak_hash_table_lookup (memory_manager->weak_type_hash, type);
-	else
-		cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
-	if (cached) {
-		res = cached;
-	} else {
-		if (memory_manager->collectible)
-			mono_weak_hash_table_insert (memory_manager->weak_type_hash, type, res);
-		else
-			mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
-		if (type->type == MONO_TYPE_VOID && !m_type_is_byref (type))
-			domain->typeof_void = (MonoObject*)res;
-	}
-	mono_mem_manager_unlock (memory_manager);
+	res = mono_type_get_object_checked_alloc_helper (type, memory_manager, domain, error);
 
 leave:
 	mono_loader_unlock ();
@@ -1530,8 +1548,17 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p)
 	}
 	assembly->name = p;
 	s = p;
-	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@' || g_ascii_isspace (*p)))
-		p++;
+	guchar *inptr = (guchar *) p;
+	while (*p && (*p != ',') && (*p != '\0')) {
+		if (quoted && (*p == '"'))
+			break;
+		guint length = g_utf8_jump_table[*inptr];
+		if (!g_utf8_validate_part (inptr, length)) {
+			return 0;
+		}
+		p += length;
+		inptr += length;
+	}
 	if (quoted) {
 		if (*p != '"')
 			return 1;
@@ -1630,7 +1657,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p)
 			found_sep = 1;
 			continue;
 		}
-		/* failed */
+		/* Done processing */
 		if (!found_sep)
 			return 1;
 	}

@@ -363,14 +363,18 @@ GcInfoDecoder::GcInfoDecoder(
     }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    if(flags & (DECODE_GC_LIFETIMES))
+    if(flags & (DECODE_GC_LIFETIMES | DECODE_INTERRUPTIBILITY))
     {
         if(m_NumSafePoints)
         {
-            m_SafePointIndex = FindSafePoint(m_InstructionOffset);
+            // Safepoints are encoded with a -1 adjustment
+            // DECODE_GC_LIFETIMES adjusts the offset accordingly, but DECODE_INTERRUPTIBILITY does not
+            // adjust here
+            UINT32 offset = flags & DECODE_INTERRUPTIBILITY ? m_InstructionOffset - 1 : m_InstructionOffset;
+            m_SafePointIndex = FindSafePoint(offset);
         }
     }
-    else if(flags & (DECODE_FOR_RANGES_CALLBACK | DECODE_INTERRUPTIBILITY))
+    else if(flags & DECODE_FOR_RANGES_CALLBACK)
     {
         // Note that normalization as a code offset can be different than
         //  normalization as code length
@@ -381,7 +385,13 @@ GcInfoDecoder::GcInfoDecoder(
     }
 #endif
 
-    if(!m_IsInterruptible && (flags & DECODE_INTERRUPTIBILITY))
+    // we do not support both DECODE_INTERRUPTIBILITY and DECODE_FOR_RANGES_CALLBACK at the same time
+    // as both will enumerate and consume interruptible ranges.
+    _ASSERTE((flags & (DECODE_INTERRUPTIBILITY | DECODE_FOR_RANGES_CALLBACK)) !=
+        (DECODE_INTERRUPTIBILITY | DECODE_FOR_RANGES_CALLBACK));
+
+    _ASSERTE(!m_IsInterruptible);
+    if(flags & DECODE_INTERRUPTIBILITY)
     {
         EnumerateInterruptibleRanges(&SetIsInterruptibleCB, this);
     }
@@ -391,6 +401,38 @@ bool GcInfoDecoder::IsInterruptible()
 {
     _ASSERTE( m_Flags & DECODE_INTERRUPTIBILITY );
     return m_IsInterruptible;
+}
+
+bool GcInfoDecoder::HasInterruptibleRanges()
+{
+    _ASSERTE(m_Flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES));
+    return m_NumInterruptibleRanges > 0;
+}
+
+bool GcInfoDecoder::IsSafePoint()
+{
+    _ASSERTE(m_Flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES));
+    return m_SafePointIndex != m_NumSafePoints;
+}
+
+bool GcInfoDecoder::AreSafePointsInterruptible()
+{
+    return m_Version >= 3;
+}
+
+bool GcInfoDecoder::IsInterruptibleSafePoint()
+{
+    return IsSafePoint() && AreSafePointsInterruptible();
+}
+
+bool GcInfoDecoder::CouldBeInterruptibleSafePoint()
+{
+    // This is used in asserts. Ideally it would return false
+    // if current location canot possibly be a safepoint.
+    // However in some cases we optimize away "boring" callsites when no variables are tracked.
+    // So there is no way to tell precisely that a point is indeed not a safe point.
+    // Thus we do what we can here, but this could be better if we could have more data
+    return AreSafePointsInterruptible() && m_NumInterruptibleRanges == 0;
 }
 
 bool GcInfoDecoder::HasMethodDescGenericsInstContext()
@@ -494,7 +536,10 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
         }
     }
 
-    m_Reader.SetCurrentPos(savedPos + m_NumSafePoints * numBitsPerOffset);
+    // Cannot just set the "savedPos + m_NumSafePoints * numBitsPerOffset" as
+    // there could be no more data if method tracks no variables of any kind.
+    // Must use Skip, which handles potential stream end.
+    m_Reader.Skip(savedPos + m_NumSafePoints * numBitsPerOffset - m_Reader.GetCurrentPos());
     return result;
 }
 
@@ -515,7 +560,7 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
         offset--;
 #endif
 
-        pCallback(offset, hCallback);
+        pCallback(this, offset, hCallback);
     }
 }
 #endif

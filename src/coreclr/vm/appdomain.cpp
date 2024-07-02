@@ -439,118 +439,6 @@ void PinnedHeapHandleTable::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
     }
 }
 
-// Constructor for the ThreadStaticHandleBucket class.
-ThreadStaticHandleBucket::ThreadStaticHandleBucket(ThreadStaticHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
-: m_pNext(pNext)
-, m_ArraySize(Size)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pDomain));
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    PTRARRAYREF HandleArrayObj;
-
-    // Allocate the array on the GC heap.
-    OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass);
-
-    // Store the array in a strong handle to keep it alive.
-    m_hndHandleArray = pDomain->CreateStrongHandle((OBJECTREF)HandleArrayObj);
-}
-
-// Destructor for the ThreadStaticHandleBucket class.
-ThreadStaticHandleBucket::~ThreadStaticHandleBucket()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (m_hndHandleArray)
-    {
-        DestroyStrongHandle(m_hndHandleArray);
-        m_hndHandleArray = NULL;
-    }
-}
-
-// Allocate handles from the bucket.
-OBJECTHANDLE ThreadStaticHandleBucket::GetHandles()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    return m_hndHandleArray;
-}
-
-// Constructor for the ThreadStaticHandleTable class.
-ThreadStaticHandleTable::ThreadStaticHandleTable(BaseDomain *pDomain)
-: m_pHead(NULL)
-, m_pDomain(pDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pDomain));
-    }
-    CONTRACTL_END;
-}
-
-// Destructor for the ThreadStaticHandleTable class.
-ThreadStaticHandleTable::~ThreadStaticHandleTable()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    // Delete the buckets.
-    while (m_pHead)
-    {
-        ThreadStaticHandleBucket *pOld = m_pHead;
-        m_pHead = pOld->GetNext();
-        delete pOld;
-    }
-}
-
-// Allocate handles from the large heap handle table.
-OBJECTHANDLE ThreadStaticHandleTable::AllocateHandles(DWORD nRequested)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(nRequested > 0);
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // create a new bucket for this allocation
-    m_pHead = new ThreadStaticHandleBucket(m_pHead, nRequested, m_pDomain);
-
-    return m_pHead->GetHandles();
-}
-
-
-
 //*****************************************************************************
 // BaseDomain
 //*****************************************************************************
@@ -612,7 +500,7 @@ void BaseDomain::Init()
         m_DomainCrst.Init(CrstBaseDomain);
 
     m_DomainCacheCrst.Init(CrstAppDomainCache);
-    m_DomainLocalBlockCrst.Init(CrstDomainLocalBlock);
+    m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
 
     // NOTE: CRST_UNSAFE_COOPGC prevents a GC mode switch to preemptive when entering this crst.
     // If you remove this flag, we will switch to preemptive mode when entering
@@ -637,7 +525,6 @@ void BaseDomain::Init()
     m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
 
     m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
-    m_crstStaticBoxInitLock.Init(CrstStaticBoxInit);
     // Has to switch thread to GC_NOTRIGGER while being held (see code:BaseDomain#AssemblyListLock)
     m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
         CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
@@ -663,14 +550,6 @@ void BaseDomain::InitVSD()
     m_typeIDMap.Init();
 
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
-}
-
-void BaseDomain::InitThreadStaticBlockTypeMap()
-{
-    STANDARD_VM_CONTRACT;
-
-    m_NonGCThreadStaticBlockTypeIDMap.Init();
-    m_GCThreadStaticBlockTypeIDMap.Init();
 }
 
 void BaseDomain::ClearBinderContext()
@@ -793,7 +672,7 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
     }
 }
 
-OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF** ppLazyAllocate)
+OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo, MethodTable *pMTToFillWithStaticBoxes)
 {
     CONTRACTL
     {
@@ -805,10 +684,10 @@ OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF*
     }
     CONTRACTL_END;
 
-    if (ppLazyAllocate && *ppLazyAllocate)
+    if (pStaticsInfo && pStaticsInfo->GetGCStaticsPointer() != NULL)
     {
         // Allocation already happened
-        return *ppLazyAllocate;
+        return pStaticsInfo->GetGCStaticsPointer();
     }
 
     GCX_COOP();
@@ -819,15 +698,21 @@ OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF*
 
     // Allocate the handles.
     OBJECTREF* result = m_pPinnedHeapHandleTable->AllocateHandles(nRequested);
-    if (ppLazyAllocate)
+    if (pMTToFillWithStaticBoxes != NULL)
+    {
+        GCPROTECT_BEGININTERIOR(result);
+        pMTToFillWithStaticBoxes->AllocateRegularStaticBoxes(&result);
+        GCPROTECT_END();
+    }
+    if (pStaticsInfo)
     {
         // race with other threads that might be doing the same concurrent allocation
-        if (InterlockedCompareExchangeT<OBJECTREF*>(ppLazyAllocate, result, NULL) != NULL)
+        if (!pStaticsInfo->InterlockedUpdateStaticsPointer(/*isGCPointer*/ true, (TADDR)result))
         {
             // we lost the race, release our handles and use the handles from the
             // winning thread
             m_pPinnedHeapHandleTable->ReleaseHandles(result, nRequested);
-            result = *ppLazyAllocate;
+            result = pStaticsInfo->GetGCStaticsPointer();
         }
     }
 
@@ -969,9 +854,6 @@ void SystemDomain::Attach()
 
     m_SystemDomainCrst.Init(CrstSystemDomain, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
     m_DelayedUnloadCrst.Init(CrstSystemDomainDelayedUnloadList, CRST_UNSAFE_COOPGC);
-
-    // Initialize the ID dispenser that is used for domain neutral module IDs
-    g_pModuleIndexDispenser = new IdDispenser();
 
     // Create the global SystemDomain and initialize it.
     m_pSystemDomain = new (&g_pSystemDomainMemory[0]) SystemDomain();
@@ -1158,6 +1040,13 @@ void SystemDomain::Init()
 
         // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
+
+        // Set AwareLock's offset of the holding OS thread ID field into ThreadBlockingInfo's static field. That can be used
+        // when doing managed debugging to get the OS ID of the thread holding the lock. The offset is currently not zero, and
+        // zero is used in managed code to determine if the static variable has been initialized.
+        _ASSERTE(AwareLock::GetOffsetOfHoldingOSThreadId() != 0);
+        CoreLibBinder::GetField(FIELD__THREAD_BLOCKING_INFO__OFFSET_OF_LOCK_OWNER_OS_THREAD_ID)
+            ->SetStaticValue32(AwareLock::GetOffsetOfHoldingOSThreadId());
     }
 
 #ifdef _DEBUG
@@ -1321,9 +1210,6 @@ void SystemDomain::LoadBaseSystemClasses()
 
         // Load the Object array class.
         g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass));
-
-        // We have delayed allocation of CoreLib's static handles until we load the object class
-        CoreLibBinder::GetModule()->AllocateRegularStaticHandles();
 
         // Boolean has to be loaded first to break cycle in IComparisonOperations and IEqualityOperators
         CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_BOOLEAN);
@@ -1696,18 +1582,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     if (SystemDomain::IsReflectionInvocationMethod(pFunc))
         return SWA_CONTINUE;
 
-    if (frame && frame->GetFrameType() == Frame::TYPE_MULTICAST)
-    {
-        // This must be either a multicast delegate invocation.
-
-        _ASSERTE(pFunc->GetMethodTable()->IsDelegate());
-
-        DELEGATEREF del = (DELEGATEREF)((MulticastFrame*)frame)->GetThis(); // This can throw.
-
-        _ASSERTE(COMDelegate::IsTrueMulticastDelegate(del));
-        return SWA_CONTINUE;
-    }
-
     // Return the first non-reflection/remoting frame if no stack mark was
     // supplied.
     if (!pCaller->stackMark)
@@ -1768,9 +1642,6 @@ void AppDomain::Create()
 
     // allocate a Virtual Call Stub Manager for the default domain
     pDomain->InitVSD();
-
-    // allocate a thread static block to index map
-    pDomain->InitThreadStaticBlockTypeMap();
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
@@ -3050,18 +2921,16 @@ void AppDomain::SetupSharedStatics()
     // Because we are allocating/referencing objects, need to be in cooperative mode
     GCX_COOP();
 
-    DomainLocalModule *pLocalModule = CoreLibBinder::GetModule()->GetDomainLocalModule();
-
     // This is a convenient place to initialize String.Empty.
     // It is treated as intrinsic by the JIT as so the static constructor would never run.
     // Leaving it uninitialized would confuse debuggers.
 
-    // String should not have any static constructors.
-    _ASSERTE(g_pStringClass->IsClassPreInited());
+    // String should not have any static constructors, so this should be safe. It will just ensure that statics are allocated
+    g_pStringClass->CheckRunClassInitThrowing();
 
     FieldDesc * pEmptyStringFD = CoreLibBinder::GetField(FIELD__STRING__EMPTY);
     OBJECTREF* pEmptyStringHandle = (OBJECTREF*)
-        ((TADDR)pLocalModule->GetPrecomputedGCStaticsBasePointer()+pEmptyStringFD->GetOffset());
+        ((TADDR)g_pStringClass->GetDynamicStaticsInfo()->m_pGCStatics+pEmptyStringFD->GetOffset());
     SetObjectReference( pEmptyStringHandle, StringObject::GetEmptyString());
 }
 
@@ -3854,8 +3723,6 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
     _ASSERTE(pThrowable != NULL && IsProtectedByGCFrame(pThrowable));
 
-    _ASSERTE(this == GetThread()->GetDomain());
-
     OBJECTREF orDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__UNHANDLED_EXCEPTION)->GetStaticOBJECTREF();
     if (orDelegate == NULL)
         return FALSE;
@@ -4077,283 +3944,7 @@ void AppDomain::ExceptionUnwind(Frame *pFrame)
 
 #endif // !DACCESS_COMPILE
 
-DWORD DomainLocalModule::GetClassFlags(MethodTable* pMT, DWORD iClassIndex /*=(DWORD)-1*/)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    {
-        CONSISTENCY_CHECK(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
-    }
-
-    if (pMT->IsDynamicStatics())
-    {
-        _ASSERTE(!pMT->ContainsGenericVariables());
-        DWORD dynamicClassID = pMT->GetModuleDynamicEntryID();
-        if(m_aDynamicEntries <= dynamicClassID)
-            return FALSE;
-        return (m_pDynamicClassTable[dynamicClassID].m_dwFlags);
-    }
-    else
-    {
-        if (iClassIndex == (DWORD)-1)
-            iClassIndex = pMT->GetClassIndex();
-        return GetPrecomputedStaticsClassData()[iClassIndex];
-    }
-}
-
 #ifndef DACCESS_COMPILE
-
-void DomainLocalModule::SetClassInitialized(MethodTable* pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    BaseDomain::DomainLocalBlockLockHolder lh(AppDomain::GetCurrentDomain());
-
-    _ASSERTE(!IsClassInitialized(pMT));
-    _ASSERTE(!IsClassInitError(pMT));
-
-    SetClassFlags(pMT, ClassInitFlags::INITIALIZED_FLAG);
-}
-
-void DomainLocalModule::SetClassInitError(MethodTable* pMT)
-{
-    WRAPPER_NO_CONTRACT;
-
-    BaseDomain::DomainLocalBlockLockHolder lh(AppDomain::GetCurrentDomain());
-
-    SetClassFlags(pMT, ClassInitFlags::ERROR_FLAG);
-}
-
-void DomainLocalModule::SetClassFlags(MethodTable* pMT, DWORD dwFlags)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
-        // Assumes BaseDomain::DomainLocalBlockLockHolder is taken
-        PRECONDITION(AppDomain::GetCurrentDomain()->OwnDomainLocalBlockLock());
-    } CONTRACTL_END;
-
-    if (pMT->IsDynamicStatics())
-    {
-        _ASSERTE(!pMT->ContainsGenericVariables());
-        DWORD dwID = pMT->GetModuleDynamicEntryID();
-        EnsureDynamicClassIndex(dwID);
-        m_pDynamicClassTable[dwID].m_dwFlags |= dwFlags;
-    }
-    else
-    {
-        GetPrecomputedStaticsClassData()[pMT->GetClassIndex()] |= dwFlags;
-    }
-}
-
-void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        // Assumes BaseDomain::DomainLocalBlockLockHolder is taken
-        PRECONDITION(AppDomain::GetCurrentDomain()->OwnDomainLocalBlockLock());
-    }
-    CONTRACTL_END;
-
-    SIZE_T oldDynamicEntries = m_aDynamicEntries.Load();
-
-    if (dwID < oldDynamicEntries)
-    {
-        _ASSERTE(m_pDynamicClassTable.Load() != NULL);
-        return;
-    }
-
-    SIZE_T aDynamicEntries = max<SIZE_T>(16, oldDynamicEntries);
-    while (aDynamicEntries <= dwID)
-    {
-        aDynamicEntries *= 2;
-    }
-
-    DynamicClassInfo* pNewDynamicClassTable;
-    pNewDynamicClassTable = (DynamicClassInfo*)
-        (void*)GetDomainAssembly()->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
-            S_SIZE_T(sizeof(DynamicClassInfo)) * S_SIZE_T(aDynamicEntries));
-
-    if (oldDynamicEntries != 0)
-    {
-        memcpy((void*)pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * oldDynamicEntries);
-    }
-
-    // Note: Memory allocated on loader heap is zero filled
-    // memset(pNewDynamicClassTable + m_aDynamicEntries, 0, (aDynamicEntries - m_aDynamicEntries) * sizeof(DynamicClassInfo));
-
-    _ASSERTE(m_aDynamicEntries%2 == 0);
-
-    // Commit new dynamic table. The lock-free helpers depend on the order.
-    MemoryBarrier();
-    m_pDynamicClassTable = pNewDynamicClassTable;
-    MemoryBarrier();
-    m_aDynamicEntries = aDynamicEntries;
-}
-
-void    DomainLocalModule::AllocateDynamicClass(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        // Assumes BaseDomain::DomainLocalBlockLockHolder is taken
-        PRECONDITION(AppDomain::GetCurrentDomain()->OwnDomainLocalBlockLock());
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!pMT->ContainsGenericVariables());
-    _ASSERTE(!pMT->IsSharedByGenericInstantiations());
-    _ASSERTE(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
-    _ASSERTE(pMT->IsDynamicStatics());
-
-    DWORD dynamicEntryIDIndex = pMT->GetModuleDynamicEntryID();
-
-    EnsureDynamicClassIndex(dynamicEntryIDIndex);
-
-    _ASSERTE(m_aDynamicEntries > dynamicEntryIDIndex);
-
-    EEClass *pClass = pMT->GetClass();
-
-    DWORD dwStaticBytes = pClass->GetNonGCRegularStaticFieldBytes();
-    DWORD dwNumHandleStatics = pClass->GetNumHandleRegularStatics();
-
-    _ASSERTE(!IsClassAllocated(pMT));
-    _ASSERTE(!IsClassInitialized(pMT));
-    _ASSERTE(!IsClassInitError(pMT));
-
-    DynamicEntry *pDynamicStatics = m_pDynamicClassTable[dynamicEntryIDIndex].m_pDynamicEntry;
-
-    // We need this check because maybe a class had a cctor but no statics
-    if (dwStaticBytes > 0 || dwNumHandleStatics > 0)
-    {
-        if (pDynamicStatics == NULL)
-        {
-            LoaderHeap * pLoaderAllocator = GetDomainAssembly()->GetLoaderAllocator()->GetHighFrequencyHeap();
-
-            if (pMT->Collectible())
-            {
-                pDynamicStatics = (DynamicEntry*)(void*)pLoaderAllocator->AllocMem(S_SIZE_T(sizeof(CollectibleDynamicEntry)));
-            }
-            else
-            {
-                SIZE_T dynamicEntrySize = DynamicEntry::GetOffsetOfDataBlob() + dwStaticBytes;
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-                // Allocate memory with extra alignment only if it is really necessary
-                if (dwStaticBytes >= MAX_PRIMITIVE_FIELD_SIZE)
-                {
-                    static_assert_no_msg(sizeof(NormalDynamicEntry) % MAX_PRIMITIVE_FIELD_SIZE == 0);
-                    pDynamicStatics = (DynamicEntry*)(void*)pLoaderAllocator->AllocAlignedMem(dynamicEntrySize, MAX_PRIMITIVE_FIELD_SIZE);
-                }
-                else
-#endif
-                    pDynamicStatics = (DynamicEntry*)(void*)pLoaderAllocator->AllocMem(S_SIZE_T(dynamicEntrySize));
-            }
-
-            // Note: Memory allocated on loader heap is zero filled
-
-            m_pDynamicClassTable[dynamicEntryIDIndex].m_pDynamicEntry = pDynamicStatics;
-        }
-
-        if (pMT->Collectible() && (dwStaticBytes != 0))
-        {
-            GCX_COOP();
-            OBJECTREF nongcStaticsArray = NULL;
-            GCPROTECT_BEGIN(nongcStaticsArray);
-#ifdef FEATURE_64BIT_ALIGNMENT
-            // Allocate memory with extra alignment only if it is really necessary
-            if (dwStaticBytes >= MAX_PRIMITIVE_FIELD_SIZE)
-                nongcStaticsArray = AllocatePrimitiveArray(ELEMENT_TYPE_I8, (dwStaticBytes + (sizeof(CLR_I8)-1)) / (sizeof(CLR_I8)));
-            else
-#endif
-                nongcStaticsArray = AllocatePrimitiveArray(ELEMENT_TYPE_U1, dwStaticBytes);
-            ((CollectibleDynamicEntry *)pDynamicStatics)->m_hNonGCStatics = GetDomainAssembly()->GetModule()->GetLoaderAllocator()->AllocateHandle(nongcStaticsArray);
-            GCPROTECT_END();
-        }
-        if (dwNumHandleStatics > 0)
-        {
-            if (!pMT->Collectible())
-            {
-                GetAppDomain()->AllocateStaticFieldObjRefPtrs(dwNumHandleStatics,
-                                                              &((NormalDynamicEntry *)pDynamicStatics)->m_pGCStatics);
-            }
-            else
-            {
-                GCX_COOP();
-                OBJECTREF gcStaticsArray = NULL;
-                GCPROTECT_BEGIN(gcStaticsArray);
-                gcStaticsArray = AllocateObjectArray(dwNumHandleStatics, g_pObjectClass);
-                ((CollectibleDynamicEntry *)pDynamicStatics)->m_hGCStatics = GetDomainAssembly()->GetModule()->GetLoaderAllocator()->AllocateHandle(gcStaticsArray);
-                GCPROTECT_END();
-            }
-        }
-    }
-}
-
-
-void DomainLocalModule::PopulateClass(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!pMT->ContainsGenericVariables());
-
-    // <todo> the only work actually done here for non-dynamics is the freezing related work.
-    // See if we can eliminate this and make this a dynamic-only path </todo>
-    DWORD iClassIndex = pMT->GetClassIndex();
-
-    if (!IsClassAllocated(pMT, iClassIndex))
-    {
-        BaseDomain::DomainLocalBlockLockHolder lh(AppDomain::GetCurrentDomain());
-
-        if (!IsClassAllocated(pMT, iClassIndex))
-        {
-            // Allocate dynamic space if necessary
-            if (pMT->IsDynamicStatics())
-                AllocateDynamicClass(pMT);
-
-            // determine flags to set on the statics block
-            DWORD dwFlags = ClassInitFlags::ALLOCATECLASS_FLAG;
-
-            if (!pMT->HasClassConstructor() && !pMT->HasBoxedRegularStatics())
-            {
-                _ASSERTE(!IsClassInitialized(pMT));
-                _ASSERTE(!IsClassInitError(pMT));
-                dwFlags |= ClassInitFlags::INITIALIZED_FLAG;
-            }
-
-            if (pMT->Collectible())
-            {
-                dwFlags |= ClassInitFlags::COLLECTIBLE_FLAG;
-            }
-
-            // Set all flags at the same time to avoid races
-            SetClassFlags(pMT, dwFlags);
-        }
-    }
-
-    return;
-}
-
 
 DomainAssembly* AppDomain::RaiseTypeResolveEventThrowing(DomainAssembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef)
 {
@@ -4652,55 +4243,6 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
 
     CONSISTENCY_CHECK(CheckPointer(pMT));
     CONSISTENCY_CHECK(pMT->IsInterface());
-    return pMT;
-}
-
-//------------------------------------------------------------------------
-UINT32 BaseDomain::GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    return m_NonGCThreadStaticBlockTypeIDMap.GetTypeID(pMT, false);
-}
-
-//------------------------------------------------------------------------
-PTR_MethodTable BaseDomain::LookupNonGCThreadStaticBlockType(UINT32 id) {
-        CONTRACTL {
-        NOTHROW;
-        WRAPPER(GC_TRIGGERS);
-        CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
-    } CONTRACTL_END;
-
-    PTR_MethodTable pMT = m_NonGCThreadStaticBlockTypeIDMap.LookupType(id);
-
-    CONSISTENCY_CHECK(CheckPointer(pMT));
-    return pMT;
-}
-//------------------------------------------------------------------------
-UINT32 BaseDomain::GetGCThreadStaticTypeIndex(PTR_MethodTable pMT)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    return m_GCThreadStaticBlockTypeIDMap.GetTypeID(pMT, false);
-}
-
-//------------------------------------------------------------------------
-PTR_MethodTable BaseDomain::LookupGCThreadStaticBlockType(UINT32 id) {
-        CONTRACTL {
-        NOTHROW;
-        WRAPPER(GC_TRIGGERS);
-        CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
-    } CONTRACTL_END;
-
-    PTR_MethodTable pMT = m_GCThreadStaticBlockTypeIDMap.LookupType(id);
-
-    CONSISTENCY_CHECK(CheckPointer(pMT));
     return pMT;
 }
 
@@ -5107,40 +4649,6 @@ size_t AppDomain::EstimateSize()
 }
 
 #ifdef DACCESS_COMPILE
-
-void
-DomainLocalModule::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    // Enumerate the DomainLocalModule itself. DLMs are allocated to be larger than
-    // sizeof(DomainLocalModule) to make room for ClassInit flags and non-GC statics.
-    // "DAC_ENUM_DTHIS()" probably does not account for this, so we might not enumerate
-    // all of the ClassInit flags and non-GC statics.
-    // sizeof(DomainLocalModule) == 0x28
-    DAC_ENUM_DTHIS();
-
-    if (m_pDomainAssembly.IsValid())
-    {
-        m_pDomainAssembly->EnumMemoryRegions(flags);
-    }
-
-    if (m_pDynamicClassTable.Load().IsValid())
-    {
-        DacEnumMemoryRegion(dac_cast<TADDR>(m_pDynamicClassTable.Load()),
-                            m_aDynamicEntries * sizeof(DynamicClassInfo));
-
-        for (SIZE_T i = 0; i < m_aDynamicEntries; i++)
-        {
-            PTR_DynamicEntry entry = dac_cast<PTR_DynamicEntry>(m_pDynamicClassTable[i].m_pDynamicEntry.Load());
-            if (entry.IsValid())
-            {
-                // sizeof(DomainLocalModule::DynamicEntry) == 8
-                entry.EnumMem();
-            }
-        }
-    }
-}
 
 void
 AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)

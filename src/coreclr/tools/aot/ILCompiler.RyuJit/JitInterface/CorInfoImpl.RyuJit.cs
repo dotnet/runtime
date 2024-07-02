@@ -363,7 +363,7 @@ namespace Internal.JitInterface
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
             fixed (CORINFO_LOOKUP* tmp = &pLookup)
-                MemoryHelper.FillMemory((byte*)tmp, 0xcc, sizeof(CORINFO_LOOKUP));
+                NativeMemory.Fill(tmp, (nuint)sizeof(CORINFO_LOOKUP), 0xcc);
 #endif
 
             MethodDesc expectedTargetMethod = HandleToObject(pTargetMethod.hMethod);
@@ -436,10 +436,17 @@ namespace Internal.JitInterface
             {
                 pLookup.lookupKind.needsRuntimeLookup = true;
 
-                MethodDesc contextMethod = HandleToObject(callerHandle);
-                pLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                pLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DelegateCtor;
-                pLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(delegateInfo);
+                if (pTargetMethod.tokenContext != contextFromMethodBeingCompiled())
+                {
+                    pLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
+                }
+                else
+                {
+                    MethodDesc contextMethod = HandleToObject(callerHandle);
+                    pLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                    pLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DelegateCtor;
+                    pLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(delegateInfo);
+                }
             }
             else
             {
@@ -496,6 +503,9 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     id = ReadyToRunHelper.CheckedWriteBarrier;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
+                    id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
                     id = ReadyToRunHelper.ByRefWriteBarrier;
@@ -1190,7 +1200,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            MemoryHelper.FillMemory((byte*)pResult, 0xcc, Marshal.SizeOf<CORINFO_CALL_INFO>());
+            NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_CALL_INFO), 0xcc);
 #endif
             MethodDesc method = HandleToObject(pResolvedToken.hMethod);
 
@@ -1698,7 +1708,7 @@ namespace Internal.JitInterface
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
             fixed (CORINFO_GENERICHANDLE_RESULT* tmp = &pResult)
-                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_GENERICHANDLE_RESULT>());
+                NativeMemory.Fill(tmp, (nuint)sizeof(CORINFO_GENERICHANDLE_RESULT), 0xcc);
 #endif
             ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
             object target = null;
@@ -2057,7 +2067,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            MemoryHelper.FillMemory((byte*)pResult, 0xcc, Marshal.SizeOf<CORINFO_FIELD_INFO>());
+            NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_FIELD_INFO), 0xcc);
 #endif
 
             Debug.Assert(((int)flags & ((int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET |
@@ -2404,6 +2414,9 @@ namespace Internal.JitInterface
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                return null;
+
             return ObjectToHandle(_compilation.NecessaryRuntimeTypeIfPossible(type));
         }
 

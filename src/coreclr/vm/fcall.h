@@ -809,7 +809,7 @@ Object* FC_GCPoll(void* me, Object* objToProtect = NULL);
     {                                                       \
         INCONTRACT(Thread::TriggersGC(GetThread());)        \
         INCONTRACT(__fCallCheck.SetDidPoll();)              \
-        if (g_TrapReturningThreads.LoadWithoutBarrier())    \
+        if (g_TrapReturningThreads)    \
         {                                                   \
             if (FC_GCPoll(__me))                            \
                 return ret;                                 \
@@ -824,7 +824,7 @@ Object* FC_GCPoll(void* me, Object* objToProtect = NULL);
     {                                                       \
         INCONTRACT(__fCallCheck.SetDidPoll();)              \
         Object* __temp = OBJECTREFToObject(obj);            \
-        if (g_TrapReturningThreads.LoadWithoutBarrier())    \
+        if (g_TrapReturningThreads)    \
         {                                                   \
             __temp = FC_GCPoll(__me, __temp);               \
             while (0 == FC_NO_TAILCALL) { }; /* side effect the compile can't remove */  \
@@ -865,7 +865,7 @@ private:
 #endif
     bool          didGCPoll;            // GC poll was done
     bool          notNeeded;            // GC poll not needed
-    unsigned __int64 startTicks;        // tick count at beginning of FCall
+    uint64_t startTicks;        // tick count at beginning of FCall
 };
 
         // FC_COMMON_PROLOG is used for both FCalls and HCalls

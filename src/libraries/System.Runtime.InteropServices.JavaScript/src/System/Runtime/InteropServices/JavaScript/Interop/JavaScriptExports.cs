@@ -203,9 +203,11 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                 }
 
-                // this is always running on I/O thread, so it will not throw PNSE
                 // it's also OK to block here, because we know we will only block shortly, as this is just race with the other thread.
-                holder.CallbackReady?.Wait();
+                if (holder.CallbackReady != null)
+                {
+                    Thread.ForceBlockingWait(static (b) => ((ManualResetEventSlim)b!).Wait(), holder.CallbackReady);
+                }
 
                 lock (ctx)
                 {

@@ -156,6 +156,7 @@
     <HelixCommandPrefixEnvVarItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
     <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingWebcil)' == 'false'" Include="TEST_USING_WEBCIL=false" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" Include="WORKLOADS_TEST_PREVIOUS_VERSIONS=true" />
   </ItemGroup>
 
   <PropertyGroup Condition="$(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic'))">

@@ -391,7 +391,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static int SingleToInt32Bits(float value)
         {
-#if NETCOREAPP
+#if NET
             return BitConverter.SingleToInt32Bits(value);
 #else
             return Unsafe.As<float, int>(ref value);
@@ -470,7 +470,7 @@ namespace System.Text.Json.Serialization.Tests
             string json;
             char fillChar = 'x';
 
-#if NETCOREAPP
+#if NET
             json = string.Create(stringLength, fillChar, (chars, fillChar) =>
             {
                 chars.Fill(fillChar);
@@ -488,6 +488,18 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData("1:00:00")]
+        [InlineData("1")]
+        [InlineData("10")]
+        [InlineData("00:01")]
+        [InlineData("0:00:02")]
+        [InlineData("0:00:00.0000001")]
+        [InlineData("0:00:00.0000010")]
+        [InlineData("0:00:00.0000100")]
+        [InlineData("0:00:00.0001000")]
+        [InlineData("0:00:00.0010000")]
+        [InlineData("0:00:00.0100000")]
+        [InlineData("0:00:00.1000000")]
         [InlineData("23:59:59")]
         [InlineData("\\u002D23:59:59", "-23:59:59")]
         [InlineData("\\u0032\\u0033\\u003A\\u0035\\u0039\\u003A\\u0035\\u0039", "23:59:59")]
@@ -546,13 +558,13 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("00:00:60")]
         [InlineData("00:00:00.00000009")]
         [InlineData("900000000.00:00:00")]
-        [InlineData("1:00:00")] // 'g' Format
         [InlineData("1:2:00:00")] // 'g' Format
         [InlineData("+00:00:00")]
         [InlineData("2021-06-18")]
         [InlineData("1$")]
         [InlineData("10675199.02:48:05.4775808")] // TimeSpan.MaxValue + 1
         [InlineData("-10675199.02:48:05.4775809")] // TimeSpan.MinValue - 1
+        [InlineData("")]
         [InlineData("1234", false)]
         [InlineData("{}", false)]
         [InlineData("[]", false)]
@@ -566,7 +578,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>(json));
         }
 
-#if NETCOREAPP
+#if NET
         [Theory]
         [InlineData("1970-01-01")]
         [InlineData("2002-02-13")]

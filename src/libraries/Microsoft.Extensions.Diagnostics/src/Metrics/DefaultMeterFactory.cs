@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
@@ -40,7 +41,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 {
                     foreach (Meter meter in meterList)
                     {
-                        if (meter.Version == options.Version && DiagnosticsHelper.CompareTags(meter.Tags as List<KeyValuePair<string, object?>>, options.Tags))
+                        if (meter.Version == options.Version && DiagnosticsHelper.CompareTags(meter.Tags as IList<KeyValuePair<string, object?>>, options.Tags))
                         {
                             return meter;
                         }
@@ -54,7 +55,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
                 object? scope = options.Scope;
                 options.Scope = this;
-                FactoryMeter m = new FactoryMeter(options.Name, options.Version, options.Tags, scope: this);
+                FactoryMeter m = new FactoryMeter(options);
                 options.Scope = scope;
 
                 meterList.Add(m);
@@ -88,8 +89,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
     internal sealed class FactoryMeter : Meter
     {
-        public FactoryMeter(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope)
-            : base(name, version, tags, scope)
+        public FactoryMeter(MeterOptions options) : base(options)
         {
         }
 

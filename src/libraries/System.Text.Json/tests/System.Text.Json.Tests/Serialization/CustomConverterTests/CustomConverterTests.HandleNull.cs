@@ -532,7 +532,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class ClassWithInitializedUri
         {
-            public Uri MyUri { get; set; } = new Uri("https://microsoft.com");
+            public Uri? MyUri { get; set; } = new Uri("https://microsoft.com");
         }
 
         public class UriToNullConverter : JsonConverter<Uri>

@@ -48,6 +48,8 @@ public:
 
     static BOOL HaveExtraWorkForFinalizer();
 
+    static OBJECTREF GetNextFinalizableObject();
+
     static void RaiseShutdownEvents()
     {
         WRAPPER_NO_CONTRACT;

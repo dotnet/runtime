@@ -3,12 +3,25 @@
 
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Tests.Vectors;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public sealed class Vector3Tests
     {
+        /// <summary>Verifies that two <see cref="Vector3" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        internal static void AssertEqual(Vector3 expected, Vector3 actual, Vector3 variance)
+        {
+            AssertExtensions.Equal(expected.X, actual.X, variance.X);
+            AssertExtensions.Equal(expected.Y, actual.Y, variance.Y);
+            AssertExtensions.Equal(expected.Z, actual.Z, variance.Z);
+        }
+
         [Fact]
         public void Vector3MarshalSizeTest()
         {
@@ -676,7 +689,7 @@ namespace System.Numerics.Tests
         {
             Vector3 v = new Vector3(1.0f, 2.0f, 3.0f);
             Quaternion q = new Quaternion();
-            Vector3 expected = v;
+            Vector3 expected = Vector3.Zero;
 
             Vector3 actual = Vector3.Transform(v, q);
             Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Transform did not return the expected value.");
@@ -1334,6 +1347,22 @@ namespace System.Numerics.Tests
         private class EmbeddedVectorObject
         {
             public Vector3 FieldVector;
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        {
+            Vector3 actualResult = Vector3.FusedMultiplyAdd(new Vector3(left), new Vector3(right), new Vector3(addend));
+            AssertEqual(new Vector3(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
+        {
+            Vector3 actualResult = Vector3.MultiplyAddEstimate(new Vector3(left), new Vector3(right), new Vector3(addend));
+            AssertEqual(new Vector3(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector3.Zero);
         }
     }
 }

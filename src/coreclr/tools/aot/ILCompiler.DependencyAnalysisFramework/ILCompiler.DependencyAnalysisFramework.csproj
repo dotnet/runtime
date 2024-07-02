@@ -1,4 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <PropertyGroup>
+    <PlatformName>AnyCPU</PlatformName>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>ILCompiler.DependencyAnalysisFramework</RootNamespace>
@@ -8,6 +12,10 @@
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- Workaround for circular dependency (this => trim analyzers in illink.Tasks => Mono.Linker => this)-->
+    <_RequiresLiveILLink>false</_RequiresLiveILLink>
+    <!-- Mono.Linker requires the assembly to be signed -->
+    <SignAssembly>true</SignAssembly>
 
     <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
          the same bits tests expect to see in artifacts/crossgen2. That way we never need to wonder which
@@ -50,4 +58,5 @@
       <Link>Sorting\MergeSortCore.cs</Link>
     </Compile>
   </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

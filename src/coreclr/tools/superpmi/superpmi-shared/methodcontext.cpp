@@ -638,7 +638,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
         case CORINFO_TYPE_UNDEF:
         case CORINFO_TYPE_VOID:
         default:
-            __debugbreak();
+            DEBUG_BREAK;
             return 0;
     }
     return -1;
@@ -1937,6 +1937,30 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeForBox(CORINFO_CLASS_HANDLE cls)
     DWORDLONG key = CastHandle(cls);
     DWORDLONG value = LookupByKeyOrMiss(GetTypeForBox, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpGetTypeForBox(key, value));
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
+    return result;
+}
+
+void MethodContext::recGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetTypeForBoxOnStack == nullptr)
+        GetTypeForBoxOnStack = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = CastHandle(result);
+    GetTypeForBoxOnStack->Add(key, value);
+    DEBUG_REC(dmpGetTypeForBoxOnStack(key, value));
+}
+void MethodContext::dmpGetTypeForBoxOnStack(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetTypeForBoxOnStack key cls-%016" PRIX64 ", value res-%016" PRIX64 "", key, value);
+}
+
+CORINFO_CLASS_HANDLE MethodContext::repGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = LookupByKeyOrMiss(GetTypeForBoxOnStack, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetTypeForBoxOnStack(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
 }
@@ -3620,7 +3644,7 @@ uint32_t MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, b
     return value;
 }
 
-void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     if (GetThreadLocalStaticBlocksInfo == nullptr)
         GetThreadLocalStaticBlocksInfo = new LightWeightMap<DWORD, Agnostic_GetThreadLocalStaticBlocksInfo>();
@@ -3635,10 +3659,10 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     value.offsetOfThreadLocalStoragePointer     = pInfo->offsetOfThreadLocalStoragePointer;
     value.offsetOfMaxThreadStaticBlocks         = pInfo->offsetOfMaxThreadStaticBlocks;
     value.offsetOfThreadStaticBlocks            = pInfo->offsetOfThreadStaticBlocks;
-    value.offsetOfGCDataPointer                 = pInfo->offsetOfGCDataPointer;
+    value.offsetOfBaseOfThreadLocalData         = pInfo->offsetOfBaseOfThreadLocalData;
 
     // This data is same for entire process, so just add it against key '0'.
-    DWORD key = isGCType ? 0 : 1;
+    DWORD key = 0;
     GetThreadLocalStaticBlocksInfo->Add(key, value);
     DEBUG_REC(dmpGetThreadLocalStaticBlocksInfo(key, value));
 }
@@ -3648,16 +3672,18 @@ void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_
     printf("GetThreadLocalStaticBlocksInfo key %u, tlsIndex-%s, "
            ", tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject - %016" PRIX64 
            ", threadVarsSection - %016" PRIX64
-           ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%u"
-           ", offsetOfThreadStaticBlocks-%u, offsetOfGCDataPointer-%u",           
+           ", offsetOfThreadLocalStoragePointer-%u"
+           ", offsetOfMaxThreadStaticBlocks-%u"
+           ", offsetOfThreadStaticBlocks-%u"
+           ", offsetOfBaseOfThreadLocalData-%u",
            key, SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndex).c_str(), value.tlsGetAddrFtnPtr,
            value.tlsIndexObject, value.threadVarsSection, value.offsetOfThreadLocalStoragePointer,
-           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer);
+           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfBaseOfThreadLocalData);
 }
 
-void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
-    int key = isGCType ? 0 : 1;
+    int key = 0;
     Agnostic_GetThreadLocalStaticBlocksInfo value = LookupByKeyOrMiss(GetThreadLocalStaticBlocksInfo, key, ": key %u", key);
 
     DEBUG_REP(dmpGetThreadLocalStaticBlocksInfo(key, value));
@@ -3667,9 +3693,9 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     pInfo->tlsIndexObject                       = (void*)value.tlsIndexObject;
     pInfo->threadVarsSection                    = (void*)value.threadVarsSection;
     pInfo->offsetOfThreadLocalStoragePointer    = value.offsetOfThreadLocalStoragePointer;
-    pInfo->offsetOfMaxThreadStaticBlocks        = value.offsetOfMaxThreadStaticBlocks;    
+    pInfo->offsetOfMaxThreadStaticBlocks        = value.offsetOfMaxThreadStaticBlocks;
     pInfo->offsetOfThreadStaticBlocks           = value.offsetOfThreadStaticBlocks;
-    pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
+    pInfo->offsetOfBaseOfThreadLocalData        = value.offsetOfBaseOfThreadLocalData;
 }
 
 void MethodContext::recGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
@@ -4305,6 +4331,7 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     Agnostic_CORINFO_EE_INFO value;
 
     value.inlinedCallFrameInfo.size                  = (DWORD)pEEInfoOut->inlinedCallFrameInfo.size;
+    value.inlinedCallFrameInfo.sizeWithSecretStubArg = (DWORD)pEEInfoOut->inlinedCallFrameInfo.sizeWithSecretStubArg;
     value.inlinedCallFrameInfo.offsetOfGSCookie      = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie;
     value.inlinedCallFrameInfo.offsetOfFrameVptr     = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr;
     value.inlinedCallFrameInfo.offsetOfFrameLink     = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink;
@@ -4312,6 +4339,8 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     value.inlinedCallFrameInfo.offsetOfCalleeSavedFP = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP;
     value.inlinedCallFrameInfo.offsetOfCallTarget    = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget;
     value.inlinedCallFrameInfo.offsetOfReturnAddress = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress;
+    value.inlinedCallFrameInfo.offsetOfSecretStubArg = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfSecretStubArg;
+    value.inlinedCallFrameInfo.offsetOfSPAfterProlog = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfSPAfterProlog;
     value.offsetOfThreadFrame                        = (DWORD)pEEInfoOut->offsetOfThreadFrame;
     value.offsetOfGCState                            = (DWORD)pEEInfoOut->offsetOfGCState;
     value.offsetOfDelegateInstance                   = (DWORD)pEEInfoOut->offsetOfDelegateInstance;
@@ -4328,12 +4357,14 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 }
 void MethodContext::dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& value)
 {
-    printf("GetEEInfo key %u, value icfi{sz-%u ogs-%u ofv-%u ofl-%u ocsp-%u ocsfp-%u oct-%u ora-%u} "
+    printf("GetEEInfo key %u, value icfi{sz-%u sz-witharg-%u ogs-%u ofv-%u ofl-%u ocsp-%u ocsfp-%u oct-%u ora-%u ossa-%u osap-%u} "
            "otf-%u ogcs-%u odi-%u odft-%u osdic-%u srpf-%u osps-%u muono-%u tabi-%u osType-%u",
-           key, value.inlinedCallFrameInfo.size, value.inlinedCallFrameInfo.offsetOfGSCookie,
+           key, value.inlinedCallFrameInfo.size, value.inlinedCallFrameInfo.sizeWithSecretStubArg,
+           value.inlinedCallFrameInfo.offsetOfGSCookie,
            value.inlinedCallFrameInfo.offsetOfFrameVptr, value.inlinedCallFrameInfo.offsetOfFrameLink,
            value.inlinedCallFrameInfo.offsetOfCallSiteSP, value.inlinedCallFrameInfo.offsetOfCalleeSavedFP,
            value.inlinedCallFrameInfo.offsetOfCallTarget, value.inlinedCallFrameInfo.offsetOfReturnAddress,
+           value.inlinedCallFrameInfo.offsetOfSecretStubArg, value.inlinedCallFrameInfo.offsetOfSPAfterProlog,
            value.offsetOfThreadFrame, value.offsetOfGCState, value.offsetOfDelegateInstance,
            value.offsetOfDelegateFirstTarget, value.offsetOfWrapperDelegateIndirectCell,
            value.sizeOfReversePInvokeFrame, value.osPageSize, value.maxUncheckedOffsetForNullObject, value.targetAbi,
@@ -4341,64 +4372,33 @@ void MethodContext::dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& valu
 }
 void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 {
-    Agnostic_CORINFO_EE_INFO value;
+    Agnostic_CORINFO_EE_INFO value = LookupByKeyOrMissNoMessage(GetEEInfo, 0);
 
-    int index = -1;
-    if (GetEEInfo != nullptr)
-        index = GetEEInfo->GetIndex((DWORD)0);
-    if (index >= 0)
-    {
-        value = GetEEInfo->Get(0);
-        DEBUG_REP(dmpGetEEInfo(0, value));
+    DEBUG_REP(dmpGetEEInfo(0, value));
 
-        pEEInfoOut->inlinedCallFrameInfo.size               = (unsigned)value.inlinedCallFrameInfo.size;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie   = (unsigned)value.inlinedCallFrameInfo.offsetOfGSCookie;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr  = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameVptr;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink  = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameLink;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallSiteSP = (unsigned)value.inlinedCallFrameInfo.offsetOfCallSiteSP;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP =
-            (unsigned)value.inlinedCallFrameInfo.offsetOfCalleeSavedFP;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget = (unsigned)value.inlinedCallFrameInfo.offsetOfCallTarget;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress =
-            (unsigned)value.inlinedCallFrameInfo.offsetOfReturnAddress;
-        pEEInfoOut->offsetOfThreadFrame                = (unsigned)value.offsetOfThreadFrame;
-        pEEInfoOut->offsetOfGCState                    = (unsigned)value.offsetOfGCState;
-        pEEInfoOut->offsetOfDelegateInstance           = (unsigned)value.offsetOfDelegateInstance;
-        pEEInfoOut->offsetOfDelegateFirstTarget        = (unsigned)value.offsetOfDelegateFirstTarget;
-        pEEInfoOut->offsetOfWrapperDelegateIndirectCell= (unsigned)value.offsetOfWrapperDelegateIndirectCell;
-        pEEInfoOut->sizeOfReversePInvokeFrame          = (unsigned)value.sizeOfReversePInvokeFrame;
-        pEEInfoOut->osPageSize                         = (size_t)value.osPageSize;
-        pEEInfoOut->maxUncheckedOffsetForNullObject    = (size_t)value.maxUncheckedOffsetForNullObject;
-        pEEInfoOut->targetAbi                          = (CORINFO_RUNTIME_ABI)value.targetAbi;
-        pEEInfoOut->osType                             = (CORINFO_OS)value.osType;
-    }
-    else
-    {
-        pEEInfoOut->inlinedCallFrameInfo.size                  = (unsigned)0x40;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie      = (unsigned)0;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr     = (unsigned)0x8;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink     = (unsigned)0x10;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallSiteSP    = (unsigned)0x28;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP = (unsigned)0x38;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget    = (unsigned)0x18;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress = (unsigned)0x30;
-        pEEInfoOut->offsetOfThreadFrame                        = (unsigned)0x10;
-        pEEInfoOut->offsetOfGCState                            = (unsigned)0xc;
-        pEEInfoOut->offsetOfDelegateInstance                   = (unsigned)0x8;
-        pEEInfoOut->offsetOfDelegateFirstTarget                = (unsigned)0x18;
-        pEEInfoOut->offsetOfWrapperDelegateIndirectCell        = (unsigned)0x40;
-        pEEInfoOut->sizeOfReversePInvokeFrame                  = (unsigned)0x8;
-        pEEInfoOut->osPageSize                                 = (size_t)0x1000;
-        pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
-        pEEInfoOut->targetAbi                                  = CORINFO_CORECLR_ABI;
-#ifdef TARGET_OSX
-        pEEInfoOut->osType                                     = CORINFO_APPLE;
-#elif defined(TARGET_UNIX)
-        pEEInfoOut->osType                                     = CORINFO_UNIX;
-#else
-        pEEInfoOut->osType                                     = CORINFO_WINNT;
-#endif
-    }
+    pEEInfoOut->inlinedCallFrameInfo.size                  = (unsigned)value.inlinedCallFrameInfo.size;
+    pEEInfoOut->inlinedCallFrameInfo.sizeWithSecretStubArg = (unsigned)value.inlinedCallFrameInfo.sizeWithSecretStubArg;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie      = (unsigned)value.inlinedCallFrameInfo.offsetOfGSCookie;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr     = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameVptr;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink     = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameLink;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfCallSiteSP    = (unsigned)value.inlinedCallFrameInfo.offsetOfCallSiteSP;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP =
+        (unsigned)value.inlinedCallFrameInfo.offsetOfCalleeSavedFP;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget = (unsigned)value.inlinedCallFrameInfo.offsetOfCallTarget;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress =
+        (unsigned)value.inlinedCallFrameInfo.offsetOfReturnAddress;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfSecretStubArg = (unsigned)value.inlinedCallFrameInfo.offsetOfSecretStubArg;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfSPAfterProlog = (unsigned)value.inlinedCallFrameInfo.offsetOfSPAfterProlog;
+    pEEInfoOut->offsetOfThreadFrame                = (unsigned)value.offsetOfThreadFrame;
+    pEEInfoOut->offsetOfGCState                    = (unsigned)value.offsetOfGCState;
+    pEEInfoOut->offsetOfDelegateInstance           = (unsigned)value.offsetOfDelegateInstance;
+    pEEInfoOut->offsetOfDelegateFirstTarget        = (unsigned)value.offsetOfDelegateFirstTarget;
+    pEEInfoOut->offsetOfWrapperDelegateIndirectCell= (unsigned)value.offsetOfWrapperDelegateIndirectCell;
+    pEEInfoOut->sizeOfReversePInvokeFrame          = (unsigned)value.sizeOfReversePInvokeFrame;
+    pEEInfoOut->osPageSize                         = (size_t)value.osPageSize;
+    pEEInfoOut->maxUncheckedOffsetForNullObject    = (size_t)value.maxUncheckedOffsetForNullObject;
+    pEEInfoOut->targetAbi                          = (CORINFO_RUNTIME_ABI)value.targetAbi;
+    pEEInfoOut->osType                             = (CORINFO_OS)value.osType;
 }
 
 void MethodContext::recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
@@ -4673,37 +4673,60 @@ int32_t* MethodContext::repGetAddrOfCaptureThreadGlobal(void** ppIndirection)
     return (int32_t*)value.B;
 }
 
-void MethodContext::recGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection, unsigned result)
+void MethodContext::recGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result)
 {
-    if (GetClassDomainID == nullptr)
-        GetClassDomainID = new LightWeightMap<DWORDLONG, DLD>();
+    if (GetClassStaticDynamicInfo == nullptr)
+        GetClassStaticDynamicInfo = new LightWeightMap<DWORDLONG, DLD>();
 
     DLD value;
 
-    if (ppIndirection != nullptr)
-        value.A = CastPointer(*ppIndirection);
-    else
-        value.A = 0;
-    value.B     = (DWORD)result;
+    value.A = result;
+    value.B = 0;
 
     DWORDLONG key = CastHandle(cls);
-    GetClassDomainID->Add(key, value);
-    DEBUG_REC(dmpGetClassDomainID(key, value));
+    GetClassStaticDynamicInfo->Add(key, value);
+    DEBUG_REC(dmpGetClassStaticDynamicInfo(key, value));
 }
-void MethodContext::dmpGetClassDomainID(DWORDLONG key, DLD value)
+void MethodContext::dmpGetClassStaticDynamicInfo(DWORDLONG key, DLD value)
 {
-    printf("GetClassDomainID key cls-%016" PRIX64 ", value pp-%016" PRIX64 " res-%u", key, value.A, value.B);
+    printf("GetClassStaticDynamicInfo key cls-%016" PRIX64 ", value pp-%016" PRIX64 " res-%u", key, value.A, value.B);
 }
-unsigned MethodContext::repGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection)
+size_t MethodContext::repGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    DLD value = LookupByKeyOrMiss(GetClassDomainID, key, ": key %016" PRIX64 "", key);
+    DLD value = LookupByKeyOrMiss(GetClassStaticDynamicInfo, key, ": key %016" PRIX64 "", key);
 
-    DEBUG_REP(dmpGetClassDomainID(key, value));
+    DEBUG_REP(dmpGetClassStaticDynamicInfo(key, value));
 
-    if (ppIndirection != nullptr)
-        *ppIndirection = (void*)value.A;
-    return (unsigned)value.B;
+    return (size_t)value.A;
+}
+
+void MethodContext::recGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result)
+{
+    if (GetClassThreadStaticDynamicInfo == nullptr)
+        GetClassThreadStaticDynamicInfo = new LightWeightMap<DWORDLONG, DLD>();
+
+    DLD value;
+
+    value.A = result;
+    value.B = 0;
+
+    DWORDLONG key = CastHandle(cls);
+    GetClassThreadStaticDynamicInfo->Add(key, value);
+    DEBUG_REC(dmpGetClassThreadStaticDynamicInfo(key, value));
+}
+void MethodContext::dmpGetClassThreadStaticDynamicInfo(DWORDLONG key, DLD value)
+{
+    printf("GetClassThreadStaticDynamicInfo key cls-%016" PRIX64 ", value pp-%016" PRIX64 " res-%u", key, value.A, value.B);
+}
+size_t MethodContext::repGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DLD value = LookupByKeyOrMiss(GetClassThreadStaticDynamicInfo, key, ": key %016" PRIX64 "", key);
+
+    DEBUG_REP(dmpGetClassThreadStaticDynamicInfo(key, value));
+
+    return (size_t)value.A;
 }
 
 void MethodContext::recGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* result)
@@ -5640,10 +5663,11 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
     UINT32 countSchemaItems,
     BYTE** pInstrumentationData)
 {
-    if (repAllocPgoInstrumentationBySchemaRecorded(ftnHnd, pSchema, countSchemaItems, pInstrumentationData))
+    HRESULT result;
+    if (repAllocPgoInstrumentationBySchemaRecorded(ftnHnd, pSchema, countSchemaItems, pInstrumentationData, &result))
     {
         // Matching case: return same layout as recorded EE.
-        return S_OK;
+        return result;
     }
 
     // Do our own layout.
@@ -5676,7 +5700,8 @@ bool MethodContext::repAllocPgoInstrumentationBySchemaRecorded(
     CORINFO_METHOD_HANDLE ftnHnd,
     ICorJitInfo::PgoInstrumentationSchema* pSchema,
     UINT32 countSchemaItems,
-    BYTE** pInstrumentationData)
+    BYTE** pInstrumentationData,
+    HRESULT* result)
 {
     if (AllocPgoInstrumentationBySchema == nullptr)
         return false;
@@ -5716,6 +5741,7 @@ bool MethodContext::repAllocPgoInstrumentationBySchemaRecorded(
     // We assume JIT does not write or read from this buffer, only generate
     // code that uses it.
     *pInstrumentationData = (BYTE*)value.instrumentationDataAddress;
+    *result = value.result;
     return true;
 }
 
@@ -5724,6 +5750,7 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
                                                     UINT32* pCountSchemaItems,
                                                     BYTE** pInstrumentationData,
                                                     ICorJitInfo::PgoSource* pPgoSource,
+                                                    bool* pDynamicPgo,
                                                     HRESULT result)
 {
     if (GetPgoInstrumentationResults == nullptr)
@@ -5754,6 +5781,7 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
     value.dataByteCount = (unsigned)maxOffset;
     value.result        = (DWORD)result;
     value.pgoSource     = (DWORD)*pPgoSource;
+    value.dynamicPgo    = (DWORD)*pDynamicPgo;
 
     DWORDLONG key = CastHandle(ftnHnd);
     GetPgoInstrumentationResults->Add(key, value);
@@ -5761,8 +5789,8 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
 }
 void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value)
 {
-    printf("GetPgoInstrumentationResults key ftn-%016" PRIX64 ", value res-%08X schemaCnt-%u profileBufSize-%u source-%u schema{",
-        key, value.result, value.countSchemaItems, value.dataByteCount, value.pgoSource);
+    printf("GetPgoInstrumentationResults key ftn-%016" PRIX64 ", value res-%08X schemaCnt-%u profileBufSize-%u source-%u dynamic-%u schema{",
+        key, value.result, value.countSchemaItems, value.dataByteCount, value.pgoSource, value.dynamicPgo);
 
     if (value.countSchemaItems > 0)
     {
@@ -5820,7 +5848,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod:
                     {
                         // (N)umber, (L)ikelihood, (H)andle
-                        printf("N %u L %u H %016" PRIX64 "", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
+                        printf("N %u L %u H %016" PRIX64 "", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other & 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
                     }
                     break;
                 default:
@@ -5838,7 +5866,8 @@ HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftn
                                                        ICorJitInfo::PgoInstrumentationSchema** pSchema,
                                                        UINT32* pCountSchemaItems,
                                                        BYTE** pInstrumentationData,
-                                                       ICorJitInfo::PgoSource* pPgoSource)
+                                                       ICorJitInfo::PgoSource* pPgoSource,
+                                                       bool* pDynamicPgo)
 {
     DWORDLONG key = CastHandle(ftnHnd);
     Agnostic_GetPgoInstrumentationResults tempValue = LookupByKeyOrMiss(GetPgoInstrumentationResults, key, ": key %016" PRIX64 "", key);
@@ -5848,6 +5877,7 @@ HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftn
     *pCountSchemaItems    = (UINT32)tempValue.countSchemaItems;
     *pInstrumentationData = (BYTE*)GetPgoInstrumentationResults->GetBuffer(tempValue.data_index);
     *pPgoSource           = (ICorJitInfo::PgoSource)tempValue.pgoSource;
+    *pDynamicPgo          = (bool)tempValue.dynamicPgo;
 
     ICorJitInfo::PgoInstrumentationSchema* pOutSchema = (ICorJitInfo::PgoInstrumentationSchema*)AllocJitTempBuffer(tempValue.countSchemaItems * sizeof(ICorJitInfo::PgoInstrumentationSchema));
 
@@ -5918,6 +5948,28 @@ bool MethodContext::repIsExactType(CORINFO_CLASS_HANDLE cls)
     DWORD value = LookupByKeyOrMiss(IsExactType, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpIsExactType(key, value));
     return value != 0;
+}
+
+void MethodContext::recIsGenericType(CORINFO_CLASS_HANDLE cls, TypeCompareState result)
+{
+    if (IsGenericType == nullptr)
+        IsGenericType = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = (DWORD)result;
+    IsGenericType->Add(key, value);
+    DEBUG_REC(dmpIsGenericType(key, value));
+}
+void MethodContext::dmpIsGenericType(DWORDLONG key, DWORD value)
+{
+    printf("IsGenericType key cls-%016" PRIX64 ", value res-%d", key, value);
+}
+TypeCompareState MethodContext::repIsGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(IsGenericType, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsGenericType(key, value));
+    return (TypeCompareState)value;
 }
 
 void MethodContext::recIsNullableType(CORINFO_CLASS_HANDLE cls, TypeCompareState result)
@@ -6245,13 +6297,13 @@ bool MethodContext::repGetSystemVAmd64PassStructInRegisterDescriptor(
     DEBUG_REP(dmpGetSystemVAmd64PassStructInRegisterDescriptor(key, value));
 
     structPassInRegDescPtr->passedInRegisters = value.passedInRegisters ? true : false;
-    structPassInRegDescPtr->eightByteCount    = (unsigned __int8)value.eightByteCount;
+    structPassInRegDescPtr->eightByteCount    = (uint8_t)value.eightByteCount;
     for (int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
     {
         structPassInRegDescPtr->eightByteClassifications[i] =
             (SystemVClassificationType)value.eightByteClassifications[i];
-        structPassInRegDescPtr->eightByteSizes[i]   = (unsigned __int8)value.eightByteSizes[i];
-        structPassInRegDescPtr->eightByteOffsets[i] = (unsigned __int8)value.eightByteOffsets[i];
+        structPassInRegDescPtr->eightByteSizes[i]   = (uint8_t)value.eightByteSizes[i];
+        structPassInRegDescPtr->eightByteOffsets[i] = (uint8_t)value.eightByteOffsets[i];
     }
 
     return value.result ? true : false;
@@ -7183,7 +7235,8 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
         UINT32 schemaCount = 0;
         BYTE* schemaData = nullptr;
         ICorJitInfo::PgoSource pgoSource = ICorJitInfo::PgoSource::Unknown;
-        HRESULT pgoHR = repGetPgoInstrumentationResults(pInfo->ftn, &schema, &schemaCount, &schemaData, &pgoSource);
+        bool dynamicPgo = false;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(pInfo->ftn, &schema, &schemaCount, &schemaData, &pgoSource, &dynamicPgo);
 
         size_t minOffset = (size_t) ~0;
         size_t maxOffset = 0;
@@ -7281,7 +7334,8 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
         ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
         UINT32 schemaCount = 0;
         BYTE* schemaData = nullptr;
-        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData, &pgoSource);
+        bool dynamicPgo;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData, &pgoSource, &dynamicPgo);
 
         if (SUCCEEDED(pgoHR))
         {

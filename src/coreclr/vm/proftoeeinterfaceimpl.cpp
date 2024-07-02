@@ -2304,7 +2304,7 @@ HRESULT GetCodeInfoFromCodeStart(
             }
             else
             {
-                _ASSERTE(methodRegionInfo.coldStartAddress != NULL);
+                _ASSERTE(methodRegionInfo.coldStartAddress != (TADDR)NULL);
                 codeInfos[0].startAddress =
                     (UINT_PTR)methodRegionInfo.coldStartAddress;
                 codeInfos[0].size = methodRegionInfo.coldSize;
@@ -2967,7 +2967,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadAppDomain(ThreadID threadId,
         return CORPROF_E_NOT_MANAGED_THREAD;
     }
 
-    *pAppDomainId = (AppDomainID)pThread->GetDomain();
+    *pAppDomainId = (AppDomainID)AppDomain::GetCurrentDomain();
 
     return S_OK;
 }
@@ -3786,13 +3786,13 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo2(ClassID classId,
     if (pModuleId != NULL)
     {
         *pModuleId = (ModuleID) typeHandle.GetModule();
-        _ASSERTE(*pModuleId != NULL);
+        _ASSERTE(*pModuleId != 0);
     }
 
     if (pTypeDefToken != NULL)
     {
         *pTypeDefToken = typeHandle.GetCl();
-        _ASSERTE(*pTypeDefToken != NULL);
+        _ASSERTE(*pTypeDefToken != 0);
     }
 
     //
@@ -3941,7 +3941,7 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
         }
     }
 
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         dwRet |= COR_PRF_MODULE_DYNAMIC;
     }
@@ -4065,7 +4065,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
         if (pcchName)
             *pcchName = trueLen;
 
-        if (ppBaseLoadAddress != NULL && !pFile->IsDynamic())
+        if (ppBaseLoadAddress != NULL && !pFile->IsReflectionEmit())
         {
             if (pModule->IsProfilerNotified())
             {
@@ -4272,7 +4272,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         IfFailRet(pImport->GetMethodImplProps(methodId, &RVA, &dwImplFlags));
 
         // Check to see if the method has associated IL
-        if ((RVA == 0 && !pPEAssembly->IsDynamic()) || !(IsMiIL(dwImplFlags) || IsMiOPTIL(dwImplFlags) || IsMiInternalCall(dwImplFlags)))
+        if ((RVA == 0 && !pPEAssembly->IsReflectionEmit()) || !(IsMiIL(dwImplFlags) || IsMiOPTIL(dwImplFlags) || IsMiInternalCall(dwImplFlags)))
         {
             return (CORPROF_E_FUNCTION_NOT_IL);
         }
@@ -4650,11 +4650,8 @@ HRESULT ProfToEEInterfaceImpl::GetThreadContext(ThreadID threadId,
         return E_INVALIDARG;
     }
 
-    // Cast to right type
-    Thread *pThread = reinterpret_cast<Thread *>(threadId);
-
     // Get the context for the Thread* provided
-    AppDomain *pContext = pThread->GetDomain(); // Context is same as AppDomain in CoreCLR
+    AppDomain *pContext = AppDomain::GetCurrentDomain(); // Context is same as AppDomain in CoreCLR
     _ASSERTE(pContext);
 
     // If there's no current context, return incomplete info
@@ -4740,13 +4737,13 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo(ClassID classId,
             if (pModuleId != NULL)
             {
                 *pModuleId = (ModuleID) th.GetModule();
-                _ASSERTE(*pModuleId != NULL);
+                _ASSERTE(*pModuleId != 0);
             }
 
             if (pTypeDefToken != NULL)
             {
                 *pTypeDefToken = th.GetCl();
-                _ASSERTE(*pTypeDefToken != NULL);
+                _ASSERTE(*pTypeDefToken != 0);
             }
         }
     }
@@ -5618,7 +5615,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
     if (pAppDomainId)
     {
         *pAppDomainId = (AppDomainID)AppDomain::GetCurrentDomain();
-        _ASSERTE(*pAppDomainId != NULL);
+        _ASSERTE(*pAppDomainId != 0);
     }
 
     // Find the module the manifest lives in.
@@ -6941,7 +6938,7 @@ HRESULT ProfToEEInterfaceImpl::GetEnvironmentVariable(
 
     if ((pcchValue != nullptr) || (szValue != nullptr))
     {
-        DWORD trueLen = GetEnvironmentVariableW(szName, szValue, cchValue);
+        DWORD trueLen = ::GetEnvironmentVariable(szName, szValue, cchValue);
         if (trueLen == 0)
         {
             hr = HRESULT_FROM_WIN32(GetLastError());
@@ -6985,7 +6982,7 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
         return E_INVALIDARG;
     }
 
-    return SetEnvironmentVariableW(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+    return ::SetEnvironmentVariable(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
@@ -10423,7 +10420,7 @@ HRESULT ProfToEEInterfaceImpl::GetInMemorySymbolsLength(
     //This method would work fine on reflection.emit, but there would be no way to know
     //if some other thread was changing the size of the symbols before this method returned.
     //Adding events or locks to detect/prevent changes would make the scenario workable
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         return COR_PRF_MODULE_DYNAMIC;
     }
@@ -10494,7 +10491,7 @@ HRESULT ProfToEEInterfaceImpl::ReadInMemorySymbols(
     //This method would work fine on reflection.emit, but there would be no way to know
     //if some other thread was changing the size of the symbols before this method returned.
     //Adding events or locks to detect/prevent changes would make the scenario workable
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         return COR_PRF_MODULE_DYNAMIC;
     }
@@ -10723,7 +10720,7 @@ HCIMPL_PROLOG(ProfileEnter)
         // while the reverse may not have this one-on-one mapping.  Therefore, FunctionID is used as the
         // key to retrieve the corresponding clientID from the internal FunctionID hash table.
         FunctionID functionId = clientData;
-        _ASSERTE(functionId != NULL);
+        _ASSERTE(functionId != 0);
         clientData = g_profControlBlock.mainProfilerInfo.pProfInterface->LookupClientIDFromCache(functionId);
 
         //
@@ -10897,7 +10894,7 @@ HCIMPL_PROLOG(ProfileLeave)
         // while the reverse may not have this one-on-one mapping.  Therefore, FunctionID is used as the
         // key to retrieve the corresponding clientID from the internal FunctionID hash table.
         FunctionID functionId = clientData;
-        _ASSERTE(functionId != NULL);
+        _ASSERTE(functionId != 0);
         clientData = g_profControlBlock.mainProfilerInfo.pProfInterface->LookupClientIDFromCache(functionId);
 
         //
@@ -11029,7 +11026,7 @@ HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpec
         // while the reverse may not have this one-on-one mapping.  Therefore, FunctionID is used as the
         // key to retrieve the corresponding clientID from the internal FunctionID hash table.
         FunctionID functionId = clientData;
-        _ASSERTE(functionId != NULL);
+        _ASSERTE(functionId != 0);
         clientData = g_profControlBlock.mainProfilerInfo.pProfInterface->LookupClientIDFromCache(functionId);
 
         //

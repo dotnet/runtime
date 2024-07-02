@@ -45,8 +45,6 @@
 // if someone changes the frame size.  You are expected to keep this hard coded constant
 // up to date so that changes in the frame size trigger errors at compile time if the code is not altered
 
-void generate_noref_copy (unsigned nbytes, StubLinkerCPU* sl);
-
 #ifdef FEATURE_EH_FUNCLETS
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * regs)
 {
@@ -910,18 +908,6 @@ Stub *GenerateInitPInvokeFrameHelper()
     // A single process-wide stub that will never unload
     RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
 }
-
-
-extern "C" VOID STDCALL StubRareEnableWorker(Thread *pThread)
-{
-    WRAPPER_NO_CONTRACT;
-
-    //printf("RareEnable\n");
-    pThread->RareEnablePreemptiveGC();
-}
-
-
-
 
 // Disable when calling into managed code from a place that fails via Exceptions
 extern "C" VOID STDCALL StubRareDisableTHROWWorker(Thread *pThread)

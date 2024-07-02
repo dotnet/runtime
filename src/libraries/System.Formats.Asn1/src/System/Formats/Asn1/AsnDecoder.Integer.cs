@@ -104,7 +104,7 @@ namespace System.Formats.Asn1
         {
             ReadOnlySpan<byte> contents = ReadIntegerBytes(source, ruleSet, out int consumed, expectedTag);
 
-#if NETCOREAPP2_1_OR_GREATER
+#if NET
             BigInteger value = new BigInteger(contents, isBigEndian: true);
 #else
             byte[] tmp = CryptoPool.Rent(contents.Length);

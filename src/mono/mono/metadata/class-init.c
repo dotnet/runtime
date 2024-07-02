@@ -735,6 +735,17 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		}
 	}
 
+	// compute is_exception_class, used by interp to avoid inlining exception handling code
+	if (
+		klass->parent && !m_class_is_valuetype (klass) &&
+		!m_class_is_interface (klass)
+	) {
+		if (m_class_is_exception_class (klass->parent))
+			klass->is_exception_class = 1;
+		else if (!strcmp (klass->name, "Exception") && !strcmp(klass->name_space, "System"))
+			klass->is_exception_class = 1;
+	}
+
 	mono_loader_unlock ();
 
 	MONO_PROFILER_RAISE (class_loaded, (klass));
@@ -926,6 +937,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->this_arg.byref__ = TRUE;
 	klass->is_inlinearray = gklass->is_inlinearray;
 	klass->inlinearray_value = gklass->inlinearray_value;
+	klass->is_exception_class = gklass->is_exception_class;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
@@ -1027,18 +1039,14 @@ class_composite_fixup_cast_class (MonoClass *klass, gboolean for_ptr)
 	case MONO_TYPE_U2:
 		klass->cast_class = mono_defaults.int16_class;
 		break;
-	case MONO_TYPE_U4:
-#if TARGET_SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-#endif
+		klass->cast_class = mono_defaults.int_class;
+		break;
+	case MONO_TYPE_U4:
 		klass->cast_class = mono_defaults.int32_class;
 		break;
 	case MONO_TYPE_U8:
-#if TARGET_SIZEOF_VOID_P == 8
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#endif
 		klass->cast_class = mono_defaults.int64_class;
 		break;
 	default:
@@ -2319,7 +2327,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 			instance_size = MAX (real_size, instance_size);
 
-			if (instance_size & (min_align - 1)) {
+			if (instance_size & (min_align - 1) && !explicit_size) {
 				instance_size += min_align - 1;
 				instance_size &= ~(min_align - 1);
 			}

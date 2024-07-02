@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Tests
         public class MyClass_WithNonPublicAccessors
         {
             public int MyInt { get; private set; }
-            public string MyString { get; internal set; }
+            public string? MyString { get; internal set; }
             public float MyFloat { private get; set; }
             public Uri MyUri { internal get; set; }
 
@@ -73,11 +73,11 @@ namespace System.Text.Json.Serialization.Tests
             [JsonInclude]
             public int MyInt { get; private set; }
             [JsonInclude]
-            public string MyString { get; internal set; }
+            public string? MyString { get; internal set; }
             [JsonInclude]
             public float MyFloat { private get; set; }
             [JsonInclude]
-            public Uri MyUri { internal get; set; }
+            public Uri? MyUri { internal get; set; }
 
             // For test validation.
             internal float GetMyFloat => MyFloat;

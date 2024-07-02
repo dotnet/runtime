@@ -175,7 +175,8 @@ private:
                                       GenTreeCall* callNode);
     void     InsertProfTailCallHook(GenTreeCall* callNode, GenTree* insertionPoint);
     GenTree* FindEarliestPutArg(GenTreeCall* call);
-    size_t   MarkPutArgNodes(GenTree* node);
+    size_t   MarkCallPutArgAndFieldListNodes(GenTreeCall* call);
+    size_t   MarkPutArgAndFieldListNodes(GenTree* node);
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
@@ -186,6 +187,7 @@ private:
     GenTree* LowerFloatArg(GenTree** pArg, CallArg* callArg);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
+    void LegalizeArgPlacement(GenTreeCall* call);
 
     void     InsertPInvokeCallProlog(GenTreeCall* call);
     void     InsertPInvokeCallEpilog(GenTreeCall* call);
@@ -315,15 +317,44 @@ private:
     }
 #endif // defined(TARGET_XARCH)
 
+    struct LoadStoreCoalescingData
+    {
+        var_types targetType;
+        GenTree*  baseAddr;
+        GenTree*  index;
+        GenTree*  value;
+        uint32_t  scale;
+        int       offset;
+        GenTree*  rangeStart;
+        GenTree*  rangeEnd;
+
+        bool IsStore() const
+        {
+            return value != nullptr;
+        }
+
+        bool IsAddressEqual(const LoadStoreCoalescingData& other, bool ignoreOffset) const
+        {
+            if ((scale != other.scale) || (targetType != other.targetType) ||
+                !GenTree::Compare(baseAddr, other.baseAddr) || !GenTree::Compare(index, other.index))
+            {
+                return false;
+            }
+            return ignoreOffset || (offset == other.offset);
+        }
+    };
+
+    bool GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const;
+
     // Per tree node member functions
-    void     LowerStoreIndirCommon(GenTreeStoreInd* ind);
+    GenTree* LowerStoreIndirCommon(GenTreeStoreInd* ind);
     GenTree* LowerIndir(GenTreeIndir* ind);
-    bool     OptimizeForLdp(GenTreeIndir* ind);
+    bool     OptimizeForLdpStp(GenTreeIndir* ind);
     bool     TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir);
     void     MarkTree(GenTree* root);
     void     UnmarkTree(GenTree* root);
-    void     LowerStoreIndir(GenTreeStoreInd* node);
-    void     LowerStoreIndirCoalescing(GenTreeStoreInd* node);
+    GenTree* LowerStoreIndir(GenTreeStoreInd* node);
+    void     LowerStoreIndirCoalescing(GenTreeIndir* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
     bool     TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
@@ -334,6 +365,7 @@ private:
     void     LowerBlockStore(GenTreeBlk* blkNode);
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
+    bool     TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
     void     LowerLclHeap(GenTree* node);
     void     ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void     LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);

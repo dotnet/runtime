@@ -455,12 +455,16 @@ void MyICJI::LongLifetimeFree(void* obj)
     DebugBreakorAV(33);
 }
 
-size_t MyICJI::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
-                                          CORINFO_MODULE_HANDLE* pModule,
-                                          void**                 ppIndirection)
+size_t MyICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
-    jitInstance->mc->cr->AddCall("getClassModuleIdForStatics");
-    return jitInstance->mc->repGetClassModuleIdForStatics(cls, pModule, ppIndirection);
+    jitInstance->mc->cr->AddCall("getClassThreadStaticDynamicInfo");
+    return jitInstance->mc->repGetClassThreadStaticDynamicInfo(cls);
+}
+
+size_t MyICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getClassStaticDynamicInfo");
+    return jitInstance->mc->repGetClassStaticDynamicInfo(cls);
 }
 
 bool MyICJI::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE  cls,
@@ -505,7 +509,7 @@ unsigned MyICJI::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDo
     return jitInstance->mc->repGetClassAlignmentRequirement(cls, fDoubleAlignHint);
 }
 
-// This is only called for Value classes.  It returns a boolean array
+// This called for ref and value classes.  It returns a boolean array
 // in representing of 'cls' from a GC perspective.  The class is
 // assumed to be an array of machine words
 // (of length // getClassSize(cls) / sizeof(void*)),
@@ -592,6 +596,13 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeForBox(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getTypeForBox");
     return jitInstance->mc->repGetTypeForBox(cls);
+}
+
+// Class handle for a boxed value type, on the stack.
+CORINFO_CLASS_HANDLE MyICJI::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getTypeForBoxOnStack");
+    return jitInstance->mc->repGetTypeForBoxOnStack(cls);
 }
 
 // returns the correct box helper for a particular class.  Note
@@ -764,6 +775,13 @@ bool MyICJI::isExactType(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repIsExactType(cls);
 }
 
+// Returns true if a class handle represents a generic type.
+TypeCompareState MyICJI::isGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("isGenericType");
+    return jitInstance->mc->repIsGenericType(cls);
+}
+
 // Returns true if a class handle represents a Nullable type.
 TypeCompareState MyICJI::isNullableType(CORINFO_CLASS_HANDLE cls)
 {
@@ -898,10 +916,10 @@ uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCTy
     return jitInstance->mc->repGetThreadLocalFieldInfo(field, isGCType);
 }
 
-void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     jitInstance->mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
-    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
+    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo);
 }
 
 void MyICJI::getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
@@ -1433,13 +1451,6 @@ void MyICJI::getCallInfo(
         ThrowRecordedException(exceptionCode);
 }
 
-// returns the class's domain ID for accessing shared statics
-unsigned MyICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("getClassDomainID");
-    return jitInstance->mc->repGetClassDomainID(cls, ppIndirection);
-}
-
 bool MyICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     jitInstance->mc->cr->AddCall("getStaticFieldContent");
@@ -1806,11 +1817,12 @@ HRESULT MyICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
                                              PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
                                              uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
                                              uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
-                                             PgoSource*                 pPgoSource)
+                                             PgoSource*                 pPgoSource,
+                                             bool*                      pDynamicPgo)
 
 {
     jitInstance->mc->cr->AddCall("getPgoInstrumentationResults");
-    return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
+    return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo);
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with

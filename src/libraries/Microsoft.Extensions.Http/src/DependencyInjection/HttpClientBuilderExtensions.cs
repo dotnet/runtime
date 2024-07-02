@@ -265,7 +265,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
-#if NET5_0_OR_GREATER
+#if NET
         /// <summary>
         /// Adds or updates <see cref="SocketsHttpHandler"/> as a primary handler for a named <see cref="HttpClient"/>. If provided,
         /// also adds a delegate that will be used to configure the primary <see cref="SocketsHttpHandler"/>.

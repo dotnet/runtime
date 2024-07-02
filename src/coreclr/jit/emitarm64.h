@@ -1205,6 +1205,11 @@ inline static bool isHighPredicateRegister(regNumber reg)
     return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
 }
 
+inline static bool isMaskReg(regNumber reg)
+{
+    return isPredicateRegister(reg);
+}
+
 inline static bool isEvenRegister(regNumber reg)
 {
     if (isGeneralRegister(reg))
@@ -1745,7 +1750,8 @@ void emitIns_Call(EmitCallType          callType,
                   regNumber        xreg,
                   unsigned         xmul,
                   ssize_t          disp,
-                  bool             isJump);
+                  bool             isJump,
+                  bool             noSafePoint = false);
 
 BYTE*    emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* i, code_t code);

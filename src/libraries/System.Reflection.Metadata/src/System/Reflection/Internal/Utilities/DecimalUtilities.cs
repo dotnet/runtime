@@ -7,7 +7,7 @@ namespace System.Reflection.Internal
     {
         public static int GetScale(this decimal value)
         {
-#if NETCOREAPP
+#if NET
             Span<int> bits = stackalloc int[4];
             decimal.GetBits(value, bits);
             return unchecked((byte)(bits[3] >> 16));
@@ -18,7 +18,7 @@ namespace System.Reflection.Internal
 
         public static void GetBits(this decimal value, out bool isNegative, out byte scale, out uint low, out uint mid, out uint high)
         {
-#if NETCOREAPP
+#if NET
             Span<int> bits = stackalloc int[4];
             decimal.GetBits(value, bits);
 #else

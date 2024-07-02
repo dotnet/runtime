@@ -35,6 +35,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include <errno.h>
 #include <signal.h>
+#include <dlfcn.h>
 
 #if !HAVE_MACH_EXCEPTIONS
 #include "pal/init.h"
@@ -74,6 +75,9 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context);
 #ifdef INJECT_ACTIVATION_SIGNAL
 static void inject_activation_handler(int code, siginfo_t *siginfo, void *context);
 extern void* g_InvokeActivationHandlerReturnAddress;
+#ifdef __APPLE__
+bool g_canSendSignalToDispatchQueueThreads = false;
+#endif // __APPLE__
 #endif
 
 static void sigill_handler(int code, siginfo_t *siginfo, void *context);
@@ -239,6 +243,27 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 #ifdef INJECT_ACTIVATION_SIGNAL
     if (flags & PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
     {
+#ifdef __APPLE__
+        void *libSystem = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY);
+        if (libSystem != NULL)
+        {
+            int (*dispatch_allow_send_signals_ptr)(int) = (int (*)(int))dlsym(libSystem, "dispatch_allow_send_signals");
+            if (dispatch_allow_send_signals_ptr != NULL)
+            {
+                int st = dispatch_allow_send_signals_ptr(INJECT_ACTIVATION_SIGNAL);
+                g_canSendSignalToDispatchQueueThreads = (st == 0);
+            }
+        }
+
+        // TODO: Once our CI tools can get upgraded to xcode >= 15.4, replace the code above by this:
+        // if (__builtin_available(macOS 14.4, *))
+        // {
+        //    // Allow sending the activation signal to dispatch queue threads
+        //    int st = dispatch_allow_send_signals(INJECT_ACTIVATION_SIGNAL);
+        //    g_canSendSignalToDispatchQueueThreads = (st == 0);
+        // }
+#endif // __APPLE__
+
         handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
         g_registered_activation_handler = true;
     }
@@ -471,6 +496,32 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
 
+void UnmaskActivationSignal()
+{
+    sigset_t signal_set;
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
+
+    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
+    if (sigmaskRet != 0)
+    {
+        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
+    }
+}
+
+void MaskActivationSignal()
+{
+    sigset_t signal_set;
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
+
+    int sigmaskRet = pthread_sigmask(SIG_BLOCK, &signal_set, NULL);
+    if (sigmaskRet != 0)
+    {
+        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
+    }
+}
+
 #if !HAVE_MACH_EXCEPTIONS
 
 /*++
@@ -493,24 +544,12 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
     // to correctly fill in this value.
 
     // Unmask the activation signal now that we are running on the original stack of the thread
-    sigset_t signal_set;
-    sigemptyset(&signal_set);
-    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
-
-    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
-    if (sigmaskRet != 0)
-    {
-        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
-    }
+    UnmaskActivationSignal();
 
     returnPoint->returnFromHandler = common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
 
     // We are going to return to the alternate stack, so block the activation signal again
-    sigmaskRet = pthread_sigmask(SIG_BLOCK, &signal_set, NULL);
-    if (sigmaskRet != 0)
-    {
-        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
-    }
+    MaskActivationSignal();
 
     RtlRestoreContext(&returnPoint->context, NULL);
 }
@@ -824,7 +863,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 
         ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
         contextFlags |= CONTEXT_XSTATE;
 #endif
 
@@ -833,7 +872,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
             &winContext,
             contextFlags);
 
-        if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext), /* checkingCurrentThread */ TRUE))
+        if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext)))
         {
             g_inject_activation_context_locvar_offset = (int)((char*)&winContext - (char*)__builtin_frame_address(0));
             int savedErrNo = errno; // Make sure that errno is not modified
@@ -886,14 +925,23 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     // the process exits.
 
 #ifdef __APPLE__
-    // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
-    if (status == ENOTSUP)
+    if (!g_canSendSignalToDispatchQueueThreads)
     {
-        return ERROR_NOT_SUPPORTED;
+        // On macOS older than 14.4, pthread_kill is not allowed to sent a signal to dispatch queue threads
+        if (status == ENOTSUP)
+        {
+            return ERROR_NOT_SUPPORTED;
+        }
     }
 #endif
 
-    if ((status != 0) && (status != EAGAIN))
+    // ESRCH may happen on some OSes when the thread is exiting.
+    if (status == EAGAIN || status == ESRCH)
+    {
+        return ERROR_CANCELLED;
+    }
+
+    if (status != 0)
     {
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
@@ -1005,7 +1053,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 
     ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
     contextFlags |= CONTEXT_XSTATE;
 #endif
 

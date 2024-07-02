@@ -591,6 +591,22 @@ bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::str
         append_path(recv, get_arch_name(arch));
     }
 #endif
+#elif defined(TARGET_FREEBSD)
+    int mib[2];
+    char buf[PATH_MAX];
+    size_t len = PATH_MAX;
+
+    mib[0] = CTL_USER;
+    mib[1] = USER_LOCALBASE;
+    if (::sysctl(mib, 2, buf, &len, NULL, 0) == 0)
+    {
+        recv->assign(buf);
+        recv->append(_X("/share/dotnet"));
+    }
+    else
+    {
+        recv->assign(_X("/usr/local/share/dotnet"));
+    }
 #else
     recv->assign(_X("/usr/share/dotnet"));
 #endif
@@ -1103,16 +1119,5 @@ bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const st
 #else
     // On Linux, paths are case-sensitive
     return path1 == path2;
-#endif
-}
-
-#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
-extern void initialize_static_createdump();
-#endif
-
-void pal::initialize_createdump()
-{
-#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
-    initialize_static_createdump();
 #endif
 }

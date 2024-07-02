@@ -5,6 +5,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Test uses Reflection.Emit -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SlowTailCallArgs.cs" />

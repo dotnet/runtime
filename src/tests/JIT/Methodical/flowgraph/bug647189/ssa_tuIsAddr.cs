@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
- * The SSA phase isn't counting TU_ISADDR leafs when determining how many hash nodes to allocate.
- * The repro can be generated as:
- * Basically a lot of static field direct accesses with nothing else in the methods.
- */
+* The SSA phase isn't counting TU_ISADDR leafs when determining how many hash nodes to allocate.
+* The repro can be generated as:
+* Basically a lot of static field direct accesses with nothing else in the methods.
+*/
 
 using System;
 using Xunit;
@@ -76,6 +76,7 @@ public class Repro
     private static int s_field59 = 59;
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         s_field0 = 2;

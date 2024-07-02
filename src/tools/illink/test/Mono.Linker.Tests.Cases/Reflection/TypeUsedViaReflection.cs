@@ -1,13 +1,19 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[KeptMember (".cctor()")]
 	[ExpectedNoWarnings ()]
+	[Define ("IL_ASSEMBLY_AVAILABLE")]
+	[SetupCompileBefore ("library.dll", new[] { "Dependencies/EscapedTypeNames.il" })]
+	[KeptTypeInAssembly ("library", "Library.Not\\+Nested")]
+	[KeptTypeInAssembly ("library", "Library.Not\\+Nested+Nes\\\\ted")]
+	[KeptTypeInAssembly ("library", "Library.Not\\+Nested+Nes/ted")]
 	[KeptDelegateCacheField ("0", nameof (AssemblyResolver))]
 	[KeptDelegateCacheField ("1", nameof (GetTypeFromAssembly))]
 	public class TypeUsedViaReflection
@@ -47,8 +53,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			BaseTypeInterfaces.Test ();
 
-
 			TestInvalidTypeCombination ();
+			TestEscapedTypeName ();
 		}
 
 		[Kept]
@@ -331,9 +337,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		// Small difference in formatting between analyzer/NativeAOT/linker
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", ProducedBy = Tool.Trimmer)]
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Func`2<AssemblyName,Assembly>,Func`4<Assembly,String,Boolean,Type>,Boolean,Boolean)'", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", Tool.Trimmer, "")]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Func`2<AssemblyName,Assembly>,Func`4<Assembly,String,Boolean,Type>,Boolean,Boolean)'", Tool.NativeAot, "")]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", Tool.Analyzer, "")]
 		static void TestTypeOverloadWith5ParametersWithIgnoreCase ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+OverloadWith5ParametersWithIgnoreCase";
@@ -384,9 +390,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		// Small difference in formatting between analyzer/NativeAOT/linker
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", ProducedBy = Tool.Trimmer)]
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Func`2<AssemblyName,Assembly>,Func`4<Assembly,String,Boolean,Type>,Boolean,Boolean)'", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", Tool.Trimmer, "")]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Func`2<AssemblyName,Assembly>,Func`4<Assembly,String,Boolean,Type>,Boolean,Boolean)'", Tool.NativeAot, "")]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", Tool.Analyzer, "")]
 		static void TestUnknownIgnoreCase5Params (int num)
 		{
 			const string reflectionTypeKeptString = "mono.linker.tests.cases.reflection.TypeUsedViaReflection+CaseUnknown2, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
@@ -464,6 +470,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				// This should throw at runtime, but should not warn nor fail the compilation
 				Console.WriteLine (Type.GetType ("System.Span`1[[System.Byte, System.Runtime]][], System.Runtime"));
 			} catch (Exception e) { }
+		}
+
+		[Kept]
+		static void TestEscapedTypeName ()
+		{
+			var typeKept = Type.GetType ("Library.Not\\+Nested, library");
+			typeKept = Type.GetType ("Library.Not\\+Nested+Nes\\\\ted, library");
+			typeKept = Type.GetType ("Library.Not\\+Nested+Nes/ted, library");
 		}
 	}
 }

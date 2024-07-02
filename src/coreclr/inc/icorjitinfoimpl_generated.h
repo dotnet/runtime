@@ -208,15 +208,16 @@ void* LongLifetimeMalloc(
 void LongLifetimeFree(
           void* obj) override;
 
-size_t getClassModuleIdForStatics(
-          CORINFO_CLASS_HANDLE cls,
-          CORINFO_MODULE_HANDLE* pModule,
-          void** ppIndirection) override;
-
 bool getIsClassInitedFlagAddress(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CONST_LOOKUP* addr,
           int* offset) override;
+
+size_t getClassThreadStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr) override;
+
+size_t getClassStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr) override;
 
 bool getStaticBaseAddress(
           CORINFO_CLASS_HANDLE cls,
@@ -272,6 +273,9 @@ CorInfoHelpFunc getSharedCCtorHelper(
           CORINFO_CLASS_HANDLE clsHnd) override;
 
 CORINFO_CLASS_HANDLE getTypeForBox(
+          CORINFO_CLASS_HANDLE cls) override;
+
+CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
           CORINFO_CLASS_HANDLE cls) override;
 
 CorInfoHelpFunc getBoxHelper(
@@ -344,6 +348,9 @@ bool isMoreSpecificType(
 bool isExactType(
           CORINFO_CLASS_HANDLE cls) override;
 
+TypeCompareState isGenericType(
+          CORINFO_CLASS_HANDLE cls) override;
+
 TypeCompareState isNullableType(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -404,8 +411,7 @@ uint32_t getThreadLocalFieldInfo(
           bool isGCtype) override;
 
 void getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
-          bool isGCType) override;
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) override;
 
 void getThreadLocalStaticInfo_NativeAOT(
           CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) override;
@@ -600,10 +606,6 @@ void getCallInfo(
           CORINFO_CALLINFO_FLAGS flags,
           CORINFO_CALL_INFO* pResult) override;
 
-unsigned getClassDomainID(
-          CORINFO_CLASS_HANDLE cls,
-          void** ppIndirection) override;
-
 bool getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
@@ -711,7 +713,8 @@ JITINTERFACE_HRESULT getPgoInstrumentationResults(
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
           uint8_t** pInstrumentationData,
-          ICorJitInfo::PgoSource* pgoSource) override;
+          ICorJitInfo::PgoSource* pPgoSource,
+          bool* pDynamicPgo) override;
 
 JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,
