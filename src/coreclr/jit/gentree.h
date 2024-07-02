@@ -1761,7 +1761,7 @@ public:
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
     inline bool IsMaskAllBitsSet() const;
-    inline bool IsMaskAllBitsZero() const;
+    inline bool IsMaskZero() const;
     inline bool IsAllTrue() const;
     inline bool IsAllFalse() const;
     inline bool IsVectorConst();
@@ -9694,12 +9694,12 @@ inline bool GenTree::IsAllTrue() const
 inline bool GenTree::IsAllFalse() const
 {
 #ifdef TARGET_ARM64
-    return IsMaskAllBitsZero() || IsVectorZero();
+    return IsMaskZero() || IsVectorZero();
 #endif
     return false;
 }
 
-inline bool GenTree::IsMaskAllBitsZero() const
+inline bool GenTree::IsMaskZero() const
 {
 #ifdef TARGET_ARM64
     static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,

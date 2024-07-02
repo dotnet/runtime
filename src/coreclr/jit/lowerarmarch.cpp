@@ -1352,22 +1352,19 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             DISPTREERANGE(BlockRange(), node);
             JITDUMP("\n");
 
-            // Wrap the intrinsic in ConditionalSelect only if it is not already inside another ConditionalSelect
-
             CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
             unsigned    simdSize        = node->GetSimdSize();
             var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
             GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-            GenTree*    trueVal         = node;
             GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
 
             GenTreeHWIntrinsic* condSelNode =
-                comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal, NI_Sve_ConditionalSelect,
+                comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
                                                 simdBaseJitType, simdSize);
 
-            BlockRange().InsertBefore(trueVal, trueMask);
-            BlockRange().InsertBefore(trueVal, falseVal);
-            BlockRange().InsertAfter(trueVal, condSelNode);
+            BlockRange().InsertBefore(node, trueMask);
+            BlockRange().InsertBefore(node, falseVal);
+            BlockRange().InsertAfter(node, condSelNode);
 
             use.ReplaceWith(condSelNode);
 
@@ -3558,34 +3555,31 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         }
     }
 
-    if (op2->OperIsHWIntrinsic())
+    if (op2->OperIsHWIntrinsic(NI_Sve_ConditionalSelect))
     {
         // Handle cases where there is a nested ConditionalSelect for
         // `trueValue`
         GenTreeHWIntrinsic* trueValNode = op2->AsHWIntrinsic();
         const HWIntrinsic   intrinEmbMask(trueValNode);
-        if (intrinEmbMask.id == NI_Sve_ConditionalSelect)
+        GenTree*            trueValOp1 = trueValNode->Op(1);
+        GenTree*            trueValOp2 = trueValNode->Op(2);
+        GenTree*            trueValOp3 = trueValNode->Op(3);
+
+        if (trueValOp1->IsAllTrue() && trueValOp2->isEmbeddedMaskingCompatibleHWIntrinsic())
         {
-            GenTree* trueValOp1 = trueValNode->Op(1);
-            GenTree* trueValOp2 = trueValNode->Op(2);
-            GenTree* trueValOp3 = trueValNode->Op(3);
+            // Transform:
+            //
+            // CndSel(mask, CndSel(AllTrue, embeddedMask(trueValOp2), trueValOp3), op3) to
+            // CndSel(mask, embedded(trueValOp2), op3)
+            //
+            GenTree** const treeUse = &(cndSelNode->Op(2));
+            cndSelNode->ReplaceOperand(treeUse, trueValOp2);
 
-            if (trueValOp1->IsAllTrue() && trueValOp2->isEmbeddedMaskingCompatibleHWIntrinsic())
-            {
-                // Transform:
-                // 
-                // CndSel(mask, CndSel(AllTrue, embeddedMask(trueValOp2), trueValOp3), op3) to
-                // CndSel(mask, embedded(trueValOp2), op3)
-                //
-                GenTree** const treeUse = &(cndSelNode->Op(2));
-                cndSelNode->ReplaceOperand(treeUse, trueValOp2);
-
-                trueValOp1->SetUnusedValue();
-                trueValOp3->SetUnusedValue();
-                trueValNode->SetUnusedValue();
-                BlockRange().Remove(trueValNode);
-                return cndSelNode;
-            }
+            trueValOp1->SetUnusedValue();
+            trueValOp3->SetUnusedValue();
+            trueValNode->SetUnusedValue();
+            BlockRange().Remove(trueValNode);
+            return cndSelNode;
         }
     }
 
