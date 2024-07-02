@@ -24,7 +24,7 @@ PROBE_FRAME_SIZE = 0xD0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp,
     // incoming register values into it.
 
     // First create PInvokeTransitionFrame
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -PROBE_FRAME_SIZE // Push down stack pointer and store FP and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, PROBE_FRAME_SIZE // Push down stack pointer and store FP and RA
 
     // Slot at $sp+0x10 is reserved for Thread *
     // Slot at $sp+0x18 is reserved for bitmask of saved registers

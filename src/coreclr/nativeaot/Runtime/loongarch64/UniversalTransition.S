@@ -92,7 +92,7 @@
     NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
 
         // FP and RA registers
-        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, -STACK_SIZE // ;; Push down stack pointer and store FP and RA
+        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, STACK_SIZE // ;; Push down stack pointer and store FP and RA
 
         // Floating point registers
         fst.d  $f0, $sp, FLOAT_ARG_OFFSET

@@ -37,7 +37,7 @@
         fst.d  $f29, $sp, 0x38
         fst.d  $f30, $sp, 0x40
         fst.d  $f31, $sp, 0x48
-        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, -0x70
+        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x70
         st.d  $zero, $sp, 0x10 // locations reserved for return value, not used for exception handling
         st.d  $zero, $sp, 0x18
         PROLOG_SAVE_REG_PAIR  23, 24, 0x20
@@ -61,7 +61,7 @@
         // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
         // of method. However, this method needs to be able to change fp before calling funclet.
         // This is required to access locals in funclet.
-        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED  22, 1, -0x60
+        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED  22, 1, 0x60
         PROLOG_SAVE_REG_PAIR  23, 24, 0x10
         PROLOG_SAVE_REG_PAIR  25, 26, 0x20
         PROLOG_SAVE_REG_PAIR  27, 28, 0x30
@@ -372,8 +372,7 @@ NotHijacked:
         st.b  $zero, $a1, OFFSETOF__ExInfo__m_kind       // init to a deterministic value (ExKind.None)
         ori  $a3, $zero, 1
         st.b  $a3, $a1, OFFSETOF__ExInfo__m_passNumber   // pExInfo->m_passNumber = 1
-        lu12i.w  $a3, -1
-        ori  $a3, $a3, 0xfff
+        addi.w  $a3, $zero, -1
         st.w  $a3, $a1, OFFSETOF__ExInfo__m_idxCurClause // pExInfo->m_idxCurClause = MaxTryRegionIdx
 
         // link the ExInfo into the thread's ExInfo chain
@@ -450,14 +449,8 @@ NotHijacked:
 
         addi.d  $t3, $a5, OFFSETOF__Thread__m_ThreadStateFlags
 
-ClearRetry_Catch: //TODO-LOONGARCH64: change ld/st to atomic instructions.
-        ld.w  $a4, $t3, 0
-        bstrins.w  $a4, $zero, 4, 4 // $a4 = $a4 & ~TSF_DoNotTriggerGc
-        st.w  $a4, $t3, 0
-        ori  $a6, $zero, 0
-        beq  $a6, $zero, ClearSuccess_Catch
-        b  ClearRetry_Catch
-ClearSuccess_Catch:
+        addi.w  $a6, $zero, -17    // $a6 = $a6 & ~TSF_DoNotTriggerGc, TSF_DoNotTriggerGc=0x10.
+        amand_db.w  $a4, $a6, $t3
 
         //
         // set preserved regs to the values expected by the funclet
@@ -592,14 +585,8 @@ NoAbort:
 
         addi.d  $t3, $a2, OFFSETOF__Thread__m_ThreadStateFlags
 
-ClearRetry: //TODO-LOONGARCH64: change ld/st to atomic instructions.
-        ld.w  $a4, $t3, 0
-        bstrins.w  $a4, $zero, 4, 4 // $a4 = $a4 & ~TSF_DoNotTriggerGc
-        st.w  $a4, $t3, 0
-        ori  $a3, $zero, 0
-        beq  $a3, $zero, ClearSuccess
-        b  ClearRetry
-ClearSuccess:
+        addi.w  $a3, $zero, -17     // $a3 = $a3 & ~TSF_DoNotTriggerGc, TSF_DoNotTriggerGc=0x10.
+        amand_db.w  $a4, $a3, $t3
 
         //
         // set preserved regs to the values expected by the funclet
@@ -631,14 +618,8 @@ ClearSuccess:
         ld.d  $a2, $sp, rsp_FinallyFunclet_offset_thread
 
         addi.d  $t3, $a2, OFFSETOF__Thread__m_ThreadStateFlags
-SetRetry: //TODO-LOONGARCH64: change ld/st to atomic instructions.
-        ld.w  $a1, $t3, 0
-        ori  $a1, $a1, TSF_DoNotTriggerGc
-        st.w  $a1, $t3, 0
-        ori  $a3, $zero, 0
-        beq  $a3, $zero, SetSuccess
-        b  SetRetry
-SetSuccess:
+        addi.w  $a3, $zero, -17     // $a3 = $a3 & ~TSF_DoNotTriggerGc, TSF_DoNotTriggerGc=0x10.
+        amand_db.w  $a1, $a3, $t3
 
         fld.d  $f24, $sp, 0x00
         fld.d  $f25, $sp, 0x08
@@ -730,7 +711,7 @@ SetSuccess:
 
         // Using the NO_FP macro so that the debugger unwinds using SP.
         // This makes backtraces work even after using RESTORE_PRESERVED_REGISTERS.
-        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED 22, 1, -0x40
+        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED 22, 1, 0x40
         ori  $fp, $sp, 0
         st.d  $a0, $sp, rsp_offset_a0  // a0 to a3 are stored to restore them anytime
         st.d  $a1, $sp, rsp_offset_a1  // a0 to a3 are stored to restore them anytime
@@ -753,14 +734,8 @@ SetSuccess:
 
         addi.d  $t3, $a5, OFFSETOF__Thread__m_ThreadStateFlags
 
-ClearRetry_Propagate: //TODO-LOONGARCH64: change ld/st to atomic instructions.
-        ld.w  $a4, $t3, 0
-        bstrins.w  $a4, $zero, 4, 4 // $a4 = $a4 & ~TSF_DoNotTriggerGc
-        st.w  $a4, $t3, 0
-        ori  $a6, $zero, 0
-        beq  $a6, $zero, ClearSuccess_Propagate
-        b  ClearRetry_Propagate
-ClearSuccess_Propagate:
+        addi.w  $a6, $zero, -17    // $a6 = $a6 & ~TSF_DoNotTriggerGc, TSF_DoNotTriggerGc=0x10.
+        amand_db.w  $a4, $a6, $t3
 
         //
         // set preserved regs to the values expected by the funclet

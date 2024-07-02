@@ -83,24 +83,30 @@ C_FUNC(\Name):
         .endif
 .endm
 
-.macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ofs
-        st.d  $r\reg1, $sp, \ofs
-        st.d  $r\reg2, $sp, \ofs + 8
-        addi.d  $sp, $sp, \ofs
-        .cfi_adjust_cfa_offset  -\ofs
+.macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
+        addi.d  $sp, $sp, -\ssize
+        //.cfi_adjust_cfa_offset  \ssize
+        .cfi_def_cfa  3, \ssize
+
+        st.d  $r\reg1, $sp, 0
+        st.d  $r\reg2, $sp, 8
+
         .cfi_rel_offset  \reg1, 0
         .cfi_rel_offset  \reg2, 8
-        .ifc  \reg1, $fp
-        ori  $fp, $sp, 0
-        .cfi_def_cfa_register  $fp
+        .if (\__def_cfa_save ==  1)
+          ori  $fp, $sp, 0
+          .cfi_def_cfa_register  22
         .endif
 .endm
 
-.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ofs
-        st.d  $r\reg1, $sp, \ofs
-        st.d  $r\reg2, $sp, \ofs + 8
-        addi.d  $sp, $sp, \ofs
-        .cfi_adjust_cfa_offset  -\ofs
+.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ssize
+        addi.d  $sp, $sp, -\ssize
+        //.cfi_adjust_cfa_offset  \ssize
+        .cfi_def_cfa  3, \ssize
+
+        st.d  $r\reg1, $sp, 0
+        st.d  $r\reg2, $sp, 8
+
         .cfi_rel_offset  \reg1, 0
         .cfi_rel_offset  \reg2, 8
 .endm
@@ -178,7 +184,7 @@ C_FUNC(\Name):
 // Creating two stack frames in one function can confuse the unwinder/debugger
 
 .macro GETTHREAD_ETLS_1
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -32          // ;; Push down stack pointer and store FP and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 32          // ;; Push down stack pointer and store FP and RA
     st.d  $a0, $sp, 0x10
 
     bl  C_FUNC(RhpGetThread)
@@ -189,7 +195,7 @@ C_FUNC(\Name):
 .endm
 
 .macro GETTHREAD_ETLS_2
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, -32           // ;; Push down stack pointer and store FP and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 32           // ;; Push down stack pointer and store FP and RA
     st.d  $a0, $sp, 0x10
     st.d  $a1, $sp, 0x18
 
@@ -202,7 +208,7 @@ C_FUNC(\Name):
 .endm
 
 .macro GETTHREAD_ETLS_3
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, -48           // ;; Push down stack pointer and store FP and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 48           // ;; Push down stack pointer and store FP and RA
     st.d  $a0, $sp, 0x10
     st.d  $a1, $sp, 0x18
     st.d  $a2, $sp, 0x20
@@ -217,7 +223,7 @@ C_FUNC(\Name):
 .endm
 
 .macro GETTHUNKDATA_ETLS_9
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, -96           // ;; Push down stack pointer and store FP and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 96           // ;; Push down stack pointer and store FP and RA
     st.d  $a0, $sp, 0x10
     st.d  $a1, $sp, 0x18
     st.d  $a2, $sp, 0x20
@@ -273,7 +279,7 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
 
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, -0x80 // Push down stack pointer and store FP and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x80 // Push down stack pointer and store FP and RA
 
     // 0x10 bytes reserved for Thread* and flags
 
