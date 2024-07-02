@@ -110,6 +110,7 @@ namespace System.Numerics
         public float this[int index]
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             readonly get
             {
                 if ((uint)index >= Count)
@@ -120,6 +121,7 @@ namespace System.Numerics
             }
 
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if ((uint)index >= Count)
@@ -154,6 +156,7 @@ namespace System.Numerics
         /// <returns>The result of the division.</returns>
         /// <remarks>The <see cref="Vector3.op_Division" /> method defines the division operation for <see cref="Vector3" /> objects.</remarks>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator /(Vector3 value1, float value2) => (value1.AsVector128Unsafe() / value2).AsVector3();
 
         /// <summary>Returns a value that indicates whether each pair of elements in two specified vectors is equal.</summary>
@@ -187,6 +190,7 @@ namespace System.Numerics
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="Vector3.op_Multiply" /> method defines the multiplication operation for <see cref="Vector3" /> objects.</remarks>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator *(Vector3 left, float right) => (left.AsVector128Unsafe() * right).AsVector3();
 
         /// <summary>Multiplies the scalar value by the specified vector.</summary>
@@ -211,6 +215,7 @@ namespace System.Numerics
         /// <returns>The negated vector.</returns>
         /// <remarks>The <see cref="op_UnaryNegation" /> method defines the unary negation operation for <see cref="Vector3" /> objects.</remarks>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator -(Vector3 value) => (-value.AsVector128Unsafe()).AsVector3();
 
         /// <summary>Returns a vector whose elements are the absolute values of each of the specified vector's elements.</summary>
@@ -250,6 +255,7 @@ namespace System.Numerics
         /// <param name="z">The Z component.</param>
         /// <returns>A new <see cref="Vector3" /> from the specified <see cref="Vector2" /> object and a Z and a W component.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Create(Vector2 vector, float z)
         {
             return vector.AsVector128Unsafe()
@@ -268,6 +274,7 @@ namespace System.Numerics
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 3 elements.</summary>
         /// <param name="values">The span of elements to assign to the vector.</param>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Create(ReadOnlySpan<float> values)
         {
             if (values.Length < Count)
@@ -296,11 +303,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Cross(Vector3 vector1, Vector3 vector2)
         {
-            return Create(
-                (vector1.Y * vector2.Z) - (vector1.Z * vector2.Y),
-                (vector1.Z * vector2.X) - (vector1.X * vector2.Z),
-                (vector1.X * vector2.Y) - (vector1.Y * vector2.X)
-            );
+            // This implementation is based on the DirectX Math Library XMVector3Cross method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
+
+            Vector128<float> v1 = vector1.AsVector128();
+            Vector128<float> v2 = vector2.AsVector128();
+
+            Vector128<float> temp = Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 3)) * Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 3));
+
+            return Vector128.MultiplyAddEstimate(
+                -Vector128.Shuffle(v1, Vector128.Create(2, 0, 1, 3)),
+                 Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 3)),
+                 temp
+            ).AsVector3();
         }
 
         /// <summary>Computes the Euclidean distance between the two given points.</summary>
@@ -351,7 +366,7 @@ namespace System.Numerics
         /// <returns>The interpolated vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 Lerp(Vector3 value1, Vector3 value2, float amount) => (value1 * (1.0f - amount)) + (value2 * amount);
+        public static Vector3 Lerp(Vector3 value1, Vector3 value2, float amount) => MultiplyAddEstimate(value1, Create(1.0f - amount), value2 * amount);
 
         /// <summary>Returns a vector whose elements are the maximum of each of the pairs of elements in two specified vectors.</summary>
         /// <param name="value1">The first vector.</param>
@@ -412,7 +427,15 @@ namespace System.Numerics
         /// <param name="normal">The normal of the surface being reflected off.</param>
         /// <returns>The reflected vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 Reflect(Vector3 vector, Vector3 normal) => vector - (2.0f * (Dot(vector, normal) * normal));
+        public static Vector3 Reflect(Vector3 vector, Vector3 normal)
+        {
+            // This implementation is based on the DirectX Math Library XMVector3Reflect method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
+
+            Vector3 tmp = Create(Dot(vector, normal));
+            tmp += tmp;
+            return MultiplyAddEstimate(-tmp, normal, vector);
+        }
 
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
         /// <param name="value">A vector.</param>
@@ -440,28 +463,7 @@ namespace System.Numerics
         /// <param name="rotation">The rotation to apply.</param>
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 Transform(Vector3 value, Quaternion rotation)
-        {
-            float x2 = rotation.X + rotation.X;
-            float y2 = rotation.Y + rotation.Y;
-            float z2 = rotation.Z + rotation.Z;
-
-            float wx2 = rotation.W * x2;
-            float wy2 = rotation.W * y2;
-            float wz2 = rotation.W * z2;
-            float xx2 = rotation.X * x2;
-            float xy2 = rotation.X * y2;
-            float xz2 = rotation.X * z2;
-            float yy2 = rotation.Y * y2;
-            float yz2 = rotation.Y * z2;
-            float zz2 = rotation.Z * z2;
-
-            return Create(
-                value.X * (1.0f - yy2 - zz2) + value.Y * (xy2 - wz2) + value.Z * (xz2 + wy2),
-                value.X * (xy2 + wz2) + value.Y * (1.0f - xx2 - zz2) + value.Z * (yz2 - wx2),
-                value.X * (xz2 - wy2) + value.Y * (yz2 + wx2) + value.Z * (1.0f - xx2 - yy2)
-            );
-        }
+        public static Vector3 Transform(Vector3 value, Quaternion rotation) => Vector4.Transform(value, rotation).AsVector3();
 
         /// <summary>Transforms a vector normal by the given 4x4 matrix.</summary>
         /// <param name="normal">The source vector.</param>
@@ -475,10 +477,10 @@ namespace System.Numerics
         {
             Vector4 result = matrix.X * normal.X;
 
-            result += matrix.Y * normal.Y;
-            result += matrix.Z * normal.Z;
+            result = Vector4.MultiplyAddEstimate(matrix.Y, Vector4.Create(normal.Y), result);
+            result = Vector4.MultiplyAddEstimate(matrix.Z, Vector4.Create(normal.Z), result);
 
-            return result.AsVector128().AsVector3();
+            return result.AsVector3();
         }
 
         /// <summary>Copies the elements of the vector to a specified array.</summary>

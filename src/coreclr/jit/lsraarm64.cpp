@@ -1371,7 +1371,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             var_types indexedElementOpType;
 
-            if (intrin.numOperands == 3)
+            if (intrin.numOperands == 2)
+            {
+                indexedElementOpType = intrin.op1->TypeGet();
+            }
+            else if (intrin.numOperands == 3)
             {
                 indexedElementOpType = intrin.op2->TypeGet();
             }
@@ -1440,17 +1444,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_ExtractVector64:
                     case NI_AdvSimd_ExtractVector128:
                     case NI_AdvSimd_StoreSelectedScalar:
-                    case NI_AdvSimd_StoreSelectedScalarVector64x2:
-                    case NI_AdvSimd_StoreSelectedScalarVector64x3:
-                    case NI_AdvSimd_StoreSelectedScalarVector64x4:
                     case NI_AdvSimd_Arm64_StoreSelectedScalar:
-                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
-                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
-                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
                     case NI_Sve_PrefetchBytes:
                     case NI_Sve_PrefetchInt16:
                     case NI_Sve_PrefetchInt32:
                     case NI_Sve_PrefetchInt64:
+                    case NI_Sve_ExtractVector:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 
@@ -1528,6 +1527,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
     bool tgtPrefOp1        = false;
+    bool tgtPrefOp2        = false;
     bool delayFreeMultiple = false;
     if (intrin.op1 != nullptr)
     {
@@ -1582,9 +1582,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
         // we want to preference op1Reg to the target if op1 is not contained.
-        if (isRMW || simdRegToSimdRegMove)
+
+        if ((isRMW || simdRegToSimdRegMove))
         {
-            tgtPrefOp1 = !intrin.op1->isContained();
+            if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
+            {
+                assert(!simdRegToSimdRegMove);
+                // Prefer op2Reg for the masked operation as mask would be the op1Reg
+                tgtPrefOp2 = !intrin.op1->isContained();
+            }
+            else
+            {
+                tgtPrefOp1 = !intrin.op1->isContained();
+            }
         }
 
         if (delayFreeMultiple)
@@ -1631,7 +1641,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                srcCount += BuildOperandUses(intrin.op1, predMask);
+                if (tgtPrefOp2)
+                {
+                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2, predMask);
+                }
+                else
+                {
+                    srcCount += BuildOperandUses(intrin.op1, predMask);
+                }
             }
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -1686,7 +1703,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             assert(!isRMW);
 
-            srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
+            if (intrin.id == NI_Sve_DuplicateSelectedScalarToVector)
+            {
+                srcCount += BuildOperandUses(intrin.op2);
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
+            }
 
             if (intrin.op3 != nullptr)
             {
@@ -1730,28 +1754,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_StoreSelectedScalar:
-                assert(intrin.op1 != nullptr);
-                assert(intrin.op3 != nullptr);
-                srcCount += BuildOperandUses(intrin.op2);
-                if (!intrin.op3->isContainedIntOrIImmed())
-                {
-                    srcCount += BuildOperandUses(intrin.op3);
-                }
-                assert(dstCount == 0);
-                buildInternalRegisterUses();
-                *pDstCount = 0;
-                break;
-
-            case NI_AdvSimd_StoreSelectedScalarVector64x2:
-            case NI_AdvSimd_StoreSelectedScalarVector64x3:
-            case NI_AdvSimd_StoreSelectedScalarVector64x4:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
             {
                 assert(intrin.op1 != nullptr);
                 assert(intrin.op3 != nullptr);
-                srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
+                srcCount += (intrin.op2->gtType == TYP_STRUCT) ? BuildConsecutiveRegistersForUse(intrin.op2)
+                                                               : BuildOperandUses(intrin.op2);
                 if (!intrin.op3->isContainedIntOrIImmed())
                 {
                     srcCount += BuildOperandUses(intrin.op3);
@@ -1762,18 +1769,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_AdvSimd_StoreVector64x2AndZip:
-            case NI_AdvSimd_StoreVector64x3AndZip:
-            case NI_AdvSimd_StoreVector64x4AndZip:
-            case NI_AdvSimd_Arm64_StoreVector128x2AndZip:
-            case NI_AdvSimd_Arm64_StoreVector128x3AndZip:
-            case NI_AdvSimd_Arm64_StoreVector128x4AndZip:
-            case NI_AdvSimd_StoreVector64x2:
-            case NI_AdvSimd_StoreVector64x3:
-            case NI_AdvSimd_StoreVector64x4:
-            case NI_AdvSimd_Arm64_StoreVector128x2:
-            case NI_AdvSimd_Arm64_StoreVector128x3:
-            case NI_AdvSimd_Arm64_StoreVector128x4:
+            case NI_AdvSimd_Store:
+            case NI_AdvSimd_Arm64_Store:
+            case NI_AdvSimd_StoreVectorAndZip:
+            case NI_AdvSimd_Arm64_StoreVectorAndZip:
             {
                 assert(intrin.op1 != nullptr);
                 srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
@@ -1804,18 +1803,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 FALLTHROUGH;
             }
 
-            case NI_AdvSimd_LoadVector64x2AndUnzip:
-            case NI_AdvSimd_LoadVector64x3AndUnzip:
-            case NI_AdvSimd_LoadVector64x4AndUnzip:
-            case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
-            case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
-            case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
-            case NI_AdvSimd_LoadVector64x2:
-            case NI_AdvSimd_LoadVector64x3:
-            case NI_AdvSimd_LoadVector64x4:
-            case NI_AdvSimd_Arm64_LoadVector128x2:
-            case NI_AdvSimd_Arm64_LoadVector128x3:
-            case NI_AdvSimd_Arm64_LoadVector128x4:
+            case NI_AdvSimd_Load2xVector64AndUnzip:
+            case NI_AdvSimd_Load3xVector64AndUnzip:
+            case NI_AdvSimd_Load4xVector64AndUnzip:
+            case NI_AdvSimd_Arm64_Load2xVector128AndUnzip:
+            case NI_AdvSimd_Arm64_Load3xVector128AndUnzip:
+            case NI_AdvSimd_Arm64_Load4xVector128AndUnzip:
+            case NI_AdvSimd_Load2xVector64:
+            case NI_AdvSimd_Load3xVector64:
+            case NI_AdvSimd_Load4xVector64:
+            case NI_AdvSimd_Arm64_Load2xVector128:
+            case NI_AdvSimd_Arm64_Load3xVector128:
+            case NI_AdvSimd_Arm64_Load4xVector128:
             case NI_AdvSimd_LoadAndReplicateToVector64x2:
             case NI_AdvSimd_LoadAndReplicateToVector64x3:
             case NI_AdvSimd_LoadAndReplicateToVector64x4:
@@ -1992,6 +1991,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                                                (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
             }
         }
+        else if (tgtPrefOp2)
+        {
+            if (!intrin.op2->isContained())
+            {
+                assert(tgtPrefUse == nullptr);
+                tgtPrefUse2 = BuildUse(intrin.op2);
+                srcCount++;
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op2);
+            }
+        }
         else
         {
             switch (intrin.id)
@@ -2058,12 +2070,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             SingleTypeRegSet candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
 
-            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1, candidates)
-                              : BuildOperandUses(intrin.op3, candidates);
+            if (isRMW)
+            {
+                srcCount += BuildDelayFreeUses(intrin.op3, (tgtPrefOp2 ? intrin.op2 : intrin.op1), candidates);
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op3, candidates);
+            }
 
             if (intrin.op4 != nullptr)
             {
                 assert(lowVectorOperandNum != 4);
+                assert(!tgtPrefOp2);
                 srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
             }
         }

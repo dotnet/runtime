@@ -101,45 +101,55 @@ vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
 vectorinstructionset,X86  ,Vector512
 
+; x86-64-v1
+
 implication        ,X86   ,SSE                  ,X86Base
 implication        ,X86   ,SSE2                 ,SSE
+
+; x86-64-v2
+
 implication        ,X86   ,SSE3                 ,SSE2
 implication        ,X86   ,SSSE3                ,SSE3
 implication        ,X86   ,SSE41                ,SSSE3
 implication        ,X86   ,SSE42                ,SSE41
+implication        ,X86   ,POPCNT               ,SSE42
+
+; x86-64-v3
+
 implication        ,X86   ,AVX                  ,SSE42
 implication        ,X86   ,AVX2                 ,AVX
-implication        ,X86   ,AES                  ,SSE2
 implication        ,X86   ,BMI1                 ,AVX
 implication        ,X86   ,BMI2                 ,AVX
 implication        ,X86   ,FMA                  ,AVX
 implication        ,X86   ,LZCNT                ,X86Base
-implication        ,X86   ,PCLMULQDQ            ,SSE2
-implication        ,X86   ,POPCNT               ,SSE42
-implication        ,X86   ,Vector128            ,SSE
-implication        ,X86   ,Vector256            ,AVX
-implication        ,X86   ,Vector512            ,AVX512F
-implication        ,X86   ,AVXVNNI              ,AVX2
 implication        ,X86   ,MOVBE                ,SSE42
-implication        ,X86   ,X86Serialize         ,X86Base
+
+; x86-64-v4
+
 implication        ,X86   ,EVEX                 ,AVX2
 implication        ,X86   ,EVEX                 ,FMA
 implication        ,X86   ,AVX512F              ,EVEX
 implication        ,X86   ,AVX512F_VL           ,AVX512F
-implication        ,X86   ,AVX512CD             ,AVX512F
-implication        ,X86   ,AVX512CD_VL          ,AVX512CD
-implication        ,X86   ,AVX512CD_VL          ,AVX512F_VL
 implication        ,X86   ,AVX512BW             ,AVX512F
 implication        ,X86   ,AVX512BW_VL          ,AVX512BW
 implication        ,X86   ,AVX512BW_VL          ,AVX512F_VL
+implication        ,X86   ,AVX512CD             ,AVX512F
+implication        ,X86   ,AVX512CD_VL          ,AVX512CD
+implication        ,X86   ,AVX512CD_VL          ,AVX512F_VL
 implication        ,X86   ,AVX512DQ             ,AVX512F
 implication        ,X86   ,AVX512DQ_VL          ,AVX512DQ
 implication        ,X86   ,AVX512DQ_VL          ,AVX512F_VL
 implication        ,X86   ,AVX512VBMI           ,AVX512BW
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512VBMI
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512BW_VL
-implication        ,X86   ,EVEX                 ,AVX2
-implication        ,X86   ,EVEX                 ,FMA
+
+; Unversioned
+
+implication        ,X86   ,AES                  ,SSE2
+implication        ,X86   ,PCLMULQDQ            ,SSE2
+implication        ,X86   ,AVXVNNI              ,AVX2
+implication        ,X86   ,X86Serialize         ,X86Base
+
 implication        ,X86   ,AVX10v1              ,EVEX
 implication        ,X86   ,AVX10v1_V512         ,AVX10v1
 implication        ,X86   ,AVX10v1_V512         ,AVX512F
@@ -152,19 +162,18 @@ implication        ,X86   ,AVX10v1_V512         ,AVX512DQ
 implication        ,X86   ,AVX10v1_V512         ,AVX512DQ_VL
 implication        ,X86   ,AVX10v1_V512         ,AVX512VBMI
 implication        ,X86   ,AVX10v1_V512         ,AVX512VBMI_VL
+
+; These synthetic ISAs need to appear after the core ISAs
+; as they depend on the other implications being correct first
+; otherwise they may not be disabled if the required isa is disabled
+
+implication        ,X86   ,Vector128            ,SSE
+implication        ,X86   ,Vector256            ,AVX
+implication        ,X86   ,Vector512            ,AVX512F
+
 implication        ,X86   ,VectorT128           ,SSE2
 implication        ,X86   ,VectorT256           ,AVX2
 implication        ,X86   ,VectorT512           ,AVX512F
-
-; While the AVX-512 ISAs can be individually lit-up, they really
-; need F, BW, CD, DQ, and VL to be fully functional without adding
-; significant complexity into the JIT. Additionally, unlike AVX/AVX2
-; there was never really any hardware that didn't provide all 5 at
-; once, with the notable exception being Knight's Landing which
-; provided a similar but not quite the same feature.
-implication        ,X86   ,AVX512F              ,AVX512BW_VL
-implication        ,X86   ,AVX512F              ,AVX512CD_VL
-implication        ,X86   ,AVX512F              ,AVX512DQ_VL
 
 ; Definition of X64 instruction sets
 definearch         ,X64   ,64Bit     ,X64, X64

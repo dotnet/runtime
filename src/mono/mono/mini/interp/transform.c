@@ -1221,7 +1221,8 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	if (!mono_jit_call_can_be_supported_by_interp (method, sig, mono_llvm_only))
 		return FALSE;
 
-	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
+	MonoAotModule *amodule = m_class_get_image (method->klass)->aot_module;
+	if (mono_aot_only && amodule && (amodule != AOT_MODULE_NOT_FOUND) && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
 		ERROR_DECL (error);
 		mono_class_init_internal (method->klass);
 		gpointer addr = mono_aot_get_method (method, error);
@@ -2252,6 +2253,56 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 #endif
 		} else if (!strcmp (tm, "InitBlockUnaligned") || !strcmp (tm, "InitBlock")) {
 			*op = MINT_INITBLK;
+		} else if (!strcmp (tm, "IsNullRef")) {
+#if SIZEOF_VOID_P == 4
+			*op = MINT_CEQ0_I4;
+#else
+			// FIXME: No CEQ0_I8
+#endif
+		} else if (!strcmp (tm, "NullRef")) {
+#if SIZEOF_VOID_P == 4
+			*op = MINT_LDC_I4_0;
+#else
+			*op = MINT_LDC_I8_0;
+#endif
+		} else if (!strcmp (tm, "Add")) {
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			MonoType *t = ctx->method_inst->type_argv [0];
+
+			int base_var = td->sp [-2].var,
+				offset_var = td->sp [-1].var,
+				align, esize;
+
+#if SIZEOF_VOID_P == 8
+			if (td->sp [-1].type == STACK_TYPE_I4) {
+				interp_add_ins (td, MINT_CONV_I8_I4);
+				interp_ins_set_sreg (td->last_ins, offset_var);
+				interp_ins_set_dreg (td->last_ins, offset_var);
+			}
+#endif
+
+			td->sp -= 2;
+
+			esize = mono_type_size (t, &align);
+			if (esize != 1) {
+				g_assert (esize <= 32767);
+				interp_add_ins (td, MINT_MUL_P_IMM);
+				td->last_ins->data [0] = (gint16)esize;
+				interp_ins_set_sreg (td->last_ins, offset_var);
+				interp_ins_set_dreg (td->last_ins, offset_var);
+			}
+
+			interp_add_ins (td, MINT_ADD_P);
+			interp_ins_set_sregs2 (td->last_ins, base_var, offset_var);
+			push_simple_type (td, STACK_TYPE_MP);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+
+			td->ip += 5;
+
+			return TRUE;
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
 		if (!strcmp (tm, "get_OffsetToStringData")) {
@@ -8741,12 +8792,18 @@ interp_foreach_ins_var (TransformData *td, InterpInst *ins, gpointer data, void 
 }
 
 int
-interp_compute_native_offset_estimates (TransformData *td)
+interp_compute_native_offset_estimates (TransformData *td, gboolean final_code)
 {
 	InterpBasicBlock *bb;
 	int noe = 0;
+
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins;
+		// FIXME This doesn't currently hold because of bblock reordering potentially
+		// inserting additional instructions after the estimate is computed.
+		//
+		// if (bb->native_offset_estimate)
+		//	g_assert (bb->native_offset_estimate >= noe);
 		bb->native_offset_estimate = noe;
 		if (!td->optimized && bb->patchpoint_bb)
 			noe += 2;
@@ -8765,6 +8822,20 @@ interp_compute_native_offset_estimates (TransformData *td)
 			if (MINT_IS_EMIT_NOP (opcode))
 				continue;
 			noe += interp_get_ins_length (ins);
+
+			if (!final_code && td->optimized &&
+					(ins->flags & INTERP_INST_FLAG_CALL) &&
+					ins->info.call_info &&
+					ins->info.call_info->call_args) {
+				// When code is optimized, for a call, the offset allocator
+				// might end up inserting additional moves for the arguments
+				int *call_args = ins->info.call_info->call_args;
+				while (*call_args != -1) {
+					noe += 4; // mono_interp_oplen [MINT_MOV_VT];
+					call_args++;
+				}
+			}
+
 			if (!td->optimized)
 				interp_foreach_ins_var (td, ins, NULL, alloc_unopt_global_local);
 		}
@@ -9205,7 +9276,7 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 
 	// This iteration could be avoided at the cost of less precise size result, following
 	// super instruction pass
-	size = interp_compute_native_offset_estimates (td);
+	size = interp_compute_native_offset_estimates (td, TRUE);
 
 	// Generate the compacted stream of instructions
 	td->new_code = ip = (guint16*)imethod_alloc0 (td, size * sizeof (guint16));

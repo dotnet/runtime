@@ -4252,8 +4252,7 @@ void emitter::emitIns_Mov(
         {
             if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
             {
-                assert(insOptsNone(opt));
-
+                assert((opt == INS_OPTS_SCALABLE_B) || insOptsNone(opt));
                 opt  = INS_OPTS_SCALABLE_B;
                 attr = EA_SCALABLE;
 
@@ -7882,42 +7881,29 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_sve_ldr:
         {
-            assert(isVectorRegister(reg1));
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
-            fmt      = IF_SVE_IE_2A;
-
-            // TODO-SVE: Don't assume 128bit vectors
-            scale        = NaturalScale_helper(EA_16BYTE);
-            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
+            if (isPredicateRegister(reg1))
             {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
-            }
-            else
-            {
-                useRegForImm      = true;
+                assert(offs == 0);
+                // For predicate, generate based off rsGetRsvdReg()
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-            }
-        }
-        break;
 
-        // TODO-SVE: Fold into INS_sve_ldr once REG_V0 and REG_P0 are distinct
-        case INS_sve_ldr_mask:
-        {
-            assert(isPredicateRegister(reg1));
-            isSimple = false;
-            size     = EA_SCALABLE;
-            attr     = size;
-            fmt      = IF_SVE_ID_2A;
-            ins      = INS_sve_ldr;
+                // add rsvd, fp, #imm
+                emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                // str p0, [rsvd, #0, mul vl]
+                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
+
+                return;
+            }
+
+            assert(isVectorRegister(reg1));
+            fmt = IF_SVE_IE_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8
-            scale        = NaturalScale_helper(EA_2BYTE);
+            scale        = NaturalScale_helper(isVectorRegister(reg1) ? EA_16BYTE : EA_2BYTE);
             ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
 
             if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
@@ -7928,7 +7914,10 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             {
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
             }
         }
         break;
@@ -8161,42 +8150,31 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_sve_str:
         {
-            assert(isVectorRegister(reg1));
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
-            fmt      = IF_SVE_JH_2A;
 
-            // TODO-SVE: Don't assume 128bit vectors
-            scale        = NaturalScale_helper(EA_16BYTE);
-            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+            if (isPredicateRegister(reg1))
+            {
+                assert(offs == 0);
 
-            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-            {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
-            }
-            else
-            {
-                useRegForImm      = true;
+                // For predicate, generate based off rsGetRsvdReg()
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-            }
-        }
-        break;
 
-        // TODO-SVE: Fold into INS_sve_str once REG_V0 and REG_P0 are distinct
-        case INS_sve_str_mask:
-        {
-            assert(isPredicateRegister(reg1));
-            isSimple = false;
-            size     = EA_SCALABLE;
-            attr     = size;
-            fmt      = IF_SVE_JG_2A;
-            ins      = INS_sve_str;
+                // add rsvd, fp, #imm
+                emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                // str p0, [rsvd, #0, mul vl]
+                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
+
+                return;
+            }
+
+            assert(isVectorRegister(reg1));
+            fmt = IF_SVE_JH_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8
-            scale        = NaturalScale_helper(EA_2BYTE);
+            scale        = NaturalScale_helper(isVectorRegister(reg1) ? EA_16BYTE : EA_2BYTE);
             ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
 
             if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
@@ -8207,7 +8185,10 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             {
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
             }
         }
         break;

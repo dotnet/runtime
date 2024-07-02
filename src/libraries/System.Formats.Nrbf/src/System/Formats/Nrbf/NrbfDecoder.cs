@@ -8,6 +8,7 @@ using System.IO;
 using System.Formats.Nrbf.Utils;
 using System.Text;
 using System.Runtime.Serialization;
+using System.Runtime.InteropServices;
 
 namespace System.Formats.Nrbf;
 
@@ -18,33 +19,24 @@ public static class NrbfDecoder
 {
     private static UTF8Encoding ThrowOnInvalidUtf8Encoding { get; } = new(false, throwOnInvalidBytes: true);
 
+    // The header consists of:
+    // - a byte that describes the record type (SerializationRecordType.SerializedStreamHeader)
+    // - four 32 bit integers:
+    //   - root Id (every value is valid)
+    //   - header Id (value is ignored)
+    //   - major version, it has to be equal 1.
+    //   - minor version, it has to be equal 0.
+    private static ReadOnlySpan<byte> HeaderSuffix => [1, 0, 0, 0, 0, 0, 0, 0];
+
     /// <summary>
     /// Checks if given buffer starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
     /// </summary>
     /// <param name="bytes">The buffer to inspect.</param>
     /// <returns><see langword="true" /> if it starts with NRBF payload header; otherwise, <see langword="false" />.</returns>
-    public static bool StartsWithPayloadHeader(byte[] bytes)
-    {
-#if NET
-        ArgumentNullException.ThrowIfNull(bytes);
-#else
-        if (bytes is null)
-        {
-            throw new ArgumentNullException(nameof(bytes));
-        }
-#endif
-
-        return bytes.Length >= SerializedStreamHeaderRecord.Size
-            && bytes[0] == (byte)SerializationRecordType.SerializedStreamHeader
-#if NET
-            && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(9)) == SerializedStreamHeaderRecord.MajorVersion
-            && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(13)) == SerializedStreamHeaderRecord.MinorVersion;
-#else
-            && BitConverter.ToInt32(bytes, 9) == SerializedStreamHeaderRecord.MajorVersion
-            && BitConverter.ToInt32(bytes, 13) == SerializedStreamHeaderRecord.MinorVersion;
-#endif
-    }
-
+    public static bool StartsWithPayloadHeader(ReadOnlySpan<byte> bytes)
+        => bytes.Length >= SerializedStreamHeaderRecord.Size
+        && bytes[0] == (byte)SerializationRecordType.SerializedStreamHeader
+        && bytes.Slice(SerializedStreamHeaderRecord.Size - HeaderSuffix.Length, HeaderSuffix.Length).SequenceEqual(HeaderSuffix);
 
     /// <summary>
     /// Checks if given stream starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
@@ -76,13 +68,13 @@ public static class NrbfDecoder
             return false;
         }
 
-        byte[] buffer = new byte[SerializedStreamHeaderRecord.Size];
-
         try
         {
 #if NET
-            stream.ReadExactly(buffer, 0, buffer.Length);
+            Span<byte> buffer = stackalloc byte[SerializedStreamHeaderRecord.Size];
+            stream.ReadExactly(buffer);
 #else
+            byte[] buffer = new byte[SerializedStreamHeaderRecord.Size];
             int offset = 0;
             while (offset < buffer.Length)
             {

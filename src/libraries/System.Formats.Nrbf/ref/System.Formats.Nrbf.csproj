@@ -9,7 +9,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Hashing\ref\System.IO.Hashing.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\ref\System.Reflection.Metadata.csproj" />
   </ItemGroup>
 

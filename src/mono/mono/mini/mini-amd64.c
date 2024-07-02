@@ -1989,26 +1989,30 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				break;
 			}
 			case ArgSwiftError: {
+				inreg = FALSE;
+				if (ainfo->offset)
+				{
 					ins->opcode = OP_REGOFFSET;
-					offset = ALIGN_TO (offset, sizeof (target_mgreg_t));
 					ins->inst_basereg = cfg->frame_reg;
-					ins->inst_offset = offset;
-					offset += sizeof (target_mgreg_t);
-
-					cfg->arch.swift_error_var = ins;
-
-					/* In the n2m case, the error register functions as an extra return register
-					 * and is thus is not treated as callee-saved.
-					 */
-					if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
-						cfg->used_int_regs |= (size_t)(1 << AMD64_R12);
+					ins->inst_offset = ainfo->offset + ARGS_OFFSET;
+					inreg = TRUE;
 				}
+
+				cfg->arch.swift_error_var = ins;
+
+				/* In the n2m case, the error register functions as an extra return register
+				* and is thus is not treated as callee-saved.
+				*/
+				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+					cfg->used_int_regs |= (size_t)(1 << AMD64_R12);
+
 				break;
+			}
 			default:
 				NOT_IMPLEMENTED;
 			}
 
-			if (!inreg && (ainfo->storage != ArgOnStack) && (ainfo->storage != ArgValuetypeAddrInIReg) && (ainfo->storage != ArgValuetypeAddrOnStack) && (ainfo->storage != ArgGSharedVtOnStack) && (ainfo->storage != ArgSwiftError)) {
+			if (!inreg && (ainfo->storage != ArgOnStack) && (ainfo->storage != ArgValuetypeAddrInIReg) && (ainfo->storage != ArgValuetypeAddrOnStack) && (ainfo->storage != ArgGSharedVtOnStack)) {
 				ins->opcode = OP_REGOFFSET;
 				ins->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
@@ -3121,7 +3125,8 @@ emit_call (MonoCompile *cfg, MonoCallInst *call, guint8 *code, MonoJitICallId ji
 
 				MonoMethod* const method = call->method;
 
-				if (m_class_get_image (method->klass)->aot_module)
+				MonoAotModule *amodule = m_class_get_image (method->klass)->aot_module;
+				if (amodule && (amodule != AOT_MODULE_NOT_FOUND))
 					/* The callee might be an AOT method */
 					near_call = FALSE;
 				if (method->dynamic)
@@ -8259,10 +8264,7 @@ MONO_RESTORE_WARNING
 				break;
 			case ArgSwiftError:
 				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-					if (ainfo->offset) {
-						amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, ARGS_OFFSET + ainfo->offset, 8);
-						amd64_mov_membase_reg (code, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, AMD64_R11, sizeof (target_mgreg_t));
-					} else {
+					if (ainfo->offset == 0) {
 						amd64_mov_membase_reg (code, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, ainfo->reg, sizeof (target_mgreg_t));
 					}
 				} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {

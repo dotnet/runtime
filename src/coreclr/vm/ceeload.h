@@ -616,11 +616,9 @@ private:
         IS_ETW_NOTIFIED             = 0x00000020,
 
         //
-        // Note: the order of these must match the order defined in
-        // cordbpriv.h for DebuggerAssemblyControlFlags. The three
-        // values below should match the values defined in
-        // DebuggerAssemblyControlFlags when shifted right
-        // DEBUGGER_INFO_SHIFT bits.
+        // Note: The values below must match the ones defined in
+        // cordbpriv.h for DebuggerAssemblyControlFlags when shifted
+        // right DEBUGGER_INFO_SHIFT bits.
         //
         DEBUGGER_USER_OVERRIDE_PRIV = 0x00000400,
         DEBUGGER_ALLOW_JIT_OPTS_PRIV= 0x00000800,
@@ -634,11 +632,14 @@ private:
         // Used to indicate that this module has had it's IJW fixups properly installed.
         IS_IJW_FIXED_UP             = 0x00080000,
         IS_BEING_UNLOADED           = 0x00100000,
-
-        // Used to indicate that the module is loaded sufficiently for generic candidate instantiations to work
-        MODULE_READY_FOR_TYPELOAD  = 0x00200000,
-
     };
+
+    static_assert_no_msg(DEBUGGER_USER_OVERRIDE_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_USER_OVERRIDE);
+    static_assert_no_msg(DEBUGGER_ALLOW_JIT_OPTS_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ALLOW_JIT_OPTS);
+    static_assert_no_msg(DEBUGGER_TRACK_JIT_INFO_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_OBSOLETE_TRACK_JIT_INFO);
+    static_assert_no_msg(DEBUGGER_ENC_ENABLED_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ENC_ENABLED);
+    static_assert_no_msg(DEBUGGER_PDBS_COPIED >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_PDBS_COPIED);
+    static_assert_no_msg(DEBUGGER_IGNORE_PDBS >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_IGNORE_PDBS);
 
     enum {
         // These are the values set in m_dwPersistedFlags.
@@ -653,9 +654,7 @@ private:
         WRAP_EXCEPTIONS             = 0x00000020,
 
         // unused                   = 0x00000040,
-
-        // This flag applies to assembly, but is also stored here so that it can be cached in ngen image
-        COLLECTIBLE_MODULE          = 0x00000080,
+        // unused                   = 0x00000080,
 
         //If attribute value has been cached before
         DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED   = 0x00000400,
@@ -679,7 +678,6 @@ private:
     PTR_Assembly            m_pAssembly;
 
     CrstExplicitInit        m_Crst;
-    CrstExplicitInit        m_FixupCrst;
 
     // Debugging symbols reader interface. This will only be
     // initialized if needed, either by the debugging subsystem or for
@@ -808,16 +806,8 @@ private:
     // m_pAvailableClasses.
     PTR_EEClassHashTable    m_pAvailableClassesCaseIns;
 
-    // Pointer to binder, if we have one
-    friend class CoreLibBinder;
-    PTR_CoreLibBinder      m_pBinder;
-
 public:
-    BOOL IsCollectible()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_dwPersistedFlags & COLLECTIBLE_MODULE) != 0;
-    }
+    BOOL IsCollectible();
 
 #ifdef FEATURE_READYTORUN
 private:
@@ -860,8 +850,6 @@ protected:
 
     PTR_PEAssembly GetPEAssembly() const { LIMITED_METHOD_DAC_CONTRACT; return m_pPEAssembly; }
 
-    BOOL IsManifest();
-
     void ApplyMetaData();
 
     void FixupVTables();
@@ -878,7 +866,7 @@ protected:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        _ASSERTE(IsReflection());
+        _ASSERTE(IsReflectionEmit());
         return dac_cast<PTR_ReflectionModule>(this);
     }
 
@@ -898,8 +886,7 @@ protected:
     CodeVersionManager * GetCodeVersionManager();
 #endif
 
-    BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetPEAssembly()->IsDynamic(); }
-    BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsDynamic(); }
+    BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsReflectionEmit(); }
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
     // Returns true iff the debugger can see this module.
     BOOL IsVisibleToDebugger();
@@ -944,24 +931,6 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-
-    // This means the module has been sufficiently fixed up/security checked
-    // that type loads can occur in domains. This is not sufficient to indicate
-    // that domain-specific types can be loaded when applied to domain-neutral modules
-    BOOL IsReadyForTypeLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwTransientFlags & MODULE_READY_FOR_TYPELOAD;
-    }
-
-#ifndef DACCESS_COMPILE
-    VOID SetIsReadyForTypeLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_dwTransientFlags, MODULE_READY_FOR_TYPELOAD);
-    }
-#endif
-
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
     VOID EnsureAllocated();
@@ -990,7 +959,7 @@ public:
         SUPPORTS_DAC;
 
 #ifdef DACCESS_COMPILE
-        if (IsReflection())
+        if (IsReflectionEmit())
         {
             return DacGetMDImport(GetReflectionModule(), true);
         }
@@ -1505,11 +1474,6 @@ public:
     InstrumentedILOffsetMapping GetInstrumentedILOffsetMapping(mdMethodDef token);
 
 public:
-    CrstBase*           GetFixupCrst()
-    {
-        return &m_FixupCrst;
-    }
-
     // LoaderHeap for storing IJW thunks
     PTR_LoaderHeap           m_pThunkHeap;
 

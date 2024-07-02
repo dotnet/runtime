@@ -925,7 +925,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
 
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
-    gc_alloc_context* ac = pThread->GetAllocContext();
+    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context;
     currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;
@@ -1012,7 +1012,10 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
     for (Thread *pThread = ThreadStore::GetThreadList(NULL); pThread; pThread = ThreadStore::GetThreadList(pThread))
     {
         gc_alloc_context* ac = pThread->GetAllocContext();
-        allocated -= ac->alloc_limit - ac->alloc_ptr;
+        if (ac != nullptr)
+        {
+            allocated -= ac->alloc_limit - ac->alloc_ptr;
+        }
     }
 
     ThreadSuspend::RestartEE(FALSE, TRUE);
@@ -1621,7 +1624,8 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
     }
 
     if (mt->ContainsPointers()
-        || mt->IsNotTightlyPacked())
+        || mt->IsNotTightlyPacked()
+        || mt->GetClass()->IsInlineArray())
     {
         mt->SetHasCheckedCanCompareBitsOrUseFastGetHashCode();
         return FALSE;
@@ -1674,13 +1678,16 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
     return canCompareBitsOrUseFastGetHashCode;
 }
 
-extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable * mt)
+extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
 {
     QCALL_CONTRACT;
 
     BOOL ret = FALSE;
 
     BEGIN_QCALL;
+
+    if (mt->GetClass()->IsInlineArray())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_InlineArrayEqualsGetHashCode"));
 
     ret = CanCompareBitsOrUseFastGetHashCode(mt);
 
@@ -1809,6 +1816,18 @@ FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 {
     FCALL_CONTRACT;
     return mt->GetNumInstanceFieldBytes();
+}
+FCIMPLEND
+
+FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTable* mt)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(mt->IsTruePrimitive() || mt->IsEnum());
+
+    // MethodTable::GetInternalCorElementType has unnecessary overhead for primitives and enums
+    // Call EEClass::GetInternalCorElementType directly to avoid it
+    return mt->GetClass()->GetInternalCorElementType();
 }
 FCIMPLEND
 

@@ -995,7 +995,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     assert(sig->numArgs == 1);
                     assert(varTypeIsLong(simdBaseType));
                     NamedIntrinsic intrinsic = NI_Illegal;
-                    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                    if ((simdSize != 64) && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                     {
                         if (simdSize == 32)
                         {
