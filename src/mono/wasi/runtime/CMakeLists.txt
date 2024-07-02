@@ -16,6 +16,8 @@ target_link_libraries(dotnet
     PRIVATE
     ${CMAKE_SYSROOT}/lib/wasm32-wasip2/libc++.a
     ${CMAKE_SYSROOT}/lib/wasm32-wasip2/libc++abi.a
+    # TODO this makes hard dependency on wasi:http@0.2.0, ideally this would be trimmable when HTTP is not used
+    ${LIB_ROOT_DIR}/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.o
     ${ICU_LIB_DIR}/libicudata.a
     ${ICU_LIB_DIR}/libicuuc.a
     ${ICU_LIB_DIR}/libicui18n.a
