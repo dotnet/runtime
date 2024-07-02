@@ -80,7 +80,7 @@ mono_locks_tracer_init (void)
 		return;
 
 	name = g_strdup_printf ("locks.%d", getpid ());
-	trace_file = fopen (name, "w+");
+	trace_file = g_fopen (name, "w+");
 	g_free (name);
 
 #ifdef TARGET_OSX

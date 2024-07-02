@@ -118,7 +118,7 @@ get_dl_name_from_libtool (const char *libtool_file)
 	FILE* file;
 	char buf [512];
 	char *line, *dlname = NULL, *libdir = NULL, *installed = NULL;
-	if (!(file = fopen (libtool_file, "r")))
+	if (!(file = g_fopen (libtool_file, "r")))
 		return NULL;
 	while ((line = fgets (buf, 512, file))) {
 		while (*line && isspace (*line))

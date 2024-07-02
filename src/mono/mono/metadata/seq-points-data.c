@@ -395,7 +395,7 @@ mono_seq_point_data_read (SeqPointData *data, char *path)
 	long fsize;
 	FILE *f;
 
-	f = fopen (path, "r");
+	f = g_fopen (path, "r");
 	if (!f)
 		return FALSE;
 
@@ -440,7 +440,7 @@ mono_seq_point_data_write (SeqPointData *data, char *path)
 	FILE *f;
 	int i, size = 0;
 
-	f = fopen (path, "w+");
+	f = g_fopen (path, "w+");
 	if (!f)
 		return FALSE;
 

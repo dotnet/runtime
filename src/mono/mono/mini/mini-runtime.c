@@ -1987,7 +1987,7 @@ mono_enable_jit_map (void)
 		char name [64];
 		g_snprintf (name, sizeof (name), "/tmp/perf-%d.map", getpid ());
 		unlink (name);
-		perf_map_file = fopen (name, "w");
+		perf_map_file = g_fopen (name, "w");
 	}
 }
 
@@ -2112,7 +2112,7 @@ mono_enable_jit_dump (void)
 
 		g_snprintf (name, sizeof (name), "/tmp/jit-%d.dump", perf_dump_pid);
 		unlink (name);
-		perf_dump_file = fopen (name, "w+");
+		perf_dump_file = g_fopen (name, "w+");
 
 		add_file_header_info (&header);
 		if (perf_dump_file) {
@@ -3140,7 +3140,7 @@ mono_set_bisect_methods (guint32 opt, const char *method_list_filename)
 	bisect_methods_hash = g_hash_table_new (g_str_hash, g_str_equal);
 	g_assert (bisect_methods_hash);
 
-	file = fopen (method_list_filename, "r");
+	file = g_fopen (method_list_filename, "r");
 	g_assert (file);
 
 	while (fgets (method_name, sizeof (method_name), file)) {

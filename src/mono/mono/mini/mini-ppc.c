@@ -575,7 +575,7 @@ mono_arch_init (void)
 	AuxVec vec [MAX_AUX_ENTRIES];
 	int i, vec_entries = 0;
 	/* sadly this will work only with 2.6 kernels... */
-	FILE* f = fopen ("/proc/self/auxv", "rb");
+	FILE* f = g_fopen ("/proc/self/auxv", "rb");
 
 	if (f) {
 		vec_entries = fread (&vec, sizeof (AuxVec), MAX_AUX_ENTRIES, f);

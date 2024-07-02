@@ -963,7 +963,7 @@ dump_object_callback (GCObject *obj, size_t size, gboolean dump_location)
 void
 sgen_debug_enable_heap_dump (const char *filename)
 {
-	heap_dump_file = fopen (filename, "w");
+	heap_dump_file = g_fopen (filename, "w");
 	if (heap_dump_file) {
 		fprintf (heap_dump_file, "<sgen-dump>\n");
 		sgen_pin_stats_enable ();

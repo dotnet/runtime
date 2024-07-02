@@ -49,7 +49,7 @@
 #define utimbuf _utimbuf
 #define utime _utime
 
-#define fopen ms_fopen
+#define g_fopen ms_fopen
 #define open ms_open
 
 #define chmod(F, P) (0)
@@ -593,7 +593,7 @@ static BROTLI_BOOL OpenInputFile(const char* input_path, FILE** f) {
     *f = fdopen(MAKE_BINARY(STDIN_FILENO), "rb");
     return BROTLI_TRUE;
   }
-  *f = fopen(input_path, "rb");
+  *f = g_fopen(input_path, "rb");
   if (!*f) {
     fprintf(stderr, "failed to open input file [%s]: %s\n",
             PrintablePath(input_path), strerror(errno));
@@ -627,7 +627,7 @@ static BROTLI_BOOL OpenOutputFile(const char* output_path, FILE** f,
 }
 
 static int64_t FileSize(const char* path) {
-  FILE* f = fopen(path, "rb");
+  FILE* f = g_fopen(path, "rb");
   int64_t retval;
   if (f == NULL) {
     return -1;

@@ -244,7 +244,7 @@ test_validity_name (int validity)
 static char*
 read_whole_file_and_close (const char *name, int *file_size)
 {
-	FILE *file = fopen (name, "ro");
+	FILE *file = g_fopen (name, "ro");
 	char *res;
 	int fsize;
 
@@ -592,7 +592,7 @@ process_test_entry (test_set_t *test_set, test_entry_t *entry)
 
 	file_name = make_test_name (entry, test_set);
 
-	f = fopen (file_name, "wo");
+	f = g_fopen (file_name, "wo");
 	fwrite (entry->data, entry->data_size, 1, f);
 	fclose (f);
 

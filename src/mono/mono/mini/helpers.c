@@ -131,7 +131,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #ifdef HOST_WIN32
 	as_file = g_strdup_printf ("%s/test.s", tmp);
 
-	if (!(ofd = fopen (as_file, "w")))
+	if (!(ofd = g_fopen (as_file, "w")))
 		g_assert_not_reached ();
 #else
 	i = g_file_open_tmp (NULL, &as_file, NULL);

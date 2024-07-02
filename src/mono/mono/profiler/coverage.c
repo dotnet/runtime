@@ -836,7 +836,7 @@ get_file_content (const gchar *filename)
 	int res, offset = 0;
 	FILE *stream;
 
-	stream = fopen (filename, "r");
+	stream = g_fopen (filename, "r");
 	if (stream == NULL)
 		return NULL;
 
@@ -1170,7 +1170,7 @@ mono_profiler_init_coverage (const char *desc)
 	} else if (*coverage_config.output_filename == '#') {
 		coverage_profiler.file = fdopen (strtol (coverage_config.output_filename + 1, NULL, 10), "a");
 	} else {
-		coverage_profiler.file = fopen (coverage_config.output_filename, "w");
+		coverage_profiler.file = g_fopen (coverage_config.output_filename, "w");
 	}
 
 	if (!coverage_profiler.file) {

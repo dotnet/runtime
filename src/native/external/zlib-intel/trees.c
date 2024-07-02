@@ -321,7 +321,7 @@ local void tr_static_init()
 
 void gen_trees_header()
 {
-    FILE *header = fopen("trees.h", "w");
+    FILE *header = g_fopen("trees.h", "w");
     int i;
 
     Assert (header != NULL, "Can't open trees.h");

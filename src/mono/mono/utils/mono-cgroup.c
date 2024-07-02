@@ -126,7 +126,7 @@ readMemoryValueFromFile(const char* filename, size_t* val)
 	FILE *file = NULL;
 
 	if (val != NULL) {
-		file = fopen (filename, "r");
+		file = g_fopen (filename, "r");
 		if (file != NULL) {
 			if (getline (&line, &lineLen, file) != -1) {
 				errno = 0;
@@ -337,7 +337,7 @@ findHierarchyMount(gboolean (*is_subsystem)(const char *), char** pmountpath, ch
 	char *mountpath = NULL;
 	char *mountroot = NULL;
 
-	FILE *mountinfofile = fopen (PROC_MOUNTINFO_FILENAME, "r");
+	FILE *mountinfofile = g_fopen (PROC_MOUNTINFO_FILENAME, "r");
 	if (mountinfofile == NULL) 
 		goto done;
 
@@ -432,7 +432,7 @@ findCGroupPathForSubsystem(gboolean (*is_subsystem)(const char *))
 	char *cgroup_path = NULL;
 	gboolean result = FALSE;
 
-	FILE *cgroupfile = fopen (PROC_CGROUP_FILENAME, "r");
+	FILE *cgroupfile = g_fopen (PROC_CGROUP_FILENAME, "r");
 	if (cgroupfile == NULL)
 		goto done;
 
@@ -568,7 +568,7 @@ getCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFile
 	if (asprintf (&stat_filename, "%s%s", s_memory_cgroup_path, CGROUP_MEMORY_STAT_FILENAME) < 0)
 		return FALSE;
 
-	FILE *stat_file = fopen (stat_filename, "r");
+	FILE *stat_file = g_fopen (stat_filename, "r");
 	free (stat_filename);
 	if (stat_file == NULL)
 		return FALSE;
@@ -689,7 +689,7 @@ mono_get_memory_used(size_t *val)
 		return TRUE;
 
 	// process resident set size.
-	FILE* file = fopen (PROC_STATM_FILENAME, "r");
+	FILE* file = g_fopen (PROC_STATM_FILENAME, "r");
 	if (file != NULL && getline (&line, &linelen, file) != -1) {
 		char* context = NULL;
 		char* strTok = strtok_r (line, " ", &context);
@@ -799,7 +799,7 @@ getCGroup2CpuLimit(guint32 *val)
 	if (asprintf (&filename, "%s%s", s_cpu_cgroup_path, CGROUP2_CPU_MAX_FILENAME) < 0)
 		return FALSE;
 
-	file = fopen (filename, "r");
+	file = g_fopen (filename, "r");
 	if (file == NULL)
 		goto done;
 
@@ -922,7 +922,7 @@ readLongLongValueFromFile(const char *filename, long long *val)
 	if (val == NULL)
 		return FALSE;
 
-	FILE *file = fopen (filename, "r");
+	FILE *file = g_fopen (filename, "r");
 	if (file == NULL)
 		return FALSE;
 

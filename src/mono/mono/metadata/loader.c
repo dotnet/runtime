@@ -1195,9 +1195,18 @@ mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, Mono
 		return result;
 
 
-	result = mono_get_method_from_token (image, token, klass, context, &used_context, error);
+	result = mono_get_method_from_token (image, token, klass, context, &used_context, error); // WHY the 1st call returns NULL when the 2nd does not?
 	if (!result)
-		return NULL;
+	{
+		g_print("mono_get_method_checked it seems result was NULL, check: result is %sNULL.\n", result == NULL ? "" : "not ");
+		result = mono_get_method_from_token (image, token, klass, context, &used_context, error);
+		if (!result)
+		{
+			g_print("mono_get_method_checked after re-call it stayed NULL\n");
+			return NULL;
+		}
+		g_print("mono_get_method_checked after re-call with logging: result is %sNULL.\n", result == NULL ? "" : "not ");
+	}
 
 	mono_image_lock (image);
 	if (!used_context && !result->is_inflated) {
@@ -1941,7 +1950,7 @@ mono_method_signature_internal_slow (MonoMethod *m)
 	if (sig)
 		return sig;
 	char *type_name = mono_type_get_full_name (m->klass);
-	g_warning ("Could not load signature of %s:%s due to: %s", type_name, m->name, mono_error_get_message (error));
+	g_warning ("Could not load signature of %s:%s due to: %s", type_name, m->name, mono_error_get_message (error)); // HERE
 	g_free (type_name);
 	mono_error_cleanup (error);
 	return NULL;

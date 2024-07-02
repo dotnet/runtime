@@ -128,9 +128,9 @@ ipc_get_process_id_disambiguation_key (
 	char stat_file_name [64];
 	snprintf (stat_file_name, sizeof (stat_file_name), "/proc/%d/stat", process_id);
 
-	FILE *stat_file = fopen (stat_file_name, "r");
+	FILE *stat_file = g_fopen (stat_file_name, "r");
 	if (!stat_file) {
-		EP_ASSERT (!"Failed to get start time of a process, fopen failed.");
+		EP_ASSERT (!"Failed to get start time of a process, g_fopen failed.");
 		return false;
 	}
 

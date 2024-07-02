@@ -622,7 +622,7 @@ dump_graph (void)
 	int edge_id = 0;
 
 	sprintf (filename, "%s.%d.gexf", dump_prefix, counter++);
-	file = fopen (filename, "w");
+	file = g_fopen (filename, "w");
 
 	if (file == NULL) {
 		fprintf (stderr, "Warning: Could not open bridge dump file `%s` for writing: %s\n", filename, strerror (errno));

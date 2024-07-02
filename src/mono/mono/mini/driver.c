@@ -2091,7 +2091,7 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "error: --statfile requires a filename argument\n");
 				return 1;
 			}
-			mini_stats_fd = fopen (argv [++i], "w+");
+			mini_stats_fd = g_fopen (argv [++i], "w+");
 		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
 			opt = parse_optimizations (opt, argv [i] + 11, TRUE);
 		} else if (strncmp (argv [i], "-O=", 3) == 0) {

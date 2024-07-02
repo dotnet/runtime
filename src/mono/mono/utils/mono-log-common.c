@@ -71,7 +71,7 @@ mono_log_open_logfile(const char *path, void *userData)
 		logFile = stdout;
 	} else {
 #ifndef HOST_WIN32
-		logFile = fopen(path, "w");
+		logFile = g_fopen(path, "w");
 #else
 		gunichar2 *wPath = g_utf8_to_utf16(path, -1, 0, 0, 0);
 		if (wPath != NULL) {

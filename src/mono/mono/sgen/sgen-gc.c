@@ -3753,7 +3753,7 @@ sgen_gc_init (void)
 					opt++;
 				if (opt [0]) {
 					char *rf = g_strdup_printf ("%s.%d", opt, mono_process_current_pid ());
-					sgen_gc_debug_file = fopen (rf, "wb");
+					sgen_gc_debug_file = g_fopen (rf, "wb");
 					if (!sgen_gc_debug_file)
 						sgen_gc_debug_file = stderr;
 					g_free (rf);
