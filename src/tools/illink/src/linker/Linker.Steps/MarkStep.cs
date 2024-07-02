@@ -3505,12 +3505,8 @@ namespace Mono.Linker.Steps
 			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), origin);
 			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), origin);
 
-			if (!Annotations.MarkProcessed (evt, reason))
-				return;
-
-			var eventOrigin = new MessageOrigin (evt);
-			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt), eventOrigin);
-			DoAdditionalEventProcessing (evt);
+			Tracer.AddDirectDependency (evt, reason, true);
+			_dependencyGraph.AddRoot (_nodeFactory.GetEventDefinitionNode (evt), Enum.GetName (reason.Kind));
 		}
 
 		internal void MarkMethodIfNotNull (MethodReference method, in DependencyInfo reason, in MessageOrigin origin)

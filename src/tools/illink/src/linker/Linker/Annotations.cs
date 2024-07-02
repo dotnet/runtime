@@ -279,6 +279,12 @@ namespace Mono.Linker
 			return processed.Add (provider);
 		}
 
+		internal bool MarkProcessed (IMetadataTokenProvider provider)
+		{
+			marked_pending.Remove (provider);
+			return processed.Add (provider);
+		}
+
 		public TypeDefinition[] GetPendingPreserve ()
 		{
 			return pending_preserve.ToArray ();
