@@ -664,6 +664,7 @@ namespace System.Numerics
                 {
                     return new Complex(double.PositiveInfinity, double.NaN);
                 }
+                return new Complex(double.NaN, double.NaN);
             }
 
             if (value.m_imaginary == 0.0)
