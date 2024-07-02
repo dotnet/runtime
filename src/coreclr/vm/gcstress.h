@@ -90,7 +90,7 @@ namespace GCStressPolicy
     } UNUSED_ATTR;
 
     FORCEINLINE bool IsEnabled()
-    { return Interlocked::ExchangeAdd(&InhibitHolder::s_nGcStressDisabled, 0) == 0; }
+    { return VolatileLoadWithoutBarrier(&InhibitHolder::s_nGcStressDisabled) == 0; }
 
     FORCEINLINE void GlobalDisable()
     { Interlocked::Increment(&InhibitHolder::s_nGcStressDisabled); }
