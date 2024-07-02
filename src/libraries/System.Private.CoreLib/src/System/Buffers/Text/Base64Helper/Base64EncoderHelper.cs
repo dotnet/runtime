@@ -677,20 +677,10 @@ namespace System.Buffers.Text
                 uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
                 uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
 
-                if (BitConverter.IsLittleEndian)
-                {
-                    dest[0] = (byte)i0;
-                    dest[1] = (byte)i1;
-                    dest[2] = (byte)EncodingPad;
-                    dest[3] = (byte)EncodingPad;
-                }
-                else
-                {
-                    dest[3] = (byte)i0;
-                    dest[2] = (byte)i1;
-                    dest[1] = (byte)EncodingPad;
-                    dest[0] = (byte)EncodingPad;
-                }
+                dest[0] = (byte)i0;
+                dest[1] = (byte)i1;
+                dest[2] = (byte)EncodingPad;
+                dest[3] = (byte)EncodingPad;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -705,20 +695,10 @@ namespace System.Buffers.Text
                 uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
                 uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
 
-                if (BitConverter.IsLittleEndian)
-                {
-                    dest[0] = (byte)i0;
-                    dest[1] = (byte)i1;
-                    dest[2] = (byte)i2;
-                    dest[3] = (byte)EncodingPad;
-                }
-                else
-                {
-                    dest[3] = (byte)i0;
-                    dest[2] = (byte)i1;
-                    dest[1] = (byte)i2;
-                    dest[0] = (byte)EncodingPad;
-                }
+                dest[0] = (byte)i0;
+                dest[1] = (byte)i1;
+                dest[2] = (byte)i2;
+                dest[3] = (byte)EncodingPad;
             }
 
 #if NET
@@ -768,20 +748,10 @@ namespace System.Buffers.Text
                 byte i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
                 byte i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
 
-                if (BitConverter.IsLittleEndian)
-                {
-                    destination[0] = i0;
-                    destination[1] = i1;
-                    destination[2] = i2;
-                    destination[3] = i3;
-                }
-                else
-                {
-                    destination[3] = i0;
-                    destination[2] = i1;
-                    destination[1] = i2;
-                    destination[0] = i3;
-                }
+                destination[0] = i0;
+                destination[1] = i1;
+                destination[2] = i2;
+                destination[3] = i3;
             }
         }
 
