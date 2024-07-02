@@ -17,7 +17,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// corresponding error code.
 /// </remarks>
 [GeneratedComClass]
-internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
+internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface9
 {
     private readonly Target _target;
 
@@ -109,6 +109,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 
     public unsafe int GetObjectClassName(ulong obj, uint count, char* className, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetObjectData(ulong objAddr, void* data) => HResults.E_NOTIMPL;
+    public unsafe int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data) => HResults.E_NOTIMPL;
     public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
@@ -192,6 +193,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetTLSIndex(uint* pIndex) => HResults.E_NOTIMPL;
     public unsafe int GetUsefulGlobals(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetWorkRequestData(ulong addrWorkRequest, void* data) => HResults.E_NOTIMPL;
+    public unsafe int IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy) => HResults.E_NOTIMPL;
     public unsafe int TraverseEHInfo(ulong ip, void* pCallback, void* token) => HResults.E_NOTIMPL;
     public unsafe int TraverseLoaderHeap(ulong loaderHeapAddr, void* pCallback) => HResults.E_NOTIMPL;
     public unsafe int TraverseModuleMap(int mmt, ulong moduleAddr, void* pCallback, void* token) => HResults.E_NOTIMPL;
