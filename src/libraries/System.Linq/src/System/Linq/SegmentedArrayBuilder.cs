@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Collections.Generic
 {
@@ -242,6 +243,28 @@ namespace System.Collections.Generic
             {
                 result = GC.AllocateUninitializedArray<T>(count);
                 ToSpanInlined(result);
+            }
+            else
+            {
+                result = [];
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a list containing all of the elements in the builder.</summary>
+        public readonly List<T> ToList()
+        {
+            List<T> result;
+            int count = Count;
+
+            if (count != 0)
+            {
+                result = new List<T>(count);
+
+                CollectionsMarshal.SetCount(result, count);
+                Span<T> span = CollectionsMarshal.AsSpan(result);
+                ToSpanInlined(span);
             }
             else
             {
