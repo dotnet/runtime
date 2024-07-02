@@ -9203,6 +9203,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 	}
 	case MDBGPROT_CMD_METHOD_GET_CLASS_TOKEN: {
 		buffer_add_int (buf, m_class_get_type_token (method->klass));
+		break;
 	}
 	case CMD_METHOD_GET_DECLARING_TYPE: {
 		buffer_add_typeid (buf, domain, method->klass);
