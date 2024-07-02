@@ -3427,6 +3427,29 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_GatherPrefetch16Bit:
+            case NI_Sve_GatherPrefetch32Bit:
+            case NI_Sve_GatherPrefetch64Bit:
+                assert(hasImmediateOperand);
+                if (!varTypeIsSIMD(intrin.op2->gtType))
+                {
+                    assert(varTypeIsIntegral(intrin.op4));
+                    if (intrin.op4->IsCnsIntOrI())
+                    {
+                        MakeSrcContained(node, intrin.op4);
+                    }
+                }
+                else
+                {
+                    assert(varTypeIsIntegral(intrin.op3));
+                    if (intrin.op3->IsCnsIntOrI())
+                    {
+                        MakeSrcContained(node, intrin.op3);
+                    }
+                }
+                break;
+
             case NI_Sve_SaturatingDecrementBy16BitElementCount:
             case NI_Sve_SaturatingDecrementBy32BitElementCount:
             case NI_Sve_SaturatingDecrementBy64BitElementCount:
