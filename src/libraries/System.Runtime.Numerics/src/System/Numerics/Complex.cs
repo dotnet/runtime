@@ -65,7 +65,8 @@ namespace System.Numerics
 
         public static Complex FromPolarCoordinates(double magnitude, double phase)
         {
-            return new Complex(magnitude * Math.Cos(phase), magnitude * Math.Sin(phase));
+            (double sin, double cos) = Math.SinCos(phase);
+            return new Complex(magnitude * cos, magnitude * sin);
         }
 
         public static Complex Negate(Complex value)
@@ -414,7 +415,8 @@ namespace System.Numerics
 
         public static Complex Sin(Complex value)
         {
-            return new Complex(Math.Sin(value.m_real) * Math.Cosh(value.m_imaginary), Math.Cos(value.m_real) * Math.Sinh(value.m_imaginary));
+            (double sin, double cos) = Math.SinCos(value.m_real);
+            return new Complex(sin * Math.Cosh(value.m_imaginary), cos * Math.Sinh(value.m_imaginary));
             // There is a known limitation with this algorithm: inputs that cause sinh and cosh to overflow, but for
             // which sin or cos are small enough that sin * cosh or cos * sinh are still representable, nonetheless
             // produce overflow. For example, Sin((0.01, 711.0)) should produce (~3.0E306, PositiveInfinity), but
@@ -451,7 +453,8 @@ namespace System.Numerics
 
         public static Complex Cos(Complex value)
         {
-            return new Complex(Math.Cos(value.m_real) * Math.Cosh(value.m_imaginary), -Math.Sin(value.m_real) * Math.Sinh(value.m_imaginary));
+            (double sin, double cos) = Math.SinCos(value.m_real);
+            return new Complex(cos * Math.Cosh(value.m_imaginary), -sin * Math.Sinh(value.m_imaginary));
         }
 
         public static Complex Cosh(Complex value)
@@ -494,16 +497,17 @@ namespace System.Numerics
 
             double x2 = 2.0 * value.m_real;
             double y2 = 2.0 * value.m_imaginary;
+            (double sin, double cos) = Math.SinCos(x2);
             double cosh = Math.Cosh(y2);
             if (Math.Abs(value.m_imaginary) <= 4.0)
             {
-                double D = Math.Cos(x2) + cosh;
-                return new Complex(Math.Sin(x2) / D, Math.Sinh(y2) / D);
+                double D = cos + cosh;
+                return new Complex(sin / D, Math.Sinh(y2) / D);
             }
             else
             {
-                double D = 1.0 + Math.Cos(x2) / cosh;
-                return new Complex(Math.Sin(x2) / cosh / D, Math.Tanh(y2) / D);
+                double D = 1.0 + cos / cosh;
+                return new Complex(sin / cosh / D, Math.Tanh(y2) / D);
             }
         }
 
@@ -663,9 +667,7 @@ namespace System.Numerics
         public static Complex Exp(Complex value)
         {
             double expReal = Math.Exp(value.m_real);
-            double cosImaginary = expReal * Math.Cos(value.m_imaginary);
-            double sinImaginary = expReal * Math.Sin(value.m_imaginary);
-            return new Complex(cosImaginary, sinImaginary);
+            return FromPolarCoordinates(expReal, value.m_imaginary);
         }
 
         public static Complex Sqrt(Complex value)
@@ -770,9 +772,9 @@ namespace System.Numerics
             double theta = Math.Atan2(valueImaginary, valueReal);
             double newRho = powerReal * theta + powerImaginary * Math.Log(rho);
 
-            double t = Math.Pow(rho, powerReal) * Math.Pow(Math.E, -powerImaginary * theta);
+            double t = Math.Pow(rho, powerReal) * Math.Exp(-powerImaginary * theta);
 
-            return new Complex(t * Math.Cos(newRho), t * Math.Sin(newRho));
+            return FromPolarCoordinates(t, newRho);
         }
 
         public static Complex Pow(Complex value, double power)
