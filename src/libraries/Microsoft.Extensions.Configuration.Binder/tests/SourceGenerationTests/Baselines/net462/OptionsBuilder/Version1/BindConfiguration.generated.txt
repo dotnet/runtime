@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region OptionsBuilder<TOptions> extensions.
         /// <summary>Registers the dependency injection container to bind <typeparamref name="TOptions"/> against the <see cref="IConfiguration"/> obtained from the DI service provider.</summary>
-        [InterceptsLocation(1, "l8J97SL0L7K7qKFZC0gWZoMBAABzcmMtMC5jcw==")] // src-0.cs(12,24)
+        [InterceptsLocation(1, "dQtLTBW+V+KExKSKfSGYWHgBAABzcmMtMC5jcw==")] // src-0.cs(12,24)
         public static OptionsBuilder<TOptions> BindConfiguration<TOptions>(this OptionsBuilder<TOptions> optionsBuilder, string configSectionPath, Action<BinderOptions>? configureBinder = null) where TOptions : class
         {
             if (optionsBuilder is null)

@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IConfiguration extensions.
         /// <summary>Extracts the value with the specified key and converts it to the specified type.</summary>
-        [InterceptsLocation(1, "DMnGweH6bi+nQ1FoKT20NRwBAABzcmMtMC5jcw==")] // src-0.cs(10,20)
+        [InterceptsLocation(1, "l6og4h0k+MCB+NyRUYPpBRMBAABzcmMtMC5jcw==")] // src-0.cs(10,20)
         public static T? GetValue<T>(this IConfiguration configuration, string key) => (T?)(BindingExtensions.GetValueCore(configuration, typeof(T), key) ?? default(T));
         #endregion IConfiguration extensions.
 

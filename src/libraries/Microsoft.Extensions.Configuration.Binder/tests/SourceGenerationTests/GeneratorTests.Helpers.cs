@@ -101,26 +101,19 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.True(source.Value.SourceText.Lines.Count > 10);
         }
 
-        /// <summary>
-        /// Use the same approach as ConfigurationBindingGenerator to look for the GetInterceptableLocation() extension method
-        /// to determine if what interceptor implemenation we should use.
-        /// </summary>
-        /// <returns></returns>
         private static bool s_initializedInterceptorVersion;
         private static int s_interceptorVersion;
         private static int GetInterceptorVersion()
         {
             if (!s_initializedInterceptorVersion)
             {
+                MethodInfo method = typeof(ConfigurationBindingGenerator).GetMethod(
+                    "DetermineInterceptableVersion",
+                    BindingFlags.Static | BindingFlags.NonPublic);
 
-                MethodInfo method = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).GetMethod(
-                    "GetInterceptableLocation",
-                    BindingFlags.Static | BindingFlags.Public,
-                    binder: null,
-                    new Type[] { typeof(SemanticModel), typeof(InvocationExpressionSyntax), typeof(CancellationToken) },
-                    modifiers: Array.Empty<ParameterModifier>());
+                Assert.NotNull(method);
 
-                s_interceptorVersion = method is null ? 0 : 1;
+                s_interceptorVersion = (int)method.Invoke(null, null);
                 s_initializedInterceptorVersion = true;
             }
 
@@ -147,6 +140,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             string baseline = LineEndingsHelper.Normalize(File.ReadAllText(path));
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
                                              .Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+
+            // Normalize the source since the interceptor attribute uses a hash of the text.
+            testSourceCode = testSourceCode.Replace("\r\n", "\n");
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(testSourceCode);
             result.ValidateDiagnostics(expectedDiags);

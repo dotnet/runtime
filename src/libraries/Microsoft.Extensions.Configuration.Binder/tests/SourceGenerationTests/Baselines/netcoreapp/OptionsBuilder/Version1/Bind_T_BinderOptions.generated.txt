@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region OptionsBuilder<TOptions> extensions.
         /// <summary>Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.</summary>
-        [InterceptsLocation(1, "UtGYIQ6mz2qWoo+RXjewRu8BAABzcmMtMC5jcw==")] // src-0.cs(15,24)
+        [InterceptsLocation(1, "eAEQHTx/qUZMzyaWapEG3uEBAABzcmMtMC5jcw==")] // src-0.cs(15,24)
         public static OptionsBuilder<TOptions> Bind<TOptions>(this OptionsBuilder<TOptions> optionsBuilder, IConfiguration config, Action<BinderOptions>? configureBinder) where TOptions : class
         {
             ArgumentNullException.ThrowIfNull(optionsBuilder);

@@ -35,19 +35,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IConfiguration extensions.
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
-        [InterceptsLocation(1, "Ht0qNABXem4npXVrWemfAmUBAABzcmMtMC5jcw==")] // src-0.cs(12,38)
+        [InterceptsLocation(1, "ybRgWwDRfhqdJiXObv1EploBAABzcmMtMC5jcw==")] // src-0.cs(12,38)
         public static T? Get<T>(this IConfiguration configuration) => (T?)(GetCore(configuration, typeof(T), configureOptions: null) ?? default(T));
 
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
-        [InterceptsLocation(1, "Ht0qNABXem4npXVrWemfAugBAABzcmMtMC5jcw==")] // src-0.cs(14,36)
+        [InterceptsLocation(1, "ybRgWwDRfhqdJiXObv1EptsBAABzcmMtMC5jcw==")] // src-0.cs(14,36)
         public static T? Get<T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions) => (T?)(GetCore(configuration, typeof(T), configureOptions) ?? default(T));
 
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
-        [InterceptsLocation(1, "Ht0qNABXem4npXVrWemfAq0BAABzcmMtMC5jcw==")] // src-0.cs(13,56)
+        [InterceptsLocation(1, "ybRgWwDRfhqdJiXObv1EpqEBAABzcmMtMC5jcw==")] // src-0.cs(13,56)
         public static object? Get(this IConfiguration configuration, Type type) => GetCore(configuration, type, configureOptions: null);
 
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
-        [InterceptsLocation(1, "Ht0qNABXem4npXVrWemfAjsCAABzcmMtMC5jcw==")] // src-0.cs(15,47)
+        [InterceptsLocation(1, "ybRgWwDRfhqdJiXObv1Epi0CAABzcmMtMC5jcw==")] // src-0.cs(15,47)
         public static object? Get(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions) => GetCore(configuration, type, configureOptions);
         #endregion IConfiguration extensions.
 

@@ -97,26 +97,48 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         internal static int DetermineInterceptableVersion()
         {
-            MethodInfo? getInterceptableLocationMethod = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).GetMethod(
-                "GetInterceptableLocation",
-                BindingFlags.Static | BindingFlags.Public,
-                binder: null,
-                new Type[] { typeof(SemanticModel), typeof(InvocationExpressionSyntax), typeof(CancellationToken) },
-                modifiers: Array.Empty<ParameterModifier>());
+            MethodInfo? getInterceptableLocationMethod = null;
+            int? interceptableVersion = null;
 
-            if (getInterceptableLocationMethod is null)
+#if UPDATE_BASELINES
+            const string envVarName = "InterceptableAttributeVersion";
+
+#pragma warning disable RS1035 // Do not use APIs banned for analyzers
+            string? interceptableVersionString = Environment.GetEnvironmentVariable(envVarName);
+#pragma warning restore RS1035
+            if (interceptableVersionString is not null)
             {
-                return 0;
+                if (int.TryParse(interceptableVersionString, out int version))
+                {
+                    interceptableVersion = version;
+                }
             }
 
-            GetInterceptableLocationFunc = (Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>)
-                getInterceptableLocationMethod.CreateDelegate(typeof(Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>), target: null);
+            if (interceptableVersion is null || interceptableVersion == 1)
+#endif
+            {
+                getInterceptableLocationMethod = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).GetMethod(
+                    "GetInterceptableLocation",
+                    BindingFlags.Static | BindingFlags.Public,
+                    binder: null,
+                    new Type[] { typeof(SemanticModel), typeof(InvocationExpressionSyntax), typeof(CancellationToken) },
+                    modifiers: Array.Empty<ParameterModifier>());
 
-            Type? interceptableLocationType = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).Assembly.GetType("Microsoft.CodeAnalysis.CSharp.InterceptableLocation");
-            InterceptableLocationVersionGetDisplayLocation = interceptableLocationType.GetMethod("GetDisplayLocation", BindingFlags.Instance | BindingFlags.Public);
-            InterceptableLocationVersionGetter = interceptableLocationType.GetProperty("Version", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
-            InterceptableLocationDataGetter = interceptableLocationType.GetProperty("Data", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
-            return 1;
+                interceptableVersion = getInterceptableLocationMethod is null ? 0 : 1;
+            }
+
+            if (interceptableVersion == 1)
+            {
+                GetInterceptableLocationFunc = (Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>)
+                    getInterceptableLocationMethod.CreateDelegate(typeof(Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>), target: null);
+
+                Type? interceptableLocationType = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).Assembly.GetType("Microsoft.CodeAnalysis.CSharp.InterceptableLocation");
+                InterceptableLocationVersionGetDisplayLocation = interceptableLocationType.GetMethod("GetDisplayLocation", BindingFlags.Instance | BindingFlags.Public);
+                InterceptableLocationVersionGetter = interceptableLocationType.GetProperty("Version", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
+                InterceptableLocationDataGetter = interceptableLocationType.GetProperty("Data", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
+            }
+
+            return interceptableVersion.Value;
         }
 
         /// <summary>

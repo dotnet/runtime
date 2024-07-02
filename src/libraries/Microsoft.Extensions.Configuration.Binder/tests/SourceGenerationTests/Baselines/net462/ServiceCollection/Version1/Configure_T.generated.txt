@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IServiceCollection extensions.
         /// <summary>Registers a configuration instance which TOptions will bind against.</summary>
-        [InterceptsLocation(1, "wJGMSC+LSE/vFE162Xwu2MQBAABzcmMtMC5jcw==")] // src-0.cs(14,18)
+        [InterceptsLocation(1, "AkrFtcV3uQ2TMBvVEqDKnLcBAABzcmMtMC5jcw==")] // src-0.cs(14,18)
         public static IServiceCollection Configure<TOptions>(this IServiceCollection services, IConfiguration config) where TOptions : class
         {
             return Configure<TOptions>(services, string.Empty, config, configureOptions: null);

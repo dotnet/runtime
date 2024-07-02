@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         #region IConfiguration extensions.
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
-        [InterceptsLocation(1, "yuowLMa8RxXFrpN+R/MtyGUBAABzcmMtMC5jcw==")] // src-0.cs(12,17)
+        [InterceptsLocation(1, "x0/k4h2yDpHi1YoDOFMOUFoBAABzcmMtMC5jcw==")] // src-0.cs(12,17)
         public static T? Get<T>(this IConfiguration configuration) => (T?)(GetCore(configuration, typeof(T), configureOptions: null) ?? default(T));
         #endregion IConfiguration extensions.
 
