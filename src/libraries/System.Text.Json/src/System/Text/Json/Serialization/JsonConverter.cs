@@ -222,5 +222,10 @@ namespace System.Text.Json.Serialization
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal virtual void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options) { }
+
+        /// <summary>
+        /// Whether the converter handles an immutable collection or dictionary type.
+        /// </summary>
+        internal virtual bool IsImmutableType => false;
     }
 }
