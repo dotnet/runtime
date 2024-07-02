@@ -645,6 +645,27 @@ namespace System.Numerics
         public static Complex Sqrt(Complex value)
         {
 
+            // Handle NaN input cases according to IEEE 754
+            if (double.IsNaN(value.m_real))
+            {
+                if (double.IsInfinity(value.m_imaginary))
+                {
+                    return new Complex(double.PositiveInfinity, value.m_imaginary);
+                }
+                return new Complex(double.NaN, double.NaN);
+            }
+            if (double.IsNaN(value.m_imaginary))
+            {
+                if (double.IsPositiveInfinity(value.m_real))
+                {
+                    return new Complex(double.NaN, double.PositiveInfinity);
+                }
+                if (double.IsNegativeInfinity(value.m_real))
+                {
+                    return new Complex(double.PositiveInfinity, double.NaN);
+                }
+            }
+
             if (value.m_imaginary == 0.0)
             {
                 // Handle the trivial case quickly.
@@ -687,11 +708,10 @@ namespace System.Numerics
             double imaginaryCopy = value.m_imaginary;
             if ((Math.Abs(realCopy) >= s_sqrtRescaleThreshold) || (Math.Abs(imaginaryCopy) >= s_sqrtRescaleThreshold))
             {
-                if (double.IsInfinity(value.m_imaginary) && !double.IsNaN(value.m_real))
+                if (double.IsInfinity(value.m_imaginary))
                 {
                     // We need to handle infinite imaginary parts specially because otherwise
-                    // our formulas below produce inf/inf = NaN. The NaN test is necessary
-                    // so that we return NaN rather than (+inf,inf) for (NaN,inf).
+                    // our formulas below produce inf/inf = NaN.
                     return (new Complex(double.PositiveInfinity, imaginaryCopy));
                 }
 
