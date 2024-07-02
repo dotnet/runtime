@@ -78,14 +78,14 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
         {
             assert(!structLayout->IsBlockLayout());
 
-            uint32_t             floatFlags;
-            CORINFO_CLASS_HANDLE typeHnd = structLayout->GetClassHandle();
+            FpStructInRegistersInfo fpInfo;
+            CORINFO_CLASS_HANDLE    typeHnd = structLayout->GetClassHandle();
 
-            floatFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(typeHnd);
+            fpInfo = comp->GetPassFpStructInRegistersInfo(typeHnd);
 
-            if ((floatFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)
+            if (fpInfo.flags != FpStruct::UseIntCallConv)
             {
-                if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+                if ((fpInfo.flags & FpStruct::OnlyOne) != 0)
                 {
                     assert(passedSize <= TARGET_POINTER_SIZE);
 
@@ -94,29 +94,29 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
 
                     argRegTypeInStruct1 = (passedSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
                 }
-                else if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+                else if ((fpInfo.flags & FpStruct::BothFloat) != 0)
                 {
                     slots                 = 2;
                     canPassArgInRegisters = m_floatRegs.Count() >= 2;
 
-                    argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                    argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                    argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+                    argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
                 }
-                else if ((floatFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
+                else if ((fpInfo.flags & FpStruct::FloatInt) != 0)
                 {
                     slots                 = 2;
                     canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
 
-                    argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                    argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
+                    argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+                    argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_LONG : TYP_INT;
                 }
-                else if ((floatFlags & STRUCT_FLOAT_FIELD_SECOND) != 0)
+                else if ((fpInfo.flags & FpStruct::IntFloat) != 0)
                 {
                     slots                 = 2;
                     canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
 
-                    argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
-                    argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                    argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_LONG : TYP_INT;
+                    argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
                 }
 
                 assert((slots == 1) || (slots == 2));

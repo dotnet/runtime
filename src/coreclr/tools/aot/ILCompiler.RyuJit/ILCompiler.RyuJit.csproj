@@ -85,8 +85,8 @@
     <Compile Include="..\..\Common\JitInterface\LoongArch64PassStructInRegister.cs">
       <Link>JitInterface\LoongArch64PassStructInRegister.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\RISCV64PassStructInRegister.cs">
-      <Link>JitInterface\RISCV64PassStructInRegister.cs</Link>
+    <Compile Include="..\..\Common\JitInterface\RiscV64PassFpStructInRegisters.cs">
+      <Link>JitInterface\RiscV64PassFpStructInRegisters.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs">
       <Link>JitInterface\SwiftPhysicalLowering.cs</Link>

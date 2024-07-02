@@ -1249,18 +1249,74 @@ namespace Internal.JitInterface
         STRUCT_FLOAT_FIELD_SECOND     = 0x4,
         STRUCT_FIRST_FIELD_SIZE_IS8   = 0x10,
         STRUCT_SECOND_FIELD_SIZE_IS8  = 0x20,
-
-        STRUCT_FIRST_FIELD_DOUBLE     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8),
-        STRUCT_SECOND_FIELD_DOUBLE    = (STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8),
-        STRUCT_FIELD_TWO_DOUBLES      = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8 | STRUCT_FLOAT_FIELD_ONLY_TWO),
-
-        STRUCT_MERGE_FIRST_SECOND     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO),
-        STRUCT_MERGE_FIRST_SECOND_8   = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_SECOND_FIELD_SIZE_IS8),
-
-        STRUCT_HAS_ONE_FLOAT_MASK     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND),
-        STRUCT_HAS_FLOAT_FIELDS_MASK  = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_ONLY_ONE),
-        STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
     };
+
+
+    public enum FpStruct_IntKind
+    {
+        Integer,
+        GcRef,
+        GcByRef,
+    }
+
+    // Bitfields for FpStructInRegistersInfo.flags
+    [Flags]
+    public enum FpStruct
+    {
+        // Positions of flags and bitfields
+        PosOnlyOne      = 0,
+        PosBothFloat    = 1,
+        PosFloatInt     = 2,
+        PosIntFloat     = 3,
+        PosSizeShift1st = 4, // 2 bits
+        PosSizeShift2nd = 6, // 2 bits
+        PosIntFieldKind = 8, // 2 bits
+
+        UseIntCallConv = 0, // struct is passed according to integer calling convention
+
+        // The flags and bitfields
+        OnlyOne          =    1 << PosOnlyOne,      // has only one field, which is floating-point
+        BothFloat        =    1 << PosBothFloat,    // has two fields, both are floating-point
+        FloatInt         =    1 << PosFloatInt,     // has two fields, 1st is floating and 2nd is integer
+        IntFloat         =    1 << PosIntFloat,     // has two fields, 2nd is floating and 1st is integer
+        SizeShift1stMask = 0b11 << PosSizeShift1st, // log2(size) of 1st field
+        SizeShift2ndMask = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
+        IntFieldKindMask = 0b11 << PosIntFieldKind, // the kind of the integer field (FpStruct::IntKind)
+        // Note: flags OnlyOne, BothFloat, FloatInt, and IntFloat are mutually exclusive
+    }
+
+    // On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating-point,
+    // can be passed in registers according to hardware FP calling convention. FpStructInRegistersInfo represents
+    // passing information for such parameters.
+    public struct FpStructInRegistersInfo
+    {
+        public FpStruct flags;
+        public uint offset1st;
+        public uint offset2nd;
+
+        public uint SizeShift1st() { return (uint)((int)flags >> (int)FpStruct.PosSizeShift1st) & 0b11; }
+
+        public uint SizeShift2nd() { return (uint)((int)flags >> (int)FpStruct.PosSizeShift2nd) & 0b11; }
+
+        public uint Size1st() { return 1u << (int)SizeShift1st(); }
+        public uint Size2nd() { return 1u << (int)SizeShift2nd(); }
+
+        public FpStruct_IntKind IntFieldKind()
+        {
+            return (FpStruct_IntKind)(((int)flags >> (int)FpStruct.PosIntFieldKind) & 0b11);
+        }
+
+        public StructFloatFieldInfoFlags ToOldFlags()
+        {
+            return
+                ((flags & FpStruct.OnlyOne) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_ONE : 0) |
+                ((flags & FpStruct.BothFloat) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
+                ((flags & FpStruct.FloatInt) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_FIRST : 0) |
+                ((flags & FpStruct.IntFloat) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND : 0) |
+                ((SizeShift1st() == 3) ? StructFloatFieldInfoFlags.STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+                ((SizeShift2nd() == 3) ? StructFloatFieldInfoFlags.STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
+        }
+    }
 
     // DEBUGGER DATA
     public enum MappingTypes

@@ -314,14 +314,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     throw new NotSupportedException();
 
                 case CorElementType.ELEMENT_TYPE_R4:
-                    if (!IsArmelABI)
+                    if (IsRiscV64 || IsLoongArch64)
+                    {
+                        fpReturnSize = (uint)FpStruct.OnlyOne | (2 << (int)FpStruct.PosSizeShift1st);
+                    }
+                    else if (!IsArmelABI)
                     {
                         fpReturnSize = sizeof(float);
                     }
                     break;
 
                 case CorElementType.ELEMENT_TYPE_R8:
-                    if (!IsArmelABI)
+                    if (IsRiscV64 || IsLoongArch64)
+                    {
+                        fpReturnSize = (uint)FpStruct.OnlyOne | (3 << (int)FpStruct.PosSizeShift1st);
+                    }
+                    else if (!IsArmelABI)
                     {
                         fpReturnSize = sizeof(double);
                     }
@@ -389,9 +397,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             if (size <= EnregisteredReturnTypeIntegerMaxSize)
                             {
                                 if (IsLoongArch64)
-                                    fpReturnSize = LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
+                                    fpReturnSize = (uint)LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(thRetType.GetRuntimeTypeHandle()).flags;
                                 else if (IsRiscV64)
-                                    fpReturnSize = RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
+                                    fpReturnSize = (uint)RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(thRetType.GetRuntimeTypeHandle()).flags;
                                 break;
 
                             }
