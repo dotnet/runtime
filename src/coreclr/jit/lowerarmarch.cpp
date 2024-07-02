@@ -1324,20 +1324,21 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-                    // We have a non-constant index, so scale it up via mul
+                    // We have a non-constant index, so scale it up via mul but
+                    // don't lower the GT_MUL node since the indir will
+                    // try to create an addressing mode and will do folding itself
 
                     GenTreeIntConCommon* scale = comp->gtNewIconNode(genTypeSize(simdBaseType));
                     BlockRange().InsertBefore(node, scale);
-                    LowerNode(scale);
 
                     offset = comp->gtNewOperNode(GT_MUL, op2->TypeGet(), op2, scale);
                     BlockRange().InsertBefore(node, offset);
-                    LowerNode(offset);
                 }
 
+                // Add the offset, don't lower the GT_ADD node since the indir will
+                // try to create an addressing mode and will do folding itself
                 GenTree* addr = comp->gtNewOperNode(GT_ADD, op1->TypeGet(), op1, offset);
                 BlockRange().InsertBefore(node, addr);
-                LowerNode(addr);
 
                 // Finally we can indirect the memory address to get the actual value
                 GenTreeIndir* indir = comp->gtNewIndir(simdBaseType, addr);

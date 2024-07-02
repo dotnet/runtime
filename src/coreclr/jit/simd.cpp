@@ -117,12 +117,8 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
     if (lvaSIMDInitTempVarNum == BAD_VAR_NUM)
     {
         JITDUMP("Allocating SIMDInitTempVar as %s\n", varTypeName(simdType));
-
         lvaSIMDInitTempVarNum                  = lvaGrabTempWithImplicitUse(false DEBUGARG("SIMDInitTempVar"));
         lvaTable[lvaSIMDInitTempVarNum].lvType = simdType;
-
-        // Ensure we mark it as do-not-enregister
-        lvaSetVarDoNotEnregister(lvaSIMDInitTempVarNum DEBUGARG(DoNotEnregisterReason::LclAddrNode));
     }
     else if (genTypeSize(lvaTable[lvaSIMDInitTempVarNum].lvType) < genTypeSize(simdType))
     {
