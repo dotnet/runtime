@@ -21,13 +21,13 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool SupportsCreateObjectDelegate => false;
 
-        internal sealed override bool IsImmutableType => true;
 
         protected sealed override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             state.Current.ReturnValue = new Dictionary<TKey, TValue>();
         }
 
+        internal sealed override bool IsImmutableType => true;
         protected sealed override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? creator =

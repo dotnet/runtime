@@ -20,13 +20,13 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool SupportsCreateObjectDelegate => false;
 
-        internal sealed override bool IsImmutableType => true;
 
         protected sealed override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = new List<TElement>();
         }
 
+        internal sealed override bool IsImmutableType => true;
         protected sealed override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;

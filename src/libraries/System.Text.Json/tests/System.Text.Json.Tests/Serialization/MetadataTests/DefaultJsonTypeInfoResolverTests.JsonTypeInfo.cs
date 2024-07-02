@@ -1524,6 +1524,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ImmutableDictionary<string, string>))]
         [InlineData(typeof(ImmutableSortedDictionary<string, string>))]
         [InlineData(typeof(IImmutableDictionary<string, string>))]
+        [InlineData(typeof(string[]))]
+        [InlineData(typeof(Memory<string>))]
+        [InlineData(typeof(ReadOnlyMemory<string>))]
         public static void SettingOnDeserializingCallbackOnImmutableTypes_ThrowsInvalidOperationException(Type type)
         {
             var jti = JsonTypeInfo.CreateJsonTypeInfo(type, new());
