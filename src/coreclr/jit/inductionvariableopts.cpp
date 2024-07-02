@@ -1342,8 +1342,17 @@ bool StrengthReductionContext::TryStrengthReduce()
             {
                 break;
             }
-
             assert(nextIV != nullptr);
+
+            // We need more sanity checks to allow materializing GC-typed add
+            // recs. Otherwise we may eagerly form a GC pointer that was only
+            // lazily formed under some conditions before, which can be
+            // illegal. For now we just bail.
+            if (varTypeIsGC(nextIV->Type))
+            {
+                JITDUMP("    Next IV has type %s. Bailing.\n", varTypeName(nextIV->Type));
+                break;
+            }
 
             derivedLevel++;
             std::swap(cursors, nextCursors);
