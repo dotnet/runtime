@@ -472,7 +472,7 @@ inline bool IsAtProcessExit()
 #if defined(DACCESS_COMPILE) || !defined(HOST_WINDOWS)
     return g_fProcessDetach;
 #else
-    // RtlDllShutdownInProgress provides more accurace information about whether the process is shutting down.
+    // RtlDllShutdownInProgress provides more accurate information about whether the process is shutting down.
     // Use it if it is available to avoid shutdown deadlocks.
     // https://learn.microsoft.com/windows/win32/devnotes/rtldllshutdowninprogress
     return g_pfnRtlDllShutdownInProgress();
