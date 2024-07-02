@@ -4,8 +4,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
 if (INTERNAL_ZLIB_NG)
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
-    add_definitions(-DINTERNAL_ZLIB_NG)
-    add_definitions(-DZLIB_COMPAT)
 endif()
 
 configure_file(
