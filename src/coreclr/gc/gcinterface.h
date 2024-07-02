@@ -11,7 +11,7 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 2
+#define GC_INTERFACE_MINOR_VERSION 3
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
@@ -1025,6 +1025,9 @@ public:
     virtual uint64_t GetGenerationBudget(int generation) PURE_VIRTUAL
 
     virtual size_t GetLOHThreshold() PURE_VIRTUAL
+
+    // Walk the heap object by object outside of a GC.
+    virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

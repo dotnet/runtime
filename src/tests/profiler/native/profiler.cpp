@@ -36,7 +36,7 @@ HRESULT STDMETHODCALLTYPE Profiler::Initialize(IUnknown *pICorProfilerInfoUnk)
     printf("Profiler.dll!Profiler::Initialize\n");
     fflush(stdout);
 
-    HRESULT queryInterfaceResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo11), reinterpret_cast<void **>(&this->pCorProfilerInfo));
+    HRESULT queryInterfaceResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo15), reinterpret_cast<void **>(&this->pCorProfilerInfo));
     if (FAILED(queryInterfaceResult))
     {
         printf("Profiler.dll!Profiler::Initialize failed to QI for ICorProfilerInfo.\n");
@@ -785,7 +785,7 @@ void Profiler::SetCallback(ProfilerCallback cb)
     s_callbackSet.Signal();
 }
 
-void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo14  *pCorProfilerInfo)
+void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo15  *pCorProfilerInfo)
 {
     s_callbackSet.Wait();
 

@@ -132,7 +132,7 @@
 #include "profilinghelper.inl"
 #include "eetoprofinterfaceimpl.inl"
 #include "profilingenumerators.h"
-#endif
+#endif // PROFILING_SUPPORTED
 
 #include "profdetach.h"
 
@@ -575,6 +575,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     else if (id == IID_ICorProfilerInfo14)
     {
         *pInterface = static_cast<ICorProfilerInfo14 *>(this);
+    }
+    else if (id == IID_ICorProfilerInfo15)
+    {
+        *pInterface = static_cast<ICorProfilerInfo15 *>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -7612,6 +7616,79 @@ HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
             *pcObjectRanges = 0;
         }
     }
+    return S_OK;
+}
+
+HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, void* callbackState)
+{
+    CONTRACTL
+    {
+        // Yay!
+        NOTHROW;
+
+        // Suspending EE is contracted to trigger GC through ThreadSuspend::SuspendAllThreads
+        GC_TRIGGERS;
+
+        // Yay!
+        MODE_ANY;
+
+        // Suspending EE will acquire the ThreadStore Lock via ThreadSuspend::LockThreadStore.
+        CAN_TAKE_LOCK;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EnumerateGCHeapObjects.\n"));
+
+    if (callback == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (!g_fEEStarted)
+    {
+        return CORPROF_E_RUNTIME_UNINITIALIZED;
+    }
+
+    bool ownEESuspension = FALSE;
+    if (!ThreadSuspend::SysIsSuspendInProgress() && (ThreadSuspend::GetSuspensionThread() == 0))
+    {
+        ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
+        ownEESuspension = TRUE;
+    }
+
+    // Suspending EE ensures safe object inspection. We permit the GC Heap walk callback to
+    // invoke ICorProfilerInfo APIs guarded by AllowObjectInspection by toggling fGCInProgress.
+    g_profControlBlock.fGCInProgress = TRUE;
+
+    _ASSERTE(m_pProfilerInfo->pProfInterface.Load() != NULL);
+    {
+        EvacuationCounterHolder holder(m_pProfilerInfo);
+        EEToProfInterfaceImpl *pProfInterface = m_pProfilerInfo->pProfInterface.Load();
+        if (pProfInterface == NULL)
+        {
+            return E_FAIL;
+        }
+
+        // Leveraging a direct callback instead of a ICorProfilerCallback API avoids the performance overhead of
+        // invoking an EEToProfInterfaceImpl callback per GC Heap object. In order to allow profilers to inspect
+        // objects with synchronous ICorProfilerInfo APIs, which are guarded with PROFILER_TO_CLR_ENTRYPOINT_SYNC(_EX),
+        // perform the GC Heap walk within an EEToProfInterfaceImpl helper to properly set callback state flags.
+        pProfInterface->EnumerateGCHeapObjectsCallback(callback, callbackState);
+    }
+
+    g_profControlBlock.fGCInProgress = FALSE;
+
+    if (ownEESuspension)
+    {
+        ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+    }
+
     return S_OK;
 }
 
