@@ -6765,10 +6765,13 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
     {
         if (pThread == NULL || !pThread->PreemptiveGCDisabled())
         {
-            // We are not running managed code, so this cannot be our hijack
+            // if we are not in coop mode, this cannot be our hijack
             // Perhaps some other runtime is responsible.
             return VEH_CONTINUE_SEARCH;
         }
+
+        // Sanity check. The thread should be hijacked by us.
+        _ASSERTE_ALL_BUILDS(pThread->HasThreadState(Thread::TS_Hijacked));
 
         PCONTEXT interruptedContext = pExceptionInfo->ContextRecord;
         bool areShadowStacksEnabled = Thread::AreShadowStacksEnabled();
