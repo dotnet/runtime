@@ -132,11 +132,12 @@ if "%__RuntimeFlavor%" NEQ "Mono" (
     echo Copying "%__CoreClrArtifacts%\corehost\PDB\singlefilehost.pdb"  "%__CMakeBinDir%/corehost/PDB/"
     copy /B /Y "%__CoreClrArtifacts%\corehost\PDB\singlefilehost.pdb"  "%__CMakeBinDir%/corehost/PDB/"
 
-    echo Embedding "%__CoreClrArtifacts%\mscordaccore.dll" into "%__CMakeBinDir%\corehost\singlefilehost.exe"
-    if not exist "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" (
-        "%__CoreClrArtifacts%\dactabletools\InjectResource.exe"     /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
-    ) else (
-        "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
+    if exist "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" (
+        echo Embedding "%__CoreClrArtifacts%\mscordaccore.dll" into "%__CMakeBinDir%\corehost\singlefilehost.exe"
+        "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe"     /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
+    ) else if exist "%__CoreClrArtifacts%\dactabletools\InjectResource.exe" (
+        echo Embedding "%__CoreClrArtifacts%\mscordaccore.dll" into "%__CMakeBinDir%\corehost\singlefilehost.exe"
+        "%__CoreClrArtifacts%\dactabletools\InjectResource.exe" /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
     )
 
     IF ERRORLEVEL 1 (

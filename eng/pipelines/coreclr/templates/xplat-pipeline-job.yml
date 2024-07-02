@@ -8,7 +8,6 @@ parameters:
   container: ''
   testGroup: ''
   crossBuild: false
-  crossrootfsDir: ''
   liveLibrariesBuildConfig: ''
   stagedBuild: false
   strategy: ''
@@ -37,7 +36,6 @@ jobs:
     helixType: ${{ parameters.helixType }}
     container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
     stagedBuild: ${{ parameters.stagedBuild }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
@@ -71,12 +69,6 @@ jobs:
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
 
-    - name: buildCrossDacArtifactName
-      value: CoreCLRCrossDacArtifacts
-
-    - name: crossDacArtifactPath
-      value: $(Build.SourcesDirectory)/artifacts/$(buildCrossDacArtifactName)
-
     - name: buildMuslDacRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/alpine.$(archType).$(buildConfigUpper)'
 
@@ -88,13 +80,6 @@ jobs:
 
     - name: buildLinuxDacStagingPath
       value: '$(crossDacArtifactPath)/Linux.$(archType).$(buildConfigUpper)'
-
-    - name: crossDacHostArch
-      value: x64
-
-    - ${{ if eq(parameters.archType, 'arm') }}:
-      - name: crossDacHostArch
-        value: x86
 
     # We need this because both mono and coreclr build currently depends on CoreClr
     - name: coreClrProductArtifactName

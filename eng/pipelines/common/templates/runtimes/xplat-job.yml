@@ -7,7 +7,6 @@ parameters:
   helixType: '(unspecified)'
   container: ''
   crossBuild: false
-  crossrootfsDir: ''
   stagedBuild: false
   strategy: ''
   pool: ''
@@ -73,15 +72,6 @@ jobs:
     variables:
     - name: buildConfig
       value: ${{ parameters.buildConfig }}
-
-    - name: archType
-      value: ${{ parameters.archType }}
-
-    - name: osGroup
-      value: ${{ parameters.osGroup }}
-
-    - name: osSubgroup
-      value: ${{ parameters.osSubgroup }}
 
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource

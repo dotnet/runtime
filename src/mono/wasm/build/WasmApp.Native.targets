@@ -426,9 +426,23 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <Error Condition="'$(RuntimeEmccVersionRaw)' == ''"
            Text="%24(RuntimeEmccVersionRaw) is not set. '$(_EmccPropsPath)' should have set that."/>
 
-    <Exec Command="emcc --version" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
+    <PropertyGroup>
+      <_EmccVersionCommand>emcc --version</_EmccVersionCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(_EmccVersionCommand)" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low" IgnoreExitCode="true">
       <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
+      <Output TaskParameter="ExitCode" PropertyName="_EmccVersionExitCode" />
     </Exec>
+
+    <!-- If `emcc -version` failed, then run it again, so we can surface the output as *Errors*. This allows the errors to show up correctly,
+         versus trying to use the output lines with the Error task -->
+    <Exec Condition="$(_EmccVersionExitCode) != '0'"
+          Command="$(_EmccVersionCommand)"
+          WorkingDirectory="$(_WasmIntermediateOutputPath)"
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          CustomErrorRegularExpression=".*"
+          />
 
     <!-- we want to get the first line from the output, which has the version.
          Rest of the lines are the license -->

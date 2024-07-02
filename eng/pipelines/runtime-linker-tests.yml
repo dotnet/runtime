@@ -43,41 +43,46 @@ pr:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
-jobs:
-#
-# Build Release config vertical for Windows, Linux, Linux musl and OSX
-#
-- template: /eng/pipelines/common/platform-matrix.yml
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
-    platforms:
-    - windows_x64
-    - OSX_x64
-    - Linux_x64
-    jobParameters:
-      testGroup: innerloop
-      timeoutInMinutes: 120
-      nameSuffix: Runtime_Release
-      buildArgs: -s clr+libs -c $(_BuildConfig)
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+    stages:
+    - stage: Build
+      jobs:
+      #
+      # Build Release config vertical for Windows, Linux, Linux musl and OSX
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          - OSX_x64
+          - Linux_x64
+          jobParameters:
+            testGroup: innerloop
+            timeoutInMinutes: 120
+            nameSuffix: Runtime_Release
+            buildArgs: -s clr+libs -c $(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
 
-#
-# Build Release config vertical for Browser-wasm
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
-    platforms:
-    - Browser_wasm
-    jobParameters:
-      testGroup: innerloop
-      timeoutInMinutes: 120
-      nameSuffix: Runtime_Release
-      buildArgs: -s mono+libs -c $(_BuildConfig) -p:WasmBuildNative=false
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
-          parameters:
-              extraTestArgs: '/p:WasmBuildNative=false'
+      #
+      # Build Release config vertical for Browser-wasm
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - Browser_wasm
+          jobParameters:
+            testGroup: innerloop
+            timeoutInMinutes: 120
+            nameSuffix: Runtime_Release
+            buildArgs: -s mono+libs -c $(_BuildConfig) -p:WasmBuildNative=false
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+                parameters:
+                    extraTestArgs: '/p:WasmBuildNative=false'

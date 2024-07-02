@@ -1,0 +1,12 @@
+parameters:
+  buildArgs: ''
+  useContinueOnErrorDuringBuild: false
+  shouldContinueOnError: false
+  archParameter: $(_archParameter)
+  displayName: Build product
+
+steps:
+  - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci ${{ parameters.archParameter }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter)
+    displayName: ${{ parameters.displayName }}
+    ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
+      continueOnError: ${{ parameters.shouldContinueOnError }}

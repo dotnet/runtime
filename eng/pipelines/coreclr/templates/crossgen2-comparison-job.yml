@@ -7,7 +7,6 @@ parameters:
   helixQueues: ''
   runtimeVariant: ''
   crossBuild: false
-  crossrootfsDir: ''
   dependOnEvaluatePaths: false
   stagedBuild: false
   variables: {}
@@ -48,7 +47,6 @@ jobs:
     displayName: ${{ format('Test crossgen2-comparison {0}{1} {2} {3} to {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.targetarch, parameters.targetos) }}
 
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     variables:
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
