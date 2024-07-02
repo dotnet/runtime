@@ -23,7 +23,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
-        public void Wasm_CannotAOT_InDebug(BuildArgs buildArgs, RunHost host, string id)
+        public void Wasm_CannotAOT_InDebug(BuildArgs buildArgs, RunHost _, string id)
         {
             string projectName = GetTestProjectPath(prefix: "no_aot_in_debug", config: buildArgs.Config);
             buildArgs = buildArgs with { ProjectName = projectName };
@@ -32,10 +32,13 @@ namespace Wasm.Build.Tests
                         id: id,
                         new BuildProjectOptions(
                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                        DotnetWasmFromRuntimePack: !relinked,
+                        DotnetWasmFromRuntimePack: true,
                         CreateProject: true,
-                        Publish: false
+                        Publish: true,
+                        ExpectSuccess: false
                         ));
+
+            Console.WriteLine($"buildOutput={buildOutput}");
 
             Assert.Contains("AOT is not supported in debug configuration", buildOutput);
         }
