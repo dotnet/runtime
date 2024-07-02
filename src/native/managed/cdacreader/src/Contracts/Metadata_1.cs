@@ -117,6 +117,8 @@ internal partial struct Metadata_1 : IMetadata
     // If we need to invalidate our view of memory, we shoudl clear this dictionary.
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables = new();
 
+    // Low order bit of EEClassOrCanonMT.
+    // See MethodTable::LowBits UNION_EECLASS / UNION_METHODABLE
     [Flags]
     internal enum EEClassOrCanonMTBits
     {
@@ -159,10 +161,7 @@ internal partial struct Metadata_1 : IMetadata
             return new MethodTableHandle(methodTablePointer);
         }
 
-        // Otherwse, get ready to validate
-        NonValidatedMethodTable_1 nonvalidatedMethodTable = GetNonValidatedMethodTableData(methodTablePointer);
-
-        // if it's the free object method table, we trust it to be valid
+        // If it's the free object method table, we trust it to be valid
         if (methodTablePointer == FreeObjectMethodTablePointer)
         {
             Data.MethodTable freeObjectMethodTableData = _target.ProcessedData.GetOrAdd<Data.MethodTable>(methodTablePointer);
@@ -170,6 +169,10 @@ internal partial struct Metadata_1 : IMetadata
             _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTable);
             return new MethodTableHandle(methodTablePointer);
         }
+
+        // Otherwse, get ready to validate
+        NonValidatedMethodTable_1 nonvalidatedMethodTable = GetNonValidatedMethodTableData(methodTablePointer);
+
         if (!ValidateMethodTablePointer(nonvalidatedMethodTable))
         {
             throw new ArgumentException("Invalid method table pointer");
@@ -185,7 +188,7 @@ internal partial struct Metadata_1 : IMetadata
     {
         try
         {
-            if (!ValidateWithPossibleAV(umt))
+            if (!ValidateThrowing(umt))
             {
                 return false;
             }
@@ -196,13 +199,17 @@ internal partial struct Metadata_1 : IMetadata
         }
         catch (System.Exception)
         {
-            // FIXME: maybe don't swallow all exceptions?
+            // TODO(cdac): maybe don't swallow all exceptions? We could consider a richer contract that
+            // helps to track down what sort of memory corruption caused the validation to fail.
+            // TODO(cdac): we could also consider a more fine-grained exception type so we don't mask
+            // programmer mistakes in cdacreader.
             return false;
         }
         return true;
     }
 
-    private bool ValidateWithPossibleAV(NonValidatedMethodTable_1 methodTable)
+    // This portion of validation may throw if we are trying to read an invalid address in the target process
+    private bool ValidateThrowing(NonValidatedMethodTable_1 methodTable)
     {
         // For non-generic classes, we can rely on comparing
         //    object->methodtable->class->methodtable
@@ -298,13 +305,7 @@ internal partial struct Metadata_1 : IMetadata
     private Data.EEClass GetClassData(MethodTableHandle methodTableHandle)
     {
         TargetPointer clsPtr = GetClassPointer(methodTableHandle);
-        // Check if we cached it already
-        if (_target.ProcessedData.TryGet(clsPtr, out Data.EEClass? eeClassData))
-        {
-            return eeClassData;
-        }
-        eeClassData = _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
-        return eeClassData;
+        return _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
     }
 
     public TargetPointer GetCanonicalMethodTable(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).MethodTable;
@@ -329,6 +330,6 @@ internal partial struct Metadata_1 : IMetadata
 
     public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).CorTypeAttr;
 
-    public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+    public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.IsDynamicStatics;
 
 }
