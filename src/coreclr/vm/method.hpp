@@ -238,7 +238,7 @@ public:
     void SetTemporaryEntryPoint(AllocMemTracker *pamTracker);
 
 #ifndef DACCESS_COMPILE
-    PCODE GetInitialEntryPointForCopiedSlot()
+    PCODE GetInitialEntryPointForCopiedSlot(MethodTable *pMTBeingCreated, AllocMemTracker* pamTracker)
     {
         CONTRACTL
         {
@@ -248,11 +248,28 @@ public:
         }
         CONTRACTL_END;
 
+        if (pMTBeingCreated != GetMethodTable())
+        {
+            pamTracker = NULL;
+        }
+
+        // If EnsureTemporaryEntryPointCore is called, then 
+        // both GetTemporaryEntryPointIfExists and GetSlot()
+        // are guaranteed to return a NON-NULL PCODE.
+        EnsureTemporaryEntryPointCore(pamTracker);
+
+        PCODE result;
         if (IsVersionableWithVtableSlotBackpatch())
         {
-            return GetTemporaryEntryPoint();
+            result = GetTemporaryEntryPointIfExists();
         }
-        return GetMethodEntryPoint();
+        else
+        {
+            result = GetSlot();
+        }
+        _ASSERTE(result != (PCODE)NULL);
+
+        return result;
     }
 #endif
 

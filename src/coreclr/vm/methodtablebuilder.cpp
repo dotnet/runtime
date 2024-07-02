@@ -10855,7 +10855,7 @@ MethodTableBuilder::SetupMethodTable2(
                 //
                 DWORD indirectionIndex = MethodTable::GetIndexOfVtableIndirection(iCurSlot);
                 if (GetParentMethodTable()->GetVtableIndirections()[indirectionIndex] != pMT->GetVtableIndirections()[indirectionIndex])
-                    pMT->SetSlot(iCurSlot, pMD->GetInitialEntryPointForCopiedSlot());
+                    pMT->SetSlot(iCurSlot, pMD->GetInitialEntryPointForCopiedSlot(pMT, GetMemTracker()));
             }
             else
             {
@@ -10949,7 +10949,7 @@ MethodTableBuilder::SetupMethodTable2(
                     if (pMD != pOriginalMD)
                     {
                         // Copy the slot value in the method's original slot.
-                        pMT->SetSlot(i, pOriginalMD->GetInitialEntryPointForCopiedSlot());
+                        pMT->SetSlot(i, pOriginalMD->GetInitialEntryPointForCopiedSlot(pMT, GetMemTracker()));
                         hMTData->InvalidateCachedVirtualSlot(i);
 
                         // Update the pMD to the new method desc we just copied over ourselves with. This will
@@ -11006,8 +11006,7 @@ MethodTableBuilder::SetupMethodTable2(
                     // If we fail to find an _IMPLEMENTATION_ for the interface MD, then
                     // we are a ComImportMethod, otherwise we still be a ComImportMethod or
                     // we can be a ManagedMethod.
-                    DispatchSlot impl(it.GetTarget());
-                    if (!impl.IsNull())
+                    if (!it.IsTargetNull())
                     {
                         pClsMD = it.GetMethodDesc();
 
