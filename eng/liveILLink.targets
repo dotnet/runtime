@@ -47,6 +47,7 @@
                       ReferenceOutputAssembly="false"
                       Private="false"
                       OutputItemType="Analyzer"
+                      SetPlatform="Platform=AnyCPU"
                       SetConfiguration="Configuration=$(ToolsConfiguration)" />
   </ItemGroup>
 
