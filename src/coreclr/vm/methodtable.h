@@ -577,7 +577,7 @@ public:
     bool GetIsInitedAndNonGCStaticsPointerIfInited(PTR_BYTE *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); *ptrResult = dac_cast<PTR_BYTE>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
 
     // This function sets the pointer portion of a statics pointer. It returns false if the statics value was already set.
-    bool InterlockedUpdateStaticsPointer(bool isGC, TADDR newVal)
+    bool InterlockedUpdateStaticsPointer(bool isGC, TADDR newVal, bool isClassInitedByUpdatingStaticPointer)
     {
         TADDR oldVal;
         TADDR oldValFromInterlockedOp;
@@ -593,7 +593,14 @@ public:
                 return false;
             }
             
-            oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal | oldVal, oldVal);
+            if (isClassInitedByUpdatingStaticPointer)
+            {
+                oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal, oldVal);
+            }
+            else
+            {
+                oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal | oldVal, oldVal);
+            }
         } while(oldValFromInterlockedOp != oldVal);
         return true;
     }
@@ -1052,11 +1059,16 @@ public:
 #ifndef DACCESS_COMPILE
     void SetClassInited()
     {
-        GetAuxiliaryDataForWrite()->SetClassInited();
+        // This must be before setting the MethodTable level flag, as otherwise there is a race condition where
+        // the MethodTable flag is set, which would allows the JIT to generate a call to a helper which assumes
+        // the DynamicStaticInfo level flag is set.
+        // The other race in the other direction is not a concern, as it can only cause allows reads/write from the static
+        // fields, which are effectively inited in any case once we reach this point.
         if (IsDynamicStatics())
         {
             GetDynamicStaticsInfo()->SetClassInited();
         }
+        GetAuxiliaryDataForWrite()->SetClassInited();
     }
 
 private:

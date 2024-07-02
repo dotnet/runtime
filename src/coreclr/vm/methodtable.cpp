@@ -3782,17 +3782,21 @@ void MethodTable::EnsureStaticDataAllocated()
     CONTRACTL_END;
 
     PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
-    if (!pAuxiliaryData->IsStaticDataAllocated() && IsDynamicStatics() && !IsSharedByGenericInstantiations())
+    if (!pAuxiliaryData->IsStaticDataAllocated())
     {
-        DynamicStaticsInfo *pDynamicStaticsInfo = GetDynamicStaticsInfo();
-        // Allocate space for normal statics if we might have them
-        if (pDynamicStaticsInfo->GetNonGCStaticsPointer() == NULL)
-            GetLoaderAllocator()->AllocateBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNonGCRegularStaticFieldBytes());
+        bool isInitedIfStaticDataAllocated = IsInitedIfStaticDataAllocated();
+        if (IsDynamicStatics() && !IsSharedByGenericInstantiations())
+        {
+            DynamicStaticsInfo *pDynamicStaticsInfo = GetDynamicStaticsInfo();
+            // Allocate space for normal statics if we might have them
+            if (pDynamicStaticsInfo->GetNonGCStaticsPointer() == NULL)
+                GetLoaderAllocator()->AllocateBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNonGCRegularStaticFieldBytes(), isInitedIfStaticDataAllocated);
 
-        if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
-            GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this->HasBoxedRegularStatics() ? this : NULL);
+            if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
+                GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this->HasBoxedRegularStatics() ? this : NULL, isInitedIfStaticDataAllocated);
+        }
+        pAuxiliaryData->SetIsStaticDataAllocated(isInitedIfStaticDataAllocated);
     }
-    pAuxiliaryData->SetIsStaticDataAllocated(IsInitedIfStaticDataAllocated());
 }
 
 bool MethodTable::IsClassInitedOrPreinited()
