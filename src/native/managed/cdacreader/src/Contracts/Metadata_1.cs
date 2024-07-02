@@ -104,11 +104,7 @@ internal partial struct Metadata_1 : IMetadata
 
     public uint GetBaseSize(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.BaseSize;
 
-    private static uint GetComponentSize(MethodTable methodTable)
-    {
-        return methodTable.Flags.HasComponentSize ? methodTable.Flags.RawGetComponentSize() : 0u;
-    }
-    public uint GetComponentSize(MethodTableHandle methodTableHandle) => GetComponentSize(_methodTables[methodTableHandle.Address]);
+    public uint GetComponentSize(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.ComponentSize;
 
     private TargetPointer GetClassPointer(MethodTableHandle methodTableHandle)
     {

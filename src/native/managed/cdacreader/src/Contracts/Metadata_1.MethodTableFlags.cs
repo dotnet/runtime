@@ -54,15 +54,8 @@ internal partial struct Metadata_1
         public WFLAGS_HIGH GetFlag(WFLAGS_HIGH mask) => FlagsHigh & mask;
 
         public WFLAGS2_ENUM GetFlag(WFLAGS2_ENUM mask) => (WFLAGS2_ENUM)MTFlags2 & mask;
-        public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
-        public bool IsString => HasComponentSize && !IsArray && RawGetComponentSize() == 2;
 
-        public bool HasComponentSize => GetFlag(WFLAGS_HIGH.HasComponentSize) != 0;
-
-        public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
-
-        public bool IsStringOrArray => HasComponentSize;
-        public ushort RawGetComponentSize() => (ushort)(MTFlags & 0x0000ffff);
+        private ushort ComponentSizeBits => (ushort)(MTFlags & 0x0000ffff); // note: caller should check HasComponentSize
 
         private bool TestFlagWithMask(WFLAGS_LOW mask, WFLAGS_LOW flag)
         {
@@ -81,10 +74,14 @@ internal partial struct Metadata_1
             return ((WFLAGS2_ENUM)MTFlags2 & mask) == flag;
         }
 
+        public bool HasComponentSize => GetFlag(WFLAGS_HIGH.HasComponentSize) != 0;
+        public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
+        public bool IsString => HasComponentSize && !IsArray && ComponentSizeBits == 2;
+        public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
+        public bool IsStringOrArray => HasComponentSize;
+        public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
-
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
-
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
     }
 }

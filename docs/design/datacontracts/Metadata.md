@@ -94,15 +94,6 @@ internal partial struct Metadata_1
         public WFLAGS_HIGH GetFlag(WFLAGS_HIGH mask) { ... /* mask & upper 16 bits of MTFlags */ }
 
         public WFLAGS2_ENUM GetFlag(WFLAGS2_ENUM mask) { ... /* mask & MTFlags2*/ }
-        public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
-        public bool IsString => HasComponentSize && !IsArray && RawGetComponentSize() == 2;
-
-        public bool HasComponentSize => GetFlag(WFLAGS_HIGH.HasComponentSize) != 0;
-
-        public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
-
-        public bool IsStringOrArray => HasComponentSize;
-        public ushort RawGetComponentSize() => (ushort)(MTFlags & 0x0000ffff);
 
         private bool TestFlagWithMask(WFLAGS_LOW mask, WFLAGS_LOW flag)
         {
@@ -116,9 +107,17 @@ internal partial struct Metadata_1
             }
         }
 
-        public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
+        public ushort ComponentSizeBits => (ushort)(MTFlags & 0x0000ffff); // only meaningful if HasComponentSize is set
 
+        public bool HasComponentSize => GetFlag(WFLAGS_HIGH.HasComponentSize) != 0;
+        public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
+        public bool IsString => HasComponentSize && !IsArray && ComponentSizeBits == 2;
+        public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
+        public bool IsStringOrArray => HasComponentSize;
+        public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
+        public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
+        public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
     }
 
     [Flags]
@@ -207,7 +206,7 @@ The contract additionally depends on the `EEClass` data descriptor.
     public bool IsFreeObjectMethodTable(MethodTableHandle methodTableHandle) => FreeObjectMethodTablePointer == methodTableHandle.Address;
 
     public bool IsString(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.IsString;
-    public bool ContainsPointers(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.ContainsPointers;
+    public bool ContainsGCPointers(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.ContainsGCPointers;
 
     public uint GetTypeDefToken(MethodTableHandle methodTableHandle)
     {
@@ -221,5 +220,5 @@ The contract additionally depends on the `EEClass` data descriptor.
 
     public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).CorTypeAttr;
 
-    public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+    public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.IsDynamicStatics;
 ```
