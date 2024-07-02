@@ -65,14 +65,13 @@ struct ThrowCallbackType
     int     dHandler;       // the index of the handler whose filter returned catch indication
     BOOL    bIsUnwind;      // are we currently unwinding an exception
     BOOL    bUnwindStack;   // reset the stack before calling the handler? (Stack overflow only)
-    BOOL    bAllowAllocMem; // are we allowed to allocate memory?
     BOOL    bDontCatch;     // can we catch this exception?
     BYTE    *pStack;
     Frame * pTopFrame;
     Frame * pBottomFrame;
     MethodDesc * pProfilerNotify;   // Context for profiler callbacks -- see COMPlusFrameHandler().
-    BOOL    bReplaceStack;  // Used to pass info to SaveStackTrace call
-    BOOL    bSkipLastElement;// Used to pass info to SaveStackTrace call
+    BOOL    bIsNewException;
+    BOOL    bSkipLastElement;// Used to skip calling StackTraceInfo::AppendElement
 #ifdef _DEBUG
     void * pCurrentExceptionRecord;
     void * pPrevExceptionRecord;
@@ -86,13 +85,12 @@ struct ThrowCallbackType
         dHandler = 0;
         bIsUnwind = FALSE;
         bUnwindStack = FALSE;
-        bAllowAllocMem = TRUE;
         bDontCatch = FALSE;
         pStack = NULL;
         pTopFrame = (Frame *)-1;
         pBottomFrame = (Frame *)-1;
         pProfilerNotify = NULL;
-        bReplaceStack = FALSE;
+        bIsNewException = FALSE;
         bSkipLastElement = FALSE;
 #ifdef _DEBUG
         pCurrentExceptionRecord = 0;

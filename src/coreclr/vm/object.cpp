@@ -1426,7 +1426,7 @@ void __fastcall ZeroMemoryInGCHeap(void* mem, size_t size)
         *memBytes++ = 0;
 }
 
-void StackTraceArray::Append(StackTraceElement const * begin, StackTraceElement const * end)
+void StackTraceArray::Append(StackTraceElement const * elem)
 {
     CONTRACTL
     {
@@ -1437,13 +1437,12 @@ void StackTraceArray::Append(StackTraceElement const * begin, StackTraceElement 
     }
     CONTRACTL_END;
 
-    // ensure that only one thread can write to the array
-    EnsureThreadAffinity();
+    // Only the thread that has created the array can append to it
+    assert(GetObjectThread() == GetThreadNULLOk());
 
-    size_t newsize = Size() + (end - begin);
-    Grow(newsize);
-    memcpyNoGCRefs(GetData() + Size(), begin, (end - begin) * sizeof(StackTraceElement));
-    MemoryBarrier();  // prevent the newsize from being reordered with the array copy
+    uint32_t newsize = Size() + 1;
+    _ASSERTE(newsize <= Capacity());
+    memcpyNoGCRefs(GetData() + Size(), elem, sizeof(StackTraceElement));
     SetSize(newsize);
 
 #if defined(_DEBUG)
@@ -1464,95 +1463,86 @@ void StackTraceArray::CheckState() const
     if (!m_array)
         return;
 
-    assert(GetObjectThread() == GetThreadNULLOk());
+    _ASSERTE(GetObjectThread() == GetThreadNULLOk());
 
-    size_t size = Size();
+    uint32_t size = Size();
     StackTraceElement const * p;
     p = GetData();
-    for (size_t i = 0; i < size; ++i)
-        assert(p[i].pFunc != NULL);
+    for (uint32_t i = 0; i < size; ++i)
+        _ASSERTE(p[i].pFunc != NULL);
 }
 
-void StackTraceArray::Grow(size_t grow_size)
+void StackTraceArray::Allocate(size_t size)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory(););
         PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)this));
     }
     CONTRACTL_END;
 
-    size_t raw_size = grow_size * sizeof(StackTraceElement) + sizeof(ArrayHeader);
+    S_SIZE_T raw_size = S_SIZE_T(size) * S_SIZE_T(sizeof(StackTraceElement)) + S_SIZE_T(sizeof(ArrayHeader));
 
-    if (!m_array)
+    if (raw_size.IsOverflow() || !FitsIn<DWORD>(raw_size.Value()))
     {
-        SetArray(I1ARRAYREF(AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(raw_size))));
-        SetSize(0);
-        SetObjectThread();
+        EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
     }
-    else
-    {
-        if (Capacity() >= raw_size)
-            return;
-
-        // allocate a new array, copy the data
-        size_t new_capacity = Max(Capacity() * 2, raw_size);
-
-        _ASSERTE(new_capacity >= grow_size * sizeof(StackTraceElement) + sizeof(ArrayHeader));
-
-        I1ARRAYREF newarr = (I1ARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(new_capacity));
-        memcpyNoGCRefs(newarr->GetDirectPointerToNonObjectElements(),
-                       GetRaw(),
-                       Size() * sizeof(StackTraceElement) + sizeof(ArrayHeader));
-
-        SetArray(newarr);
-    }
+   
+    SetArray(I1ARRAYREF(AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(raw_size.Value()))));
+    SetSize(0);
+    SetKeepAliveItemsCount(0);
+    SetObjectThread();
 }
 
-void StackTraceArray::EnsureThreadAffinity()
+size_t StackTraceArray::Capacity() const
 {
     WRAPPER_NO_CONTRACT;
-
     if (!m_array)
-        return;
-
-    if (GetObjectThread() != GetThreadNULLOk())
     {
-        // object is being changed by a thread different from the one which created it
-        // make a copy of the array to prevent a race condition when two different threads try to change it
-        StackTraceArray copy;
-        GCPROTECT_BEGIN(copy);
-            copy.CopyFrom(*this);
-            this->Swap(copy);
-        GCPROTECT_END();
+        return 0;
     }
+
+    return (m_array->GetNumComponents() - sizeof(ArrayHeader)) / sizeof(StackTraceElement);
 }
 
-// Deep copies the stack trace array
-void StackTraceArray::CopyFrom(StackTraceArray const & src)
+// Compute the number of methods in the stack trace that can be collected. We need to store keepAlive
+// objects (Resolver / LoaderAllocator) for these methods.
+uint32_t StackTraceArray::ComputeKeepAliveItemsCount()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    uint32_t count = 0;
+    for (uint32_t i = 0; i < Size(); i++)
+    {
+        if ((*this)[i].flags & STEF_KEEPALIVE)
+        {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+uint32_t StackTraceArray::CopyDataFrom(StackTraceArray const & src)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory(););
         PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)this));
         PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)&src));
     }
     CONTRACTL_END;
 
-    m_array = (I1ARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(src.Capacity()));
-
-    Volatile<size_t> size = src.Size();
+    uint32_t size = src.Size();
     memcpyNoGCRefs(GetRaw(), src.GetRaw(), size * sizeof(StackTraceElement) + sizeof(ArrayHeader));
+    // Affinitize the copy with the current thread
+    SetObjectThread();
 
-    SetSize(size);  // set size to the exact value which was used when we copied the data
-                    // another thread might have changed it at the time of copying
-    SetObjectThread();  // affinitize the newly created array with the current thread
+    return size;
 }
 
 #ifdef _DEBUG
@@ -1895,10 +1885,11 @@ StackTraceElement & StackTraceArray::operator[](size_t index)
 }
 
 #if !defined(DACCESS_COMPILE)
-// Define the lock used to access stacktrace from an exception object
-SpinLock g_StackTraceArrayLock;
 
-void ExceptionObject::SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMethodArray)
+// If there are any dynamic methods, the stack trace object is the dynamic methods array with its first
+// slot set to the stack trace I1Array.
+// Otherwise the stack trace object is directly the stacktrace I1Array
+void ExceptionObject::SetStackTrace(OBJECTREF stackTrace)
 {
     CONTRACTL
     {
@@ -1915,42 +1906,151 @@ void ExceptionObject::SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMe
     }
 #endif
 
-    SpinLock::AcquireLock(&g_StackTraceArrayLock);
-
     SetObjectReference((OBJECTREF*)&_stackTrace, (OBJECTREF)stackTrace);
-    SetObjectReference((OBJECTREF*)&_dynamicMethods, (OBJECTREF)dynamicMethodArray);
-
-    SpinLock::ReleaseLock(&g_StackTraceArrayLock);
-
 }
 #endif // !defined(DACCESS_COMPILE)
 
-void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outDynamicMethodArray /*= NULL*/) const
+// Get the stack trace and keep alive array for the exception.
+// Both arrays returned by the method are safe to work with without other threads modifying them.
+// - if the stack trace was created by the current thread, the arrays are returned as is.
+// - if it was created by another thread, deep copies of the arrays are returned. It is ensured
+//   that both of these arrays are consistent. That means that the stack trace doesn't contain
+//   frames that need keep alive objects and that are not protected by entries in the keep alive 
+//   array.
+void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepAliveArray /*= NULL*/) const
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
-        NOTHROW;
+        GC_TRIGGERS;
+        THROWS;
         MODE_COOPERATIVE;
+        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)&stackTrace));
+        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)outKeepAliveArray));
     }
     CONTRACTL_END;
 
-#if !defined(DACCESS_COMPILE)
-    SpinLock::AcquireLock(&g_StackTraceArrayLock);
-#endif // !defined(DACCESS_COMPILE)
+    ExceptionObject::GetStackTraceParts(_stackTrace, stackTrace, outKeepAliveArray);
 
-    StackTraceArray temp(_stackTrace);
-    stackTrace.Swap(temp);
+#ifndef DACCESS_COMPILE
+    Thread *pThread = GetThread();
 
-    if (outDynamicMethodArray != NULL)
+    if ((stackTrace.Get() != NULL) && (stackTrace.GetObjectThread() != pThread))
     {
-        *outDynamicMethodArray = _dynamicMethods;
+        struct
+        {
+            StackTraceArray newStackTrace;
+            PTRARRAYREF newKeepAliveArray = NULL;
+        } gc;
+
+        GCPROTECT_BEGIN(gc);
+
+        // When the stack trace was created by other thread than the current one, we create a copy of both the stack trace and the keepAlive arrays to make sure
+        // they are not changing while the caller is accessing them.
+        gc.newStackTrace.Allocate(stackTrace.Capacity());
+        uint32_t numCopiedFrames = gc.newStackTrace.CopyDataFrom(stackTrace);
+        // Set size to the exact value which was used when we copied the data,
+        // another thread might have changed it at the time of copying
+        gc.newStackTrace.SetSize(numCopiedFrames);
+
+        stackTrace.Set(gc.newStackTrace.Get());
+
+        uint32_t keepAliveArrayCapacity = ((*outKeepAliveArray) == NULL) ? 0 : (*outKeepAliveArray)->GetNumComponents();
+
+        // It is possible that another thread was modifying the stack trace array and keep alive array while we were making the copies. 
+        // The following sequence of events could have happened:
+        // Case 1:
+        // * The current thread gets the stack trace array and the keep alive array references using the ExceptionObject::GetStackTraceParts above
+        // * The current thread reads the size of the stack trace array
+        // * Another thread adds a new stack frame to the stack trace array and a corresponding keep alive object to the keep alive array
+        // * The current thread creates a copy of the stack trace using the size it read before
+        // * The keep alive count stored in the stack trace array doesn't match the elements in the copy of the stack trace array
+        // In this case, we need to recompute the keep alive count based on the copied stack trace array.
+        //
+        // Case 2:
+        // * The current thread gets the stack trace array and the keep alive array references using the ExceptionObject::GetStackTraceParts above
+        // * Another thread adds a stack frame with a keep alive item and that exceeds the keep alive array capacity. So it allocates a new keep alive array
+        //   and adds the new keep alive item to it.
+        // * Thus the keep alive array this thread has read doesn't have the keep alive item, but the stack trace array contains the element the other thread has added.
+        // In this case, we need to trim the stack trace array at the first element that doesn't have a corresponding keep alive object in the keep alive array.
+        // We cannot fetch the keep alive object for that stack trace entry, because in the meanwhile, the keep alive array that the other thread created
+        // may have been collected and the method related to the stack trace entry may have been collected as well.
+        //
+        uint32_t keepAliveItemsCount = 0;
+        for (uint32_t i = 0; i < numCopiedFrames; i++)
+        {
+            if (stackTrace[i].flags & STEF_KEEPALIVE)
+            {
+                if ((keepAliveItemsCount + 1) >= keepAliveArrayCapacity)
+                {
+                    // Trim the stack trace at a point where a dynamic or collectible method is found without a corresponding keepAlive object.
+                    stackTrace.SetSize(i);
+                    break;
+                }
+                else
+                {
+                    _ASSERTE((*outKeepAliveArray)->GetAt(keepAliveItemsCount + 1) != NULL);
+                }
+
+                keepAliveItemsCount++;
+            }
+        }
+
+        stackTrace.SetKeepAliveItemsCount(keepAliveItemsCount);
+        _ASSERTE(stackTrace.ComputeKeepAliveItemsCount() == keepAliveItemsCount);
+
+        if (keepAliveArrayCapacity != 0)
+        {
+            gc.newKeepAliveArray = (PTRARRAYREF)AllocateObjectArray(keepAliveArrayCapacity, g_pObjectClass);
+            _ASSERTE((*outKeepAliveArray) != NULL);
+            memmoveGCRefs(gc.newKeepAliveArray->GetDataPtr() + 1,
+                          (*outKeepAliveArray)->GetDataPtr() + 1,
+                          (keepAliveItemsCount) * sizeof(Object *));
+            gc.newKeepAliveArray->SetAt(0, stackTrace.Get());
+            *outKeepAliveArray = gc.newKeepAliveArray;
+        }
+        else
+        {
+            *outKeepAliveArray = NULL;
+        }
+        GCPROTECT_END();
+    }
+#endif // DACCESS_COMPILE            
+}
+
+// Get the stack trace and the dynamic method array from the stack trace object. 
+// If the stack trace was created by another thread, it returns clones of both arrays.
+/* static */
+void ExceptionObject::GetStackTraceParts(OBJECTREF stackTraceObj, StackTraceArray & stackTrace, PTRARRAYREF * outKeepAliveArray /*= NULL*/)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_COOPERATIVE;
+        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)&stackTrace));
+        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)outKeepAliveArray));
+    }
+    CONTRACTL_END;
+
+    PTRARRAYREF keepAliveArray = NULL;
+
+    // Extract the stack trace and keepAlive arrays from the stack trace object.
+    if ((stackTraceObj != NULL) && ((dac_cast<PTR_ArrayBase>(OBJECTREFToObject(stackTraceObj)))->GetArrayElementType() != ELEMENT_TYPE_I1))
+    {
+        // The stack trace object is the dynamic methods array with its first slot set to the stack trace I1Array.
+        PTR_PTRArray combinedArray = dac_cast<PTR_PTRArray>(OBJECTREFToObject(stackTraceObj));
+        stackTrace.Set(dac_cast<I1ARRAYREF>(combinedArray->GetAt(0)));
+        keepAliveArray = dac_cast<PTRARRAYREF>(ObjectToOBJECTREF(combinedArray));
+    }
+    else
+    {
+        stackTrace.Set(dac_cast<I1ARRAYREF>(stackTraceObj));
     }
 
-#if !defined(DACCESS_COMPILE)
-    SpinLock::ReleaseLock(&g_StackTraceArrayLock);
-#endif // !defined(DACCESS_COMPILE)
-
+    if (outKeepAliveArray != NULL)
+    {
+        *outKeepAliveArray = keepAliveArray;
+    }
 }
 
 #ifndef DACCESS_COMPILE
