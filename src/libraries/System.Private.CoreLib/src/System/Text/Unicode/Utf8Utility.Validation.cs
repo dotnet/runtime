@@ -878,7 +878,7 @@ namespace System.Text.Unicode
 
             int countBytes = 0; // number of continuation bytes in the block
             int n4 = 0; // number of 4-byte sequences that start in this block
-            for (; processedLength + Vector256<byte>.Count <= inputLength; processedLength += Vector256<byte>.Count)
+            for (; processedLength <= inputLength - Vector256<byte>.Count; processedLength += Vector256<byte>.Count)
             {
                 Vector256<byte> currentBlock = Vector256.Load(pInputBuffer + processedLength);
                 int mask = (int)currentBlock.ExtractMostSignificantBits();
@@ -909,7 +909,7 @@ namespace System.Text.Unicode
                     int localAsciiRun = Vector256<byte>.Count;
                     if (processedLength + localAsciiRun + (Vector256<byte>.Count * 2) <= inputLength)
                     {
-                        for (; processedLength + localAsciiRun + (Vector256<byte>.Count * 2) <= inputLength; localAsciiRun += (Vector256<byte>.Count * 2))
+                        for (; localAsciiRun <= inputLength - processedLength - (Vector256<byte>.Count * 2); localAsciiRun += (Vector256<byte>.Count * 2))
                         {
                             Vector256<byte> block1 = Vector256.Load(pInputBuffer + processedLength + localAsciiRun);
                             Vector256<byte> block2 = Vector256.Load(pInputBuffer + processedLength + localAsciiRun + Vector256<byte>.Count);
