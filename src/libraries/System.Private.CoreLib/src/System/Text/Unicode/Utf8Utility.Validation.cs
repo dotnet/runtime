@@ -787,60 +787,66 @@ namespace System.Text.Unicode
             Vector256<byte> maxValue = Vector256.Create(255, 255, 255, 255, 255, 255, 255, 255,
                 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
                 255, 255, 255, 255, 255, 0b11110000 - 1, 0b11100000 - 1, 0b11000000 - 1);
+
             Vector256<byte> prevIncomplete = Avx2.SubtractSaturate(prevInputBlock, maxValue);
-            Vector256<byte> shuf1 = Vector256.Create(tooLong, tooLong, tooLong, tooLong,
-                    tooLong, tooLong, tooLong, tooLong,
-                    twoConts, twoConts, twoConts, twoConts,
-                    tooShort | overlong2,
-                    tooShort,
-                    tooShort | overlong3 | surrogate,
-                    tooShort | tooLarge | tooLarge1000 | overlong4,
-                    tooLong, tooLong, tooLong, tooLong,
-                    tooLong, tooLong, tooLong, tooLong,
-                    twoConts, twoConts, twoConts, twoConts,
-                    tooShort | overlong2,
-                    tooShort,
-                    tooShort | overlong3 | surrogate,
-                    tooShort | tooLarge | tooLarge1000 | overlong4);
-            Vector256<byte> shuf2 = Vector256.Create(carry | overlong3 | overlong2 | overlong4,
-                    carry | overlong2,
-                    carry, carry,
-                    carry | tooLarge,
-                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                    carry | tooLarge | tooLarge1000 | surrogate,
-                    carry | tooLarge | tooLarge1000,
-                    carry | tooLarge | tooLarge1000,
-                    carry | overlong3 | overlong2 | overlong4,
-                    carry | overlong2,
-                    carry, carry,
-                    carry | tooLarge,
-                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                    carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
-                    carry | tooLarge | tooLarge1000 | surrogate,
-                    carry | tooLarge | tooLarge1000,
-                    carry | tooLarge | tooLarge1000);
-            Vector256<byte> shuf3 = Vector256.Create(tooShort, tooShort, tooShort, tooShort,
-                    tooShort, tooShort, tooShort, tooShort,
-                    tooLong | overlong2 | twoConts | overlong3 | tooLarge1000 | overlong4,
-                    tooLong | overlong2 | twoConts | overlong3 | tooLarge,
-                    tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                    tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                    tooShort, tooShort, tooShort, tooShort, tooShort, tooShort, tooShort, tooShort,
-                    tooShort, tooShort, tooShort, tooShort,
-                    tooLong | overlong2 | twoConts | overlong3 | tooLarge1000 | overlong4,
-                    tooLong | overlong2 | twoConts | overlong3 | tooLarge,
-                    tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                    tooLong | overlong2 | twoConts | surrogate | tooLarge,
-                    tooShort, tooShort, tooShort, tooShort);
+            Vector256<byte> shuf1 = Vector256.Create(
+                tooLong, tooLong, tooLong, tooLong, tooLong, tooLong, tooLong, tooLong,
+                twoConts, twoConts, twoConts, twoConts,
+                tooShort | overlong2,
+                tooShort,
+                tooShort | overlong3 | surrogate,
+                tooShort | tooLarge | tooLarge1000 | overlong4,
+                tooLong, tooLong, tooLong, tooLong, tooLong, tooLong, tooLong, tooLong,
+                twoConts, twoConts, twoConts, twoConts,
+                tooShort | overlong2,
+                tooShort,
+                tooShort | overlong3 | surrogate,
+                tooShort | tooLarge | tooLarge1000 | overlong4);
+
+            Vector256<byte> shuf2 = Vector256.Create(
+                carry | overlong3 | overlong2 | overlong4,
+                carry | overlong2,
+                carry, carry,
+                carry | tooLarge,
+                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                carry | tooLarge | tooLarge1000 | surrogate,
+                carry | tooLarge | tooLarge1000,
+                carry | tooLarge | tooLarge1000,
+                carry | overlong3 | overlong2 | overlong4,
+                carry | overlong2,
+                carry, carry,
+                carry | tooLarge,
+                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                carry | tooLarge | tooLarge1000, carry | tooLarge | tooLarge1000,
+                carry | tooLarge | tooLarge1000 | surrogate,
+                carry | tooLarge | tooLarge1000,
+                carry | tooLarge | tooLarge1000);
+
+            Vector256<byte> shuf3 = Vector256.Create(
+                tooShort, tooShort, tooShort, tooShort,
+                tooShort, tooShort, tooShort, tooShort,
+                tooLong | overlong2 | twoConts | overlong3 | tooLarge1000 | overlong4,
+                tooLong | overlong2 | twoConts | overlong3 | tooLarge,
+                tooLong | overlong2 | twoConts | surrogate | tooLarge,
+                tooLong | overlong2 | twoConts | surrogate | tooLarge,
+                tooShort, tooShort, tooShort, tooShort, tooShort, tooShort, tooShort, tooShort,
+                tooShort, tooShort, tooShort, tooShort,
+                tooLong | overlong2 | twoConts | overlong3 | tooLarge1000 | overlong4,
+                tooLong | overlong2 | twoConts | overlong3 | tooLarge,
+                tooLong | overlong2 | twoConts | surrogate | tooLarge,
+                tooLong | overlong2 | twoConts | surrogate | tooLarge,
+                tooShort, tooShort, tooShort, tooShort);
+
             Vector256<byte> thirdByte = Vector256.Create((byte)(0b11100000u - 0x80));
             Vector256<byte> fourthByte = Vector256.Create((byte)(0b11110000u - 0x80));
             Vector256<byte> v0f = Vector256.Create((byte)0x0F);
             Vector256<byte> v80 = Vector256.Create((byte)0x80);
+
             // So we want to count the number of 4-byte sequences,
             // the number of 4-byte sequences, 3-byte sequences, and
             // the number of 2-byte sequences.
@@ -869,9 +875,10 @@ namespace System.Text.Unicode
             // The *block* here is what begins at processedLength and ends
             // at processedLength/16*16 or when an error occurs.
             // The block goes from processedLength to processedLength/16*16.
+
             int countBytes = 0; // number of continuation bytes in the block
             int n4 = 0; // number of 4-byte sequences that start in this block
-            for (; processedLength + 32 <= inputLength; processedLength += 32)
+            for (; processedLength + Vector256<byte>.Count <= inputLength; processedLength += Vector256<byte>.Count)
             {
                 Vector256<byte> currentBlock = Vector256.Load(pInputBuffer + processedLength);
                 int mask = (int)currentBlock.ExtractMostSignificantBits();
@@ -881,7 +888,8 @@ namespace System.Text.Unicode
                     // we need to check if the previous block was incomplete.
                     if (!Avx.TestZ(prevIncomplete, prevIncomplete))
                     {
-                        byte* invalidBytePointer = SimpleRewindAndValidateWithErrors(32 - 3, pInputBuffer + processedLength - 3, inputLength - processedLength + 3);
+                        byte* invalidBytePointer = SimpleRewindAndValidateWithErrors(Vector256<byte>.Count - 3,
+                            pInputBuffer + processedLength - 3, inputLength - processedLength + 3);
                         // So the code is correct up to invalidBytePointer
                         if (invalidBytePointer < pInputBuffer + processedLength)
                         {
@@ -891,25 +899,26 @@ namespace System.Text.Unicode
                         {
                             AddCounters(pInputBuffer + processedLength, invalidBytePointer, ref n4, ref countBytes);
                         }
+
                         (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = CalculateN2N3FinalSimdAdjustments(n4, countBytes);
                         return invalidBytePointer;
                     }
                     prevIncomplete = Vector256<byte>.Zero;
 
                     // Often, we have a lot of ASCII characters in a row.
-                    int localAsciiRun = 32;
-                    if (processedLength + localAsciiRun + 64 <= inputLength)
+                    int localAsciiRun = Vector256<byte>.Count;
+                    if (processedLength + localAsciiRun + (Vector256<byte>.Count * 2) <= inputLength)
                     {
-                        for (; processedLength + localAsciiRun + 64 <= inputLength; localAsciiRun += 64)
+                        for (; processedLength + localAsciiRun + (Vector256<byte>.Count * 2) <= inputLength; localAsciiRun += (Vector256<byte>.Count * 2))
                         {
                             Vector256<byte> block1 = Vector256.Load(pInputBuffer + processedLength + localAsciiRun);
-                            Vector256<byte> block2 = Vector256.Load(pInputBuffer + processedLength + localAsciiRun + 32);
+                            Vector256<byte> block2 = Vector256.Load(pInputBuffer + processedLength + localAsciiRun + Vector256<byte>.Count);
                             if ((block1 | block2).ExtractMostSignificantBits() != 0)
                             {
                                 break;
                             }
                         }
-                        processedLength += localAsciiRun - 32;
+                        processedLength += localAsciiRun - Vector256<byte>.Count;
                     }
 
                 }
@@ -919,9 +928,15 @@ namespace System.Text.Unicode
                     Vector256<byte> shuffled = Avx2.Permute2x128(prevInputBlock, currentBlock, 0x21);
                     prevInputBlock = currentBlock;
                     Vector256<byte> prev1 = Avx2.AlignRight(prevInputBlock, shuffled, 16 - 1);
-                    Vector256<byte> byte1High = Avx2.Shuffle(shuf1, Avx2.ShiftRightLogical(prev1.AsUInt16(), 4).AsByte() & v0f);// takes the XXXX 0000 part of the previous byte
-                    Vector256<byte> byte1Low = Avx2.Shuffle(shuf2, prev1 & v0f); // takes the 0000 XXXX part of the previous part
-                    Vector256<byte> byte2High = Avx2.Shuffle(shuf3, Avx2.ShiftRightLogical(currentBlock.AsUInt16(), 4).AsByte() & v0f); // takes the XXXX 0000 part of the current byte
+
+                    // Takes the XXXX 0000 part of the previous byte
+                    Vector256<byte> byte1High = Avx2.Shuffle(shuf1, Avx2.ShiftRightLogical(prev1.AsUInt16(), 4).AsByte() & v0f);
+
+                    // Takes the 0000 XXXX part of the previous part
+                    Vector256<byte> byte1Low = Avx2.Shuffle(shuf2, prev1 & v0f);
+
+                    // Takes the XXXX 0000 part of the current byte
+                    Vector256<byte> byte2High = Avx2.Shuffle(shuf3, Avx2.ShiftRightLogical(currentBlock.AsUInt16(), 4).AsByte() & v0f);
                     Vector256<byte> sc = byte1High & byte1Low & byte2High;
                     Vector256<byte> prev2 = Avx2.AlignRight(prevInputBlock, shuffled, 16 - 2);
                     Vector256<byte> prev3 = Avx2.AlignRight(prevInputBlock, shuffled, 16 - 3);
@@ -945,6 +960,7 @@ namespace System.Text.Unicode
                         {
                             AddCounters(pInputBuffer + processedLength, invalidBytePointer, ref n4, ref countBytes);
                         }
+
                         (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = CalculateN2N3FinalSimdAdjustments(n4, countBytes);
                         return invalidBytePointer;
                     }
@@ -962,11 +978,13 @@ namespace System.Text.Unicode
                 byte* invalidBytePointer;
                 if (processedLength == 0 || !hasIncomplete)
                 {
-                    invalidBytePointer = SimpleRewindAndValidateWithErrors(0, pInputBuffer + processedLength, inputLength - processedLength);
+                    invalidBytePointer = SimpleRewindAndValidateWithErrors(
+                        0, pInputBuffer + processedLength, inputLength - processedLength);
                 }
                 else
                 {
-                    invalidBytePointer = SimpleRewindAndValidateWithErrors(3, pInputBuffer + processedLength - 3, inputLength - processedLength + 3);
+                    invalidBytePointer = SimpleRewindAndValidateWithErrors(
+                        3, pInputBuffer + processedLength - 3, inputLength - processedLength + 3);
                 }
                 if (invalidBytePointer != pInputBuffer + inputLength)
                 {
@@ -978,11 +996,13 @@ namespace System.Text.Unicode
                     {
                         AddCounters(pInputBuffer + processedLength, invalidBytePointer, ref n4, ref countBytes);
                     }
+
                     (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = CalculateN2N3FinalSimdAdjustments(n4, countBytes);
                     return invalidBytePointer;
                 }
                 AddCounters(pInputBuffer + processedLength, invalidBytePointer, ref n4, ref countBytes);
             }
+
             (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = CalculateN2N3FinalSimdAdjustments(n4, countBytes);
             return pInputBuffer + inputLength;
         }
@@ -993,9 +1013,13 @@ namespace System.Text.Unicode
             for (byte* p = start; p < end; p++)
             {
                 if ((*p & 0b11000000) == 0b10000000)
+                {
                     countBytes -= 1;
+                }
                 if ((*p & 0b11110000) == 0b11110000)
+                {
                     n4 -= 1;
+                }
             }
         }
 
@@ -1005,17 +1029,22 @@ namespace System.Text.Unicode
             for (byte* p = start; p < end; p++)
             {
                 if ((*p & 0b11000000) == 0b10000000)
+                {
                     countBytes += 1;
+                }
                 if ((*p & 0b11110000) == 0b11110000)
+                {
                     n4 += 1;
+                }
             }
         }
 
-        // We scan the input from buf to len, possibly going back howFarBack bytes, to find the end of
-        // a valid UTF-8 sequence. We return buf + len if the buffer is valid, otherwise we return the
-        // pointer to the first invalid byte.
         private static byte* SimpleRewindAndValidateWithErrors(int howFarBack, byte* buf, int len)
         {
+            // We scan the input from buf to len, possibly going back howFarBack bytes, to find the end of
+            // a valid UTF-8 sequence. We return buf + len if the buffer is valid, otherwise we return the
+            // pointer to the first invalid byte.
+
             int extraLen = 0;
             bool foundLeadingBytes = false;
 
@@ -1032,7 +1061,9 @@ namespace System.Text.Unicode
             }
 
             if (!foundLeadingBytes)
+            {
                 return buf - howFarBack;
+            }
 
             int pos = 0;
             len += extraLen;
@@ -1042,7 +1073,9 @@ namespace System.Text.Unicode
                 while (firstByte < 0b10000000)
                 {
                     if (++pos == len)
+                    {
                         return buf + len;
+                    }
                     firstByte = buf[pos];
                 }
 
@@ -1052,56 +1085,92 @@ namespace System.Text.Unicode
                 {
                     nextPos = pos + 2;
                     if (nextPos > len)
-                        return buf + pos; // Too short
+                    {
+                        // Too short
+                        return buf + pos;
+                    }
                     if ((buf[pos + 1] & 0b11000000) != 0b10000000)
-                        return buf + pos; // Too short
+                    {
+                        // Too short
+                        return buf + pos;
+                    }
 
-                    // range check
-                    codePoint = ((uint)(firstByte & 0b00011111) << 6) | (uint)(buf[pos + 1] & 0b00111111);
-                    if (codePoint < 0x80 || 0x7ff < codePoint)
-                        return buf + pos; // Overlong
+                    // Range check
+                    codePoint = ((uint)(firstByte & 0b00011111) << 6) |
+                                ((uint)(buf[pos + 1] & 0b00111111));
+                    if (codePoint is < 0x80 or > 0x7ff)
+                    {
+                        // Overlong
+                        return buf + pos;
+                    }
                 }
                 else if ((firstByte & 0b11110000) == 0b11100000)
                 {
                     nextPos = pos + 3;
                     if (nextPos > len)
-                        return buf + pos; // Too short
-
-                    // range check
-                    codePoint = ((uint)(firstByte & 0b00001111) << 12) | ((uint)(buf[pos + 1] & 0b00111111) << 6) | (uint)(buf[pos + 2] & 0b00111111);
-                    // Either overlong or too large:
-                    if (codePoint < 0x800 || 0xffff < codePoint || (0xd7ff < codePoint && codePoint < 0xe000))
+                    {
+                        // Too short
                         return buf + pos;
+                    }
+                    // Range check
+                    codePoint = ((uint)(firstByte & 0b00001111) << 12) |
+                                ((uint)(buf[pos + 1] & 0b00111111) << 6) |
+                                ((uint)(buf[pos + 2] & 0b00111111));
+                    // Either overlong or too large:
+                    if (codePoint is < 0x800 or > 0xffff or > 0xd7ff and < 0xe000)
+                    {
+                        return buf + pos;
+                    }
                     if ((buf[pos + 1] & 0b11000000) != 0b10000000)
-                        return buf + pos; // Too short
+                    {
+                        // Too short
+                        return buf + pos;
+                    }
                     if ((buf[pos + 2] & 0b11000000) != 0b10000000)
-                        return buf + pos; // Too short
+                    {
+                        // Too short
+                        return buf + pos;
+                    }
                 }
                 else if ((firstByte & 0b11111000) == 0b11110000)
                 {
                     nextPos = pos + 4;
                     if (nextPos > len)
+                    {
                         return buf + pos;
+                    }
                     if ((buf[pos + 1] & 0b11000000) != 0b10000000)
+                    {
                         return buf + pos;
+                    }
                     if ((buf[pos + 2] & 0b11000000) != 0b10000000)
+                    {
                         return buf + pos;
+                    }
                     if ((buf[pos + 3] & 0b11000000) != 0b10000000)
+                    {
                         return buf + pos;
-                    // range check
-                    codePoint = ((uint)(firstByte & 0b00000111) << 18) | ((uint)(buf[pos + 1] & 0b00111111) << 12) |
-                                ((uint)(buf[pos + 2] & 0b00111111) << 6) | (uint)(buf[pos + 3] & 0b00111111);
-                    if (codePoint <= 0xffff || 0x10ffff < codePoint)
+                    }
+
+                    // Range check
+                    codePoint = ((uint)(firstByte & 0b00000111) << 18) |
+                                ((uint)(buf[pos + 1] & 0b00111111) << 12) |
+                                ((uint)(buf[pos + 2] & 0b00111111) << 6) |
+                                ((uint)(buf[pos + 3] & 0b00111111));
+                    if (codePoint is <= 0xffff or > 0x10ffff)
+                    {
                         return buf + pos;
+                    }
                 }
                 else
                 {
-                    // we may have a continuation/too long error
+                    // We may have a continuation/too long error
                     return buf + pos;
                 }
                 pos = nextPos;
             }
-            return buf + len; // no error
+            // No error
+            return buf + len;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
