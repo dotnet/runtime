@@ -62,6 +62,8 @@ NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *pImageL
 
 void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
 {
+    INSTRUMENTED_METHOD("NativeImage::Initialize");
+    
     LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
 
     m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, pLoaderAllocator, m_pImageLayout, pHeader, this, pamTracker);
@@ -115,6 +117,8 @@ NativeImage *NativeImage::Open(
     LoaderAllocator *pLoaderAllocator,
     /* out */ bool *isNewNativeImage)
 {
+    INSTRUMENTED_METHOD("NativeImage::Open");
+    
     STANDARD_VM_CONTRACT;
 
     NativeImage *pExistingImage = AppDomain::GetCurrentDomain()->GetNativeImage(nativeImageFileName);
@@ -263,6 +267,8 @@ NativeImage *NativeImage::Open(
 #ifndef DACCESS_COMPILE
 Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid, DomainAssembly *pParentAssembly)
 {
+    INSTRUMENTED_METHOD("NativeImage::LoadManifestAssembly");
+    
     STANDARD_VM_CONTRACT;
 
     AssemblySpec spec;
@@ -274,6 +280,8 @@ Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid, DomainAssembly *pPar
 #ifndef DACCESS_COMPILE
 PTR_READYTORUN_CORE_HEADER NativeImage::GetComponentAssemblyHeader(LPCUTF8 simpleName)
 {
+    INSTRUMENTED_METHOD("NativeImage::GetComponentAssemblyHeader");
+    
     STANDARD_VM_CONTRACT;
 
     const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.LookupPtr(simpleName);
@@ -291,6 +299,8 @@ PTR_READYTORUN_CORE_HEADER NativeImage::GetComponentAssemblyHeader(LPCUTF8 simpl
 #ifndef DACCESS_COMPILE
 IMDInternalImport *NativeImage::LoadManifestMetadata()
 {
+    INSTRUMENTED_METHOD("NativeImage::LoadManifestMetadata");
+    
     STANDARD_VM_CONTRACT;
 
     IMAGE_DATA_DIRECTORY *pMeta = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ManifestMetadata);
