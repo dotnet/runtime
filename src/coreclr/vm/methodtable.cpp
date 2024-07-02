@@ -6442,6 +6442,8 @@ InteropMethodTableData *MethodTable::GetComInteropData()
         GC_TRIGGERS;
     } CONTRACTL_END;
 
+    _ASSERTE(GetAuxiliaryData()->IsPublished());
+
     InteropMethodTableData *pData = LookupComInteropData();
 
     if (!pData)
