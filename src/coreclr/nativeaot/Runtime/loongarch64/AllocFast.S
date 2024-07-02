@@ -117,11 +117,9 @@ NewOutOfMemory:
 
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
         ori  $a2, $zero, STRING_COMPONENT_SIZE
-        ori  $a3, $zero, (STRING_BASE_SIZE + 7)
-        mulw.d.w  $a2, $a1, $a2
-        add.d  $a2, $a2, $a3        // a2 = (a1[31:0] * a2[31:0])[64:0] + a3
-        srli.d  $a2, $a2, 3
-        slli.d  $a2, $a2, 3
+        mulw.d.w  $a2, $a1, $a2                 // a2 = (a1[31:0] * a2[31:0])[64:0]
+        addi.d  $a2, $a2, STRING_BASE_SIZE + 7  // a2 = a2 + STRING_BASE_SIZE + 7
+        bstrins.d  $a2, $r0, 2, 0               // clear the bits[2:0] of $a2
 
         // a0 == MethodTable
         // a1 == element count
@@ -188,8 +186,7 @@ RhNewString_Rare:
         ld.w  $a3, $a0, OFFSETOF__MethodTable__m_uBaseSize
         add.d  $a2, $a2, $a3
         addi.d  $a2, $a2, 7
-        srli.d  $a2, $a2, 3
-        slli.d  $a2, $a2, 3
+        bstrins.d  $a2, $r0, 2, 0
         // a0 == MethodTable
         // a1 == element count
         // a2 == array size

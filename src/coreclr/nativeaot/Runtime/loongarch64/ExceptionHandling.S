@@ -208,10 +208,10 @@
 #endif // _DEBUG
     .endm
 
-.macro GetThreadX2
-    st.d  $a0, $sp, -16
-    st.d  $a1, $sp, -8
+.macro GetThreadA2
     addi.d  $sp, $sp, -16
+    st.d  $a0, $sp, 0
+    st.d  $a1, $sp, 8
     bl  C_FUNC(RhpGetThread)
     ori  $a2, $a0, 0
     ld.d  $a0, $sp, 0
@@ -234,14 +234,13 @@
 
         ALLOC_THROW_FRAME HARDWARE_EXCEPTION
 
-        GetThreadX2
+        GetThreadA2
 
         addi.d  $a1, $sp, rsp_offsetof_ExInfo            // a1 <- ExInfo*
         st.d  $zero, $a1, OFFSETOF__ExInfo__m_exception  // pExInfo->m_exception = null
         ori  $a3, $zero, 1
         st.b  $a3, $a1, OFFSETOF__ExInfo__m_passNumber   // pExInfo->m_passNumber = 1
-        lu12i.w  $a3, -1
-        ori  $a3, $a3, 0xfff
+        addi.w  $a3, $zero, -1
         st.w  $a3, $a1, OFFSETOF__ExInfo__m_idxCurClause // pExInfo->m_idxCurClause = MaxTryRegionIdx
         ori  $a3, $zero, 2
         st.b  $a3, $a1, OFFSETOF__ExInfo__m_kind         // pExInfo->m_kind = ExKind.HardwareFault
@@ -278,7 +277,7 @@
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
-        GetThreadX2
+        GetThreadA2
 
         // There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return
         // address could have been hijacked when we were in that C# code and we must remove the hijack and
@@ -327,8 +326,7 @@ NotHijacked:
         st.d  $zero, $a1, OFFSETOF__ExInfo__m_exception  // pExInfo->m_exception = null
         ori  $a3, $zero, 1
         st.b  $a3, $a1, OFFSETOF__ExInfo__m_passNumber   // pExInfo->m_passNumber = 1
-        lu12i.w  $a3, -1
-        ori  $a3, $a3, 0xfff
+        addi.w  $a3, $zero, -1
         st.w  $a3, $a1, OFFSETOF__ExInfo__m_idxCurClause // pExInfo->m_idxCurClause = MaxTryRegionIdx
         ori  $a3, $zero, 1
         st.b  $a3, $a1, OFFSETOF__ExInfo__m_kind         // pExInfo->m_kind = ExKind.Throw
@@ -367,7 +365,7 @@ NotHijacked:
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
-        GetThreadX2
+        GetThreadA2
 
         addi.d  $a1, $sp, rsp_offsetof_ExInfo            // a1 <- ExInfo*
         st.d  $zero, $a1, OFFSETOF__ExInfo__m_exception  // pExInfo->m_exception = null
@@ -412,7 +410,7 @@ NotHijacked:
 
     NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
 
-        ALLOC_CALL_FUNCLET_FRAME 0x70 // Size needs to be equal with ExceptionHandling.asm variant of this function
+        ALLOC_CALL_FUNCLET_FRAME 0x70
         fst.d  $f24, $sp, 0x00
         fst.d  $f25, $sp, 0x08
         fst.d  $f26, $sp, 0x10
@@ -559,7 +557,7 @@ NoAbort:
 
     NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
 
-        ALLOC_CALL_FUNCLET_FRAME 0x60 // Size needs to be equal with ExceptionHandling.asm variant of this function
+        ALLOC_CALL_FUNCLET_FRAME 0x60
         fst.d  $f24, $sp, 0x00
         fst.d  $f25, $sp, 0x08
         fst.d  $f26, $sp, 0x10
