@@ -4829,7 +4829,7 @@ public:
 
     CGCDesc *GetSlotMap ()
     {
-        assert (GetMethodTable()->ContainsPointers());
+        assert (GetMethodTable()->ContainsGCPointers());
         return CGCDesc::GetCGCDescFromMT(GetMethodTable());
     }
 
@@ -4893,9 +4893,9 @@ public:
     }
 #endif // FEATURE_STRUCTALIGN
 
-    BOOL ContainsPointers() const
+    BOOL ContainsGCPointers() const
     {
-        return GetMethodTable()->ContainsPointers();
+        return GetMethodTable()->ContainsGCPointers();
     }
 
 #ifdef COLLECTIBLE_CLASS
@@ -4904,10 +4904,10 @@ public:
         return GetMethodTable()->Collectible();
     }
 
-    FORCEINLINE BOOL ContainsPointersOrCollectible() const
+    FORCEINLINE BOOL ContainsGCPointersOrCollectible() const
     {
         MethodTable *pMethodTable = GetMethodTable();
-        return (pMethodTable->ContainsPointers() || pMethodTable->Collectible());
+        return (pMethodTable->ContainsGCPointers() || pMethodTable->Collectible());
     }
 #endif //COLLECTIBLE_CLASS
 
@@ -6066,7 +6066,7 @@ void gc_heap::release_segment (heap_segment* sg)
     FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem(sg));
     size_t reserved_size = (uint8_t*)heap_segment_reserved (sg) - (uint8_t*)sg;
     reduce_committed_bytes (
-        sg, 
+        sg,
         ((uint8_t*)heap_segment_committed (sg) - (uint8_t*)sg),
         (int) heap_segment_oh (sg)
 #ifdef MULTIPLE_HEAPS
@@ -9083,7 +9083,7 @@ void destroy_card_table (uint32_t* c_table)
 void gc_heap::destroy_card_table_helper (uint32_t* c_table)
 {
     uint8_t* lowest = card_table_lowest_address (c_table);
-    uint8_t* highest = card_table_highest_address (c_table);    
+    uint8_t* highest = card_table_highest_address (c_table);
     get_card_table_element_layout(lowest, highest, card_table_element_layout);
     size_t result = card_table_element_layout[seg_mapping_table_element + 1];
     gc_heap::reduce_committed_bytes (&card_table_refcount(c_table), result, recorded_committed_bookkeeping_bucket, -1, true);
@@ -11555,14 +11555,14 @@ inline size_t my_get_size (Object* ob)
 
 #define size(i) my_get_size (header(i))
 
-#define contain_pointers(i) header(i)->ContainsPointers()
+#define contain_pointers(i) header(i)->ContainsGCPointers()
 #ifdef COLLECTIBLE_CLASS
-#define contain_pointers_or_collectible(i) header(i)->ContainsPointersOrCollectible()
+#define contain_pointers_or_collectible(i) header(i)->ContainsGCPointersOrCollectible()
 
 #define get_class_object(i) GCToEEInterface::GetLoaderAllocatorObjectForGC((Object *)i)
 #define is_collectible(i) method_table(i)->Collectible()
 #else //COLLECTIBLE_CLASS
-#define contain_pointers_or_collectible(i) header(i)->ContainsPointers()
+#define contain_pointers_or_collectible(i) header(i)->ContainsGCPointers()
 #endif //COLLECTIBLE_CLASS
 
 #ifdef BACKGROUND_GC
@@ -26683,7 +26683,7 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
 #ifndef COLLECTIBLE_CLASS
 #define go_through_object_cl(mt,o,size,parm,exp)                            \
 {                                                                           \
-    if (header(o)->ContainsPointers())                                      \
+    if (header(o)->ContainsGCPointers())                                      \
     {                                                                       \
         go_through_object_nostart(mt,o,size,parm,exp);                      \
     }                                                                       \
@@ -26697,7 +26697,7 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
         uint8_t** parm = &class_obj;                                           \
         do {exp} while (false);                                             \
     }                                                                       \
-    if (header(o)->ContainsPointers())                                      \
+    if (header(o)->ContainsGCPointers())                                      \
     {                                                                       \
         go_through_object_nostart(mt,o,size,parm,exp);                      \
     }                                                                       \

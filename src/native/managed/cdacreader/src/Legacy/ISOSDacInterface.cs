@@ -42,6 +42,25 @@ internal struct DacpThreadData
     public ulong lastThrownObjectHandle;
     public ulong nextThread;
 }
+
+internal struct DacpMethodTableData
+{
+    public int bIsFree; // everything else is NULL if this is true.
+    public ulong module;
+    public ulong klass;
+    public ulong parentMethodTable;
+    public ushort wNumInterfaces;
+    public ushort wNumMethods;
+    public ushort wNumVtableSlots;
+    public ushort wNumVirtuals;
+    public uint baseSize;
+    public uint componentSize;
+    public uint /*mdTypeDef*/ cl; // Metadata token
+    public uint dwAttrClass; // cached metadata
+    public int bIsShared;  // Always false, preserved for backward compatibility
+    public int bIsDynamic;
+    public int bContainsGCPointers;
+}
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
 [GeneratedComInterface]
@@ -139,7 +158,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded);
     [PreserveSig]
-    int GetMethodTableData(ulong mt, /*struct DacpMethodTableData*/ void* data);
+    int GetMethodTableData(ulong mt, DacpMethodTableData* data);
     [PreserveSig]
     int GetMethodTableSlot(ulong mt, uint slot, ulong* value);
     [PreserveSig]

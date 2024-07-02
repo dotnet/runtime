@@ -5062,7 +5062,7 @@ void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTa
         reporter.Find(pMT, 0 /* baseOffset */);
     }
 
-    if (!pMT->ContainsPointers())
+    if (!pMT->ContainsGCPointers())
         return;
 
     CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
@@ -5091,7 +5091,7 @@ void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_Metho
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!pMT->ContainsPointers() && !pMT->IsByRefLike())
+    if (!pMT->ContainsGCPointers() && !pMT->IsByRefLike())
     {
         return;
     }

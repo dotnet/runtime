@@ -364,7 +364,7 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 
     _ASSERTE(!pMT->IsArray());  // bunch of assumptions about arrays wrong.
 
-    if (pMT->ContainsPointers())
+    if (pMT->ContainsGCPointers())
     {
         memmoveGCRefs(dest, src, pMT->GetNumInstanceFieldBytes());
     }

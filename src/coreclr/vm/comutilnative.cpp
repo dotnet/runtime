@@ -1623,7 +1623,7 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
         return mt->CanCompareBitsOrUseFastGetHashCode();
     }
 
-    if (mt->ContainsPointers()
+    if (mt->ContainsGCPointers()
         || mt->IsNotTightlyPacked()
         || mt->GetClass()->IsInlineArray())
     {
