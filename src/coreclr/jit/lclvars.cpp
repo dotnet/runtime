@@ -2572,6 +2572,13 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
 
     if (varDsc->GetLayout()->IsBlockLayout())
     {
+        JITDUMP("  struct promotion of V%02u is disabled because it has block layout\n", lclNum);
+        return false;
+    }
+
+    if (varDsc->lvStackAllocatedBox)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it is a stack allocated box\n", lclNum);
         return false;
     }
 
@@ -3358,6 +3365,8 @@ bool Compiler::lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const
 // TODO-Throughput: This does a lookup on the class handle, and in the outgoing arg context
 // this information is already available on the CallArgABIInformation, and shouldn't need to be
 // recomputed.
+//
+// Also seems like this info could be cached in the layout.
 //
 bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
 {

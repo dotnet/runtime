@@ -13404,6 +13404,10 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_Unbox;
             break;
 
+        case CORINFO_HELP_UNBOX_TYPETEST:
+            vnf = VNF_Unbox_TypeTest;
+            break;
+
         // A constant within any method.
         case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
             vnf = VNF_ManagedThreadId;
