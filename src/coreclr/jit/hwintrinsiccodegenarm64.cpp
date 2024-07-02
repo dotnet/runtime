@@ -2313,6 +2313,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_LoadVectorFirstFaulting:
+            {
+                insScalableOpts sopt = INS_SCALABLE_OPTS_LSL_N;
+                if (opt == INS_OPTS_SCALABLE_B)
+                {
+                    sopt = INS_SCALABLE_OPTS_NONE;
+                }
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, REG_ZR, opt, sopt);
+                break;
+            }
+
             default:
                 unreached();
         }
