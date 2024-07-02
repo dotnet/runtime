@@ -492,6 +492,10 @@ void HWIntrinsicInfo::lookupImmBounds(
                 }
                 break;
 
+            case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_GatherPrefetch16Bit:
+            case NI_Sve_GatherPrefetch32Bit:
+            case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_PrefetchBytes:
             case NI_Sve_PrefetchInt16:
             case NI_Sve_PrefetchInt32:
