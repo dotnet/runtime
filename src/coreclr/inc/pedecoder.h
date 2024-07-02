@@ -396,10 +396,7 @@ class PEDecoder
         FLAG_HAS_NO_READYTORUN_HEADER = 0x100,
     };
 
-protected:
     TADDR               m_base;
-
-private:
     COUNT_T             m_size;     // size of file on disk, as opposed to OptionalHeaders.SizeOfImage
     ULONG               m_flags;
 

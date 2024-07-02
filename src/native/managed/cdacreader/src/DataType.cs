@@ -27,6 +27,4 @@ public enum DataType
     RuntimeThreadLocals,
     Module,
     PEAssembly,
-    PEImage,
-    PEImageLayout,
 }

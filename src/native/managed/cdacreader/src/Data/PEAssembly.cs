@@ -12,10 +12,8 @@ internal sealed class PEAssembly : IData<PEAssembly>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.PEAssembly);
 
-        TargetPointer peImagePointer = target.ReadPointer(address + (ulong)type.Fields[nameof(PEImage)].Offset);
-        if (peImagePointer != TargetPointer.Null)
-            PEImage = target.ProcessedData.GetOrAdd<PEImage>(peImagePointer);
+        PEImage = target.ReadPointer(address + (ulong)type.Fields[nameof(PEImage)].Offset);
     }
 
-    public PEImage? PEImage { get; init; }
+    public TargetPointer PEImage { get; init; }
 }

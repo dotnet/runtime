@@ -46,8 +46,6 @@ IDictionary<ModuleLookupTable, TargetPointer> GetLookupTables(ModuleHandle handl
 Data descriptors used:
 - `Module`
 - `PEAssembly`
-- `PEImage`
-- `PEImageLayout`
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
@@ -84,13 +82,7 @@ bool IsReflectionEmit(ModuleHandle handle)
 
 TargetPointer GetILBase(ModuleHandle handle)
 {
-    TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-    TargetPointer peImage = target.ReadPointer(peAssembly + /* PEAssembly::PEImage offset */);
-    if (peImage == TargetPointer.Null)
-        return TargetPointer.Null;
-
-    TargetPointer layout = target.ReadPointer(peAssembly + /* PEImage::LoadedLayout offset */);
-    return target.ReadPointer(layout + /* PEImageLayout::Base offset */);
+    return target.ReadPointer(handle.Address + /* Module::Base offset */);
 }
 
 TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size)

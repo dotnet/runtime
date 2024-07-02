@@ -72,14 +72,6 @@ private:
     Volatile<LONG> m_refCount;
 public:
     PEImage* m_pOwner;
-
-    template<typename T> friend struct ::cdac_offsets;
-};
-
-template<>
-struct cdac_offsets<PEImageLayout>
-{
-    static constexpr size_t Base = offsetof(PEImageLayout, m_base);
 };
 
 typedef ReleaseHolder<PEImageLayout> PEImageLayoutHolder;

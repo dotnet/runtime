@@ -319,16 +319,6 @@ private:
     SimpleRWLock *m_pLayoutLock;
     PTR_PEImageLayout m_pLayouts[IMAGE_COUNT];
     IMDInternalImport* m_pMDImport;
-
-    template<typename T> friend struct ::cdac_offsets;
-};
-
-template<>
-struct cdac_offsets<PEImage>
-{
-    static constexpr size_t LoadedLayout = offsetof(PEImage, m_pLayouts) + PEImage::IMAGE_LOADED * sizeof(PTR_PEImageLayout);
-    static_assert(std::is_same<decltype(std::declval<PEImage>().m_pLayouts), PTR_PEImageLayout[PEImage::IMAGE_COUNT]>::value,
-        "PEImage::m_pLayouts is of type PTR_PEImageLayout[]");
 };
 
 FORCEINLINE void PEImageRelease(PEImage *i)
