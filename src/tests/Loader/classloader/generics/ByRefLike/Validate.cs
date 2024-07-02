@@ -56,15 +56,54 @@ public class Validate
         Assert.Throws<InvalidCastException>(() => { Exec.UnboxToT(new object()); });
     }
 
-    [Fact]
-    public static void Validate_RecognizedOpCodeSequences_Scenarios()
-    {
-        Console.WriteLine($"{nameof(Validate_RecognizedOpCodeSequences_Scenarios)}...");
+    interface I1 { }
 
-        Assert.True(Exec.BoxUnboxAny());
-        Assert.True(Exec.BoxBranch());
-        Assert.True(Exec.BoxIsinstUnboxAny());
-        Assert.True(Exec.BoxIsinstBranch());
+    struct S {}
+    struct S<T> {}
+    struct S_I1 : I1 {}
+    struct S_I1<T> : I1 {}
+
+    ref struct RS { }
+    ref struct RS<T> { }
+    ref struct RS_I1 : I1 { }
+    ref struct RS_I1<T> : I1 { }
+
+    sealed class Ignored { }
+
+    [Fact]
+    public static void Validate_RecognizedOpCodeSequences()
+    {
+        Console.WriteLine($"{nameof(Validate_RecognizedOpCodeSequences)}...");
+
+        Exec.BoxUnboxAny();
+        Exec.BoxBranch();
+        Exec.BoxIsinstUnboxAny();
+
+        Exec.BoxIsinstBranchVarious();
+
+        Assert.True(Exec.BoxIsinstBranch<int, object>(default));
+        Assert.False(Exec.BoxIsinstBranch<int, I1>(default));
+        Assert.False(Exec.BoxIsinstBranch<object, I1>(default));
+
+        Assert.True(Exec.BoxIsinstBranch<S, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S<int>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S<object>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S, S>(default));
+        Assert.True(Exec.BoxIsinstBranch<S<int>, S<int>>(default));
+        Assert.True(Exec.BoxIsinstBranch<S<object>, S<object>>(default));
+        Assert.False(Exec.BoxIsinstBranch<S, I1>(default));
+        Assert.False(Exec.BoxIsinstBranch<S<int>, I1>(default));
+        Assert.False(Exec.BoxIsinstBranch<S<object>, I1>(default));
+
+        Assert.True(Exec.BoxIsinstBranch<S_I1, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<int>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<object>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1, S_I1>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<int>, S_I1<int>>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<object>, S_I1<object>>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1, I1>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<int>, I1>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<object>, I1>(default));
     }
 
     [Fact]
@@ -85,12 +124,13 @@ public class Validate
         // These methods uses opcodes that are not able to handle ByRefLike type operands.
         // The TypeLoader prevents these invalid types from being constructed. We rely on
         // the failure to construct these invalid types to block opcode usage.
-        Assert.Throws<TypeLoadException>(() => { Exec.AllocArrayOfT_Invalid(); });
-        Assert.Throws<TypeLoadException>(() => { Exec.AllocMultiDimArrayOfT_Invalid(); });
+        Assert.Throws<TypeLoadException>(() => { Exec.AllocArray<RS>(); });
+        Assert.Throws<TypeLoadException>(() => { Exec.AllocMultiDimArray<RS>(); });
         Assert.Throws<TypeLoadException>(() => { Exec.GenericClassWithStaticField_Invalid(); });
 
         // Test that explicitly tries to box a ByRefLike type.
-        Assert.Throws<InvalidProgramException>(() => { Exec.BoxAsObject(); });
+        Assert.Throws<InvalidProgramException>(() => { Exec.BoxAsObject<RS>(new RS()); });
+        Assert.Throws<InvalidProgramException>(() => { Exec.CallStringOnObject<RS>(new RS()); });
     }
 
     [Fact]
