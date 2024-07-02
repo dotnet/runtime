@@ -3756,8 +3756,8 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
 //      gtFlags - DEBUG only gtFlags.
 //
 void emitter::emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
-                                    regNumber   reg,
-                                    ssize_t imm DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
+                                        regNumber   reg,
+                                        ssize_t imm DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
     emitAttr size = EA_SIZE(attr);
 
@@ -3808,7 +3808,7 @@ void emitter::emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
     id->idReg2(reg);
 
     // Since this is relocation, set to 8 byte size.
-    id->idOpSize(EA_8BYTE);    
+    id->idOpSize(EA_8BYTE);
     id->idSetTlsGD();
 
 #ifdef DEBUG
@@ -11366,10 +11366,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
             }
 
-            //if (id->idIsReloc())
+            // if (id->idIsReloc())
             //{
-            //    assert(sz == sizeof(instrDesc));
-            //    assert(id->idAddr()->iiaAddr != nullptr);
+            //     assert(sz == sizeof(instrDesc));
+            //     assert(id->idAddr()->iiaAddr != nullptr);
 
             //    if (id->idIsTlsGD())
             //    {
@@ -11389,7 +11389,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //        emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
             //    }
             //}
-            //else if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
+            // else if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
             //{
             //    assert(TargetOS::IsWindows);
             //    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_SECREL_LOW12L);
