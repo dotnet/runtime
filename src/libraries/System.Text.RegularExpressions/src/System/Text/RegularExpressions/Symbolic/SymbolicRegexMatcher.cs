@@ -804,7 +804,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     timeoutOccursAt)
                         || pos >= lengthMinus1)
                     {
-                        if (pos < lengthMinus1)
+                        if (pos + 1 < input.Length)
                         {
                             return false;
                         }
