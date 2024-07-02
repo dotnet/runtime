@@ -3080,10 +3080,8 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		float value[4];
 		value [0] = 1.0f;
 		value [1] = 1.0f;
-		value [2] = 1.0f;
-		value [3] = 1.0f;
-		if (len == 3)
-			value [3] = 0.0f;
+		value [2] = (len > 2) ? 1.0f : 0.0f;
+		value [3] = (len > 3) ? 1.0f : 0.0f;
 		return emit_xconst_v128 (cfg, klass, (guint8*)value);
 	}
 	case SN_set_Item: {
@@ -3299,26 +3297,44 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 #endif
 	}
 	case SN_Lerp: {
-#if defined (TARGET_ARM64)
-		MonoInst* v1 = args [1];
 		if (!strcmp ("Quaternion", m_class_get_name (klass))) 
 			return NULL;
-		
 
-		MonoInst *diffs = emit_simd_ins (cfg, klass, OP_XBINOP, v1->dreg, args [0]->dreg);
-		diffs->inst_c0 = OP_FSUB;
-		diffs->inst_c1 = MONO_TYPE_R4;
+		float value[4];
+		value [0] = 1.0f;
+		value [1] = 1.0f;
+		value [2] = (len > 2) ? 1.0f : 0.0f;
+		value [3] = (len > 3) ? 1.0f : 0.0f;
+		MonoInst *ins_one = emit_xconst_v128 (cfg, klass, (guint8*)value);
 
-		MonoInst *scaled_diffs = handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [2]->dreg, diffs->dreg, OP_FMUL);
-		
-		MonoInst *result = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, scaled_diffs->dreg);
+		MonoInst *ins_amount = args [2];
+
+		if (!type_is_simd_vector (fsig->params [2])) {
+			ins_amount = emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), ins_amount->dreg, -1);
+			ins_amount->inst_c1 = MONO_TYPE_R4;
+		}
+
+		// diff = 1.0 - amount
+		MonoInst *ins_diff = emit_simd_ins (cfg, klass, OP_XBINOP, ins_one->dreg, ins_amount->dreg);
+		ins_diff->inst_c0 = OP_FSUB;
+		ins_diff->inst_c1 = MONO_TYPE_R4;
+
+		// prodx = x * diff
+		MonoInst *ins_prodx = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, ins_diff->dreg);
+		ins_prodx->inst_c0 = OP_FMUL;
+		ins_prodx->inst_c1 = MONO_TYPE_R4;
+
+		// prody = y * amount
+		MonoInst *ins_prody = emit_simd_ins (cfg, klass, OP_XBINOP, args [1]->dreg, ins_diff->dreg);
+		ins_prody->inst_c0 = OP_FMUL;
+		ins_prody->inst_c1 = MONO_TYPE_R4;
+
+		// result = prodx + prody
+		MonoInst *result = emit_simd_ins (cfg, klass, OP_XBINOP, ins_prodx->dreg, ins_prody->dreg);
 		result->inst_c0 = OP_FADD;
 		result->inst_c1 = MONO_TYPE_R4;
 
 		return result;
-#else
-		return NULL;
-#endif
 	}
 	case SN_Normalize: {
 #if defined (TARGET_ARM64)
