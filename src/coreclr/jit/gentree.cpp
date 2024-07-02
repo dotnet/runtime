@@ -23479,18 +23479,14 @@ GenTree* Compiler::gtNewSimdCndSelNode(
     NamedIntrinsic intrinsic = NI_Illegal;
 
 #if defined(TARGET_XARCH)
-    assert((simdSize != 32) || compIsaSupportedDebugOnly(InstructionSet_AVX));
-
-    if (canUseEvexEncoding())
+    if (simdSize == 64)
     {
-        GenTree* control = gtNewIconNode(0xCA); // (B & A) | (C & ~A)
-        return gtNewSimdTernaryLogicNode(type, op1, op2, op3, control, simdBaseJitType, simdSize);
+        assert(canUseEvexEncodingDebugOnly());
+        intrinsic = NI_Vector512_ConditionalSelect;
     }
-
-    assert(simdSize != 64);
-
-    if (simdSize == 32)
+    else if (simdSize == 32)
     {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         intrinsic = NI_Vector256_ConditionalSelect;
     }
     else
@@ -26606,45 +26602,19 @@ GenTree* Compiler::gtNewSimdUnOpNode(
         {
             if (simdSize == 64)
             {
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-
-                if (genTypeSize(simdBaseType) >= 4)
-                {
-                    intrinsic = NI_AVX512F_TernaryLogic;
-                }
-            }
-            else
-            {
-                if (simdSize == 32)
-                {
-                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-                }
-                if ((genTypeSize(simdBaseType) >= 4) && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-                {
-                    intrinsic = NI_AVX10v1_TernaryLogic;
-                }
-                else if ((genTypeSize(simdBaseType) >= 4) && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-                {
-                    intrinsic = NI_AVX512F_VL_TernaryLogic;
-                }
-            }
-
-            if (intrinsic != NI_Illegal)
-            {
-                // AVX512 allows performing `not` without requiring a memory access
                 assert(canUseEvexEncodingDebugOnly());
-
-                op2 = gtNewZeroConNode(type);
-                op3 = gtNewZeroConNode(type);
-
-                GenTree* cns = gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
-                return gtNewSimdTernaryLogicNode(type, op3, op2, op1, cns, simdBaseJitType, simdSize);
+                intrinsic = NI_Vector512_op_OnesComplement;
+            }
+            else if (simdSize == 32)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+                intrinsic = NI_Vector256_op_OnesComplement;
             }
             else
             {
-                op2 = gtNewAllBitsSetConNode(type);
-                return gtNewSimdBinOpNode(GT_XOR, type, op1, op2, simdBaseJitType, simdSize);
+                intrinsic = NI_Vector128_op_OnesComplement;
             }
+            return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
         }
 #elif defined(TARGET_ARM64)
         case GT_NEG:
@@ -28194,12 +28164,16 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
             return GT_AND;
         }
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_XARCH)
+        case NI_Vector128_op_OnesComplement:
+        case NI_Vector256_op_OnesComplement:
+        case NI_Vector512_op_OnesComplement:
+#elif defined(TARGET_ARM64)
         case NI_AdvSimd_Not:
+#endif
         {
             return GT_NOT;
         }
-#endif
 
 #if defined(TARGET_XARCH)
         case NI_SSE_Xor:
@@ -30548,6 +30522,65 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 break;
             }
 #endif
+
+            default:
+            {
+                break;
+            }
+        }
+    }
+
+    if (op3 != nullptr)
+    {
+        switch (ni)
+        {
+            case NI_Vector128_ConditionalSelect:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_ConditionalSelect:
+            case NI_Vector512_ConditionalSelect:
+#elif defined(TARGET_ARM64)
+            case NI_Vector64_ConditionalSelect:
+            case NI_Sve_ConditionalSelect:
+#endif
+            {
+                if (cnsNode != op1)
+                {
+                    break;
+                }
+
+                if (op1->IsVectorAllBitsSet() || op1->IsMaskAllBitsSet())
+                {
+                    if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        // op3 has side effects, this would require us to append a new statement
+                        // to ensure that it isn't lost, which isn't safe to do from the general
+                        // purpose handler here. We'll recognize this and mark it in VN instead
+                    }
+
+                    // op3 has no side effects, so we can return op2 directly
+                    return op2;
+                }
+
+                if (op1->IsVectorZero())
+                {
+                    return gtWrapWithSideEffects(op3, op2, GTF_ALL_EFFECT);
+                }
+
+                if (op2->IsCnsVec() && op3->IsCnsVec())
+                {
+                    // op2 = op2 & op1
+                    op2->AsVecCon()->EvaluateBinaryInPlace(GT_AND, false, simdBaseType, op1->AsVecCon());
+
+                    // op3 = op2 & ~op1
+                    op3->AsVecCon()->EvaluateBinaryInPlace(GT_AND_NOT, false, simdBaseType, op1->AsVecCon());
+
+                    // op2 = op2 | op3
+                    op2->AsVecCon()->EvaluateBinaryInPlace(GT_OR, false, simdBaseType, op3->AsVecCon());
+
+                    resultNode = op2;
+                }
+                break;
+            }
 
             default:
             {

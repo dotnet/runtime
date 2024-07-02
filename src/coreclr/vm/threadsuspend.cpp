@@ -5543,7 +5543,7 @@ retry_for_debugger:
     // set tls flags for compat with SOS
     ClrFlsSetThreadType(ThreadType_DynamicSuspendEE);
 
-    _ASSERTE(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
+    _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
 
 #ifdef PROFILING_SUPPORTED
     // If the profiler desires information about GCs, then let it know that one

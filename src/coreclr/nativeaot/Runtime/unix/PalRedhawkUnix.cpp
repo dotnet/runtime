@@ -1126,6 +1126,11 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
     return WaitForSingleObjectEx(pHandles[0], timeout, alertable);
 }
 
+REDHAWK_PALEXPORT HANDLE PalCreateLowMemoryResourceNotification()
+{
+    return NULL;
+}
+
 #if !__has_builtin(_mm_pause)
 extern "C" void _mm_pause()
 // Defined for implementing PalYieldProcessor in PalRedhawk.h
