@@ -1846,6 +1846,21 @@ extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, Metho
     return bResult;
 }
 
+extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo(void* fromTypeHnd, void* toTypeHnd)
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = false;
+
+    BEGIN_QCALL;
+
+    ret = TypeHandle::FromPtr(fromTypeHnd).CanCastTo(TypeHandle::FromPtr(toTypeHnd));
+
+    END_QCALL;
+
+    return ret;
+}
+
 static MethodTable * g_pStreamMT;
 static WORD g_slotBeginRead, g_slotEndRead;
 static WORD g_slotBeginWrite, g_slotEndWrite;
