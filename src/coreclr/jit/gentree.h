@@ -1761,6 +1761,9 @@ public:
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
     inline bool IsMaskAllBitsSet() const;
+    inline bool IsMaskAllBitsZero() const;
+    inline bool IsAllTrue() const;
+    inline bool IsAllFalse() const;
     inline bool IsVectorConst();
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
@@ -9674,6 +9677,47 @@ inline bool GenTree::IsMaskAllBitsSet() const
         }
         return ((id == NI_Sve_CreateTrueMaskAll) ||
                 ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+    }
+
+#endif
+    return false;
+}
+
+inline bool GenTree::IsAllTrue() const
+{
+#ifdef TARGET_ARM64
+    return IsMaskAllBitsSet() || IsVectorAllBitsSet();
+#endif
+    return false;
+}
+
+inline bool GenTree::IsAllFalse() const
+{
+#ifdef TARGET_ARM64
+    return IsMaskAllBitsZero() || IsVectorZero();
+#endif
+    return false;
+}
+
+inline bool GenTree::IsMaskAllBitsZero() const
+{
+#ifdef TARGET_ARM64
+    static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,
+                                       NI_Sve_CreateFalseMaskInt16, NI_Sve_CreateFalseMaskInt32,
+                                       NI_Sve_CreateFalseMaskInt64, NI_Sve_CreateFalseMaskSByte,
+                                       NI_Sve_CreateFalseMaskSingle, NI_Sve_CreateFalseMaskUInt16,
+                                       NI_Sve_CreateFalseMaskUInt32, NI_Sve_CreateFalseMaskUInt64));
+
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+        if (id == NI_Sve_ConvertMaskToVector)
+        {
+            GenTree* op1 = AsHWIntrinsic()->Op(1);
+            assert(op1->OperIsHWIntrinsic());
+            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
+        }
+        return ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
     }
 
 #endif
