@@ -5865,6 +5865,58 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double AddAcross(double[] op1) => Reduce(Add, op1);
 
+        public static (double, double) AddRotateComplex(double op1_r, double op1_i, double op2_r, double op2_i, byte rot)
+        {
+            double dest_r;
+            double dest_i;
+
+            if (rot == 0)
+            {
+                //rotate 90
+                double temp = op2_r;
+                op2_r = -op2_i;
+                op2_i = temp;
+            }
+            else // rot == 1
+            {
+                //rotate 270
+                double temp = op2_i;
+                op2_i = -op2_r;
+                op2_r = temp;
+            }
+
+            dest_r = op1_r + op2_r;
+            dest_i = op1_i + op2_i;
+
+            return (dest_r, dest_i);
+        }
+
+        public static (float, float) AddRotateComplex(float op1_r, float op1_i, float op2_r, float op2_i, byte rot)
+        {
+            float dest_r;
+            float dest_i;
+
+            if (rot == 0)
+            {
+                //rotate 90
+                float temp = op2_r;
+                op2_r = -op2_i;
+                op2_i = temp;
+            }
+            else // rot == 1
+            {
+                //rotate 270
+                float temp = op2_i;
+                op2_i = -op2_r;
+                op2_r = temp;
+            }
+
+            dest_r = op1_r + op2_r;
+            dest_i = op1_i + op2_i;
+
+            return (dest_r, dest_i);
+        }
+
         public static double MaxAcross(double[] op1) => Reduce(Max, op1);
 
         public static double MinAcross(double[] op1) => Reduce(Min, op1);

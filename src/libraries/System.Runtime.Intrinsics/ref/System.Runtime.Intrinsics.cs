@@ -4235,6 +4235,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> AddAcross(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> AddAcross(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<double> AddRotateComplex(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, [ConstantExpected] byte rotation) { throw null; }
+        public static System.Numerics.Vector<float> AddRotateComplex(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right, [ConstantExpected] byte rotation) { throw null; }
+  
         public static System.Numerics.Vector<byte> AddSaturate(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> AddSaturate(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> AddSaturate(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4244,6 +4247,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> AddSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> AddSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
+        public static System.Numerics.Vector<double> AddSequentialAcross(System.Numerics.Vector<double> initial, System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> AddSequentialAcross(System.Numerics.Vector<float> initial, System.Numerics.Vector<float> value) { throw null; }
+     
         public static System.Numerics.Vector<byte> And(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> And(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> And(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
