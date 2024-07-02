@@ -209,6 +209,8 @@
     <EnableAggressiveTrimming Condition="'$(OutputType)' == 'Exe'">true</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(OutputType)' == 'Exe'">true</PublishTrimmed>
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
+    <!-- Prevent getting DynamicCodeSupport=true default from ILLink targets that are imported with the Sdk.targets -->
+    <DynamicCodeSupport>false</DynamicCodeSupport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
