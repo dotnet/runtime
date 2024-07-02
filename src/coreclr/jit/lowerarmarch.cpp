@@ -3346,15 +3346,17 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     MakeSrcContained(node, intrin.op2);
                 }
 
-                if (IsContainableMemoryOp(intrin.op1) && IsSafeToContainMem(node, intrin.op1))
-                {
-                    MakeSrcContained(node, intrin.op1);
-
-                    if (intrin.op1->OperIs(GT_IND))
-                    {
-                        intrin.op1->AsIndir()->Addr()->ClearContained();
-                    }
-                }
+                // TODO: Codegen isn't currently handling this correctly
+                //
+                // if (IsContainableMemoryOp(intrin.op1) && IsSafeToContainMem(node, intrin.op1))
+                // {
+                //     MakeSrcContained(node, intrin.op1);
+                //
+                //     if (intrin.op1->OperIs(GT_IND))
+                //     {
+                //         intrin.op1->AsIndir()->Addr()->ClearContained();
+                //     }
+                // }
                 break;
             }
 
@@ -3451,6 +3453,29 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (intrin.op4->IsCnsIntOrI())
                 {
                     MakeSrcContained(node, intrin.op4);
+                }
+                break;
+
+            case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_GatherPrefetch16Bit:
+            case NI_Sve_GatherPrefetch32Bit:
+            case NI_Sve_GatherPrefetch64Bit:
+                assert(hasImmediateOperand);
+                if (!varTypeIsSIMD(intrin.op2->gtType))
+                {
+                    assert(varTypeIsIntegral(intrin.op4));
+                    if (intrin.op4->IsCnsIntOrI())
+                    {
+                        MakeSrcContained(node, intrin.op4);
+                    }
+                }
+                else
+                {
+                    assert(varTypeIsIntegral(intrin.op3));
+                    if (intrin.op3->IsCnsIntOrI())
+                    {
+                        MakeSrcContained(node, intrin.op3);
+                    }
                 }
                 break;
 

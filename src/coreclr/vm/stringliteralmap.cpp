@@ -341,7 +341,7 @@ GlobalStringLiteralMap::~GlobalStringLiteralMap()
     {
         // We are shutting down, the OS will reclaim the memory from the StringLiteralEntries,
         // m_MemoryPool and m_StringToEntryHashTable.
-        _ASSERTE(g_fProcessDetach);
+        _ASSERTE(IsAtProcessExit());
     }
 }
 

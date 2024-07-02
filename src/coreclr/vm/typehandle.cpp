@@ -84,6 +84,13 @@ BOOL TypeHandle::IsArray() const {
     return !IsTypeDesc() && AsMethodTable()->IsArray();
 }
 
+BOOL TypeHandle::IsString() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return !IsTypeDesc() && AsMethodTable()->IsString();
+}
+
 BOOL TypeHandle::IsGenericVariable() const {
     LIMITED_METHOD_DAC_CONTRACT;
 

@@ -459,20 +459,25 @@ GVAL_DECL(bool, g_metadataUpdatesApplied);
 #endif
 EXTERN bool g_fManagedAttach;
 
+#ifdef HOST_WINDOWS
+typedef BOOLEAN (WINAPI* PRTLDLLSHUTDOWNINPROGRESS)();
+EXTERN PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress;
+#endif
+
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
-inline BOOL    IsAtProcessExit()
+inline bool IsAtProcessExit()
 {
     SUPPORTS_DAC;
+#if defined(DACCESS_COMPILE) || !defined(HOST_WINDOWS)
     return g_fProcessDetach;
+#else
+    // RtlDllShutdownInProgress provides more accurace information about whether the process is shutting down.
+    // Use it if it is available to avoid shutdown deadlocks.
+    // https://learn.microsoft.com/windows/win32/devnotes/rtldllshutdowninprogress
+    return g_pfnRtlDllShutdownInProgress();
+#endif
 }
-
-enum FWStatus
-{
-    FWS_WaitInterrupt = 0x00000001,
-};
-
-EXTERN DWORD g_FinalizerWaiterStatus;
 
 #if defined(TARGET_UNIX) && defined(FEATURE_EVENT_TRACE)
 extern Volatile<BOOL> g_TriggerHeapDump;

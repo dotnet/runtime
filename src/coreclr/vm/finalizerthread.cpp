@@ -312,7 +312,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         // Setting the event here, instead of at the bottom of the loop, could
         // cause us to skip draining the Q, if the request is made as soon as
         // the app starts running.
-        SignalFinalizationDone(TRUE);
+        SignalFinalizationDone();
 #endif //0
 
         WaitForFinalizerEvent (hEventFinalizer);
@@ -410,7 +410,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         // race in that another thread starting a drain, as we leave a drain, may
         // consider itself satisfied by the drain that just completed.  This is
         // acceptable.
-        SignalFinalizationDone(TRUE);
+        SignalFinalizationDone();
     }
 
     if (s_InitializedFinalizerThreadForPlatform)
@@ -538,19 +538,15 @@ void FinalizerThread::FinalizerThreadCreate()
     }
 }
 
-void FinalizerThread::SignalFinalizationDone(BOOL fFinalizer)
+void FinalizerThread::SignalFinalizationDone()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (fFinalizer)
-    {
-        InterlockedAnd((LONG*)&g_FinalizerWaiterStatus, ~FWS_WaitInterrupt);
-    }
     hEventFinalizerDone->Set();
 }
 
 // Wait for the finalizer thread to complete one pass.
-void FinalizerThread::FinalizerThreadWait(DWORD timeout)
+void FinalizerThread::FinalizerThreadWait()
 {
     ASSERT(hEventFinalizerDone->IsValid());
     ASSERT(hEventFinalizer->IsValid());
@@ -569,44 +565,10 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
             g_pRCWCleanupList->CleanupWrappersInCurrentCtxThread();
 #endif // FEATURE_COMINTEROP
 
-        ULONGLONG startTime = CLRGetTickCount64();
-        ULONGLONG endTime;
-        if (timeout == INFINITE)
-        {
-            endTime = MAXULONGLONG;
-        }
-        else
-        {
-            endTime = timeout + startTime;
-        }
+        hEventFinalizerDone->Reset();
 
-        while (TRUE)
-        {
-            hEventFinalizerDone->Reset();
-            EnableFinalization();
+        EnableFinalization();
 
-            //----------------------------------------------------
-            // Do appropriate wait and pump messages if necessary
-            //----------------------------------------------------
-
-            DWORD status = hEventFinalizerDone->Wait(timeout,TRUE);
-            if (status != WAIT_TIMEOUT && !(g_FinalizerWaiterStatus & FWS_WaitInterrupt))
-            {
-                return;
-            }
-            // recalculate timeout
-            if (timeout != INFINITE)
-            {
-                ULONGLONG curTime = CLRGetTickCount64();
-                if (curTime >= endTime)
-                {
-                    return;
-                }
-                else
-                {
-                    timeout = (DWORD)(endTime - curTime);
-                }
-            }
-        }
+        hEventFinalizerDone->Wait(INFINITE,TRUE);
     }
 }
