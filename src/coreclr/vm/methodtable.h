@@ -457,7 +457,7 @@ public:
 
         DWORD dwFlags = VolatileLoad(&m_dwFlags);
         *initResult = m_dwFlags & enum_flag_Initialized;
-        return (dwFlags & enum_flag_IsStaticDataAllocated|enum_flag_Initialized) != 0;
+        return (dwFlags & (enum_flag_IsStaticDataAllocated|enum_flag_Initialized)) != 0;
     }
 
 #ifndef DACCESS_COMPILE
