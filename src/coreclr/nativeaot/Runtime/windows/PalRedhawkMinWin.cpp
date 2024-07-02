@@ -677,23 +677,20 @@ void InitHijackingAPIs()
     if (PalAreShadowStacksEnabled())
     {
         // When shadow stacks are enabled, support for special user-mode APCs is required
-        _ASSERTE_ALL_BUILDS(g_pfnQueueUserAPC2Proc != NULL);
+        _ASSERTE(g_pfnQueueUserAPC2Proc != NULL);
 
         HMODULE hModNtdll = LoadNtdlldll();
-        if (hModNtdll != NULL)
-        {
-            typedef void* (*PFN_RtlGetReturnAddressHijackTarget)(void);
+        typedef void* (*PFN_RtlGetReturnAddressHijackTarget)(void);
 
-            void* rtlGetReturnAddressHijackTarget = GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
-            if (rtlGetReturnAddressHijackTarget != NULL)
-            {
-                g_returnAddressHijackTarget = ((PFN_RtlGetReturnAddressHijackTarget)rtlGetReturnAddressHijackTarget)();
-            }
+        void* rtlGetReturnAddressHijackTarget = GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
+        if (rtlGetReturnAddressHijackTarget != NULL)
+        {
+            g_returnAddressHijackTarget = ((PFN_RtlGetReturnAddressHijackTarget)rtlGetReturnAddressHijackTarget)();
         }
 
         if (g_returnAddressHijackTarget == NULL)
         {
-            _ASSERTE_ALL_BUILDS(!"RtlGetReturnAddressHijackTarget must provide a target when shadow stacks are enabled");
+            _ASSERTE(!"RtlGetReturnAddressHijackTarget must provide a target when shadow stacks are enabled");
         }
     }
 }
