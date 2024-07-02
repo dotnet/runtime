@@ -129,7 +129,7 @@ public partial class QuicConnection
                 if (certData.Length > 0)
                 {
                     Debug.Assert(certificate == null);
-                    certificate = new X509Certificate2(certData.Span);
+                    certificate = X509CertificateLoader.LoadCertificate(certData.Span);
                 }
 
                 result = _connection._sslConnectionOptions.ValidateCertificate(certificate, certData.Span, chainData.Span);
@@ -205,8 +205,11 @@ public partial class QuicConnection
 
                     if (chainData.Length > 0)
                     {
+                        Debug.Assert(X509Certificate2.GetCertContentType(chainData) is X509ContentType.Pkcs7);
                         X509Certificate2Collection additionalCertificates = new X509Certificate2Collection();
+#pragma warning disable SYSLIB0057
                         additionalCertificates.Import(chainData);
+#pragma warning restore SYSLIB0057
                         chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
                     }
 
