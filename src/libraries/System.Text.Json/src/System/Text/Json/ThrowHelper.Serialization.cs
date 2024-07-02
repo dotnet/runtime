@@ -415,9 +415,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForImmutableType(Type type)
+        public static void ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForImmutableCollectionType(Type type)
         {
-            throw new InvalidOperationException(SR.Format(SR.InvalidJsonTypeInfoOperationForImmutableType, type));
+            throw new InvalidOperationException(SR.Format(SR.InvalidJsonTypeInfoOperationForImmutableCollectionType, type));
         }
 
         [DoesNotReturn]

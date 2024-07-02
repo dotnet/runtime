@@ -190,7 +190,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (Converter.IsImmutableCollectionType)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForImmutableType(Type);
+                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForImmutableCollectionType(Type);
                 }
 
                 _onDeserializing = value;
