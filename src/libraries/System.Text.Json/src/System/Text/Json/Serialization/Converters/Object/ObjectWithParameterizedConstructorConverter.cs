@@ -255,10 +255,10 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(obj != null);
             value = (T)obj;
 
-            // Check if we are trying to build the sorted cache.
-            if (state.Current.PropertyRefCache != null)
+            // Check if we are trying to update the UTF-8 property cache.
+            if (state.Current.PropertyRefCacheBuilder != null)
             {
-                state.Current.JsonTypeInfo.UpdateSortedPropertyCache(ref state.Current);
+                jsonTypeInfo.UpdateUtf8PropertyCache(ref state.Current);
             }
 
             return true;
@@ -603,12 +603,8 @@ namespace System.Text.Json.Serialization.Converters
                 unescapedPropertyName,
                 ref state,
                 options,
-                out byte[] utf8PropertyName,
                 out bool useExtensionProperty,
                 createExtensionProperty: false);
-
-            // For case insensitive and missing property support of JsonPath, remember the value on the temporary stack.
-            state.Current.JsonPropertyName = utf8PropertyName;
 
             jsonParameterInfo = jsonPropertyInfo.AssociatedParameter;
             if (jsonParameterInfo != null)
