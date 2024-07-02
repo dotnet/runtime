@@ -3,8 +3,10 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -16,6 +18,9 @@ namespace System.Net.Sockets.Tests
 {
     public class TelemetryTest
     {
+        private const string ActivitySourceName = "System.Net.Sockets";
+        private const string ActivityName = ActivitySourceName + ".Connect";
+
         private static readonly Lazy<Task<bool>> s_remoteServerIsReachable = new Lazy<Task<bool>>(() => Task.Run(async () =>
         {
             try
@@ -102,6 +107,63 @@ namespace System.Net.Sockets.Tests
                 "Eap" => new SocketHelperEap(),
                 _ => throw new ArgumentException(socketMethod)
             };
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(SocketMethods_MemberData))]
+        public async Task Connect_Success_ActivityRecorded(string connectMethod)
+        {
+            await RemoteExecutor.Invoke(async connectMethod =>
+            {
+                using Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                server.BindToAnonymousPort(IPAddress.Loopback);
+                server.Listen();
+
+                Activity parent = new Activity("parent").Start();
+
+                using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+                using ActivityRecorder recorder = new ActivityRecorder(ActivitySourceName, ActivityName)
+                {
+                    ExpectedParent = parent
+                };
+
+                Task connectTask = GetHelperBase(connectMethod).ConnectAsync(client, server.LocalEndPoint);
+                await server.AcceptAsync();
+                await connectTask;
+
+                recorder.VerifyActivityRecorded(1);
+                Assert.Same(parent, Activity.Current);
+                parent.Stop();
+            }, connectMethod).DisposeAsync();
+        }
+
+        [OuterLoop("Connection failure takes long on Windows.")]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(SocketMethods_MemberData))]
+        public async Task Connect_Failure_ActivityRecorded(string connectMethod)
+        {
+            await RemoteExecutor.Invoke(async connectMethod =>
+            {
+                using Socket notListening = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                notListening.BindToAnonymousPort(IPAddress.Loopback);
+
+                Activity parent = new Activity("parent").Start();
+
+                using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+                using ActivityRecorder recorder = new ActivityRecorder(ActivitySourceName, ActivityName)
+                {
+                    ExpectedParent = parent
+                };
+
+                await Assert.ThrowsAsync<SocketException>(() =>GetHelperBase(connectMethod)
+                    .ConnectAsync(client, notListening.LocalEndPoint));
+
+                recorder.VerifyActivityRecorded(1);
+                Assert.Same(parent, Activity.Current);
+                parent.Stop();
+            }, connectMethod).DisposeAsync();
         }
 
         [OuterLoop]

@@ -15,6 +15,11 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
+        private const string ActivitySourceName = "System.Net.Security";
+        private const string ActivityName = ActivitySourceName + ".TlsHandshake";
+
+        private static readonly ActivitySource s_activitySource = new(ActivitySourceName);
+
         private readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
         private int _nestedAuth;
         private bool _isRenego;
@@ -106,7 +111,7 @@ namespace System.Net.Security
         {
             ThrowIfExceptional();
 
-            if (NetSecurityTelemetry.Log.IsEnabled())
+            if (NetSecurityTelemetry.Log.IsEnabled() || s_activitySource.HasListeners())
             {
                 return ProcessAuthenticationWithTelemetryAsync(isAsync, cancellationToken);
             }
@@ -120,8 +125,18 @@ namespace System.Net.Security
 
         private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, CancellationToken cancellationToken)
         {
-            NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions.TargetHost);
-            long startingTimestamp = Stopwatch.GetTimestamp();
+            long startingTimestamp;
+            if (NetSecurityTelemetry.Log.IsEnabled())
+            {
+                NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions.TargetHost);
+                startingTimestamp = Stopwatch.GetTimestamp();
+            }
+            else
+            {
+                startingTimestamp = 0;
+            }
+
+            using Activity? activity = s_activitySource.StartActivity(ActivityName, IsServer ? ActivityKind.Server : ActivityKind.Client);
 
             try
             {
@@ -131,15 +146,21 @@ namespace System.Net.Security
 
                 await task.ConfigureAwait(false);
 
-                // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == 2
-                // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
-                bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, 1, 0) == 0;
-
-                NetSecurityTelemetry.Log.HandshakeCompleted(GetSslProtocolInternal(), startingTimestamp, connectionOpen);
+                if (startingTimestamp is not 0)
+                {
+                    // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == 2
+                    // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
+                    bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, 1, 0) == 0;
+                    NetSecurityTelemetry.Log.HandshakeCompleted(GetSslProtocolInternal(), startingTimestamp, connectionOpen);
+                }
             }
             catch (Exception ex)
             {
-                NetSecurityTelemetry.Log.HandshakeFailed(IsServer, startingTimestamp, ex.Message);
+                if (startingTimestamp is not 0)
+                {
+                    NetSecurityTelemetry.Log.HandshakeFailed(IsServer, startingTimestamp, ex.Message);
+                }
+
                 throw;
             }
         }

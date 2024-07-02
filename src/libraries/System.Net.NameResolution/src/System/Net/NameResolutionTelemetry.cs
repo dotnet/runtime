@@ -9,6 +9,38 @@ using System.Threading;
 
 namespace System.Net
 {
+    internal readonly struct NameResolutionActivity
+    {
+        private const string ActivitySourceName = "System.Net.NameResolution";
+        private const string ActivityName = ActivitySourceName + ".DsnLookup";
+        private static readonly ActivitySource s_activitySource = new(ActivitySourceName);
+
+        // _startingTimestamp == 0 means NameResolutionTelemetry and NameResolutionMetrics are both disabled.
+        private readonly long _startingTimestamp;
+        private readonly Activity? _activity;
+
+        public NameResolutionActivity(long startingTimestamp)
+        {
+            _startingTimestamp = startingTimestamp;
+            _activity = s_activitySource.StartActivity(ActivityName, ActivityKind.Client);
+        }
+
+        public static bool IsTracingEnabled() => s_activitySource.HasListeners();
+
+        // Returns true if either NameResolutionTelemetry or NameResolutionMetrics is enabled.
+        public bool Stop(out TimeSpan duration)
+        {
+            _activity?.Stop();
+            if (_startingTimestamp == 0)
+            {
+                duration = default;
+                return false;
+            }
+            duration = Stopwatch.GetElapsedTime(_startingTimestamp);
+            return true;
+        }
+    }
+
     [EventSource(Name = "System.Net.NameResolution")]
     internal sealed class NameResolutionTelemetry : EventSource
     {
@@ -58,10 +90,17 @@ namespace System.Net
         [Event(ResolutionFailedEventId, Level = EventLevel.Informational)]
         private void ResolutionFailed() => WriteEvent(ResolutionFailedEventId);
 
+        [NonEvent]
+        public static bool AnyDiagnosticsEnabled() => Log.IsEnabled() || NameResolutionMetrics.IsEnabled() || NameResolutionActivity.IsTracingEnabled();
 
         [NonEvent]
-        public long BeforeResolution(object hostNameOrAddress)
+        public NameResolutionActivity BeforeResolution(object hostNameOrAddress, long startingTimestamp = 0)
         {
+            if (!AnyDiagnosticsEnabled())
+            {
+                return default;
+            }
+
             if (IsEnabled())
             {
                 Interlocked.Increment(ref _lookupsRequested);
@@ -74,22 +113,20 @@ namespace System.Net
                     ResolutionStart(host);
                 }
 
-                return Stopwatch.GetTimestamp();
+                return new(startingTimestamp is not 0 ? startingTimestamp : Stopwatch.GetTimestamp());
             }
 
-            return NameResolutionMetrics.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
+            return new(startingTimestamp is not 0 ? startingTimestamp : NameResolutionMetrics.IsEnabled() ? Stopwatch.GetTimestamp() : 0);
         }
 
         [NonEvent]
-        public void AfterResolution(object hostNameOrAddress, long? startingTimestamp, Exception? exception = null)
+        public void AfterResolution(object hostNameOrAddress, in NameResolutionActivity activity, Exception? exception = null)
         {
-            Debug.Assert(startingTimestamp.HasValue);
-            if (startingTimestamp == 0)
+            if (!activity.Stop(out TimeSpan duration))
             {
+                // We stopped the System.Diagnostics.Activity at this point and neither metrics nor EventSource is enabled.
                 return;
             }
-
-            TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp.Value);
 
             if (IsEnabled())
             {
