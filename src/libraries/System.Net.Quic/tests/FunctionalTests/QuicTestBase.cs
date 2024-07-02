@@ -44,6 +44,19 @@ namespace System.Net.Quic.Tests
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
         public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
 
+        static QuicTestBase()
+        {
+            // Opt in to run with OpenSSL version on MsQuic on older windows where Schannel
+            // version is not supported.
+            //
+            // This has to happen here in order to be called before QuicTestBase.IsSupported
+            if (PlatformDetection.IsWindows10OrLater && !QuicTestCollection.IsWindowsVersionWithSchannelSupport())
+            {
+                System.Console.WriteLine("Setting AppContext switch to use OpenSSL version of MsQuic on Windows.");
+                AppContext.SetSwitch("System.Net.Quic.AppLocalMsQuic", true);
+            }
+        }
+
         public QuicTestBase(ITestOutputHelper output)
         {
             _output = output;

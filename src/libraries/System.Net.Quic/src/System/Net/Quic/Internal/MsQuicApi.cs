@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
+using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
@@ -22,6 +23,9 @@ internal sealed unsafe partial class MsQuicApi
 
     private static readonly delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> MsQuicOpenVersion;
     private static readonly delegate* unmanaged[Cdecl]<QUIC_API_TABLE*, void> MsQuicClose;
+
+    [LibraryImport("Kernel32.dll", EntryPoint = "GetModuleFileNameW")]
+    internal static partial int GetModuleNameW(IntPtr hModule, char* lpFilename, int nSize);
 
     public MsQuicSafeHandle Registration { get; }
 
@@ -73,7 +77,7 @@ internal sealed unsafe partial class MsQuicApi
     static MsQuicApi()
     {
         bool loaded = false;
-        IntPtr msQuicHandle;
+        IntPtr msQuicHandle = IntPtr.Zero;
         Version = default;
 
         // MsQuic is using DualMode sockets and that will fail even for IPv4 if AF_INET6 is not available.
@@ -89,8 +93,29 @@ internal sealed unsafe partial class MsQuicApi
 
         if (OperatingSystem.IsWindows())
         {
-            // Windows ships msquic in the assembly directory.
-            loaded = NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
+            // We ship Schannel version of MsQuic as part of the .NET runtime.
+            // This version works on newer OS versions (see s_minWindowsVersion).
+            //
+            // For cases where the Schannel version cannot be used, we want to
+            // support developers explicitly providing OpenSSL version of MsQuic.
+            // in the application directory.
+            if (ShouldUseAppLocalMsQuic())
+            {
+                var path = Path.Combine(AppContext.BaseDirectory, Interop.Libraries.MsQuic);
+
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(null, $"Attempting to load MsQuic library from '{path}'.");
+                }
+
+                System.Console.WriteLine($"Attempting to load MsQuic library from '{path}'.");
+                loaded = NativeLibrary.TryLoad(path, out msQuicHandle);
+            }
+            else
+            {
+                System.Console.WriteLine("Loading from assembly directory");
+                loaded = NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
+            }
         }
         else
         {
@@ -108,6 +133,22 @@ internal sealed unsafe partial class MsQuicApi
                 NetEventSource.Info(null, NotSupportedReason);
             }
             return;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            Span<char> pathBuffer = stackalloc char[260];
+            int len;
+            fixed (char* pathBufferPtr = pathBuffer)
+            {
+                len = GetModuleNameW(msQuicHandle, pathBufferPtr, pathBuffer.Length);
+            }
+
+            if (len > 0)
+            {
+                string path = new string(pathBuffer.Slice(0, len));
+                System.Console.WriteLine($"Loaded MsQuic library from '{path}'.");
+            }
         }
 
         MsQuicOpenVersion = (delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int>)NativeLibrary.GetExport(msQuicHandle, nameof(MsQuicOpenVersion));
@@ -263,4 +304,7 @@ internal sealed unsafe partial class MsQuicApi
 #endif
         return false;
     }
+
+    private static bool ShouldUseAppLocalMsQuic() => AppContextSwitchHelper.GetBooleanConfig(
+        "System.Net.Quic.AppLocalMsQuic");
 }
