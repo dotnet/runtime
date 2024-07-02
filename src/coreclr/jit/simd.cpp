@@ -122,7 +122,7 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
         lvaTable[lvaSIMDInitTempVarNum].lvType = simdType;
 
         // Ensure we mark it as do-not-enregister
-        lvaTable[lvaSIMDInitTempVarNum].lvDoNotEnregister = true;
+        lvaSetVarDoNotEnregister(lvaSIMDInitTempVarNum DEBUGARG(DoNotEnregisterReason::LclAddrNode));
     }
     else if (genTypeSize(lvaTable[lvaSIMDInitTempVarNum].lvType) < genTypeSize(simdType))
     {
