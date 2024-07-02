@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -72,6 +73,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Defines the core property lookup logic for a given unescaped UTF-8 encoded property name.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal JsonPropertyInfo? GetProperty(ReadOnlySpan<byte> propertyName, ref ReadStackFrame frame, out byte[] utf8PropertyName)
         {
             Debug.Assert(IsConfigured);
@@ -87,33 +89,55 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (!utf8PropertyCacheSpan.IsEmpty)
             {
+                PropertyRef propertyRef;
+
                 // Start with the current property index, and then go forwards\backwards.
                 int propertyIndex = frame.PropertyIndex;
 
                 int count = utf8PropertyCacheSpan.Length;
                 int iForward = Math.Min(propertyIndex, count);
-                int iBackward = iForward;
+                int iBackward = iForward - 1;
 
-                while (iForward - iBackward < count)
+                while (true)
                 {
                     if (iForward < count)
                     {
-                        PropertyRef propertyRef = utf8PropertyCacheSpan[iForward++];
+                        propertyRef = utf8PropertyCacheSpan[iForward];
                         if (propertyRef.Equals(propertyName, key))
                         {
                             utf8PropertyName = propertyRef.Utf8PropertyName;
                             return propertyRef.Info;
+                        }
+
+                        ++iForward;
+
+                        if (iBackward >= 0)
+                        {
+                            propertyRef = utf8PropertyCacheSpan[iBackward];
+                            if (propertyRef.Equals(propertyName, key))
+                            {
+                                utf8PropertyName = propertyRef.Utf8PropertyName;
+                                return propertyRef.Info;
+                            }
+
+                            --iBackward;
                         }
                     }
-
-                    if (iBackward > 0)
+                    else if (iBackward >= 0)
                     {
-                        PropertyRef propertyRef = utf8PropertyCacheSpan[--iBackward];
+                        propertyRef = utf8PropertyCacheSpan[iBackward];
                         if (propertyRef.Equals(propertyName, key))
                         {
                             utf8PropertyName = propertyRef.Utf8PropertyName;
                             return propertyRef.Info;
                         }
+
+                        --iBackward;
+                    }
+                    else
+                    {
+                        // Property was not found.
+                        break;
                     }
                 }
             }
