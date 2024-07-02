@@ -598,7 +598,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_OBJ_HDL);
         dllRef          = gtNewIndir(TYP_INT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
         dllRef          = gtNewCastNode(TYP_I_IMPL, dllRef, true, TYP_I_IMPL);
-        dllRef          = gtNewOperNode(GT_LSH, TYP_I_IMPL, dllRef, gtNewIconNode(3, TYP_LONG));
+        dllRef          = gtNewOperNode(GT_LSH, TYP_I_IMPL, dllRef, gtNewIconNode(3, TYP_I_IMPL));
 
         // Add the dllRef to produce thread local storage reference for coreclr
         tlsValue = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
