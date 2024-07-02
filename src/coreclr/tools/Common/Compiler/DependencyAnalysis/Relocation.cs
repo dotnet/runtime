@@ -58,8 +58,8 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_ARM_JUMP24                 = 0x10E,
 
         // Windows arm64 TLS access
-        IMAGE_REL_ARM64_TLS_SECREL_HIGH12A = 0x20A,  // ADD high 12-bit offset for tls
-        IMAGE_REL_ARM64_TLS_SECREL_LOW12L  = 0x20B,  // ADD low 12-bit offset for tls
+        IMAGE_REL_ARM64_TLS_SECREL_HIGH12A = 0x10F,  // ADD high 12-bit offset for tls
+        IMAGE_REL_ARM64_TLS_SECREL_LOW12L  = 0x110,  // ADD low 12-bit offset for tls
 
         //
         // Relocations for R2R image production
