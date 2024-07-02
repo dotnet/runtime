@@ -1587,7 +1587,7 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         }
 
         memset( buf, 0, BUFFER_SIZE );
-        if (NewSize - OrigSize - BufferSize >= 0 && BUFFER_SIZE > 0)
+        if (NewSize - OrigSize - BUFFER_SIZE >= 0 && BUFFER_SIZE > 0)
         {
             for ( x = 0; x < NewSize - OrigSize - BUFFER_SIZE; x += BUFFER_SIZE )
             {
@@ -1609,6 +1609,8 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         else
         {
             //This will be an infinite loop because it did not pass the check.
+            palError = ERROR_INTERNAL_ERROR;
+            goto done;
         }
         /* Catch any left overs. */
         if ( x != NewSize )
