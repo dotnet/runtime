@@ -226,6 +226,6 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Whether the converter handles an immutable collection or dictionary type.
         /// </summary>
-        internal virtual bool IsImmutableType => false;
+        internal virtual bool IsImmutableCollectionType => false;
     }
 }

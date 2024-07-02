@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = new List<TElement>();
         }
 
-        internal sealed override bool IsImmutableType => true;
+        internal sealed override bool IsImmutableCollectionType => true;
         protected sealed override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;

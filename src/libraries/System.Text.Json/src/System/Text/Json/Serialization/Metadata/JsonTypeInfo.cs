@@ -188,7 +188,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
 
-                if (Converter.IsImmutableType)
+                if (Converter.IsImmutableCollectionType)
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForImmutableType(Type);
                 }
