@@ -1946,13 +1946,11 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf)
 int
 mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match)
 {
-	// const char *iname = mono_type_get_name_full (m_class_get_byval_arg (itf), MONO_TYPE_NAME_FORMAT_FULL_NAME);
 	gboolean has_variance = mono_class_has_variant_generic_params (itf);
 	int exact_match = mono_class_interface_offset (klass, itf), i = -1;
 	*non_exact_match = FALSE;
 
 	if (exact_match >= 0) {
-		// g_print ("exact match for %s on %s\n", iname, m_class_get_name (klass));
 		if (!has_variance)
 			return exact_match;
 	}
@@ -1965,13 +1963,6 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 
 		for (i = 0; i < klass_interface_offsets_count; i++) {
 			if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
-				/*
-				g_print (
-					"is_variant_compatible (%s, %s, FALSE) == true\n",
-					iname,
-					mono_type_get_name_full (m_class_get_byval_arg (m_class_get_interfaces_packed (klass) [i]), MONO_TYPE_NAME_FORMAT_FULL_NAME)
-				);
-				*/
 				found = i;
 				*non_exact_match = (i != exact_match);
 				break;
@@ -1983,13 +1974,6 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 
 		for (i = 0; i < klass_interface_offsets_count; i++) {
 			if (mono_class_get_generic_type_definition (m_class_get_interfaces_packed (klass) [i]) == gtd) {
-				/*
-				g_print (
-					"gtd_of (%s) == gtd_of (%s)\n",
-					mono_type_get_name_full (m_class_get_byval_arg (m_class_get_interfaces_packed (klass) [i]), MONO_TYPE_NAME_FORMAT_FULL_NAME),
-					iname
-				);
-				*/
 				found = i;
 				*non_exact_match = (i != exact_match);
 				break;
@@ -2036,7 +2020,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 			current = m_class_get_parent (current);
 		}
 
-		// If the variance search failed to find a match, fall back on the one from mono_class_interface_offset
+		// If the variance search failed to find a match, return the exact match search result (probably -1).
 		*non_exact_match = (exact_match < 0);
 		return exact_match;
 	}

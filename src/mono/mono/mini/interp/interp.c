@@ -620,25 +620,6 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 		/* TODO: interface offset lookup is slow, go through IMT instead */
 		gboolean non_exact_match;
 		int ioffset = mono_class_interface_offset_with_variance (vtable->klass, m->klass, &non_exact_match);
-		if (ioffset < 0) {
-			char *vtname = mono_type_get_full_name (vtable->klass),
-				*mname = mono_type_get_full_name (m->klass);
-			g_print (
-				"interface_offset_with_variance failure for %s and %s\n",
-				vtname, mname
-			);
-			MonoClass **table;
-			int table_size;
-			mono_class_get_variance_search_table (vtable->klass, &table, &table_size);
-			for (int i = 0; i < table_size; i++) {
-				char *tyname = mono_type_get_full_name (table[i]);
-				g_print (
-					"#%d: %s\n",
-					i, tyname
-				);
-				g_free (tyname);
-			}
-		}
 		g_assert (ioffset >= 0);
 		slot += ioffset;
 	}
