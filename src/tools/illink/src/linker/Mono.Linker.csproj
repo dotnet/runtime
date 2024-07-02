@@ -83,12 +83,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- PrivateAssets prevents ILCompiler.DependencyAnalysisFramework from becoming a dependency of the Microsoft.NET.ILLink package, which is designed to
-         be referenced by custom step authors as the public surface available to custom steps (which should not use the dependency analysis framework). -->
-    <ProjectReference Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
