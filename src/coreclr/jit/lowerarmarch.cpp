@@ -1289,7 +1289,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 else if (op1->IsLocal())
                 {
                     // We're an existing local that is loaded from memory
-                    lclNum = op1->AsLclVarCommon()->GetLclNum();
+                    GenTreeLclVarCommon* lclVar = op1->AsLclVarCommon();
+
+                    lclNum = lclVar->GetLclNum();
+                    offset = lclVar->GetLclOffs();
+
                     BlockRange().Remove(op1);
                 }
 
@@ -1300,25 +1304,32 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     BlockRange().InsertBefore(node, op1);
                     LowerNode(op1);
                 }
+                else
+                {
+                    assert(op1->isIndir());
+
+                    // We need to get the underlying address
+                    GenTree* addr = op1->AsIndir()->Addr();
+                    BlockRange().Remove(op1);
+                    op1 = addr;
+                }
 
                 // Now that we have a memory op, we need to offset it by op2 * scale
-                assert(op1->isMemoryOp());
-
                 if (op2->OperIsConst())
                 {
-                    offset = op2->AsIntCon()->IconValue() * scale;
+                    offset = offset + (op2->AsIntCon()->IconValue() * scale);
                     scale  = 0;
 
                     BlockRange().Remove(op2);
                     op2 = nullptr;
                 }
 
-                GenTree* addr = new (comp, GT_LEA) GenTreeAddrMode(op1->TypeGet(), op1, op2, scale, offset);
-                BlockRange().InsertBefore(node, addr);
-                LowerNode(addr);
+                GenTree* addrMode = new (comp, GT_LEA) GenTreeAddrMode(op1->TypeGet(), op1, op2, scale, offset);
+                BlockRange().InsertBefore(node, addrMode);
+                LowerNode(addrMode);
 
                 // Finally we can indirect the memory address to get the actual value
-                GenTreeIndir* indir = comp->gtNewIndir(simdBaseType, addr);
+                GenTreeIndir* indir = comp->gtNewIndir(simdBaseType, addrMode);
                 BlockRange().InsertBefore(node, indir);
 
                 LIR::Use use;
