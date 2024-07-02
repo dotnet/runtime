@@ -64,11 +64,16 @@ static guint16 sri_vector128_methods [] = {
 	SN_AsInt64,
 	SN_AsNInt,
 	SN_AsNUInt,
+	SN_AsPlane,
+	SN_AsQuaternion,
 	SN_AsSByte,
 	SN_AsSingle,
 	SN_AsUInt16,
 	SN_AsUInt32,
 	SN_AsUInt64,
+	SN_AsVector,
+	SN_AsVector4,
+	SN_AsVector128,
 	SN_ConditionalSelect,
 	SN_Create,
 	SN_CreateScalar,
@@ -444,6 +449,8 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_AsInt64:
 		case SN_AsNInt:
 		case SN_AsNUInt:
+		case SN_AsPlane:
+		case SN_AsQuaternion:
 		case SN_AsSByte:
 		case SN_AsSingle:
 		case SN_AsUInt16:
@@ -454,6 +461,25 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			simd_opcode = MINT_SIMD_INTRINS_P_P;
 			simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITCAST;
 			break;
+		}
+		case SN_AsVector:
+		case SN_AsVector128:
+		case SN_AsVector4: {
+			if (!is_element_type_primitive (csignature->ret) || !is_element_type_primitive (csignature->params [0]))
+				return FALSE;
+
+			MonoClass *ret_class = mono_class_from_mono_type_internal (csignature->ret);
+			int ret_size = mono_class_value_size (ret_class, NULL);
+
+			MonoClass *arg_class = mono_class_from_mono_type_internal (csignature->params [0]);
+			int arg_size = mono_class_value_size (arg_class, NULL);
+
+			if (arg_size == ret_size) {
+				simd_opcode = MINT_SIMD_INTRINS_P_P;
+				simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITCAST;
+				break;
+			}
+			return FALSE;
 		}
 		case SN_ConditionalSelect:
 			simd_opcode = MINT_SIMD_INTRINS_P_PPP;
