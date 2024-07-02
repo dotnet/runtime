@@ -2,8 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -13,9 +13,16 @@ namespace Mono.Linker.Steps
 		internal sealed class NodeFactory (MarkStep markStep)
 		{
 			public MarkStep MarkStep { get; } = markStep;
-			readonly NodeCache<TypeDefinition, TypeDefinitionNode> _typeNodes = new (static t => new TypeDefinitionNode(t));
+
+			public static readonly ImmutableDictionary<string, DependencyKind> StringToDependencyKindMap = Enum.GetValues<DependencyKind> ().ToImmutableDictionary (v => v.ToString ());
+			public static readonly ImmutableDictionary<DependencyKind, string> DependencyKindToStringMap = Enum.GetValues<DependencyKind> ().ToImmutableDictionary (v => v, v => v.ToString ());
+
+			readonly NodeCache<TypeDefinition, TypeDefinitionNode> _typeNodes = new (static t => new TypeDefinitionNode (t));
+
 			readonly NodeCache<MethodDefinition, MethodDefinitionNode> _methodNodes = new (static _ => throw new InvalidOperationException ("Creation of node requires more than the key."));
+
 			readonly NodeCache<PropertyDefinition, PropertyDefinitionNode> _propertyNodes = new (static p => new PropertyDefinitionNode(p));
+
 			readonly NodeCache<TypeDefinition, TypeIsRelevantToVariantCastingNode> _typeIsRelevantToVariantCastingNodes = new (static (t) => new TypeIsRelevantToVariantCastingNode (t));
 
 			internal TypeDefinitionNode GetTypeNode (TypeDefinition definition)

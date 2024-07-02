@@ -51,7 +51,6 @@ using TypeNameParseOptions = System.Reflection.Metadata.TypeNameParseOptions;
 
 namespace Mono.Linker.Steps
 {
-
 	public partial class MarkStep : IStep
 	{
 		LinkContext? _context;
@@ -77,7 +76,7 @@ namespace Mono.Linker.Steps
 		// method body scanner.
 		readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
 		private readonly NodeFactory _nodeFactory;
-		private readonly DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> _dependencyGraph;
+		private readonly DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory> _dependencyGraph;
 
 		MarkStepContext? _markContext;
 		MarkStepContext MarkContext {
@@ -228,7 +227,7 @@ namespace Mono.Linker.Steps
 			_entireTypesMarked = new HashSet<TypeDefinition> ();
 			_compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool> ();
 			_nodeFactory = new NodeFactory (this);
-			_dependencyGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> (_nodeFactory, null);
+			_dependencyGraph = new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory> (_nodeFactory, null);
 		}
 
 		public AnnotationStore Annotations => Context.Annotations;
@@ -372,6 +371,7 @@ namespace Mono.Linker.Steps
 			_dependencyGraph.ComputeMarkedNodes ();
 
 			ProcessPendingTypeChecks ();
+			_dependencyGraph.VisitLogEdges (new EdgeVisitor (this));
 
 			bool ProcessAllPendingItems ()
 				=> ProcessPrimaryQueue () ||
@@ -1947,14 +1947,14 @@ namespace Mono.Linker.Steps
 			MarkStaticConstructor (type, reason, origin);
 		}
 
-
 		/// <summary>
 		/// Marks the specified <paramref name="reference"/> as referenced.
 		/// </summary>
 		/// <param name="reference">The type reference to mark.</param>
 		/// <param name="reason">The reason why the marking is occuring</param>
+		/// <param name="addToGraphAsRoot">Whether to add the node to the dependency graph</param>
 		/// <returns>The resolved type definition if the reference can be resolved</returns>
-		protected internal virtual TypeDefinition? MarkType (TypeReference reference, DependencyInfo reason, MessageOrigin origin)
+		protected internal virtual TypeDefinition? MarkType (TypeReference reference, DependencyInfo reason, MessageOrigin origin, bool addToGraphAsRoot = true)
 		{
 #if DEBUG
 			if (!_typeReasons.Contains (reason.Kind))
@@ -1982,7 +1982,12 @@ namespace Mono.Linker.Steps
 				Debug.Assert (Annotations.IsMarked (type));
 				break;
 			default:
-				Annotations.Mark (type, reason, origin);
+				if (addToGraphAsRoot)
+					Annotations.Mark (type, reason, origin);
+				else
+#pragma warning disable CS0618 // Mark with a reason: We add the reason in the dependency graph edge visitor
+					Annotations.Mark (type);
+#pragma warning restore CS0618
 				break;
 			}
 
@@ -2007,7 +2012,10 @@ namespace Mono.Linker.Steps
 			if (type.Scope is ModuleDefinition module)
 				MarkModule (module, new DependencyInfo (DependencyKind.ScopeOfType, type), origin);
 
-			_dependencyGraph.AddRoot (_nodeFactory.GetTypeNode (type), Enum.GetName (reason.Kind));
+			if(addToGraphAsRoot) {
+				var typeNode = _nodeFactory.GetTypeNode (type);
+				_dependencyGraph.AddRoot (typeNode, NodeFactory.DependencyKindToStringMap[reason.Kind]);
+			}
 			return type;
 		}
 
@@ -2998,7 +3006,9 @@ namespace Mono.Linker.Steps
 			// We will only enqueue a method to be processed if it hasn't been processed yet.
 			if (!CheckProcessed (method))
 				_completed = false;
-			_dependencyGraph.AddRoot (_nodeFactory.GetMethodDefinitionNode (method, reason), Enum.GetName (reason.Kind));
+
+			var methodNode = _nodeFactory.GetMethodDefinitionNode (method, reason);
+			_dependencyGraph.AddRoot (methodNode, NodeFactory.DependencyKindToStringMap[reason.Kind]);
 
 			return method;
 		}
@@ -3154,16 +3164,6 @@ namespace Mono.Linker.Steps
 					Annotations.ProcessSatelliteAssemblies = true;
 			} else if (method.TryGetProperty (out PropertyDefinition? property))
 				MarkProperty (property, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.PropertyOfPropertyMethod), method));
-
-			if (method.HasMetadataParameters ()) {
-#pragma warning disable RS0030 // MethodReference.Parameters is banned. It's easiest to leave the code as is for now
-				foreach (ParameterDefinition pd in method.Parameters) {
-					MarkType (pd.ParameterType, new DependencyInfo (DependencyKind.ParameterType, method), methodOrigin);
-					MarkCustomAttributes (pd, new DependencyInfo (DependencyKind.ParameterAttribute, method), methodOrigin);
-					MarkMarshalSpec (pd, new DependencyInfo (DependencyKind.ParameterMarshalSpec, method), methodOrigin);
-				}
-#pragma warning restore RS0030
-			}
 
 			if (method.HasOverrides) {
 				var assembly = Context.Resolve (method.DeclaringType.Scope);
