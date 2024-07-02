@@ -265,7 +265,8 @@ public:
         }
         else
         {
-            result = GetSlot();
+            _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
+            result = GetMethodTable()->GetSlot(GetSlot());
         }
         _ASSERTE(result != (PCODE)NULL);
 
