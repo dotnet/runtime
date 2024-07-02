@@ -21,6 +21,7 @@ class DeadCodeElimination
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeEquals.Run();
+        TestTypeEqualityDeadBranchScanRemoval.Run();
         TestTypeIsEnum.Run();
         TestTypeIsValueType.Run();
         TestBranchesInGenericCodeRemoval.Run();
@@ -451,6 +452,42 @@ class DeadCodeElimination
 #endif
         }
     }
+
+    class TestTypeEqualityDeadBranchScanRemoval
+    {
+        class NeverAllocated1 { }
+        class NeverAllocated2 { }
+
+        class PossiblyAllocated1 { }
+        class PossiblyAllocated2 { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetNeverObject() => null;
+
+        static volatile Type s_sink;
+
+        public static void Run()
+        {
+            if (GetNeverObject() == typeof(NeverAllocated1))
+            {
+                Console.WriteLine(new NeverAllocated1().ToString());
+                Console.WriteLine(new NeverAllocated2().ToString());
+            }
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEqualityDeadBranchScanRemoval), nameof(NeverAllocated1));
+            ThrowIfPresent(typeof(TestTypeEqualityDeadBranchScanRemoval), nameof(NeverAllocated2));
+#endif
+
+            if (GetNeverObject() == typeof(PossiblyAllocated1))
+            {
+                Console.WriteLine(new PossiblyAllocated1().ToString());
+                Console.WriteLine(new PossiblyAllocated2().ToString());
+            }
+            if (Environment.GetEnvironmentVariable("SURETHING") != null)
+                s_sink = typeof(PossiblyAllocated1);
+        }
+    }
+
 
     class TestTypeIsEnum
     {
