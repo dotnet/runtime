@@ -5313,7 +5313,7 @@ HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     WORD slot = pBaseMD->GetSlot();
     _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
 
-    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+    MethodDesc* pMD = pMT->GetMethodDescForSlot_NoThrow(slot);
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
@@ -5362,7 +5362,7 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     WORD slot = pBaseMD->GetSlot();
     _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
 
-    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+    MethodDesc* pMD = pMT->GetMethodDescForSlot_NoThrow(slot);
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())

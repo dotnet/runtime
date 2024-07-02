@@ -748,6 +748,7 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
 #ifdef _DEBUG
     pClass->SetDebugClassName("dynamicClass");
     pMT->SetDebugClassName("dynamicClass");
+    pMT->GetAuxiliaryDataForWrite()->SetIsPublished();
 #endif
 
     LOG((LF_BCL, LL_INFO10, "Level1 - MethodTable created {0x%p}\n", pClass));
@@ -1644,7 +1645,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
                            name,
                            pszName,
                            IsMdFinal(dwAttrs) ? " (final)" : "",
-                           (VOID *)pMD->GetMethodEntryPoint(),
+                           (VOID *)pMD->GetMethodEntryPointIfExists(),
                            pMD->GetSlot()
                           );
                 OutputDebugStringUtf8(buff);
@@ -1658,7 +1659,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
                      pMD->GetClass()->GetDebugClassName(),
                      pszName,
                      IsMdFinal(dwAttrs) ? " (final)" : "",
-                     (VOID *)pMD->GetMethodEntryPoint(),
+                     (VOID *)pMD->GetMethodEntryPointIfExists(),
                      pMD->GetSlot()
                     ));
             }
@@ -1771,9 +1772,9 @@ MethodTable::Debug_DumpDispatchMap()
             nInterfaceIndex,
             pInterface->GetDebugClassName(),
             nInterfaceSlotNumber,
-            pInterface->GetMethodDescForSlot(nInterfaceSlotNumber)->GetName(),
+            pInterface->GetMethodDescForSlot_NoThrow(nInterfaceSlotNumber)->GetName(),
             nImplementationSlotNumber,
-            GetMethodDescForSlot(nImplementationSlotNumber)->GetName()));
+            GetMethodDescForSlot_NoThrow(nImplementationSlotNumber)->GetName()));
 
         it.Next();
     }
@@ -3448,7 +3449,7 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         MethodTable * pCanonMT = GetCanonicalMethodTable();
 
         // Call the code method without touching MethodDesc if possible
-        PCODE pCctorCode = pCanonMT->GetSlot(pCanonMT->GetClassConstructorSlot());
+        PCODE pCctorCode = pCanonMT->GetRestoredSlot(pCanonMT->GetClassConstructorSlot());
 
         if (pCanonMT->IsSharedByGenericInstantiations())
         {
@@ -6254,19 +6255,6 @@ void MethodTable::SetCl(mdTypeDef token)
 }
 
 //==========================================================================================
-MethodDesc * MethodTable::GetClassConstructor()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    return GetMethodDescForSlot(GetClassConstructorSlot());
-}
-
-//==========================================================================================
 DWORD MethodTable::HasFixedAddressVTStatics()
 {
     LIMITED_METHOD_CONTRACT;
@@ -6714,7 +6702,7 @@ MethodDesc *MethodTable::MethodDataObject::GetImplMethodDesc(UINT32 slotNumber)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     }
@@ -6732,13 +6720,13 @@ MethodDesc *MethodTable::MethodDataObject::GetImplMethodDesc(UINT32 slotNumber)
     if (pMDRet == NULL)
     {
         _ASSERTE(slotNumber < GetNumVirtuals());
-        pMDRet = m_pDeclMT->GetMethodDescForSlot(slotNumber);
+        pMDRet = m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber);
         _ASSERTE(CheckPointer(pMDRet));
         pEntry->SetImplMethodDesc(pMDRet);
     }
     else
     {
-        _ASSERTE(slotNumber >= GetNumVirtuals() || pMDRet == m_pDeclMT->GetMethodDescForSlot(slotNumber));
+        _ASSERTE(slotNumber >= GetNumVirtuals() || pMDRet == m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber));
     }
 
     return pMDRet;
@@ -6949,6 +6937,14 @@ DispatchSlot MethodTable::MethodDataInterfaceImpl::GetImplSlot(UINT32 slotNumber
         return DispatchSlot(0);
     }
     return m_pImpl->GetImplSlot(implSlotNumber);
+}
+
+//==========================================================================================
+bool MethodTable::MethodDataInterfaceImpl::IsImplSlotNull(UINT32 slotNumber)
+{
+    WRAPPER_NO_CONTRACT;
+    UINT32 implSlotNumber = MapToImplSlotNumber(slotNumber);
+    return (implSlotNumber == INVALID_SLOT_NUMBER);
 }
 
 //==========================================================================================
@@ -7597,18 +7593,37 @@ Module *MethodTable::GetDefiningModuleForOpenType()
 PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
 {
     CONTRACTL {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     } CONTRACTL_END;
+
+    // Since this can allocate memory that won't be freed until the LoaderAllocator is release, we need
+    // to make sure that the associated MethodTable is fully allocated and permanent.
+    _ASSERTE(GetAuxiliaryData()->IsPublished());
 
     //
     // Keep in sync with code:MethodTable::GetRestoredSlotMT
     //
 
     PCODE slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
+#ifndef DACCESS_COMPILE
+    if (slot == (PCODE)NULL)
+    {
+        // This is a slot that has not been filled in yet. This can happen if we are
+        // looking at a slot which has not yet been given a temporary entry point.
+        MethodDesc *pMD = GetCanonicalMethodTable()->GetMethodDescForSlot_NoThrow(slotNumber);
+        PCODE temporaryEntryPoint = pMD->GetTemporaryEntryPoint();
+        slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
+        if (slot == (PCODE)NULL)
+        {
+            InterlockedCompareExchangeT(GetCanonicalMethodTable()->GetSlotPtrRaw(slotNumber), temporaryEntryPoint, (PCODE)NULL);
+            slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
+        }
+    }
     _ASSERTE(slot != (PCODE)NULL);
+#endif // DACCESS_COMPILE
     return slot;
 }
 
@@ -7684,7 +7699,7 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD)
         return GetParallelMethodDescForEnC(this, pDefMD);
 #endif // FEATURE_METADATA_UPDATER
 
-    return GetMethodDescForSlot(pDefMD->GetSlot());
+    return GetMethodDescForSlot_NoThrow(pDefMD->GetSlot()); // TODO! We should probably use the throwing variant where possible
 }
 
 #ifndef DACCESS_COMPILE
@@ -7757,7 +7772,7 @@ BOOL MethodTable::HasExplicitOrImplicitPublicDefaultConstructor()
         return FALSE;
     }
 
-    MethodDesc * pCanonMD = GetMethodDescForSlot(GetDefaultConstructorSlot());
+    MethodDesc * pCanonMD = GetMethodDescForSlot_NoThrow(GetDefaultConstructorSlot());
     return pCanonMD != NULL && pCanonMD->IsPublic();
 }
 

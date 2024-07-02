@@ -211,24 +211,6 @@ LOCAL_LABEL(LNullThis):
         NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------
-        NESTED_ENTRY ThePreStubCompactARM, _TEXT, NoHandler
-
-        // r12 - address of compact entry point + PC_REG_RELATIVE_OFFSET
-
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        mov         r0, r12
-
-        bl          C_FUNC(PreStubGetMethodDescForCompactEntryPoint)
-
-        mov         r12, r0                                          // pMethodDesc
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-
-        b           C_FUNC(ThePreStub)
-
-        NESTED_END ThePreStubCompactARM, _TEXT
-// ------------------------------------------------------------------
 // This method does nothing. It's just a fixed function for the debugger to put a breakpoint on.
         LEAF_ENTRY ThePreStubPatch, _TEXT
         nop
