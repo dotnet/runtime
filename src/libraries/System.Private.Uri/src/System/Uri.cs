@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -1280,12 +1281,11 @@ namespace System
                             return UriHostNameType.IPv6;
                         }
                     }
+                }
 
-                    end = name.Length;
-                    if (IPv4AddressHelper.IsValid(fixedName, 0, ref end, false, false, false) && end == name.Length)
-                    {
-                        return UriHostNameType.IPv4;
-                    }
+                if (IPv4AddressHelper.IsValid(name.AsSpan(), out end, false, false, false) && end == name.Length)
+                {
+                    return UriHostNameType.IPv4;
                 }
 
                 if (DomainNameHelper.IsValid(name, iri: false, notImplicitFile: false, out int length) && length == name.Length)
@@ -2520,11 +2520,12 @@ namespace System
 
                 case Flags.IPv6HostType:
                     // The helper will return [...] string that is not suited for Dns.Resolve()
-                    host = IPv6AddressHelper.ParseCanonicalName(str, idx, ref loopback, ref scopeId);
+                    host = IPv6AddressHelper.ParseCanonicalName(str.AsSpan(idx), ref loopback, out ReadOnlySpan<char> scopeIdSpan);
+                    scopeId = scopeIdSpan.IsEmpty ? null : new string(scopeIdSpan);
                     break;
 
                 case Flags.IPv4HostType:
-                    host = IPv4AddressHelper.ParseCanonicalName(str, idx, end, ref loopback);
+                    host = IPv4AddressHelper.ParseCanonicalName(str.AsSpan(idx), ref loopback);
                     break;
 
                 case Flags.UncHostType:
@@ -3866,8 +3867,9 @@ namespace System
                 }
             }
             else if (char.IsAsciiDigit(ch) && syntax.InFact(UriSyntaxFlags.AllowIPv4Host) &&
-                IPv4AddressHelper.IsValid(pString, start, ref end, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
+                IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), out int bytesConsumed, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
             {
+                end = start + bytesConsumed;
                 flags |= Flags.IPv4HostType;
 
                 if (hasUnicode)
