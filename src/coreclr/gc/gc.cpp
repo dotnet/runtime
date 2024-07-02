@@ -30812,10 +30812,7 @@ retry:
                 else
                 {
                     if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg), true) &&
-                        // We are overestimating here by padding with 2 loh_padding_obj_size objects which we shouldn't need
-                        // to do if it's at the end of the region. However, grow_heap_segment is already overestimating by
-                        // a lot more - it would be worth fixing when we are in extreme low memory situations.
-                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + 2* AlignQword (loh_padding_obj_size)))))
+                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + AlignQword (loh_padding_obj_size)))))
                     {
                         dprintf (1235, ("growing seg from %p to %p\n", heap_segment_committed (seg),
                                          (generation_allocation_pointer (gen) + size)));
