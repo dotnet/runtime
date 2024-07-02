@@ -337,7 +337,7 @@ struct MethodTableAuxiliaryData
         enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
         enum_flag_IsInitError               = 0x0100,
-        enum_flag_IsStaticDataAllocated     = 0x0200,
+        enum_flag_IsStaticDataAllocated     = 0x0200,     // When this is set, if the class can be marked as initialized without any further code execution it will be.
         // unum_unused                      = 0x0400,
         enum_flag_IsTlsIndexAllocated       = 0x0800,
         enum_flag_MayHaveOpenInterfaceInInterfaceMap = 0x1000,
@@ -451,6 +451,15 @@ public:
         return VolatileLoad(&m_dwFlags) & enum_flag_Initialized;
     }
 
+    inline bool IsClassInitedOrPreinitedDecided(bool *initResult) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        DWORD dwFlags = VolatileLoad(&m_dwFlags);
+        *initResult = m_dwFlags & enum_flag_Initialized;
+        return (dwFlags & enum_flag_IsStaticDataAllocated|enum_flag_Initialized) != 0;
+    }
+
 #ifndef DACCESS_COMPILE
     inline void SetClassInited()
     {
@@ -466,10 +475,10 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    inline void SetIsStaticDataAllocated()
+    inline void SetIsStaticDataAllocated(bool markAsInitedToo)
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_IsStaticDataAllocated);
+        InterlockedOr((LONG*)&m_dwFlags, markAsInitedToo ? (LONG)(enum_flag_IsStaticDataAllocated|enum_flag_Initialized) : (LONG)enum_flag_IsStaticDataAllocated);
     }
 #endif
 
@@ -1051,11 +1060,11 @@ public:
     }
 
 private:
-    void AttemptToPreinit();
+    bool IsInitedIfStaticDataAllocated();
 public:
     // Is the MethodTable current initialized, and/or can the runtime initialize the MethodTable
     // without running any user code. (This function may allocate memory, and may throw OutOfMemory)
-    BOOL IsClassInitedOrPreinited();
+    bool IsClassInitedOrPreinited();
 #endif
 
     // Is the MethodTable current known to be initialized

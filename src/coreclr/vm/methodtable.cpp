@@ -3782,7 +3782,7 @@ void MethodTable::EnsureStaticDataAllocated()
     CONTRACTL_END;
 
     PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
-    if (!pAuxiliaryData->IsStaticDataAllocated() && IsDynamicStatics())
+    if (!pAuxiliaryData->IsStaticDataAllocated() && IsDynamicStatics() && !IsSharedByGenericInstantiations())
     {
         DynamicStaticsInfo *pDynamicStaticsInfo = GetDynamicStaticsInfo();
         // Allocate space for normal statics if we might have them
@@ -3792,10 +3792,10 @@ void MethodTable::EnsureStaticDataAllocated()
         if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
             GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this->HasBoxedRegularStatics() ? this : NULL);
     }
-    pAuxiliaryData->SetIsStaticDataAllocated();
+    pAuxiliaryData->SetIsStaticDataAllocated(IsInitedIfStaticDataAllocated());
 }
 
-BOOL MethodTable::IsClassInitedOrPreinited()
+bool MethodTable::IsClassInitedOrPreinited()
 {
     CONTRACTL
     {
@@ -3805,15 +3805,15 @@ BOOL MethodTable::IsClassInitedOrPreinited()
     }
     CONTRACTL_END;
 
-    if (IsClassInited())
-        return TRUE;
-    
-    AttemptToPreinit();
+    bool initResult;
+    if (GetAuxiliaryData()->IsClassInitedOrPreinitedDecided(&initResult))
+        return initResult;
 
+    EnsureStaticDataAllocated();
     return IsClassInited();
 }
 
-void MethodTable::AttemptToPreinit()
+bool MethodTable::IsInitedIfStaticDataAllocated()
 {
     CONTRACTL
     {
@@ -3824,33 +3824,32 @@ void MethodTable::AttemptToPreinit()
     CONTRACTL_END;
 
     if (IsClassInited())
-        return;
+    {
+        return true;
+    }
 
     if (HasClassConstructor())
     {
         // If there is a class constructor, then the class cannot be preinitted.
-        return;
+        return false;
     }
     
     if (GetClass()->GetNonGCRegularStaticFieldBytes() == 0 && GetClass()->GetNumHandleRegularStatics() == 0)
     {
-        // If there are static fields that are not thread statics, then the class is preinitted.
-        SetClassInited();
-        return;
+        // If there aren't static fields that are not thread statics, then the class is preinitted.
+        return true;
     }
 
     // At this point, we are looking at a class that has no class constructor, but does have static fields
 
     if (IsSharedByGenericInstantiations())
     {
-        // If we don't know the exact type, we can't pre-allocate the fields
-        return;
+        // If we don't know the exact type, we can't pre-init the the fields
+        return false;
     }
 
     // All this class needs to be initialized is to allocate the memory for the static fields. Do so, and mark the type as initialized
-    EnsureStaticDataAllocated();
-    SetClassInited();
-    return;
+    return true;
 }
 
 void MethodTable::EnsureTlsIndexAllocated()
