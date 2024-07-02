@@ -12,7 +12,7 @@ variables:
   - name: fuzzerProject
     value: $(Build.SourcesDirectory)/src/libraries/Fuzzing/DotnetFuzzing
   - name: dotnetPath
-    value: $(Build.SourcesDirectory)/.dotnet/dotnet
+    value: $(Build.SourcesDirectory)/dotnet.cmd
 
 extends:
   template: /eng/pipelines/common/templates/pipeline-with-resources.yml

@@ -188,6 +188,23 @@ function InitializeDotNetCli([bool]$install, [bool]$createSdkLocationFile) {
     $dotnetRoot = $env:DOTNET_INSTALL_DIR
   } else {
     $dotnetRoot = Join-Path $RepoRoot '.dotnet'
+    if ($env:DOTNET_USE_ARCH_IN_INSTALL_PATH -eq "1") {
+      $osArchitecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+      if ($osArchitecture) {
+        $rid = "win-$osArchitecture".ToLowerInvariant()
+      } else {
+        # netfx / desktop
+        $osArchitecture = (Get-CimInstance -ClassName Win32_OperatingSystem).OSArchitecture
+        switch -Wildcard ($osArchitecture) {
+            "*ARM 64-bit*" { $rid = "win-arm64"; break }
+            "*ARM*" { $rid = "win-arm"; break }
+            "*32-bit*" { $rid = "win-x86"; break }
+            "*64-bit*" { $rid = "win-x64"; break }
+        }
+      }
+
+      $dotnetRoot = Join-Path $dotnetRoot $rid
+    }
 
     if (-not (Test-Path(Join-Path $dotnetRoot "sdk\$dotnetSdkVersion"))) {
       if ($install) {

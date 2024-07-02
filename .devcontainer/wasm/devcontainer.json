@@ -47,7 +47,7 @@
 	// This allows developers to just use 'dotnet build' on the command-line, and the local dotnet version will be used.
 	// Add the global tools dir to the PATH so that globally installed tools will work
 	"remoteEnv": {
-		"PATH": "${containerWorkspaceFolder}/.dotnet:${containerWorkspaceFolder}/.dotnet-tools-global:${containerEnv:PATH}",
+		"PATH": "${containerWorkspaceFolder}/.dotnet/linux-x64:${containerWorkspaceFolder}/.dotnet-tools-global:${containerEnv:PATH}",
 		"DOTNET_MULTILEVEL_LOOKUP": "0",
 	},
 
