@@ -5,7 +5,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { ENVIRONMENT_IS_PTHREAD, Module, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
+import { ENVIRONMENT_IS_PTHREAD, Module, globalizationHelpers, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
 import { PThreadSelf, monoThreadInfo, mono_wasm_pthread_ptr, postMessageToMain, update_thread_info } from "./shared";
 import { PThreadLibrary, MonoThreadMessage, PThreadInfo, PThreadPtr, WorkerToMainMessageType } from "../types/internal";
 import {
@@ -15,7 +15,7 @@ import {
     WorkerThreadEventTarget
 } from "./worker-events";
 import { postRunWorker, preRunWorker } from "../startup";
-import { mono_log_debug, mono_log_error } from "../logging";
+import { mono_log_debug, mono_log_error, mono_log_info } from "../logging";
 import { CharPtr } from "../types/emscripten";
 import { utf8ToString } from "../strings";
 import { forceThreadMemoryViewRefresh } from "../memory";
@@ -110,6 +110,8 @@ export function mono_wasm_pthread_on_pthread_created (): void {
             info: monoThreadInfo,
             port: mainPort,
         }, [mainPort]);
+        const segmentationRules = globalizationHelpers.getSegmentationRules();
+        mono_log_info(`[mono_wasm_pthread_on_pthread_created] ID: ${pthread_id}; segmentationRules = ${segmentationRules}; ${runtimeHelpers.monoThreadInfo.threadName}\nStack: ${(new Error()).stack}`);
     } catch (err) {
         mono_log_error("mono_wasm_pthread_on_pthread_created () failed", err);
         loaderHelpers.mono_exit(1, err);

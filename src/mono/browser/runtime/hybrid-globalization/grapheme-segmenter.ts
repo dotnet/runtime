@@ -8,6 +8,7 @@
  */
 
 import { isSurrogate } from "./helpers";
+import { runtimeHelpers } from "./module-exports";
 
 type SegmentationRule = {
     breaks: boolean
@@ -26,7 +27,7 @@ type SegmentationTypeRaw = {
     rules: Record<string, SegmentationRuleRaw>
 }
 
-let segmentationRules: Record<string, SegmentationRule>;
+let segmentationRules: Record<string, SegmentationRule> = null as any;
 
 function replaceVariables (variables: Record<string, string>, input: string): string {
     const findVarRegex = /\$[A-Za-z0-9_]+/gm;
@@ -46,17 +47,44 @@ function isSegmentationTypeRaw (obj: any): obj is SegmentationTypeRaw {
     return obj.variables != null && obj.rules != null;
 }
 
-export function setSegmentationRulesFromJson (json: string) {
-    if (!isSegmentationTypeRaw(json))
+export function setSegmentationRulesFromJson (rawRules: SegmentationTypeRaw) {
+    if (!isSegmentationTypeRaw(rawRules))
         throw new Error("Provided grapheme segmentation rules are not valid");
-    segmentationRules = GraphemeSegmenter.prepareSegmentationRules(json);
+
+    segmentationRules = {};
+
+    for (const key of Object.keys(rawRules.rules)) {
+        const ruleValue = rawRules.rules[key];
+        const preparedRule: SegmentationRule = { breaks: ruleValue.breaks, };
+
+        if ("before" in ruleValue && ruleValue.before) {
+            preparedRule.before = generateRegexRule(ruleValue.before, rawRules.variables, false);
+        }
+        if ("after" in ruleValue && ruleValue.after) {
+            preparedRule.after = generateRegexRule(ruleValue.after, rawRules.variables, true);
+        }
+
+        segmentationRules[key] = preparedRule;
+    }
+    runtimeHelpers.mono_log_info(`Grapheme segmentation rules are set ID: ${runtimeHelpers.monoThreadInfo.pthreadId}; ${runtimeHelpers.monoThreadInfo.threadName};\nStack: ${(new Error()).stack}`);
 }
 
+export function getSegmentationRules (): Record<string, SegmentationRule> {
+    runtimeHelpers.mono_log_info(`getSegmentationRules=${segmentationRules}; ID: ${runtimeHelpers.monoThreadInfo.pthreadId}; ${runtimeHelpers.monoThreadInfo.threadName}`);
+    return segmentationRules;
+}
+
+// ToDo: refactor to drop the class
 export class GraphemeSegmenter {
     private readonly rules: Record<string, SegmentationRule>;
     private readonly ruleSortedKeys: string[];
 
     public constructor () {
+        if (!segmentationRules) {
+            const message = `Grapheme segmentation rules are not set ID: ${runtimeHelpers.monoThreadInfo.pthreadId}; ${runtimeHelpers.monoThreadInfo.threadName};\nStack: ${(new Error()).stack}`;
+            runtimeHelpers.mono_log_info(message);
+            throw new Error(message);
+        }
         this.rules = segmentationRules;
         this.ruleSortedKeys = Object.keys(this.rules).sort((a, b) => Number(a) - Number(b));
     }
@@ -119,24 +147,5 @@ export class GraphemeSegmenter {
 
         // GB999: Any ÷ Any
         return true;
-    }
-
-    public static prepareSegmentationRules (segmentationRules: SegmentationTypeRaw): Record<string, SegmentationRule> {
-        const preparedRules: Record<string, SegmentationRule> = {};
-
-        for (const key of Object.keys(segmentationRules.rules)) {
-            const ruleValue = segmentationRules.rules[key];
-            const preparedRule: SegmentationRule = { breaks: ruleValue.breaks, };
-
-            if ("before" in ruleValue && ruleValue.before) {
-                preparedRule.before = generateRegexRule(ruleValue.before, segmentationRules.variables, false);
-            }
-            if ("after" in ruleValue && ruleValue.after) {
-                preparedRule.after = generateRegexRule(ruleValue.after, segmentationRules.variables, true);
-            }
-
-            preparedRules[key] = preparedRule;
-        }
-        return preparedRules;
     }
 }

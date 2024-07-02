@@ -112,7 +112,7 @@ export async function instantiate_segmentation_rules_asset (pendingAsset: AssetE
         const json = await response.json();
         globalizationHelpers.setSegmentationRulesFromJson(json);
     } catch (error: any) {
-        mono_log_info(`Error loading static json asset ${pendingAsset.name}: ${JSON.stringify(error)}`);
+        mono_log_info(`Error loading static json asset ${pendingAsset.name}: ${error}`);
     }
 }
 
