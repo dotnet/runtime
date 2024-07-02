@@ -2235,6 +2235,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
+
+    emitAttr origAttr = size;
     if (!compiler->opts.compReloc)
     {
         size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
@@ -2242,8 +2244,16 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
 
     if (EA_IS_RELOC(size))
     {
-        // This emits a pair of adrp/add (two instructions) with fix-ups.
-        GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+        if (!EA_IS_CNS_SEC_RELOC(origAttr))
+        {
+            // This emits a pair of adrp/add (two instructions) with fix-ups.
+            GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+        }
+        else if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        {
+            // This emits pair of `add` instructions for TLS reloc
+            GetEmitter()->emitIns_Add_Add_Tls_Reloc(size, reg, imm DEBUGARG(gtFlags));
+        }
     }
     else if (imm == 0)
     {
@@ -2355,6 +2365,14 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (targetType == TYP_BYREF)
             {
                 attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+            }
+
+            if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                if (con->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+                {
+                    attr = EA_SET_FLG(attr, EA_CNS_SEC_RELOC);
+                }
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
