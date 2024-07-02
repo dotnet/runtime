@@ -580,7 +580,13 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
     }
 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
-    void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE | hugePagesFlag, -1, 0);
+    int mapflags = MAP_ANON | MAP_PRIVATE | hugePagesFlag;
+#if defined(MAP_NORESERVE) && defined(TARGET_SUNOS)
+    // Without this, the OS will try to actually allocate physical pages
+    // for this range (typically 256GB) and on most VMs that will fail.
+    mapflags |= MAP_NORESERVE;
+#endif
+    void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, mapflags, -1, 0);
 
     if (pRetVal != MAP_FAILED)
     {
