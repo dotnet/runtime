@@ -30,6 +30,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm64-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/arm64
+          ROOTFS_HOST_DIR: /
 
       linux_musl_x64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-alpine-net9.0
@@ -104,9 +105,6 @@ extends:
 
       debian-12-gcc14-amd64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64
-
-      linux_x64_llvmaot:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
 
       browser_wasm:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-webassembly-amd64-net9.0

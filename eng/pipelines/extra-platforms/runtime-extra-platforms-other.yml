@@ -120,8 +120,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
       - linux_x64
-      # Tracking issue: https://github.com/dotnet/runtime/issues/90427
-      # linux_arm64
+      - linux_arm64
     variables:
       - name: timeoutPerTestInMinutes
         value: 60
@@ -143,7 +142,6 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            llvmAotStepContainer: linux_x64
             testRunNamePrefixSuffix: Mono_Release
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
