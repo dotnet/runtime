@@ -401,7 +401,15 @@ namespace System.Text.Json
                 bool success = Utf8Parser.TryParse(span.Slice(i + 1), out exp, out _);
                 Debug.Assert(success);
 
-            Normalize:
+            Normalize: // Calculates the normal form of the number.
+
+                if (IndexOfFirstTrailingZero(frac) is >= 0 and int iz)
+                {
+                    // Trim trailing zeros from the fractional part.
+                    // e.g. 3.1400 -> 3.14
+                    frac = frac.Slice(0, iz);
+                }
+
                 if (intg[0] == '0')
                 {
                     Debug.Assert(intg.Length == 1, "Leading zeros not permitted in JSON numbers.");
@@ -417,13 +425,6 @@ namespace System.Text.Json
 
                     // Normalize "0" to the empty span.
                     intg = default;
-                }
-
-                if (IndexOfFirstTrailingZero(frac) is >= 0 and int iz)
-                {
-                    // Trim trailing zeros from the fractional part.
-                    // e.g. 3.1400 -> 3.14
-                    frac = frac.Slice(0, iz);
                 }
 
                 if (frac.IsEmpty && IndexOfFirstTrailingZero(intg) is >= 0 and int fz)
