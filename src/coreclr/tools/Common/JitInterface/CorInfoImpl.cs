@@ -3927,9 +3927,9 @@ namespace Internal.JitInterface
                         case IMAGE_REL_ARM64_TLSDESC_CALL:
                             return RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL;
                         case IMAGE_REL_ARM64_SECREL_HIGH12A:
-                            return RelocType.IMAGE_REL_BASED_ARM64_SECREL_HIGH12A;
+                            return RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A;
                         case IMAGE_REL_ARM64_SECREL_LOW12L:
-                            return RelocType.IMAGE_REL_BASED_ARM64_SECREL_LOW12L;
+                            return RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12L;
                         default:
                             Debug.Fail("Invalid RelocType: " + fRelocType);
                             return 0;

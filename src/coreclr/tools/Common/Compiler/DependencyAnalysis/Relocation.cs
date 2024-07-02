@@ -37,13 +37,6 @@ namespace ILCompiler.DependencyAnalysis
         // Windows x64
         IMAGE_REL_SECREL                     = 0x104,
 
-        // Windows arm64 TLS access
-        // The value of IMAGE_REL_BASED_ARM64_SECREL_HIGH12A and IMAGE_REL_BASED_DIR64 are same.
-        // Hence, IMAGE_REL_BASED_ARM64_SECREL_HIGH12A is assigned a different value.
-        // IMAGE_REL_BASED_ARM64_SECREL_LOW12L is assigned 0x1B, just for consistency.
-        IMAGE_REL_BASED_ARM64_SECREL_HIGH12A        = 0x1A,  // ADD high 12-bit offset for tls
-        IMAGE_REL_BASED_ARM64_SECREL_LOW12L         = 0x1B,  // ADD low 12-bit offset for tls
-
         // Linux x64
         // GD model
         IMAGE_REL_TLSGD                      = 0x105,
@@ -63,6 +56,10 @@ namespace ILCompiler.DependencyAnalysis
         // Linux arm32
         IMAGE_REL_ARM_PREL31                 = 0x10D,
         IMAGE_REL_ARM_JUMP24                 = 0x10E,
+
+        // Windows arm64 TLS access
+        IMAGE_REL_ARM64_TLS_SECREL_HIGH12A = 0x20A,  // ADD high 12-bit offset for tls
+        IMAGE_REL_ARM64_TLS_SECREL_LOW12L  = 0x20B,  // ADD low 12-bit offset for tls
 
         //
         // Relocations for R2R image production
@@ -534,12 +531,12 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
                     PutArm64Rel21((uint*)location, (int)value);
                     break;
-                case RelocType.IMAGE_REL_BASED_ARM64_SECREL_HIGH12A:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A:
                     PutArm64TlsRel12((uint*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
-                case RelocType.IMAGE_REL_BASED_ARM64_SECREL_LOW12L:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12L:
                     PutArm64Rel12((uint*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
@@ -595,8 +592,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                     return GetArm64Rel21((uint*)location);
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
-                case RelocType.IMAGE_REL_BASED_ARM64_SECREL_HIGH12A:
-                case RelocType.IMAGE_REL_BASED_ARM64_SECREL_LOW12L:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12L:
                     return GetArm64Rel12((uint*)location);
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
