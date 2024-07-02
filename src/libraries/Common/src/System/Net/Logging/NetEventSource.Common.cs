@@ -77,7 +77,7 @@ namespace System.Net
         [Event(InfoEventId, Level = EventLevel.Informational, Keywords = Keywords.Default)]
         private void Info(string thisOrContextObject, string? memberName, string? message)
         {
-            Debug.Assert(IsEnabled());
+            //Debug.Assert(IsEnabled());
             WriteEvent(InfoEventId, thisOrContextObject, memberName ?? MissingMember, message);
         }
         #endregion
@@ -102,7 +102,7 @@ namespace System.Net
         [Event(ErrorEventId, Level = EventLevel.Error, Keywords = Keywords.Default)]
         private void ErrorMessage(string thisOrContextObject, string? memberName, string? message)
         {
-            Debug.Assert(IsEnabled());
+            //Debug.Assert(IsEnabled());
             WriteEvent(ErrorEventId, thisOrContextObject, memberName ?? MissingMember, message);
         }
         #endregion
