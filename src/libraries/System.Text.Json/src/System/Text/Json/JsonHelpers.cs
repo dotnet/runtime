@@ -395,45 +395,46 @@ namespace System.Text.Json
             Normalize:
                 if (integral[0] == '0')
                 {
-                    // Normalize "0" to the empty span.
                     Debug.Assert(integral.Length == 1, "Leading zeros not permitted in JSON numbers.");
+
+                    // Normalize "0" to the empty span.
                     integral = default;
+
+                    if (IndexOfLastLeadingZero(fractional) is >= 0 and int lz)
+                    {
+                        // Trim leading zeros from the fractional part
+                        // and update the exponent accordingly.
+                        // e.g. 0.000123 -> 0.123e-3
+                        fractional = fractional.Slice(lz + 1);
+                        exponent -= lz + 1;
+                    }
                 }
 
                 if (IndexOfFirstTrailingZero(fractional) is >= 0 and int iz)
                 {
-                    // Trim all trailing zeros from the fractional part.
+                    // Trim trailing zeros from the fractional part.
+                    // e.g. 3.1400 -> 3.14
                     fractional = fractional.Slice(0, iz);
                 }
 
                 if (fractional.IsEmpty && IndexOfFirstTrailingZero(integral) is >= 0 and int fz)
                 {
-                    // There is no fractional part, trim all trailing zeros from
+                    // There is no fractional part, trim trailing zeros from
                     // the integral part and increase the exponent accordingly.
+                    // e.g. 1000 -> 1e3
                     exponent += integral.Length - fz;
                     integral = integral.Slice(0, fz);
                 }
 
                 // Normalize the exponent by subtracting the length of the fractional part.
+                // e.g. 3.14 -> 314e-2
                 exponent -= fractional.Length;
 
-                if (integral.IsEmpty)
+                if (integral.IsEmpty && fractional.IsEmpty)
                 {
-                    // Handle representations that only have a fractional component.
-
-                    if (IndexOfLastLeadingZero(fractional) is >= 0 and int lz)
-                    {
-                        // Trim all leading zeros from the fractional segment as
-                        // they have already been accounted for in the exponent.
-                        fractional = fractional.Slice(lz + 1);
-                    }
-
-                    if (fractional.IsEmpty)
-                    {
-                        // Normalize zero representations.
-                        isNegative = false;
-                        exponent = 0;
-                    }
+                    // Normalize zero representations.
+                    isNegative = false;
+                    exponent = 0;
                 }
 
                 static int IndexOfLastLeadingZero(ReadOnlySpan<byte> span)
