@@ -7365,18 +7365,18 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         assert(varDsc->lvIsMultiRegRet);
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        var_types type  = retTypeDesc.GetReturnRegType(0);
-        unsigned offset = retTypeDesc.GetReturnFieldOffset(0);
-        regNumber toReg = retTypeDesc.GetABIReturnReg(0, compiler->info.compCallConv);
+        var_types type   = retTypeDesc.GetReturnRegType(0);
+        unsigned  offset = retTypeDesc.GetReturnFieldOffset(0);
+        regNumber toReg  = retTypeDesc.GetABIReturnReg(0, compiler->info.compCallConv);
 
         GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         if (regCount > 1)
         {
             assert(regCount == 2);
             assert(offset + genTypeSize(type) <= retTypeDesc.GetReturnFieldOffset(1));
-            type       = retTypeDesc.GetReturnRegType(1);
+            type   = retTypeDesc.GetReturnRegType(1);
             offset = retTypeDesc.GetReturnFieldOffset(1);
-            toReg      = retTypeDesc.GetABIReturnReg(1, compiler->info.compCallConv);
+            toReg  = retTypeDesc.GetABIReturnReg(1, compiler->info.compCallConv);
 
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
