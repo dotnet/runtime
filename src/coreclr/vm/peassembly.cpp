@@ -539,7 +539,7 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     {
         AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
         DomainAssembly* pParentAssembly = pAppDomain->FindAssembly(this);
-        pAssembly = pAppDomain->RaiseResourceResolveEvent(pParentAssembly, szName);
+        pAssembly = pAppDomain->RaiseResourceResolveEvent(pParentAssembly->GetAssembly(), szName);
         if (pAssembly == NULL)
             return FALSE;
         pPEAssembly = pAssembly->GetPEAssembly();
