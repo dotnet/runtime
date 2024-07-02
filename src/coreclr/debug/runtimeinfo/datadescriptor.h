@@ -152,6 +152,18 @@ CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(Ex
 #endif
 CDAC_TYPE_END(ExceptionInfo)
 
+CDAC_TYPE_BEGIN(ExceptionObject)
+CDAC_TYPE_INDETERMINATE(ExceptionObject)
+CDAC_TYPE_FIELD(ExceptionObject, /*pointer*/, Message, cdac_offsets<ExceptionObject>::Message)
+CDAC_TYPE_FIELD(ExceptionObject, /*pointer*/, InnerException, cdac_offsets<ExceptionObject>::InnerException)
+CDAC_TYPE_FIELD(ExceptionObject, /*pointer*/, StackTrace, cdac_offsets<ExceptionObject>::StackTrace)
+CDAC_TYPE_FIELD(ExceptionObject, /*pointer*/, WatsonBuckets, cdac_offsets<ExceptionObject>::WatsonBuckets)
+CDAC_TYPE_FIELD(ExceptionObject, /*pointer*/, StackTraceString, cdac_offsets<ExceptionObject>::StackTraceString)
+CDAC_TYPE_FIELD(ExceptionObject, /*pointer*/, RemoteStackTraceString, cdac_offsets<ExceptionObject>::RemoteStackTraceString)
+CDAC_TYPE_FIELD(ExceptionObject, /*int32*/, HResult, cdac_offsets<ExceptionObject>::HResult)
+CDAC_TYPE_FIELD(ExceptionObject, /*int32*/, XCode, cdac_offsets<ExceptionObject>::XCode)
+CDAC_TYPE_END(ExceptionObject)
+
 CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(GCHandle)

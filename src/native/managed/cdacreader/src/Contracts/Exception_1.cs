@@ -20,4 +20,18 @@ internal readonly struct Exception_1 : IException
         nextNestedException = exceptionInfo.PreviousNestedInfo;
         return exceptionInfo.ThrownObject.Object;
     }
+
+    ExceptionObjectData IException.GetExceptionObjectData(TargetPointer objectAddress)
+    {
+        Data.ExceptionObject exceptionObject = _target.ProcessedData.GetOrAdd<Data.ExceptionObject>(objectAddress);
+        return new ExceptionObjectData(
+            exceptionObject.Message,
+            exceptionObject.InnerException,
+            exceptionObject.StackTrace,
+            exceptionObject.WatsonBuckets,
+            exceptionObject.StackTraceString,
+            exceptionObject.RemoteStackTraceString,
+            exceptionObject.HResult,
+            exceptionObject.XCode);
+    }
 }

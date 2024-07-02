@@ -2340,6 +2340,21 @@ private:
     void*       _xptrs;
     INT32       _xcode;
     INT32       _HResult;
+
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<>
+struct cdac_offsets<ExceptionObject>
+{
+    static constexpr size_t Message = offsetof(ExceptionObject, _message);
+    static constexpr size_t InnerException = offsetof(ExceptionObject, _innerException);
+    static constexpr size_t StackTrace = offsetof(ExceptionObject, _stackTrace);
+    static constexpr size_t WatsonBuckets = offsetof(ExceptionObject, _watsonBuckets);
+    static constexpr size_t StackTraceString = offsetof(ExceptionObject, _stackTraceString);
+    static constexpr size_t RemoteStackTraceString = offsetof(ExceptionObject, _remoteStackTraceString);
+    static constexpr size_t HResult = offsetof(ExceptionObject, _HResult);
+    static constexpr size_t XCode = offsetof(ExceptionObject, _xcode);
 };
 
 // Defined in Contracts.cs

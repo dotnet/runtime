@@ -109,7 +109,30 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
 
     public unsafe int GetObjectClassName(ulong obj, uint count, char* className, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetObjectData(ulong objAddr, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data)
+    {
+        try
+        {
+            Contracts.IException contract = _target.Contracts.Exception;
+            Contracts.ExceptionObjectData exceptionData = contract.GetExceptionObjectData(objectAddress);
+            data->Message = exceptionData.Message;
+            data->InnerException = exceptionData.InnerException;
+            data->StackTrace = exceptionData.StackTrace;
+            data->WatsonBuckets = exceptionData.WatsonBuckets;
+            data->StackTraceString = exceptionData.StackTraceString;
+            data->RemoteStackTraceString = exceptionData.RemoteStackTraceString;
+            data->HResult = exceptionData.HResult;
+            data->XCode = exceptionData.XCode;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
