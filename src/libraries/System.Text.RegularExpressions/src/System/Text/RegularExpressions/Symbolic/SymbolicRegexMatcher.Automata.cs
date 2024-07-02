@@ -392,8 +392,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     if (// check if there is an active timer
                         (timeoutOccursAt != 0 && Environment.TickCount64 > timeoutOccursAt) ||
-                        // check if size exceeds the NFA threshold
-                        (checkThreshold && _stateCache.Count >= SymbolicRegexThresholds.NfaThreshold))
+                        // check if amount of nodes exceeds the NFA threshold
+                        (checkThreshold && _builder._nodeCache.Count >= SymbolicRegexThresholds.NfaNodeCountThreshold)
+                    )
                     {
                         nextState = null;
                         return false;

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -220,7 +221,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         FindMode:
                         FindNextStartingPositionMode.FixedDistanceSets_LeftToRight or
                         FindNextStartingPositionMode.LeadingSet_LeftToRight} when
-                        _optimizedReversalState.Kind != MatchReversalKind.FixedLength => findOptimizations,
+                        _optimizedReversalState.Kind == MatchReversalKind.FixedLength => findOptimizations,
                     // string literals are the best case
                     {
                         FindMode:
@@ -573,9 +574,11 @@ namespace System.Text.RegularExpressions.Symbolic
             where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
             where TOptimizedNullabilityHandler : struct, IOptimizedNullabilityHandler
         {
+            // TODO: possible this value could be removed
             int initialStatePosCandidate = pos;
             var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind<FullInputReader>(input, pos - 1)]);
             int endPos = NoMatchExists;
+            int lengthMinus1 = input.Length - 1;
 
             while (true)
             {
@@ -584,15 +587,14 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (currentState.NfaState is null)
                 {
                     const int dfaCharsPerTimeoutCheck = 100000;
-                    innerLoopLength = _checkTimeout && input.Length - pos > dfaCharsPerTimeoutCheck
+                    innerLoopLength = _checkTimeout && lengthMinus1 - pos > dfaCharsPerTimeoutCheck
                         ? pos + dfaCharsPerTimeoutCheck
-                        : input.Length;
+                        : lengthMinus1;
                     done =
                         FindEndPositionDeltasDFAOptimized<TOptimizedInputReader,
                             TAcceleratedStateHandler,
-                            TOptimizedNullabilityHandler>(input, innerLoopLength - 1, mode, timeoutOccursAt, ref pos,
-                            currentState.DfaStateId, ref endPos, ref initialStatePosCandidate,
-                            ref initialStatePosCandidate);
+                            TOptimizedNullabilityHandler>(input, innerLoopLength, mode, timeoutOccursAt, ref pos,
+                            ref currentState.DfaStateId, ref endPos);
                 }
                 else
                 {
@@ -729,8 +731,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private bool FindEndPositionDeltasDFAOptimized<TOptimizedInputReader, TAcceleratedStateHandler,
             TOptimizedNullabilityHandler>(ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
-            long timeoutOccursAt, ref int posRef, int startStateId, ref int endPosRef, ref int initialStatePosRef,
-            ref int initialStatePosCandidateRef)
+            long timeoutOccursAt, ref int posRef, ref int currentStateIdRef, ref int endPosRef)
             where TOptimizedInputReader : struct, IOptimizedInputReader
             where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
             where TOptimizedNullabilityHandler : struct, IOptimizedNullabilityHandler
@@ -739,7 +740,7 @@ namespace System.Text.RegularExpressions.Symbolic
             if (posRef == input.Length)
 
             {
-                if (_stateArray[startStateId]!.IsNullableFor(_positionKinds[0]))
+                if (_stateArray[currentStateIdRef]!.IsNullableFor(_positionKinds[0]))
                 {
                     // the end position kind was nullable
                     endPosRef = posRef;
@@ -751,7 +752,7 @@ namespace System.Text.RegularExpressions.Symbolic
             int pos = posRef;
             int endPos = endPosRef;
             byte[] mtlookup = _mintermClassifier.ByteLookup()!;
-            int currStateId = startStateId;
+            int currStateId = currentStateIdRef;
             int deadStateId = _deadStateId;
             int initialStateId = _initialStateId;
             int maxChar = _mintermClassifier.MaxChar();
@@ -803,7 +804,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     timeoutOccursAt)
                         || pos >= lengthMinus1)
                     {
-                        if (pos + 1 < input.Length)
+                        if (pos < lengthMinus1)
                         {
                             return false;
                         }
@@ -829,7 +830,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Write back the local copies of the ref values.
                 posRef = pos;
                 endPosRef = endPos;
-                initialStatePosRef = currStateId > 0 ? initialStatePosCandidateRef : initialStatePosRef;
+                currentStateIdRef = currStateId;
             }
         }
 
