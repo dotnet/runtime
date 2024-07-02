@@ -49,6 +49,23 @@ public static class Program
 		Assert.Equal(0, native);
 		Assert.Equal(0, managed);
 	}
+
+	[Fact]
+	[ActiveIssue(RiscVClangEmptyStructsIgnored, typeof(Program), nameof(IsRiscV64))]
+	[ActiveIssue(Arm32ClangEmptyStructsIgnored, typeof(Program), nameof(IsArm32))]
+	[ActiveIssue(SystemVPassNoClassEightbytes, typeof(Program), nameof(IsSystemV))]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64))]
+	public static void Test_Empty_ByReflection_Sanity()
+	{
+		Empty empty = new Empty{};
+		int native = (int)typeof(Program).GetMethod("Echo_Empty_Sanity").Invoke(
+			null, new object[] {-2, 3f, empty, -3, 2f});
+		int managed = (int)typeof(Program).GetMethod("Echo_Empty_Sanity_Managed").Invoke(
+			null, new object[] {-2, 3f, empty, -3, 2f});
+
+		Assert.Equal(0, native);
+		Assert.Equal(0, managed);
+	}
 #endregion
 
 #region IntEmpty_SystemVTests
@@ -87,6 +104,19 @@ public static class Program
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
 	}
+
+	[Fact]
+	public static void Test_IntEmpty_ByReflection_SysV()
+	{
+		var expected = (IntEmpty)typeof(IntEmpty).GetMethod("Get").Invoke(null, new object[] {});
+		var native = (IntEmpty)typeof(Program).GetMethod("Echo_IntEmpty_SysV").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+		var managed = (IntEmpty)typeof(Program).GetMethod("Echo_IntEmpty_SysV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
 #endregion
 
 #region IntEmptyPair_SystemVTests
@@ -121,6 +151,19 @@ public static class Program
 		IntEmptyPair expected = IntEmptyPair.Get();
 		IntEmptyPair native = Echo_IntEmptyPair_SysV(0, 0f, expected, 1, -1f);
 		IntEmptyPair managed = Echo_IntEmptyPair_SysV_Managed(0, 0f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_IntEmptyPair_ByReflection_SysV()
+	{
+		var expected = IntEmptyPair.Get();
+		var native = (IntEmptyPair)typeof(Program).GetMethod("Echo_IntEmptyPair_SysV").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+		var managed = (IntEmptyPair)typeof(Program).GetMethod("Echo_IntEmptyPair_SysV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -167,6 +210,19 @@ public static class Program
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
 	}
+
+	[Fact]
+	public static void Test_EmptyFloatIntInt_ByReflection_SysV()
+	{
+		var expected = EmptyFloatIntInt.Get();
+		var native = (EmptyFloatIntInt)typeof(Program).GetMethod("Echo_EmptyFloatIntInt_SysV").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+		var managed = (EmptyFloatIntInt)typeof(Program).GetMethod("Echo_EmptyFloatIntInt_SysV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
 #endregion
 
 #region FloatFloatEmptyFloat_SystemVTests
@@ -205,6 +261,19 @@ public static class Program
 		FloatFloatEmptyFloat expected = FloatFloatEmptyFloat.Get();
 		FloatFloatEmptyFloat native = Echo_FloatFloatEmptyFloat_SysV(0, 0f, expected, 1, -1f);
 		FloatFloatEmptyFloat managed = Echo_FloatFloatEmptyFloat_SysV_Managed(0, 0f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_FloatFloatEmptyFloat_ByReflection_SysV()
+	{
+		var expected = FloatFloatEmptyFloat.Get();
+		var native = (FloatFloatEmptyFloat)typeof(Program).GetMethod("Echo_FloatFloatEmptyFloat_SysV").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+		var managed = (FloatFloatEmptyFloat)typeof(Program).GetMethod("Echo_FloatFloatEmptyFloat_SysV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -255,6 +324,19 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact, ActiveIssue(SystemVPassNoClassEightbytes, typeof(Program), nameof(IsSystemV))]
+	public static void Test_Empty8Float_ByReflection_RiscV()
+	{
+		var expected = Empty8Float.Get();
+		var native = (Empty8Float)typeof(Program).GetMethod("Echo_Empty8Float_RiscV").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
+		var managed = (Empty8Float)typeof(Program).GetMethod("Echo_Empty8Float_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern Empty8Float Echo_Empty8Float_InIntegerRegs_RiscV(
 		int a0,
@@ -279,6 +361,19 @@ public static class Program
 			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
 		Empty8Float managed = Echo_Empty8Float_InIntegerRegs_RiscV_Managed(
 			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact, ActiveIssue(SystemVPassNoClassEightbytes, typeof(Program), nameof(IsSystemV))]
+	public static void Test_Empty8Float_InIntegerRegs_ByReflection_RiscV()
+	{
+		var expected = Empty8Float.Get();
+		var native = (Empty8Float)typeof(Program).GetMethod("Echo_Empty8Float_InIntegerRegs_RiscV").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+		var managed = (Empty8Float)typeof(Program).GetMethod("Echo_Empty8Float_InIntegerRegs_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -313,6 +408,19 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact, ActiveIssue(SystemVPassNoClassEightbytes, typeof(Program), nameof(IsSystemV))]
+	public static void Test_Empty8Float_Split_ByReflection_RiscV()
+	{
+		var expected = Empty8Float.Get();
+		var native = (Empty8Float)typeof(Program).GetMethod("Echo_Empty8Float_Split_RiscV").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+		var managed = (Empty8Float)typeof(Program).GetMethod("Echo_Empty8Float_Split_RiscV_Managed").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern Empty8Float Echo_Empty8Float_OnStack_RiscV(
 		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
@@ -337,6 +445,19 @@ public static class Program
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
 		Empty8Float managed = Echo_Empty8Float_OnStack_RiscV_Managed(
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact, ActiveIssue(SystemVPassNoClassEightbytes, typeof(Program), nameof(IsSystemV))]
+	public static void Test_Empty8Float_OnStack_ByReflection_RiscV()
+	{
+		var expected = Empty8Float.Get();
+		var native = (Empty8Float)typeof(Program).GetMethod("Echo_Empty8Float_OnStack_RiscV").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+		var managed = (Empty8Float)typeof(Program).GetMethod("Echo_Empty8Float_OnStack_RiscV_Managed").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -383,6 +504,19 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact]
+	public static void Test_FloatEmpty8Float_ByReflection_RiscV()
+	{
+		var expected = FloatEmpty8Float.Get();
+		var native = (FloatEmpty8Float)typeof(Program).GetMethod("Echo_FloatEmpty8Float_RiscV").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
+		var managed = (FloatEmpty8Float)typeof(Program).GetMethod("Echo_FloatEmpty8Float_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern FloatEmpty8Float Echo_FloatEmpty8Float_InIntegerRegs_RiscV(
 		int a0,
@@ -407,6 +541,19 @@ public static class Program
 			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
 		FloatEmpty8Float managed = Echo_FloatEmpty8Float_InIntegerRegs_RiscV_Managed(
 			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_FloatEmpty8Float_InIntegerRegs_ByReflection_RiscV()
+	{
+		var expected = FloatEmpty8Float.Get();
+		var native = (FloatEmpty8Float)typeof(Program).GetMethod("Echo_FloatEmpty8Float_InIntegerRegs_RiscV").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+		var managed = (FloatEmpty8Float)typeof(Program).GetMethod("Echo_FloatEmpty8Float_InIntegerRegs_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -441,6 +588,19 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact]
+	public static void Test_FloatEmpty8Float_Split_ByReflection_RiscV()
+	{
+		var expected = FloatEmpty8Float.Get();
+		var native = (FloatEmpty8Float)typeof(Program).GetMethod("Echo_FloatEmpty8Float_Split_RiscV").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, -2, 2f});
+		var managed = (FloatEmpty8Float)typeof(Program).GetMethod("Echo_FloatEmpty8Float_Split_RiscV_Managed").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, -2, 2f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern FloatEmpty8Float Echo_FloatEmpty8Float_OnStack_RiscV(
 		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
@@ -465,6 +625,19 @@ public static class Program
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 3, -3f);
 		FloatEmpty8Float managed = Echo_FloatEmpty8Float_OnStack_RiscV_Managed(
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 3, -3f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_FloatEmpty8Float_OnStack_ByReflection_RiscV()
+	{
+		var expected = FloatEmpty8Float.Get();
+		var native = (FloatEmpty8Float)typeof(Program).GetMethod("Echo_FloatEmpty8Float_OnStack_RiscV").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 3, -3f});
+		var managed = (FloatEmpty8Float)typeof(Program).GetMethod("Echo_FloatEmpty8Float_OnStack_RiscV_Managed").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 3, -3f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -511,6 +684,19 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact]
+	public static void Test_FloatEmptyShort_ByReflection_RiscV()
+	{
+		var expected = FloatEmptyShort.Get();
+		var native = (FloatEmptyShort)typeof(Program).GetMethod("Echo_FloatEmptyShort_RiscV").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
+		var managed = (FloatEmptyShort)typeof(Program).GetMethod("Echo_FloatEmptyShort_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern FloatEmptyShort Echo_FloatEmptyShort_InIntegerRegs_RiscV(
 		int a0,
@@ -540,6 +726,19 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact]
+	public static void Test_FloatEmptyShort_InIntegerRegs_ByReflection_RiscV()
+	{
+		var expected = FloatEmptyShort.Get();
+		var native = (FloatEmptyShort)typeof(Program).GetMethod("Echo_FloatEmptyShort_InIntegerRegs_RiscV").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+		var managed = (FloatEmptyShort)typeof(Program).GetMethod("Echo_FloatEmptyShort_InIntegerRegs_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern FloatEmptyShort Echo_FloatEmptyShort_OnStack_RiscV(
 		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
@@ -564,6 +763,19 @@ public static class Program
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 2, -2f);
 		FloatEmptyShort managed = Echo_FloatEmptyShort_OnStack_RiscV_Managed(
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 2, -2f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_FloatEmptyShort_OnStack_ByReflection_RiscV()
+	{
+		var expected = FloatEmptyShort.Get();
+		var native = (FloatEmptyShort)typeof(Program).GetMethod("Echo_FloatEmptyShort_OnStack_RiscV").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 2, -2f});
+		var managed = (FloatEmptyShort)typeof(Program).GetMethod("Echo_FloatEmptyShort_OnStack_RiscV_Managed").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 2, -2f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -606,6 +818,19 @@ public static class Program
 		EmptyFloatEmpty5Sbyte expected = EmptyFloatEmpty5Sbyte.Get();
 		EmptyFloatEmpty5Sbyte native = Echo_EmptyFloatEmpty5Sbyte_RiscV(0, 0f, expected, -1, 1f);
 		EmptyFloatEmpty5Sbyte managed = Echo_EmptyFloatEmpty5Sbyte_RiscV_Managed(0, 0f, expected, -1, 1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_EmptyFloatEmpty5Sbyte_ByReflection_RiscV()
+	{
+		var expected = EmptyFloatEmpty5Sbyte.Get();
+		var native = (EmptyFloatEmpty5Sbyte)typeof(Program).GetMethod("Echo_EmptyFloatEmpty5Sbyte_RiscV").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
+		var managed = (EmptyFloatEmpty5Sbyte)typeof(Program).GetMethod("Echo_EmptyFloatEmpty5Sbyte_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -653,6 +878,19 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact]
+	public static void Test_EmptyFloatEmpty5Byte_ByReflection_RiscV()
+	{
+		var expected = EmptyFloatEmpty5Byte.Get();
+		var native = (EmptyFloatEmpty5Byte)typeof(Program).GetMethod("Echo_EmptyFloatEmpty5Byte_RiscV").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
+		var managed = (EmptyFloatEmpty5Byte)typeof(Program).GetMethod("Echo_EmptyFloatEmpty5Byte_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern EmptyFloatEmpty5Byte Echo_EmptyFloatEmpty5Byte_InIntegerRegs_RiscV(
 		int a0,
@@ -677,6 +915,19 @@ public static class Program
 			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
 		EmptyFloatEmpty5Byte managed = Echo_EmptyFloatEmpty5Byte_InIntegerRegs_RiscV_Managed(
 			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_EmptyFloatEmpty5Byte_InIntegerRegs_ByReflection_RiscV()
+	{
+		var expected = EmptyFloatEmpty5Byte.Get();
+		var native = (EmptyFloatEmpty5Byte)typeof(Program).GetMethod("Echo_EmptyFloatEmpty5Byte_InIntegerRegs_RiscV").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+		var managed = (EmptyFloatEmpty5Byte)typeof(Program).GetMethod("Echo_EmptyFloatEmpty5Byte_InIntegerRegs_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -711,6 +962,19 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact]
+	public static void Test_EmptyFloatEmpty5Byte_Split_ByReflection_RiscV()
+	{
+		var expected = EmptyFloatEmpty5Byte.Get();
+		var native = (EmptyFloatEmpty5Byte)typeof(Program).GetMethod("Echo_EmptyFloatEmpty5Byte_Split_RiscV").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+		var managed = (EmptyFloatEmpty5Byte)typeof(Program).GetMethod("Echo_EmptyFloatEmpty5Byte_Split_RiscV_Managed").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern EmptyFloatEmpty5Byte Echo_EmptyFloatEmpty5Byte_OnStack_RiscV(
 		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
@@ -735,6 +999,19 @@ public static class Program
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
 		EmptyFloatEmpty5Byte managed = Echo_EmptyFloatEmpty5Byte_OnStack_RiscV_Managed(
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_EmptyFloatEmpty5Byte_OnStack_ByReflection_RiscV()
+	{
+		var expected = EmptyFloatEmpty5Byte.Get();
+		var native = (EmptyFloatEmpty5Byte)typeof(Program).GetMethod("Echo_EmptyFloatEmpty5Byte_OnStack_RiscV").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+		var managed = (EmptyFloatEmpty5Byte)typeof(Program).GetMethod("Echo_EmptyFloatEmpty5Byte_OnStack_RiscV_Managed").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -790,6 +1067,19 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact]
+	public static void Test_DoubleFloatNestedEmpty_ByReflection_RiscV()
+	{
+		var expected = DoubleFloatNestedEmpty.Get();
+		var native = (DoubleFloatNestedEmpty)typeof(Program).GetMethod("Echo_DoubleFloatNestedEmpty_RiscV").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+		var managed = (DoubleFloatNestedEmpty)typeof(Program).GetMethod("Echo_DoubleFloatNestedEmpty_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern DoubleFloatNestedEmpty Echo_DoubleFloatNestedEmpty_InIntegerRegs_RiscV(
 		int a0,
@@ -814,6 +1104,19 @@ public static class Program
 			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, expected, 1, -1f);
 		DoubleFloatNestedEmpty managed = Echo_DoubleFloatNestedEmpty_InIntegerRegs_RiscV_Managed(
 			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_DoubleFloatNestedEmpty_InIntegerRegs_ByReflection_RiscV()
+	{
+		var expected = DoubleFloatNestedEmpty.Get();
+		var native = (DoubleFloatNestedEmpty)typeof(Program).GetMethod("Echo_DoubleFloatNestedEmpty_InIntegerRegs_RiscV").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, expected, 1, -1f});
+		var managed = (DoubleFloatNestedEmpty)typeof(Program).GetMethod("Echo_DoubleFloatNestedEmpty_InIntegerRegs_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, expected, 1, -1f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -864,6 +1167,19 @@ public static class Program
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
 	}
+
+	[Fact]
+	public static void Test_EmptyUshortAndDouble_ByReflection_RiscV()
+	{
+		var expected = EmptyUshortAndDouble.Get();
+		var native = (EmptyUshortAndDouble)typeof(Program).GetMethod("Echo_EmptyUshortAndDouble_RiscV").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
+		var managed = (EmptyUshortAndDouble)typeof(Program).GetMethod("Echo_EmptyUshortAndDouble_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, -1, 1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
 #endregion
 
 #region PackedEmptyFloatLong_RiscVTests
@@ -908,6 +1224,19 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact]
+	public static void Test_PackedEmptyFloatLong_ByReflection_RiscV()
+	{
+		var expected = PackedEmptyFloatLong.Get();
+		var native = (PackedEmptyFloatLong)typeof(Program).GetMethod("Echo_PackedEmptyFloatLong_RiscV").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+		var managed = (PackedEmptyFloatLong)typeof(Program).GetMethod("Echo_PackedEmptyFloatLong_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern PackedEmptyFloatLong Echo_PackedEmptyFloatLong_InIntegerRegs_RiscV(
 		int a0,
@@ -933,6 +1262,19 @@ public static class Program
 			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
 		PackedEmptyFloatLong managed = Echo_PackedEmptyFloatLong_InIntegerRegs_RiscV_Managed(
 			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_PackedEmptyFloatLong_InIntegerRegs_ByReflection_RiscV()
+	{
+		var expected = PackedEmptyFloatLong.Get();
+		var native = (PackedEmptyFloatLong)typeof(Program).GetMethod("Echo_PackedEmptyFloatLong_InIntegerRegs_RiscV").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+		var managed = (PackedEmptyFloatLong)typeof(Program).GetMethod("Echo_PackedEmptyFloatLong_InIntegerRegs_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
@@ -968,6 +1310,19 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact]
+	public static void Test_PackedEmptyFloatLong_Split_ByReflection_RiscV()
+	{
+		var expected = PackedEmptyFloatLong.Get();
+		var native = (PackedEmptyFloatLong)typeof(Program).GetMethod("Echo_PackedEmptyFloatLong_Split_RiscV").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+		var managed = (PackedEmptyFloatLong)typeof(Program).GetMethod("Echo_PackedEmptyFloatLong_Split_RiscV_Managed").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern PackedEmptyFloatLong Echo_PackedEmptyFloatLong_OnStack_RiscV(
 		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
@@ -993,6 +1348,19 @@ public static class Program
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
 		PackedEmptyFloatLong managed = Echo_PackedEmptyFloatLong_OnStack_RiscV_Managed(
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_PackedEmptyFloatLong_OnStack_ByReflection_RiscV()
+	{
+		var expected = PackedEmptyFloatLong.Get();
+		var native = (PackedEmptyFloatLong)typeof(Program).GetMethod("Echo_PackedEmptyFloatLong_OnStack_RiscV").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
+		var managed = (PackedEmptyFloatLong)typeof(Program).GetMethod("Echo_PackedEmptyFloatLong_OnStack_RiscV_Managed").Invoke(
+			null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f});
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
