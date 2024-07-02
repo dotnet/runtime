@@ -2088,7 +2088,15 @@ int32_t SystemNative_GetSockOpt(
     {
         return Error_EFAULT;
     }
-
+   #if defined(TARGET_RISCV64)
+    uint8_t nonEmptyOptionValueBuffer;
+        if (socketOptionLevel == SocketOptionLevel_SOL_TCP && socketOptionName == SocketOptionName_SO_TCP_KEEPALIVE_TIME && optionValue == NULL
+                && *optionLen == 0)
+        {
+            // It's workaround for Qemu bug: https://gitlab.com/qemu-project/qemu/-/issues/2390.
+            optionValue = &nonEmptyOptionValueBuffer;
+        }
+    #endif
     int fd = ToFileDescriptor(socket);
 
     //

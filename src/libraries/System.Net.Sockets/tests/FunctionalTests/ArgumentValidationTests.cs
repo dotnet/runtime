@@ -794,18 +794,20 @@ namespace System.Net.Sockets.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        [InlineData(0)]
-        [InlineData(1)]
-        public void Connect_ConnectTwice_NotSupported(int invalidatingAction)
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Connect_ConnectTwice_NotSupported(bool invalidatingAction)
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                switch (invalidatingAction)
+                // On RISC-V Qemu we omit one test case due to: https://gitlab.com/qemu-project/qemu/-/issues/2410
+                bool invalidatingActionOnPlatform = invalidatingAction && PlatformDetection.IsNotRiscV64Ubuntu;
+                switch (invalidatingActionOnPlatform)
                 {
-                    case 0:
+                    case false:
                         IntPtr handle = client.Handle; // exposing the underlying handle
                         break;
-                    case 1:
+                    case true:
                         client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.Debug, 1); // untracked socket option
                         break;
                 }
@@ -825,20 +827,22 @@ namespace System.Net.Sockets.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        [InlineData(0)]
-        [InlineData(1)]
-        public void ConnectAsync_ConnectTwice_NotSupported(int invalidatingAction)
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ConnectAsync_ConnectTwice_NotSupported(bool invalidatingAction)
         {
             AutoResetEvent completed = new AutoResetEvent(false);
 
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                switch (invalidatingAction)
+                // On RISC-V Qemu we omit one test case due to: https://gitlab.com/qemu-project/qemu/-/issues/2410
+                bool invalidatingActionOnPlatform = invalidatingAction && PlatformDetection.IsNotRiscV64Ubuntu;
+                switch (invalidatingActionOnPlatform)
                 {
-                    case 0:
+                    case false:
                         IntPtr handle = client.Handle; // exposing the underlying handle
                         break;
-                    case 1:
+                    case true:
                         client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.Debug, 1); // untracked socket option
                         break;
                 }
