@@ -568,7 +568,7 @@ if(NOT DISABLE_EXECUTABLES)
   
   set(MONOSGEN_LINKABLE_LIBS "")
   list(APPEND MONOSGEN_LINKABLE_LIBS monoapi eglib_api monosgen-static dn-containers)
-  if (CLR_CMAKE_USE_SYSTEM_ZLIB)
+  if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
     list(APPEND MONOSGEN_LINKABLE_LIBS zlib)
   endif()
   target_link_libraries(mono-sgen PRIVATE ${MONOSGEN_LINKABLE_LIBS})
