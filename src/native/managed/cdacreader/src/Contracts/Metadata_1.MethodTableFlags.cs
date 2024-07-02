@@ -41,8 +41,6 @@ internal partial struct Metadata_1
 
     internal struct MethodTableFlags
     {
-
-
         public uint MTFlags { get; init; }
         public uint MTFlags2 { get; init; }
         public uint BaseSize { get; init; }
