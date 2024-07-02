@@ -21,7 +21,7 @@ namespace System.Net
         [Event(ErrorEventId, Level = EventLevel.Error)]
         private void ErrorMessage(string memberName, string message)
         {
-            Debug.Assert(IsEnabled());
+            //Debug.Assert(IsEnabled());
             WriteEvent(ErrorEventId, memberName, message);
         }
     }

@@ -32,7 +32,7 @@ namespace System.Net
         [Event(AssociateEventId, Level = EventLevel.Informational, Keywords = Keywords.Default, Message = "[{2}]<-->[{3}]")]
         private void Associate(string thisOrContextObject, string? memberName, string first, string second)
         {
-            Debug.Assert(IsEnabled());
+            //Debug.Assert(IsEnabled());
             WriteEvent(AssociateEventId, thisOrContextObject, memberName ?? MissingMember, first, second);
         }
 

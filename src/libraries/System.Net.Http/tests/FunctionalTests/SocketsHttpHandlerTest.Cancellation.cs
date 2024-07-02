@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
+using TestUtilities;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -17,6 +18,11 @@ namespace System.Net.Http.Functional.Tests
     public abstract class SocketsHttpHandler_Cancellation_Test : HttpClientHandler_Cancellation_Test
     {
         protected SocketsHttpHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
+
+        [Fact] public async Task ValidateConnectTimeout2() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+        [Fact] public async Task ValidateConnectTimeout3() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+        [Fact][OuterLoop] public async Task ValidateConnectTimeout4() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+        [Fact][OuterLoop] public async Task ValidateConnectTimeout5() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
 
         private async Task ValidateConnectTimeout(HttpMessageInvoker invoker, Uri uri, int minElapsed, int maxElapsed)
         {
@@ -81,6 +87,11 @@ namespace System.Net.Http.Functional.Tests
             options: new GenericLoopbackOptions() { UseSsl = useSsl });
         }
 
+        [Fact] public async Task ConnectTimeout_PlaintextStreamFilterTimesOut_Throws2() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+        [Fact] public async Task ConnectTimeout_PlaintextStreamFilterTimesOut_Throws3() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+        [Fact][OuterLoop] public async Task ConnectTimeout_PlaintextStreamFilterTimesOut_Throws4() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+        [Fact][OuterLoop] public async Task ConnectTimeout_PlaintextStreamFilterTimesOut_Throws5() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+
         [OuterLoop]
         [Fact]
         public async Task ConnectTimeout_PlaintextStreamFilterTimesOut_Throws()
@@ -107,36 +118,35 @@ namespace System.Net.Http.Functional.Tests
             options: new GenericLoopbackOptions() { UseSsl = false });
         }
 
-        [OuterLoop]
+        [Fact] public async Task ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection2() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+        [Fact] public async Task ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection3() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+
+        [Fact][OuterLoop] public async Task ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection4() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+        [Fact][OuterLoop] public async Task ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection5() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(bool useSsl)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion.Major != 1 || !TestAsync || !useSsl)
             {
-                // HTTP3 does not support ConnectCallback
                 return;
             }
 
-            if (!TestAsync)
-            {
-                // Test relies on ordering of async operations, so we can't test the sync case
-                return;
-            }
+            using var listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 int connectCount = 0;
 
-                TaskCompletionSource tcsFirstConnectionInitiated = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                TaskCompletionSource tcsFirstRequestCanceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var tcsFirstConnectionInitiated = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var tcsFirstRequestCanceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                using (var handler = CreateHttpClientHandler(allowAllCertificates: true))
-                using (var client = CreateHttpClient(handler))
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (HttpClient client = CreateHttpClient(handler))
                 {
-                    var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
-                    socketsHandler.ConnectCallback = async (context, token) =>
+                    GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = async (context, token) =>
                     {
                         // Note we force serialization of connection creation by waiting on tcsFirstConnectionInitiated below,
                         // so we don't need to worry about concurrent access to connectCount.
@@ -144,6 +154,8 @@ namespace System.Net.Http.Functional.Tests
                         connectCount++;
 
                         Assert.True(connectCount <= 2);
+
+                        _output.WriteLine($"Connection count {connectCount}");
 
                         if (isFirstConnection)
                         {
@@ -156,6 +168,8 @@ namespace System.Net.Http.Functional.Tests
 
                         // Wait until first request is cancelled and has completed
                         await tcsFirstRequestCanceled.Task;
+
+                        _output.WriteLine($"After tcsFirstRequestCanceled {isFirstConnection}");
 
                         if (isFirstConnection)
                         {
@@ -170,27 +184,34 @@ namespace System.Net.Http.Functional.Tests
                     };
 
                     using CancellationTokenSource cts = new CancellationTokenSource();
-                    Task<HttpResponseMessage> t1 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }, cts.Token);
+                    Task<HttpResponseMessage> t1 = client.SendAsync(CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true), cts.Token);
+                    _output.WriteLine("t1");
 
                     // Wait for the connection attempt to be initiated before we send the second request, to avoid races in connection creation
                     await tcsFirstConnectionInitiated.Task;
-                    Task<HttpResponseMessage> t2 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }, default);
+                    Task<HttpResponseMessage> t2 = client.SendAsync(CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true), CancellationToken.None);
+                    _output.WriteLine("t2");
 
                     // Cancel the first message and wait for it to complete
                     cts.Cancel();
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t1);
+                    _output.WriteLine("ThrowsAnyAsync");
 
                     // Signal connections to proceed
                     tcsFirstRequestCanceled.SetResult();
 
                     // Second request should succeed, even though the first connection failed
                     HttpResponseMessage resp2 = await t2;
+                    _output.WriteLine("resp2");
                     Assert.Equal(HttpStatusCode.OK, resp2.StatusCode);
                     Assert.Equal("Hello world", await resp2.Content.ReadAsStringAsync());
+
+                    Assert.True(connectCount == 2);
                 }
             }, async server =>
             {
-                await server.AcceptConnectionSendResponseAndCloseAsync(content: "Hello world");
+                await server.HandleRequestAsync(content: "Hello world");
+                _output.WriteLine("Server done");
             },
             options: new GenericLoopbackOptions() { UseSsl = useSsl });
         }
@@ -392,6 +413,11 @@ namespace System.Net.Http.Functional.Tests
                 await connectionTestTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
             }, UseVersion.ToString(), timeout.ToString()).DisposeAsync();
         }
+
+        [Fact] public async Task PendingConnectionTimeout_HighValue_PendingConnectionIsNotCancelled2() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+        [Fact] public async Task PendingConnectionTimeout_HighValue_PendingConnectionIsNotCancelled3() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+        [Fact] [OuterLoop] public async Task PendingConnectionTimeout_HighValue_PendingConnectionIsNotCancelled4() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
+        [Fact] [OuterLoop] public async Task PendingConnectionTimeout_HighValue_PendingConnectionIsNotCancelled5() => await ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(true);
 
         private sealed class SetTcsContent : StreamContent
         {

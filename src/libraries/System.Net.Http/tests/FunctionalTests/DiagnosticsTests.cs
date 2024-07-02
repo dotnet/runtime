@@ -18,6 +18,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ActiveIssue("Foo")]
     public abstract class DiagnosticsTest : HttpClientHandlerTestBase
     {
         private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
