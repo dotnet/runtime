@@ -359,11 +359,7 @@ namespace System.Text.Json
                     isNegative = false;
                 }
 
-#if NET
-                int i = span.IndexOfAny(s_decimalPointOrExponent);
-#else
                 int i = span.IndexOfAny((byte)'.', (byte)'e', (byte)'E');
-#endif
                 if (i < 0)
                 {
                     integral = span;
@@ -377,12 +373,7 @@ namespace System.Text.Json
                 if (span[i] == '.')
                 {
                     span = span.Slice(i + 1);
-#if NET
-                    i = span.IndexOfAny(s_exponent);
-#else
                     i = span.IndexOfAny((byte)'e', (byte)'E');
-#endif
-
                     if (i < 0)
                     {
                         fractional = span;
@@ -490,10 +481,5 @@ namespace System.Text.Json
                 }
             }
         }
-
-#if NET
-        private static readonly SearchValues<byte> s_decimalPointOrExponent = SearchValues.Create([(byte)'.', (byte)'e', (byte)'E']);
-        private static readonly SearchValues<byte> s_exponent = SearchValues.Create([(byte)'e', (byte)'E']);
-#endif
     }
 }
