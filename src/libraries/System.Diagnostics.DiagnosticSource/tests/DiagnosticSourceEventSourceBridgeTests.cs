@@ -1445,7 +1445,7 @@ namespace System.Diagnostics.Tests
 
                 Assert.Equal(
                     ActivitySamplingResult.None,
-                    DiagnosticSourceEventSource.FilterAndTransform.ParentRatioSampler(
+                    DiagnosticSourceEventSourceSamplerBuilder.ParentRatioSampler(
                         (long)(0.0001D * long.MaxValue),
                         parentContext: default,
                         notSampledtraceId));
@@ -1479,7 +1479,7 @@ namespace System.Diagnostics.Tests
 
                 Assert.Equal(
                     ActivitySamplingResult.AllDataAndRecorded,
-                    DiagnosticSourceEventSource.FilterAndTransform.ParentRatioSampler(
+                    DiagnosticSourceEventSourceSamplerBuilder.ParentRatioSampler(
                         (long)(0.0001D * long.MaxValue),
                         parentContext: default,
                         sampledtraceId));

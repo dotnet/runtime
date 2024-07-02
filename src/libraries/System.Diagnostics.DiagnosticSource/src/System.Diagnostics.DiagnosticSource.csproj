@@ -26,7 +26,6 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\Diagnostics\Activity.cs" />
     <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
     <Compile Include="System\Diagnostics\ActivityStatusCode.cs" />
@@ -42,9 +41,13 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
-    <Compile Include="System\Diagnostics\DiagnosticSourceEventSource.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticSourceEventSource\DiagnosticSourceEventSource.cs" />
     <Compile Include="System\Diagnostics\DiagLinkedList.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticSourceEventSource\DiagnosticSourceEventSourceActivitySourceListener.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticSourceEventSource\DiagnosticSourceEventSourceListener.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticSourceEventSource\DiagnosticSourceEventSourceSamplerBuilder.cs" />
     <Compile Include="System\Diagnostics\DistributedContextPropagator.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticSourceEventSource\DiagnosticSourceEventSourceFilterAndTransform.cs" />
     <Compile Include="System\Diagnostics\LegacyPropagator.cs" />
     <Compile Include="System\Diagnostics\NoOutputPropagator.cs" />
     <Compile Include="System\Diagnostics\PassThroughPropagator.cs" />
