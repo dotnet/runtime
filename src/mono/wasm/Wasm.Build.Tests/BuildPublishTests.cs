@@ -23,7 +23,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
-        public void Wasm_CannotAOT_InDebug(BuildArgs buildArgs, string config)
+        public void Wasm_CannotAOT_InDebug(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = GetTestProjectPath(prefix: "no_aot_in_debug", config: buildArgs.Config);
             buildArgs = buildArgs with { ProjectName = projectName };
