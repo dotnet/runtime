@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
@@ -180,8 +181,10 @@ namespace Microsoft.Extensions.Http.Logging
             };
 
 #if NET
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static ReadOnlySpan<char> GetPath(string pathAndQuery, int queryIndex) => pathAndQuery.AsSpan(0, queryIndex + 1);
 #else
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static string GetPath(string pathAndQuery, int queryIndex) => pathAndQuery.Substring(0, queryIndex + 1);
 #endif
         }
