@@ -11365,35 +11365,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
                 }
             }
-
-            // if (id->idIsReloc())
-            //{
-            //     assert(sz == sizeof(instrDesc));
-            //     assert(id->idAddr()->iiaAddr != nullptr);
-
-            //    if (id->idIsTlsGD())
-            //    {
-            //        assert(emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-
-            //        if (TargetOS::IsWindows)
-            //        {
-            //            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_SECREL_HIGH12A);
-            //        }
-            //        else
-            //        {
-            //            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_AARCH64_TLSDESC_ADD_LO12);
-            //        }
-            //    }
-            //    else
-            //    {
-            //        emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
-            //    }
-            //}
-            // else if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
-            //{
-            //    assert(TargetOS::IsWindows);
-            //    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_SECREL_LOW12L);
-            //}
             break;
 
         case IF_DI_2B: // DI_2B   X.........Xnnnnn ssssssnnnnnddddd      Rd Rn    imm(0-63)
