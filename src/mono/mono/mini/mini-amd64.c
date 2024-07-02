@@ -4072,8 +4072,26 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			case CMP_NE: ins->inst_c0 = 4; break;
 			case CMP_LT: ins->inst_c0 = 1; break;
 			case CMP_LE: ins->inst_c0 = 2; break;
-			case CMP_GT: ins->inst_c0 = 6; break;
-			case CMP_GE: ins->inst_c0 = 5; break;
+			case CMP_GT: {
+				// CMPNLT (5) is not the same as CMPGT due to NaN
+				// as such, we want to emit CMPLT (1) with swapped
+				// operands instead, ensuring we get correct handling
+				int tmp = ins->sreg1;
+				ins->sreg1 = ins->sreg2;
+				ins->sreg2 = tmp;
+				ins->inst_c0 = 1;
+				break;
+			}
+			case CMP_GE: {
+				// CMPNLE (6) is not the same as CMPGE due to NaN
+				// as such, we want to emit CMPLE (2) with swapped
+				// operands instead, ensuring we get correct handling
+				int tmp = ins->sreg1;
+				ins->sreg1 = ins->sreg2;
+				ins->sreg2 = tmp;
+				ins->inst_c0 = 2;
+				break;
+			}
 			default:
 				g_assert_not_reached();
 				break;
