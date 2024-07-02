@@ -1582,18 +1582,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     if (SystemDomain::IsReflectionInvocationMethod(pFunc))
         return SWA_CONTINUE;
 
-    if (frame && frame->GetFrameType() == Frame::TYPE_MULTICAST)
-    {
-        // This must be either a multicast delegate invocation.
-
-        _ASSERTE(pFunc->GetMethodTable()->IsDelegate());
-
-        DELEGATEREF del = (DELEGATEREF)((MulticastFrame*)frame)->GetThis(); // This can throw.
-
-        _ASSERTE(COMDelegate::IsTrueMulticastDelegate(del));
-        return SWA_CONTINUE;
-    }
-
     // Return the first non-reflection/remoting frame if no stack mark was
     // supplied.
     if (!pCaller->stackMark)
@@ -4133,15 +4121,6 @@ AppDomain::RaiseAssemblyResolveEvent(
 
     RETURN pAssembly;
 } // AppDomain::RaiseAssemblyResolveEvent
-
-enum WorkType
-{
-    WT_UnloadDomain = 0x1,
-    WT_ThreadAbort = 0x2,
-    WT_FinalizerThread = 0x4
-};
-
-static Volatile<DWORD> s_WorkType = 0;
 
 void SystemDomain::ProcessDelayedUnloadLoaderAllocators()
 {

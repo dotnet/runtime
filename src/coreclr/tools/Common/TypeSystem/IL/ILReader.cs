@@ -100,7 +100,7 @@ namespace Internal.IL
             return opcode;
         }
 
-        public ILOpcode PeekILOpcode()
+        public readonly ILOpcode PeekILOpcode()
         {
             ILOpcode opcode = (ILOpcode)_ilBytes[_currentOffset];
             if (opcode == ILOpcode.prefix1)
@@ -111,6 +111,14 @@ namespace Internal.IL
             }
 
             return opcode;
+        }
+
+        public readonly int PeekILToken()
+        {
+            if (!BinaryPrimitives.TryReadInt32LittleEndian(_ilBytes.Slice(_currentOffset), out int value))
+                ThrowHelper.ThrowInvalidProgramException();
+
+            return value;
         }
 
         public void Skip(ILOpcode opcode)
