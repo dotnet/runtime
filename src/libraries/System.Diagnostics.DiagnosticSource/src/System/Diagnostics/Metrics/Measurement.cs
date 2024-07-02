@@ -115,7 +115,10 @@ namespace System.Diagnostics.Metrics
             }
 
             if (count == 0)
+            {
+                ArrayPool<KeyValuePair<string, object?>>.Shared.Return(array);
                 return Instrument.EmptyTags;
+            }
 
             result = new KeyValuePair<string, object?>[count];
             array.AsSpan().Slice(0, count).CopyTo(result.AsSpan());

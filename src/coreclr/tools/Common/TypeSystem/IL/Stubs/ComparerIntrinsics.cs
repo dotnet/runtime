@@ -75,7 +75,7 @@ namespace Internal.IL.Stubs
         /// Gets the comparer type that is suitable to compare instances of <paramref name="type"/>
         /// or null if such comparer cannot be determined at compile time.
         /// </summary>
-        private static InstantiatedType GetComparerForType(TypeDesc type, string flavor, string interfaceName)
+        private static TypeDesc GetComparerForType(TypeDesc type, string flavor, string interfaceName)
         {
             TypeSystemContext context = type.Context;
 
@@ -90,6 +90,11 @@ namespace Internal.IL.Stubs
             {
                 return context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
                     .MakeInstantiatedType(type.Instantiation[0]);
+            }
+
+            if (type.IsString && flavor == "EqualityComparer")
+            {
+                return context.SystemModule.GetKnownType("System.Collections.Generic", "StringEqualityComparer");
             }
 
             if (type.IsEnum)
