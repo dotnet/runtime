@@ -1616,7 +1616,6 @@ struct cdac_offsets<Module>
     static constexpr size_t Base = offsetof(Module, m_baseAddress);
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
-    static constexpr size_t PEAssembly = offsetof(Module, m_pPEAssembly);
     static constexpr size_t ThunkHeap = offsetof(Module, m_pThunkHeap);
 
     // Lookup map pointers
