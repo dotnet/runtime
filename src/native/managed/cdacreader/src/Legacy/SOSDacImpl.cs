@@ -96,15 +96,16 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
-            bool isReflectionEmit = contract.IsReflectionEmit(handle);
 
             data->Address = moduleAddr;
             data->PEAssembly = moduleAddr; // Module address in .NET 9+ - correspondingly, SOS-DAC APIs for PE assemblies expect a module address
             data->Assembly = contract.GetAssembly(handle);
 
+            Contracts.ModuleFlags flags = contract.GetFlags(handle);
+            bool isReflectionEmit = flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit);
             data->isReflection = (uint)(isReflectionEmit ? 1 : 0);
             data->isPEFile = (uint)(isReflectionEmit ? 0 : 1);      // ReflectionEmit module means it is not a PE file
-            data->dwTransientFlags = (uint)contract.GetFlags(handle);
+            data->dwTransientFlags = (uint)flags;
 
             data->ilBase = contract.GetILBase(handle);
             data->metadataStart = contract.GetMetadataAddress(handle, out ulong metadataSize);

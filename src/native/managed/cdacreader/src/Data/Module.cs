@@ -21,7 +21,6 @@ internal sealed class Module : IData<Module>
         Assembly = target.ReadPointer(address + (ulong)type.Fields[nameof(Assembly)].Offset);
         Base = target.ReadPointer(address + (ulong)type.Fields[nameof(Base)].Offset);
         LoaderAllocator = target.ReadPointer(address + (ulong)type.Fields[nameof(LoaderAllocator)].Offset);
-        PEAssembly = target.ProcessedData.GetOrAdd<PEAssembly>(target.ReadPointer(address + (ulong)type.Fields[nameof(PEAssembly)].Offset));
         ThunkHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(ThunkHeap)].Offset);
 
         FieldDefToDescMap = target.ReadPointer(address + (ulong)type.Fields[nameof(FieldDefToDescMap)].Offset);
@@ -36,7 +35,6 @@ internal sealed class Module : IData<Module>
     public uint Flags { get; init; }
     public TargetPointer Base { get; init; }
     public TargetPointer LoaderAllocator { get; init; }
-    public PEAssembly PEAssembly { get; init; }
     public TargetPointer ThunkHeap { get; init; }
 
     public TargetPointer FieldDefToDescMap { get; init; }

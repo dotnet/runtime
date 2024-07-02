@@ -173,11 +173,6 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, TypeDefToMethodTableMap, cdac_offsets<Modul
 CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_offsets<Module>::TypeRefToMethodTableMap)
 CDAC_TYPE_END(Module)
 
-CDAC_TYPE_BEGIN(PEAssembly)
-CDAC_TYPE_INDETERMINATE(PEAssembly)
-CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, PEImage, cdac_offsets<PEAssembly>::PEImage)
-CDAC_TYPE_END(PEAssembly)
-
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()

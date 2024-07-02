@@ -15,7 +15,8 @@ readonly struct ModuleHandle
 [Flags]
 enum ModuleFlags
 {
-    EditAndContinue = 0x00000008, // Edit and Continue is enabled for this module
+    EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
+    ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
 }
 
 enum ModuleLookupTable
@@ -35,7 +36,6 @@ TargetPointer GetAssembly(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetThunkHeap(ModuleHandle handle);
-bool IsReflectionEmit(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size);
 IDictionary<ModuleLookupTable, TargetPointer> GetLookupTables(ModuleHandle handle);
@@ -45,7 +45,6 @@ IDictionary<ModuleLookupTable, TargetPointer> GetLookupTables(ModuleHandle handl
 
 Data descriptors used:
 - `Module`
-- `PEAssembly`
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
@@ -71,13 +70,6 @@ TargetPointer GetLoaderAllocator(ModuleHandle handle)
 TargetPointer GetThunkHeap(ModuleHandle handle)
 {
     return target.ReadPointer(handle.Address + /* Module::ThunkHeap offset */);
-}
-
-bool IsReflectionEmit(ModuleHandle handle)
-{
-    TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-    TargetPointer peImage = target.ReadPointer(peAssembly + /* PEAssembly::PEImage offset */);
-    return peImage == TargetPointer.Null;
 }
 
 TargetPointer GetILBase(ModuleHandle handle)

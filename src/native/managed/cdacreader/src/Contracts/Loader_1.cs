@@ -43,12 +43,6 @@ internal readonly struct Loader_1 : ILoader
         return module.ThunkHeap;
     }
 
-    bool ILoader.IsReflectionEmit(ModuleHandle handle)
-    {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        return module.PEAssembly.PEImage == TargetPointer.Null;
-    }
-
     TargetPointer ILoader.GetILBase(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);

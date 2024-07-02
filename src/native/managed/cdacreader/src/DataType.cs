@@ -26,5 +26,4 @@ public enum DataType
     ExceptionInfo,
     RuntimeThreadLocals,
     Module,
-    PEAssembly,
 }

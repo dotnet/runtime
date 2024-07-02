@@ -19,7 +19,8 @@ internal readonly struct ModuleHandle
 [Flags]
 internal enum ModuleFlags
 {
-    EditAndContinue = 0x00000008, // Edit and Continue is enabled for this module
+    EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
+    ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
 }
 
 internal enum ModuleLookupTable
@@ -50,7 +51,6 @@ internal interface ILoader : IContract
     public virtual ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
     public virtual TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     public virtual TargetPointer GetThunkHeap(ModuleHandle handle) => throw new NotImplementedException();
-    public virtual bool IsReflectionEmit(ModuleHandle handle) => throw new NotImplementedException();
 
     public virtual TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
     public virtual TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size) => throw new NotImplementedException();
