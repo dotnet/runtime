@@ -37,7 +37,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         /// <summary>
-        /// Convert JIT version of CFI blob into the the DWARF byte code form.
+        /// Convert JIT version of CFI blob into the DWARF byte code form.
         /// </summary>
         private static byte[] CfiCodeToInstructions(DwarfCie cie, byte[] blobData)
         {
