@@ -898,66 +898,35 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         }
         else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        uint32_t  floatFlags          = STRUCT_NO_FLOAT_FIELD;
+        FpStructInRegistersInfo fpInfo = {};
+
         var_types argRegTypeInStruct1 = TYP_UNKNOWN;
         var_types argRegTypeInStruct2 = TYP_UNKNOWN;
 
         if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) && (argSize <= MAX_PASS_MULTIREG_BYTES))
         {
-#if defined(TARGET_LOONGARCH64)
-            floatFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(typeHnd);
-#else
-            floatFlags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(typeHnd);
-#endif
+            fpInfo = GetPassFpStructInRegistersInfo(typeHnd);
         }
 
-        if ((floatFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)
+        if (fpInfo.flags != FpStruct::UseIntCallConv)
         {
             assert(varTypeIsStruct(argType));
-            int floatNum = 0;
-            if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
-            {
-                assert(argSize <= 8);
-                assert(varDsc->lvExactSize() <= argSize);
+            assert(((fpInfo.flags & FpStruct::OnlyOne) != 0) || varDsc->lvExactSize() <= argSize);
+            cSlotsToEnregister = ((fpInfo.flags & FpStruct::OnlyOne) != 0) ? 1 : 2;
+            int floatNum       = ((fpInfo.flags & FpStruct::BothFloat) != 0) ? 2 : 1;
 
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
+            canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
+            if (canPassArgInRegisters && ((fpInfo.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0))
+                canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, 1);
 
-                argRegTypeInStruct1 = (varDsc->lvExactSize() == 8) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
-            {
-                floatNum              = 2;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 2);
-
-                argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if ((floatFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
-            {
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
-                canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
-
-                argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
-            }
-            else if ((floatFlags & STRUCT_FLOAT_FIELD_SECOND) != 0)
-            {
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
-                canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
-
-                argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
-                argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-
-            assert((floatNum == 1) || (floatNum == 2));
+            Compiler::GetTypesFromFpStructInRegistersInfo(fpInfo, &argRegTypeInStruct1, &argRegTypeInStruct2);
 
             if (!canPassArgInRegisters)
             {
-                // On LoongArch64, if there aren't any remaining floating-point registers to pass the argument,
-                // integer registers (if any) are used instead.
+                // If a struct eligible for passing according to floating-point calling convention cannot be fully
+                // enregistered, it is passed according to integer calling convention -- in up to two integer registers
+                // and/or stack slots, as a lump of bits laid out like in memory.
+                cSlotsToEnregister    = cSlots;
                 canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
 
                 argRegTypeInStruct1 = TYP_UNKNOWN;
@@ -1091,15 +1060,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 {
                     varDsc->SetArgReg(
                         genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argRegTypeInStruct1, info.compCallConv));
-                    varDsc->lvIs4Field1 = (genTypeSize(argRegTypeInStruct1) == 4) ? 1 : 0;
                     if (argRegTypeInStruct2 != TYP_UNKNOWN)
                     {
                         secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
-                        varDsc->lvIs4Field2 = (genTypeSize(argRegTypeInStruct2) == 4) ? 1 : 0;
                     }
-                    else if (cSlots > 1)
+                    else if (cSlotsToEnregister > 1)
                     {
                         // Here a struct-arg which needs two registers but only one integer register available,
                         // it has to be split. But we reserved extra 8-bytes for the whole struct.
@@ -1675,9 +1642,7 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     varDsc->lvIsImplicitByRef = 0;
 #endif // FEATURE_IMPLICIT_BYREFS
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    varDsc->lvIs4Field1 = 0;
-    varDsc->lvIs4Field2 = 0;
-    varDsc->lvIsSplit   = 0;
+    varDsc->lvIsSplit = 0;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     // Set the lvType (before this point it is TYP_UNDEF).

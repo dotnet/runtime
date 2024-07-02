@@ -1012,9 +1012,9 @@ public:
     void CheckRunClassInitAsIfConstructingThrowing();
 
 #if defined(TARGET_LOONGARCH64)
-    static int GetLoongArch64PassStructInRegisterFlags(TypeHandle th);
+    static FpStructInRegistersInfo GetLoongArch64PassFpStructInRegistersInfo(TypeHandle th);
 #elif defined(TARGET_RISCV64)
-    static int GetRiscV64PassStructInRegisterFlags(TypeHandle th);
+    static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfo(TypeHandle th);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
