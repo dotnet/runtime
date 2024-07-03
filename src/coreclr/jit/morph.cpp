@@ -8157,14 +8157,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 //    a & c ==/!= c
                 // =>
                 //    ~a & c ==/!= 0
-                // where c is a constant
+                // where c is a constant other than 0 and power of 2
                 // The optimization could also take the form of a & ~c but the comparison would have to switch between EQ to NE/NE to EQ
-                if (op1->OperIs(GT_AND) && varTypeIsIntegral(op1) && op2->IsCnsIntOrI())
+                if (op1->OperIs(GT_AND) && varTypeIsIntegral(op1) && op2->TypeIs(op1->gtType) && !op2->IsIntegralConstPow2() && !op2->IsIntegralConst(0))
                 {
                     GenTree* andOp1 = op1->AsOp()->gtOp1;
                     GenTree* andOp2 = op1->AsOp()->gtOp2;
 
-                    if (andOp1->TypeIs(TYP_INT) && GenTree::Compare(op2, andOp2))
+                    if (andOp1->TypeIs(op1->gtType) && GenTree::Compare(op2, andOp2))
                     {
                         // Want GT_AND to look like AND(NOT(a), c) ==/!= a. The non-matching constant must be the one wrapped in NOT node
                         // so 2nd andOp will be the constant, so 1st andOp will have the NOT
