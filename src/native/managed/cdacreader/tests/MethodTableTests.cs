@@ -232,4 +232,33 @@ public unsafe class MethodTableTests
             Assert.True(metadataContract.IsString(systemStringMethodTableHandle));
         });
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void MethodTableEEClassInvalidThrows(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        const ulong SystemObjectMethodTableAddress = 0x00000000_7c000010;
+        const ulong SystemObjectEEClassAddress = 0x00000000_7c0000d0;
+        TargetPointer systemObjectMethodTablePtr = new TargetPointer(SystemObjectMethodTableAddress);
+        TargetPointer systemObjectEEClassPtr = new TargetPointer(SystemObjectEEClassAddress);
+
+        const ulong badMethodTableAddress = 0x00000000_4a000100; // place a normal-looking MethodTable here
+        const ulong badMethodTableEEClassAddress = 0x00000010_afafafafa0; // bad address
+        TargetPointer badMethodTablePtr = new TargetPointer(badMethodTableAddress);
+        TargetPointer badMethodTableEEClassPtr = new TargetPointer(badMethodTableEEClassAddress);
+        RTSContractHelper(arch,
+        (builder) =>
+        {
+            builder = AddSystemObject(targetTestHelpers, builder, systemObjectMethodTablePtr, systemObjectEEClassPtr);
+            builder = AddMethodTable(targetTestHelpers, builder, badMethodTablePtr, "Bad MethodTable", badMethodTableEEClassPtr, mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize, module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
+            return builder;
+        },
+        (target) =>
+        {
+            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
+            Assert.NotNull(metadataContract);
+            Assert.Throws<InvalidOperationException>(() => metadataContract.GetMethodTableHandle(badMethodTablePtr));
+        });
+    }
 }

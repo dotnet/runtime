@@ -92,7 +92,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         if (!ValidateMethodTablePointer(nonvalidatedMethodTable))
         {
-            throw new ArgumentException("Invalid method table pointer");
+            throw new InvalidOperationException("Invalid method table pointer");
         }
         // ok, we validated it, cache the data and add the MethodTable_1 struct to the dictionary
         Data.MethodTable trustedMethodTableData = _target.ProcessedData.GetOrAdd<Data.MethodTable>(methodTablePointer);
