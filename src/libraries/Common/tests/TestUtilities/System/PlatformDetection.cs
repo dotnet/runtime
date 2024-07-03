@@ -323,7 +323,6 @@ namespace System
         }
 
         public static bool SupportsAlpn => s_supportsAlpn.Value;
-        public static bool SupportsBackendAlpn => SupportsAlpn && !IsAndroid;
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
         public static bool SupportsHardLinkCreation => !IsAndroid && !IsLinuxBionic;
 
@@ -736,7 +735,7 @@ namespace System
             {
                 return false;
             }
-            
+
             Assembly assembly = typeof(System.Runtime.Serialization.Formatters.Binary.BinaryFormatter).Assembly;
             AssemblyName name = assembly.GetName();
             Version assemblyVersion = name.Version;

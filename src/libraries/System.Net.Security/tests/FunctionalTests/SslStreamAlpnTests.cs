@@ -19,7 +19,7 @@ namespace System.Net.Security.Tests
 
     public abstract class SslStreamAlpnTestBase
     {
-        private static bool BackendSupportsAlpn => PlatformDetection.SupportsBackendAlpn;
+        private static bool BackendSupportsAlpn => PlatformDetection.SupportsAlpn;
         private static bool ClientSupportsAlpn => PlatformDetection.SupportsClientAlpn;
         readonly ITestOutputHelper _output;
         public static readonly object[][] Http2Servers = Configuration.Http.Http2Servers;
@@ -154,7 +154,8 @@ namespace System.Net.Security.Tests
                 };
 
                 // Test ALPN failure only on platforms that supports ALPN.
-                if (BackendSupportsAlpn)
+                // On Android, protocol mismatch won't cause an exception, even though it supports ALPN.
+                if (BackendSupportsAlpn && !OperatingSystem.IsAndroid())
                 {
                     Task t1 = Assert.ThrowsAsync<AuthenticationException>(() => clientStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions));
                     await Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions).WaitAsync(TestConfiguration.PassingTestTimeout));
