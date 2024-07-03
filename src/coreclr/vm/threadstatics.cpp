@@ -784,7 +784,9 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
 
 static void* GetTlsIndexObjectAddress();
 
+#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
 extern "C" size_t GetTLSResolverAddress();
+#endif // !TARGET_OSX && TARGET_UNIX && TARGET_ARM64
 
 bool CanJITOptimizeTLSAccess()
 {
@@ -801,7 +803,7 @@ bool CanJITOptimizeTLSAccess()
     // Optimization is disabled for FreeBSD/arm64
 #elif defined(FEATURE_INTERPRETER)
     // Optimization is disabled when interpreter may be used
-#elif defined(TARGET_UNIX) && defined(TARGET_ARM64)
+#elif !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
     // Optimization is enabled for linux/arm64 only for static resolver.
     // For static resolver, the TP offset is same for all threads.
     // For dynamic resolver, TP offset returned is that of a JIT thread and
