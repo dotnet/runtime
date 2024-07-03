@@ -11,9 +11,10 @@ public static class Program
 	public static bool IsSystemV =>
 		(RuntimeInformation.ProcessArchitecture == Architecture.X64) &&
 		!RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-	public static bool IsRiscV64 => (RuntimeInformation.ProcessArchitecture == Architecture.RiscV64);
+	public static bool IsRiscV64OrArm32 =>
+		RuntimeInformation.ProcessArchitecture is Architecture.RiscV64 or Architecture.Arm;
 	public const string SystemVPassNoClassEightbytes = "https://github.com/dotnet/runtime/issues/104098";
-	public const string RiscVClangEmptyStructsIgnored = "https://github.com/llvm/llvm-project/issues/97285";
+	public const string ClangEmptyStructsIgnoredWhenPassing = "https://github.com/llvm/llvm-project/issues/97285";
 
 	public struct Empty
 	{
@@ -30,7 +31,7 @@ public static class Program
 	}
 
 	[Fact]
-	[ActiveIssue(RiscVClangEmptyStructsIgnored, typeof(Program), nameof(IsRiscV64))]
+	[ActiveIssue(ClangEmptyStructsIgnoredWhenPassing, typeof(Program), nameof(IsRiscV64OrArm32))]
 	[ActiveIssue(SystemVPassNoClassEightbytes, typeof(Program), nameof(IsSystemV))]
 	public static void Test_Empty_Sanity()
 	{
