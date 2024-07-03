@@ -435,7 +435,7 @@ namespace System.Text.Json
         /// <typeparam name="TValue">The element type to deserialize asynchronously.</typeparam>
         /// <returns>An <see cref="IAsyncEnumerable{TValue}" /> representation of the provided JSON array.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
-        /// <param name="topLevelValues">Whether to deserialize from a sequence of top-level JSON values.</param>
+        /// <param name="topLevelValues"><see langword="true" /> to deserialize from a sequence of top-level JSON values, or <see langword="false" />to deserialize from a single top-level array.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the read operation.</param>
         /// <exception cref="System.ArgumentNullException">
