@@ -43,6 +43,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "valuenum.h"
 #include "scev.h"
 #include "namedintrinsiclist.h"
+#include "structsegments.h"
 #ifdef LATE_DISASM
 #include "disasm.h"
 #endif
@@ -5630,11 +5631,27 @@ public:
         return m_signatureToLookupInfoMap;
     }
 
+    const StructSegments& GetSignificantSegments(ClassLayout* layout);
+
 #ifdef SWIFT_SUPPORT
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, CORINFO_SWIFT_LOWERING*> SwiftLoweringMap;
     SwiftLoweringMap* m_swiftLoweringCache;
     const CORINFO_SWIFT_LOWERING* GetSwiftLowering(CORINFO_CLASS_HANDLE clsHnd);
 #endif
+
+    typedef JitHashTable<ClassLayout*, JitPtrKeyFuncs<ClassLayout>, class StructSegments*> ClassLayoutStructSegmentsMap;
+    ClassLayoutStructSegmentsMap* m_significantSegmentsMap;
+
+    ClassLayoutStructSegmentsMap* GetSignificantSegmentsMap()
+    {
+        if (m_significantSegmentsMap == nullptr)
+        {
+            m_significantSegmentsMap = new (this, CMK_Promotion) ClassLayoutStructSegmentsMap(getAllocator(CMK_Promotion));
+        }
+
+        return m_significantSegmentsMap;
+    }
+
 
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
     void optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree);

@@ -40,55 +40,6 @@ struct Replacement
     bool Overlaps(unsigned otherStart, unsigned otherSize) const;
 };
 
-// Represents significant segments of a struct operation.
-//
-// Essentially a segment tree (but not stored as a tree) that supports boolean
-// Add/Subtract operations of segments. Used to compute the remainder after
-// replacements have been handled as part of a decomposed block operation.
-class StructSegments
-{
-public:
-    struct Segment
-    {
-        unsigned Start = 0;
-        unsigned End   = 0;
-
-        Segment()
-        {
-        }
-
-        Segment(unsigned start, unsigned end)
-            : Start(start)
-            , End(end)
-        {
-        }
-
-        bool IntersectsOrAdjacent(const Segment& other) const;
-        bool Intersects(const Segment& other) const;
-        bool Contains(const Segment& other) const;
-        void Merge(const Segment& other);
-    };
-
-private:
-    jitstd::vector<Segment> m_segments;
-
-public:
-    explicit StructSegments(CompAllocator allocator)
-        : m_segments(allocator)
-    {
-    }
-
-    void Add(const Segment& segment);
-    void Subtract(const Segment& segment);
-    bool IsEmpty();
-    bool CoveringSegment(Segment* result);
-    bool Intersects(const Segment& segment);
-
-#ifdef DEBUG
-    void Dump();
-#endif
-};
-
 // Represents information about an aggregate that now has replacements in it.
 struct AggregateInfo
 {
@@ -137,12 +88,9 @@ public:
     }
 };
 
-typedef JitHashTable<ClassLayout*, JitPtrKeyFuncs<ClassLayout>, class StructSegments*> ClassLayoutStructSegmentsMap;
-
 class Promotion
 {
     Compiler*                     m_compiler;
-    ClassLayoutStructSegmentsMap* m_significantSegmentsCache = nullptr;
 
     friend class LocalUses;
     friend class LocalsUseVisitor;
@@ -151,8 +99,6 @@ class Promotion
     friend class ReplaceVisitor;
     friend class DecompositionPlan;
     friend class StructSegments;
-
-    StructSegments SignificantSegments(ClassLayout* layout);
 
     void            ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
                                                         const jitstd::vector<Replacement>& replacements,
@@ -341,12 +287,14 @@ private:
     void ClearNeedsReadBack(Replacement& rep);
 
     template <typename Func>
-    void VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func);
+    bool VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func);
 
     void      InsertPreStatementReadBacks();
     void      InsertPreStatementWriteBacks();
     GenTree** InsertMidTreeReadBacks(GenTree** use);
 
+    bool ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVarCommon* callArg);
+    bool CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl);
     void ReadBackAfterCall(GenTreeCall* call, GenTree* user);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);

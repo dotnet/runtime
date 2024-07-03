@@ -1123,7 +1123,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     // Spill multireg struct arguments that have stores or calls embedded in them.
                     SetNeedsTemp(&arg);
                 }
-                else if (!argx->OperIsLocalRead() && !argx->OperIsLoad())
+                else if (!argx->OperIsLocalRead() && !argx->OperIsLoad() && !argx->OperIs(GT_FIELD_LIST))
                 {
                     // TODO-CQ: handle HWI/SIMD/COMMA nodes in multi-reg morphing.
                     SetNeedsTemp(&arg);
@@ -2313,6 +2313,53 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif
 
     m_abiInformationDetermined = true;
+    m_newAbiInformationDetermined = true;
+}
+
+//------------------------------------------------------------------------
+// DetermineNewABIInfo:
+//   Determine the new ABI info for all call args without making any IR
+//   changes.
+//
+// Parameters:
+//   comp - The compiler object.
+//   call - The call to which the CallArgs belongs.
+//
+void CallArgs::DetermineNewABIInfo(Compiler* comp, GenTreeCall* call)
+{
+    ClassifierInfo info;
+    info.CallConv = call->GetUnmanagedCallConv();
+    // X86 tailcall helper is considered varargs, but not for ABI classification purposes.
+    info.IsVarArgs  = call->IsVarargs() && !call->IsTailCallViaJitHelper();
+    info.HasThis    = call->gtArgs.HasThisPointer();
+    info.HasRetBuff = call->gtArgs.HasRetBuffer();
+    PlatformClassifier classifier(info);
+
+    for (CallArg& arg : Args())
+    {
+        const var_types            argSigType  = arg.GetSignatureType();
+        const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
+        ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
+
+        // Some well known args have custom register assignment.
+        // These should not affect the placement of any other args or stack space required.
+        // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
+        // TODO-Cleanup: Integrate this into the new style ABI classifiers.
+        regNumber nonStdRegNum = GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg());
+
+        if (nonStdRegNum == REG_NA)
+        {
+            arg.NewAbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
+        }
+        else
+        {
+            ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
+            arg.NewAbiInfo            = ABIPassingInformation::FromSegment(comp, segment);
+        }
+    }
+
+    m_argsStackSize = classifier.StackSize();
+    m_newAbiInformationDetermined = true;
 }
 
 //------------------------------------------------------------------------
@@ -2483,8 +2530,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             unsigned originalSize;
             if (argObj->TypeGet() == TYP_STRUCT)
             {
-                assert(argObj->OperIs(GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
-                originalSize = argObj->GetLayout(this)->GetSize();
+                if (argObj->OperIs(GT_FIELD_LIST))
+                {
+                    originalSize = typGetObjLayout(arg.GetSignatureClassHandle())->GetSize();
+                }
+                else
+                {
+                    assert(argObj->OperIs(GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
+                    originalSize = argObj->GetLayout(this)->GetSize();
+                }
             }
             else
             {
@@ -2563,6 +2617,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             {
                                 makeOutArgCopy = true;
                             }
+                        }
+                        else if (argObj->OperIs(GT_FIELD_LIST))
+                        {
+                            // Fall through with makeOutArgCopy = false
                         }
                         else if (!argIsLocal)
                         {
@@ -2805,12 +2863,12 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
     {
         if ((arg.AbiInfo.ArgType == TYP_STRUCT) && !arg.AbiInfo.PassedByRef)
         {
+            foundStructArg = true;
             GenTree*& argx = (arg.GetLateNode() != nullptr) ? arg.LateNodeRef() : arg.EarlyNodeRef();
 
             if (!argx->OperIs(GT_FIELD_LIST))
             {
                 argx           = fgMorphMultiregStructArg(&arg);
-                foundStructArg = true;
             }
         }
     }

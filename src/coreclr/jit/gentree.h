@@ -4817,6 +4817,7 @@ class CallArgs
     bool m_hasRetBuffer             : 1;
     bool m_isVarArgs                : 1;
     bool m_abiInformationDetermined : 1;
+    bool m_newAbiInformationDetermined : 1;
     // True if we have one or more register arguments.
     bool m_hasRegArgs : 1;
     // True if we have one or more stack arguments.
@@ -4874,8 +4875,10 @@ public:
         PushFront(comp, arg);
     }
 
-    void ResetFinalArgsAndABIInfo();
     void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
+    void ResetFinalArgsAndABIInfo();
+
+    void DetermineNewABIInfo(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
     void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
@@ -4892,6 +4895,7 @@ public:
     void SetIsVarArgs() { m_isVarArgs = true; }
     void ClearIsVarArgs() { m_isVarArgs = false; }
     bool IsAbiInformationDetermined() const { return m_abiInformationDetermined; }
+    bool IsNewAbiInformationDetermined() const { return m_newAbiInformationDetermined; }
     bool AreArgsComplete() const { return m_argsComplete; }
     bool HasRegArgs() const { return m_hasRegArgs; }
     bool HasStackArgs() const { return m_hasStackArgs; }
