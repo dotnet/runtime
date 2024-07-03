@@ -82,6 +82,7 @@ namespace GCStressPolicy
         {
             int newVal = Interlocked::Decrement(&InhibitHolder::s_nGcStressDisabled);
             _ASSERTE(newVal >= 0);
+            __UNUSED(newVal);
         }
 
     public:
