@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 
 
-internal partial struct Metadata_1 : IMetadata
+internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 {
     private readonly Target _target;
     private readonly TargetPointer _freeObjectMethodTablePointer;
@@ -53,7 +53,7 @@ internal partial struct Metadata_1 : IMetadata
         Mask = 1,
     }
 
-    internal Metadata_1(Target target, TargetPointer freeObjectMethodTablePointer)
+    internal RuntimeTypeSystem_1(Target target, TargetPointer freeObjectMethodTablePointer)
     {
         _target = target;
         _freeObjectMethodTablePointer = freeObjectMethodTablePointer;
@@ -114,7 +114,7 @@ internal partial struct Metadata_1 : IMetadata
             case EEClassOrCanonMTBits.EEClass:
                 return methodTable.EEClassOrCanonMT;
             case EEClassOrCanonMTBits.CanonMT:
-                TargetPointer canonMTPtr = new TargetPointer((ulong)methodTable.EEClassOrCanonMT & ~(ulong)Metadata_1.EEClassOrCanonMTBits.Mask);
+                TargetPointer canonMTPtr = new TargetPointer((ulong)methodTable.EEClassOrCanonMT & ~(ulong)RuntimeTypeSystem_1.EEClassOrCanonMTBits.Mask);
                 MethodTableHandle canonMTHandle = GetMethodTableHandle(canonMTPtr);
                 MethodTable canonMT = _methodTables[canonMTHandle.Address];
                 return canonMT.EEClassOrCanonMT; // canonical method table EEClassOrCanonMT is always EEClass

@@ -17,17 +17,17 @@ internal readonly struct MethodTableHandle
     internal TargetPointer Address { get; }
 }
 
-internal interface IMetadata : IContract
+internal interface IRuntimeTypeSystem : IContract
 {
-    static string IContract.Name => nameof(Metadata);
+    static string IContract.Name => nameof(RuntimeTypeSystem);
     static IContract IContract.Create(Target target, int version)
     {
         TargetPointer targetPointer = target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable);
         TargetPointer freeObjectMethodTable = target.ReadPointer(targetPointer);
         return version switch
         {
-            1 => new Metadata_1(target, freeObjectMethodTable),
-            _ => default(Metadata),
+            1 => new RuntimeTypeSystem_1(target, freeObjectMethodTable),
+            _ => default(RuntimeTypeSystem),
         };
     }
 
@@ -61,7 +61,7 @@ internal interface IMetadata : IContract
     #endregion MethodTable inspection APIs
 }
 
-internal struct Metadata : IMetadata
+internal struct RuntimeTypeSystem : IRuntimeTypeSystem
 {
     // Everything throws NotImplementedException
 }

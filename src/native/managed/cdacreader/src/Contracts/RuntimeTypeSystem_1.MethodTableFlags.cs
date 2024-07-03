@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal partial struct Metadata_1
+internal partial struct RuntimeTypeSystem_1
 {
     // The lower 16-bits of the MTFlags field are used for these flags,
     // if WFLAGS_HIGH.HasComponentSize is unset

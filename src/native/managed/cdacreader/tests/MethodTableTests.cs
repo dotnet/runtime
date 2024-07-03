@@ -4,7 +4,6 @@
 using System;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.Data;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
@@ -37,14 +36,14 @@ public unsafe class MethodTableTests
         }
     };
 
-    private static readonly (DataType Type, Target.TypeInfo Info)[] MetadataTypes =
+    private static readonly (DataType Type, Target.TypeInfo Info)[] RTSTypes =
     [
         (DataType.MethodTable, MethodTableTypeInfo),
         (DataType.EEClass, EEClassTypeInfo),
     ];
 
 
-    private static readonly (string Name, ulong Value, string? Type)[] MetadataGlobals =
+    private static readonly (string Name, ulong Value, string? Type)[] RTSGlobals =
     [
         (nameof(Constants.Globals.FreeObjectMethodTable), TestFreeObjectMethodTableGlobalAddress, null),
     ];
@@ -91,30 +90,30 @@ public unsafe class MethodTableTests
     // a delegate for adding more heap fragments to the context builder
     private delegate MockMemorySpace.Builder ConfigureContextBuilder(MockMemorySpace.Builder builder);
 
-    private static void MetadataContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
+    private static void RTSContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        string metadataTypesJson = TargetTestHelpers.MakeTypesJson(MetadataTypes);
-        string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(MetadataGlobals);
+        string metadataTypesJson = TargetTestHelpers.MakeTypesJson(RTSTypes);
+        string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(RTSGlobals);
         byte[] json = Encoding.UTF8.GetBytes($$"""
         {
             "version": 0,
             "baseline": "empty",
             "contracts": {
-                "Metadata": 1
+                "{{nameof(Contracts.RuntimeTypeSystem)}}": 1
             },
             "types": { {{metadataTypesJson}} },
             "globals": { {{metadataGlobalsJson}} }
         }
         """);
         Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, MetadataGlobals.Length);
+        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, RTSGlobals.Length);
 
         int pointerSize = targetTestHelpers.PointerSize;
-        Span<byte> pointerData = stackalloc byte[MetadataGlobals.Length * pointerSize];
-        for (int i = 0; i < MetadataGlobals.Length; i++)
+        Span<byte> pointerData = stackalloc byte[RTSGlobals.Length * pointerSize];
+        for (int i = 0; i < RTSGlobals.Length; i++)
         {
-            var (_, value, _) = MetadataGlobals[i];
+            var (_, value, _) = RTSGlobals[i];
             targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
         }
 
@@ -145,11 +144,11 @@ public unsafe class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void HasMetadataContract(MockTarget.Architecture arch)
+    public void HasRuntimeTypeSystemContract(MockTarget.Architecture arch)
     {
-        MetadataContractHelper(arch, default, (target) =>
+        RTSContractHelper(arch, default, (target) =>
         {
-            Contracts.IMetadata metadataContract = target.Contracts.Metadata;
+            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
             Contracts.MethodTableHandle handle = metadataContract.GetMethodTableHandle(TestFreeObjectMethodTableAddress);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
@@ -178,7 +177,7 @@ public unsafe class MethodTableTests
         TargetPointer systemObjectMethodTablePtr = new TargetPointer(SystemObjectMethodTableAddress);
         TargetPointer systemObjectEEClassPtr = new TargetPointer(SystemObjectEEClassAddress);
         TargetTestHelpers targetTestHelpers = new(arch);
-        MetadataContractHelper(arch,
+        RTSContractHelper(arch,
         (builder) =>
         {
             builder = AddSystemObject(targetTestHelpers, builder, systemObjectMethodTablePtr, systemObjectEEClassPtr);
@@ -186,7 +185,7 @@ public unsafe class MethodTableTests
         },
         (target) =>
         {
-            Contracts.IMetadata metadataContract = target.Contracts.Metadata;
+            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
             Contracts.MethodTableHandle systemObjectMethodTableHandle = metadataContract.GetMethodTableHandle(systemObjectMethodTablePtr);
             Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectMethodTableHandle.Address.Value);
@@ -208,7 +207,7 @@ public unsafe class MethodTableTests
         TargetPointer systemStringMethodTablePtr = new TargetPointer(SystemStringMethodTableAddress);
         TargetPointer systemStringEEClassPtr = new TargetPointer(SystemStringEEClassAddress);
         TargetTestHelpers targetTestHelpers = new(arch);
-        MetadataContractHelper(arch,
+        RTSContractHelper(arch,
         (builder) =>
         {
             builder = AddSystemObject(targetTestHelpers, builder, systemObjectMethodTablePtr, systemObjectEEClassPtr);
@@ -216,7 +215,7 @@ public unsafe class MethodTableTests
             const int numMethods = 37; // Arbitrary. Not trying to exactly match  the real System.String
             const int numInterfaces = 8; // Arbitrary
             const int numVirtuals = 3; // at least as many as System.Object
-            uint mtflags = (uint)Metadata_1.WFLAGS_HIGH.HasComponentSize | /*componentSize: */2;
+            uint mtflags = (uint)RuntimeTypeSystem_1.WFLAGS_HIGH.HasComponentSize | /*componentSize: */2;
             builder = AddEEClass(targetTestHelpers, builder, systemStringEEClassPtr, "System.String", systemStringMethodTablePtr, attr: (uint)typeAttributes, numMethods: numMethods);
             builder = AddMethodTable(targetTestHelpers, builder, systemStringMethodTablePtr, "System.String", systemStringEEClassPtr,
                                     mtflags: mtflags, mtflags2: default, baseSize: targetTestHelpers.StringBaseSize,
@@ -225,7 +224,7 @@ public unsafe class MethodTableTests
         },
         (target) =>
         {
-            Contracts.IMetadata metadataContract = target.Contracts.Metadata;
+            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
             Contracts.MethodTableHandle systemStringMethodTableHandle = metadataContract.GetMethodTableHandle(systemStringMethodTablePtr);
             Assert.Equal(systemStringMethodTablePtr.Value, systemStringMethodTableHandle.Address.Value);

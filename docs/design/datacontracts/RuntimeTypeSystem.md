@@ -1,10 +1,10 @@
-# Contract Metadata
+# Contract RuntimeTypeSystem
 
-This contract is for exploring the properties of the metadata of values on the heap or on the stack in a .NET process.
+This contract is for exploring the properties of the runtime types of values on the managed heap or on the stack in a .NET process.
 
 ## APIs of contract
 
-A `MethodTable` is the runtime representation of the type information about a value.  Given a `TargetPointer` address, the `Metadata` contract provides a `MethodTableHandle` for querying the `MethodTable`.
+A `MethodTable` is the runtime representation of the type information about a value.  Given a `TargetPointer` address, the `RuntimeTypeSystem` contract provides a `MethodTableHandle` for querying the `MethodTable`.
 
 ``` csharp
 struct MethodTableHandle
@@ -51,7 +51,7 @@ struct MethodTableHandle
 The `MethodTable` inspection APIs are implemented in terms of the following flags on the runtime `MethodTable` structure:
 
 ``` csharp
-internal partial struct Metadata_1
+internal partial struct RuntimeTypeSystem_1
 {
     // The lower 16-bits of the MTFlags field are used for these flags,
     // if WFLAGS_HIGH.HasComponentSize is unset
@@ -135,7 +135,7 @@ Internally the contract has a `MethodTable_1` struct that depends on the `Method
 ```csharp
 internal struct MethodTable_1
 {
-    internal Metadata_1.MethodTableFlags Flags { get; }
+    internal RuntimeTypeSystem_1.MethodTableFlags Flags { get; }
     internal ushort NumInterfaces { get; }
     internal ushort NumVirtuals { get; }
     internal TargetPointer ParentMethodTable { get; }
@@ -143,7 +143,7 @@ internal struct MethodTable_1
     internal TargetPointer EEClassOrCanonMT { get; }
     internal MethodTable_1(Data.MethodTable data)
     {
-        Flags = new Metadata_1.MethodTableFlags
+        Flags = new RuntimeTypeSystem_1.MethodTableFlags
         {
             MTFlags = data.MTFlags,
             MTFlags2 = data.MTFlags2,

@@ -89,7 +89,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 
         try
         {
-            Contracts.IMetadata contract = _target.Contracts.Metadata;
+            Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodTableHandle methodTable = contract.GetMethodTableHandle(mt);
 
             DacpMethodTableData result = default;
@@ -137,7 +137,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 
         try
         {
-            Contracts.IMetadata contract = _target.Contracts.Metadata;
+            Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodTableHandle methodTableHandle = contract.GetMethodTableHandle(eeClassReallyCanonMT);
             *value = methodTableHandle.Address;
             return HResults.S_OK;

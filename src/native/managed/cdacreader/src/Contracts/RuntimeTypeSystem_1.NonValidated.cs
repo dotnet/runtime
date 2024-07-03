@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal partial struct Metadata_1 : IMetadata
+internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 {
     // GC Heap corruption may create situations where a pointer value may point to garbage or even
     // to an unmapped memory region.
