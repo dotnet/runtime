@@ -22,9 +22,6 @@ namespace System.Security.Cryptography.X509Certificates
         private const int NTE_FAIL = unchecked((int)0x80090020);
 #endif
 
-        [ThreadStatic]
-        private static HashSet<string>? t_attributeDuplicateCheck;
-
         static partial void LoadPkcs12NoLimits(
             ReadOnlyMemory<byte> data,
             ReadOnlySpan<char> password,
@@ -272,6 +269,8 @@ namespace System.Security.Cryptography.X509Certificates
             AsnValueReader reader = outer.ReadSequence();
             outer.ThrowIfNotEmpty();
 
+            HashSet<string> duplicateAttributeCheck = new();
+
             while (reader.HasData)
             {
                 SafeBagAsn.Decode(ref reader, contentData, out SafeBagAsn bag);
@@ -280,7 +279,7 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (bag.BagAttributes is not null && !loaderLimits.AllowDuplicateAttributes)
                     {
-                        RejectDuplicateAttributes(bag.BagAttributes);
+                        RejectDuplicateAttributes(bag.BagAttributes, duplicateAttributeCheck);
                     }
 
                     CertBagAsn certBag = CertBagAsn.Decode(bag.BagValue, AsnEncodingRules.BER);
@@ -313,7 +312,7 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (bag.BagAttributes is not null && !loaderLimits.AllowDuplicateAttributes)
                     {
-                        RejectDuplicateAttributes(bag.BagAttributes);
+                        RejectDuplicateAttributes(bag.BagAttributes, duplicateAttributeCheck);
                     }
 
                     if (loaderLimits.IgnorePrivateKeys)
@@ -372,12 +371,12 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static void RejectDuplicateAttributes(AttributeAsn[] bagAttributes)
+        private static void RejectDuplicateAttributes(AttributeAsn[] bagAttributes, HashSet<string> duplicateAttributeCheck)
         {
             // If there's only one attribute set there's no reason to instantiate the HashSet.
             if (bagAttributes.Length == 1)
             {
-                // Use >1 instead of=1 to account for MsPkcs12MachineKeySet, which is a named set with no values.
+                // Use >1 instead of =1 to account for MsPkcs12MachineKeySet, which is a named set with no values.
                 // Though it doesn't really make sense as the only attribute.
                 if (bagAttributes[0].AttrValues.Length > 1)
                 {
@@ -387,24 +386,16 @@ namespace System.Security.Cryptography.X509Certificates
                 return;
             }
 
-            HashSet<string> set = (t_attributeDuplicateCheck ??= new HashSet<string>());
-            set.Clear();
+            duplicateAttributeCheck.Clear();
 
-            try
+            foreach (AttributeAsn attrSet in bagAttributes)
             {
-                foreach (AttributeAsn attrSet in bagAttributes)
+                // Use >1 instead of =1 to account for MsPkcs12MachineKeySet, which is a named set with no values.
+                // An empty attribute set can't be followed by the same empty set, or a non-empty set.
+                if (!duplicateAttributeCheck.Add(attrSet.AttrType) || attrSet.AttrValues.Length > 1)
                 {
-                    // Use >1 instead of=1 to account for MsPkcs12MachineKeySet, which is a named set with no values.
-                    // An empty attribute set can't be followed by the same empty set, or a non-empty set.
-                    if (!set.Add(attrSet.AttrType) || attrSet.AttrValues.Length > 1)
-                    {
-                        throw new Pkcs12LoadLimitExceededException(nameof(Pkcs12LoaderLimits.AllowDuplicateAttributes));
-                    }
+                    throw new Pkcs12LoadLimitExceededException(nameof(Pkcs12LoaderLimits.AllowDuplicateAttributes));
                 }
-            }
-            finally
-            {
-                set.Clear();
             }
         }
 
