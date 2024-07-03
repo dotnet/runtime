@@ -1920,6 +1920,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         else
         {
             assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3));
+
+            // Special handling for ShiftRightArithmeticForDivide:
+            // We might need an additional register to hold branch targets into the switch table
+            // that encodes the immediate
+            if (intrinEmb.id == NI_Sve_ShiftRightArithmeticForDivide)
+            {
+                assert(embOp2Node->GetOperandCount() == 2);
+                if (!embOp2Node->Op(2)->isContainedIntOrIImmed())
+                {
+                    buildInternalIntRegisterDefForNode(embOp2Node);
+                }
+            }
+
             tgtPrefUse = BuildUse(embOp2Node->Op(1));
             srcCount += 1;
 
