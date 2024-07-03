@@ -8903,8 +8903,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE
     TypeHandle elemTypeHnd(elemType);
 
     // Mirrors the logic in BCL's CompareHelpers.CreateDefaultComparer
-    // And in compile.cpp's SpecializeComparer
-    //
+
     // We need to find the appropriate instantiation
     Instantiation inst(&elemTypeHnd, 1);
 
@@ -8969,15 +8968,17 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    // Mirrors the logic in BCL's CompareHelpers.CreateDefaultEqualityComparer
-    // And in compile.cpp's SpecializeEqualityComparer
+    // Mirrors the logic in BCL's CompareHelpers.CreateDefaultEqualityComparer.
     TypeHandle elemTypeHnd(elemType);
 
-    // Mirrors the logic in BCL's CompareHelpers.CreateDefaultComparer
-    // And in compile.cpp's SpecializeComparer
-    //
-    // We need to find the appropriate instantiation
+    // We need to find the appropriate instantiation.
     Instantiation inst(&elemTypeHnd, 1);
+
+    // string
+    if (elemTypeHnd.IsString())
+    {
+        return CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__STRING_EQUALITYCOMPARER));
+    }
 
     // Nullable<T>
     if (Nullable::IsNullableType(elemTypeHnd))

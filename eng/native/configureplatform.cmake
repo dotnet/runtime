@@ -500,3 +500,9 @@ if(LOWERCASE_CMAKE_BUILD_TYPE STREQUAL debug)
     string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 endif()
+
+if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_HOST_ARCH_ARMV6)
+    # Our zlib-ng copy should only be used in non-mobile platforms only.
+    # In mobile platforms we should use the zlib package provided by the system.
+    set(CLR_CMAKE_USE_SYSTEM_ZLIB 1)
+endif()

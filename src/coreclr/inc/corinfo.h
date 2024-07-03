@@ -317,8 +317,8 @@ private:
     }
 };
 
-// StructFloatFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` and
-// `getRISCV64PassStructInRegisterFlags` API to convey struct argument passing information.
+// StructFloatFieldInfoFlags: used on LoongArch64 and RISC-V architecture as a legacy representation of
+// FpStructInRegistersInfo, returned by FpStructInRegistersInfo::ToOldFlags()
 //
 // `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
 //
@@ -432,8 +432,6 @@ struct FpStructInRegistersInfo
             ((SizeShift2nd() == 3) ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0));
     }
 };
-
-static_assert(sizeof(FpStructInRegistersInfo) == 3 * sizeof(uint32_t), "");
 
 #include "corinfoinstructionset.h"
 

@@ -182,7 +182,7 @@ public partial class BinaryFormatterTests
     {
         Type objType = obj.GetType();
         Assert.True(objType.IsGenericType, $"Type `{objType.FullName}` must be generic.");
-        Assert.Equal("System.Collections.Generic.ObjectEqualityComparer`1", objType.GetGenericTypeDefinition().FullName);
+        Assert.True(objType.GetGenericTypeDefinition().FullName is "System.Collections.Generic.ObjectEqualityComparer`1" or "System.Collections.Generic.GenericEqualityComparer`1");
         Assert.Equal(obj.GetType().GetGenericArguments()[0], objType.GetGenericArguments()[0]);
     }
 
