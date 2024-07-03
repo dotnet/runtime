@@ -679,8 +679,8 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>2)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<2)
 #define CODE_OFFSETS_NEED_NORMALIZATION 1
-#define NORMALIZE_CODE_OFFSET(x) (x)   // Instructions are 2/4 bytes long in Thumb/ARM states,
-#define DENORMALIZE_CODE_OFFSET(x) (x) // but the safe-point offsets are encoded with a -1 adjustment.
+#define NORMALIZE_CODE_OFFSET(x) ((x)>>1)   // Instructions are 2/4 bytes long in Thumb/ARM states,
+#define DENORMALIZE_CODE_OFFSET(x) ((x)<<1)
 #define NORMALIZE_REGISTER(x) (x)
 #define DENORMALIZE_REGISTER(x) (x)
 #define NORMALIZE_NUM_SAFE_POINTS(x) (x)
@@ -735,9 +735,9 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define DENORMALIZE_STACK_BASE_REGISTER(x) ((x)^29)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
-#define CODE_OFFSETS_NEED_NORMALIZATION 0
-#define NORMALIZE_CODE_OFFSET(x) (x)   // Instructions are 4 bytes long, but the safe-point
-#define DENORMALIZE_CODE_OFFSET(x) (x) // offsets are encoded with a -1 adjustment.
+#define CODE_OFFSETS_NEED_NORMALIZATION 1
+#define NORMALIZE_CODE_OFFSET(x) ((x)>>2)   // Instructions are 4 bytes long
+#define DENORMALIZE_CODE_OFFSET(x) ((x)<<2)
 #define NORMALIZE_REGISTER(x) (x)
 #define DENORMALIZE_REGISTER(x) (x)
 #define NORMALIZE_NUM_SAFE_POINTS(x) (x)
@@ -790,9 +790,9 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 22 : 3)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
-#define CODE_OFFSETS_NEED_NORMALIZATION 0
-#define NORMALIZE_CODE_OFFSET(x) (x)   // Instructions are 4 bytes long, but the safe-point
-#define DENORMALIZE_CODE_OFFSET(x) (x) // offsets are encoded with a -1 adjustment.
+#define CODE_OFFSETS_NEED_NORMALIZATION 1
+#define NORMALIZE_CODE_OFFSET(x) ((x)>>2)   // Instructions are 4 bytes long
+#define DENORMALIZE_CODE_OFFSET(x) ((x)<<2)
 #define NORMALIZE_REGISTER(x) (x)
 #define DENORMALIZE_REGISTER(x) (x)
 #define NORMALIZE_NUM_SAFE_POINTS(x) (x)
@@ -845,9 +845,9 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 8 : 2)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
-#define CODE_OFFSETS_NEED_NORMALIZATION 0
-#define NORMALIZE_CODE_OFFSET(x) (x)   // Instructions are 4 bytes long, but the safe-point
-#define DENORMALIZE_CODE_OFFSET(x) (x) // offsets are encoded with a -1 adjustment.
+#define CODE_OFFSETS_NEED_NORMALIZATION 1
+#define NORMALIZE_CODE_OFFSET(x) ((x)>>2)   // Instructions are 4 bytes long
+#define DENORMALIZE_CODE_OFFSET(x) ((x)<<2)
 #define NORMALIZE_REGISTER(x) (x)
 #define DENORMALIZE_REGISTER(x) (x)
 #define NORMALIZE_NUM_SAFE_POINTS(x) (x)
