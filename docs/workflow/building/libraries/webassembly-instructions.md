@@ -65,7 +65,7 @@ If you don't run the full `Libs` subset then you can use the `Libs.PreTest` subs
 
 ## Building libraries native components only
 
-The libraries build contains some native code. This includes shims over libc, openssl, gssapi, and zlib. The build system uses CMake to generate Makefiles using clang. The build also uses git for generating some version information.
+The libraries build contains some native code. This includes shims over libc, openssl, gssapi, and zlib-ng. The build system uses CMake to generate Makefiles using clang. The build also uses git for generating some version information.
 
 ```bash
 ./build.sh libs.native -os browser -c Debug|Release
