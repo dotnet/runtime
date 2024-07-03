@@ -110,14 +110,15 @@ namespace Microsoft.Extensions.Http.Logging
             }
         }
 
-        public static IDisposable? BeginRequestPipelineScope(this ILogger logger, HttpRequestMessage request)
+        public static IDisposable? BeginRequestPipelineScope(this ILogger logger, HttpRequestMessage request, out string? formattedUri)
         {
-            return _beginRequestPipelineScope(logger, request.Method, GetRedactedUriString(request.RequestUri));
+            formattedUri = GetRedactedUriString(request.RequestUri);
+            return _beginRequestPipelineScope(logger, request.Method, formattedUri);
         }
 
-        public static void LogRequestPipelineStart(this ILogger logger, HttpRequestMessage request, Func<string, bool> shouldRedactHeaderValue)
+        public static void LogRequestPipelineStart(this ILogger logger, HttpRequestMessage request, string? formattedUri, Func<string, bool> shouldRedactHeaderValue)
         {
-            _requestPipelineStart(logger, request.Method, GetRedactedUriString(request.RequestUri), null);
+            _requestPipelineStart(logger, request.Method, formattedUri, null);
 
             if (logger.IsEnabled(LogLevel.Trace))
             {

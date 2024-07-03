@@ -58,9 +58,9 @@ namespace Microsoft.Extensions.Http.Logging
 
                 Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
 
-                using (_logger.BeginRequestPipelineScope(request))
+                using (_logger.BeginRequestPipelineScope(request, out string? formattedUri))
                 {
-                    _logger.LogRequestPipelineStart(request, shouldRedactHeaderValue);
+                    _logger.LogRequestPipelineStart(request, formattedUri, shouldRedactHeaderValue);
                     HttpResponseMessage response = useAsync
                         ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
 #if NET
