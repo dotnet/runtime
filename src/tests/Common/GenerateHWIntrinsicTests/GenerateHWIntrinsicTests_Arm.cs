@@ -78,6 +78,25 @@ const string SimpleVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < Re
                 }
             }";
 
+const string SimpleVecOpTest_ValidationLogicForCndSel_FalseValue = @"for (var i = 0; i < RetElementCount; i++)
+            {
+                {Op1BaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
+                if (mask[i] != 0)
+                {
+                    // Pick the trueValue
+                    if (iterResult != result[i])
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    // For false, the values are merged with destination, and we do not know
+                    // those contents would be, so skip verification for them.
+                }              
+            }";
+
 const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing = @"for (var i = 0; i < Op1ElementCount; i++)
             {
                 {Op1BaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
@@ -86,6 +105,25 @@ const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing = @"for (var i
                     succeeded = false;
                     break;
                 }
+            }";
+
+const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing_FalseValue = @"for (var i = 0; i < Op1ElementCount; i++)
+            {
+                {Op1BaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
+                if (mask[i] != 0)
+                {
+                    // Pick the trueValue
+                    if (iterResult != result[i])
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    // For false, the values are merged with destination, and we do not know
+                    // those contents would be, so skip verification for them.
+                }  
             }";
 
 const string SimpleVecOpTest_VectorValidationLogicForCndSel = @"
@@ -104,15 +142,59 @@ const string SimpleVecOpTest_VectorValidationLogicForCndSel = @"
                 }
             }";
 
+const string SimpleVecOpTest_VectorValidationLogicForCndSel_FalseValue = @"
+            {
+                {Op1BaseType}[] vectorResult = {GetVectorResult};
+                {Op1BaseType}[] maskedVectorResult = new {RetBaseType}[vectorResult.Length];
+
+                for (var i = 0; i < vectorResult.Length; i++)
+                {
+                    {Op1BaseType} iterResult = (mask[i] != 0) ? trueVal[i] : vectorResult[i];
+                    if (mask[i] != 0)
+                    {
+                        // Pick the trueValue
+                        if (iterResult != result[i])
+                        {
+                            succeeded = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // For false, the values are merged with destination, and we do not know
+                        // those contents would be, so skip verification for them.
+                    }
+                }
+            }";
+
 const string SimpleTernVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < RetElementCount; i++)
             {
                 {Op1BaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
+                if (mask[i] != 0)
+                {
+                    // Pick the trueValue
+                    if ({ConvertFunc}(iterResult) !=  {ConvertFunc}(result[i]))
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    // For false, the values are merged with destination, and we do not know
+                    // those contents would be, so skip verification for them.
+                }                
+            }";
+
+const string SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue = @"for (var i = 0; i < RetElementCount; i++)
+            {
+                {Op1BaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
                 if ({ConvertFunc}(iterResult) !=  {ConvertFunc}(result[i]))
                 {
                     succeeded = false;
                     break;
                 }
-            }";
+            }";            
 
 const string VecPairBinOpTest_ValidationLogic = @"
             int index = 0;
@@ -176,21 +258,21 @@ const string SecureHashOpTest_ValidationLogic = @"{RetBaseType}[] expectedResult
     ("_UnaryOpTestTemplate.template",                    "SecureHashUnOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "SecureHash", ["TemplateValidationLogic"] = SecureHashOpTest_ValidationLogic }),
     ("_BinaryOpTestTemplate.template",                   "SecureHashBinOpTest.template",                new Dictionary<string, string> { ["TemplateName"] = "SecureHash", ["TemplateValidationLogic"] = SecureHashOpTest_ValidationLogic }),
     ("_TernaryOpTestTemplate.template",                  "SecureHashTernOpTest.template",               new Dictionary<string, string> { ["TemplateName"] = "SecureHash", ["TemplateValidationLogic"] = SecureHashOpTest_ValidationLogic }),
-    ("_SveUnaryOpTestTemplate.template",                 "SveSimpleVecOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveUnaryOpDifferentRetTypeTestTemplate.template", "SveSimpleVecOpDifferentRetTypeTest.template", new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogicForNarrowing, ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSelForNarrowing }),
-    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpTest.template",                    new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpVecTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_VectorValidationLogic,       ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_VectorValidationLogicForCndSel }),
-    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpConvertTest.template",             new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
-    ("_SveBinaryOpDifferentTypesTestTemplate.template",  "SveVecBinOpDifferentTypesTest.template",      new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveBinaryMaskOpTestTemplate.template",            "SveMaskVecBinOpConvertTest.template",         new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveImmBinaryOpTestTemplate.template",             "SveVecImmBinOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveImmUnaryOpTestTemplate.template",              "SveVecImmUnOpTest.template",                  new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveTernOpTestTemplate.template",                  "SveVecTernOpTest.template",                   new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
-    ("_SveTernOpTestTemplate.template",                  "SveVecTernOpVecTest.template",                new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_VectorValidationLogic,       ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_VectorValidationLogicForCndSel }),
-    ("_SveTernOpFirstArgTestTemplate.template",          "SveVecTernOpFirstArgTest.template",           new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
-    ("_SveImmTernOpTestTemplate.template",               "SveVecImmTernOpTest.template",                new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
-    ("_SveTernOpMaskedOpTestTemplate.template",          "SveVecTernOpMaskedTest.template",             new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
-    ("_SveImmTernOpFirstArgTestTemplate.template",       "SveVecImmTernOpFirstArgTest.template",        new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
+    ("_SveUnaryOpTestTemplate.template",                 "SveSimpleVecOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveUnaryOpDifferentRetTypeTestTemplate.template", "SveSimpleVecOpDifferentRetTypeTest.template", new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogicForNarrowing, ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSelForNarrowing, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSelForNarrowing_FalseValue }),
+    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpTest.template",                    new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpVecTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_VectorValidationLogic,       ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_VectorValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_VectorValidationLogicForCndSel_FalseValue }),
+    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpConvertTest.template",             new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveBinaryOpDifferentTypesTestTemplate.template",  "SveVecBinOpDifferentTypesTest.template",      new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveBinaryMaskOpTestTemplate.template",            "SveMaskVecBinOpConvertTest.template",         new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveImmBinaryOpTestTemplate.template",             "SveVecImmBinOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveImmUnaryOpTestTemplate.template",              "SveVecImmUnOpTest.template",                  new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveTernOpTestTemplate.template",                  "SveVecTernOpTest.template",                   new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveTernOpTestTemplate.template",                  "SveVecTernOpVecTest.template",                new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_VectorValidationLogic,       ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_VectorValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_VectorValidationLogicForCndSel_FalseValue }),
+    ("_SveTernOpFirstArgTestTemplate.template",          "SveVecTernOpFirstArgTest.template",           new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveImmTernOpTestTemplate.template",               "SveVecImmTernOpTest.template",                new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveTernOpMaskedOpTestTemplate.template",          "SveVecTernOpMaskedTest.template",             new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveImmTernOpFirstArgTestTemplate.template",       "SveVecImmTernOpFirstArgTest.template",        new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
     ("_SveImm2UnaryOpTestTemplate.template",             "SveVecImm2UnOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Imm",        ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
     ("_SveMinimalUnaryOpTestTemplate.template",          "SveVecReduceUnOpTest.template",               new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = VecReduceOpTest_ValidationLogic }),
     ("_SveMasklessUnaryOpTestTemplate.template",         "SveMasklessSimpleVecOpTest.template",         new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
