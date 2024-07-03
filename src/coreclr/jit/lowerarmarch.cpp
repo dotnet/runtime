@@ -1314,27 +1314,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         case NI_Sve_ConditionalSelect:
         {
-            LIR::Use use;
-            bool     foundUse = BlockRange().TryGetUse(node, &use);
-
-            JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
-            DISPTREERANGE(BlockRange(), node);
-            JITDUMP("\n");
-
-            GenTree* cndSelNode = LowerHWIntrinsicCndSel(node);
-
-            JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
-            DISPTREERANGE(BlockRange(), cndSelNode);
-            JITDUMP("\n");
-
-            if (cndSelNode != node)
-            {
-                if (foundUse)
-                {
-                    use.ReplaceWith(cndSelNode);
-                }
-                BlockRange().Remove(node);
-            }
+            LowerHWIntrinsicCndSel(node);
             break;
         }
         default:
@@ -1358,17 +1338,17 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
             GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
 
+            BlockRange().InsertBefore(node, trueMask);
+            BlockRange().InsertBefore(node, falseVal);
+
             GenTreeHWIntrinsic* condSelNode =
                 comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
                                                 simdBaseJitType, simdSize);
-
-            BlockRange().InsertBefore(node, trueMask);
-            BlockRange().InsertBefore(node, falseVal);
             BlockRange().InsertAfter(node, condSelNode);
 
             use.ReplaceWith(condSelNode);
 
-            JITDUMP("lowering EmbeddedMasked HWIntrinisic (before):\n");
+            JITDUMP("lowering EmbeddedMasked HWIntrinisic (after):\n");
             DISPTREERANGE(BlockRange(), condSelNode);
             JITDUMP("\n");
         }
@@ -3520,50 +3500,25 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 {
     assert(cndSelNode->OperIsHWIntrinsic(NI_Sve_ConditionalSelect));
 
-    GenTree* op1 = cndSelNode->Op(1);
-    GenTree* op2 = cndSelNode->Op(2);
-    GenTree* op3 = cndSelNode->Op(3);
+    GenTree* op1         = cndSelNode->Op(1);
+    GenTree* op2         = cndSelNode->Op(2);
+    GenTree* op3         = cndSelNode->Op(3);
+    GenTree* lowerCndSel = cndSelNode;
 
     if (op1->OperIsHWIntrinsic())
     {
         GenTreeHWIntrinsic* predNode = op1->AsHWIntrinsic();
-        if (predNode->IsAllFalse())
-        {
-            // Transform:
-            //
-            // CndSel(AllFalse, op2, op3) to
-            // op3
-            op1->SetUnusedValue();
-            op2->SetUnusedValue();
-            cndSelNode->SetUnusedValue();
+        // op1 should never be Zero, because we optimized that in HIR already
+        // op1 should never be a SIMD node, because op1 takes TYP_MASK
+        assert(!predNode->IsMaskZero() && varTypeIsMask(predNode));
 
-            return op3;
-        }
-
-        if (predNode->IsAllTrue())
+        if (predNode->IsMaskAllBitsSet())
         {
             if (op2->isEmbeddedMaskingCompatibleHWIntrinsic())
             {
-                // Transform:
-                //
-                // CndSel(AllTrue, embeddedMask(op2), op3) to
-                // CndSel(AllTrue, embeddedMask(op2), Zero)
-                //
-                // Zero will get contained during ConditionalSelect
-                // containment
+                // We already have shape we want, so return as-is
+                // CndSel(AllTrue, embeddedMask(op2), op3) 
 
-                if (!op3->IsAllFalse())
-                {
-                    // Replace op3 with Zero, if not already zero
-                    op3->SetUnusedValue();
-
-                    GenTree** const treeUse  = &(cndSelNode->Op(1));
-                    GenTree*        zeroNode = comp->gtNewZeroConNode(op3->TypeGet());
-
-                    BlockRange().InsertBefore(cndSelNode, zeroNode);
-
-                    cndSelNode->ReplaceOperand(treeUse, zeroNode);
-                }
                 return cndSelNode;
             }
             else
@@ -3572,9 +3527,26 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 //
                 // CndSel(AllTrue, op2, op3) to
                 // op2
+
+                JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
+                DISPTREERANGE(BlockRange(), cndSelNode);
+                JITDUMP("\n");
+
+                LIR::Use use;
+                bool     foundUse = BlockRange().TryGetUse(cndSelNode, &use);
                 op1->SetUnusedValue();
                 op3->SetUnusedValue();
                 cndSelNode->SetUnusedValue();
+                if (foundUse)
+                {
+                    use.ReplaceWith(op2);
+                }
+                BlockRange().Remove(cndSelNode);
+
+                JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
+                DISPTREERANGE(BlockRange(), op2);
+                JITDUMP("\n");
+
                 return op2;
             }
         }
@@ -3590,8 +3562,18 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         GenTree*            trueValOp2 = trueValNode->Op(2);
         GenTree*            trueValOp3 = trueValNode->Op(3);
 
-        if (trueValOp1->IsAllTrue() && trueValOp2->isEmbeddedMaskingCompatibleHWIntrinsic())
+        // trueValOp1 should never be Zero, because we optimized that in HIR already
+        // trueValOp1 should never be a SIMD node, because op1 takes TYP_MASK
+        assert(!trueValOp1->IsMaskZero() && varTypeIsMask(trueValOp1));
+
+        if (trueValOp1->IsMaskAllBitsSet())
         {
+            assert(trueValOp2->isEmbeddedMaskingCompatibleHWIntrinsic());
+
+            JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
+            DISPTREERANGE(BlockRange(), cndSelNode);
+            JITDUMP("\n");
+
             // Transform:
             //
             // CndSel(mask, CndSel(AllTrue, embeddedMask(trueValOp2), trueValOp3), op3) to
@@ -3604,6 +3586,11 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             trueValOp3->SetUnusedValue();
             trueValNode->SetUnusedValue();
             BlockRange().Remove(trueValNode);
+
+            JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
+            DISPTREERANGE(BlockRange(), cndSelNode);
+            JITDUMP("\n");
+
             return cndSelNode;
         }
     }

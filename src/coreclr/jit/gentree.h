@@ -1762,8 +1762,6 @@ public:
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
     inline bool IsMaskAllBitsSet() const;
     inline bool IsMaskZero() const;
-    inline bool IsAllTrue() const;
-    inline bool IsAllFalse() const;
     inline bool IsVectorConst();
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
@@ -9679,22 +9677,6 @@ inline bool GenTree::IsMaskAllBitsSet() const
                 ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
     }
 
-#endif
-    return false;
-}
-
-inline bool GenTree::IsAllTrue() const
-{
-#ifdef TARGET_ARM64
-    return IsMaskAllBitsSet() || IsVectorAllBitsSet();
-#endif
-    return false;
-}
-
-inline bool GenTree::IsAllFalse() const
-{
-#ifdef TARGET_ARM64
-    return IsMaskZero() || IsVectorZero();
 #endif
     return false;
 }
