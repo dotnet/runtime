@@ -54,13 +54,6 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 _maxChar = Math.Max(_maxChar, (int)BDDRangeConverter.ToRanges(minterms[mintermId])[^1].Item2);
             }
-            // there is an opportunity to gain around 5% performance for allocating the
-            // full 64K, past a certain threshold where maxChar is already large.
-            // TODO: what should this threshold be?
-            if (_maxChar > 32_000)
-            {
-                _maxChar = ushort.MaxValue;
-            }
 
             // It's incredibly rare for a regex to use more than a hundred or two minterms,
             // but we need a fallback just in case.
@@ -124,14 +117,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int[]? IntLookup() => _intLookup;
-
-        /// <summary>
-        /// Whether the full 64K char lookup is allocated.
-        /// This accelerates the minterm mapping by removing an if-else case,
-        /// and is only considered for the common &lt;= 255 minterms case
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsFullLookup() => _lookup is not null && _lookup.Length == ushort.MaxValue + 1;
 
         /// <summary>
         /// Maximum ordinal character for a non-0 minterm, used to conserve memory

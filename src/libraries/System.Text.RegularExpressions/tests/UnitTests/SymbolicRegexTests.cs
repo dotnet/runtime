@@ -253,19 +253,5 @@ namespace System.Text.RegularExpressions.Tests
             AppContext.SetData(SymbolicRegexThresholds.SymbolicRegexSafeSizeThreshold_ConfigKeyName, null);
             Assert.Equal(expectedThreshold, k);
         }
-
-        [Fact]
-        public static void OptimizedReversalTests()
-        {
-            var charSetSolver = new CharSetSolver();
-            var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);
-            var converter = new RegexNodeConverter(bddBuilder, null);
-            const RegexOptions options = RegexOptions.NonBacktracking | RegexOptions.ExplicitCapture;
-            RegexNode tree = RegexParser.Parse("abc.*def", options, CultureInfo.CurrentCulture).Root;
-            SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
-            // todo: import the matcher here or use something else?
-            // var matcher = SymbolicRegexMatcher.Create(bddBuilder, rootNode, 0, null, TimeSpan.MaxValue);
-
-        }
     }
 }
