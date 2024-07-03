@@ -1404,7 +1404,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             /// <summary>Transition function that only considers DFA state id</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool TryTakeDFATransition(SymbolicRegexMatcher<TSet> matcher, ref int state,
+            internal static bool TryTakeDFATransition(SymbolicRegexMatcher<TSet> matcher, ref int state,
                 int mintermId, long timeoutOccursAt)
             {
                 Debug.Assert(state > 0, $"Expected {nameof(state)} {state} > 0");

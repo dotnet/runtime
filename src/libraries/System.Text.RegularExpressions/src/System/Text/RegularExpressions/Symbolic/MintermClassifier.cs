@@ -28,27 +28,20 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private readonly int[]? _intLookup;
 
-        /// <summary>
-        /// Maximum ordinal character for a non-0 minterm, used to conserve memory
-        /// Note: this is maximum index allowed for the lookup, the array size is _maxChar + 1
-        /// </summary>
-        private readonly int _maxChar;
-
         /// <summary>Create a classifier that maps a character to the ID of its associated minterm.</summary>
         /// <param name="minterms">A BDD for classifying all characters (ASCII and non-ASCII) to their corresponding minterm IDs.</param>
         public MintermClassifier(BDD[] minterms)
         {
             Debug.Assert(minterms.Length > 0, "Requires at least");
 
-
             if (minterms.Length == 1)
             {
                 // With only a single minterm, the mapping is trivial: everything maps to it (ID 0).
                 _lookup = Array.Empty<byte>();
-                _maxChar = -1;
                 return;
             }
 
+            int _maxChar = -1;
             // attempt to save memory in common cases by allocating only up to the highest char code
             for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
             {
@@ -96,13 +89,16 @@ namespace System.Text.RegularExpressions.Symbolic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetMintermID(int c)
         {
-            if (c > _maxChar)
+            if (_intLookup is null)
             {
-                return 0;
+                byte[] lookup = _lookup!;
+                return (uint)c < (uint)lookup.Length ? lookup[c] : 0;
             }
-
-            // high performance inner-loop variant uses the array directly
-            return _intLookup is null ? _lookup![c] : _intLookup[c];
+            else
+            {
+                int[] lookup = _intLookup!;
+                return (uint)c < (uint)lookup.Length ? lookup[c] : 0;
+            }
         }
         /// <summary>
         /// Gets a quick mapping from char to minterm for the common case when there are &lt;= 255 minterms.
