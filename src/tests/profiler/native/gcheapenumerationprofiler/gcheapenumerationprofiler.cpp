@@ -24,18 +24,6 @@ HRESULT GCHeapEnumerationProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     WCHAR envVar[bufferSize];
     HRESULT hr = S_OK;
 
-    if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("Set_Object_Allocated_Event_Mask"), bufferSize, &envVarLen, envVar)))
-    {
-        _failures++;
-        printf("FAIL: ICorProfilerInfo::GetEnvironmentVariable() failed hr=0x%x", hr);
-        return hr;
-    }
-    if (wcscmp(envVar, L"TRUE") == 0)
-    {
-        printf("Setting ObjectAllocated event masks\n");
-        eventMask |= COR_PRF_MONITOR_OBJECT_ALLOCATED | COR_PRF_ENABLE_OBJECT_ALLOCATED;
-    }
-
     if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("Set_Monitor_GC_Event_Mask"), bufferSize, &envVarLen, envVar)))
     {
         _failures++;
@@ -52,40 +40,6 @@ HRESULT GCHeapEnumerationProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     {
         _failures++;
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
-    }
-
-    return hr;
-}
-
-HRESULT STDMETHODCALLTYPE GCHeapEnumerationProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
-{
-    SHUTDOWNGUARD();
-    String classIdName = GCHeapEnumerationProfiler::GetClassIDNameHelper(classId);
-    if (classIdName.ToWString() != L"CustomObjectAllocatedToSuspendRuntime")
-    {
-        // We only want to test the scenario of invoking
-        // EnumerateGCHeapObjects within the scope of a profiler requested SuspendRuntime + ResumeRuntime
-        return S_OK;
-    }
-
-    HRESULT hr = S_OK;
-    if (FAILED(hr = pCorProfilerInfo->SuspendRuntime()))
-    {
-        printf("Error: failed to suspend runtime. hr=0x%x\n", hr);
-        _failures++;
-        return hr;
-    }
-
-    if (FAILED(hr = GCHeapEnumerationProfiler::EnumerateGCHeapObjects()))
-    {
-        return hr;
-    }
-
-    if (FAILED(hr = pCorProfilerInfo->ResumeRuntime()))
-    {
-        printf("Error: failed to resume runtime. hr=0x%x\n", hr);
-        _failures++;
-        return hr;
     }
 
     return hr;
@@ -162,8 +116,7 @@ static BOOL STDMETHODCALLTYPE heap_walk_fn(ObjectID object, void* callbackState)
     }
 
     String classIdName = state->instance->GetClassIDNameHelper(classId);
-    if (classIdName.ToWString() == L"CustomGCHeapObject" ||
-        classIdName.ToWString() == L"CustomObjectAllocatedToSuspendRuntime")
+    if (classIdName.ToWString() == L"CustomGCHeapObject")
     {
         state->customGcHeapObjectTypeCount->fetch_add(1, std::memory_order_relaxed);
     }
@@ -204,4 +157,28 @@ extern "C" __declspec(dllexport) void STDMETHODCALLTYPE EnumerateGCHeapObjects()
         return;
     }
     instance->EnumerateGCHeapObjects();
+}
+
+extern "C" __declspec(dllexport) void STDMETHODCALLTYPE SuspendRuntime()
+{
+    printf("SuspendRuntime PInvoke\n");
+    GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
+    if (instance == nullptr)
+    {
+        printf("Error: profiler instance is null.\n");
+        return;
+    }
+    instance->pCorProfilerInfo->SuspendRuntime();
+}
+
+extern "C" __declspec(dllexport) void STDMETHODCALLTYPE ResumeRuntime()
+{
+    printf("ResumeRuntime PInvoke\n");
+    GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
+    if (instance == nullptr)
+    {
+        printf("Error: profiler instance is null.\n");
+        return;
+    }
+    instance->pCorProfilerInfo->ResumeRuntime();
 }

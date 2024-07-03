@@ -10,12 +10,17 @@ namespace Profiler.Tests
 {
     class GCHeapEnumerationTests
     {
-        static readonly string ShouldSetObjectAllocatedEventMaskEnvVar = "Set_Object_Allocated_Event_Mask";
         static readonly string ShouldSetMonitorGCEventMaskEnvVar = "Set_Monitor_GC_Event_Mask";
         static readonly Guid GCHeapEnumerationProfilerGuid = new Guid("8753F0E1-6D6D-4329-B8E1-334918869C15");
 
         [DllImport("Profiler")]
         private static extern void EnumerateGCHeapObjects();
+
+        [DllImport("Profiler")]
+        private static extern void SuspendRuntime();
+
+        [DllImport("Profiler")]
+        private static extern void ResumeRuntime();
 
         public static int EnumerateGCHeapObjectsSingleThreadNoPriorSuspension()
         {
@@ -24,9 +29,12 @@ namespace Profiler.Tests
             return 100;
         }
 
-        public static int EnumerateGCHeapObjectsSingleThreadWithPriorSuspension()
+        public static int EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension()
         {
-            var customObjectAllocatedToSuspendRuntime = new CustomObjectAllocatedToSuspendRuntime();
+            var customGCHeapObject = new CustomGCHeapObject();
+            SuspendRuntime();
+            EnumerateGCHeapObjects();
+            ResumeRuntime();
             return 100;
         }
 
@@ -64,25 +72,25 @@ namespace Profiler.Tests
                     case nameof(EnumerateGCHeapObjectsSingleThreadNoPriorSuspension):
                         return EnumerateGCHeapObjectsSingleThreadNoPriorSuspension();
 
-                    case nameof(EnumerateGCHeapObjectsSingleThreadWithPriorSuspension):
-                        return EnumerateGCHeapObjectsSingleThreadWithPriorSuspension();
+                    case nameof(EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension):
+                        return EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension();
 
                     case nameof(EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension):
                         return EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension();
                 }
             }
 
-            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsSingleThreadNoPriorSuspension), "FALSE", "FALSE"))
+            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsSingleThreadNoPriorSuspension), "FALSE"))
             {
                 return 101;
             }
 
-            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsSingleThreadWithPriorSuspension), "TRUE", "FALSE"))
+            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension), "FALSE"))
             {
                 return 102;
             }
 
-            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension), "FALSE", "TRUE"))
+            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension), "TRUE"))
             {
                 return 103;
             }
@@ -90,7 +98,7 @@ namespace Profiler.Tests
             return 100;
         }
 
-        private static bool RunProfilerTest(string testName, string shouldSetObjectAllocatedEventMask, string shouldSetMonitorGCEventMask)
+        private static bool RunProfilerTest(string testName, string shouldSetMonitorGCEventMask)
         {
             try
             {
@@ -100,7 +108,6 @@ namespace Profiler.Tests
                                               profileeArguments: testName,
                                               envVars: new Dictionary<string, string>
                                               {
-                                                {ShouldSetObjectAllocatedEventMaskEnvVar, shouldSetObjectAllocatedEventMask},
                                                 {ShouldSetMonitorGCEventMaskEnvVar, shouldSetMonitorGCEventMask},
                                               }
                                               ) == 100;
@@ -113,6 +120,5 @@ namespace Profiler.Tests
         }
 
         class CustomGCHeapObject {}
-        class CustomObjectAllocatedToSuspendRuntime {}
     }
 }

@@ -16,7 +16,6 @@ public:
 
 	static GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
-    virtual HRESULT STDMETHODCALLTYPE ObjectAllocated(ObjectID objectId, ClassID classId);
     virtual HRESULT STDMETHODCALLTYPE GarbageCollectionStarted(int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason);
     virtual HRESULT STDMETHODCALLTYPE GarbageCollectionFinished();
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
