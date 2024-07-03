@@ -11,10 +11,13 @@ public static class Program
 	public static bool IsSystemV =>
 		(RuntimeInformation.ProcessArchitecture == Architecture.X64) &&
 		!RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-	public static bool IsRiscV64OrArm32 =>
+	public static bool IsRiscV64OrArm =>
 		RuntimeInformation.ProcessArchitecture is Architecture.RiscV64 or Architecture.Arm;
+	public static bool IsArm64 => RuntimeInformation.ProcessArchitecture is Architecture.Arm64;
+	public static bool IsArm => RuntimeInformation.ProcessArchitecture is Architecture.Arm;
 	public const string SystemVPassNoClassEightbytes = "https://github.com/dotnet/runtime/issues/104098";
 	public const string ClangEmptyStructsIgnoredWhenPassing = "https://github.com/llvm/llvm-project/issues/97285";
+	public const string ProblemsWithEmptyStructPassing = "https://github.com/dotnet/runtime/issues/104369";
 
 	public struct Empty
 	{
@@ -31,8 +34,9 @@ public static class Program
 	}
 
 	[Fact]
-	[ActiveIssue(ClangEmptyStructsIgnoredWhenPassing, typeof(Program), nameof(IsRiscV64OrArm32))]
+	[ActiveIssue(ClangEmptyStructsIgnoredWhenPassing, typeof(Program), nameof(IsRiscV64OrArm))]
 	[ActiveIssue(SystemVPassNoClassEightbytes, typeof(Program), nameof(IsSystemV))]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64))]
 	public static void Test_Empty_Sanity()
 	{
 		Empty empty = new Empty{};
@@ -890,6 +894,7 @@ public static class Program
 	}
 
 	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm))]
 	public static void Test_PackedEmptyFloatLong_RiscV()
 	{
 		PackedEmptyFloatLong expected = PackedEmptyFloatLong.Get();
@@ -917,6 +922,7 @@ public static class Program
 	}
 
 	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm))]
 	public static void Test_PackedEmptyFloatLong_InIntegerRegs_RiscV()
 	{
 		PackedEmptyFloatLong expected = PackedEmptyFloatLong.Get();
@@ -946,6 +952,7 @@ public static class Program
 	}
 
 	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm))]
 	public static void Test_PackedEmptyFloatLong_Split_RiscV()
 	{
 		PackedEmptyFloatLong expected = PackedEmptyFloatLong.Get();
@@ -975,6 +982,7 @@ public static class Program
 	}
 
 	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm))]
 	public static void Test_PackedEmptyFloatLong_OnStack_RiscV()
 	{
 		PackedEmptyFloatLong expected = PackedEmptyFloatLong.Get();
