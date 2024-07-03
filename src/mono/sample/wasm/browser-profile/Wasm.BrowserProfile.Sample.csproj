@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
-    <WasmProfilers>aot;browser;</WasmProfilers>
+    <WasmProfilers>aot;</WasmProfilers>
   </PropertyGroup>
 
   <ItemGroup>
