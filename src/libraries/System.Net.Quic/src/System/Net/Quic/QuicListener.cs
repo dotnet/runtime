@@ -225,9 +225,9 @@ public sealed partial class QuicListener : IAsyncDisposable
         // https://github.com/microsoft/msquic/discussions/2705.
         // This will be assigned to before the linked CTS is cancelled
         TimeSpan handshakeTimeout = QuicDefaults.HandshakeTimeout;
-        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ConnectionShutdownToken);
         try
         {
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ConnectionShutdownToken);
             cancellationToken = linkedCts.Token;
             // Initial timeout for retrieving connection options.
             linkedCts.CancelAfter(handshakeTimeout);
@@ -249,28 +249,6 @@ public sealed partial class QuicListener : IAsyncDisposable
                 await connection.DisposeAsync().ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException) when (connection.ConnectionShutdownToken.IsCancellationRequested && !linkedCts.IsCancellationRequested)
-        {
-            // Connection closed by peer
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Info(connection, $"{connection} Connection closed by remote peer");
-            }
-
-            // Retrieve the exception which failed the handshake, the parameters are not going to be
-            // validated because the inner _connectedTcs is already transitioned to faulted state.
-            ValueTask task = connection.FinishHandshakeAsync(null!, null!, default);
-            Debug.Assert(task.IsFaulted);
-
-            // Unwrap AggregateException and propagate it to the accept queue.
-            Exception ex = task.AsTask().Exception!.InnerException!;
-
-            await connection.DisposeAsync().ConfigureAwait(false);
-            if (!_acceptQueue.Writer.TryWrite(ex))
-            {
-                // Channel has been closed, connection is already disposed, do nothing.
-            }
-        }
         catch (OperationCanceledException) when (_disposeCts.IsCancellationRequested)
         {
             // Handshake stopped by QuicListener.DisposeAsync:
@@ -284,7 +262,7 @@ public sealed partial class QuicListener : IAsyncDisposable
 
             await connection.DisposeAsync().ConfigureAwait(false);
         }
-        catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested && !connection.ConnectionShutdownToken.IsCancellationRequested)
         {
             // Handshake cancelled by options.HandshakeTimeout, probably stalled:
             // 1. Connection must be killed so dispose it and by that shut it down --> application error code doesn't matter here as this is a transport error.
@@ -307,6 +285,24 @@ public sealed partial class QuicListener : IAsyncDisposable
             // Handshake failed:
             // 1. Dispose the connection and by that shut it down --> application error code doesn't matter here as this is a transport error.
             // 2. Connection cannot be handed out since it's useless --> propagate the exception as-is, listener will pass it to the caller.
+
+            if (wrapException && connection.ConnectionShutdownToken.IsCancellationRequested)
+            {
+                // The connection was closed while we were waiting for the connection options callback to complete
+                // ex is going to be an OperationCanceledException, but we want to propagate the original exception.
+                // Since the inner _connectedTcs is already transitioned to faulted state (because ConnectionShutdownToken
+                // fired), the parameters to FinishHandshakeAsync are not going to be validated and it will return the
+                // faulted task.
+                ValueTask task = connection.FinishHandshakeAsync(null!, null!, default);
+                Debug.Assert(task.IsCompleted);
+
+                // Unwrap AggregateException and propagate it to the accept queue.
+                if (task.AsTask().Exception?.InnerException is Exception handshakeException)
+                {
+                    ex = handshakeException;
+                    wrapException = false;
+                }
+            }
 
             if (NetEventSource.Log.IsEnabled())
             {
