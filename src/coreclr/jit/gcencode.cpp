@@ -4027,8 +4027,7 @@ public:
     // Report everything between the previous region and the current
     // region as interruptible.
 
-    bool operator()(
-        unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
+    bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
     {
         if (igOffs < m_uninterruptibleEnd)
         {
