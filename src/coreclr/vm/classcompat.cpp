@@ -1478,7 +1478,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
                             // Set the slot and interop data
                             bmtVT->SetMethodDescForSlot(dwSlot, pMD);
                             bmtVT->ppSDVtable[dwSlot] = pMDData;
-                            _ASSERTE( bmtVT->GetMethodDescForSlot_NoThrow(dwSlot) != NULL);
+                            _ASSERTE( bmtVT->GetMethodDescForSlot(dwSlot) != NULL);
                             bmtInterface->ppInterfaceMethodDescList[it.GetSlotNumber()] = NULL;
                             bmtInterface->ppInterfaceDeclMethodDescList[it.GetSlotNumber()] = NULL;
                         }
@@ -1513,9 +1513,9 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
                         }
 
                         // Set the vtable slot
-                        _ASSERTE(bmtVT->GetMethodDescForSlot_NoThrow(bmtVT->wCurrentVtableSlot) == NULL);
+                        _ASSERTE(bmtVT->GetMethodDescForSlot(bmtVT->wCurrentVtableSlot) == NULL);
                         bmtVT->SetMethodDescForSlot(bmtVT->wCurrentVtableSlot, pMD);
-                        _ASSERTE(bmtVT->GetMethodDescForSlot_NoThrow(bmtVT->wCurrentVtableSlot) != NULL);
+                        _ASSERTE(bmtVT->GetMethodDescForSlot(bmtVT->wCurrentVtableSlot) != NULL);
                         bmtVT->ppSDVtable[bmtVT->wCurrentVtableSlot] = pMDData;
 
                         // Increment the current vtable slot
