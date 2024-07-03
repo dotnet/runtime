@@ -58,7 +58,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 test.ConditionalSelect_FalseOp();
 
                 // Validates executing the test inside conditional, with op3 as zero
-                test.ConditionalSelect_ZeroOp();                
+                test.ConditionalSelect_ZeroOp();
             }
             else
             {
@@ -301,47 +301,83 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public void ConditionalSelect_Op1()
         {
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_mask");
-            ConditionalSelectScenario(_mask, _fld1, _fld2, _fld3, _fld1);
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_mask - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue(_mask, _fld1, _fld2, _fld3, _fld1);
             
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_zero");
-            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _fld3, _fld1);
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_zero - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _fld3, _fld1);
             
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_all");
-            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _fld3, _fld1);
-        }    
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_all - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _fld3, _fld1);
+
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_mask - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue(_mask, _fld1, _fld2, _fld3, _fld1);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_zero - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _fld3, _fld1);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_all - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _fld3, _fld1);
+        }
 
         public void ConditionalSelect_FalseOp()
         {
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask");
-            ConditionalSelectScenario(_mask, _fld1, _fld2, _fld3, _falseFld);
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue(_mask, _fld1, _fld2, _fld3, _falseFld);
             
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero");
-            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _fld3, _falseFld);
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _fld3, _falseFld);
             
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all");
-            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _fld3, _falseFld);            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _fld3, _falseFld);
+
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue(_mask, _fld1, _fld2, _fld3, _falseFld);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _fld3, _falseFld);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _fld3, _falseFld);
         }
 
         public void ConditionalSelect_ZeroOp()
         {
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask");
-            ConditionalSelectScenario(_mask, _fld1, _fld2, _fld3, {Op1VectorType}<{Op1BaseType}>.Zero);
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue(_mask, _fld1, _fld2, _fld3, {Op1VectorType}<{Op1BaseType}>.Zero);
             
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero");
-            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _fld3, {Op1VectorType}<{Op1BaseType}>.Zero);
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _fld3, {Op1VectorType}<{Op1BaseType}>.Zero);
             
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all");
-            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _fld3, {Op1VectorType}<{Op1BaseType}>.Zero);            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _fld3, {Op1VectorType}<{Op1BaseType}>.Zero);
+
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue(_mask, _fld1, _fld2, _fld3, {Op1VectorType}<{Op1BaseType}>.Zero);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _fld3, {Op1VectorType}<{Op1BaseType}>.Zero);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _fld3, {Op1VectorType}<{Op1BaseType}>.Zero);
         }
 
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op2BaseType}> op2, {Op1VectorType}<{Op3BaseType}> op3, {Op1VectorType}<{Op1BaseType}> falseOp)
+        private void ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op2BaseType}> op2, {Op1VectorType}<{Op3BaseType}> op3, {Op1VectorType}<{Op1BaseType}> falseOp)
         {
             var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2, op3), falseOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateConditionalSelectResult(mask, op1, op2, op3, falseOp, _dataTable.outArrayPtr);
+            ValidateConditionalSelectResult_TrueValue(mask, op1, op2, op3, falseOp, _dataTable.outArrayPtr);
+        }
+
+        [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op2BaseType}> op2, {Op1VectorType}<{Op3BaseType}> op3, {Op1VectorType}<{Op1BaseType}> trueOp)
+        {
+            var result = Sve.ConditionalSelect(mask, trueOp, {Isa}.{Method}(op1, op2, op3));
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateConditionalSelectResult_TrueValue(mask, op1, op2, op3, trueOp, _dataTable.outArrayPtr);
         }
 
         public void RunUnsupportedScenario()
@@ -365,7 +401,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateConditionalSelectResult({Op1VectorType}<{Op1BaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> firstOp, {Op1VectorType}<{Op2BaseType}> secondOp, {Op1VectorType}<{Op3BaseType}> thirdOp, {Op1VectorType}<{Op1BaseType}> falseOp, void* output, [CallerMemberName] string method = "")
+        private void ValidateConditionalSelectResult_TrueValue({Op1VectorType}<{Op1BaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> firstOp, {Op1VectorType}<{Op2BaseType}> secondOp, {Op1VectorType}<{Op3BaseType}> thirdOp, {Op1VectorType}<{Op1BaseType}> falseOp, void* output, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] mask = new {Op1BaseType}[Op1ElementCount];
             {Op1BaseType}[] first = new {Op1BaseType}[Op1ElementCount];
