@@ -710,7 +710,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
-            var observedCancellation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
@@ -722,7 +721,6 @@ namespace System.Net.Http.Functional.Tests
                         HttpCompletionOption.ResponseHeadersRead);
 
                     await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.ReadAsStringAsync(cts.Token));
-                    observedCancellation.SetResult();
                 },
                 async server =>
                 {
@@ -730,9 +728,10 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await connection.ReadRequestHeaderAsync();
                         await connection.SendResponseAsync(LoopbackServer.GetHttpResponseHeaders(contentLength: 100));
-                        await Task.Delay(10);
+                        await Task.Delay(250);
                         cts.Cancel();
-                        await observedCancellation.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        await Task.Delay(500);
+                        await IgnoreExceptions(connection.SendResponseAsync(new string('a', 100)));
                     });
                 });
         }
@@ -792,7 +791,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
-            var observedCancellation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
@@ -804,7 +802,6 @@ namespace System.Net.Http.Functional.Tests
                         HttpCompletionOption.ResponseHeadersRead);
 
                     await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.ReadAsByteArrayAsync(cts.Token));
-                    observedCancellation.SetResult();
                 },
                 async server =>
                 {
@@ -812,9 +809,10 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await connection.ReadRequestHeaderAsync();
                         await connection.SendResponseAsync(LoopbackServer.GetHttpResponseHeaders(contentLength: 100));
-                        await Task.Delay(10);
+                        await Task.Delay(250);
                         cts.Cancel();
-                        await observedCancellation.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        await Task.Delay(500);
+                        await IgnoreExceptions(connection.SendResponseAsync(new string('a', 100)));
                     });
                 });
         }
