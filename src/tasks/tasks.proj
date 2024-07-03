@@ -27,7 +27,7 @@
 
     <TaskProject Include="installer.tasks\installer.tasks.csproj" />
 
-    <ProjectReference Include="@(MonoTaskProject)" Condition="'$(RuntimeFlavor)' == 'Mono'" />
+    <ProjectReference Include="@(MonoTaskProject)" />
     <ProjectReference Include="@(CoreCLRTaskProject)" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
     <ProjectReference Include="@(TaskProject)" />
   </ItemGroup>
