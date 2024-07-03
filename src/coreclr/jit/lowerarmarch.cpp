@@ -3536,7 +3536,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 nestedOp3->SetUnusedValue();
             }
 
-            nestedOp1->SetUnusedValue();
+            BlockRange().Remove(nestedOp1);
             BlockRange().Remove(nestedCndSel);
 
             JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
