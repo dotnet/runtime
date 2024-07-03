@@ -2816,6 +2816,8 @@ size_t        gc_heap::last_gc_end_time_us = 0;
 #endif //HEAP_BALANCE_INSTRUMENTATION
 #ifdef USE_REGIONS
 bool          gc_heap::enable_special_regions_p = false;
+int           gc_heap::large_region_factor = 0;
+int           gc_heap::min_regions_per_heap = 0;
 #else //USE_REGIONS
 size_t        gc_heap::min_segment_size = 0;
 size_t        gc_heap::min_uoh_segment_size = 0;
@@ -3787,7 +3789,7 @@ bool region_allocator::init (uint8_t* start, uint8_t* end, size_t alignment, uin
 {
     uint8_t* actual_start = start;
     region_alignment = alignment;
-    large_region_alignment = LARGE_REGION_FACTOR * alignment;
+    large_region_alignment = gc_heap::large_region_factor * alignment;
     global_region_start = (uint8_t*)align_region_up ((size_t)actual_start);
     uint8_t* actual_end = end;
     global_region_end = (uint8_t*)align_region_down ((size_t)actual_end);
@@ -13373,7 +13375,7 @@ void gc_heap::distribute_free_regions()
     size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
 
     ptrdiff_t num_regions_to_decommit[kind_count];
-    int region_factor[kind_count] = { 1, LARGE_REGION_FACTOR };
+    int region_factor[kind_count] = { 1, large_region_factor };
 #ifdef TRACE_GC
     const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
 #endif // TRACE_GC
@@ -48400,6 +48402,8 @@ HRESULT GCHeap::Initialize()
 #ifdef USE_REGIONS
     gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
+    gc_heap::large_region_factor = (int)GCConfig::GetGCLargeRegionFactor();
+    gc_heap::min_regions_per_heap = ((ephemeral_generation_count + 1) + ((total_generation_count - uoh_start_generation) * gc_heap::large_region_factor));
 
     if (gc_region_size >= MAX_REGION_SIZE)
     {
@@ -48414,7 +48418,7 @@ HRESULT GCHeap::Initialize()
     {
         // We have a minimum amount of basic regions we have to fit per heap, and we'd like to have the initial
         // regions only take up half of the space.
-        size_t max_region_size = gc_heap::regions_range / 2 / nhp / min_regions_per_heap;
+        size_t max_region_size = gc_heap::regions_range / 2 / nhp / gc_heap::min_regions_per_heap;
         if (max_region_size >= (4 * 1024 * 1024))
         {
             gc_region_size = 4 * 1024 * 1024;
@@ -48429,7 +48433,7 @@ HRESULT GCHeap::Initialize()
         }
     }
 
-    if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * min_regions_per_heap) > gc_heap::regions_range))
+    if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * gc_heap::min_regions_per_heap) > gc_heap::regions_range))
     {
         return E_OUTOFMEMORY;
     }
