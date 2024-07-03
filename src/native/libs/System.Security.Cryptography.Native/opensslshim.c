@@ -235,7 +235,7 @@ void InitializeOpenSSLShim(void)
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
     // This value will represent a time in year 2038 if 64-bit time is used,
     // or 1901 if the lower 32 bits are interpreted as a 32-bit time_t value.
-    time_t timeVal = (time_t)INT_MAX + 1u;
+    time_t timeVal = (time_t)((unsigned long)INT_MAX + 1u);
     struct tm tmVal = { 0 };
 
     // Detect whether openssl is using 32-bit or 64-bit time_t.
