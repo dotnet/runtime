@@ -2653,7 +2653,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, RegexOptions.Multiline, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}$", "date 10/12/1966\nand 10/12/66\nare the same", new (int, int)[] { (5, 10), (20, 8) } };
             }
         }
-
+#if NET
         [Fact]
         public async Task MatchNonBacktrackingOver255Minterms()
         {
@@ -2676,5 +2676,6 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(0, ms[0].Index);
             Assert.Equal(513, ms[0].Length);
         }
+#endif
     }
 }
