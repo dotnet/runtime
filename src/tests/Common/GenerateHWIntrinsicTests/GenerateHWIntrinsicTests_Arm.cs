@@ -81,7 +81,7 @@ const string SimpleVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < Re
 const string SimpleVecOpTest_ValidationLogicForCndSel_FalseValue = @"for (var i = 0; i < RetElementCount; i++)
             {
                 {Op1BaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
-                if ((mask[i] != 0))
+                if (mask[i] != 0)
                 {
                     // Pick the trueValue
                     if (iterResult != result[i])
@@ -110,7 +110,7 @@ const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing = @"for (var i
 const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing_FalseValue = @"for (var i = 0; i < Op1ElementCount; i++)
             {
                 {Op1BaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
-                if ((mask[i] != 0))
+                if (mask[i] != 0)
                 {
                     // Pick the trueValue
                     if (iterResult != result[i])
@@ -149,9 +149,8 @@ const string SimpleVecOpTest_VectorValidationLogicForCndSel_FalseValue = @"
 
                 for (var i = 0; i < vectorResult.Length; i++)
                 {
-                    // maskedVectorResult[i] = (mask[i] != 0) ? trueVal[i] : vectorResult[i];
                     {Op1BaseType} iterResult = (mask[i] != 0) ? trueVal[i] : vectorResult[i];
-                    if ((mask[i] != 0))
+                    if (mask[i] != 0)
                     {
                         // Pick the trueValue
                         if (iterResult != result[i])
