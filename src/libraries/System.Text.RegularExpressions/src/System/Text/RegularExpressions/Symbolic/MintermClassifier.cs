@@ -137,6 +137,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Maximum ordinal character for a non-0 minterm, used to conserve memory
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int MaxChar() => _maxChar;
+        public int MaxChar() => (_lookup?.Length ?? _intLookup!.Length) - 1;
     }
 }
