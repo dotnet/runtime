@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
     <MonoTaskProject Include="AndroidAppBuilder\AndroidAppBuilder.csproj" />
     <MonoTaskProject Include="AotCompilerTask\MonoAOTCompiler.csproj" />
     <MonoTaskProject Include="AppleAppBuilder\AppleAppBuilder.csproj" />
@@ -12,8 +12,12 @@
     <MonoTaskProject Include="TestExclusionListTasks\TestExclusionListTasks.csproj" />
     <MonoTaskProject Include="WasmAppBuilder\WasmAppBuilder.csproj" />
     <MonoTaskProject Include="WasmBuildTasks\WasmBuildTasks.csproj" />
+  
+    <!-- For WasmBuildTests or any other configuration that tests against workloads -->
     <MonoTaskProject Include="WorkloadBuildTasks\WorkloadBuildTasks.csproj" />
+  </ItemGroup>
 
+  <ItemGroup>
     <!-- This should be CoreCLRTaskProject but Mono legs apparently need this for now -->
     <TaskProject Include="Crossgen2Tasks\Crossgen2Tasks.csproj" />
 
