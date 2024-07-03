@@ -27546,14 +27546,12 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
     {
 #ifdef TARGET_ARM64
         static_assert_no_msg(
-            AreContiguous(NI_Sve_GatherPrefetch16Bit, NI_Sve_GatherPrefetch32Bit, NI_Sve_GatherPrefetch64Bit,
-                          NI_Sve_GatherPrefetch8Bit, NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend,
-                          NI_Sve_GatherVectorInt16SignExtend, NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend,
-                          NI_Sve_GatherVectorInt32SignExtend, NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend,
-                          NI_Sve_GatherVectorSByteSignExtend, NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend,
-                          NI_Sve_GatherVectorUInt16ZeroExtend, NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend,
-                          NI_Sve_GatherVectorUInt32ZeroExtend));
-        assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherPrefetch16Bit) &&
+            AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend, NI_Sve_GatherVectorInt16SignExtend,
+                          NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend, NI_Sve_GatherVectorInt32SignExtend,
+                          NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend, NI_Sve_GatherVectorSByteSignExtend,
+                          NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend, NI_Sve_GatherVectorUInt16ZeroExtend,
+                          NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend, NI_Sve_GatherVectorUInt32ZeroExtend));
+        assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherVector) &&
                                                             (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtend))));
 #else
         assert(varTypeIsI(addr));
