@@ -13,6 +13,98 @@ GUID GCHeapEnumerationProfiler::GetClsid()
 // Contrary to other profiler tests, this test focuses on the asynchronous API EnumerateGCHeapObjects,
 // which operates without events. So there is no need to override Initialize to call SetEventMask or
 // perform any other setup.
+HRESULT GCHeapEnumerationProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
+{
+    Profiler::Initialize(pICorProfilerInfoUnk);
+    printf("GCHeapEnumerationProfiler::Initialize\n");
+
+    int eventMask = 0;
+    constexpr ULONG bufferSize = 1024;
+    ULONG envVarLen = 0;
+    WCHAR envVar[bufferSize];
+    HRESULT hr = S_OK;
+
+    if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("Set_Object_Allocated_Event_Mask"), bufferSize, &envVarLen, envVar)))
+    {
+        _failures++;
+        printf("FAIL: ICorProfilerInfo::GetEnvironmentVariable() failed hr=0x%x", hr);
+        return hr;
+    }
+    if (wcscmp(envVar, L"TRUE") == 0)
+    {
+        printf("Setting ObjectAllocated event masks\n");
+        eventMask |= COR_PRF_MONITOR_OBJECT_ALLOCATED | COR_PRF_ENABLE_OBJECT_ALLOCATED;
+    }
+
+    if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("Set_Monitor_GC_Event_Mask"), bufferSize, &envVarLen, envVar)))
+    {
+        _failures++;
+        printf("FAIL: ICorProfilerInfo::GetEnvironmentVariable() failed hr=0x%x", hr);
+        return hr;
+    }
+    if (wcscmp(envVar, L"TRUE") == 0)
+    {
+        printf("Setting GarbageCollectionStarted event masks\n");
+        eventMask |= COR_PRF_MONITOR_GC;
+    }
+
+    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(eventMask, COR_PRF_HIGH_MONITOR_NONE)))
+    {
+        _failures++;
+        printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
+    }
+
+    return hr;
+}
+
+HRESULT STDMETHODCALLTYPE GCHeapEnumerationProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
+{
+    SHUTDOWNGUARD();
+    String classIdName = GCHeapEnumerationProfiler::GetClassIDNameHelper(classId);
+    if (classIdName.ToWString() != L"CustomObjectAllocatedToSuspendRuntime")
+    {
+        // We only want to test the scenario of invoking
+        // EnumerateGCHeapObjects within the scope of a profiler requested SuspendRuntime + ResumeRuntime
+        return S_OK;
+    }
+
+    HRESULT hr = S_OK;
+    if (FAILED(hr = pCorProfilerInfo->SuspendRuntime()))
+    {
+        printf("Error: failed to suspend runtime. hr=0x%x\n", hr);
+        _failures++;
+        return hr;
+    }
+
+    if (FAILED(hr = GCHeapEnumerationProfiler::EnumerateGCHeapObjects()))
+    {
+        return hr;
+    }
+
+    if (FAILED(hr = pCorProfilerInfo->ResumeRuntime()))
+    {
+        printf("Error: failed to resume runtime. hr=0x%x\n", hr);
+        _failures++;
+        return hr;
+    }
+
+    return hr;
+}
+
+HRESULT STDMETHODCALLTYPE GCHeapEnumerationProfiler::GarbageCollectionStarted(int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason)
+{
+    SHUTDOWNGUARD();
+    printf("GCHeapEnumerationProfiler::GarbageCollectionStarted\nSleeping for 10 seconds\n");
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE GCHeapEnumerationProfiler::GarbageCollectionFinished()
+{
+    SHUTDOWNGUARD();
+    printf("GCHeapEnumerationProfiler::GarbageCollectionFinished\n");
+    return S_OK;
+}
 
 HRESULT GCHeapEnumerationProfiler::Shutdown()
 {
@@ -70,7 +162,8 @@ static BOOL STDMETHODCALLTYPE heap_walk_fn(ObjectID object, void* callbackState)
     }
 
     String classIdName = state->instance->GetClassIDNameHelper(classId);
-    if (classIdName.ToWString() == L"CustomGCHeapObject")
+    if (classIdName.ToWString() == L"CustomGCHeapObject" ||
+        classIdName.ToWString() == L"CustomObjectAllocatedToSuspendRuntime")
     {
         state->customGcHeapObjectTypeCount->fetch_add(1, std::memory_order_relaxed);
     }
@@ -83,22 +176,27 @@ HRESULT GCHeapEnumerationProfiler::EnumerateGCHeapObjects()
     printf("GCHeapEnumerationProfiler::EnumerateGCHeapObjects\n");
     GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
     CallbackState state = { &_objectsCount, instance, &_customGCHeapObjectTypesCount };
+
+    printf("Enumerating GC Heap Objects\n");
     HRESULT hr = pCorProfilerInfo->EnumerateGCHeapObjects(heap_walk_fn, &state);
     if (SUCCEEDED(hr))
     {
         printf("Number of objects: %d\n", _objectsCount.load());
         printf("Number of custom GCHeapObject types: %d\n", _customGCHeapObjectTypesCount.load());
-        return S_OK;
     }
     else
     {
         printf("Error: failed to enumerate GC heap objects. hr=0x%x\n", hr);
+        _failures++;
         return E_FAIL;
     }
+
+    return S_OK;
 }
 
 extern "C" __declspec(dllexport) void STDMETHODCALLTYPE EnumerateGCHeapObjects()
 {
+    printf("EnumerateGCHeapObjects PInvoke\n");
     GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
     if (instance == nullptr)
     {
