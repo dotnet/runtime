@@ -15,7 +15,7 @@
         But we do want to set it for Configuration=Debug .
     -->
     <WasmDebugLevel Condition="'$(Configuration)' == 'Debug' and '$(WasmDebugLevel)' == ''">-1</WasmDebugLevel>
-    <WasmDebugLevel Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(WasmDebugLevel)' == ''">0</WasmDebugLevel>
+    <WasmDebugLevel Condition="'$(WasmDebugLevel)' == ''">0</WasmDebugLevel>
 
     <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(JsonSerializerIsReflectionEnabledByDefault)' == ''">true</JsonSerializerIsReflectionEnabledByDefault>
