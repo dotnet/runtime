@@ -1349,6 +1349,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     addr = comp->gtNewOperNode(GT_ADD, addr->TypeGet(), addr, offset);
                     BlockRange().InsertBefore(node, addr);
                 }
+                else
+                {
+                    BlockRange().Remove(offset);
+                }
 
                 // Finally we can indirect the memory address to get the actual value
                 GenTreeIndir* indir = comp->gtNewIndir(simdBaseType, addr);
