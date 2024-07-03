@@ -1313,32 +1313,42 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     op1 = addr;
                 }
 
-                GenTree* offset;
+                GenTree* offset       = op2;
+                unsigned baseTypeSize = genTypeSize(simdBaseType);
 
-                if (op2->OperIsConst())
+                if (offset->OperIsConst())
                 {
                     // We have a constant index, so scale it up directly
-                    GenTreeIntConCommon* index = op2->AsIntCon();
-                    index->SetIconValue(index->IconValue() * genTypeSize(simdBaseType));
-                    offset = index;
+                    GenTreeIntConCommon* index = offset->AsIntCon();
+                    index->SetIconValue(index->IconValue() * baseTypeSize);
                 }
                 else
                 {
                     // We have a non-constant index, so scale it up via mul but
-                    // don't lower the GT_MUL node since the indir will
-                    // try to create an addressing mode and will do folding itself
+                    // don't lower the GT_MUL node since the indir will try to
+                    // create an addressing mode and will do folding itself. We
+                    // do, however, skip the multiply for scale == 1
 
-                    GenTreeIntConCommon* scale = comp->gtNewIconNode(genTypeSize(simdBaseType));
-                    BlockRange().InsertBefore(node, scale);
+                    if (baseTypeSize != 1)
+                    {
+                        GenTreeIntConCommon* scale = comp->gtNewIconNode(baseTypeSize);
+                        BlockRange().InsertBefore(node, scale);
 
-                    offset = comp->gtNewOperNode(GT_MUL, op2->TypeGet(), op2, scale);
-                    BlockRange().InsertBefore(node, offset);
+                        offset = comp->gtNewOperNode(GT_MUL, offset->TypeGet(), offset, scale);
+                        BlockRange().InsertBefore(node, offset);
+                    }
                 }
 
                 // Add the offset, don't lower the GT_ADD node since the indir will
-                // try to create an addressing mode and will do folding itself
-                GenTree* addr = comp->gtNewOperNode(GT_ADD, op1->TypeGet(), op1, offset);
-                BlockRange().InsertBefore(node, addr);
+                // try to create an addressing mode and will do folding itself. We
+                // do, however, skip the add for offset == 0
+                GenTree* addr = op1;
+
+                if (!offset->IsIntegralConst(0))
+                {
+                    addr = comp->gtNewOperNode(GT_ADD, addr->TypeGet(), addr, offset);
+                    BlockRange().InsertBefore(node, addr);
+                }
 
                 // Finally we can indirect the memory address to get the actual value
                 GenTreeIndir* indir = comp->gtNewIndir(simdBaseType, addr);
