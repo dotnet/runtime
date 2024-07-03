@@ -76,7 +76,9 @@ if(CLR_CMAKE_TARGET_OSX)
     arch/${PAL_ARCH_SOURCES_DIR}/dispatchexceptionwrapper.S
     exception/machexception.cpp
     exception/machmessage.cpp
+    ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
   )
+  include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
 endif(CLR_CMAKE_TARGET_OSX)
 
 if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)

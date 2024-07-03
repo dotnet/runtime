@@ -42,7 +42,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include <dlfcn.h>
 #include <mach-o/loader.h>
 #include <sys/mman.h>
-//#include <minipal/cpufeatures.c>
+#include <minipal/cpufeatures.h>
 
 using namespace CorUnix;
 
@@ -767,6 +767,7 @@ HijackFaultingThread(
     BuildExceptionRecord(exceptionInfo, &exceptionRecord);
 
 #if defined(HOST_AMD64)
+    int cpuFeatures = minipal_getcpufeatures();
     threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
     printf("Right before we call GTCFTS the value of the ymm register is ");
     for(int i = 0; i < 16; i++)
@@ -778,14 +779,22 @@ HijackFaultingThread(
         printf("%d.", *(((BYTE*)&(exceptionInfo.AVXState.ufs.as64.__fpu_ymmh0))+i));
     }
     printf("\n");
-#if defined(XSTATE_SUPPORTED)
     // CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
-    threadContext.ContextFlags |= CONTEXT_XSTATE; //TODO: Mikelle check if this is where this should be set.
-    CONTEXT_GetThreadContextFromThreadState(x86_AVX_STATE, (thread_state_t)&exceptionInfo.AVXState, &threadContext);
-#else
-    CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0))
+    {
+        threadContext.ContextFlags |= CONTEXT_XSTATE; //TODO: Mikelle check if this is where this should be set.
+        CONTEXT_GetThreadContextFromThreadState(x86_AVX512_STATE, (thread_state_t)&exceptionInfo.AVX512State, &threadContext);
+    }
+    else if(((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0))
+    {
+        threadContext.ContextFlags |= CONTEXT_XSTATE;
+        CONTEXT_GetThreadContextFromThreadState(x86_AVX_STATE, (thread_state_t)&exceptionInfo.AVXState, &threadContext);
+    }
+    else
+    {
+        CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
+    }
     printf("After CONTEXT_GetThreadContextFromThreadState. We should not see this unless AVX isn't available\n");
-#endif
     printf("After CONTEXT_GetThreadContextFromThreadState.\n");
     M128A ymm_register_l = threadContext.Xmm0;
     M128A ymm_register_h = threadContext.Ymm0H;
