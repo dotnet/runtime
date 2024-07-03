@@ -2088,6 +2088,7 @@ int32_t SystemNative_GetSockOpt(
     {
         return Error_EFAULT;
     }
+
     int fd = ToFileDescriptor(socket);
 
     //
