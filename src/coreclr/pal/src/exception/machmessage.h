@@ -86,6 +86,7 @@ struct MachExceptionInfo
     x86_thread_state_t ThreadState;
     x86_float_state_t FloatState;
     x86_debug_state_t DebugState;
+    x86_avx_state_t AVXState;
 #elif defined(HOST_ARM64)
     arm_thread_state64_t ThreadState;
     arm_neon_state64_t FloatState;
