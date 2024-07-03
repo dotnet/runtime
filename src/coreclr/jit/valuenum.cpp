@@ -2582,7 +2582,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             if (IsVNObjHandle(addressVN))
             {
                 size_t handle = CoercedConstantValue<size_t>(addressVN);
-                int    len    = m_pComp->info.compCompHnd->getArrayOrStringLength((CORINFO_OBJECT_HANDLE)handle);
+                int    len =
+                    m_pComp->info.compCompHnd->getArrayOrStringLength(CastToHandle<CORINFO_OBJECT_HANDLE>(handle));
                 if (len >= 0)
                 {
                     resultVN = VNForIntCon(len);
@@ -13031,7 +13032,8 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
                 break;
             }
 
-            CORINFO_OBJECT_HANDLE obj = info.compCompHnd->getRuntimeTypePointer((CORINFO_CLASS_HANDLE)clsHandle);
+            CORINFO_OBJECT_HANDLE obj =
+                info.compCompHnd->getRuntimeTypePointer(CastToHandle<CORINFO_CLASS_HANDLE>(clsHandle));
             if (obj != nullptr)
             {
                 setMethodHasFrozenObjects();
@@ -14450,7 +14452,7 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
         *pIsNonNull   = true;
         *pIsExact     = true;
         size_t handle = CoercedConstantValue<size_t>(vn);
-        return m_pComp->info.compCompHnd->getObjectType((CORINFO_OBJECT_HANDLE)handle);
+        return m_pComp->info.compCompHnd->getObjectType(CastToHandle<CORINFO_OBJECT_HANDLE>(handle));
     }
 
     VNFuncApp funcApp;

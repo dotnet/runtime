@@ -1200,7 +1200,7 @@ public:
     CORINFO_OBJECT_HANDLE ConstantObjHandle(ValueNum vn)
     {
         assert(IsVNObjHandle(vn));
-        return reinterpret_cast<CORINFO_OBJECT_HANDLE>(CoercedConstantValue<size_t>(vn));
+        return CastToHandle<CORINFO_OBJECT_HANDLE>(CoercedConstantValue<size_t>(vn));
     }
 
     // Requires "mthFunc" to be an intrinsic math function (one of the allowable values for the "gtMath" field

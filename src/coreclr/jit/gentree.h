@@ -10531,6 +10531,16 @@ enum varRefKinds
     VR_GLB_VAR   = 0x04, // a global (clsVar)
 };
 
+template <typename CORINFO_T_HANDLE>
+CORINFO_T_HANDLE CastToHandle(ssize_t x)
+{
+    // All casts from ssize_t to a CORINFO_T_HANDLE should be done through this function.
+    // In order to handle edge cases like 64-bit host with 32-bit target
+    CORINFO_T_HANDLE handle = nullptr;
+    memcpy(&handle, &x, TARGET_POINTER_SIZE);
+    return handle;
+}
+
 /*****************************************************************************/
 #endif // !GENTREE_H
 /*****************************************************************************/

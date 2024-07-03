@@ -9082,7 +9082,7 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
-        if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))
+        if (!comp->info.compCompHnd->isObjectImmutable(CastToHandle<CORINFO_OBJECT_HANDLE>(handle)))
         {
             // On platforms with weaker memory model we need to make sure we use a store with the release semantic
             // when we publish a potentially mutable object
