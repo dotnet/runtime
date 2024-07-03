@@ -1401,10 +1401,13 @@ CONTEXT_GetThreadContextFromThreadState(
     thread_state_t threadState,
     LPCONTEXT lpContext)
 {
+    x86_avx_state64_t *pState2 = (x86_avx_state64_t *)threadState;
+    x86_float_state64_t *pState = (x86_float_state64_t *)threadState;
     switch (threadStateFlavor)
     {
 #if defined (HOST_AMD64)
         case x86_THREAD_STATE64:
+            printf("We are in the x86_THREAD_STATE64\n");
             if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS) & CONTEXT_AREA_MASK)
             {
                 x86_thread_state64_t *pState = (x86_thread_state64_t *)threadState;
@@ -1460,11 +1463,25 @@ CONTEXT_GetThreadContextFromThreadState(
 
         case x86_AVX_STATE64:
         {
+            printf("We are in the x86_AVX_STATE64\n");
+            printf("The value of CONTEXT_XSTATE is %ld\n", CONTEXT_XSTATE);
+            printf("The value of CONTEXT_AREA_MASK is %d\n", CONTEXT_AREA_MASK);
+            printf("The value of lpContext->ContextFlags is %d\n", lpContext->ContextFlags);
             if (lpContext->ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
             {
                 x86_avx_state64_t *pState = (x86_avx_state64_t *)threadState;
-                memcpy(&lpContext->Ymm0H, &pState->__fpu_ymmh0, sizeof(_STRUCT_XMM_REG) * 16);
+                memcpy(&lpContext->Ymm0H, &pState->__fpu_ymmh0, sizeof(_STRUCT_XMM_REG) * 16);//this should be copying the value into &pState->__fpu_ymmh0
                 lpContext->XStateFeaturesMask |= XSTATE_MASK_AVX;
+                printf("Still inside x86_AVX_STATE64\n");
+                for(int i = 0; i < 16; i++)
+                {
+                    printf("%d.", *(((BYTE*)&(pState->__fpu_xmm0))+i));
+                }
+                for(int i = 0; i < 16; i++)
+                {
+                    printf("%d.", *(((BYTE*)&(pState->__fpu_ymmh0))+i));
+                } 
+                printf("\n");
             }
 
             // Intentional fall-through, the AVX states are supersets of the FLOAT state
@@ -1473,10 +1490,26 @@ CONTEXT_GetThreadContextFromThreadState(
 
         case x86_FLOAT_STATE64:
         {
+            printf("We are in the x86_FLOAT_STATE64\n");
+            printf("The value of CONTEXT_XSTATE is %ld\n", CONTEXT_XSTATE);
+            printf("The value of CONTEXT_AREA_MASK is %d\n", CONTEXT_AREA_MASK);
+            printf("The value of lpContext->ContextFlags is %d\n", lpContext->ContextFlags);
             if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)
             {
-                x86_float_state64_t *pState = (x86_float_state64_t *)threadState;
-
+                x86_avx_state64_t *pState2 = (x86_avx_state64_t *)threadState;
+                x86_float_state64_t *pState3 = (x86_float_state64_t *)threadState;
+                printf("The actual thread context value of the ymm register is ");//correct here
+                // M128A ymm_register_l = pState->__fpu_xmm0;
+                // M128A ymm_register_h = pState->__fpu_ymmh0;
+                for(int i = 0; i < 16; i++)
+                {
+                    printf("%d.", *(((BYTE*)&(pState3->__fpu_xmm0))+i));
+                }
+                for(int i = 0; i < 16; i++)
+                {
+                    printf("%d.", *(((BYTE*)&(pState2->__fpu_ymmh0))+i));
+                }
+                printf("\n");
                 lpContext->FltSave.ControlWord = *(DWORD*)&pState->__fpu_fcw;
                 lpContext->FltSave.StatusWord = *(DWORD*)&pState->__fpu_fsw;
                 lpContext->FltSave.TagWord = pState->__fpu_ftw;
@@ -1502,6 +1535,7 @@ CONTEXT_GetThreadContextFromThreadState(
 
         case x86_THREAD_STATE:
         {
+            printf("We are in the x86_THREAD_STATE\n");
             x86_thread_state_t *pState = (x86_thread_state_t *)threadState;
             CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->tsh.flavor, (thread_state_t)&pState->uts, lpContext);
         }
@@ -1509,8 +1543,41 @@ CONTEXT_GetThreadContextFromThreadState(
 
         case x86_FLOAT_STATE:
         {
+            printf("We are in the x86_FLOAT_STATE\n");
+            x86_avx_state64_t *pState2 = (x86_avx_state64_t *)threadState;
+            x86_float_state64_t *pState3 = (x86_float_state64_t *)threadState;
+            printf("In FLOAT_STATE the value of the thread_state ymm register is ");
+            // M128A ymm_register_l = pState->__fpu_xmm0;
+            // M128A ymm_register_h = pState->__fpu_ymmh0;
+            for(int i = 0; i < 16; i++)
+            {
+                printf("%d.", *(((BYTE*)&(pState3->__fpu_xmm0))+i));
+            }
+
+            for(int i = 0; i < 16; i++)
+            {
+                printf("%d.", *(((BYTE*)&(pState2->__fpu_ymmh0))+i));
+            }
             x86_float_state_t *pState = (x86_float_state_t *)threadState;
             CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->fsh.flavor, (thread_state_t)&pState->ufs, lpContext);
+        }
+        break;
+    case x86_AVX_STATE:
+        {
+            printf("We are in the x86_AVX_STATE\n");
+            x86_avx_state64_t *pState2 = (x86_avx_state64_t *)threadState;
+            x86_float_state64_t *pState3 = (x86_float_state64_t *)threadState;
+            printf("In AVX_STATE the value of the thread_state ymm register is ");//wrong here, when printed below
+            for(int i = 0; i < 16; i++)
+            {
+                printf("%d.", *(((BYTE*)&(pState3->__fpu_xmm0))+i));
+            }
+            for(int i = 0; i < 16; i++)
+            {
+                printf("%d.", *(((BYTE*)&(pState2->__fpu_ymmh0))+i));
+            }
+            x86_avx_state_t *pState = (x86_avx_state_t *)threadState;
+            CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->ash.flavor, (thread_state_t)&pState->ufs, lpContext);//after this, it is correct
         }
         break;
 #elif defined(HOST_ARM64)
