@@ -76,7 +76,7 @@ namespace System.Text.Json
         /// zero or more top-level JSON values that are whitespace separated.
         /// </summary>
         /// <remarks>
-        /// By default, it's set to false, and <exception cref="JsonException"/> is thrown if trailing content is encountered.
+        /// By default, it's set to false, and <exception cref="JsonException"/> is thrown if trailing content is encountered after the first top-level JSON value.
         /// </remarks>
         public bool AllowMultipleValues { get; set; }
     }
