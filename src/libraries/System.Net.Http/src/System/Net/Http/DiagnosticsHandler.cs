@@ -237,6 +237,10 @@ namespace System.Net.Http
                         if (DiagnosticsHelper.TryGetErrorType(response, exception, out string? errorType))
                         {
                             activity.SetTag("error.type", errorType);
+
+                            // The presence of error.type indicates that the conditions for setting Error status are also met.
+                            // https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/docs/http/http-spans.md#status
+                            activity.SetStatus(ActivityStatusCode.Error);
                         }
                     }
 

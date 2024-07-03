@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Net.Http.Tests
 {
-    public class DiagnsoticsHelperTest
+    public class DiagnosticsHelperTest
     {
         public static readonly TheoryData<string, string> GetRedactedUriString_Data = new TheoryData<string, string>()
         {

@@ -418,10 +418,12 @@ namespace System.Net.Http.Functional.Tests
                         if (statusCodeStr != "200")
                         {
                             string errorType = (string)tags.Single(t => t.Key == "error.type").Value;
+                            Assert.Equal(ActivityStatusCode.Error, activity.Status);
                             Assert.Equal(statusCodeStr, errorType);
                         }
                         else
                         {
+                            Assert.Equal(ActivityStatusCode.Unset, activity.Status);
                             Assert.DoesNotContain(tags, t => t.Key == "error.type");
                         }
 
@@ -489,6 +491,18 @@ namespace System.Net.Http.Functional.Tests
                         VerifyTag(tags, "http.request.method_original", method is "CUSTOM" ? method : null);
                         VerifyTag(tags, "network.protocol.version", GetVersionString(Version.Parse(useVersion)));
                         VerifyTag(tags, "http.response.status_code", int.Parse(statusCodeStr));
+
+                        if (statusCodeStr != "200")
+                        {
+                            string errorType = (string)tags.Single(t => t.Key == "error.type").Value;
+                            Assert.Equal(ActivityStatusCode.Error, activity.Status);
+                            Assert.Equal(statusCodeStr, errorType);
+                        }
+                        else
+                        {
+                            Assert.Equal(ActivityStatusCode.Unset, activity.Status);
+                            Assert.DoesNotContain(tags, t => t.Key == "error.type");
+                        }
 
                         activityStopTcs.SetResult();
                     }
