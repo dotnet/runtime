@@ -251,11 +251,11 @@ namespace System.Buffers.Text
 
                 uint i = t0 << 8;
 
-                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
-                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
+                byte i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
+                byte i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
 
-                dest[0] = (byte)i0;
-                dest[1] = (byte)i1;
+                dest[0] = i0;
+                dest[1] = i1;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -266,13 +266,13 @@ namespace System.Buffers.Text
 
                 uint i = (t0 << 16) | (t1 << 8);
 
-                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-                uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
+                byte i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
+                byte i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
+                byte i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
 
-                dest[0] = (byte)i0;
-                dest[1] = (byte)i1;
-                dest[2] = (byte)i2;
+                dest[0] = i0;
+                dest[1] = i1;
+                dest[2] = i2;
             }
 
 #if NET
@@ -331,11 +331,11 @@ namespace System.Buffers.Text
 
                 uint i = t0 << 8;
 
-                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
-                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
+                ushort i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
+                ushort i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
 
-                dest[0] = (ushort)i0;
-                dest[1] = (ushort)i1;
+                dest[0] = i0;
+                dest[1] = i1;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -346,13 +346,13 @@ namespace System.Buffers.Text
 
                 uint i = (t0 << 16) | (t1 << 8);
 
-                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-                uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
+                ushort i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
+                ushort i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
+                ushort i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
 
-                dest[0] = (ushort)i0;
-                dest[1] = (ushort)i1;
-                dest[2] = (ushort)i2;
+                dest[0] = i0;
+                dest[1] = i1;
+                dest[2] = i2;
             }
 
 #if NET
@@ -407,15 +407,22 @@ namespace System.Buffers.Text
 
                 uint i = (t0 << 16) | (t1 << 8) | t2;
 
-                byte i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-                byte i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-                byte i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-                byte i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
+                ulong i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
+                ulong i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
+                ulong i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
+                ulong i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
 
-                destination[0] = i0;
-                destination[1] = i1;
-                destination[2] = i2;
-                destination[3] = i3;
+                ulong result;
+                if (BitConverter.IsLittleEndian)
+                {
+                    result = i0 | (i1 << 16) | (i2 << 32) | (i3 << 48);
+                }
+                else
+                {
+                    result = (i0 << 48) | (i1 << 32) | (i2 << 16) | i3;
+                }
+
+                Unsafe.WriteUnaligned(destination, result);
             }
         }
     }
