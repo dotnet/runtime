@@ -6850,7 +6850,7 @@ HRESULT ProfToEEInterfaceImpl::SuspendRuntime()
     }
     CONTRACTL_END;
 
-    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(
         kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF,
         LL_INFO1000,
@@ -6882,7 +6882,7 @@ HRESULT ProfToEEInterfaceImpl::ResumeRuntime()
     }
     CONTRACTL_END;
 
-    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(
         kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF,
         LL_INFO1000,
