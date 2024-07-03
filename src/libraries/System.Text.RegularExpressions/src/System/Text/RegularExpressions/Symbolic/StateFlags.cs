@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>
@@ -17,9 +15,9 @@ namespace System.Text.RegularExpressions.Symbolic
     {
         None = 0,
         IsInitialFlag = 1,
-        IsNullableFlag = 4,
-        CanBeNullableFlag = 8,
-        SimulatesBacktrackingFlag = 16,
+        IsNullableFlag = 2,
+        CanBeNullableFlag = 4,
+        SimulatesBacktrackingFlag = 8,
     }
 
     /// <summary>
