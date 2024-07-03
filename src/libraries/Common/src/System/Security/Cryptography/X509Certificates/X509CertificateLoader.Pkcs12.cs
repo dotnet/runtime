@@ -373,19 +373,6 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static void RejectDuplicateAttributes(AttributeAsn[] bagAttributes, HashSet<string> duplicateAttributeCheck)
         {
-            // If there's only one attribute set there's no reason to instantiate the HashSet.
-            if (bagAttributes.Length == 1)
-            {
-                // Use >1 instead of =1 to account for MsPkcs12MachineKeySet, which is a named set with no values.
-                // Though it doesn't really make sense as the only attribute.
-                if (bagAttributes[0].AttrValues.Length > 1)
-                {
-                    throw new Pkcs12LoadLimitExceededException(nameof(Pkcs12LoaderLimits.AllowDuplicateAttributes));
-                }
-
-                return;
-            }
-
             duplicateAttributeCheck.Clear();
 
             foreach (AttributeAsn attrSet in bagAttributes)
