@@ -62,7 +62,7 @@ FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int
     int64_t iOldValue;
     do {
         iOldValue = *pDst;
-    } while (PalInterlockedCompareExchange64(Target,
+    } while (PalInterlockedCompareExchange64(pDst,
                                           iValue,
                                           iOldValue) != iOldValue);
     return iOldValue;
