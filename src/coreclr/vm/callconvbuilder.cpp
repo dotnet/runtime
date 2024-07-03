@@ -453,7 +453,7 @@ HRESULT CallConv::TryGetCallingConventionFromUnmanagedCallConv(
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
     DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
-    IfFailThrow(Attribute::ParseArgumentValues(
+    IfFailThrow(CustomAttribute::ParseArgumentValues(
         pData,
         cData,
         &caValueArrayFactory,
@@ -528,7 +528,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
     DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
-    IfFailThrow(Attribute::ParseArgumentValues(
+    IfFailThrow(CustomAttribute::ParseArgumentValues(
         pData,
         cData,
         &caValueArrayFactory,
