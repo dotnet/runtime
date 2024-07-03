@@ -28,6 +28,12 @@ namespace System.Globalization.Tests
             yield return new object[] { new string[] { "", "", "", "", "", "", "" } };
         }
 
+        public static IEnumerable<object[]> AbbreviatedDayNames_Get_TestData_ICU()
+        {
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, new string[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }, "en-US" };
+            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, new string[] { "dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam." }, "fr-FR" };
+        }
+
         public static IEnumerable<object[]> AbbreviatedDayNames_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
@@ -84,6 +90,16 @@ namespace System.Globalization.Tests
             yield return new object[] { "uk-UA", new string[] { "нд", "пн", "вт", "ср", "чт", "пт", "сб" } };
             yield return new object[] { "vi-VN", new string[] { "CN", "Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7" } };
             yield return new object[] { "zh-CN", new string[] { "周日", "周一", "周二", "周三", "周四", "周五", "周六" } };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(AbbreviatedDayNames_Get_TestData_ICU))]
+        public void AbbreviatedDayNames_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string[] expected, string cultureName)
+        {
+            string[] result = format.AbbreviatedDayNames;
+            Assert.True(result.Length == expected.Length, $"Length comparison failed for culture: {cultureName}. Expected: {expected.Length}, Actual: {result.Length}");
+            for (int i = 0; i<result.Length; i++)
+                Assert.True(expected[i] == result[i], $"Failed for culture: {cultureName} on index: {i}. Expected: {expected[i]}, Actual: {result[i]}");
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
