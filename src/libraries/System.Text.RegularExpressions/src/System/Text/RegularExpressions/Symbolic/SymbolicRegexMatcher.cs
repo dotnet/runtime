@@ -246,7 +246,6 @@ namespace System.Text.RegularExpressions.Symbolic
             // The loops below and how character kinds are calculated assume that the "general" character kind is zero
             Debug.Assert(CharKind.General == 0);
 
-
             // Assign edge case info for quick lookup
             _containsAnyAnchor = _pattern._info.ContainsSomeAnchor;
             _containsEndZAnchor = _pattern._info.ContainsEndZAnchor;
@@ -289,7 +288,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 reverseInitialStates[charKind] = GetOrCreateState_NoLock(_reversePattern, charKind);
             }
             _reverseInitialStates = reverseInitialStates;
-
 
             // Some SearchValues<char> implementations are slower than a DFA,
             // but depend on input frequency.
@@ -592,7 +590,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 bool done;
                 if (currentState.NfaState is null)
                 {
-                    const int dfaCharsPerTimeoutCheck = 100000;
+                    const int DfaCharsPerTimeoutCheck = 100000;
                     innerLoopLength = _checkTimeout && lengthMinus1 - pos > dfaCharsPerTimeoutCheck
                         ? pos + dfaCharsPerTimeoutCheck
                         : lengthMinus1;
@@ -606,7 +604,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     // nfa fallback check, assume \Z and full nullability for nfa since it's already extremely rare to get here
                     // worst case NFA speed is about 150 kb/s, this means the check is about every 13ms
-                    const int nfaCharsPerTimeoutCheck = 1000;
+                    const int NfaCharsPerTimeoutCheck = 1000;
                     innerLoopLength = _checkTimeout && input.Length - pos > nfaCharsPerTimeoutCheck
                         ? pos + nfaCharsPerTimeoutCheck
                         : input.Length;
@@ -678,7 +676,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 bool done;
                 if (currentState.NfaState is null)
                 {
-                    const int dfaCharsPerTimeoutCheck = 25000;
+                    const int DfaCharsPerTimeoutCheck = 25000;
                     innerLoopLength = _checkTimeout && input.Length - pos > dfaCharsPerTimeoutCheck
                         ? pos + dfaCharsPerTimeoutCheck
                         : input.Length;
@@ -691,7 +689,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     // nfa fallback check, assume \Z and full nullability for nfa since it's already extremely rare to get here
                     // worst case NFA speed is about 150 kb/s, this means the check is about every 13ms
-                    const int nfaCharsPerTimeoutCheck = 1000;
+                    const int NfaCharsPerTimeoutCheck = 1000;
                     innerLoopLength = _checkTimeout && input.Length - pos > nfaCharsPerTimeoutCheck
                         ? pos + nfaCharsPerTimeoutCheck
                         : input.Length;
@@ -839,7 +837,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 currentStateIdRef = currStateId;
             }
         }
-
 
         /// <summary>
         /// Workhorse inner loop for <see cref="FindEndPositionFallback{TInputReader,TFindOptimizationsHandler,TNullabilityHandler}"/>.  Consumes the <paramref name="input"/> character by character,

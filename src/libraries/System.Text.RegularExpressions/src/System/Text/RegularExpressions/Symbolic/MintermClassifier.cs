@@ -28,7 +28,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private readonly int[]? _intLookup;
 
-
         /// <summary>
         /// Maximum ordinal character for a non-0 minterm, used to conserve memory
         /// Note: this is maximum index allowed for the lookup, the array size is _maxChar + 1
