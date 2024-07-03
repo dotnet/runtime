@@ -598,6 +598,21 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
             return arg0 & ~arg1;
         }
 
+        case GT_EQ:
+        {
+            return (arg0 == arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
+        }
+
+        case GT_GT:
+        {
+            return (arg0 > arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
+        }
+
+        case GT_GE:
+        {
+            return (arg0 >= arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
+        }
+
         case GT_LSH:
         {
 #if defined(TARGET_XARCH)
@@ -617,6 +632,21 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
             arg1 &= shiftCountMask;
 #endif
             return arg0 << arg1;
+        }
+
+        case GT_LT:
+        {
+            return (arg0 < arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
+        }
+
+        case GT_LE:
+        {
+            return (arg0 <= arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
+        }
+
+        case GT_NE:
+        {
+            return (arg0 != arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
         }
 
         case GT_OR:
@@ -679,21 +709,93 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
 template <>
 inline float EvaluateBinaryScalarSpecialized<float>(genTreeOps oper, float arg0, float arg1)
 {
-    uint32_t arg0Bits = BitOperations::SingleToUInt32Bits(arg0);
-    uint32_t arg1Bits = BitOperations::SingleToUInt32Bits(arg1);
+    switch (oper)
+    {
+        case GT_EQ:
+        {
+            return (arg0 == arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
 
-    uint32_t resultBits = EvaluateBinaryScalarSpecialized<uint32_t>(oper, arg0Bits, arg1Bits);
-    return BitOperations::UInt32BitsToSingle(resultBits);
+        case GT_GT:
+        {
+            return (arg0 > arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
+
+        case GT_GE:
+        {
+            return (arg0 >= arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
+
+        case GT_LT:
+        {
+            return (arg0 < arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
+
+        case GT_LE:
+        {
+            return (arg0 <= arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
+
+        case GT_NE:
+        {
+            return (arg0 != arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
+
+        default:
+        {
+            uint32_t arg0Bits = BitOperations::SingleToUInt32Bits(arg0);
+            uint32_t arg1Bits = BitOperations::SingleToUInt32Bits(arg1);
+
+            uint32_t resultBits = EvaluateBinaryScalarSpecialized<uint32_t>(oper, arg0Bits, arg1Bits);
+            return BitOperations::UInt32BitsToSingle(resultBits);
+        }
+    }
 }
 
 template <>
 inline double EvaluateBinaryScalarSpecialized<double>(genTreeOps oper, double arg0, double arg1)
 {
-    uint64_t arg0Bits = BitOperations::DoubleToUInt64Bits(arg0);
-    uint64_t arg1Bits = BitOperations::DoubleToUInt64Bits(arg1);
+    switch (oper)
+    {
+        case GT_EQ:
+        {
+            return (arg0 == arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
 
-    uint64_t resultBits = EvaluateBinaryScalarSpecialized<uint64_t>(oper, arg0Bits, arg1Bits);
-    return BitOperations::UInt64BitsToDouble(resultBits);
+        case GT_GT:
+        {
+            return (arg0 > arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
+
+        case GT_GE:
+        {
+            return (arg0 >= arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
+
+        case GT_LT:
+        {
+            return (arg0 < arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
+
+        case GT_LE:
+        {
+            return (arg0 <= arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
+
+        case GT_NE:
+        {
+            return (arg0 != arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
+
+        default:
+        {
+            uint64_t arg0Bits = BitOperations::DoubleToUInt64Bits(arg0);
+            uint64_t arg1Bits = BitOperations::DoubleToUInt64Bits(arg1);
+
+            uint64_t resultBits = EvaluateBinaryScalarSpecialized<uint64_t>(oper, arg0Bits, arg1Bits);
+            return BitOperations::UInt64BitsToDouble(resultBits);
+        }
+    }
 }
 
 template <typename TBase>
@@ -1019,6 +1121,7 @@ void BroadcastConstantToSimd(TSimd* result, TBase arg0)
 #define SHUFFLE_XYZW 0x1B // 00 01 10 11
 #define SHUFFLE_YXYX 0x44 // 01 00 01 00
 #define SHUFFLE_YWXZ 0x72 // 01 11 00 10
+#define SHUFFLE_YWXW 0x73 // 01 11 00 11
 #define SHUFFLE_YYZZ 0x5A // 01 01 10 10
 #define SHUFFLE_ZXXX 0x80 // 10 00 00 00
 #define SHUFFLE_ZXXY 0x81 // 10 00 00 01

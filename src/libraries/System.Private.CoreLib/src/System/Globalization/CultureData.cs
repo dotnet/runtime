@@ -976,11 +976,10 @@ namespace System.Globalization
         private string GetLanguageDisplayNameCore(string cultureName) => GlobalizationMode.UseNls ?
                                                                             NlsGetLanguageDisplayName(cultureName) :
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                                                                            GlobalizationMode.Hybrid ? GetLocaleInfoNative(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name) :
-                                                                            IcuGetLanguageDisplayName(cultureName);
-#else
-                                                                            IcuGetLanguageDisplayName(cultureName);
+                                                                         GlobalizationMode.Hybrid ?
+                                                                            GetLocaleInfoNative(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name) :
 #endif
+                                                                            IcuGetLanguageDisplayName(cultureName);
 
         /// <summary>
         /// English pretty name for this locale (ie: English (United States))
@@ -1545,7 +1544,11 @@ namespace System.Globalization
                 if (_iFirstDayOfWeek == undef && !GlobalizationMode.Invariant)
                 {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    _iFirstDayOfWeek = GlobalizationMode.Hybrid ? GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek) : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+                    if (GlobalizationMode.Hybrid)
+                    {
+                        _iFirstDayOfWeek = GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek);
+                    }
+                    else
 #elif TARGET_BROWSER
                     if (GlobalizationMode.Hybrid)
                     {
@@ -1553,12 +1556,10 @@ namespace System.Globalization
                         _iFirstDayOfWeek = GetFirstDayOfWeek(_sName);
                     }
                     else
-                    {
-                        _iFirstDayOfWeek = IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
-                    }
-#else
-                    _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
 #endif
+                    {
+                        _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+                    }
                 }
                 return _iFirstDayOfWeek;
             }
@@ -1581,12 +1582,10 @@ namespace System.Globalization
                         _iFirstWeekOfYear = GetFirstWeekOfYear(_sName);
                     }
                     else
+#endif
                     {
                         _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
                     }
-#else
-                    _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
-#endif
                 }
                 return _iFirstWeekOfYear;
             }

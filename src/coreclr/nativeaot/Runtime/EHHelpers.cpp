@@ -214,7 +214,7 @@ EXTERN_C void QCALLTYPE RhpFailFastForPInvokeExceptionPreemp(intptr_t PInvokeCal
                                                              void* pExceptionRecord, void* pContextRecord);
 FCDECL3(void, RhpFailFastForPInvokeExceptionCoop, intptr_t PInvokeCallsiteReturnAddr,
                                                   void* pExceptionRecord, void* pContextRecord);
-int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
+EXTERN_C int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 
 EXTERN_C int32_t __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExceptionRecord,
                                                   uintptr_t              EstablisherFrame,
@@ -535,6 +535,61 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }
+
+    // the following would work on ARM64 as well, but there is no way to test right now.
+#ifdef TARGET_AMD64
+
+#ifndef STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT
+#define STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT ((uintptr_t)0x80000033L)
+#endif
+
+    if (faultCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
+    {
+        Thread * pThread = ThreadStore::GetCurrentThreadIfAvailable();
+        if (pThread == NULL || !pThread->IsCurrentThreadInCooperativeMode())
+        {
+            // if we are not in coop mode, this cannot be our hijack
+            // Perhaps some other runtime is responsible.
+            return EXCEPTION_CONTINUE_SEARCH;
+        }
+
+        // Sanity check.
+        if (!pThread->IsHijacked())
+        {
+            _ASSERTE(!"The thread should be hijacked by us.");
+            RhFailFast();
+        }
+
+        PCONTEXT interruptedContext = pExPtrs->ContextRecord;
+        bool areShadowStacksEnabled = PalAreShadowStacksEnabled();
+        if (areShadowStacksEnabled)
+        {
+            // OS should have fixed the SP value to the same as we`ve stashed for the hijacked thread
+            _ASSERTE(*(size_t *)interruptedContext->GetSp() == (uintptr_t)pThread->GetHijackedReturnAddress());
+
+            // When the CET is enabled, the interruption happens on the ret instruction in the calee.
+            // We need to "pop" rsp to the caller, as if the ret has consumed it.
+            interruptedContext->SetSp(interruptedContext->GetSp() + 8);
+        }
+
+        // Change the IP to be at the original return site, as if we have returned to the caller.
+        // That IP is an interruptible safe point, so we can suspend right there.
+        uintptr_t origIp = interruptedContext->GetIp();
+        interruptedContext->SetIp((uintptr_t)pThread->GetHijackedReturnAddress());
+
+        pThread->InlineSuspend(interruptedContext);
+
+        if (areShadowStacksEnabled)
+        {
+            // Undo the "pop", so that the ret could now succeed.
+            interruptedContext->SetSp(interruptedContext->GetSp() - 8);
+            interruptedContext->SetIp(origIp);
+        }
+
+        ASSERT(!pThread->IsHijacked());
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+#endif // TARGET_AMD64    (support for STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
 
     uintptr_t faultingIP = pExPtrs->ContextRecord->GetIp();
 
