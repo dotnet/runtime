@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.Build.Traversal">
+  <PropertyGroup>
+    <TargetsMobile Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</TargetsMobile>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
     <MonoTaskProject Include="AndroidAppBuilder\AndroidAppBuilder.csproj" />
     <MonoTaskProject Include="AotCompilerTask\MonoAOTCompiler.csproj" />
