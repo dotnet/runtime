@@ -1313,10 +1313,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerHWIntrinsicFusedMultiplyAddScalar(node);
             break;
         case NI_Sve_ConditionalSelect:
-        {
             LowerHWIntrinsicCndSel(node);
             break;
-        }
         default:
             break;
     }
@@ -1343,7 +1341,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             GenTreeHWIntrinsic* condSelNode =
                 comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
-                                                simdBaseJitType, simdSize);
+                                               simdBaseJitType, simdSize);
             BlockRange().InsertAfter(node, condSelNode);
 
             use.ReplaceWith(condSelNode);
@@ -3517,7 +3515,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             if (op2->isEmbeddedMaskingCompatibleHWIntrinsic())
             {
                 // We already have shape we want, so return as-is
-                // CndSel(AllTrue, embeddedMask(op2), op3) 
+                // CndSel(AllTrue, embeddedMask(op2), op3)
 
                 return cndSelNode;
             }
