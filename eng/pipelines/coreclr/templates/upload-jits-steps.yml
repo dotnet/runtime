@@ -20,5 +20,4 @@ steps:
     scriptType: 'pscore'
     scriptLocation: 'inlineScript'
     inlineScript: |
-      $Env:AZCOPY_AUTO_LOGIN_TYPE="AZCLI"
       $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitrollingbuild.py upload -build_type $(_BuildConfig) -arch $(archType) -host_os $(osGroup) -git_hash $(Build.SourceVersion) --use_latest_jit_change

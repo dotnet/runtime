@@ -77,7 +77,6 @@ steps:
       scriptType: 'pscore'
       scriptLocation: 'inlineScript'
       inlineScript: |
-        $Env:AZCOPY_AUTO_LOGIN_TYPE="AZCLI"
         ${{ parameters.PythonScript }} $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch ${{ parameters.archType }} -build_type ${{ parameters.buildConfig }} -mch_files ${{ parameters.MergedMchFileLocation }}${{ parameters.SuperPmiCollectionName }}.${{ parameters.SuperPmiCollectionType }}.${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}.mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/${{ parameters.osGroup }}.x64.${{ parameters.buildConfigUpper }}
     condition: always()
 
