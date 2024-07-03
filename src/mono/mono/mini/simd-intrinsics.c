@@ -1193,6 +1193,8 @@ static guint16 sri_vector_methods [] = {
 	SN_AsInt16,
 	SN_AsInt32,
 	SN_AsInt64,
+	SN_AsNInt,
+	SN_AsNUInt,
 	SN_AsSByte,
 	SN_AsSingle,
 	SN_AsUInt16,
@@ -1674,6 +1676,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_AsInt16:
 	case SN_AsInt32:
 	case SN_AsInt64:
+	case SN_AsNInt:
+	case SN_AsNUInt:
 	case SN_AsSByte:
 	case SN_AsSingle:
 	case SN_AsUInt16:

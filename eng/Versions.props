@@ -34,17 +34,17 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- dotnet/roslyn-analyzers dependencies -->
-    <MicrosoftCodeAnalysisAnalyzersVersion>3.11.0-beta1.24313.1</MicrosoftCodeAnalysisAnalyzersVersion>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>9.0.0-preview.24313.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisAnalyzersVersion>3.11.0-beta1.24324.1</MicrosoftCodeAnalysisAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>9.0.0-preview.24324.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- dotnet/roslyn dependencies -->
     <!--
       These versions should not be used by any project that contributes to the design-time experience in VS, such as an analyzer, code-fix, or generator assembly.
       Any tools that contribute to the design-time experience should use the MicrosoftCodeAnalysisVersion_LatestVS property above to ensure
       they do not break the local dev experience.
     -->
-    <MicrosoftCodeAnalysisCSharpVersion>4.11.0-3.24313.9</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisVersion>4.11.0-3.24313.9</MicrosoftCodeAnalysisVersion>
-    <MicrosoftNetCompilersToolsetVersion>4.11.0-3.24313.9</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.11.0-3.24329.1</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisVersion>4.11.0-3.24329.1</MicrosoftCodeAnalysisVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.11.0-3.24329.1</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.

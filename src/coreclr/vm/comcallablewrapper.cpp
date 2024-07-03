@@ -3103,7 +3103,7 @@ void ComMethodTable::Cleanup()
 
     if (m_pDispatchInfo)
         delete m_pDispatchInfo;
-    if (m_pITypeInfo && !g_fProcessDetach)
+    if (m_pITypeInfo && !IsAtProcessExit())
         SafeRelease(m_pITypeInfo);
 
     // The m_pMDescr and the current instance is allocated from the related LoaderAllocator

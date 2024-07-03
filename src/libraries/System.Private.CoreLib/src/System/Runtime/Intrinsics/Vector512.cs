@@ -1458,7 +1458,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="start">The value that element 0 will be initialized to.</param>
         /// <param name="step">The value that indicates how far apart each element should be from the previous.</param>
-        /// <returns>A new <see cref="Vector512{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
+        /// <returns>A new <see cref="Vector512{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the value of the previous element plus <paramref name="step" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> CreateSequence<T>(T start, T step) => (Vector512<T>.Indices * step) + Create(start);

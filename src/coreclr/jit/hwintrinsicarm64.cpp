@@ -492,6 +492,10 @@ void HWIntrinsicInfo::lookupImmBounds(
                 }
                 break;
 
+            case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_GatherPrefetch16Bit:
+            case NI_Sve_GatherPrefetch32Bit:
+            case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_PrefetchBytes:
             case NI_Sve_PrefetchInt16:
             case NI_Sve_PrefetchInt32:
@@ -1857,12 +1861,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_op_Multiply:
         {
             assert(sig->numArgs == 2);
-
-            if (varTypeIsLong(simdBaseType))
-            {
-                // TODO-ARM64-CQ: We should support long/ulong multiplication.
-                break;
-            }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
             CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);

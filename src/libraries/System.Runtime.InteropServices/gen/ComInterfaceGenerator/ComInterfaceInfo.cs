@@ -202,7 +202,7 @@ namespace Microsoft.Interop
                 var baseAttr = GeneratedComInterfaceData.From(baseAttrInfo);
                 // The base type must specify at least the same wrappers as the derived type.
                 if ((attrInfo.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper) && !baseAttr.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
-                    || (attrInfo.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper) && !baseAttr.Options.HasFlag(ComInterfaceOptions.ComObjectWrapper)))
+                    || (attrInfo.Options.HasFlag(ComInterfaceOptions.ComObjectWrapper) && !baseAttr.Options.HasFlag(ComInterfaceOptions.ComObjectWrapper)))
                 {
                     optionsDiagnostic = DiagnosticInfo.Create(
                         GeneratorDiagnostics.InvalidOptionsOnInterface,
