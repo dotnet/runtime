@@ -181,24 +181,6 @@ namespace System.Net.Http
             return 100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0');
         }
 
-        /// <summary>Awaits a task, ignoring any resulting exceptions.</summary>
-        internal static void IgnoreExceptions(ValueTask<int> task)
-        {
-            // Avoid TaskScheduler.UnobservedTaskException firing for any exceptions.
-            if (task.IsCompleted)
-            {
-                if (task.IsFaulted)
-                {
-                    _ = task.AsTask().Exception;
-                }
-            }
-            else
-            {
-                task.AsTask().ContinueWith(static t => _ = t.Exception,
-                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-            }
-        }
-
         /// <summary>Awaits a task, logging any resulting exceptions (which are otherwise ignored).</summary>
         internal void LogExceptions(Task task)
         {

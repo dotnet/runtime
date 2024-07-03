@@ -1433,12 +1433,12 @@ void EEJitManager::SetCpuInfo()
         {
             CPUCompileFlags.Set(InstructionSet_EVEX);
             CPUCompileFlags.Set(InstructionSet_AVX10v1);
-        }
-    }
 
-    if ((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0)
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
+            if((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
+            {
+                CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
+            }
+        }
     }
 #elif defined(TARGET_ARM64)
 
@@ -3550,7 +3550,7 @@ void ExecutionManager::CleanupCodeHeaps()
     }
     CONTRACTL_END;
 
-    _ASSERTE (g_fProcessDetach || (GCHeapUtilities::IsGCInProgress()  && ::IsGCThread()));
+    _ASSERTE (IsAtProcessExit() || (GCHeapUtilities::IsGCInProgress()  && ::IsGCThread()));
 
     GetEEJitManager()->CleanupCodeHeaps();
 }
@@ -3564,7 +3564,7 @@ void EEJitManager::CleanupCodeHeaps()
     }
     CONTRACTL_END;
 
-    _ASSERTE (g_fProcessDetach || (GCHeapUtilities::IsGCInProgress() && ::IsGCThread()));
+    _ASSERTE (IsAtProcessExit() || (GCHeapUtilities::IsGCInProgress() && ::IsGCThread()));
 
 	// Quick out, don't even take the lock if we have not cleanup to do.
 	// This is important because ETW takes the CodeHeapLock when it is doing

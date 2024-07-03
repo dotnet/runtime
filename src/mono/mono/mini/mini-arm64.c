@@ -1915,16 +1915,17 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [pindex]);
-			if (klass == swift_self && sig->pinvoke) {
+			if ((klass == swift_self || klass == swift_indirect_result) && sig->pinvoke) {
 				guint32 align;
 				MonoType *ptype = mini_get_underlying_type (sig->params [pindex]);
 				int size = mini_type_stack_size_full (ptype, &align, cinfo->pinvoke);
 				g_assert (size == 8);
 
 				ainfo->storage = ArgVtypeInIRegs;
-				ainfo->reg = ARMREG_R20;
+				ainfo->reg = (klass == swift_self) ? ARMREG_R20 : ARMREG_R8;
 				ainfo->nregs = 1;
 				ainfo->size = size;
 				continue;

@@ -7578,5 +7578,126 @@ namespace JIT.HardwareIntrinsics.Arm
             return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
         }
 
+        public static T LastActive<T>(T[] mask, T[] x) where T : IBinaryInteger<T>
+        {
+            for (var i = mask.Length - 1; i >= 0; i--)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    return x[i];
+                }
+            }
+            return T.Zero;
+        }
+
+        public static T[] CreateBreakAfterMask<T>(T[] mask, T[] op) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isBreakSet = false;
+            for (var i = 0; i < count; i++)
+            {
+                var isElementActive = op[i] != T.Zero;
+                if (mask[i] != T.Zero)
+                {
+                    if (isBreakSet)
+                    {
+                        result[i] = T.Zero;
+                    }
+                    else
+                    {
+                        result[i] = T.One;
+                    }
+                    isBreakSet = isBreakSet || isElementActive;
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] CreateBreakAfterPropagateMask<T>(T[] mask, T[] op1, T[] op2) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isLastActive = LastActive(mask, op1) != T.Zero;
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    if (isLastActive)
+                    {
+                        result[i] = T.One;
+                    }
+                    else
+                    {
+                        result[i] = T.Zero;
+                    }
+                    isLastActive = isLastActive && (op2[i] == T.Zero);
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] CreateBreakBeforeMask<T>(T[] mask, T[] op) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isBreakSet = false;
+            for (var i = 0; i < count; i++)
+            {
+                var isElementActive = op[i] != T.Zero;
+                if (mask[i] != T.Zero)
+                {
+                    isBreakSet = isBreakSet || isElementActive;
+                    if (isBreakSet)
+                    {
+                        result[i] = T.Zero;
+                    }
+                    else
+                    {
+                        result[i] = T.One;
+                    }
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] CreateBreakBeforePropagateMask<T>(T[] mask, T[] op1, T[] op2) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isLastActive = LastActive(mask, op1) != T.Zero;
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    isLastActive = isLastActive && (op2[i] == T.Zero);
+                    if (isLastActive)
+                    {
+                        result[i] = T.One;
+                    }
+                    else
+                    {
+                        result[i] = T.Zero;
+                    }
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
     }
 }

@@ -1269,6 +1269,9 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 	/* set context registers to CallContext */
 	for (i = 0; i < CTX_REGS; i++)
 		amd64_mov_membase_reg (code, AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, gregs) + (i + CTX_REGS_OFFSET) * sizeof (target_mgreg_t), i + CTX_REGS_OFFSET, sizeof (target_mgreg_t));
+
+	// Move RAX to R10 before the managed call as R10 is used as a proxy for SwiftIndirectResult.
+	amd64_mov_membase_reg (code, AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, gregs) + 10 * sizeof (target_mgreg_t), AMD64_RAX, sizeof (target_mgreg_t));
 #endif
 
 	/* set the stack pointer to the value at call site */
