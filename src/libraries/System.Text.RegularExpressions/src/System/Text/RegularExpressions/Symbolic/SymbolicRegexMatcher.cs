@@ -591,8 +591,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (currentState.NfaState is null)
                 {
                     const int DfaCharsPerTimeoutCheck = 100000;
-                    innerLoopLength = _checkTimeout && lengthMinus1 - pos > dfaCharsPerTimeoutCheck
-                        ? pos + dfaCharsPerTimeoutCheck
+                    innerLoopLength = _checkTimeout && lengthMinus1 - pos > DfaCharsPerTimeoutCheck
+                        ? pos + DfaCharsPerTimeoutCheck
                         : lengthMinus1;
                     done =
                         FindEndPositionDeltasDFAOptimized<TOptimizedInputReader,
@@ -605,8 +605,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     // nfa fallback check, assume \Z and full nullability for nfa since it's already extremely rare to get here
                     // worst case NFA speed is about 150 kb/s, this means the check is about every 13ms
                     const int NfaCharsPerTimeoutCheck = 1000;
-                    innerLoopLength = _checkTimeout && input.Length - pos > nfaCharsPerTimeoutCheck
-                        ? pos + nfaCharsPerTimeoutCheck
+                    innerLoopLength = _checkTimeout && input.Length - pos > NfaCharsPerTimeoutCheck
+                        ? pos + NfaCharsPerTimeoutCheck
                         : input.Length;
                     done =
                         FindEndPositionDeltasNFA<NfaStateHandler, FullInputReader, NoOptimizationsInitialStateHandler,
@@ -677,8 +677,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (currentState.NfaState is null)
                 {
                     const int DfaCharsPerTimeoutCheck = 25000;
-                    innerLoopLength = _checkTimeout && input.Length - pos > dfaCharsPerTimeoutCheck
-                        ? pos + dfaCharsPerTimeoutCheck
+                    innerLoopLength = _checkTimeout && input.Length - pos > DfaCharsPerTimeoutCheck
+                        ? pos + DfaCharsPerTimeoutCheck
                         : input.Length;
                     done =
                         FindEndPositionDeltasDFA<DfaStateHandler, TInputReader, TFindOptimizationsHandler,
@@ -690,8 +690,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     // nfa fallback check, assume \Z and full nullability for nfa since it's already extremely rare to get here
                     // worst case NFA speed is about 150 kb/s, this means the check is about every 13ms
                     const int NfaCharsPerTimeoutCheck = 1000;
-                    innerLoopLength = _checkTimeout && input.Length - pos > nfaCharsPerTimeoutCheck
-                        ? pos + nfaCharsPerTimeoutCheck
+                    innerLoopLength = _checkTimeout && input.Length - pos > NfaCharsPerTimeoutCheck
+                        ? pos + NfaCharsPerTimeoutCheck
                         : input.Length;
                     done =
                         FindEndPositionDeltasNFA<NfaStateHandler, TInputReader, TFindOptimizationsHandler,
