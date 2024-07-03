@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Http.Logging
 
         public static void LogRequestStart(this ILogger logger, HttpRequestMessage request, Func<string, bool> shouldRedactHeaderValue)
         {
-            // We check here to avoid allocating in the GetUriString call unnecessarily
+            // We check here to avoid allocating in the GetRedactedUriString call unnecessarily
             if (logger.IsEnabled(LogLevel.Information))
             {
                 _requestStart(logger, request.Method, GetRedactedUriString(request.RequestUri), null);
