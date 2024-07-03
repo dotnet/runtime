@@ -5863,7 +5863,101 @@ namespace JIT.HardwareIntrinsics.Arm
             return reduceOp(l_reduced, r_reduced);
         }
 
+        public static double AddAcrossSequential(float[] op1, float[] op2) => Reduce(Add, op1) + Reduce(Add, op2);
+
         public static double AddAcross(double[] op1) => Reduce(Add, op1);
+
+        public static double MaxAcross(double[] op1) => Reduce(Max, op1);
+
+        public static double MinAcross(double[] op1) => Reduce(Min, op1);
+
+        private static double Reduce(Func<double, double, double> reduceOp, double[] op1)
+        {
+            double acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        public static double AddAcrossRecursivePairwise(double[] op1) => ReduceRecursivePairwise(Add, op1);
+
+        private static double ReduceRecursivePairwise(Func<double, double, double> reduceOp, double[] op1)
+        {
+            if (op1.Length == 2)
+            {
+                return reduceOp(op1[0], op1[1]);
+            }
+
+            if (op1.Length % 2 != 0)
+            {
+                return double.NaN;
+            }
+
+            double[] l = new double[op1.Length / 2];
+            Array.Copy(op1, 0, l, 0, (op1.Length / 2));
+            double l_reduced = ReduceRecursivePairwise(reduceOp, l);
+
+            double[] r = new double[op1.Length / 2];
+            Array.Copy(op1, (op1.Length / 2), r, 0, (op1.Length / 2));
+            double r_reduced = ReduceRecursivePairwise(reduceOp, r);
+
+            return reduceOp(l_reduced, r_reduced);
+        }
+
+        public static double AddAcrossSequential(double[] op1, double[] op2) => Reduce(Add, op1) + Reduce(Add, op2);
+
+        public static float MaxNumberAcross(float[] op1) => Reduce(MaxNumber, op1);
+
+        public static float MinNumberAcross(float[] op1) => Reduce(MinNumber, op1);
+
+        private struct poly128_t
+        {
+            public ulong lo;
+            public ulong hi;
+
+            public static poly128_t operator ^(poly128_t op1, poly128_t op2)
+            {
+                op1.lo ^= op2.lo;
+                op1.hi ^= op2.hi;
+
+                return op1;
+            }
+
+            public static poly128_t operator <<(poly128_t val, int shiftAmount)
+            {
+                for (int i = 0; i < shiftAmount; i++)
+                {
+                    val.hi <<= 1;
+
+                    if ((val.lo & 0x8000000000000000U) != 0)
+                    {
+                       val.hi |= 1;
+                    }
+
+                    val.lo <<= 1;
+                }
+
+                return val;
+            }
+
+            public static implicit operator poly128_t(ulong lo)
+            {
+                poly128_t result = new poly128_t();
+                result.lo = lo;
+                return result;
+            }
+
+            public static explicit operator poly128_t(long lo)
+            {
+                poly128_t result = new poly128_t();
+                result.lo = (ulong)lo;
+                return result;
+            }
+        }
 
         public static (double, double) AddRotateComplex(double op1_r, double op1_i, double op2_r, double op2_i, byte rot)
         {
@@ -5915,96 +6009,6 @@ namespace JIT.HardwareIntrinsics.Arm
             dest_i = op1_i + op2_i;
 
             return (dest_r, dest_i);
-        }
-
-        public static double MaxAcross(double[] op1) => Reduce(Max, op1);
-
-        public static double MinAcross(double[] op1) => Reduce(Min, op1);
-
-        private static double Reduce(Func<double, double, double> reduceOp, double[] op1)
-        {
-            double acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        public static double AddAcrossRecursivePairwise(double[] op1) => ReduceRecursivePairwise(Add, op1);
-
-        private static double ReduceRecursivePairwise(Func<double, double, double> reduceOp, double[] op1)
-        {
-            if (op1.Length == 2)
-            {
-                return reduceOp(op1[0], op1[1]);
-            }
-
-            if (op1.Length % 2 != 0)
-            {
-                return double.NaN;
-            }
-
-            double[] l = new double[op1.Length / 2];
-            Array.Copy(op1, 0, l, 0, (op1.Length / 2));
-            double l_reduced = ReduceRecursivePairwise(reduceOp, l);
-
-            double[] r = new double[op1.Length / 2];
-            Array.Copy(op1, (op1.Length / 2), r, 0, (op1.Length / 2));
-            double r_reduced = ReduceRecursivePairwise(reduceOp, r);
-
-            return reduceOp(l_reduced, r_reduced);
-        }
-
-        public static float MaxNumberAcross(float[] op1) => Reduce(MaxNumber, op1);
-
-        public static float MinNumberAcross(float[] op1) => Reduce(MinNumber, op1);
-
-        private struct poly128_t
-        {
-            public ulong lo;
-            public ulong hi;
-
-            public static poly128_t operator ^(poly128_t op1, poly128_t op2)
-            {
-                op1.lo ^= op2.lo;
-                op1.hi ^= op2.hi;
-
-                return op1;
-            }
-
-            public static poly128_t operator <<(poly128_t val, int shiftAmount)
-            {
-                for (int i = 0; i < shiftAmount; i++)
-                {
-                    val.hi <<= 1;
-
-                    if ((val.lo & 0x8000000000000000U) != 0)
-                    {
-                       val.hi |= 1;
-                    }
-
-                    val.lo <<= 1;
-                }
-
-                return val;
-            }
-
-            public static implicit operator poly128_t(ulong lo)
-            {
-                poly128_t result = new poly128_t();
-                result.lo = lo;
-                return result;
-            }
-
-            public static explicit operator poly128_t(long lo)
-            {
-                poly128_t result = new poly128_t();
-                result.lo = (ulong)lo;
-                return result;
-            }
         }
 
         private static ushort PolynomialMult(byte op1, byte op2)
