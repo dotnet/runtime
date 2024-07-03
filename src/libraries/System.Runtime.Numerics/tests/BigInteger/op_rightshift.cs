@@ -29,19 +29,21 @@ namespace System.Numerics.Tests
         public static void LargeNegativeBigIntegerShiftTest()
         {
             // Create a very large negative BigInteger
-            BigInteger bigInt = new BigInteger(-1) << int.MaxValue;
-            Assert.Equal(2147483647, bigInt.GetBitLength());
+            int bitsPerElement = 8 * sizeof(uint);
+            int maxBitLength = ((Array.MaxLength / bitsPerElement) * bitsPerElement);
+            BigInteger bigInt = new BigInteger(-1) << (maxBitLength - 1);
+            Assert.Equal(maxBitLength - 1, bigInt.GetBitLength());
             Assert.Equal(-1, bigInt.Sign);
 
             // Validate internal representation.
-            // At this point, bigInt should be a 1 followed by int.MaxValue zeros.
+            // At this point, bigInt should be a 1 followed by maxBitLength - 1 zeros.
             // Given this, bigInt._bits is expected to be structured as follows:
-            // - _bits.Length == (int.MaxValue + 1) / (8 * sizeof(uint))
+            // - _bits.Length == ceil(maxBitLength / bitsPerElement)
             // - First (_bits.Length - 1) elements: 0x00000000
             // - Last element: 0x80000000
             //                   ^------ (There's the leading '1')
 
-            Assert.Equal(((uint)int.MaxValue + 1) / (8 * sizeof(uint)), (uint)bigInt._bits.Length);
+            Assert.Equal((maxBitLength + (bitsPerElement - 1)) / bitsPerElement, bigInt._bits.Length);
 
             uint i = 0;
             for (; i < (bigInt._bits.Length - 1); i++) {
@@ -52,18 +54,18 @@ namespace System.Numerics.Tests
 
             // Right shift the BigInteger
             BigInteger shiftedBigInt = bigInt >> 1;
-            Assert.Equal(2147483646, shiftedBigInt.GetBitLength());
+            Assert.Equal(maxBitLength - 2, shiftedBigInt.GetBitLength());
             Assert.Equal(-1, shiftedBigInt.Sign);
 
             // Validate internal representation.
-            // At this point, shiftedBigInt should be a 1 followed by int.MaxValue - 1 zeros.
+            // At this point, shiftedBigInt should be a 1 followed by maxBitLength - 2 zeros.
             // Given this, shiftedBigInt._bits is expected to be structured as follows:
-            // - _bits.Length == (int.MaxValue + 1) / (8 * sizeof(uint))
+            // - _bits.Length == ceil((maxBitLength - 1) / bitsPerElement)
             // - First (_bits.Length - 1) elements: 0x00000000
             // - Last element: 0x40000000
             //                   ^------ (the '1' is now one position to the right)
 
-            Assert.Equal(((uint)int.MaxValue + 1) / (8 * sizeof(uint)), (uint)shiftedBigInt._bits.Length);
+            Assert.Equal(((maxBitLength - 1) + (bitsPerElement - 1)) / bitsPerElement, shiftedBigInt._bits.Length);
 
             i = 0;
             for (; i < (shiftedBigInt._bits.Length - 1); i++) {

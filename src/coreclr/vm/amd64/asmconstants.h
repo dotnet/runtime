@@ -111,12 +111,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 
-#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x48
-ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
-
-#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x50
-ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_limit == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
-
 #define               OFFSETOF__gc_alloc_context__alloc_ptr 0x0
 ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_ptr);
 
@@ -194,42 +188,23 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceInfo_t__m_pMethodTable
 ASMCONSTANTS_C_ASSERT(SIZEOF__InterfaceInfo_t
                     == sizeof(InterfaceInfo_t));
 
-#define               OFFSETOF__DomainLocalModule__m_pDataBlob   0x030
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DomainLocalModule__m_pDataBlob
-                    == offsetof(DomainLocalModule, m_pDataBlob));
+ASMCONSTANTS_C_ASSERT(MethodTableAuxiliaryData::enum_flag_Initialized == 0x1);
 
-// If this changes then we can't just test one bit in the assembly code.
-ASMCONSTANTS_C_ASSERT(ClassInitFlags::INITIALIZED_FLAG == 1);
+#define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
+                    == offsetof(DynamicStaticsInfo, m_pNonGCStatics));
 
-// End for JIT_GetSharedNonGCStaticBaseWorker
-
-// For JIT_GetSharedGCStaticBaseWorker
-
-#define               OFFSETOF__DomainLocalModule__m_pGCStatics 0x020
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DomainLocalModule__m_pGCStatics
-                    == offsetof(DomainLocalModule, m_pGCStatics));
-
-// End for JIT_GetSharedGCStaticBaseWorker
+#define                OFFSETOF__DynamicStaticsInfo__m_pGCStatics 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
+                    == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
 #define                  CORINFO_NullReferenceException_ASM 0
 ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
                       == CORINFO_NullReferenceException);
 
-#define                  CORINFO_InvalidCastException_ASM 2
-ASMCONSTANTS_C_ASSERT(   CORINFO_InvalidCastException_ASM
-                      == CORINFO_InvalidCastException);
-
 #define                  CORINFO_IndexOutOfRangeException_ASM 3
 ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
                       == CORINFO_IndexOutOfRangeException);
-
-#define                  CORINFO_ArrayTypeMismatchException_ASM 6
-ASMCONSTANTS_C_ASSERT(   CORINFO_ArrayTypeMismatchException_ASM
-                      == CORINFO_ArrayTypeMismatchException);
-
-#define                  CORINFO_ArgumentNullException_ASM 8
-ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentNullException_ASM
-                      == CORINFO_ArgumentNullException);
 
 #define                  CORINFO_ArgumentException_ASM 9
 ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentException_ASM

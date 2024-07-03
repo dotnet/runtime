@@ -72,6 +72,8 @@ struct Scev
 #endif
     template <typename TVisitor>
     ScevVisit Visit(TVisitor visitor);
+
+    bool IsInvariant();
 };
 
 struct ScevConstant : Scev
@@ -190,6 +192,13 @@ ScevVisit Scev::Visit(TVisitor visitor)
     return ScevVisit::Continue;
 }
 
+enum class RelopEvaluationResult
+{
+    Unknown,
+    True,
+    False,
+};
+
 typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Scev*> ScalarEvolutionMap;
 
 // Scalar evolution is analyzed in the context of a single loop, and are
@@ -218,6 +227,11 @@ class ScalarEvolutionContext
     Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
     void  ExtractAddOperands(ScevBinop* add, ArrayStack<Scev*>& operands);
 
+    VNFunc                MapRelopToVNFunc(genTreeOps oper, bool isUnsigned);
+    RelopEvaluationResult EvaluateRelop(ValueNum relop);
+    bool                  MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, VNFunc exitOp);
+
+    bool Materialize(Scev* scev, bool createIR, GenTree** result, ValueNum* resultVN);
 public:
     ScalarEvolutionContext(Compiler* comp);
 
@@ -231,4 +245,9 @@ public:
 
     Scev* Analyze(BasicBlock* block, GenTree* tree);
     Scev* Simplify(Scev* scev);
+
+    Scev* ComputeExitNotTakenCount(BasicBlock* exiting);
+
+    GenTree* Materialize(Scev* scev);
+    ValueNum MaterializeVN(Scev* scev);
 };

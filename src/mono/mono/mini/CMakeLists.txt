@@ -49,14 +49,6 @@ endif()
 # MINI
 #
 
-set(imported_native_sources
-    ../../../native/containers/dn-simdhash.c
-    ../../../native/containers/dn-simdhash-ptr-ptr.c
-    ../../../native/containers/dn-simdhash-string-ptr.c
-    ../../../native/containers/dn-simdhash-u32-ptr.c
-    ../../../native/containers/dn-simdhash-ght-compatible.c
-    ../../../native/containers/dn-simdhash-ptrpair-ptr.c)
-
 set(mini_common_sources
     mini.c
     mini-runtime.c
@@ -310,7 +302,7 @@ else()
 set(profiler_sources "")
 endif()
 
-set(mini_sources "main-core.c;${imported_native_sources};${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${profiler_sources};${llvm_runtime_sources}")
+set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${profiler_sources};${llvm_runtime_sources}")
 
 if(LLVM_INCLUDEDIR)
   include_directories(BEFORE SYSTEM "${LLVM_INCLUDEDIR}")
@@ -341,6 +333,7 @@ endif()
 
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:eglib_objects> $<TARGET_OBJECTS:utils_objects> $<TARGET_OBJECTS:sgen_objects> $<TARGET_OBJECTS:metadata_objects> $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
+target_link_libraries(monosgen-static PRIVATE dn-containers)
 
 if(DISABLE_COMPONENTS OR AOT_COMPONENTS)
   # add component fallback stubs into static mono library when components have been disabled.
@@ -366,9 +359,9 @@ if(NOT DISABLE_SHARED_LIBS)
     set_target_properties(monosgen-shared PROPERTIES INSTALL_RPATH "$ORIGIN")
   endif()
   if(HOST_WIN32)
-    target_link_libraries(monosgen-shared PRIVATE monoapi eglib_objects utils_objects_shared sgen_objects_shared metadata_objects_shared)
+    target_link_libraries(monosgen-shared PRIVATE monoapi eglib_objects utils_objects_shared sgen_objects_shared metadata_objects_shared dn-containers)
   else()
-    target_link_libraries(monosgen-shared PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
+    target_link_libraries(monosgen-shared PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects dn-containers)
   endif()
   target_include_directories (monosgen-shared PRIVATE monoapi)
   if(TARGET_WIN32)
@@ -424,7 +417,7 @@ if(NOT DISABLE_SHARED_LIBS)
         endif()
         add_library(${frameworkconfig} SHARED $<TARGET_OBJECTS:monosgen-objects>)
         target_compile_definitions(${frameworkconfig} PRIVATE -DMONO_DLL_EXPORT)
-        target_link_libraries(${frameworkconfig} PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
+        target_link_libraries(${frameworkconfig} PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects dn-containers)
         target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${Z_LIBS})
 
         set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
@@ -541,7 +534,7 @@ if(NOT DISABLE_EXECUTABLES)
       set_target_properties(mono-sgen PROPERTIES INSTALL_RPATH "$ORIGIN")
     endif()
   endif()
-  target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static)
+  target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static dn-containers)
   if (HOST_WASM)
     target_link_libraries(mono-sgen PRIVATE mono-wasm-nosimd)
   endif()

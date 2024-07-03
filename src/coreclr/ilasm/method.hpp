@@ -337,6 +337,8 @@ public:
     unsigned m_LineNum;
     // debug info
     LinePCList m_LinePCList;
+    Document* m_FirstDocument;
+    BOOL m_HasMultipleDocuments;
     // custom values
     CustomDescrList m_CustomDescrList;
     // token relocs (used for OBJ generation only)
@@ -371,7 +373,7 @@ public:
         if(sz)
         {
             wzUniBuf[0] = 0;
-            WszMultiByteToWideChar(g_uCodePage,0,sz,-1,wzUniBuf,dwUniBuf);
+            MultiByteToWideChar(g_uCodePage,0,sz,-1,wzUniBuf,dwUniBuf);
             return FindTyPar(wzUniBuf);
         }
         else return -1;

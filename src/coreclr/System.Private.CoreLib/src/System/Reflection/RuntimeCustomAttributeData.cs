@@ -1544,11 +1544,13 @@ namespace System.Reflection
                     else
                     {
                         int data = Unsafe.ReadUnaligned<int>((void*)blobStart);
-#if BIGENDIAN
-                        // Metadata is always written in little-endian format. Must account for this on
-                        // big-endian platforms.
-                        data = BinaryPrimitives.ReverseEndianness(data);
-#endif
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            // Metadata is always written in little-endian format. Must account for this on
+                            // big-endian platforms.
+                            data = BinaryPrimitives.ReverseEndianness(data);
+                        }
+
                         const int CustomAttributeVersion = 0x0001;
                         if ((data & 0xffff) != CustomAttributeVersion)
                         {

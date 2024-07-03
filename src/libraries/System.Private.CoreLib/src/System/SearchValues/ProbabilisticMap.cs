@@ -411,7 +411,7 @@ namespace System.Buffers
 
             if (searchSpaceLength > 32)
             {
-                Vector512<byte> charMap512 = Vector512.Create(charMap256, charMap256);
+                Vector512<byte> charMap512 = Vector512.Create(charMap256);
 
                 if (searchSpaceLength > 64)
                 {
@@ -499,8 +499,8 @@ namespace System.Buffers
             if (Avx2.IsSupported && searchSpaceLength >= 32)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                Vector256<byte> charMapLower256 = Vector256.Create(charMapLower, charMapLower);
-                Vector256<byte> charMapUpper256 = Vector256.Create(charMapUpper, charMapUpper);
+                Vector256<byte> charMapLower256 = Vector256.Create(charMapLower);
+                Vector256<byte> charMapUpper256 = Vector256.Create(charMapUpper);
 
                 ref char lastStartVectorAvx2 = ref Unsafe.Subtract(ref searchSpaceEnd, 32);
 
@@ -586,7 +586,7 @@ namespace System.Buffers
 
             if (searchSpaceLength > 32)
             {
-                Vector512<byte> charMap512 = Vector512.Create(charMap256, charMap256);
+                Vector512<byte> charMap512 = Vector512.Create(charMap256);
 
                 if (searchSpaceLength > 64)
                 {
@@ -676,8 +676,8 @@ namespace System.Buffers
             if (Avx2.IsSupported && searchSpaceLength >= 32)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                Vector256<byte> charMapLower256 = Vector256.Create(charMapLower, charMapLower);
-                Vector256<byte> charMapUpper256 = Vector256.Create(charMapUpper, charMapUpper);
+                Vector256<byte> charMapLower256 = Vector256.Create(charMapLower);
+                Vector256<byte> charMapUpper256 = Vector256.Create(charMapUpper);
 
                 ref char lastStartVectorAvx2 = ref Unsafe.Add(ref searchSpace, 32);
 

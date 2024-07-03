@@ -179,6 +179,12 @@ namespace System.Text.RegularExpressions
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[]{ "options"})] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[]{ "options"})] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
+        public System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input) { throw null; }
+        public System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input, int count) { throw null; }
+        public System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input, int count, int startat) { throw null; }
+        public static System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
+        public static System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[] { "options" })] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
+        public static System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[] { "options" })] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public string[] GetGroupNames() { throw null; }
         public int[] GetGroupNumbers() { throw null; }
         public string GroupNameFromNumber(int i) { throw null; }
@@ -243,6 +249,14 @@ namespace System.Text.RegularExpressions
             public readonly System.Text.RegularExpressions.Regex.ValueMatchEnumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
         }
+        public ref partial struct ValueSplitEnumerator
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public readonly System.Range Current { get { throw null; } }
+            public readonly System.Text.RegularExpressions.Regex.ValueSplitEnumerator GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
+        }
     }
     [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the GeneratedRegexAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class RegexCompilationInfo
@@ -256,7 +270,7 @@ namespace System.Text.RegularExpressions
         public System.Text.RegularExpressions.RegexOptions Options { get { throw null; } set { } }
         public string Pattern { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public sealed partial class GeneratedRegexAttribute : System.Attribute
     {
         public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { }

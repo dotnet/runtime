@@ -32,7 +32,7 @@ namespace System.Globalization.Tests
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { "ar-SA", new string[] { "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة", "" } };
-            if (PlatformDetection.IsFirefox)
+            if (PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS)
             {
                 yield return new object[] { "am-ET", new string[] { "ጃንዩ", "ፌብሩ", "ማርች", "ኤፕሪ", "ሜይ", "ጁን", "ጁላይ", "ኦገስ", "ሴፕቴ", "ኦክቶ", "ኖቬም", "ዲሴም", "" } };
                 yield return new object[] { "en-AU", new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } };

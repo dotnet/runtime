@@ -69,6 +69,14 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/Base64Fuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send Base64Fuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/HttpHeadersFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send HttpHeadersFuzzer to OneFuzz
@@ -96,6 +104,14 @@ extends:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/SearchValuesStringFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send SearchValuesStringFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/TextEncodingFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send TextEncodingFuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:

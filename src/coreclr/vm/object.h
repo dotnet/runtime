@@ -732,9 +732,7 @@ public:
     }
 
     friend class StubLinkerCPU;
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     friend class ArrayOpLinker;
-#endif
 public:
     OBJECTREF    m_Array[1];
 };
@@ -1344,12 +1342,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT
         m_StartHelper = NULL;
-    }
-
-    void ResetName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Name = NULL;
     }
 
     void SetPriority(INT32 priority)
@@ -2089,30 +2081,22 @@ class LoaderAllocatorObject : public Object
     friend class CoreLibBinder;
 
 public:
-    PTRARRAYREF GetHandleTable()
+    // All uses of this api must be safe lock-free reads used only for reading from the handle table
+    // The normal GetHandleTable can only be called while holding the handle table lock, but
+    // this is for use in lock-free scenarios
+    PTRARRAYREF DangerousGetHandleTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (PTRARRAYREF)m_pSlots;
+        return (PTRARRAYREF)ObjectToOBJECTREF(VolatileLoadWithoutBarrier((Object**)&m_pSlots));
     }
 
-    void SetHandleTable(PTRARRAYREF handleTable)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetObjectReference(&m_pSlots, (OBJECTREF)handleTable);
-    }
-
-    INT32 GetSlotsUsed()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_slotsUsed;
-    }
-
-    void SetSlotsUsed(INT32 newSlotsUsed)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_slotsUsed = newSlotsUsed;
-    }
-
+#ifndef DACCESS_COMPILE
+    PTRARRAYREF GetHandleTable();
+    void SetHandleTable(PTRARRAYREF handleTable);
+    INT32 GetSlotsUsed();
+    void SetSlotsUsed(INT32 newSlotsUsed);
+#endif // DACCESS_COMPILE
+    
     void SetNativeLoaderAllocator(LoaderAllocator * pLoaderAllocator)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2472,6 +2456,8 @@ public:
         Nullable *nullable = (Nullable *)src;
         return nullable->ValueAddr(nullableMT);
     }
+
+    static int32_t GetValueAddrOffset(MethodTable* nullableMT);
 
 private:
     static BOOL IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* paramMT);

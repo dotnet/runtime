@@ -7,7 +7,7 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
-        /// <summary>Computes the element-wise hypotensue given values from two tensors representing the lengths of the shorter sides in a right-angled triangle.</summary>
+        /// <summary>Computes the element-wise hypotenuse given values from two tensors representing the lengths of the shorter sides in a right-angled triangle.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
