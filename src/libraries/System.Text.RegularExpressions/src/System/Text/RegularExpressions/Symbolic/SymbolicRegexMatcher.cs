@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -82,7 +82,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Data and routines for skipping ahead to the next place a match could potentially start.</summary>
         private readonly RegexFindOptimizations? _findOpts;
 
-        /// <summary>Dead end state to quickly return NoMatch, this could potentially be a constant</summary>
+        /// <summary>
+        /// Dead end state to quickly return NoMatch.
+        /// This could potentially be a constant if it's the very first state created
+        /// </summary>
         private readonly int _deadStateId;
 
         /// <summary>Initial state used for vectorization</summary>
@@ -91,7 +94,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Whether the pattern contains any anchor</summary>
         private readonly bool _containsAnyAnchor;
 
-        /// <summary>Whether the pattern contains the EndZ anchor which makes most optimizations invalid</summary>
+        /// <summary>Whether the pattern contains the EndZ anchor, which makes most optimization shortcuts invalid</summary>
         private readonly bool _containsEndZAnchor;
 
         /// <summary>The initial states for the original pattern, keyed off of the previous character kind.</summary>
@@ -163,11 +166,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Convert the BDD-based AST to TSet-based AST
             SymbolicRegexNode<TSet> rootNode = bddBuilder.Transform(rootBddNode, builder, (builder, bdd) => builder._solver.ConvertFromBDD(bdd, charSetSolver));
-            return new SymbolicRegexMatcher<TSet>(bddBuilder, builder, rootNode, captureCount, findOptimizations, matchTimeout);
+            return new SymbolicRegexMatcher<TSet>(builder, rootNode, captureCount, findOptimizations, matchTimeout);
         }
 
         /// <summary>Constructs matcher for given symbolic regex.</summary>
-        private SymbolicRegexMatcher(SymbolicRegexBuilder<BDD> _, SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> rootNode, int captureCount, RegexFindOptimizations findOptimizations, TimeSpan matchTimeout)
+        private SymbolicRegexMatcher(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> rootNode, int captureCount, RegexFindOptimizations findOptimizations, TimeSpan matchTimeout)
         {
             Debug.Assert(builder._solver is UInt64Solver or BitVectorSolver, $"Unsupported solver: {builder._solver}");
 
@@ -215,13 +218,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 // In some cases where the findOptimizations are useful, just using the DFA can still be faster.
                 _findOpts = findOptimizations switch
                 {
-                    // for sets in fixed length patterns just trust the optimizations,
-                    // the performance can be either better or worse depending on frequency
-                    {
-                        FindMode:
-                        FindNextStartingPositionMode.FixedDistanceSets_LeftToRight or
-                        FindNextStartingPositionMode.LeadingSet_LeftToRight} when
-                        _optimizedReversalState.Kind == MatchReversalKind.FixedLength => findOptimizations,
                     // string literals are the best case
                     {
                         FindMode:
@@ -230,11 +226,15 @@ namespace System.Text.RegularExpressions.Symbolic
                         FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight
                     } => findOptimizations,
                     // note: only the Teddy implementation is faster than DFA here, Aho Corasick should map to null
-                    { FindMode: FindNextStartingPositionMode.LeadingStrings_LeftToRight } => findOptimizations,
-                    { FindMode: FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight } => findOptimizations,
+                    {
+                        FindMode:
+                        FindNextStartingPositionMode.LeadingStrings_LeftToRight or
+                        FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight,
+                        LeadingStrings: not null
+                    } when findOptimizations.LeadingStrings.GetType().Name != "StringSearchValuesAhoCorasick`2" => findOptimizations,
                     // for singular character sets it depends if there's any reasonably small set to be accelerated
-                    { FindMode: FindNextStartingPositionMode.FixedDistanceSets_LeftToRight } when findOptimizations.FixedDistanceSets!.TrueForAll(CharSetIsTooCommon) => null,
-                    { FindMode: FindNextStartingPositionMode.LeadingSet_LeftToRight } when CharSetIsTooCommon(findOptimizations.FixedDistanceSets![0]) => null,
+                    { FindMode: FindNextStartingPositionMode.FixedDistanceSets_LeftToRight } when !findOptimizations.FixedDistanceSets!.TrueForAll(CharSetIsTooCommon) => findOptimizations,
+                    { FindMode: FindNextStartingPositionMode.LeadingSet_LeftToRight } when !CharSetIsTooCommon(findOptimizations.FixedDistanceSets![0]) => findOptimizations,
                     _ => null
                 };
             }
@@ -291,31 +291,30 @@ namespace System.Text.RegularExpressions.Symbolic
             _reverseInitialStates = reverseInitialStates;
 
 
-            // TODO: this is still work in progress
-            // The frequency of occurrences makes a big difference here,
-            // anything above 4 uint16 chars is generally slower than DFA, but
-            // if the characters are very rare, then SearchValues can be up to ~2x faster
-            // SearchValues<char> implementations to avoid:
-            // - ProbabilisticCharSearchValues
-            // - ProbabilisticWithAsciiCharSearchValues`1
-            // - AsciiCharSearchValues`1
-            // - Any5SearchValues`2"
-            // SearchValues<string> implementations to avoid:
-            // - StringSearchValuesAhoCorasick`2
+            // Some SearchValues<char> implementations are slower than a DFA,
+            // but depend on input frequency.
+            // This is currently tuned for consistency
+            // but it could return false to enable findOptimizations.
             bool CharSetIsTooCommon(RegexFindOptimizations.FixedDistanceSet fixedDistanceSet)
             {
+                char[]? chars = fixedDistanceSet.Chars;
+                bool avoidSearchValues = false;
+                if (chars is not null && chars.Length > 5)
+                {
+                    // RegexFindOptimizations picks 3 sets at most so the construction overhead should not be too high
+                    var searchValues = SearchValues.Create(chars);
+                    avoidSearchValues = searchValues.GetType().Name switch
+                    {
+                        "ProbabilisticCharSearchValues" => true,
+                        "ProbabilisticWithAsciiCharSearchValues`1" => true,
+                        "AsciiCharSearchValues`1" => true,
+                        _ => false
+                    };
+                }
+
                 return fixedDistanceSet switch
                 {
-                    // anything above 4 uint16 chars is generally slower than DFA
-                    { Chars: not null } =>
-                        // negated sets are usually large
-                        fixedDistanceSet.Negated ||
-                        (fixedDistanceSet.Chars.Length > 4
-                        // TODO: this extra condition is currently kept so there's no regressions
-                        // if ~500mb/s worst case is acceptable then this could be removed
-                        // but being able to guess which character sets are not too frequent can
-                        // often reach over 1gb/s with AVX
-                        && Array.Exists(fixedDistanceSet.Chars, char.IsAsciiLetterLower)),
+                    { Chars: not null } => fixedDistanceSet.Negated || avoidSearchValues,
                     { Range: not null } => false,
                     _ => false,
                 };
@@ -429,9 +428,10 @@ namespace System.Text.RegularExpressions.Symbolic
             // It returns NoMatchExists (-2) when there is no match.
             // As an example, consider the pattern a{1,3}(b*) run against an input of aacaaaabbbc: phase 1 will find
             // the position of the last b: aacaaaabbbc.  It additionally records the position of the first a after
-            // the c as the low boundary for the starting position.d
-            int matchEnd;
+            // the c as the low boundary for the starting position.
+
             // The Z anchor and over 255 minterms are rare enough to consider them separate edge cases
+            int matchEnd;
             if (!(_containsEndZAnchor || _mintermClassifier.IntLookup() is not null))
             {
                 matchEnd = (_mintermClassifier.IsFullLookup(), _findOpts is not null, _containsAnyAnchor) switch
@@ -568,13 +568,19 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
+        /// <summary>
+        /// This version of <see cref="FindEndPositionFallback"/> uses a different set of interfaces,
+        /// which don't check for many inner loop edge cases e.g. input end or '\n'.
+        /// All edge cases are handled before entering the loop.
+        /// </summary>
         private int FindEndPositionOptimized<TOptimizedInputReader, TAcceleratedStateHandler, TOptimizedNullabilityHandler>(
             ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, PerThreadData perThreadData)
             where TOptimizedInputReader : struct, IOptimizedInputReader
             where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
             where TOptimizedNullabilityHandler : struct, IOptimizedNullabilityHandler
         {
-            // TODO: possible this value could be removed
+            // this initial state candidate is not really used in the common DFA case
+            // and could potentially be removed in the future
             int initialStatePosCandidate = pos;
             var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind<FullInputReader>(input, pos - 1)]);
             int endPos = NoMatchExists;

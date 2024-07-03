@@ -182,7 +182,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// 2) the reversal starts at abc.*|
         /// </summary>
         /// <param name="node">reversed initial pattern</param>
-        /// <returns>returns n of chars to skip and adjusted reversal start state</returns>
+        /// <returns>returns num of chars to skip and adjusted reversal start state</returns>
         private MatchReversal<TSet> CreateOptimizedReversal(SymbolicRegexNode<TSet> node)
         {
             int pos = 0;
@@ -194,12 +194,14 @@ namespace System.Text.RegularExpressions.Symbolic
                 pos = 0;
                 return (false, node);
             });
+
             var addSingleton = new Func<SymbolicRegexNode<TSet>, (bool, SymbolicRegexNode<TSet>)>(concatNode =>
             {
                 pos += 1;
                 // continue with next concat
                 return (true, concatNode._right!);
             });
+
             var addFixedLengthLoop = new Func<SymbolicRegexNode<TSet>, (bool, SymbolicRegexNode<TSet>)>(concatNode =>
             {
                 SymbolicRegexNode<TSet>? loopNode = concatNode._left;
@@ -207,6 +209,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     return (false, concatNode);
                 }
+
                 switch (loopNode!._left!.Kind)
                 {
                     case SymbolicRegexNodeKind.Singleton:
@@ -217,9 +220,11 @@ namespace System.Text.RegularExpressions.Symbolic
                             // the entire loop is fixed, continue
                             return (true, concatNode._right!);
                         }
+
                         // subtract the fixed part of the loop
                         int loopRemainder = loopNode._upper - loopNode._lower;
-                        SymbolicRegexNode<TSet> newLeft = _builder.CreateLoop(loopNode._left, loopNode.IsLazy, 0, loopRemainder);
+                        SymbolicRegexNode<TSet> newLeft =
+                            _builder.CreateLoop(loopNode._left, loopNode.IsLazy, 0, loopRemainder);
                         SymbolicRegexNode<TSet> newNode = _builder.CreateConcat(newLeft, concatNode._right!);
                         pos += loopNode._lower;
                         return (true, newNode);

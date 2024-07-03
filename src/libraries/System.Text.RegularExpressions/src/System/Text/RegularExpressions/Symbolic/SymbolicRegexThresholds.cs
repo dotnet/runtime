@@ -17,10 +17,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// an NFA. As an NFA, we instead track all of the states we're in at any given point.
         /// </remarks>
         /// <remarks>
-        /// This limit is chosen due to memory usage constraints, the worst possible allocation is currently approx. 50 MB;
+        /// This limit is chosen due to memory usage constraints, the largest possible memory allocation for a regex instance
+        /// is currently approx. 50 MB.
         /// There is some motivation to make this configurable, as it can exchange upfront costs with potentially
-        /// significant search-time performance gains.
-        /// Worst case memory consumption for the regex instance can be approximated to about (NfaNodeCountThreshold * (sizeof(MatchingState) + sizeof(SymbolicRegexNode))
+        /// significant search-time performance gains. Worst case memory consumption for the regex instance
+        /// can be approximated to about (NfaNodeCountThreshold * (sizeof(MatchingState) + sizeof(SymbolicRegexNode))
         /// while it most cases the MatchingState part can be ignored, as only a subset of nodes have their own state.
         /// </remarks>
         internal const int NfaNodeCountThreshold = 125_000;
