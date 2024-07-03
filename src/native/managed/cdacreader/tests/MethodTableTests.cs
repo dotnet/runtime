@@ -264,7 +264,7 @@ public unsafe class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void MethodTableGenericInstValid(MockTarget.Architecture arch)
+    public void ValidateGenericInstMethodTable(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
         const ulong SystemObjectMethodTableAddress = 0x00000000_7c000010;
@@ -314,5 +314,63 @@ public unsafe class MethodTableTests
             Assert.False(metadataContract.IsString(genericInstanceMethodTableHandle));
             Assert.Equal(numMethods, metadataContract.GetNumMethods(genericInstanceMethodTableHandle));
         });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateArrayInstMethodTable(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        const ulong SystemObjectMethodTableAddress = 0x00000000_7c000010;
+        const ulong SystemObjectEEClassAddress = 0x00000000_7c0000d0;
+        TargetPointer systemObjectMethodTablePtr = new TargetPointer(SystemObjectMethodTableAddress);
+        TargetPointer systemObjectEEClassPtr = new TargetPointer(SystemObjectEEClassAddress);
+
+        const ulong SystemArrayMethodTableAddress = 0x00000000_7c00a010;
+        const ulong SystemArrayEEClassAddress = 0x00000000_7c00a0d0;
+        TargetPointer systemArrayMethodTablePtr = new TargetPointer(SystemArrayMethodTableAddress);
+        TargetPointer systemArrayEEClassPtr = new TargetPointer(SystemArrayEEClassAddress);
+
+        const ulong arrayInstanceMethodTableAddress = 0x00000000_330000a0;
+        const ulong arrayInstanceEEClassAddress = 0x00000000_330001d0;
+        TargetPointer arrayInstanceMethodTablePtr = new TargetPointer(arrayInstanceMethodTableAddress);
+        TargetPointer arrayInstanceEEClassPtr = new TargetPointer(arrayInstanceEEClassAddress);
+
+        const uint arrayInstanceComponentSize = 392;
+
+        RTSContractHelper(arch,
+        (builder) =>
+        {
+            builder = AddSystemObject(targetTestHelpers, builder, systemObjectMethodTablePtr, systemObjectEEClassPtr);
+            const ushort systemArrayNumInterfaces = 4;
+            const ushort systemArrayNumMethods = 37; // Arbitrary. Not trying to exactly match  the real System.Array
+            const uint systemArrayCorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
+
+            builder = AddEEClass(targetTestHelpers, builder, systemArrayEEClassPtr, "EEClass System.Array", systemArrayMethodTablePtr, attr: systemArrayCorTypeAttr, numMethods: systemArrayNumMethods);
+            builder = AddMethodTable(targetTestHelpers, builder, systemArrayMethodTablePtr, "MethodTable System.Array", systemArrayEEClassPtr,
+                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
+                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: systemArrayNumInterfaces, numVirtuals: 3);
+
+            const uint arrayInst_mtflags = (uint)(RuntimeTypeSystem_1.WFLAGS_HIGH.HasComponentSize | RuntimeTypeSystem_1.WFLAGS_HIGH.Category_Array) | arrayInstanceComponentSize;
+            const uint arrayInstCorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Sealed);
+
+            builder = AddEEClass(targetTestHelpers, builder, arrayInstanceEEClassPtr, "EEClass ArrayInstance", arrayInstanceMethodTablePtr, attr: arrayInstCorTypeAttr, numMethods: systemArrayNumMethods);
+            builder = AddMethodTable(targetTestHelpers, builder, arrayInstanceMethodTablePtr, "MethodTable ArrayInstance", arrayInstanceEEClassPtr,
+                                    mtflags: arrayInst_mtflags, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
+                                    module: TargetPointer.Null, parentMethodTable: systemArrayMethodTablePtr, numInterfaces: systemArrayNumInterfaces, numVirtuals: 3);
+
+            return builder;
+        },
+        (target) =>
+        {
+            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
+            Assert.NotNull(metadataContract);
+            Contracts.MethodTableHandle arrayInstanceMethodTableHandle = metadataContract.GetMethodTableHandle(arrayInstanceMethodTablePtr);
+            Assert.Equal(arrayInstanceMethodTablePtr.Value, arrayInstanceMethodTableHandle.Address.Value);
+            Assert.False(metadataContract.IsFreeObjectMethodTable(arrayInstanceMethodTableHandle));
+            Assert.False(metadataContract.IsString(arrayInstanceMethodTableHandle));
+            Assert.Equal(arrayInstanceComponentSize, metadataContract.GetComponentSize(arrayInstanceMethodTableHandle));
+        });
+
     }
 }
