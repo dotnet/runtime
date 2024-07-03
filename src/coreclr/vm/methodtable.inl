@@ -478,7 +478,7 @@ inline void MethodTable::CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSou
 
     MethodDesc *pMD = hSourceMTData->GetImplMethodDesc(slotNumber);
     _ASSERTE(CheckPointer(pMD));
-    _ASSERTE(pMD == pSourceMT->GetMethodDescForSlot(slotNumber));
+    _ASSERTE(pMD == pSourceMT->GetMethodDescForSlot_NoThrow(slotNumber));
     SetSlot(slotNumber, pMD->GetInitialEntryPointForCopiedSlot(NULL, NULL));
 }
 

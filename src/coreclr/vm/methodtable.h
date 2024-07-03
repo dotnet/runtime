@@ -333,6 +333,8 @@ struct MethodTableAuxiliaryData
 
         enum_flag_HasApproxParent           = 0x0010,
 #ifdef _DEBUG
+        // The MethodTable is in the right state to be published, and will be inevitably.
+        // Currently DEBUG only as it does not affect behavior in any way in a release build
         enum_flag_IsPublished               = 0x0020,
 #endif
         enum_flag_IsNotFullyLoaded          = 0x0040,
@@ -500,15 +502,16 @@ public:
 
 #ifdef _DEBUG
 #ifndef DACCESS_COMPILE
+    // Used in DEBUG builds to indicate that the MethodTable is in the right state to be published, and will be inevitably.
     void SetIsPublished()
     {
         LIMITED_METHOD_CONTRACT;
-
-        // Array's parent is always precise
         m_dwFlags |= (MethodTableAuxiliaryData::enum_flag_IsPublished);
     }
 #endif
 
+    // The MethodTable is in the right state to be published, and will be inevitably.
+    // Currently DEBUG only as it does not affect behavior in any way in a release build
     bool IsPublished() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -1637,6 +1640,10 @@ public:
     // Slots <-> the MethodDesc associated with the slot.
     //
 
+    // Get the MethodDesc that implements a given slot
+    // NOTE: Since this may fill in the slot with a temporary entrypoint if that hasn't happened
+    //       yet, when writing asserts, GetMethodDescForSlot_NoThrow should be used to avoid
+    //       the presence of an assert hiding bugs.
     MethodDesc* GetMethodDescForSlot(DWORD slot);
 
     // This api produces the same result as GetMethodDescForSlot, but it uses a variation on the

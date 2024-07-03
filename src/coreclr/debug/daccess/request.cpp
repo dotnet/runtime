@@ -452,6 +452,7 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
                 {
                     hr = S_OK;
                 }
+                break;
             }
         }
     }
@@ -496,11 +497,11 @@ HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
 {
     unsigned int slot = 0;
 
-    SOSMethodData methodData;
     WORD numVtableSlots = mTable->GetNumVtableSlots();
     while (slot < numVtableSlots)
     {
         MethodDesc* pMD = mTable->GetMethodDescForSlot_NoThrow(slot);
+        SOSMethodData methodData = {0};
         methodData.MethodDesc = HOST_CDADDR(pMD);
         methodData.Entrypoint = mTable->GetSlot(slot);
         methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
@@ -520,6 +521,7 @@ HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
         WORD slot = pMD->GetSlot();
         if (slot >= numVtableSlots)
         {
+            SOSMethodData methodData = {0};
             methodData.MethodDesc = HOST_CDADDR(pMD);
             methodData.Entrypoint = pMD->GetMethodEntryPointIfExists();
             methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());

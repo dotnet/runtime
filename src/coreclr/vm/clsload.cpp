@@ -2786,6 +2786,10 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
 #ifdef _DEBUG
     if (!typeHnd.IsTypeDesc())
     {
+        // The IsPublished flag is used by various asserts to assure that allocations of
+        // MethodTable associated memory which do not use the AllocMemTracker of the MethodTableBuilder
+        // aren't permitted until the MethodTable is in a state where the MethodTable object
+        // cannot be freed (except by freeing an entire LoaderAllocator)
         typeHnd.AsMethodTable()->GetAuxiliaryDataForWrite()->SetIsPublished();
     }
 #endif

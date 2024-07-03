@@ -970,8 +970,8 @@ BYTE MethodDesc::InterlockedUpdateFlags4(BYTE bMask, BOOL fSet)
     DWORD   dwMask = bMask;
 
     // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
-    // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
-    // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
+    // is a byte and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
+    // dword (along with the intended bitfield mask). Note that we make the assumption that the flags byte is aligned itself, so we
     // only have four possibilities: the field already lies on a dword boundary or it's 1, 2 or 3 bytes out
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_bFlags4 - (offsetof(MethodDesc, m_bFlags4) & 0x3));
 
