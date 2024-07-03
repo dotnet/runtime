@@ -410,7 +410,9 @@ namespace System.Net.Http.Functional.Tests
                 () => client.GetAsync(TestAsync, InvalidUri, cancellationToken: cts.Token));
 
             // .NET Framework has bug where it doesn't propagate token information.
-            Assert.True(oce.CancellationToken.IsCancellationRequested);
+#if !NETFRAMEWORK
+            Assert.Equal(cts.Token, oce.CancellationToken);
+#endif
         }
 
         public static IEnumerable<object[]> PostAsync_Cancel_CancellationTokenPassedToContent_MemberData()
