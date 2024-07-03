@@ -2670,11 +2670,19 @@ namespace System.Text.RegularExpressions.Tests
                 // input is the pattern itself
                 input.Append(str);
             }
-            Regex r = await RegexHelpers.GetRegexAsync(RegexEngine.NonBacktracking, pattern.ToString(), RegexOptions.None);
-            MatchCollection ms = r.Matches(input.ToString());
-            Assert.Equal(1, ms.Count);
-            Assert.Equal(0, ms[0].Index);
-            Assert.Equal(513, ms[0].Length);
+
+            // just so it's not allocated multiple times
+            string patternString = pattern.ToString();
+            string inputString = input.ToString();
+
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                Regex r = await RegexHelpers.GetRegexAsync(engine, patternString, RegexOptions.None);
+                MatchCollection ms = r.Matches(inputString);
+                Assert.Equal(1, ms.Count);
+                Assert.Equal(0, ms[0].Index);
+                Assert.Equal(513, ms[0].Length);
+            }
         }
 #endif
     }
