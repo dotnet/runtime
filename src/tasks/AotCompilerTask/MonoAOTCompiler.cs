@@ -523,7 +523,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         else
         {
-            int allowedParallelism = DisableParallelAot ? 1 : Math.Min(_assembliesToCompile.Count, Math.Max(1, Environment.ProcessorCount/2));
+            int allowedParallelism = DisableParallelAot ? 1 : Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
             IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
             if (be9 is not null)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
