@@ -3,10 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Net.Http.Headers;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -36,11 +33,12 @@ namespace System.Net.Http
             };
         }
 
-        internal static KeyValuePair<string, object?> GetMethodTag(HttpMethod method)
+        internal static KeyValuePair<string, object?> GetMethodTag(HttpMethod method, out bool isUnknownMethod)
         {
             // Return canonical names for known methods and "_OTHER" for unknown ones.
             HttpMethod? known = HttpMethod.GetKnownMethod(method.Method);
-            return new KeyValuePair<string, object?>("http.request.method", known?.Method ?? "_OTHER");
+            isUnknownMethod = known is null;
+            return new KeyValuePair<string, object?>("http.request.method", isUnknownMethod ? "_OTHER" : known!.Method);
         }
 
         internal static string GetProtocolVersionString(Version httpVersion) => (httpVersion.Major, httpVersion.Minor) switch

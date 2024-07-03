@@ -145,7 +145,7 @@ namespace System.Net.Http.Metrics
                     tags.Add("server.port", requestUri.Port);
                 }
             }
-            tags.Add(DiagnosticsHelper.GetMethodTag(request.Method));
+            tags.Add(DiagnosticsHelper.GetMethodTag(request.Method, out _));
 
             return tags;
         }

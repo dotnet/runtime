@@ -379,14 +379,13 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString(), idFormat.ToString()).DisposeAsync();
         }
 
-        
-
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(200)]
-        [InlineData(404)]
-        public async Task SendAsync_ExpectedTagsRecorded(int statusCode)
+        [InlineData(200, "GET")]
+        [InlineData(404, "GET")]
+        [InlineData(200, "CUSTOM")]
+        public async Task SendAsync_DiagnosticListener_ExpectedTagsRecorded(int statusCode, string method)
         {
-            await RemoteExecutor.Invoke(async (useVersion, testAsync, statusCodeStr) =>
+            await RemoteExecutor.Invoke(static async (useVersion, testAsync, statusCodeStr, method) =>
             {
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -408,7 +407,8 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotNull(activity);
                     Assert.Equal(parentActivity, Activity.Current.Parent);
                     IEnumerable<KeyValuePair<string, object?>> tags = activity.TagObjects;
-                    VerifyRequestTags(tags, currentUri, expectedUriFull);
+                    VerifyRequestTags(tags, currentUri, expectedUriFull, expectedMethodTag: method is "CUSTOM" ? "_OTHER" : method);
+                    VerifyTag(tags, "http.request.method_original", method is "CUSTOM" ? method : null);
 
                     if (kvp.Key.EndsWith(".Stop"))
                     {
@@ -439,7 +439,10 @@ namespace System.Net.Http.Functional.Tests
                             uri = new Uri($"{uri.Scheme}://user:pass@{uri.Authority}/1/2/?a=1&b=2");
                             expectedUriFull = $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}?*";
                             currentUri = uri;
-                            await GetAsync(useVersion, testAsync, uri);
+
+                            using HttpClient client = new(CreateHttpClientHandler(allowAllCertificates: true));
+                            using HttpRequestMessage request = CreateRequest(HttpMethod.Parse(method), uri, Version.Parse(useVersion), exactVersion: true);
+                            await client.SendAsync(bool.Parse(testAsync), request);
                             await activityStopTcs.Task;
                         },
                         async server =>
@@ -449,59 +452,76 @@ namespace System.Net.Http.Functional.Tests
                             AssertHeadersAreInjected(requestData, parentActivity);
                         });
                 }
-            }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString()).DisposeAsync();
+            }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString(), method).DisposeAsync();
         }
 
-        [Fact]
-        public async Task SendAsync_ExpectedRequestTagsAvailableForSampling()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(200, "GET")]
+        [InlineData(404, "GET")]
+        [InlineData(200, "CUSTOM")]
+        public async Task SendAsync_ActivitySource_ExpectedTagsRecorded(int statusCode, string method)
         {
-            string useVersion = UseVersion.ToString();
-            string testAsync = TestAsync.ToString();
-            await RemoteExecutor.Invoke(static async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(static async (useVersion, testAsync, statusCodeStr, method) =>
             {
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 Activity? activity = null;
                 bool sampled = false;
-                Uri currentUri = null;
+                Uri? currentUri = null;
+                string? expectedUriFull = null;
+
                 using ActivityListener listener = new ActivityListener()
                 {
                     ShouldListenTo = s => s.Name is "System.Net.Http",
                     Sample = (ref ActivityCreationOptions<ActivityContext> options) =>
                     {
                         sampled = true;
-                        VerifyRequestTags(options.Tags, currentUri, currentUri.AbsoluteUri);
+                        VerifyRequestTags(options.Tags, currentUri, expectedUriFull, expectedMethodTag: method is "CUSTOM" ? "_OTHER" : method);
                         return ActivitySamplingResult.AllData;
+                    },
+                    ActivityStarted = a =>
+                    {
+                        VerifyRequestTags(a.TagObjects, currentUri, expectedUriFull, expectedMethodTag: method is "CUSTOM" ? "_OTHER" : method);
                     },
                     ActivityStopped = a =>
                     {
                         activity = a;
+                        var tags = activity.TagObjects;
+                        VerifyTag(tags, "http.request.method_original", method is "CUSTOM" ? method : null);
+                        VerifyTag(tags, "network.protocol.version", GetVersionString(Version.Parse(useVersion)));
+                        VerifyTag(tags, "http.response.status_code", int.Parse(statusCodeStr));
+
                         activityStopTcs.SetResult();
                     }
                 };
                 ActivitySource.AddActivityListener(listener);
 
                 await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
-                            async uri =>
-                            {
-                                currentUri = uri;
-                                await GetAsync(useVersion, testAsync, uri);
-                                await activityStopTcs.Task;
-                            },
-                            async server =>
-                            {
-                                _ = await server.AcceptConnectionSendResponseAndCloseAsync();
-                            });
+                        async uri =>
+                        {
+                            uri = new Uri($"{uri.Scheme}://user:pass@{uri.Authority}/1/2/?a=1&b=2");
+                            expectedUriFull = $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}?*";
+                            currentUri = uri;
+
+                            using HttpClient client = new(CreateHttpClientHandler(allowAllCertificates: true));
+                            using HttpRequestMessage request = CreateRequest(HttpMethod.Parse(method), uri, Version.Parse(useVersion), exactVersion: true);
+                            await client.SendAsync(bool.Parse(testAsync), request);
+                            await activityStopTcs.Task;
+                        },
+                        async server =>
+                        {
+                            await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: (HttpStatusCode)int.Parse(statusCodeStr));
+                        });
 
                 Assert.NotNull(activity);
                 Assert.True(sampled);
-            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
+            }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString(), method).DisposeAsync();
         }
 
-        protected static void VerifyRequestTags(IEnumerable<KeyValuePair<string, object?>> tags, Uri uri, string expectedUriFull)
+        protected static void VerifyRequestTags(IEnumerable<KeyValuePair<string, object?>> tags, Uri uri, string expectedUriFull, string expectedMethodTag = "GET")
         {
             VerifyTag(tags, "server.address", uri.Host);
             VerifyTag(tags, "server.port", uri.Port);
-            VerifyTag(tags, "http.request.method", "GET");
+            VerifyTag(tags, "http.request.method", expectedMethodTag);
             VerifyTag(tags, "url.full", expectedUriFull);
         }
 

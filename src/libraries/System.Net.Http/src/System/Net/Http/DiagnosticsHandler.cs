@@ -66,17 +66,29 @@ namespace System.Net.Http
 
                 // The following tags might be important for making sampling decisions and should be provided at span creation time.
                 // https://github.com/open-telemetry/semantic-conventions/blob/5077fd5ccf64e3ad0821866cc80d77bb24098ba2/docs/http/http-spans.md?plain=1#L213-L219
-                KeyValuePair<string, object?>[] tags = requestUri is not null
-                    ? new KeyValuePair<string, object?>[4]
-                    : new KeyValuePair<string, object?>[1];
+                KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method, out bool isUnknownMethod);
+                int tagCount = requestUri is not null ? 4 : 1;
+                if (isUnknownMethod)
+                {
+                    tagCount++;
+                }
 
-                tags[0] = DiagnosticsHelper.GetMethodTag(request.Method);
+                KeyValuePair<string, object?>[] tags = new KeyValuePair<string, object?>[tagCount];
+                int i = 0;
+
+                tags[i++] = methodTag;
+                if (isUnknownMethod)
+                {
+                    tags[i++] = new("http.request.method_original", request.Method.Method);
+                }
+
                 if (requestUri is not null)
                 {
-                    tags[1] = new("server.address", requestUri.Host);
-                    tags[2] = new("server.port", requestUri.Port);
-                    tags[3] = new("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
+                    tags[i++] = new("server.address", requestUri.Host);
+                    tags[i++] = new("server.port", requestUri.Port);
+                    tags[i++] = new("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
                 }
+                Debug.Assert(i == tagCount);
 
                 activity = s_activitySource.StartActivity(ActivityKind.Client, name: DiagnosticsHandlerLoggingStrings.ActivityName, tags: tags);
             }
@@ -86,14 +98,24 @@ namespace System.Net.Http
                 s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request)))
             {
                 activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
-                KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method);
-                activity.SetTag(methodTag.Key, methodTag.Value);
-                if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
+
+                if (activity.IsAllDataRequested)
                 {
-                    activity.SetTag("server.address", requestUri.Host);
-                    activity.SetTag("server.port", requestUri.Port);
-                    activity.SetTag("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
+                    KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method, out bool isUnknownMethod);
+                    activity.SetTag(methodTag.Key, methodTag.Value);
+                    if (isUnknownMethod)
+                    {
+                        activity.SetTag("http.request.method_original", request.Method.Method);
+                    }
+
+                    if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
+                    {
+                        activity.SetTag("server.address", requestUri.Host);
+                        activity.SetTag("server.port", requestUri.Port);
+                        activity.SetTag("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
+                    }
                 }
+
                 activity.Start();
             }
 
