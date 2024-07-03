@@ -578,7 +578,8 @@ void FinalizerThread::FinalizerThreadWait()
         // Do appropriate wait and pump messages if necessary
         //----------------------------------------------------
 
-        DWORD status = hEventFinalizerDone->Wait(INFINITE,TRUE);
+        DWORD status;
+        status = hEventFinalizerDone->Wait(INFINITE,TRUE);
         _ASSERTE(status == WAIT_OBJECT_0);
     }
 }
