@@ -254,8 +254,18 @@ namespace System.Buffers.Text
                 byte i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
                 byte i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
 
-                dest[0] = i0;
-                dest[1] = i1;
+                ushort result;
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    result = (ushort)(i0 | (i1 << 8));
+                }
+                else
+                {
+                    result = (ushort)((i0 << 8) | i1);
+                }
+
+                Unsafe.WriteUnaligned(dest, result);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -331,11 +341,21 @@ namespace System.Buffers.Text
 
                 uint i = t0 << 8;
 
-                ushort i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
-                ushort i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
+                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
+                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
 
-                dest[0] = i0;
-                dest[1] = i1;
+                uint result;
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    result = (i0 | (i1 << 16));
+                }
+                else
+                {
+                    result = ((i0 << 16) | i1);
+                }
+
+                Unsafe.WriteUnaligned(dest, result);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
