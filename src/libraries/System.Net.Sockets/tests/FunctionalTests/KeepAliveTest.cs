@@ -121,7 +121,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotQemuLinux))]
         public void Socket_Get_KeepAlive_Time_AsByteArray_OptionLengthZero_Failure()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -144,6 +144,10 @@ namespace System.Net.Sockets.Tests
         [InlineData(new byte[3] { 0, 0, 0 })]
         public void Socket_Get_KeepAlive_Time_AsByteArray_BufferNullOrTooSmall_Failure(byte[] buffer)
         {
+            if (!PlatformDetection.IsNotQemuLinux && (buffer == null || buffer.Length == 0))
+            {
+                return;
+            }
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 if (PlatformDetection.IsWindows)

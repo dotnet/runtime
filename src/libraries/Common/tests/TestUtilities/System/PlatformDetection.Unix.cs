@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Collections;
 
 namespace System
 {
@@ -30,7 +32,7 @@ namespace System
 
         public static bool IsMonoLinuxArm64 => IsMonoRuntime && IsLinux && IsArm64Process;
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
-        public static bool IsNotRiscV64Ubuntu => !IsUbuntu || !IsRiscV64Process;
+        public static bool IsNotQemuLinux => !IsQemuLinux();
 
         // OSX family
         public static bool IsApplePlatform => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
@@ -299,6 +301,21 @@ namespace System
                 }
             }
 
+            return false;
+        }
+
+        private static bool IsQemuLinux()
+        {
+            if (IsLinux)
+            {
+                foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
+                {
+                    if (((String)entry.Key).ToUpper().Contains("QEMU"))
+                    {
+                        return true;
+                    }
+                }
+            }
             return false;
         }
 
