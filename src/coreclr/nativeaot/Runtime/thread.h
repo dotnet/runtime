@@ -173,16 +173,9 @@ private:
 #ifdef FEATURE_HIJACK
     static void HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack);
 
-    //
-    // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
-    // Thus they cannot have any parameters or return anything.
-    //
-    typedef void FASTCALL HijackFunc();
-
     void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction);
-    bool InlineSuspend(NATIVE_CONTEXT* interruptedContext);
     void CrossThreadUnhijack();
     void UnhijackWorker();
 #else // FEATURE_HIJACK
@@ -209,6 +202,7 @@ private:
     static uint64_t s_DeadThreadsNonAllocBytes;
 
 public:
+    bool InlineSuspend(NATIVE_CONTEXT* interruptedContext);
 
     static uint64_t GetDeadThreadsNonAllocBytes();
 

@@ -1856,6 +1856,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         break;
 
 #elif defined(TARGET_ARM64)
+                    case NI_Sve_GatherPrefetch8Bit:
+                    case NI_Sve_GatherPrefetch16Bit:
+                    case NI_Sve_GatherPrefetch32Bit:
+                    case NI_Sve_GatherPrefetch64Bit:
+                        assert(varTypeIsSIMD(op2->TypeGet()));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        break;
+
                     case NI_Sve_GatherVector:
                     case NI_Sve_GatherVectorByteZeroExtend:
                     case NI_Sve_GatherVectorInt16SignExtend:
@@ -1885,6 +1893,22 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 assert(!isScalar);
                 retNode =
                     gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
+
+#if defined(TARGET_ARM64)
+                switch (intrinsic)
+                {
+                    case NI_Sve_GatherPrefetch8Bit:
+                    case NI_Sve_GatherPrefetch16Bit:
+                    case NI_Sve_GatherPrefetch32Bit:
+                    case NI_Sve_GatherPrefetch64Bit:
+                        assert(varTypeIsSIMD(op3->TypeGet()));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                        break;
+
+                    default:
+                        break;
+                }
+#endif
                 break;
             }
 
@@ -1911,6 +1935,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         switch (intrinsic)
         {
+            case NI_Sve_CreateBreakAfterMask:
+            case NI_Sve_CreateBreakAfterPropagateMask:
+            case NI_Sve_CreateBreakBeforeMask:
+            case NI_Sve_CreateBreakBeforePropagateMask:
             case NI_Sve_CreateMaskForFirstActiveElement:
             case NI_Sve_CreateMaskForNextActiveElement:
             case NI_Sve_GetActiveElementCount:
@@ -1925,6 +1953,26 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     retNode->AsHWIntrinsic()->Op(2) =
                         gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+
+        switch (intrinsic)
+        {
+            case NI_Sve_CreateBreakAfterPropagateMask:
+            case NI_Sve_CreateBreakBeforePropagateMask:
+            {
+                GenTree* op3 = retNode->AsHWIntrinsic()->Op(3);
+
+                // HWInstrinsic requires a mask for op3
+                if (!varTypeIsMask(op3))
+                {
+                    retNode->AsHWIntrinsic()->Op(3) =
+                        gtNewSimdCvtVectorToMaskNode(TYP_MASK, op3, simdBaseJitType, simdSize);
                 }
                 break;
             }
