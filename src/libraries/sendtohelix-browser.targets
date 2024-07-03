@@ -242,6 +242,7 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
+        <Timeout Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
       </HelixWorkItem>
     </ItemGroup>
 
