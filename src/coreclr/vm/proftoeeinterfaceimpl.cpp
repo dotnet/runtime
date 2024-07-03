@@ -7661,6 +7661,16 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
         ownEESuspension = TRUE;
     }
+    else if (!g_profControlBlock.fProfilerRequestedRuntimeSuspend)
+    {
+        return CORPROF_E_SUSPENSION_IN_PROGRESS;
+    }
+    else
+    {
+        // The profiler requested a runtime suspension before invoking this API,
+        // so the responsibility of resuming the runtime is outside the scope of this API.
+        // Given that the profiler owns the suspension, walking the GC Heap is safe.
+    }
 
     // Suspending EE ensures safe object inspection. We permit the GC Heap walk callback to
     // invoke ICorProfilerInfo APIs guarded by AllowObjectInspection by toggling fGCInProgress.
