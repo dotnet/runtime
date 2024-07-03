@@ -3653,6 +3653,9 @@
   <data name="TypeLoad_ResolveTypeFromAssembly" xml:space="preserve">
     <value>Could not resolve type '{0}' in assembly '{1}'.</value>
   </data>
+  <data name="TypeLoad_FieldSizeTooBig" xml:space="preserve">
+    <value>Type load failed, because the size of a field is too big.</value>
+  </data>
   <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
     <value>Access to the path is denied.</value>
   </data>

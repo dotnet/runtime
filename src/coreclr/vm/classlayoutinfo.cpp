@@ -148,6 +148,9 @@ namespace
             LayoutRawFieldInfo* pfwalk = *pSortWalk;
             RawFieldPlacementInfo* placementInfo = &pfwalk->m_placement;
 
+            if (placementInfo->m_size > FIELD_OFFSET_LAST_REAL_OFFSET)
+                COMPlusThrow(kTypeLoadException, W("TypeLoad_FieldSizeTooBig"));
+
             BYTE alignmentRequirement = (BYTE)placementInfo->m_alignment;
 
             alignmentRequirement = min(alignmentRequirement, packingSize);
