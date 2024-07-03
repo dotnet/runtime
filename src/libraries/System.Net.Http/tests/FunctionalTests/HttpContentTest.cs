@@ -702,14 +702,7 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    try
-                    {
-                        await server.AcceptConnectionSendResponseAndCloseAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(server.AcceptConnectionSendResponseAndCloseAsync());
                 });
         }
 
@@ -717,6 +710,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
+            var observedCancellation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
@@ -728,6 +722,7 @@ namespace System.Net.Http.Functional.Tests
                         HttpCompletionOption.ResponseHeadersRead);
 
                     await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.ReadAsStringAsync(cts.Token));
+                    observedCancellation.SetResult();
                 },
                 async server =>
                 {
@@ -735,17 +730,9 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await connection.ReadRequestHeaderAsync();
                         await connection.SendResponseAsync(LoopbackServer.GetHttpResponseHeaders(contentLength: 100));
-                        await Task.Delay(250);
+                        await Task.Delay(10);
                         cts.Cancel();
-                        await Task.Delay(500);
-                        try
-                        {
-                            await connection.SendResponseAsync(new string('a', 100));
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await observedCancellation.Task.WaitAsync(TestHelper.PassingTestTimeout);
                     });
                 });
         }
@@ -797,14 +784,7 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    try
-                    {
-                        await server.AcceptConnectionSendResponseAndCloseAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(server.AcceptConnectionSendResponseAndCloseAsync());
                 });
         }
 
@@ -812,6 +792,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
+            var observedCancellation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
@@ -823,6 +804,7 @@ namespace System.Net.Http.Functional.Tests
                         HttpCompletionOption.ResponseHeadersRead);
 
                     await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.ReadAsByteArrayAsync(cts.Token));
+                    observedCancellation.SetResult();
                 },
                 async server =>
                 {
@@ -830,17 +812,9 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await connection.ReadRequestHeaderAsync();
                         await connection.SendResponseAsync(LoopbackServer.GetHttpResponseHeaders(contentLength: 100));
-                        await Task.Delay(250);
+                        await Task.Delay(10);
                         cts.Cancel();
-                        await Task.Delay(500);
-                        try
-                        {
-                            await connection.SendResponseAsync(new string('a', 100));
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await observedCancellation.Task.WaitAsync(TestHelper.PassingTestTimeout);
                     });
                 });
         }
