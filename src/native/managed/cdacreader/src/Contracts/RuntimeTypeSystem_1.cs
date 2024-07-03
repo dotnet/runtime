@@ -15,7 +15,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly TargetPointer _freeObjectMethodTablePointer;
 
     // TODO(cdac): we mutate this dictionary - copies of the Metadata_1 struct share this instance.
-    // If we need to invalidate our view of memory, we shoudl clear this dictionary.
+    // If we need to invalidate our view of memory, we should clear this dictionary.
     private readonly Dictionary<TargetPointer, MethodTable> _methodTables = new();
 
 
