@@ -2653,5 +2653,28 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, RegexOptions.Multiline, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}$", "date 10/12/1966\nand 10/12/66\nare the same", new (int, int)[] { (5, 10), (20, 8) } };
             }
         }
+
+        [Fact]
+        public async Task MatchNonBacktrackingOver255Minterms()
+        {
+            // This is a test for the rare over 255 unique minterms case in MintermClassifier
+            StringBuilder pattern = new();
+            StringBuilder input = new();
+            for (int i = 256; i <= 768; i++)
+            {
+                string str = new Rune(i).ToString();
+                pattern.Append(str);
+                // adding an optional char as well just so it's not a string literal
+                pattern.Append(str);
+                pattern.Append('?');
+                // input is the pattern itself
+                input.Append(str);
+            }
+            Regex r = await RegexHelpers.GetRegexAsync(RegexEngine.NonBacktracking, pattern.ToString(), RegexOptions.None);
+            MatchCollection ms = r.Matches(input.ToString());
+            Assert.Equal(1, ms.Count);
+            Assert.Equal(0, ms[0].Index);
+            Assert.Equal(513, ms[0].Length);
+        }
     }
 }
