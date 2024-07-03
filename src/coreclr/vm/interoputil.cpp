@@ -3082,6 +3082,7 @@ void IUInvokeDispMethod(
     DISPID              MemberID            = 0;
     ByrefArgumentInfo*  aByrefArgInfos      = NULL;
     BOOL                bSomeArgsAreByref   = FALSE;
+    SafeComHolder<IUnknown> pUnk            = NULL;
     SafeComHolder<IDispatch> pDisp          = NULL;
     SafeComHolder<IDispatchEx> pDispEx      = NULL;
     VariantPtrHolder    pVarResult          = NULL;
@@ -3121,7 +3122,7 @@ void IUInvokeDispMethod(
     {
         CorIfaceAttr ifaceType = pInvokedMT->GetComInterfaceType();
         if (!IsDispatchBasedItf(ifaceType))
-            COMPlusThrow(kTargetInvocationException, IDS_EE_INTERFACE_NOT_DISPATCH_BASED);
+            COMPlusThrow(kTargetException, W("TargetInvocation_InterfaceNotIDispatch"));
     }
 
     // Validate that the target is a COM object.
@@ -3156,7 +3157,10 @@ void IUInvokeDispMethod(
     {
         // The invoked type is a dispatch or dual interface so we will make the
         // invocation on it.
-        pDisp = (IDispatch *)ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+        pUnk = ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+        hr = SafeQueryInterface(pUnk, IID_IDispatch, (IUnknown**)&pDisp);
+        if (FAILED(hr))
+            COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
     }
     else
     {
@@ -3169,7 +3173,7 @@ void IUInvokeDispMethod(
         // Retrieve the IDispatch pointer from the wrapper.
         pDisp = (IDispatch*)pRCW->GetIDispatch();
         if (!pDisp)
-            COMPlusThrow(kTargetInvocationException, IDS_EE_NO_IDISPATCH_ON_TARGET);
+            COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
 
         // If we aren't ignoring case, then we need to try and QI for IDispatchEx to
         // be able to use IDispatchEx::GetDispID() which has a flag to control case
