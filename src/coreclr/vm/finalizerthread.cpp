@@ -569,6 +569,17 @@ void FinalizerThread::FinalizerThreadWait()
 
         EnableFinalization();
 
-        hEventFinalizerDone->Wait(INFINITE,TRUE);
+        // Under GC stress the finalizer queue may never go empty as frequent
+        // GCs will keep filling up the queue with items.
+        // We will disable GC stress to make sure the current thread is not permanently blocked on that.
+        GCStressPolicy::InhibitHolder iholder;
+
+        //----------------------------------------------------
+        // Do appropriate wait and pump messages if necessary
+        //----------------------------------------------------
+
+        DWORD status;
+        status = hEventFinalizerDone->Wait(INFINITE,TRUE);
+        _ASSERTE(status == WAIT_OBJECT_0);
     }
 }
