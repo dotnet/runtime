@@ -109,6 +109,14 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/TextEncodingFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send TextEncodingFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/UTF8Fuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send UTF8Fuzzer to OneFuzz

@@ -1371,7 +1371,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             var_types indexedElementOpType;
 
-            if (intrin.numOperands == 3)
+            if (intrin.numOperands == 2)
+            {
+                indexedElementOpType = intrin.op1->TypeGet();
+            }
+            else if (intrin.numOperands == 3)
             {
                 indexedElementOpType = intrin.op2->TypeGet();
             }
@@ -1469,6 +1473,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_Sve_Count64BitElements:
                     case NI_Sve_Count8BitElements:
                         needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
+                        break;
+
+                    case NI_Sve_GatherPrefetch8Bit:
+                    case NI_Sve_GatherPrefetch16Bit:
+                    case NI_Sve_GatherPrefetch32Bit:
+                    case NI_Sve_GatherPrefetch64Bit:
+                        if (!varTypeIsSIMD(intrin.op2->gtType))
+                        {
+                            needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
+                        }
+                        else
+                        {
+                            needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
+                        }
                         break;
 
                     case NI_Sve_SaturatingDecrementBy16BitElementCount:
@@ -1623,7 +1641,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                srcCount += BuildOperandUses(intrin.op1, predMask);
+                if (tgtPrefOp2)
+                {
+                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2, predMask);
+                }
+                else
+                {
+                    srcCount += BuildOperandUses(intrin.op1, predMask);
+                }
             }
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -1678,7 +1703,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             assert(!isRMW);
 
-            srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
+            if (intrin.id == NI_Sve_DuplicateSelectedScalarToVector)
+            {
+                srcCount += BuildOperandUses(intrin.op2);
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
+            }
 
             if (intrin.op3 != nullptr)
             {
@@ -1986,6 +2018,29 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
                     srcCount += BuildAddrUses(intrin.op2);
                     break;
+
+                case NI_Sve_GatherPrefetch8Bit:
+                case NI_Sve_GatherPrefetch16Bit:
+                case NI_Sve_GatherPrefetch32Bit:
+                case NI_Sve_GatherPrefetch64Bit:
+                case NI_Sve_GatherVector:
+                case NI_Sve_GatherVectorByteZeroExtend:
+                case NI_Sve_GatherVectorInt16SignExtend:
+                case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+                case NI_Sve_GatherVectorInt32SignExtend:
+                case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+                case NI_Sve_GatherVectorSByteSignExtend:
+                case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+                case NI_Sve_GatherVectorUInt16ZeroExtend:
+                case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+                case NI_Sve_GatherVectorUInt32ZeroExtend:
+                    assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                    if (!varTypeIsSIMD(intrin.op2->gtType))
+                    {
+                        srcCount += BuildAddrUses(intrin.op2);
+                        break;
+                    }
+                    FALLTHROUGH;
 
                 default:
                 {

@@ -1724,7 +1724,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->Address = addr;
     ModuleData->PEAssembly = addr; // Module address in .NET 9+ - correspondingly, SOS-DAC APIs for PE assemblies expect a module address
     COUNT_T metadataSize = 0;
-    if (!pModule->GetPEAssembly()->IsDynamic())
+    if (!pModule->IsReflectionEmit())
     {
         ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedLayout()->GetBase()));
     }
@@ -1732,8 +1732,8 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
     ModuleData->metadataSize = (SIZE_T) metadataSize;
 
-    ModuleData->bIsReflection = pModule->IsReflection();
-    ModuleData->bIsPEFile = !pModule->GetPEAssembly()->IsDynamic();
+    ModuleData->bIsReflection = pModule->IsReflectionEmit();
+    ModuleData->bIsPEFile = !pModule->IsReflectionEmit();
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
     ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
     ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
@@ -2140,34 +2140,9 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _In
         if (!pPEAssembly->GetPath().DacGetUnicode(count, fileName, pNeeded))
             hr = E_FAIL;
     }
-    else if (!pPEAssembly->IsDynamic())
+    else if (!pPEAssembly->IsReflectionEmit())
     {
-        StackSString displayName;
-        pPEAssembly->GetDisplayName(displayName, 0);
-
-        if (displayName.IsEmpty())
-        {
-            if (fileName)
-                fileName[0] = 0;
-
-            if (pNeeded)
-                *pNeeded = 1;
-        }
-        else
-        {
-            unsigned int len = displayName.GetCount()+1;
-
-            if (fileName)
-            {
-                wcsncpy_s(fileName, count, displayName.GetUnicode(), _TRUNCATE);
-
-                if (count < len)
-                    len = count;
-            }
-
-            if (pNeeded)
-                *pNeeded = len;
-        }
+        hr = E_NOTIMPL;
     }
     else
     {
@@ -2194,7 +2169,7 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
     PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // More fields later?
-    if (!pPEAssembly->IsDynamic())
+    if (!pPEAssembly->IsReflectionEmit())
     {
         *base = TO_CDADDR(dac_cast<TADDR>(pPEAssembly->GetLoadedLayout()->GetBase()));
     }
@@ -2709,21 +2684,9 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _In
         else if (name)
             name[count-1] = 0;
     }
-    else if (!pAssembly->GetPEAssembly()->IsDynamic())
+    else if (!pAssembly->GetPEAssembly()->IsReflectionEmit())
     {
-        StackSString displayName;
-        pAssembly->GetPEAssembly()->GetDisplayName(displayName, 0);
-
-        const WCHAR *val = displayName.GetUnicode();
-
-        if (pNeeded)
-            *pNeeded = displayName.GetCount() + 1;
-
-        if (name && count)
-        {
-            wcsncpy_s(name, count, val, _TRUNCATE);
-            name[count-1] = 0;
-        }
+        hr = E_NOTIMPL;
     }
     else
     {
@@ -3239,7 +3202,6 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
     return hr;
 }
 
-
 HRESULT
 ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException)
 {
@@ -3248,6 +3210,39 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetNestedExceptionData(exception, exceptionObject, nextNestedException);
+        if (FAILED(hr))
+        {
+            hr = GetNestedExceptionDataImpl(exception, exceptionObject, nextNestedException);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            CLRDATA_ADDRESS exceptionObjectLocal;
+            CLRDATA_ADDRESS nextNestedExceptionLocal;
+            HRESULT hrLocal = GetNestedExceptionDataImpl(exception, &exceptionObjectLocal, &nextNestedExceptionLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(*exceptionObject == exceptionObjectLocal);
+            _ASSERTE(*nextNestedException == nextNestedExceptionLocal);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetNestedExceptionDataImpl(exception, exceptionObject, nextNestedException);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException)
+{
 #ifdef FEATURE_EH_FUNCLETS
     ExceptionTrackerBase *pExData = PTR_ExceptionTrackerBase(TO_TADDR(exception));
 #else
@@ -3255,19 +3250,12 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
 #endif // FEATURE_EH_FUNCLETS
 
     if (!pExData)
-    {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
-        *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
-    }
+        return E_INVALIDARG;
 
-    SOSDacLeave();
-    return hr;
+    *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
+    *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
+    return S_OK;
 }
-
 
 HRESULT
 ClrDataAccess::GetDomainLocalModuleData(CLRDATA_ADDRESS addr, struct DacpDomainLocalModuleData *pLocalModuleData)

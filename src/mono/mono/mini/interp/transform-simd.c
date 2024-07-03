@@ -56,6 +56,19 @@ lookup_intrins (guint16 *intrinsics, int size, MonoMethod *cmethod)
 // i.e. all 'get_' and 'op_' need to come after regular title-case names
 static guint16 sri_vector128_methods [] = {
 	SN_AndNot,
+	SN_As,
+	SN_AsByte,
+	SN_AsDouble,
+	SN_AsInt16,
+	SN_AsInt32,
+	SN_AsInt64,
+	SN_AsNInt,
+	SN_AsNUInt,
+	SN_AsSByte,
+	SN_AsSingle,
+	SN_AsUInt16,
+	SN_AsUInt32,
+	SN_AsUInt64,
 	SN_ConditionalSelect,
 	SN_Create,
 	SN_CreateScalar,
@@ -310,6 +323,42 @@ get_common_simd_info (MonoClass *vector_klass, MonoMethodSignature *csignature, 
 	return TRUE;
 }
 
+static MonoType*
+get_vector_t_elem_type (MonoType *vector_type)
+{
+	MonoClass *klass;
+	MonoType *etype;
+
+	g_assert (vector_type->type == MONO_TYPE_GENERICINST);
+	klass = mono_class_from_mono_type_internal (vector_type);
+	g_assert (
+		!strcmp (m_class_get_name (klass), "Vector`1") ||
+		!strcmp (m_class_get_name (klass), "Vector64`1") ||
+		!strcmp (m_class_get_name (klass), "Vector128`1") ||
+		!strcmp (m_class_get_name (klass), "Vector256`1") ||
+		!strcmp (m_class_get_name (klass), "Vector512`1"));
+	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+	return etype;
+}
+
+static gboolean
+is_element_type_primitive (MonoType *vector_type)
+{
+	if (vector_type->type == MONO_TYPE_GENERICINST) {
+		MonoType *element_type = get_vector_t_elem_type (vector_type);
+		return MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type);
+	} else {
+		MonoClass *klass = mono_class_from_mono_type_internal (vector_type);
+		g_assert (
+			!strcmp (m_class_get_name (klass), "Plane") ||
+			!strcmp (m_class_get_name (klass), "Quaternion") ||
+			!strcmp (m_class_get_name (klass), "Vector2") ||
+			!strcmp (m_class_get_name (klass), "Vector3") ||
+			!strcmp (m_class_get_name (klass), "Vector4"));
+		return TRUE;
+	}
+}
+
 static void
 emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMethodSignature *csignature, int vector_size, gboolean allow_void)
 {
@@ -387,6 +436,25 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			simd_intrins = INTERP_SIMD_INTRINSIC_V128_AND_NOT;
 			break;
+		case SN_As:
+		case SN_AsByte:
+		case SN_AsDouble:
+		case SN_AsInt16:
+		case SN_AsInt32:
+		case SN_AsInt64:
+		case SN_AsNInt:
+		case SN_AsNUInt:
+		case SN_AsSByte:
+		case SN_AsSingle:
+		case SN_AsUInt16:
+		case SN_AsUInt32:
+		case SN_AsUInt64: {
+			if (!is_element_type_primitive (csignature->ret) || !is_element_type_primitive (csignature->params [0]))
+				return FALSE;
+			simd_opcode = MINT_SIMD_INTRINS_P_P;
+			simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITCAST;
+			break;
+		}
 		case SN_ConditionalSelect:
 			simd_opcode = MINT_SIMD_INTRINS_P_PPP;
 			simd_intrins = INTERP_SIMD_INTRINSIC_V128_CONDITIONAL_SELECT;

@@ -2215,8 +2215,19 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
     GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, block->GetTarget(), REG_INTRET);
 }
 
-//  move an immediate value into an integer register
+//  move an immediate value + base address into an integer register
+void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
+                                               regNumber      dstReg,
+                                               regNumber      baseReg,
+                                               ssize_t        imm,
+                                               insFlags flags DEBUGARG(size_t targetHandle)
+                                                   DEBUGARG(GenTreeFlags gtFlags))
+{
+    instGen_Set_Reg_To_Imm(size, dstReg, imm);
+    GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+}
 
+//  move an immediate value into an integer register
 void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
                                      regNumber      reg,
                                      ssize_t        imm,
@@ -2224,12 +2235,19 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
+
+    emitAttr origAttr = size;
     if (!compiler->opts.compReloc)
     {
         size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
     }
 
-    if (EA_IS_RELOC(size))
+    if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_SEC_RELOC(origAttr))
+    {
+        // This emits pair of `add` instructions for TLS reloc
+        GetEmitter()->emitIns_Add_Add_Tls_Reloc(size, reg, imm DEBUGARG(gtFlags));
+    }
+    else if (EA_IS_RELOC(size))
     {
         // This emits a pair of adrp/add (two instructions) with fix-ups.
         GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
@@ -2344,6 +2362,14 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (targetType == TYP_BYREF)
             {
                 attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+            }
+
+            if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                if (con->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+                {
+                    attr = EA_SET_FLG(attr, EA_CNS_SEC_RELOC);
+                }
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,

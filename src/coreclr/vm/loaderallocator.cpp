@@ -769,7 +769,7 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
             do
             {
                 {
-                    CrstHolder ch(&m_crstLoaderAllocator);
+                    CrstHolder ch(&m_crstLoaderAllocatorHandleTable);
 
                     gc.handleTable = gc.loaderAllocator->GetHandleTable();
 
@@ -781,7 +781,6 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
                         retVal = (UINT_PTR)((freeHandleIndex + 1) << 1);
                         break;
                     }
-
                     slotsUsed = gc.loaderAllocator->GetSlotsUsed();
 
                     if (slotsUsed > MAX_LOADERALLOCATOR_HANDLE)
@@ -808,7 +807,7 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
                 gc.handleTable = (PTRARRAYREF)AllocateObjectArray(newSize, g_pObjectClass);
 
                 {
-                    CrstHolder ch(&m_crstLoaderAllocator);
+                    CrstHolder ch(&m_crstLoaderAllocatorHandleTable);
 
                     if (gc.loaderAllocator->GetHandleTable() == gc.handleTableOld)
                     {
@@ -886,7 +885,7 @@ void LoaderAllocator::FreeHandle(LOADERHANDLE handle)
         // The slot value doesn't have the low bit set, so it is an index to the handle table.
         // In this case, push the index of the handle to the stack of freed indexes for
         // reuse.
-        CrstHolder ch(&m_crstLoaderAllocator);
+        CrstHolder ch(&m_crstLoaderAllocatorHandleTable);
 
         UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
         // The Push can fail due to OOM. Ignore this failure, it is better than crashing. The
@@ -937,7 +936,7 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
     else
     {
         /* The handle table is read locklessly, be careful */
-        CrstHolder ch(&m_crstLoaderAllocator);
+        CrstHolder ch(&m_crstLoaderAllocatorHandleTable);
 
         _ASSERTE(!ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle));
 
@@ -983,7 +982,7 @@ void LoaderAllocator::SetHandleValue(LOADERHANDLE handle, OBJECTREF value)
     else
     {
         // The handle table is read locklessly, be careful
-        CrstHolder ch(&m_crstLoaderAllocator);
+        CrstHolder ch(&m_crstLoaderAllocatorHandleTable);
 
         _ASSERTE(!ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle));
 
@@ -1065,6 +1064,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     m_pDomain = pDomain;
 
     m_crstLoaderAllocator.Init(CrstLoaderAllocator, (CrstFlags)CRST_UNSAFE_COOPGC);
+    m_crstLoaderAllocatorHandleTable.Init(CrstLeafLock, (CrstFlags)CRST_UNSAFE_COOPGC);
     m_InteropDataCrst.Init(CrstInteropData, CRST_REENTRANCY);
 #ifdef FEATURE_COMINTEROP
     m_ComCallWrapperCrst.Init(CrstCOMCallWrapper);

@@ -1815,7 +1815,6 @@ DebuggerMethodInfo::DJIIterator::DJIIterator()
     LIMITED_METHOD_CONTRACT;
 
     m_pCurrent = NULL;
-    m_pLoaderModuleFilter = NULL;
 }
 
 bool DebuggerMethodInfo::DJIIterator::IsAtEnd()
@@ -1854,10 +1853,6 @@ void DebuggerMethodInfo::DJIIterator::Next(BOOL fFirst /*=FALSE*/)
     for ( ; m_pCurrent != NULL; m_pCurrent = m_pCurrent->m_prevJitInfo)
     {
         Module * pLoaderModule = m_pCurrent->m_pLoaderModule;
-
-        // Obey the module filter if it's provided
-        if ((m_pLoaderModuleFilter != NULL) && (m_pLoaderModuleFilter != pLoaderModule))
-            continue;
 
         //Obey the methodDesc filter if it is provided
         if ((m_pMethodDescFilter != NULL) && (m_pMethodDescFilter != m_pCurrent->m_nativeCodeVersion.GetMethodDesc()))
@@ -1971,7 +1966,7 @@ void DebuggerMethodInfo::SetJMCStatus(bool fStatus)
 // Get an iterator that will go through ALL native code-blobs (DJI) in the specified
 // AppDomain, optionally filtered by loader module (if pLoaderModuleFilter != NULL).
 // This is EnC/ Generics / Prejit aware.
-void DebuggerMethodInfo::IterateAllDJIs(AppDomain * pAppDomain, Module * pLoaderModuleFilter, MethodDesc * pMethodDescFilter, DebuggerMethodInfo::DJIIterator * pEnum)
+void DebuggerMethodInfo::IterateAllDJIs(AppDomain * pAppDomain, MethodDesc * pMethodDescFilter, DebuggerMethodInfo::DJIIterator * pEnum)
 {
     CONTRACTL
     {
@@ -1984,10 +1979,9 @@ void DebuggerMethodInfo::IterateAllDJIs(AppDomain * pAppDomain, Module * pLoader
     _ASSERTE(pAppDomain != NULL || pMethodDescFilter != NULL);
 
     // Ensure we have DJIs for everything.
-    CreateDJIsForNativeBlobs(pAppDomain, pLoaderModuleFilter, pMethodDescFilter);
+    CreateDJIsForNativeBlobs(pAppDomain, pMethodDescFilter);
 
     pEnum->m_pCurrent = m_latestJitInfo;
-    pEnum->m_pLoaderModuleFilter = pLoaderModuleFilter;
     pEnum->m_pMethodDescFilter = pMethodDescFilter;
 
     // Advance to the first DJI that passes the filter
@@ -2000,14 +1994,10 @@ void DebuggerMethodInfo::IterateAllDJIs(AppDomain * pAppDomain, Module * pLoader
 //
 // Arguments:
 //      * pAppDomain - Create DJIs only for this AppDomain
-//      * pLoaderModuleFilter - If non-NULL, create DJIs only for MethodDescs whose
-//          loader module matches this one. (This can be different from m_module in the
-//          case of generics defined in one module and instantiated in another). If
-//          non-NULL, create DJIs for all modules in pAppDomain.
 //      * pMethodDescFilter - If non-NULL, create DJIs only for this single MethodDesc.
 //
 
-void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module * pLoaderModuleFilter, MethodDesc* pMethodDescFilter)
+void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, MethodDesc* pMethodDescFilter)
 {
     CONTRACTL
     {
@@ -2016,11 +2006,8 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module
     }
     CONTRACTL_END;
 
-    // If we're not stopped and the module we're iterating over allows types to load,
-    // then it's possible new native blobs are being created underneath us.
-    _ASSERTE(g_pDebugger->IsStopped() ||
-             ((pLoaderModuleFilter != NULL) && !pLoaderModuleFilter->IsReadyForTypeLoad()) ||
-             pMethodDescFilter != NULL);
+    // If we're not stopped, it's possible new native blobs are being created underneath us.
+    _ASSERTE(g_pDebugger->IsStopped() || pMethodDescFilter != NULL);
 
     if (pMethodDescFilter != NULL)
     {
@@ -2046,10 +2033,6 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module
             }
 
             Module * pLoaderModule = pDesc->GetLoaderModule();
-
-            // Obey the module filter if it's provided
-            if ((pLoaderModuleFilter != NULL) && (pLoaderModuleFilter != pLoaderModule))
-                continue;
 
             // Skip modules that are unloaded, but still hanging around. Note that we can't use DebuggerModule for this check
             // because of it is deleted pretty early during unloading, and we do not want to recreate it.

@@ -2236,7 +2236,7 @@ void MethodDesc::Reset()
 
     _ASSERTE(InEnCEnabledModule() || // The process is frozen by the debugger
              IsDynamicMethod() || // These are used in a very restricted way
-             GetLoaderModule()->IsReflection()); // Rental methods
+             GetLoaderModule()->IsReflectionEmit()); // Rental methods
 
     // Reset any flags relevant to the old code
     ClearFlagsOnUpdate();
@@ -2248,7 +2248,7 @@ void MethodDesc::Reset()
     else
     {
         // We should go here only for the rental methods
-        _ASSERTE(GetLoaderModule()->IsReflection());
+        _ASSERTE(GetLoaderModule()->IsReflectionEmit());
 
         InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, FALSE);
 
