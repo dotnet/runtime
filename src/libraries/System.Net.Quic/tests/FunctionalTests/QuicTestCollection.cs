@@ -1,16 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.XUnitExtensions;
-using System;
-using System.Net.Quic;
+using Microsoft.Quic;
 using System.Reflection;
 using System.Text;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Threading;
+using System.Collections.Generic;
 using Xunit;
-using Xunit.Abstractions;
 
-using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Tests;
@@ -21,6 +20,8 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
     public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
 
     public static Version MsQuicVersion { get; } = GetMsQuicVersion();
+
+    private static readonly Dictionary<string, int> s_unobservedExceptions = new Dictionary<string, int>();
 
     public QuicTestCollection()
     {
@@ -33,11 +34,28 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
             QUIC_SETTINGS settings = default(QUIC_SETTINGS);
             settings.IsSet.MaxWorkerQueueDelayUs = 1;
             settings.MaxWorkerQueueDelayUs = 2_500_000u; // 2.5s, 10x the default
-            if (MsQuic.StatusFailed(GetApiTable()->SetParam(null, MsQuic.QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
+            if (StatusFailed(GetApiTable()->SetParam(null, QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
             {
                 Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
             }
         }
+
+        EventHandler<UnobservedTaskExceptionEventArgs> eventHandler = (_, e) =>
+        {
+            lock (s_unobservedExceptions)
+            {
+                string text = e.Exception.ToString();
+                if (!s_unobservedExceptions.ContainsKey(text))
+                {
+                    s_unobservedExceptions[text] = 1;
+                }
+                else
+                {
+                    s_unobservedExceptions[text] += 1;
+                }
+            }
+        };
+        TaskScheduler.UnobservedTaskException += eventHandler;
     }
 
     public unsafe void Dispose()
@@ -60,7 +78,7 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
 
         if (StatusFailed(status))
         {
-            System.Console.WriteLine($"Failed to read MsQuic counters: {status}");
+            Console.WriteLine($"Failed to read MsQuic counters: {status}");
             return;
         }
 
@@ -81,7 +99,9 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
         DumpCounter(QUIC_PERFORMANCE_COUNTERS.CONN_APP_REJECT);
         DumpCounter(QUIC_PERFORMANCE_COUNTERS.CONN_LOAD_REJECT);
 
-        System.Console.WriteLine(sb.ToString());
+        Console.WriteLine(sb.ToString());
+
+        Console.WriteLine($"Unobserved exceptions of {s_unobservedExceptions.Count} different types: {Environment.NewLine}{string.Join(Environment.NewLine + new string('=', 120) + Environment.NewLine, s_unobservedExceptions.Select(pair => $"Count {pair.Value}: {pair.Key}"))}");
     }
 
     private static Version GetMsQuicVersion()
@@ -102,6 +122,6 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
     {
         Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
         object msQuicApiInstance = msQuicApiType.GetProperty("Api", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
-        return (QUIC_API_TABLE*)(Pointer.Unbox(msQuicApiType.GetProperty("ApiTable").GetGetMethod().Invoke(msQuicApiInstance, Array.Empty<object?>())));
+        return (QUIC_API_TABLE*)Pointer.Unbox(msQuicApiType.GetProperty("ApiTable").GetGetMethod().Invoke(msQuicApiInstance, Array.Empty<object?>()));
     }
 }
