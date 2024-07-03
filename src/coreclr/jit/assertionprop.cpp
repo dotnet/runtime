@@ -2318,6 +2318,82 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
+    // If this is a loop header (cycle entry), see if this phi-def
+    // is value equivalent to some other phi-def in the block. Note
+    // value numbering is a one-pass forward algorithm and doesn't
+    // know the value numbers for backege phis, so cycle entry
+    // phis will all have novel VNs.
+    //
+    // We walk "backwards" so that
+    // we don't generate the assertion too early...?
+    //
+    // Consider: compute hash of forward edge phi inputs during VN,
+    // so we can quickly rule out inequivalent cases.
+    //
+    // Consider: tap into reachability logic available to VN, and/or
+    // edit out PHIs from impossible preds, or mark the phi nodes
+    // in some way so we can ignore them here.
+    //
+    FlowGraphNaturalLoop* const loop = m_blockToLoop->GetLoop(compCurBB);
+    if ((loop != nullptr) && (loop->GetHeader() == compCurBB))
+    {
+        for (Statement* stmt = compCurBB->firstStmt(); stmt != compCurStmt; stmt = stmt->GetNextStmt())
+        {
+            // Consider: limit searching if there are lots of phi defs
+            //
+            GenTree* const otherTree = stmt->GetRootNode();
+            assert(otherTree->IsPhiDefn());
+
+            if (otherTree->TypeGet() != tree->TypeGet())
+            {
+                continue;
+            }
+
+            GenTreePhi* const       treePhi   = tree->AsLclVar()->Data()->AsPhi();
+            GenTreePhi* const       otherPhi  = otherTree->AsLclVar()->Data()->AsPhi();
+            GenTreePhi::UseIterator treeIter  = treePhi->Uses().begin();
+            GenTreePhi::UseIterator treeEnd   = treePhi->Uses().end();
+            GenTreePhi::UseIterator otherIter = otherPhi->Uses().begin();
+            GenTreePhi::UseIterator otherEnd  = otherPhi->Uses().end();
+
+            bool phiDefsAreEquivalent = true;
+
+            for (; (treeIter != treeEnd) && (otherIter != otherEnd); ++treeIter, ++otherIter)
+            {
+                GenTreePhiArg* const treePhiArg  = treeIter->GetNode()->AsPhiArg();
+                GenTreePhiArg* const otherPhiArg = otherIter->GetNode()->AsPhiArg();
+
+                assert(treePhiArg->gtPredBB == otherPhiArg->gtPredBB);
+
+                // Consult SSA defs always...
+                //
+                ValueNum treePhiArgVN =
+                    lvaGetDesc(treePhiArg)->GetPerSsaData(treePhiArg->GetSsaNum())->m_vnPair.GetConservative();
+                ValueNum otherPhiArgVN =
+                    lvaGetDesc(otherPhiArg)->GetPerSsaData(otherPhiArg->GetSsaNum())->m_vnPair.GetConservative();
+
+                // Consider: see if we already think these two VNs are equivalent..
+                //
+                if (treePhiArgVN != otherPhiArgVN)
+                {
+                    phiDefsAreEquivalent = false;
+                    break;
+                }
+            }
+
+            // If we didn't verify all phi args we have failed to prove equivalence
+            //
+            phiDefsAreEquivalent &= (treeIter == treeEnd);
+            phiDefsAreEquivalent &= (otherIter == otherEnd);
+
+            if (phiDefsAreEquivalent)
+            {
+                JITDUMP("Found equivalent phi defs: [%06u] and [%06u]\n", dspTreeID(treePhi), dspTreeID(otherPhi));
+                // generate assertion!
+            }
+        }
+    }
+
     // Try to find if all phi arguments are known to be non-null.
     bool isNonNull = true;
     for (GenTreePhi::Use& use : tree->AsLclVar()->Data()->AsPhi()->Uses())
@@ -6602,6 +6678,8 @@ PhaseStatus Compiler::optAssertionPropMain()
                     continue;
                 }
             }
+
+            compCurStmt = stmt;
 
             // Perform assertion gen for control flow based assertions.
             for (GenTree* const tree : stmt->TreeList())
