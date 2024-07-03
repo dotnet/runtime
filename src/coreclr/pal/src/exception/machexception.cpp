@@ -778,9 +778,14 @@ HijackFaultingThread(
         printf("%d.", *(((BYTE*)&(exceptionInfo.AVXState.ufs.as64.__fpu_ymmh0))+i));
     }
     printf("\n");
+#if defined(XSTATE_SUPPORTED)
     // CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
     threadContext.ContextFlags |= CONTEXT_XSTATE; //TODO: Mikelle check if this is where this should be set.
     CONTEXT_GetThreadContextFromThreadState(x86_AVX_STATE, (thread_state_t)&exceptionInfo.AVXState, &threadContext);
+#else
+    CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
+    printf("After CONTEXT_GetThreadContextFromThreadState. We should not see this unless AVX isn't available\n");
+#endif
     printf("After CONTEXT_GetThreadContextFromThreadState.\n");
     M128A ymm_register_l = threadContext.Xmm0;
     M128A ymm_register_h = threadContext.Ymm0H;
@@ -1531,7 +1536,6 @@ MachExceptionInfo::MachExceptionInfo(mach_port_t thread, MachMessage& message)
 
 #if defined(HOST_AMD64)
     mach_msg_type_number_t count = x86_THREAD_STATE_COUNT;
-    mach_msg_type_number_t avx_count = x86_AVX_STATE_COUNT;
     machret = thread_get_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, &count);
     CHECK_MACH("thread_get_state", machret);
 
@@ -1539,9 +1543,12 @@ MachExceptionInfo::MachExceptionInfo(mach_port_t thread, MachMessage& message)
     machret = thread_get_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, &count);
     CHECK_MACH("thread_get_state(float)", machret);
     printf("Right before the AVX Call\n");
+#if defined(XSTATE_SUPPORTED)
+    mach_msg_type_number_t avx_count = x86_AVX_STATE_COUNT;
     machret = thread_get_state(thread, x86_AVX_STATE, (thread_state_t)&AVXState, &avx_count);
     printf("After we do thread_get_state_avx: %d\n", machret);
     CHECK_MACH("thread_get_state(avx)", machret);
+#endif
     printf("Inside the constructor for MachExceptionInfo, after Float_STATE has changed, the thread state value of the ymm register is ");
 
     for(int i = 0; i < 16; i++)
