@@ -1029,8 +1029,8 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				ainfo->pair_storage [0] = ArgInIReg;
 				ainfo->pair_storage [1] = ArgNone;
 				ainfo->nregs = 1;
-				// The indirect result is RAX on AMD64. However, since RAX is used as a scratch register, 
-				// the R10 register is used instead and before the native call, the value is moved from R10 to RAX.
+				// The indirect result is passed in RAX on AMD64. However, since we don't prevent reg allocator to use RAX in m2n wrappers, the RAX is used to pass the function pointer.
+				// We use the R10 register instead and before the native call, the value is moved from R10 to RAX.
 				ainfo->pair_regs [0] = (klass == swift_self) ? GINT32_TO_UINT8 (AMD64_R13) : GINT32_TO_UINT8 (AMD64_R10);
 				ainfo->pair_size [0] = size;
 				continue;
