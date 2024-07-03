@@ -2156,6 +2156,10 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVa
             {
                 type = rep->AccessType;
             }
+            else if (genIsValidFloatReg(seg.GetRegister()))
+            {
+                type = seg.GetRegisterType();
+            }
             else
             {
                 if ((seg.Offset % TARGET_POINTER_SIZE) == 0 && (seg.Size == TARGET_POINTER_SIZE))

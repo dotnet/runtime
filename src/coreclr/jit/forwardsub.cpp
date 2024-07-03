@@ -222,14 +222,21 @@ public:
                 //
                 // fgGetStubAddrArg cannot handle complex trees (it calls gtClone)
                 //
-                bool isCallTarget = false;
-                if ((parent != nullptr) && parent->IsCall())
+                bool canSubstituteIntoParent = true;
+                if (parent != nullptr)
                 {
-                    GenTreeCall* const parentCall = parent->AsCall();
-                    isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
+                    if (parent->IsCall())
+                    {
+                        GenTreeCall* const parentCall = parent->AsCall();
+                        canSubstituteIntoParent = (parentCall->gtCallType != CT_INDIRECT) || (parentCall->gtCallAddr != node);
+                    }
+                    else if (parent->OperIs(GT_FIELD_LIST))
+                    {
+                        canSubstituteIntoParent = false;
+                    }
                 }
 
-                if (!isCallTarget && IsLastUse(node->AsLclVar()))
+                if (canSubstituteIntoParent && IsLastUse(node->AsLclVar()))
                 {
                     m_node          = node;
                     m_use           = use;
