@@ -6765,44 +6765,41 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
     {
         if (pThread == NULL || !pThread->PreemptiveGCDisabled())
         {
-            // We are not running managed code, so this cannot be our hijack
+            // if we are not in coop mode, this cannot be our hijack
             // Perhaps some other runtime is responsible.
             return VEH_CONTINUE_SEARCH;
         }
 
-        HijackArgs hijackArgs;
-        hijackArgs.Rax = pExceptionInfo->ContextRecord->Rax;
-        hijackArgs.Rsp = pExceptionInfo->ContextRecord->Rsp;
+        // Sanity check. The thread should be hijacked by us.
+        _ASSERTE_ALL_BUILDS(pThread->HasThreadState(Thread::TS_Hijacked));
 
+        PCONTEXT interruptedContext = pExceptionInfo->ContextRecord;
         bool areShadowStacksEnabled = Thread::AreShadowStacksEnabled();
         if (areShadowStacksEnabled)
         {
-            // When the CET is enabled, the return address is still on stack, so we need to set the Rsp as
-            // if it was popped.
-            hijackArgs.Rsp += 8;
+            // OS should have fixed the SP value to the same as we`ve stashed for the hijacked thread
+            _ASSERTE(*(size_t *)interruptedContext->Rsp == (uintptr_t)pThread->GetHijackedReturnAddress());
+
+            // When the CET is enabled, the interruption happens on the ret instruction in the calee.
+            // We need to "pop" rsp to the caller, as if the ret has consumed it.
+            interruptedContext->Rsp += 8;
         }
-        hijackArgs.Rip = 0 ; // The OnHijackWorker sets this
-        #define CALLEE_SAVED_REGISTER(regname) hijackArgs.Regs.regname = pExceptionInfo->ContextRecord->regname;
-        ENUM_CALLEE_SAVED_REGISTERS();
-        #undef CALLEE_SAVED_REGISTER
 
-        OnHijackWorker(&hijackArgs);
+        // Change the IP to be at the original return site, as if we have returned to the caller.
+        // That IP is an interruptible safe point, so we can suspend right there.
+        uintptr_t origIp = interruptedContext->Rip;
+        interruptedContext->Rip = (uintptr_t)pThread->GetHijackedReturnAddress();
 
-        #define CALLEE_SAVED_REGISTER(regname) pExceptionInfo->ContextRecord->regname = hijackArgs.Regs.regname;
-        ENUM_CALLEE_SAVED_REGISTERS();
-        #undef CALLEE_SAVED_REGISTER
-        pExceptionInfo->ContextRecord->Rax = hijackArgs.Rax;
+        FrameWithCookie<ResumableFrame> frame(pExceptionInfo->ContextRecord);
+        frame.Push(pThread);
+        CommonTripThread();
+        frame.Pop(pThread);
 
         if (areShadowStacksEnabled)
         {
-            // The context refers to the return instruction
-            // Set the return address on the stack to the original one
-            *(size_t *)pExceptionInfo->ContextRecord->Rsp = hijackArgs.ReturnAddress;
-        }
-        else
-        {
-            // The context refers to the location after the return was processed
-            pExceptionInfo->ContextRecord->Rip = hijackArgs.ReturnAddress;
+            // Undo the "pop", so that the ret could now succeed.
+            interruptedContext->Rsp = interruptedContext->Rsp - 8;
+            interruptedContext->Rip = origIp;
         }
 
         return VEH_CONTINUE_EXECUTION;

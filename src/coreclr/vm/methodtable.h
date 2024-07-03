@@ -337,7 +337,7 @@ struct MethodTableAuxiliaryData
         enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
         enum_flag_IsInitError               = 0x0100,
-        enum_flag_IsStaticDataAllocated     = 0x0200,
+        enum_flag_IsStaticDataAllocated     = 0x0200,     // When this is set, if the class can be marked as initialized without any further code execution it will be.
         // unum_unused                      = 0x0400,
         enum_flag_IsTlsIndexAllocated       = 0x0800,
         enum_flag_MayHaveOpenInterfaceInInterfaceMap = 0x1000,
@@ -447,7 +447,17 @@ public:
 
     inline BOOL IsClassInited() const
     {
+        LIMITED_METHOD_DAC_CONTRACT;
         return VolatileLoad(&m_dwFlags) & enum_flag_Initialized;
+    }
+
+    inline bool IsClassInitedOrPreinitedDecided(bool *initResult) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        DWORD dwFlags = VolatileLoad(&m_dwFlags);
+        *initResult = m_dwFlags & enum_flag_Initialized;
+        return (dwFlags & (enum_flag_IsStaticDataAllocated|enum_flag_Initialized)) != 0;
     }
 
 #ifndef DACCESS_COMPILE
@@ -465,10 +475,10 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    inline void SetIsStaticDataAllocated()
+    inline void SetIsStaticDataAllocated(bool markAsInitedToo)
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_IsStaticDataAllocated);
+        InterlockedOr((LONG*)&m_dwFlags, markAsInitedToo ? (LONG)(enum_flag_IsStaticDataAllocated|enum_flag_Initialized) : (LONG)enum_flag_IsStaticDataAllocated);
     }
 #endif
 
@@ -567,7 +577,7 @@ public:
     bool GetIsInitedAndNonGCStaticsPointerIfInited(PTR_BYTE *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); *ptrResult = dac_cast<PTR_BYTE>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
 
     // This function sets the pointer portion of a statics pointer. It returns false if the statics value was already set.
-    bool InterlockedUpdateStaticsPointer(bool isGC, TADDR newVal)
+    bool InterlockedUpdateStaticsPointer(bool isGC, TADDR newVal, bool isClassInitedByUpdatingStaticPointer)
     {
         TADDR oldVal;
         TADDR oldValFromInterlockedOp;
@@ -582,8 +592,16 @@ public:
                 // If it has, then we don't need to do anything
                 return false;
             }
+            
+            if (isClassInitedByUpdatingStaticPointer)
+            {
+                oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal, oldVal);
+            }
+            else
+            {
+                oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal | oldVal, oldVal);
+            }
 
-            oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal | oldVal, oldVal);
         } while(oldValFromInterlockedOp != oldVal);
         return true;
     }
@@ -1042,18 +1060,31 @@ public:
 #ifndef DACCESS_COMPILE
     void SetClassInited()
     {
-        GetAuxiliaryDataForWrite()->SetClassInited();
+        // This must be before setting the MethodTable level flag, as otherwise there is a race condition where
+        // the MethodTable flag is set, which would allows the JIT to generate a call to a helper which assumes
+        // the DynamicStaticInfo level flag is set.
+        // The other race in the other direction is not a concern, as it can only cause allows reads/write from the static
+        // fields, which are effectively inited in any case once we reach this point.
         if (IsDynamicStatics())
         {
             GetDynamicStaticsInfo()->SetClassInited();
         }
+        GetAuxiliaryDataForWrite()->SetClassInited();
     }
 
-    void AttemptToPreinit();
+private:
+    bool IsInitedIfStaticDataAllocated();
+public:
+    // Is the MethodTable current initialized, and/or can the runtime initialize the MethodTable
+    // without running any user code. (This function may allocate memory, and may throw OutOfMemory)
+    bool IsClassInitedOrPreinited();
 #endif
 
+    // Is the MethodTable current known to be initialized
+    // If you want to know if it is initialized and allocation/throwing is permitted, call IsClassInitedOrPreinited instead
     BOOL  IsClassInited()
     {
+        LIMITED_METHOD_DAC_CONTRACT;
         return GetAuxiliaryDataForWrite()->IsClassInited();
     }
 

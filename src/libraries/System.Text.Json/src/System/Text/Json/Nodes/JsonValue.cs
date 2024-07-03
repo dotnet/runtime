@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
@@ -181,18 +180,19 @@ namespace System.Text.Json.Nodes
 
         internal static JsonValue? CreateFromElement(ref readonly JsonElement element, JsonNodeOptions? options = null)
         {
-            if (element.ValueKind is JsonValueKind.Null)
+            switch (element.ValueKind)
             {
-                return null;
-            }
+                case JsonValueKind.Null:
+                    return null;
 
-            // Force usage of JsonArray and JsonObject instead of supporting those in an JsonValue.
-            if (element.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NodeElementCannotBeObjectOrArray();
-            }
+                case JsonValueKind.Object or JsonValueKind.Array:
+                    // Force usage of JsonArray and JsonObject instead of supporting those in an JsonValue.
+                    ThrowHelper.ThrowInvalidOperationException_NodeElementCannotBeObjectOrArray();
+                    return null;
 
-            return new JsonValueOfElement(element, options);
+                default:
+                    return new JsonValueOfElement(element, options);
+            }
         }
     }
 }

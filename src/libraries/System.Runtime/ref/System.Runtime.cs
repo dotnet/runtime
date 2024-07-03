@@ -3138,8 +3138,13 @@ namespace System
         public Guid(string g) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public Guid(uint a, ushort b, ushort c, byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k) { throw null; }
+        public static Guid AllBitsSet { get { throw null; } }
+        public int Variant { get { throw null; } }
+        public int Version { get { throw null; } }
         public int CompareTo(System.Guid value) { throw null; }
         public int CompareTo(object? value) { throw null; }
+        public static Guid CreateVersion7() { throw null; }
+        public static Guid CreateVersion7(DateTimeOffset timestamp) { throw null; }
         public bool Equals(System.Guid g) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public override int GetHashCode() { throw null; }
