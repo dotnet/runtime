@@ -80,9 +80,9 @@ namespace GCStressPolicy
 
         FORCEINLINE static void Enable()
         {
-            int newVal = Interlocked::Decrement(&InhibitHolder::s_nGcStressDisabled);
+            int newVal;
+            newVal = Interlocked::Decrement(&InhibitHolder::s_nGcStressDisabled);
             _ASSERTE(newVal >= 0);
-            __UNUSED(newVal);
         }
 
     public:
