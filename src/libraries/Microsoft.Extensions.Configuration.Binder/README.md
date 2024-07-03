@@ -119,7 +119,8 @@ Sometimes the SDK uses stale bits of the generator. This can lead to unexpected 
 Some contributions might change the logic emitted by the generator. We maintain baseline [source files](https://github.com/dotnet/runtime/tree/e3e9758a10870a8f99a93a25e54ab2837d3abefc/src/libraries/Microsoft.Extensions.Configuration.Binder/tests/SourceGenerationTests/Baselines) to track the code emitted to handle some core binding scenarios.
 
 If the emitted code changes, these tests will fail locally and\or during continuous integration checks. You would need to update the baseline source files, manually or by using a combination of:
-- The `/p:UpdateBaselines=true` switch when building `Microsoft.Extensions.Configuration.Binder`.
+- The `/p:UpdateBaselines=true` switch when building `Microsoft.Extensions.Configuration.Binder` in order to use `InterceptableAttributeVersion` for testing and\or updating the baselines.
+- The `/p:UpdateBaselines=true` switch when building `Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests` in order to update the test baseline files.
 - The `RepoRootDir` environment variable.
 - The optional `InterceptableAttributeVersion` environment variable.
 
@@ -147,4 +148,6 @@ cd tests\SourceGenerationTests
 dotnet build -t:test /p:UpdateBaselines=true
 ```
 
-After updating the baselines, inspect the changes to verify that they are valid. Note that the baseline tests will fail if the new code causes errors when building the resulting compilation. The `InterceptableAttributeVersion` is also used while testing provided the `Microsoft.Extensions.Configuration.Binder` assembly and tests were compiles with `/p:UpdateBaselines=true`. When done updating the baselines, rebuild at least the tests without `/p:UpdateBaselines=true` so the tests can be compared against the new baselines. Rebuild `Microsoft.Extensions.Configuration.Binder` without `/p:UpdateBaselines=true` the version is automatically selected based on the compiler.
+After updating the baselines:
+- Inspect the changes to verify that they are valid. Note that the baseline tests will fail if the new code causes errors when building the resulting compilation.
+- Rebuild `Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests` without `/p:UpdateBaselines=true` so that the tests compare against the new baselines instead of being re-generated.

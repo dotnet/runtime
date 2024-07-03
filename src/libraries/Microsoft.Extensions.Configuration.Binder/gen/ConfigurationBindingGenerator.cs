@@ -74,19 +74,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        internal static int s_interceptorVersion;
-        internal static int InterceptorVersion
-        {
-            get
-            {
-                Debug.Assert(s_hasInitializedInterceptorVersion);
-                return s_interceptorVersion;
-            }
-            set
-            {
-                s_interceptorVersion = value;
-            }
-        }
+        internal static int InterceptorVersion { get; private set; }
 
         // Used with v1 interceptor lightup approach:
         private static bool s_hasInitializedInterceptorVersion;
@@ -101,16 +89,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             int? interceptableVersion = null;
 
 #if UPDATE_BASELINES
-            const string envVarName = "InterceptableAttributeVersion";
-
 #pragma warning disable RS1035 // Do not use APIs banned for analyzers
-            string? interceptableVersionString = Environment.GetEnvironmentVariable(envVarName);
+            string? interceptableVersionString = Environment.GetEnvironmentVariable("InterceptableAttributeVersion");
 #pragma warning restore RS1035
             if (interceptableVersionString is not null)
             {
-                if (int.TryParse(interceptableVersionString, out int version))
+                if (int.TryParse(interceptableVersionString, out int version) && (version == 0 || version == 1))
                 {
                     interceptableVersion = version;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Invalid InterceptableAttributeVersion value: {interceptableVersionString}");
                 }
             }
 

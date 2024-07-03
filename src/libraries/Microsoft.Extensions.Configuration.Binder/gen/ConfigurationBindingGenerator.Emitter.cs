@@ -73,44 +73,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 _writer.WriteLine();
 
-                if (ConfigurationBindingGenerator.InterceptorVersion == 0)
-                {
-                    _writer.WriteLine($$"""
-                    namespace System.Runtime.CompilerServices
-                    {
-                        using System;
-                        using System.CodeDom.Compiler;
+                string arguments = ConfigurationBindingGenerator.InterceptorVersion == 0 ?
+                    "string filePath, int line, int column" :
+                    "int version, string data";
 
-                        {{Expression.GeneratedCodeAnnotation}}
-                        [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-                        file sealed class InterceptsLocationAttribute : Attribute
+                _writer.WriteLine($$"""
+                namespace System.Runtime.CompilerServices
+                {
+                    using System;
+                    using System.CodeDom.Compiler;
+
+                    {{Expression.GeneratedCodeAnnotation}}
+                    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+                    file sealed class InterceptsLocationAttribute : Attribute
+                    {
+                        public InterceptsLocationAttribute({{arguments}})
                         {
-                            public InterceptsLocationAttribute(string filePath, int line, int column)
-                            {
-                            }
                         }
                     }
-                    """);
                 }
-                else
-                {
-                    _writer.WriteLine($$"""
-                    namespace System.Runtime.CompilerServices
-                    {
-                        using System;
-                        using System.CodeDom.Compiler;
+                """);
 
-                        {{Expression.GeneratedCodeAnnotation}}
-                        [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-                        file sealed class InterceptsLocationAttribute : Attribute
-                        {
-                            public InterceptsLocationAttribute(int version, string data)
-                            {
-                            }
-                        }
-                    }
-                    """);
-                }
                 _writer.WriteLine();
             }
 
