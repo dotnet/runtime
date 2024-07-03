@@ -1349,6 +1349,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             DISPTREERANGE(BlockRange(), condSelNode);
             JITDUMP("\n");
         }
+        else
+        {
+            assert(!"Embedded mask operation is not used anywhere.");
+        }
     }
 
     ContainCheckHWIntrinsic(node);
@@ -3507,7 +3511,6 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         // Handle cases where there is a nested ConditionalSelect for
         // `trueValue`
         GenTreeHWIntrinsic* nestedCndSel = op2->AsHWIntrinsic();
-        const HWIntrinsic   intrinEmbMask(nestedCndSel);
         GenTree*            nestedOp1 = nestedCndSel->Op(1);
         assert(varTypeIsMask(nestedOp1));
 
@@ -3515,8 +3518,6 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         {
             GenTree* nestedOp2 = nestedCndSel->Op(2);
             GenTree* nestedOp3 = nestedCndSel->Op(3);
-
-            assert(nestedOp2->isEmbeddedMaskingCompatibleHWIntrinsic());
 
             JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
             DISPTREERANGE(BlockRange(), cndSelNode);
@@ -3538,7 +3539,6 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             }
 
             nestedOp1->SetUnusedValue();
-            nestedCndSel->SetUnusedValue();
             BlockRange().Remove(nestedCndSel);
 
             JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
