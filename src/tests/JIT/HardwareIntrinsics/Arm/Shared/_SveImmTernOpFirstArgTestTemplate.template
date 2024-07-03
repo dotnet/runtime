@@ -378,7 +378,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             var result = Sve.ConditionalSelect(mask, trueOp, {Isa}.{Method}(op1, op2, op3, Imm));
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateConditionalSelectResult_TrueValue(mask, op1, op2, op3, trueOp, _dataTable.outArrayPtr);
+            ValidateConditionalSelectResult_FalseValue(mask, op1, op2, op3, trueOp, _dataTable.outArrayPtr);
         }
 
         public void RunUnsupportedScenario()

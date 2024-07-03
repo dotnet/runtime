@@ -422,7 +422,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             var result = Sve.ConditionalSelect(mask, trueOp, {Isa}.{Method}(op1, op2, op3, Imm));
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateConditionalSelectResult_TrueValue(mask, op1, op2, op3, trueOp, _dataTable.outArrayPtr);
+            ValidateConditionalSelectResult_FalseValue(mask, op1, op2, op3, trueOp, _dataTable.outArrayPtr);
         }
 
         public void RunUnsupportedScenario()
@@ -445,6 +445,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 Succeeded = false;
             }
         }
+
         private void ValidateConditionalSelectResult_TrueValue({Op1VectorType}<{Op1BaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> firstOp, {Op1VectorType}<{Op1BaseType}> secondOp, {Op1VectorType}<{Op1BaseType}> thirdOp, {Op1VectorType}<{Op1BaseType}> falseOp, void* output, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] mask = new {Op1BaseType}[Op1ElementCount];
@@ -469,6 +470,38 @@ namespace JIT.HardwareIntrinsics.Arm
                 TestLibrary.TestFramework.LogInformation($"   second: ({string.Join(", ", second)})");
                 TestLibrary.TestFramework.LogInformation($"   third: ({string.Join(", ", third)})");
                 TestLibrary.TestFramework.LogInformation($" falseOp: ({string.Join(", ", falseVal)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateConditionalSelectResult_FalseValue({Op1VectorType}<{Op1BaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> firstOp, {Op1VectorType}<{Op1BaseType}> secondOp, {Op1VectorType}<{Op1BaseType}> thirdOp, {Op1VectorType}<{Op1BaseType}> trueOp, void* output, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] mask = new {Op1BaseType}[Op1ElementCount];
+            {Op1BaseType}[] first = new {Op1BaseType}[Op1ElementCount];
+            {Op1BaseType}[] second = new {Op1BaseType}[Op1ElementCount];
+            {Op1BaseType}[] third = new {Op1BaseType}[Op1ElementCount];
+            {Op1BaseType}[] trueVal = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] result = new {RetBaseType}[RetElementCount];
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref mask[0]), maskOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref first[0]), firstOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref second[0]), secondOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref third[0]), thirdOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref trueVal[0]), trueOp);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref result[0]), ref Unsafe.AsRef<byte>(output), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            bool succeeded = true;
+
+            {TemplateValidationLogicForCndSel_FalseValue}
+            
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"    mask: ({string.Join(", ", mask)})");
+                TestLibrary.TestFramework.LogInformation($"    first: ({string.Join(", ", first)})");
+                TestLibrary.TestFramework.LogInformation($"   second: ({string.Join(", ", second)})");
+                TestLibrary.TestFramework.LogInformation($"   third: ({string.Join(", ", third)})");
+                TestLibrary.TestFramework.LogInformation($" trueOp: ({string.Join(", ", trueVal)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
                 Succeeded = false;
