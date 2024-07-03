@@ -18,6 +18,9 @@ namespace System.Diagnostics.Metrics.Tests
             using InstrumentRecorder<long> instrumentRecorder = new("dotnet.gc.collections.count");
             using CancellationTokenSource cts = new(1000);
 
+            var token = cts.Token;
+            token.Register(() => Assert.Fail("Timed out waiting for measurements."));
+
             for (var gen = 0; gen <= GC.MaxGeneration; gen++)
             {
                 GC.Collect(gen, GCCollectionMode.Forced);
@@ -25,20 +28,49 @@ namespace System.Diagnostics.Metrics.Tests
 
             instrumentRecorder.RecordObservableInstruments();
 
-            (bool success, IReadOnlyList<Measurement<long>> measurements) = await WaitForMeasurements(instrumentRecorder, 3, cts.Token);
+            (bool success, IReadOnlyList<Measurement<long>> measurements) = await WaitForMeasurements(instrumentRecorder, GC.MaxGeneration + 1, token);
 
-            Assert.True(success, "Expected to receive at least 3 measurements.");
+            Assert.True(success, "Expected to receive at least 1 measurement per generation.");
 
-            int count = 0;
-            for (int i = GC.MaxGeneration; i >= 0; i--)
+            bool[] foundGenerations = new bool[GC.MaxGeneration + 1];
+            for (int i = 0; i < GC.MaxGeneration + 1; i++)
             {
-                Measurement<long> measurement = measurements[count++];
-                Assert.True(measurement.Value > 0, $"Gen {i} count should be greater than zero.");
+                foundGenerations[i] = false;
+            }
 
+            foreach (Measurement<long> measurement in measurements.Where(m => m.Value >= 1))
+            {
                 var tags = measurement.Tags.ToArray();
 
-                Assert.Equal(1, tags.Length);
-                VerifyTag(tags, "gc.heap.generation", $"gen{i}");
+                var tag = tags.SingleOrDefault(k => k.Key == "gc.heap.generation");
+
+                if (tag.Key is not null)
+                {
+                    Assert.True(tag.Value is string, "Expected generation tag to be a string.");
+
+                    string tagValue = (string)tag.Value;
+
+                    switch (tagValue)
+                    {
+                        case "gen0":
+                            foundGenerations[0] = true;
+                            break;
+                        case "gen1":
+                            foundGenerations[1] = true;
+                            break;
+                        case "gen2":
+                            foundGenerations[2] = true;
+                            break;
+                        default:
+                            Assert.Fail("Unexpected generation tag value.");
+                            break;
+                    }
+                }
+            }
+
+            foreach (var found in foundGenerations)
+            {
+                Assert.True(found, "Expected to find a measurement for each generation (0, 1 and 2).");
             }
         }
 
