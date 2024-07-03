@@ -667,13 +667,88 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_LCL_ADDR:
         {
-            const GenTreeLclVarCommon* lclAddr = node->AsLclVarCommon();
-            const LclVarDsc*           varDsc  = comp->lvaGetDesc(lclAddr);
+            GenTreeLclFld*   lclAddr = node->AsLclFld();
+            const LclVarDsc* varDsc  = comp->lvaGetDesc(lclAddr);
+
             if (!varDsc->lvDoNotEnregister)
             {
                 // TODO-Cleanup: this is definitely not the best place for this detection,
                 // but for now it is the easiest. Move it to morph.
                 comp->lvaSetVarDoNotEnregister(lclAddr->GetLclNum() DEBUGARG(DoNotEnregisterReason::LclAddrNode));
+            }
+
+            // We want to specially handle additional offsetting that can occur to
+            // ensure that optimal addressing modes can be generated where possible.
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                GenTree* user = use.User();
+
+                if (!user->OperIs(GT_ADD, GT_SUB))
+                {
+                    // We can only handle addition/subtraction
+                    break;
+                }
+
+                GenTree* otherOp = user->gtGetOp2();
+
+                if (otherOp == lclAddr)
+                {
+                    otherOp = user->gtGetOp1();
+                }
+
+                if (!otherOp->IsCnsIntOrI())
+                {
+                    // We can only handle constant offsets
+                    break;
+                }
+
+                ssize_t offset = otherOp->AsIntConCommon()->IconValue();
+
+                if (user->OperIs(GT_SUB))
+                {
+                    offset = -offset;
+                }
+
+                bool     overflow    = false;
+                unsigned lclAddrOffs = lclAddr->GetLclOffs();
+
+                if (CheckedOps::AddOverflows<ssize_t>(offset, lclAddrOffs, false))
+                {
+                    overflow = true;
+                }
+                else
+                {
+                    offset += lclAddrOffs;
+
+                    if (CheckedOps::CastFromLongOverflows(offset, TYP_UINT, false))
+                    {
+                        overflow = true;
+                    }
+                }
+
+                if (!overflow && comp->IsValidLclAddr(lclAddr->GetLclNum(), static_cast<unsigned>(offset)))
+                {
+                    // We have an in range LCL_ADDR, so transform
+                    // from ADD(LCL_ADDR(LCLNUM, CNS1), CNS2)
+                    // into LCL_ADDR(LCLNUM, CNS1+CNS2)
+
+                    lclAddr->SetLclOffs(static_cast<unsigned>(offset));
+                    use.ReplaceWith(lclAddr);
+
+                    BlockRange().Remove(user);
+                    BlockRange().Remove(otherOp);
+                }
+                else
+                {
+                    // We have an out of range LCL_ADDR, so transform
+                    // from ADD(LCL_ADDR(LCLNUM, CNS1), CNS2)
+                    // into ADD(LCL_ADDR(LCLNUM, 0), CNS1+CNS2)
+
+                    lclAddr->SetLclOffs(0);
+                    otherOp->AsIntConCommon()->SetIconValue(offset);
+                }
             }
         }
         break;
