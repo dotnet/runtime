@@ -28,6 +28,242 @@ namespace JIT.HardwareIntrinsics.Arm
             return new Vector<T>(arr);
         }
 
+        public static byte[] CreateMaskForFirstActiveElement(byte[] mask, byte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new byte[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static short[] CreateMaskForFirstActiveElement(short[] mask, short[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new short[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static int[] CreateMaskForFirstActiveElement(int[] mask, int[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new int[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static long[] CreateMaskForFirstActiveElement(long[] mask, long[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new long[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static sbyte[] CreateMaskForFirstActiveElement(sbyte[] mask, sbyte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new sbyte[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ushort[] CreateMaskForFirstActiveElement(ushort[] mask, ushort[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ushort[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static uint[] CreateMaskForFirstActiveElement(uint[] mask, uint[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new uint[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ulong[] CreateMaskForFirstActiveElement(ulong[] mask, ulong[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ulong[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static int LastActiveElement(byte[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(ushort[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(uint[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(ulong[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static byte[] CreateMaskForNextActiveElement(byte[] mask, byte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new byte[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ushort[] CreateMaskForNextActiveElement(ushort[] mask, ushort[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ushort[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static uint[] CreateMaskForNextActiveElement(uint[] mask, uint[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new uint[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ulong[] CreateMaskForNextActiveElement(ulong[] mask, ulong[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ulong[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
         public static sbyte CountLeadingSignBits(sbyte op1)
         {
             return (sbyte)(CountLeadingZeroBits((sbyte)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
@@ -1942,6 +2178,28 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long MultiplyWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static long MultiplyWideningUpperAndSubtract(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static T ShiftLeft<T>(T op1, ulong op2) where T : INumber<T>
+        {
+            T two = T.One + T.One;
+            for (ulong i = 0; (op1 != T.Zero) && (i < op2); i++)
+            {
+                op1 *= two;
+            }
+
+            return op1;
+        }
+
+        public static T ShiftRight<T>(T op1, ulong op2) where T : INumber<T>
+        {
+            T two = T.One + T.One;
+            for (ulong i = 0; (op1 != T.Zero) && (i < op2); i++)
+            {
+                op1 /= two;
+            }
+
+            return op1;
+        }
 
         public static T SignExtend<T>(T n, int numBits, bool zeroExtend) where T : struct, IComparable, IConvertible
         {
@@ -6176,14 +6434,18 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int ConvertDoubleToInt32(double op1) => (int)Math.Clamp(op1, long.MinValue, long.MaxValue);
 
         public static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
+        
+        public static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
 
-        private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
+        public static long ConvertFloatToInt64(float op1) => (long)Math.Clamp(op1, int.MinValue, int.MaxValue);
 
         public static uint ConvertDoubleToUInt32(double op1) => (uint)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
 
         public static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
 
-        private static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+        public static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+
+        public static ulong ConvertFloatToUInt64(float op1) => (ulong)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
 
         public static Int32 ConvertToInt32RoundAwayFromZero(float op1) => ConvertToInt32(RoundAwayFromZero(op1));
 
@@ -7316,5 +7578,126 @@ namespace JIT.HardwareIntrinsics.Arm
             return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
         }
 
+        public static T LastActive<T>(T[] mask, T[] x) where T : IBinaryInteger<T>
+        {
+            for (var i = mask.Length - 1; i >= 0; i--)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    return x[i];
+                }
+            }
+            return T.Zero;
+        }
+
+        public static T[] CreateBreakAfterMask<T>(T[] mask, T[] op) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isBreakSet = false;
+            for (var i = 0; i < count; i++)
+            {
+                var isElementActive = op[i] != T.Zero;
+                if (mask[i] != T.Zero)
+                {
+                    if (isBreakSet)
+                    {
+                        result[i] = T.Zero;
+                    }
+                    else
+                    {
+                        result[i] = T.One;
+                    }
+                    isBreakSet = isBreakSet || isElementActive;
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] CreateBreakAfterPropagateMask<T>(T[] mask, T[] op1, T[] op2) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isLastActive = LastActive(mask, op1) != T.Zero;
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    if (isLastActive)
+                    {
+                        result[i] = T.One;
+                    }
+                    else
+                    {
+                        result[i] = T.Zero;
+                    }
+                    isLastActive = isLastActive && (op2[i] == T.Zero);
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] CreateBreakBeforeMask<T>(T[] mask, T[] op) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isBreakSet = false;
+            for (var i = 0; i < count; i++)
+            {
+                var isElementActive = op[i] != T.Zero;
+                if (mask[i] != T.Zero)
+                {
+                    isBreakSet = isBreakSet || isElementActive;
+                    if (isBreakSet)
+                    {
+                        result[i] = T.Zero;
+                    }
+                    else
+                    {
+                        result[i] = T.One;
+                    }
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] CreateBreakBeforePropagateMask<T>(T[] mask, T[] op1, T[] op2) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isLastActive = LastActive(mask, op1) != T.Zero;
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    isLastActive = isLastActive && (op2[i] == T.Zero);
+                    if (isLastActive)
+                    {
+                        result[i] = T.One;
+                    }
+                    else
+                    {
+                        result[i] = T.Zero;
+                    }
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
     }
 }

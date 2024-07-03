@@ -205,7 +205,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
             }
             finally
             {
-                // Un-root the the kept alive object in all cases.
+                // Un-root the kept alive object in all cases.
                 if (_keepAlive.IsAllocated)
                 {
                     _keepAlive.Free();

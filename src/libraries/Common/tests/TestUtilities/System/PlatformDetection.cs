@@ -731,7 +731,7 @@ namespace System
             {
                 return true;
             }
-            else if (IsNativeAot)
+            else if (IsNativeAot || IsBrowser || IsMobile)
             {
                 return false;
             }
