@@ -29495,7 +29495,6 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
 
         bool       isScalar = false;
         genTreeOps oper     = intrinsic->HWOperGet(&isScalar);
-        assert(!isScalar);
 
         switch (oper)
         {
