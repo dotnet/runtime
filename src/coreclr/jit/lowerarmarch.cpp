@@ -1321,38 +1321,36 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId))
     {
         LIR::Use use;
-        if (BlockRange().TryGetUse(node, &use))
+        bool     foundUse = BlockRange().TryGetUse(node, &use);
+        JITDUMP("lowering EmbeddedMasked HWIntrinisic (before):\n");
+        DISPTREERANGE(BlockRange(), node);
+        JITDUMP("\n");
+
+        CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+        unsigned    simdSize        = node->GetSimdSize();
+        var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
+        GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+        GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
+
+        BlockRange().InsertBefore(node, trueMask);
+        BlockRange().InsertBefore(node, falseVal);
+
+        GenTreeHWIntrinsic* condSelNode =
+            comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
+                                           simdBaseJitType, simdSize);
+        BlockRange().InsertAfter(node, condSelNode);
+        if (foundUse)
         {
-            GenTree* user = use.User();
-
-            JITDUMP("lowering EmbeddedMasked HWIntrinisic (before):\n");
-            DISPTREERANGE(BlockRange(), node);
-            JITDUMP("\n");
-
-            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            unsigned    simdSize        = node->GetSimdSize();
-            var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
-            GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-            GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
-
-            BlockRange().InsertBefore(node, trueMask);
-            BlockRange().InsertBefore(node, falseVal);
-
-            GenTreeHWIntrinsic* condSelNode =
-                comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
-                                               simdBaseJitType, simdSize);
-            BlockRange().InsertAfter(node, condSelNode);
-
             use.ReplaceWith(condSelNode);
-
-            JITDUMP("lowering EmbeddedMasked HWIntrinisic (after):\n");
-            DISPTREERANGE(BlockRange(), condSelNode);
-            JITDUMP("\n");
         }
         else
         {
-            assert(!"Embedded mask operation is not used anywhere.");
+            condSelNode->SetUnusedValue();
         }
+
+        JITDUMP("lowering EmbeddedMasked HWIntrinisic (after):\n");
+        DISPTREERANGE(BlockRange(), condSelNode);
+        JITDUMP("\n");
     }
 
     ContainCheckHWIntrinsic(node);
@@ -3511,7 +3509,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         // Handle cases where there is a nested ConditionalSelect for
         // `trueValue`
         GenTreeHWIntrinsic* nestedCndSel = op2->AsHWIntrinsic();
-        GenTree*            nestedOp1 = nestedCndSel->Op(1);
+        GenTree*            nestedOp1    = nestedCndSel->Op(1);
         assert(varTypeIsMask(nestedOp1));
 
         if (nestedOp1->IsMaskAllBitsSet())
