@@ -303,14 +303,8 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 static gboolean
 get_common_simd_info (MonoClass *vector_klass, MonoMethodSignature *csignature, MonoTypeEnum *atype, int *vector_size, int *arg_size, int *scalar_arg)
 {
-	if (!m_class_is_simd_type (vector_klass) && csignature->param_count) {
-		if (csignature->params [0]->type == MONO_TYPE_GENERICINST) {
-			vector_klass = mono_class_from_mono_type_internal (csignature->params [0]);
-		} else {
-			g_assert(csignature->ret->type == MONO_TYPE_GENERICINST);
-			vector_klass = mono_class_from_mono_type_internal (csignature->ret);
-		}
-	}
+	if (!m_class_is_simd_type (vector_klass) && csignature->param_count)
+		vector_klass = mono_class_from_mono_type_internal (csignature->params [0]);
 	if (!m_class_is_simd_type (vector_klass))
 		return FALSE;
 
@@ -435,7 +429,13 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 	gint16 simd_opcode = -1;
 	gint16 simd_intrins = -1;
 
-	vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+	if (csignature->ret->type == MONO_TYPE_GENERICINST) {
+		vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+	} else if (csignature->params [0]->type == MONO_TYPE_GENERICINST) {
+		vector_klass = mono_class_from_mono_type_internal (csignature->params [0]);
+	} else {
+		return FALSE;
+	}
 
 	MonoTypeEnum atype;
 	int arg_size, scalar_arg;
