@@ -287,7 +287,7 @@ namespace System.Reflection.Emit
                 case CoreTypeId.TypedReference:
                     signature.TypedReference();
                     break;
-                default:    // handles null and ValueType
+                default:    // handles null and all other types 
                     EntityHandle typeHandle = module.GetTypeHandle(type);
                     signature.Type(typeHandle, type.IsValueType);
                     break;
