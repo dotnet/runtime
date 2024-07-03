@@ -1534,20 +1534,6 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
 //                 of these cursors will be updated to point to the next derived
 //                 IV.
 //
-// Returns:
-//   True if all uses were analyzed and cursors could be introduced for them
-//   all; otherwise false.
-//
-// Remarks:
-//   A cursor is created for a use when it represents the same value as the
-//   primary IV passed. The function will allow mismatching uses if the use is
-//   expected to be removed in the downwards loop transformation. Otherwise the
-//   function will fail.
-//
-//   It is not a correctness requirement that we remove all uses; if we end up
-//   not doing so (e.g. because a cursor was not created by this function),
-//   then we may just end up with extra primary IVs in the loop.
-//
 void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors)
 {
     for (int i = 0; i < cursors->Height(); i++)
@@ -1627,19 +1613,10 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
 //                  cursors to now consider strength reducing.
 //
 // Returns:
-//   True if all uses were analyzed and cursors could be introduced for them
-//   all; otherwise false.
+//   True if all cursors still represent a common derived IV and would be
+//   replacable by a new primary IV computing it.
 //
 // Remarks:
-//   A cursor is created for a use when it represents the same value as the
-//   primary IV passed. The function will allow mismatching uses if the use is
-//   expected to be removed in the downwards loop transformation. Otherwise the
-//   function will fail.
-//
-//   It is not a correctness requirement that we remove all uses; if we end up
-//   not doing so (e.g. because a cursor was not created by this function),
-//   then we may just end up with extra primary IVs in the loop.
-//
 //   This function may remove cursors from m_cursors1 and m_cursors2 if it
 //   decides to no longer consider some cursors for strength reduction.
 //

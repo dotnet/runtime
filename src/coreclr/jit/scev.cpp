@@ -1655,7 +1655,7 @@ bool ScalarEvolutionContext::AddRecMayOverflow(ScevAddRec*                      
     // In general we are interested in proving that the add recurrence does not
     // cross the minimum or maximum bounds during the iteration of the loop:
     //
-    // For signed bounds   (sext): sext(a + b) != sext(a) + sext(b) if a + b crosses -2^31 og 2^31 - 1.
+    // For signed bounds   (sext): sext(a + b) != sext(a) + sext(b) if a + b crosses -2^31 or 2^31 - 1.
     // For unsigned bounds (zext): zext(a + b) != zext(a) + zext(b) if a + b crosses 0 or 2^32 - 1.
     //
     // We need to verify this condition for all i < bound where a = start, b =
