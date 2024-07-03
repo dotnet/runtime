@@ -2840,7 +2840,7 @@ void MethodDesc::MarkPrecodeAsStableEntrypoint()
 {
 #if _DEBUG
     PCODE tempEntry = GetTemporaryEntryPointIfExists();
-    _ASSERTE(tempEntry != NULL);
+    _ASSERTE(tempEntry != (PCODE)NULL);
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     _ASSERTE(requiredType == availableType);

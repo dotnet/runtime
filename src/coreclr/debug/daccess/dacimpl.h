@@ -1225,7 +1225,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
 
     // ISOSDacInterface15
-    virtual HRESULT GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator);
+    virtual HRESULT STDMETHODCALLTYPE GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator);
 
     //
     // ClrDataAccess.
