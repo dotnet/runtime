@@ -6091,11 +6091,11 @@ HRESULT EEToProfInterfaceImpl::EnumerateGCHeapObjectsCallback(ObjectCallback cal
         // Yay!
         NOTHROW;
 
-        // Yay!
-        GC_TRIGGERS;
+        // Don't allow a GC while we're enumerating the heap
+        GC_NOTRIGGER;
 
-        // Yay!
-        MODE_PREEMPTIVE;
+        // Called from EnumerateGCHeapObjects
+        MODE_ANY;
 
         // Yay!
         CAN_TAKE_LOCK;
@@ -6105,7 +6105,8 @@ HRESULT EEToProfInterfaceImpl::EnumerateGCHeapObjectsCallback(ObjectCallback cal
     }
     CONTRACTL_END;
 
-    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
+    CLR_TO_PROFILER_ENTRYPOINT_EX(kEE2PNoTrigger,
+                                (LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: EnumerateGCHeapObjectsCallback.\n"
                                 ));
