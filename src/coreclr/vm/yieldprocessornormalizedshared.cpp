@@ -157,6 +157,7 @@ void YieldProcessorNormalization::PerformMeasurement()
 #ifdef FEATURE_NATIVEAOT
         if ((s_performanceCounterTicksPerS = PalQueryPerformanceFrequency()) < 1000 * 1000)
 #else
+        LARGE_INTEGER li;
         if (!QueryPerformanceFrequency(&li) || li.QuadPart < 1000 * 1000)
 #endif
         {
