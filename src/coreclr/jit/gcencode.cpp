@@ -4028,7 +4028,7 @@ public:
     // region as interruptible.
 
     bool operator()(
-        unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInPrologOrEpilog)
+        unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
     {
         if (igOffs < m_uninterruptibleEnd)
         {
@@ -4044,7 +4044,7 @@ public:
             // Once the first instruction in IG executes, we cannot have GC.
             // But it is ok to have GC while the IP is on the first instruction, unless we are in prolog/epilog.
             unsigned interruptibleEnd = igOffs;
-            if (!isInPrologOrEpilog)
+            if (!isInProlog)
             {
                 interruptibleEnd += firstInstrSize;
             }
