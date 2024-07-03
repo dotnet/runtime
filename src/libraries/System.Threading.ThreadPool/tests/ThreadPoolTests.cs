@@ -1251,6 +1251,89 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void PrioritizationTestConfigVarTest()
+        {
+            // Avoid contaminating the main process' environment
+            RemoteExecutor.Invoke(() =>
+            {
+                // The actual test process below will inherit the config var
+                Environment.SetEnvironmentVariable("DOTNET_ThreadPool_PrioritizationTest", "1");
+
+                RemoteExecutor.Invoke(() =>
+                {
+                    const int WorkItemCountPerKind = 100;
+
+                    int completedWorkItemCount = 0;
+                    var allWorkItemsCompleted = new AutoResetEvent(false);
+                    Action<int> workItem = _ =>
+                    {
+                        if (Interlocked.Increment(ref completedWorkItemCount) == WorkItemCountPerKind * 3)
+                        {
+                            allWorkItemsCompleted.Set();
+                        }
+                    };
+
+                    var startTest = new ManualResetEvent(false);
+
+                    var t = new Thread(() =>
+                    {
+                        // Enqueue global work from a non-thread-pool thread
+
+                        startTest.CheckedWait();
+
+                        for (int i = 0; i < WorkItemCountPerKind; i++)
+                        {
+                            ThreadPool.UnsafeQueueUserWorkItem(workItem, 0, preferLocal: false);
+                        }
+                    });
+                    t.IsBackground = true;
+                    t.Start();
+
+                    ThreadPool.UnsafeQueueUserWorkItem(
+                        _ =>
+                        {
+                            // Enqueue global work from a thread pool worker thread
+
+                            startTest.CheckedWait();
+
+                            for (int i = 0; i < WorkItemCountPerKind; i++)
+                            {
+                                ThreadPool.UnsafeQueueUserWorkItem(workItem, 0, preferLocal: false);
+                            }
+                        },
+                        0,
+                        preferLocal: false);
+
+                    t = new Thread(() =>
+                    {
+                        // Enqueue local work from thread pool worker threads
+
+                        Assert.True(WorkItemCountPerKind / 10 * 10 == WorkItemCountPerKind);
+                        Action<int> localWorkItemEnqueuer = _ =>
+                        {
+                            for (int i = 0; i < WorkItemCountPerKind / 10; i++)
+                            {
+                                ThreadPool.UnsafeQueueUserWorkItem(workItem, 0, preferLocal: true);
+                            }
+                        };
+
+                        startTest.CheckedWait();
+
+                        for (int i = 0; i < 10; i++)
+                        {
+                            ThreadPool.UnsafeQueueUserWorkItem(localWorkItemEnqueuer, 0, preferLocal: false);
+                        }
+                    });
+                    t.IsBackground = true;
+                    t.Start();
+
+                    startTest.Set();
+                    allWorkItemsCompleted.CheckedWait();
+                }).Dispose();
+            }).Dispose();
+        }
+
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
 
