@@ -58,7 +58,7 @@ namespace System.Diagnostics.Metrics
 
                 return gcInfo.Index == 0
                     ? Array.Empty<Measurement<long>>()
-                    : [new(GC.GetGCMemoryInfo().TotalCommittedBytes)];
+                    : [new(gcInfo.TotalCommittedBytes)];
             },
             unit: "By",
             description: "The amount of committed virtual memory for the managed GC heap, as observed during the latest garbage collection.");
@@ -192,7 +192,7 @@ namespace System.Diagnostics.Metrics
         {
             long collectionsFromHigherGeneration = 0;
 
-            for (int gen = 2; gen >= 0; --gen)
+            for (int gen = GC.MaxGeneration; gen >= 0; --gen)
             {
                 long collectionsFromThisGeneration = GC.CollectionCount(gen);
                 yield return new(collectionsFromThisGeneration - collectionsFromHigherGeneration, new KeyValuePair<string, object?>("gc.heap.generation", s_genNames[gen]));
