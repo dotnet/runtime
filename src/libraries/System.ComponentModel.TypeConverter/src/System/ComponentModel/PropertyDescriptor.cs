@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -16,10 +17,11 @@ namespace System.ComponentModel
         internal const string PropertyDescriptorPropertyTypeMessage = "PropertyDescriptor's PropertyType cannot be statically discovered.";
 
         private TypeConverter? _converter;
-        private Dictionary<object, EventHandler?>? _valueChangedHandlers;
+        private ConcurrentDictionary<object, EventHandler?>? _valueChangedHandlers;
         private object?[]? _editors;
         private Type[]? _editorTypes;
         private int _editorCount;
+        private readonly object s_internalSyncObject = new object();
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.PropertyDescriptor'/> class with the specified name and
@@ -165,10 +167,11 @@ namespace System.ComponentModel
             ArgumentNullException.ThrowIfNull(component);
             ArgumentNullException.ThrowIfNull(handler);
 
-            _valueChangedHandlers ??= new Dictionary<object, EventHandler?>();
-
-            EventHandler? h = _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);
-            _valueChangedHandlers[component] = (EventHandler?)Delegate.Combine(h, handler);
+            lock (s_internalSyncObject)
+            {
+                _valueChangedHandlers ??= new ConcurrentDictionary<object, EventHandler?>();
+                _valueChangedHandlers.AddOrUpdate(component, handler, (k, v) => (EventHandler?)Delegate.Combine(v));
+            }
         }
 
         /// <summary>
@@ -433,15 +436,18 @@ namespace System.ComponentModel
 
             if (_valueChangedHandlers != null)
             {
-                EventHandler? h = _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);
-                h = (EventHandler?)Delegate.Remove(h, handler);
-                if (h != null)
+                lock (s_internalSyncObject)
                 {
-                    _valueChangedHandlers[component] = h;
-                }
-                else
-                {
-                    _valueChangedHandlers.Remove(component);
+                    EventHandler? h = _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);
+                    h = (EventHandler?)Delegate.Remove(h, handler);
+                    if (h != null)
+                    {
+                        _valueChangedHandlers[component] = h;
+                    }
+                    else
+                    {
+                        _valueChangedHandlers.Remove(component, out EventHandler? _);
+                    }
                 }
             }
         }
