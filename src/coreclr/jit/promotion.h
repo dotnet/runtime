@@ -90,7 +90,7 @@ public:
 
 class Promotion
 {
-    Compiler*                     m_compiler;
+    Compiler* m_compiler;
 
     friend class LocalUses;
     friend class LocalsUseVisitor;

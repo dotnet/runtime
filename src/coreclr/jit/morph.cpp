@@ -2312,7 +2312,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     }
 #endif
 
-    m_abiInformationDetermined = true;
+    m_abiInformationDetermined    = true;
     m_newAbiInformationDetermined = true;
 }
 
@@ -2358,7 +2358,7 @@ void CallArgs::DetermineNewABIInfo(Compiler* comp, GenTreeCall* call)
         }
     }
 
-    m_argsStackSize = classifier.StackSize();
+    m_argsStackSize               = classifier.StackSize();
     m_newAbiInformationDetermined = true;
 }
 
@@ -2868,7 +2868,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 
             if (!argx->OperIs(GT_FIELD_LIST))
             {
-                argx           = fgMorphMultiregStructArg(&arg);
+                argx = fgMorphMultiregStructArg(&arg);
             }
         }
     }

@@ -228,7 +228,8 @@ public:
                     if (parent->IsCall())
                     {
                         GenTreeCall* const parentCall = parent->AsCall();
-                        canSubstituteIntoParent = (parentCall->gtCallType != CT_INDIRECT) || (parentCall->gtCallAddr != node);
+                        canSubstituteIntoParent =
+                            (parentCall->gtCallType != CT_INDIRECT) || (parentCall->gtCallAddr != node);
                     }
                     else if (parent->OperIs(GT_FIELD_LIST))
                     {

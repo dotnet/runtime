@@ -1990,7 +1990,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
     m_signatureToLookupInfoMap = nullptr;
-    m_significantSegmentsMap = nullptr;
+    m_significantSegmentsMap   = nullptr;
     fgSsaPassesCompleted       = 0;
     fgSsaValid                 = false;
     fgVNPassesCompleted        = 0;
@@ -8427,15 +8427,13 @@ const StructSegments& Compiler::GetSignificantSegments(ClassLayout* layout)
 
     if (m_significantSegmentsMap == nullptr)
     {
-        m_significantSegmentsMap =
-            new (this, CMK_Promotion) ClassLayoutStructSegmentsMap(getAllocator(CMK_Promotion));
+        m_significantSegmentsMap = new (this, CMK_Promotion) ClassLayoutStructSegmentsMap(getAllocator(CMK_Promotion));
     }
 
     m_significantSegmentsMap->Set(layout, newSegments);
 
     return *newSegments;
 }
-
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

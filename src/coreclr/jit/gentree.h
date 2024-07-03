@@ -4813,10 +4813,10 @@ class CallArgs
     // made for this call.
     unsigned m_padStkAlign;
 #endif
-    bool m_hasThisPointer           : 1;
-    bool m_hasRetBuffer             : 1;
-    bool m_isVarArgs                : 1;
-    bool m_abiInformationDetermined : 1;
+    bool m_hasThisPointer              : 1;
+    bool m_hasRetBuffer                : 1;
+    bool m_isVarArgs                   : 1;
+    bool m_abiInformationDetermined    : 1;
     bool m_newAbiInformationDetermined : 1;
     // True if we have one or more register arguments.
     bool m_hasRegArgs : 1;
