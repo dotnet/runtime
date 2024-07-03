@@ -715,7 +715,8 @@ namespace System.Net.Quic.Tests
                 DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
                 DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
                 RemoteEndPoint = new DnsEndPoint(name, 10000),
-                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(sameTargetHost ? name : "localhost")
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(sameTargetHost ? name : "localhost"),
+                HandshakeTimeout = HandshakeTimeout
             };
 
             SocketException ex = await Assert.ThrowsAsync<SocketException>(() => QuicConnection.ConnectAsync(options).AsTask());
@@ -729,7 +730,8 @@ namespace System.Net.Quic.Tests
             {
                 DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
                 DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
-                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+                HandshakeTimeout = HandshakeTimeout
             };
 
             Assert.Throws<ArgumentNullException>(() => QuicConnection.ConnectAsync(options));
@@ -741,7 +743,8 @@ namespace System.Net.Quic.Tests
             var options = new QuicClientConnectionOptions()
             {
                 RemoteEndPoint = new DnsEndPoint("localhost", 10000),
-                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+                HandshakeTimeout = HandshakeTimeout
             };
 
             Assert.Throws<ArgumentOutOfRangeException>(() => QuicConnection.ConnectAsync(options));

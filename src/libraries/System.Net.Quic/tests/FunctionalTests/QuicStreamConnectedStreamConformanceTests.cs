@@ -69,7 +69,8 @@ namespace System.Net.Quic.Tests
                 {
                     DefaultStreamErrorCode = QuicTestBase.DefaultStreamErrorCodeServer,
                     DefaultCloseErrorCode = QuicTestBase.DefaultCloseErrorCodeServer,
-                    ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+                    ServerAuthenticationOptions = GetSslServerAuthenticationOptions(),
+                    HandshakeTimeout = QuicTestBase.HandshakeTimeout
                 })
             });
 
@@ -94,7 +95,8 @@ namespace System.Net.Quic.Tests
                                 DefaultStreamErrorCode = QuicTestBase.DefaultStreamErrorCodeClient,
                                 DefaultCloseErrorCode = QuicTestBase.DefaultCloseErrorCodeClient,
                                 RemoteEndPoint = listener.LocalEndPoint,
-                                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+                                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+                                HandshakeTimeout = QuicTestBase.HandshakeTimeout
                             });
                             stream2 = await connection2.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                             // OpenBidirectionalStream only allocates ID. We will force stream opening

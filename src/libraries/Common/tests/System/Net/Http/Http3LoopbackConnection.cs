@@ -33,6 +33,8 @@ namespace System.Net.Test.Common
         public const long H3_CONNECT_ERROR = 0x10f;
         public const long H3_VERSION_FALLBACK = 0x110;
 
+        public static TimeSpan HandshakeTimeout => TimeSpan.FromSeconds(30);
+
         private readonly QuicConnection _connection;
 
         // Queue for holding streams we accepted before we managed to accept the control stream

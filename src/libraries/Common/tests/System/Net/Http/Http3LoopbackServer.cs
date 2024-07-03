@@ -48,7 +48,8 @@ namespace System.Net.Test.Common
                             },
                             ServerCertificate = _cert,
                             ClientCertificateRequired = false
-                        }
+                        },
+                        HandshakeTimeout = Http3LoopbackConnection.HandshakeTimeout
                     };
                     return ValueTask.FromResult(serverOptions);
                 }

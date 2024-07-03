@@ -43,6 +43,7 @@ namespace System.Net.Quic.Tests
         public ITestOutputHelper _output;
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
         public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
+        public static TimeSpan HandshakeTimeout => TimeSpan.FromSeconds(30);
 
         public QuicTestBase(ITestOutputHelper output)
         {
@@ -75,7 +76,8 @@ namespace System.Net.Quic.Tests
             {
                 DefaultStreamErrorCode = DefaultStreamErrorCodeServer,
                 DefaultCloseErrorCode = DefaultCloseErrorCodeServer,
-                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+                ServerAuthenticationOptions = GetSslServerAuthenticationOptions(),
+                HandshakeTimeout = HandshakeTimeout
             };
         }
 
@@ -105,7 +107,8 @@ namespace System.Net.Quic.Tests
                 DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
                 DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
                 RemoteEndPoint = endpoint,
-                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+                HandshakeTimeout = HandshakeTimeout
             };
         }
 

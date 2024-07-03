@@ -112,7 +112,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
         [SupportedOSPlatform("windows")]
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, TimeSpan idleTimeout, SslClientAuthenticationOptions clientAuthenticationOptions, Action<QuicConnection, QuicStreamCapacityChangedArgs> streamCapacityCallback, CancellationToken cancellationToken)
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, TimeSpan idleTimeout, TimeSpan handshakeTimeout, SslClientAuthenticationOptions clientAuthenticationOptions, Action<QuicConnection, QuicStreamCapacityChangedArgs> streamCapacityCallback, CancellationToken cancellationToken)
         {
             clientAuthenticationOptions = SetUpRemoteCertificateValidationCallback(clientAuthenticationOptions, request);
 
@@ -123,6 +123,7 @@ namespace System.Net.Http
                     MaxInboundBidirectionalStreams = 0, // Client doesn't support inbound streams: https://www.rfc-editor.org/rfc/rfc9114.html#name-bidirectional-streams. An extension might change this.
                     MaxInboundUnidirectionalStreams = 5, // Minimum is 3: https://www.rfc-editor.org/rfc/rfc9114.html#unidirectional-streams (1x control stream + 2x QPACK). Set to 100 if/when support for PUSH streams is added.
                     IdleTimeout = idleTimeout,
+                    HandshakeTimeout = handshakeTimeout,
                     DefaultStreamErrorCode = (long)Http3ErrorCode.RequestCancelled,
                     DefaultCloseErrorCode = (long)Http3ErrorCode.NoError,
                     RemoteEndPoint = endPoint,

@@ -68,7 +68,10 @@ namespace System.Net.Quic.Tests
         {
             QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
             // Do not set any options, which should throw an argument exception from accept.
-            listenerOptions.ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(new QuicServerConnectionOptions());
+            listenerOptions.ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(new QuicServerConnectionOptions()
+            {
+                HandshakeTimeout = HandshakeTimeout
+            });
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
 
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
