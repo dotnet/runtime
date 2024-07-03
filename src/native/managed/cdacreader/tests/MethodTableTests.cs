@@ -261,4 +261,58 @@ public unsafe class MethodTableTests
             Assert.Throws<InvalidOperationException>(() => metadataContract.GetMethodTableHandle(badMethodTablePtr));
         });
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void MethodTableGenericInstValid(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        const ulong SystemObjectMethodTableAddress = 0x00000000_7c000010;
+        const ulong SystemObjectEEClassAddress = 0x00000000_7c0000d0;
+        TargetPointer systemObjectMethodTablePtr = new TargetPointer(SystemObjectMethodTableAddress);
+        TargetPointer systemObjectEEClassPtr = new TargetPointer(SystemObjectEEClassAddress);
+
+        const ulong genericDefinitionMethodTableAddress = 0x00000000_5d004040;
+        const ulong genericDefinitionEEClassAddress = 0x00000000_5d0040c0;
+        TargetPointer genericDefinitionMethodTablePtr = new TargetPointer(genericDefinitionMethodTableAddress);
+        TargetPointer genericDefinitionEEClassPtr = new TargetPointer(genericDefinitionEEClassAddress);
+
+        const ulong genericInstanceMethodTableAddress = 0x00000000_330000a0;
+        TargetPointer genericInstanceMethodTablePtr = new TargetPointer(genericInstanceMethodTableAddress);
+
+        const int numMethods = 17;
+
+        RTSContractHelper(arch,
+        (builder) =>
+        {
+            builder = AddSystemObject(targetTestHelpers, builder, systemObjectMethodTablePtr, systemObjectEEClassPtr);
+
+            System.Reflection.TypeAttributes typeAttributes = System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class;
+            const int numInterfaces = 0;
+            const int numVirtuals = 3;
+            const uint gtd_mtflags = 0x00000030; // TODO: GenericsMask_TypicalInst
+            builder = AddEEClass(targetTestHelpers, builder, genericDefinitionEEClassPtr, "EEClass GenericDefinition", genericDefinitionMethodTablePtr, attr: (uint)typeAttributes, numMethods: numMethods);
+            builder = AddMethodTable(targetTestHelpers, builder, genericDefinitionMethodTablePtr, "MethodTable GenericDefinition", genericDefinitionEEClassPtr,
+                                    mtflags: gtd_mtflags, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
+                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: numInterfaces, numVirtuals: numVirtuals);
+
+            const uint ginst_mtflags = 0x00000010; // TODO: GenericsMask_GenericInst
+            TargetPointer ginstCanonMT = new TargetPointer(genericDefinitionMethodTablePtr.Value | (ulong)1);
+            builder = AddMethodTable(targetTestHelpers, builder, genericInstanceMethodTablePtr, "MethodTable GenericInstance", eeClassOrCanonMT: ginstCanonMT,
+                                    mtflags: ginst_mtflags, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
+                                    module: TargetPointer.Null, parentMethodTable: genericDefinitionMethodTablePtr, numInterfaces: numInterfaces, numVirtuals: numVirtuals);
+
+            return builder;
+        },
+        (target) =>
+        {
+            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
+            Assert.NotNull(metadataContract);
+            Contracts.MethodTableHandle genericInstanceMethodTableHandle = metadataContract.GetMethodTableHandle(genericInstanceMethodTablePtr);
+            Assert.Equal(genericInstanceMethodTablePtr.Value, genericInstanceMethodTableHandle.Address.Value);
+            Assert.False(metadataContract.IsFreeObjectMethodTable(genericInstanceMethodTableHandle));
+            Assert.False(metadataContract.IsString(genericInstanceMethodTableHandle));
+            Assert.Equal(numMethods, metadataContract.GetNumMethods(genericInstanceMethodTableHandle));
+        });
+    }
 }
