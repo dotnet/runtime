@@ -3160,8 +3160,9 @@ public:
     // Classifies a swift structure into primitives or an implicit byref for ABI purposes.
     virtual void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering) = 0;
 
-    virtual FpStructInRegistersInfo getLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls) = 0;
-    virtual FpStructInRegistersInfo getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls) = 0;
+    // Returns passing info for a RISC-V/LoongArch struct passed in registers according to
+    // hardware floating-point calling convention.
+    virtual FpStructInRegistersInfo getFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls) = 0;
 };
 
 /*****************************************************************************

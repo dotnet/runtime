@@ -8295,17 +8295,11 @@ void Compiler::GetStructTypeOffset(
 //      The passing info
 FpStructInRegistersInfo Compiler::GetPassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHandle)
 {
-#ifdef TARGET_RISCV64
-#define getInfoFunc getRiscV64PassFpStructInRegistersInfo
-#else
-#define getInfoFunc getLoongArch64PassFpStructInRegistersInfo
-#endif
-
-    FpStructInRegistersInfo ret = info.compCompHnd->getInfoFunc(structHandle);
+    FpStructInRegistersInfo ret = info.compCompHnd->getFpStructInRegistersInfo(structHandle);
 #ifdef DEBUG
     if (verbose)
     {
-        printf("**** " STRINGIFY(getInfoFunc) "(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
+        printf("**** getFpStructInRegistersInfo(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
                eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
 #undef getInfoFunc
         if (ret.flags == FpStruct::UseIntCallConv)

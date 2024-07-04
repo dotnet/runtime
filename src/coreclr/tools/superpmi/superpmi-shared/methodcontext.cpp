@@ -6359,59 +6359,31 @@ void MethodContext::repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_
     }
 }
 
-void MethodContext::recGetLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value)
+void MethodContext::recGetFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value)
 {
-    if (GetLoongArch64PassFpStructInRegistersInfo == nullptr)
-        GetLoongArch64PassFpStructInRegistersInfo = new LightWeightMap<DWORDLONG, FpStructInRegistersInfo>();
+    if (GetFpStructInRegistersInfo == nullptr)
+        GetFpStructInRegistersInfo = new LightWeightMap<DWORDLONG, FpStructInRegistersInfo>();
 
     DWORDLONG key = CastHandle(structHnd);
 
-    GetLoongArch64PassFpStructInRegistersInfo->Add(key, value);
-    DEBUG_REC(dmpGetLoongArch64PassFpStructInRegistersInfo(key, value));
+    GetFpStructInRegistersInfo->Add(key, value);
+    DEBUG_REC(dmpGetFpStructInRegistersInfo(key, value));
 }
 
-void MethodContext::dmpGetLoongArch64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value)
+void MethodContext::dmpGetFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value)
 {
-    printf("GetLoongArch64PassFpStructInRegistersInfo key %016" PRIX64 " value-%#03x-"
+    printf("GetFpStructInRegistersInfo key %016" PRIX64 " value-%#03x-"
         "{%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKind=%s}\n",
         key, value.flags,
         value.FlagName(), value.Size1st(), value.Size2nd(), value.offset1st, value.offset2nd, value.IntFieldKindName());
 }
 
-FpStructInRegistersInfo MethodContext::repGetLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
+FpStructInRegistersInfo MethodContext::repGetFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
 {
     DWORDLONG key = CastHandle(structHnd);
 
-    FpStructInRegistersInfo value = LookupByKeyOrMissNoMessage(GetLoongArch64PassFpStructInRegistersInfo, key);
-    DEBUG_REP(dmpGetLoongArch64PassFpStructInRegistersInfo(key, value));
-    return value;
-}
-
-void MethodContext::recGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value)
-{
-    if (GetRiscV64PassFpStructInRegistersInfo == nullptr)
-        GetRiscV64PassFpStructInRegistersInfo = new LightWeightMap<DWORDLONG, FpStructInRegistersInfo>();
-
-    DWORDLONG key = CastHandle(structHnd);
-
-    GetRiscV64PassFpStructInRegistersInfo->Add(key, value);
-    DEBUG_REC(dmpGetRiscV64PassFpStructInRegistersInfo(key, value));
-}
-
-void MethodContext::dmpGetRiscV64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value)
-{
-    printf("GetRiscV64PassFpStructInRegistersInfo key %016" PRIX64 " value-%#03x-"
-        "{%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKind=%s}\n",
-        key, value.flags,
-        value.FlagName(), value.Size1st(), value.Size2nd(), value.offset1st, value.offset2nd, value.IntFieldKindName());
-}
-
-FpStructInRegistersInfo MethodContext::repGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
-{
-    DWORDLONG key = CastHandle(structHnd);
-
-    FpStructInRegistersInfo value = LookupByKeyOrMissNoMessage(GetRiscV64PassFpStructInRegistersInfo, key);
-    DEBUG_REP(dmpGetRiscV64PassFpStructInRegistersInfo(key, value));
+    FpStructInRegistersInfo value = LookupByKeyOrMissNoMessage(GetFpStructInRegistersInfo, key);
+    DEBUG_REP(dmpGetFpStructInRegistersInfo(key, value));
     return value;
 }
 

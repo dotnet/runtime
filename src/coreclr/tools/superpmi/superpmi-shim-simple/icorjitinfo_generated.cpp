@@ -889,16 +889,10 @@ void interceptor_ICJI::getSwiftLowering(
     original_ICorJitInfo->getSwiftLowering(structHnd, pLowering);
 }
 
-FpStructInRegistersInfo interceptor_ICJI::getLoongArch64PassFpStructInRegistersInfo(
+FpStructInRegistersInfo interceptor_ICJI::getFpStructInRegistersInfo(
           CORINFO_CLASS_HANDLE structHnd)
 {
-    return original_ICorJitInfo->getLoongArch64PassFpStructInRegistersInfo(structHnd);
-}
-
-FpStructInRegistersInfo interceptor_ICJI::getRiscV64PassFpStructInRegistersInfo(
-          CORINFO_CLASS_HANDLE structHnd)
-{
-    return original_ICorJitInfo->getRiscV64PassFpStructInRegistersInfo(structHnd);
+    return original_ICorJitInfo->getFpStructInRegistersInfo(structHnd);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

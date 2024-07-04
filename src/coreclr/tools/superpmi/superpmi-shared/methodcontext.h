@@ -783,13 +783,9 @@ public:
     void dmpGetSwiftLowering(DWORDLONG key, const Agnostic_GetSwiftLowering& value);
     void repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
 
-    void recGetLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value);
-    void dmpGetLoongArch64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value);
-    FpStructInRegistersInfo repGetLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd);
-
-    void recGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value);
-    void dmpGetRiscV64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value);
-    FpStructInRegistersInfo repGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd);
+    void recGetFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value);
+    void dmpGetFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value);
+    FpStructInRegistersInfo repGetFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd);
 
     void recGetRelocTypeHint(void* target, WORD result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
@@ -1186,8 +1182,7 @@ enum mcPackets
     Packet_GetClassThreadStaticDynamicInfo = 219,
     Packet_IsGenericType = 220,
     Packet_GetTypeForBoxOnStack = 221,
-    Packet_GetRiscV64PassFpStructInRegistersInfo = 222,
-    Packet_GetLoongArch64PassFpStructInRegistersInfo = 223,
+    Packet_GetFpStructInRegistersInfo = 222,
 };
 
 void SetDebugDumpVariables();

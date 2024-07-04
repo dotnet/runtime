@@ -137,8 +137,7 @@ struct JitInterfaceCallbacks
     unsigned (* getMethodHash)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
     bool (* getSystemVAmd64PassStructInRegisterDescriptor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
     void (* getSwiftLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
-    FpStructInRegistersInfo (* getLoongArch64PassFpStructInRegistersInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
-    FpStructInRegistersInfo (* getRiscV64PassFpStructInRegistersInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
+    FpStructInRegistersInfo (* getFpStructInRegistersInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     void* (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, void** ppIndirection);
@@ -1417,20 +1416,11 @@ public:
     if (pException != nullptr) throw pException;
 }
 
-    virtual FpStructInRegistersInfo getLoongArch64PassFpStructInRegistersInfo(
+    virtual FpStructInRegistersInfo getFpStructInRegistersInfo(
           CORINFO_CLASS_HANDLE structHnd)
 {
     CorInfoExceptionClass* pException = nullptr;
-    FpStructInRegistersInfo temp = _callbacks->getLoongArch64PassFpStructInRegistersInfo(_thisHandle, &pException, structHnd);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual FpStructInRegistersInfo getRiscV64PassFpStructInRegistersInfo(
-          CORINFO_CLASS_HANDLE structHnd)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    FpStructInRegistersInfo temp = _callbacks->getRiscV64PassFpStructInRegistersInfo(_thisHandle, &pException, structHnd);
+    FpStructInRegistersInfo temp = _callbacks->getFpStructInRegistersInfo(_thisHandle, &pException, structHnd);
     if (pException != nullptr) throw pException;
     return temp;
 }

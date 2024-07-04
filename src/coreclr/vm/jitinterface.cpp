@@ -9520,8 +9520,8 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 // These depends on the platform's ABI rules.
 //
 // The returned value's encoding details how a struct argument uses float registers:
-// see the enum `StructFloatFieldInfoFlags`.
-FpStructInRegistersInfo CEEInfo::getLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls)
+// see the struct `FpStructInRegistersInfo`.
+FpStructInRegistersInfo CEEInfo::getFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         NOTHROW;
@@ -9533,30 +9533,9 @@ FpStructInRegistersInfo CEEInfo::getLoongArch64PassFpStructInRegistersInfo(CORIN
 
     FpStructInRegistersInfo info = {};
 
-#if defined(TARGET_LOONGARCH64)
-    info = MethodTable::GetLoongArch64PassFpStructInRegistersInfo(TypeHandle(cls));
-#endif // TARGET_LOONGARCH64
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return info;
-}
-
-FpStructInRegistersInfo CEEInfo::getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    FpStructInRegistersInfo info = {};
-
-#if defined(TARGET_RISCV64)
-    info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(TypeHandle(cls));
-#endif // TARGET_RISCV64
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    info = MethodTable::GetFpStructInRegistersInfo(TypeHandle(cls));
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
     EE_TO_JIT_TRANSITION_LEAF();
 

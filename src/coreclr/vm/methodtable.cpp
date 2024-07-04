@@ -2948,11 +2948,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
     return true;
 }
 
-#if defined(TARGET_RISCV64)
-FpStructInRegistersInfo MethodTable::GetRiscV64PassFpStructInRegistersInfo(TypeHandle th)
-#elif defined(TARGET_LOONGARCH64)
-FpStructInRegistersInfo MethodTable::GetLoongArch64PassFpStructInRegistersInfo(TypeHandle th)
-#endif
+FpStructInRegistersInfo MethodTable::GetFpStructInRegistersInfo(TypeHandle th)
 {
     if (th.GetSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
     {

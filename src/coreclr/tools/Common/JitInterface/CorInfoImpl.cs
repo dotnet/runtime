@@ -3454,16 +3454,23 @@ namespace Internal.JitInterface
             lowering = SwiftPhysicalLowering.LowerTypeForSwiftSignature(HandleToObject(structHnd));
         }
 
-        private FpStructInRegistersInfo getLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_STRUCT_* cls)
+        private FpStructInRegistersInfo getFpStructInRegistersInfo(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc typeDesc = HandleToObject(cls);
-            return LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(typeDesc);
-        }
-
-        private FpStructInRegistersInfo getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc typeDesc = HandleToObject(cls);
-            return RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(typeDesc);
+            var target = _compilation.TypeSystemContext.Target;
+            if (target.Architecture is TargetArchitecture.RiscV64)
+            {
+                return RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(typeDesc);
+            }
+            else if (target.Architecture is TargetArchitecture.LoongArch64)
+            {
+                return LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(typeDesc);
+            }
+            else
+            {
+                Debug.Assert(false, "Unsupported architecture for getFpStructInRegistersInfo");
+                return new FpStructInRegistersInfo{};
+            }
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
