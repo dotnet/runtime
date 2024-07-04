@@ -4296,6 +4296,74 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> Compact(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> Compact(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> CompareGreaterThan(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<byte> CompareGreaterThan(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<double> CompareGreaterThan(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> CompareGreaterThan(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<short> CompareGreaterThan(System.Numerics.Vector<short> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<int> CompareGreaterThan(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> CompareGreaterThan(System.Numerics.Vector<int> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<long> CompareGreaterThan(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CompareGreaterThan(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CompareGreaterThan(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<float> CompareGreaterThan(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> CompareGreaterThan(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ushort> CompareGreaterThan(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<uint> CompareGreaterThan(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> CompareGreaterThan(System.Numerics.Vector<uint> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ulong> CompareGreaterThan(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<byte> CompareGreaterThanOrEqual(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<byte> CompareGreaterThanOrEqual(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<double> CompareGreaterThanOrEqual(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> CompareGreaterThanOrEqual(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<short> CompareGreaterThanOrEqual(System.Numerics.Vector<short> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<int> CompareGreaterThanOrEqual(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> CompareGreaterThanOrEqual(System.Numerics.Vector<int> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<long> CompareGreaterThanOrEqual(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CompareGreaterThanOrEqual(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CompareGreaterThanOrEqual(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<float> CompareGreaterThanOrEqual(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> CompareGreaterThanOrEqual(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ushort> CompareGreaterThanOrEqual(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<uint> CompareGreaterThanOrEqual(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> CompareGreaterThanOrEqual(System.Numerics.Vector<uint> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ulong> CompareGreaterThanOrEqual(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<byte> CompareLessThan(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<byte> CompareLessThan(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<double> CompareLessThan(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> CompareLessThan(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<short> CompareLessThan(System.Numerics.Vector<short> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<int> CompareLessThan(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> CompareLessThan(System.Numerics.Vector<int> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<long> CompareLessThan(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CompareLessThan(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CompareLessThan(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<float> CompareLessThan(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> CompareLessThan(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ushort> CompareLessThan(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<uint> CompareLessThan(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> CompareLessThan(System.Numerics.Vector<uint> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ulong> CompareLessThan(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        
+        public static System.Numerics.Vector<byte> CompareLessThanOrEqual(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<byte> CompareLessThanOrEqual(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<double> CompareLessThanOrEqual(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> CompareLessThanOrEqual(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<short> CompareLessThanOrEqual(System.Numerics.Vector<short> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<int> CompareLessThanOrEqual(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<int> CompareLessThanOrEqual(System.Numerics.Vector<int> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<long> CompareLessThanOrEqual(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CompareLessThanOrEqual(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CompareLessThanOrEqual(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<float> CompareLessThanOrEqual(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> CompareLessThanOrEqual(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<ushort> CompareLessThanOrEqual(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<uint> CompareLessThanOrEqual(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> CompareLessThanOrEqual(System.Numerics.Vector<uint> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ulong> CompareLessThanOrEqual(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
         public static System.Numerics.Vector<uint> Compute16BitAddresses(System.Numerics.Vector<uint> bases, System.Numerics.Vector<int> indices) { throw null; }
         public static System.Numerics.Vector<uint> Compute16BitAddresses(System.Numerics.Vector<uint> bases, System.Numerics.Vector<uint> indices) { throw null; }
         public static System.Numerics.Vector<ulong> Compute16BitAddresses(System.Numerics.Vector<ulong> bases, System.Numerics.Vector<long> indices) { throw null; }
