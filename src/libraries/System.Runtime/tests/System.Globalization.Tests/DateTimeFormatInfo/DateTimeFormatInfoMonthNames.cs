@@ -238,6 +238,7 @@ namespace System.Globalization.Tests
         public void MonthNames_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string[] expected, string cultureName)
         {
             var actual = format.MonthNames;
+            Assert.True(expected.Length == actual.Length, $"Expected '{expected.Length}' but got '{actual.Length}' for {cultureName}");
             for (int i = 0; i < actual.Length; i++)
             {
                 Assert.True(actual[i] == expected[i], $"Expected '{expected[i]}' but got '{actual[i]}' at position {i} for {cultureName}");
