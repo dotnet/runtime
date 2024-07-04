@@ -24,11 +24,11 @@ namespace System.Net
             for (int i = 0; i < numbers.Length; ++i)
             {
                 int b = 0;
-                TChar ch;
+                int ch;
 
-                for (; (start < str.Length) && (ch = str[start]) != TChar.CreateTruncating('.') && ch != TChar.CreateTruncating(':'); ++start)
+                for (; (start < str.Length) && (ch = int.CreateTruncating(str[start])) != '.' && ch != ':'; ++start)
                 {
-                    b = (b * 10) + int.CreateTruncating(ch) - '0';
+                    b = (b * 10) + ch - '0';
                 }
 
                 numbers[i] = (byte)b;
@@ -133,10 +133,12 @@ namespace System.Net
                     break;
                 }
 
-                if (IPAddressParser.TryParseInteger(IPAddressParser.Decimal, ch, out int parsedCharacter))
+                int parsedCharacter = int.CreateTruncating(ch) - '0';
+
+                if (parsedCharacter >= 0 && parsedCharacter <= 9)
                 {
                     // A number starting with zero should be interpreted in base 8 / octal
-                    if (!haveNumber && ch == TChar.CreateTruncating('0'))
+                    if (!haveNumber && parsedCharacter == 0)
                     {
                         if (current + 1 < name.Length && name[current + 1] == TChar.CreateTruncating('0'))
                         {
@@ -196,10 +198,13 @@ namespace System.Net
             int dotCount = 0; // Limit 3
             int current;
 
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             charsConsumed = 0;
             for (current = 0; current < name.Length; current++)
             {
                 TChar ch = name[current];
+                int maxDigitValue = 9;
                 currentValue = 0;
 
                 // Figure out what base this section is in, default to base 10
@@ -209,16 +214,19 @@ namespace System.Net
                 if (ch == TChar.CreateTruncating('0'))
                 {
                     numberBase = IPAddressParser.Octal;
+                    maxDigitValue = 7;
+
                     current++;
                     atLeastOneChar = true;
                     if (current < name.Length)
                     {
-                        // Force an uppercase 'X' to lowercase 'x'.
-                        ch = name[current] | TChar.CreateTruncating(0x20);
+                        ch = name[current];
 
-                        if (ch == TChar.CreateTruncating('x'))
+                        if ((ch == TChar.CreateTruncating('x')) || (ch == TChar.CreateTruncating('X')))
                         {
                             numberBase = IPAddressParser.Hex;
+                            maxDigitValue = 9;
+
                             current++;
                             atLeastOneChar = false;
                         }
@@ -229,10 +237,26 @@ namespace System.Net
                 for (; current < name.Length; current++)
                 {
                     ch = name[current];
+                    int characterValue = int.CreateTruncating(ch);
+                    int digitValue = characterValue - '0';
 
-                    if (!IPAddressParser.TryParseInteger(numberBase, ch, out int digitValue))
+                    if ((digitValue < 0) || (digitValue > maxDigitValue))
                     {
-                        break; // Invalid/terminator
+                        if (numberBase != IPAddressParser.Hex)
+                        {
+                            break; // Invalid/terminator
+                        }
+                        else
+                        {
+                            int lowercaseCharacterValue = characterValue | 0x20;
+
+                            digitValue = 10 + lowercaseCharacterValue - 'a';
+
+                            if ((digitValue < 10) || (digitValue > 16))
+                            {
+                                break; // Invalid/terminator
+                            }
+                        }
                     }
 
                     currentValue = (currentValue * numberBase) + digitValue;
@@ -248,7 +272,7 @@ namespace System.Net
                 if (current < name.Length && name[current] == TChar.CreateTruncating('.'))
                 {
                     if (dotCount >= 3 // Max of 3 dots and 4 segments
-                        || !atLeastOneChar // No empty segmets: 1...1
+                        || !atLeastOneChar // No empty segments: 1...1
                                            // Only the last segment can be more than 255 (if there are less than 3 dots)
                         || currentValue > 0xFF)
                     {
@@ -259,7 +283,7 @@ namespace System.Net
                     atLeastOneChar = false;
                     continue;
                 }
-                // We don't get here unless We find an invalid character or a terminator
+                // We don't get here unless we find an invalid character or a terminator
                 break;
             }
 
@@ -291,10 +315,6 @@ namespace System.Net
             switch (dotCount)
             {
                 case 0: // 0xFFFFFFFF
-                    if (parts[0] > MaxIPv4Value)
-                    {
-                        return Invalid;
-                    }
                     charsConsumed = current;
                     return parts[0];
                 case 1: // 0xFF.0xFFFFFF

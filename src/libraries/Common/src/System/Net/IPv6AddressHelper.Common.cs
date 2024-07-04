@@ -132,7 +132,10 @@ namespace System.Net
             int i;
             for (i = start; i < name.Length; ++i)
             {
-                if (IPAddressParser.IsValidInteger(IPAddressParser.Hex, name[i]))
+                int hexCh = int.CreateTruncating(name[i]) | 0x20;
+
+                if ((hexCh >= '0' && hexCh <= '9')
+                    || (hexCh >= 'a' && hexCh <= 'f'))
                 {
                     ++sequenceLength;
                     expectingNumber = false;
@@ -205,7 +208,16 @@ namespace System.Net
 
                         for (; i < name.Length; i++)
                         {
-                            if (!IPAddressParser.IsValidInteger(numericBase, name[i]))
+                            int ch = int.CreateTruncating(name[i]) | 0x20;
+
+                            if ((ch >= '0' && ch <= '9')
+                                || (numericBase == IPAddressParser.Hex
+                                    && ch >= 'a'
+                                    && ch <= 'f'))
+                            {
+                                continue;
+                            }
+                            else
                             {
                                 return false;
                             }
@@ -317,10 +329,13 @@ namespace System.Net
             int index = 0;
             int compressorIndex = -1;
             bool numberIsValid = true;
+            int addressTerminatorIndex = address.IndexOf(TChar.CreateTruncating(']'));
+            int end = addressTerminatorIndex < 0 ? address.Length : addressTerminatorIndex;
+            bool containsIPv4Separator = address.Contains(TChar.CreateTruncating('.'));
 
             scopeId = ReadOnlySpan<TChar>.Empty;
             // Skip the start '[' character, if present. Stop parsing at the end IPv6 address terminator (']').
-            for (int i = (address[0] == TChar.CreateTruncating('[') ? 1 : 0); i < address.Length && address[i] != TChar.CreateTruncating(']');)
+            for (int i = (address[0] == TChar.CreateTruncating('[') ? 1 : 0); i < end;)
             {
                 if (address[i] == TChar.CreateTruncating('%')
                     || address[i] == TChar.CreateTruncating('/'))
@@ -353,37 +368,43 @@ namespace System.Net
                     number = 0;
                     // Two sequential colons form a compressor ('::').
                     ++i;
-                    if (address[i] == TChar.CreateTruncating(':'))
+                    if (i < address.Length && address[i] == TChar.CreateTruncating(':'))
                     {
                         compressorIndex = index;
                         ++i;
                     }
                     else if ((compressorIndex < 0) && (index < 6))
                     {
-                        // no point checking for IPv4 address if we don't
+                        // No point checking for IPv4 address if we don't
                         // have a compressor or we haven't seen 6 16-bit
-                        // numbers yet
+                        // numbers yet.
+                        continue;
+                    }
+                    else if (!containsIPv4Separator)
+                    {
+                        // No point checking for IPv4 address if the string
+                        // doesn't contain an IPv4 component separator.
                         continue;
                     }
 
                     // check to see if the upcoming number is really an IPv4
                     // address. If it is, convert it to 2 ushort numbers
                     for (int j = i; j < address.Length &&
-                                    (address[j] != TChar.CreateTruncating(']')) &&
-                                    (address[j] != TChar.CreateTruncating(':')) &&
-                                    (address[j] != TChar.CreateTruncating('%')) &&
-                                    (address[j] != TChar.CreateTruncating('/')) &&
-                                    (j < i + 4); ++j)
+                                (address[j] != TChar.CreateTruncating(']')) &&
+                                (address[j] != TChar.CreateTruncating(':')) &&
+                                (address[j] != TChar.CreateTruncating('%')) &&
+                                (address[j] != TChar.CreateTruncating('/')) &&
+                                (j < i + 4); ++j)
                     {
 
                         if (address[j] == TChar.CreateTruncating('.'))
                         {
-                            // we have an IPv4 address. Find the end of it:
+                            // We have an IPv4 address. Find the end of it:
                             // we know that since we have a valid IPv6
                             // address, the only things that will terminate
                             // the IPv4 address are the prefix delimiter '/'
                             // or the end-of-string (which we conveniently
-                            // delimited with ']')
+                            // delimited with ']').
                             while (j < address.Length && (address[j] != TChar.CreateTruncating(']')) && (address[j] != TChar.CreateTruncating('/')) && (address[j] != TChar.CreateTruncating('%')))
                             {
                                 ++j;
@@ -403,7 +424,18 @@ namespace System.Net
                 }
                 else
                 {
-                    number = number * IPAddressParser.Hex + Uri.FromHex((char)ushort.CreateTruncating(address[i++]));
+                    TChar ch = address[i++];
+                    int characterValue = int.CreateTruncating(ch);
+                    int digitValue = characterValue - '0';
+
+                    if ((digitValue < 0) || (digitValue > 9))
+                    {
+                        int lowercaseCharacterValue = characterValue | 0x20;
+
+                        digitValue = 10 + lowercaseCharacterValue - 'a';
+                    }
+
+                    number = number * IPAddressParser.Hex + digitValue;
                 }
             }
 
@@ -416,20 +448,17 @@ namespace System.Net
 
             // if we had a compressor sequence ("::") then we need to expand the
             // numbers array
-            if (compressorIndex > 0)
+            // If index is the same as NumberOfLabels, it means that "zero bits" are already in the correct place.
+            // It happens for leading and trailing compression.
+            if (compressorIndex > 0 && index != NumberOfLabels)
             {
                 int toIndex = NumberOfLabels - 1;
                 int fromIndex = index - 1;
 
-                // if fromIndex and toIndex are the same, it means that "zero bits" are already in the correct place
-                // it happens for leading and trailing compression
-                if (fromIndex != toIndex)
+                for (int i = index - compressorIndex; i > 0; --i)
                 {
-                    for (int i = index - compressorIndex; i > 0; --i)
-                    {
-                        numbers[toIndex--] = numbers[fromIndex];
-                        numbers[fromIndex--] = 0;
-                    }
+                    numbers[toIndex--] = numbers[fromIndex];
+                    numbers[fromIndex--] = 0;
                 }
             }
         }
