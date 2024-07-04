@@ -74,6 +74,8 @@ struct Scev
     ScevVisit Visit(TVisitor visitor);
 
     bool IsInvariant();
+
+    static bool Equals(Scev* left, Scev* right);
 };
 
 struct ScevConstant : Scev
@@ -201,6 +203,14 @@ enum class RelopEvaluationResult
 
 typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Scev*> ScalarEvolutionMap;
 
+struct SimplificationAssumptions
+{
+    // A bound on the number of times a backedge will be taken; the backedge
+    // taken count is <= min(BackEdgeTakenBound).
+    Scev**   BackEdgeTakenBound    = nullptr;
+    unsigned NumBackEdgeTakenBound = 0;
+};
+
 // Scalar evolution is analyzed in the context of a single loop, and are
 // computed on-demand by the use of the "Analyze" method on this class, which
 // also maintains a cache.
@@ -230,8 +240,10 @@ class ScalarEvolutionContext
     VNFunc                MapRelopToVNFunc(genTreeOps oper, bool isUnsigned);
     RelopEvaluationResult EvaluateRelop(ValueNum relop);
     bool                  MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, VNFunc exitOp);
+    bool AddRecMayOverflow(ScevAddRec* addRec, bool signedBound, const SimplificationAssumptions& assumptions);
 
     bool Materialize(Scev* scev, bool createIR, GenTree** result, ValueNum* resultVN);
+
 public:
     ScalarEvolutionContext(Compiler* comp);
 
@@ -244,7 +256,9 @@ public:
     ScevAddRec*   NewAddRec(Scev* start, Scev* step);
 
     Scev* Analyze(BasicBlock* block, GenTree* tree);
-    Scev* Simplify(Scev* scev);
+
+    static const SimplificationAssumptions NoAssumptions;
+    Scev* Simplify(Scev* scev, const SimplificationAssumptions& assumptions = NoAssumptions);
 
     Scev* ComputeExitNotTakenCount(BasicBlock* exiting);
 

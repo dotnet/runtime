@@ -646,7 +646,10 @@ RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyProfScale, W("JitExtDefaultPolicyProfS
 RELEASE_CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 RELEASE_CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
 RELEASE_CONFIG_INTEGER(JitInlinePolicyProfileThreshold, W("JitInlinePolicyProfileThreshold"), 40)
-RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 0)
+CONFIG_STRING(JitObjectStackAllocationRange, W("JitObjectStackAllocationRange"))
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 1)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationRefClass, W("JitObjectStackAllocationRefClass"), 1)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationBoxedValueClass, W("JitObjectStackAllocationBoxedValueClass"), 1)
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, W("JitEECallTimingInfo"), 0)
 
@@ -768,6 +771,9 @@ RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossB
 
 // Do greedy RPO-based layout in Compiler::fgReorderBlocks.
 RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, W("JitDoReversePostOrderLayout"), 1);
+
+// Enable strength reduction
+RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, W("JitEnableStrengthReduction"), 0)
 
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,

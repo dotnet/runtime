@@ -1475,6 +1475,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
                         break;
 
+                    case NI_Sve_GatherPrefetch8Bit:
+                    case NI_Sve_GatherPrefetch16Bit:
+                    case NI_Sve_GatherPrefetch32Bit:
+                    case NI_Sve_GatherPrefetch64Bit:
+                        if (!varTypeIsSIMD(intrin.op2->gtType))
+                        {
+                            needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
+                        }
+                        else
+                        {
+                            needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
+                        }
+                        break;
+
                     case NI_Sve_SaturatingDecrementBy16BitElementCount:
                     case NI_Sve_SaturatingDecrementBy32BitElementCount:
                     case NI_Sve_SaturatingDecrementBy64BitElementCount:
@@ -1906,6 +1920,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         else
         {
             assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3));
+
+            // Special handling for ShiftRightArithmeticForDivide:
+            // We might need an additional register to hold branch targets into the switch table
+            // that encodes the immediate
+            if (intrinEmb.id == NI_Sve_ShiftRightArithmeticForDivide)
+            {
+                assert(embOp2Node->GetOperandCount() == 2);
+                if (!embOp2Node->Op(2)->isContainedIntOrIImmed())
+                {
+                    buildInternalIntRegisterDefForNode(embOp2Node);
+                }
+            }
+
             tgtPrefUse = BuildUse(embOp2Node->Op(1));
             srcCount += 1;
 
@@ -2004,6 +2031,29 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
                     srcCount += BuildAddrUses(intrin.op2);
                     break;
+
+                case NI_Sve_GatherPrefetch8Bit:
+                case NI_Sve_GatherPrefetch16Bit:
+                case NI_Sve_GatherPrefetch32Bit:
+                case NI_Sve_GatherPrefetch64Bit:
+                case NI_Sve_GatherVector:
+                case NI_Sve_GatherVectorByteZeroExtend:
+                case NI_Sve_GatherVectorInt16SignExtend:
+                case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+                case NI_Sve_GatherVectorInt32SignExtend:
+                case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+                case NI_Sve_GatherVectorSByteSignExtend:
+                case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+                case NI_Sve_GatherVectorUInt16ZeroExtend:
+                case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+                case NI_Sve_GatherVectorUInt32ZeroExtend:
+                    assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                    if (!varTypeIsSIMD(intrin.op2->gtType))
+                    {
+                        srcCount += BuildAddrUses(intrin.op2);
+                        break;
+                    }
+                    FALLTHROUGH;
 
                 default:
                 {

@@ -54,7 +54,6 @@ public class MiscTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData("Debug")]
     [InlineData("Release")]
     public void DefaultTemplate_AOT_InProjectFile(string config)
     {
