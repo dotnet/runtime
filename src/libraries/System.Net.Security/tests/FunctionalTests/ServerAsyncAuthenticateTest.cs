@@ -60,9 +60,9 @@ namespace System.Net.Security.Tests
 
             Assert.NotNull(e);
 
-            if (OperatingSystem.IsAndroid())
+            if (OperatingSystem.IsAndroid() && (PlatformDetection.IsX64Process || PlatformDetection.IsX86Process))
             {
-                // On Android the server side throws IOException instead of AuthenticationException
+                // On Android running on x64 or x86 the server side throws IOException instead of AuthenticationException
                 Assert.IsType<IOException>(e);
             }
             else
