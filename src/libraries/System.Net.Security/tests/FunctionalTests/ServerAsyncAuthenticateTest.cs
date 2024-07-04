@@ -59,7 +59,16 @@ namespace System.Net.Security.Tests
                 });
 
             Assert.NotNull(e);
-            Assert.IsType<AuthenticationException>(e);
+
+            if (OperatingSystem.IsAndroid())
+            {
+                // On Android the server side throws IOException instead of AuthenticationException
+                Assert.IsType<IOException>(e);
+            }
+            else
+            {
+                Assert.IsType<AuthenticationException>(e);
+            }
         }
 
         [Theory]
