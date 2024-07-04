@@ -3034,12 +3034,12 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     GenTree* op3 = node->Op(3);
 
     // If the condition vector comes from a hardware intrinsic that
-    // returns a per-element mask (marked with HW_Flag_ReturnsPerElementMask),
-    // we can optimize the entire conditional select to
-    // a single BlendVariable instruction (if supported by the architecture)
+    // returns a per-element mask, we can optimize the entire
+    // conditional select to a single BlendVariable instruction
+    // (if supported by the architecture)
 
     // First, determine if the condition is a per-element mask
-    if (op1->OperIsHWIntrinsic() && HWIntrinsicInfo::ReturnsPerElementMask(op1->AsHWIntrinsic()->GetHWIntrinsicId()))
+    if (op1->IsVectorPerElementMask(simdBaseType, simdSize))
     {
         // Next, determine if the target architecture supports BlendVariable
         NamedIntrinsic blendVariableId = NI_Illegal;

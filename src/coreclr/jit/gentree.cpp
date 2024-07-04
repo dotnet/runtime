@@ -29707,6 +29707,92 @@ bool GenTree::IsInvariant() const
     return OperIsConst() || OperIs(GT_LCL_ADDR) || OperIs(GT_FTN_ADDR);
 }
 
+//-------------------------------------------------------------------
+// IsVectorPerElementMask: returns true if this node is a vector constant per-element mask
+//                         (every element has either all bits set or none of them).
+//
+// Arguments:
+//    simdBaseType - the base type of the constant being checked.
+//    simdSize     - the size of the SIMD type of the intrinsic.
+//
+// Returns:
+//     True if this node is a vector constant per-element mask.
+//
+bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const
+{
+#ifdef FEATURE_SIMD
+    if (IsCnsVec())
+    {
+        const GenTreeVecCon* vecCon = AsVecCon();
+
+        int elementCount = vecCon->ElementCount(simdSize, simdBaseType);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u8[0], elementCount);
+            case TYP_SHORT:
+            case TYP_USHORT:
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u16[0], elementCount);
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u32[0], elementCount);
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u64[0], elementCount);
+            default:
+                unreached();
+        }
+    }
+    else if (OperIsHWIntrinsic())
+    {
+        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = intrinsic->GetHWIntrinsicId();
+
+        if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsicId))
+        {
+            // We directly return a per-element mask
+            return true;
+        }
+
+        bool       isScalar = false;
+        genTreeOps oper     = intrinsic->HWOperGet(&isScalar);
+
+        switch (oper)
+        {
+            case GT_AND:
+            case GT_AND_NOT:
+            case GT_OR:
+            case GT_XOR:
+            {
+                // We are a binary bitwise operation where both inputs are per-element masks
+                return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize) &&
+                       intrinsic->Op(2)->IsVectorPerElementMask(simdBaseType, simdSize);
+            }
+
+            case GT_NOT:
+            {
+                // We are an unary bitwise operation where the input is a per-element mask
+                return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize);
+            }
+
+            default:
+            {
+                assert(!GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper));
+                break;
+            }
+        }
+
+        return false;
+    }
+#endif // FEATURE_SIMD
+
+    return false;
+}
+
 //------------------------------------------------------------------------
 // IsNeverNegative: returns true if the given tree is known to be never
 //                  negative, i. e. the upper bit will always be zero.
