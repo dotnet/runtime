@@ -186,24 +186,57 @@ namespace System.Text.RegularExpressions.Symbolic
         private MatchReversal<TSet> CreateOptimizedReversal(SymbolicRegexNode<TSet> node)
         {
             int pos = 0;
-            SymbolicRegexNode<TSet>? current = node;
+            SymbolicRegexNode<TSet> current = node;
             bool canLoop = true;
 
-            // finding anchors inside pattern invalidates this optimization
-            var bail = new Func<SymbolicRegexNode<TSet>, (bool, SymbolicRegexNode<TSet>)>(concatNode =>
+            while (canLoop)
             {
-                pos = 0;
-                return (false, node);
-            });
+                (bool loop, SymbolicRegexNode<TSet> next) = current switch
+                {
+                    // Bail if it contains any anchors. (This could potentially be a very good future optimization for
+                    // anchors but there's too many edge cases to guarantee it works.
+                    // one example which fails currently: pattern: @"\By\b", input: "xy")
+                    { _info.ContainsSomeAnchor: true } => Bail(),
 
-            var addSingleton = new Func<SymbolicRegexNode<TSet>, (bool, SymbolicRegexNode<TSet>)>(concatNode =>
+                    // if this is reached then entire match is fixed length
+                    { _kind: SymbolicRegexNodeKind.CaptureStart} => (false, _builder.Epsilon),
+
+                    { _kind:SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.CaptureEnd } => (true, current._right!),
+
+                    {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.BoundaryAnchor } => (true, current._right!),
+
+                    {_kind:SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Singleton} => AddSingleton(current),
+
+                    {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Loop } =>
+                        AddFixedLengthLoop(current),
+
+                    _ => (false, current)
+                };
+                canLoop = loop;
+                current = next;
+            }
+
+            return
+                pos <= 0 ? new MatchReversal<TSet>(MatchReversalKind.MatchStart, 0) :
+                current == _builder.Epsilon ? new MatchReversal<TSet>(MatchReversalKind.FixedLength, pos) :
+                new MatchReversal<TSet>(MatchReversalKind.PartialFixedLength, pos, GetOrCreateState_NoLock(_builder.CreateDisableBacktrackingSimulation(current), 0));
+
+            // finding anchors inside pattern invalidates this optimization
+            (bool, SymbolicRegexNode<TSet>) Bail()
+            {
+                pos += 1;
+                // continue with next concat
+                return (false, node);
+            }
+
+            (bool, SymbolicRegexNode<TSet>) AddSingleton(SymbolicRegexNode<TSet> concatNode)
             {
                 pos += 1;
                 // continue with next concat
                 return (true, concatNode._right!);
-            });
+            }
 
-            var addFixedLengthLoop = new Func<SymbolicRegexNode<TSet>, (bool, SymbolicRegexNode<TSet>)>(concatNode =>
+            (bool, SymbolicRegexNode<TSet>) AddFixedLengthLoop(SymbolicRegexNode<TSet> concatNode)
             {
                 SymbolicRegexNode<TSet>? loopNode = concatNode._left;
                 if (loopNode is { _lower: <= 0 })
@@ -217,53 +250,22 @@ namespace System.Text.RegularExpressions.Symbolic
 
                         if (loopNode._lower == loopNode._upper)
                         {
-                            // the entire loop is fixed, continue
                             pos += loopNode._lower;
+                            // the entire loop is fixed, continue
                             return (true, concatNode._right!);
                         }
 
                         // subtract the fixed part of the loop
                         int loopRemainder = loopNode._upper - loopNode._lower;
-                        SymbolicRegexNode<TSet> newLeft = _builder.CreateLoop(loopNode._left, loopNode.IsLazy, 0, loopRemainder);
+                        SymbolicRegexNode<TSet> newLeft =
+                            _builder.CreateLoop(loopNode._left, loopNode.IsLazy, 0, loopRemainder);
                         SymbolicRegexNode<TSet> newNode = _builder.CreateConcat(newLeft, concatNode._right!);
                         pos += loopNode._lower;
                         return (true, newNode);
-
                     default:
                         return (false, concatNode);
                 }
-            });
-
-            while (canLoop)
-            {
-                (bool loop, SymbolicRegexNode<TSet> next) = current switch
-                {
-                    // Bail if it contains any anchors. (This could potentially be a very good future optimization for
-                    // anchors but there's too many edge cases to guarantee it works.
-                    // one example which fails currently: pattern: @"\By\b", input: "xy")
-                    { _info.ContainsSomeAnchor: true } => bail(current),
-
-                    // if this is reached then entire match is fixed length
-                    { _kind: SymbolicRegexNodeKind.CaptureStart} => (false, _builder.Epsilon),
-
-                    { _kind:SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.CaptureEnd } => (true, current._right!),
-
-                    {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.BoundaryAnchor } => (true, current._right!),
-
-                    {_kind:SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Singleton} => addSingleton(current),
-
-                    {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Loop } => addFixedLengthLoop(current),
-
-                    _ => (false, current)
-                };
-                canLoop = loop;
-                current = next;
             }
-
-                return
-                    pos <= 0 ? new MatchReversal<TSet>(MatchReversalKind.MatchStart, 0) :
-                    current == _builder.Epsilon ? new MatchReversal<TSet>(MatchReversalKind.FixedLength, pos) :
-                    new MatchReversal<TSet>(MatchReversalKind.PartialFixedLength, pos, GetOrCreateState_NoLock(_builder.CreateDisableBacktrackingSimulation(current), 0));
         }
 
         /// <summary>
