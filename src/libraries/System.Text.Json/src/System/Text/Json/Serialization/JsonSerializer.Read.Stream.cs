@@ -489,7 +489,7 @@ namespace System.Text.Json
         /// that can be used to deserialize sequences of JSON values in a streaming manner.
         /// </summary>
         /// <typeparam name="TValue">The element type to deserialize asynchronously.</typeparam>
-        /// <returns>An <see cref="IAsyncEnumerable{TValue}" /> representation of the provided JSON array.</returns>
+        /// <returns>An <see cref="IAsyncEnumerable{TValue}" /> representation of the provided JSON sequence.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="jsonTypeInfo">Metadata about the element type to convert.</param>
         /// <param name="topLevelValues">Whether to deserialize from a sequence of top-level JSON values.</param>
