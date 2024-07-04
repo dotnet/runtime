@@ -27954,6 +27954,7 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)
+            case NI_ArmBase_Yield:
             case NI_Sve_PrefetchBytes:
             case NI_Sve_PrefetchInt16:
             case NI_Sve_PrefetchInt32:
@@ -27962,7 +27963,6 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
-            case NI_ArmBase_Yield:
             {
                 return true;
             }
