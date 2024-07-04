@@ -4706,8 +4706,6 @@ class CallArg
 
     // The class handle for the signature type (when varTypeIsStruct(SignatureType)).
     CORINFO_CLASS_HANDLE m_signatureClsHnd;
-    // The LclVar number if we had to force evaluation of this arg.
-    unsigned m_tmpNum;
     // The type of the argument in the signature.
     var_types m_signatureType : 5;
     // The type of well-known argument this is.
@@ -4716,8 +4714,6 @@ class CallArg
     bool m_needTmp : 1;
     // True when we must replace this argument with a placeholder node.
     bool m_needPlace : 1;
-    // True when we setup a temp LclVar for this argument.
-    bool m_isTmp : 1;
     // True when we have decided the evaluation order for this argument in LateArgs
     bool m_processed : 1;
 
@@ -4728,12 +4724,10 @@ private:
         , m_next(nullptr)
         , m_lateNext(nullptr)
         , m_signatureClsHnd(NO_CLASS_HANDLE)
-        , m_tmpNum(BAD_VAR_NUM)
         , m_signatureType(TYP_UNDEF)
         , m_wellKnownArg(WellKnownArg::None)
         , m_needTmp(false)
         , m_needPlace(false)
-        , m_isTmp(false)
         , m_processed(false)
     {
     }
@@ -4770,7 +4764,6 @@ public:
     CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureClsHnd; }
     var_types GetSignatureType() { return m_signatureType; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
-    bool IsTemp() { return m_isTmp; }
     // clang-format on
 
     // Get the real argument node, i.e. not a setup or placeholder node.
@@ -4885,8 +4878,7 @@ public:
     void SetNeedsTemp(CallArg* arg);
     bool IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg);
 
-    GenTree* MakeTmpArgNode(Compiler* comp, CallArg* arg);
-    void     SetTemp(CallArg* arg, unsigned tmpNum);
+    GenTree* MakeTmpArgNode(Compiler* comp, CallArg* arg, unsigned lclNum);
 
     // clang-format off
     bool HasThisPointer() const { return m_hasThisPointer; }
