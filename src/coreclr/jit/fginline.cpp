@@ -388,8 +388,8 @@ private:
         }
 
         // If the inline was rejected and returns a retbuffer, then mark that
-        // local now as DNER now so that promotion knows to leave it up to
-        // physical promotion.
+        // local as DNER now so that promotion knows to leave it up to physical
+        // promotion.
         if ((*use)->IsCall())
         {
             CallArg* retBuffer = (*use)->AsCall()->gtArgs.GetRetBufferArg();
