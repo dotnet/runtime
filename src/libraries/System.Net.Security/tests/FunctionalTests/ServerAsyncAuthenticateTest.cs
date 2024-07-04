@@ -426,16 +426,7 @@ namespace System.Net.Security.Tests
                     clientStream.Socket.Shutdown(SocketShutdown.Send);
                 }
 
-                try
-                {
-                    await serverAuthentication.WaitAsync(TestConfiguration.PassingTestTimeout);
-                }
-                catch (Exception ex)
-                {
-                    _log.WriteLine("Server exception : " + ex);
-                    throw;
-                }
-
+                await serverAuthentication.WaitAsync(TestConfiguration.PassingTestTimeout);
                 _logVerbose.WriteLine("ServerAsyncAuthenticateTest.serverAuthentication complete.");
 
                 _log.WriteLine(
