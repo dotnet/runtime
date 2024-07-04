@@ -27983,6 +27983,9 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
 
 #if defined(TARGET_ARM64)
             case NI_ArmBase_Yield:
+            case NI_Sve_GatherVectorFirstFaulting:
+            case NI_Sve_LoadVectorFirstFaulting:
+            case NI_Sve_SetFfr:
             {
                 return true;
             }
@@ -28165,6 +28168,9 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 
 #if defined(TARGET_ARM64)
             case NI_ArmBase_Yield:
+            case NI_Sve_GatherVectorFirstFaulting:
+            case NI_Sve_LoadVectorFirstFaulting:
+            case NI_Sve_SetFfr:
             {
                 // Mark as a call and global reference, much as is done for GT_KEEPALIVE
                 gtFlags |= (GTF_CALL | GTF_GLOB_REF);

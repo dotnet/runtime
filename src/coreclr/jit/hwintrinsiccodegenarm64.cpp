@@ -2324,6 +2324,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_SetFfr:
+            {
+                assert(targetReg == REG_NA);
+                GetEmitter()->emitIns_R(ins, emitSize, op1Reg, opt);
+                break;
+            }
+
             default:
                 unreached();
         }

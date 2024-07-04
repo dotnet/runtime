@@ -24,12 +24,13 @@ namespace JIT.HardwareIntrinsics.Arm
         [Fact]
         public static void {TestName}()
         {
-            var test = new LoadUnaryOpTest__{TestName}();
+            var test = new Sve__{TestName}();
 
             if (test.IsSupported)
             {
                 // Validates basic functionality works
                 test.RunBasicScenario_Load();
+                test.RunBasicScenario_LoadFirstFaulting();
 
                 // Validates calling via reflection works
                 test.RunReflectionScenario_Load();
@@ -56,14 +57,16 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class LoadUnaryOpTest__{TestName}
+    public sealed unsafe class Sve__{TestName}
     {
         private struct DataTable
         {
             private byte[] inArray1;
+            private byte[] inArray1Half;
             private byte[] outArray;
 
             private GCHandle inHandle1;
+            private GCHandle inHandle1Half;
             private GCHandle outHandle;
 
             private ulong alignment;
@@ -71,6 +74,7 @@ namespace JIT.HardwareIntrinsics.Arm
             public DataTable({Op2BaseType}[] inArray1, {RetBaseType}[] outArray, int alignment)
             {
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op2BaseType}>();
+                int sizeOfinArray1Half = sizeOfinArray1 / 2;
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
                 if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
                 {
@@ -78,23 +82,27 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
 
                 this.inArray1 = new byte[alignment * 2];
+                this.inArray1Half = new byte[(alignment * 2) / 2];
                 this.outArray = new byte[alignment * 2];
 
                 this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+                this.inHandle1Half = GCHandle.Alloc(this.inArray1Half, GCHandleType.Pinned);
                 this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
 
                 this.alignment = (ulong)alignment;
 
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
-
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1HalfPtr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinArray1Half);
             }
 
             public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray1HalfPtr => Align((byte*)(inHandle1Half.AddrOfPinnedObject().ToPointer()), alignment);
             public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
 
             public void Dispose()
             {
                 inHandle1.Free();
+                inHandle1Half.Free();
                 outHandle.Free();
             }
 
@@ -118,7 +126,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return testStruct;
             }
 
-            public void RunStructFldScenario(LoadUnaryOpTest__{TestName} testClass)
+            public void RunStructFldScenario(Sve__{TestName} testClass)
             {
                 {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
 
@@ -140,7 +148,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        public LoadUnaryOpTest__{TestName}()
+        public Sve__{TestName}()
         {
             Succeeded = true;
 
@@ -165,6 +173,24 @@ namespace JIT.HardwareIntrinsics.Arm
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunBasicScenario_LoadFirstFaulting()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadFirstFaulting));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
+
+            var op2Ptr = ({Op2BaseType}*)(_dataTable.inArray1HalfPtr);
+            Sve.SetFfr(Sve.CreateTrueMaskByte(SveMaskPattern.All));
+            var result = {Isa}.{Method}(
+                loadMask,
+                op2Ptr
+            );
+            var faultResult = Sve.GetFfr();
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateFirstFaultingResult(_dataTable.inArray1HalfPtr, _dataTable.outArrayPtr, faultResult.As<byte, {RetBaseType}>());
         }
 
         public void RunReflectionScenario_Load()
@@ -261,6 +287,70 @@ namespace JIT.HardwareIntrinsics.Arm
                 TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>, {Op2BaseType}): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateFirstFaultingResult(void* firstOp, void* result, Vector<{RetBaseType}> faultResult, [CallerMemberName] string method = "")
+        {
+            {Op2BaseType}[] inArray = new {Op2BaseType}[Op2ElementCount / 2];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<{RetVectorType}<{Op2BaseType}>>() / 2);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            ValidateFirstFaultingResult(inArray, outArray, faultResult, method);
+        }
+
+        private void ValidateFirstFaultingResult({Op2BaseType}[] firstOp, {RetBaseType}[] result, Vector<{RetBaseType}> faultResult, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (var i = 0; i < RetElementCount; i++)
+            {
+                if (i < (RetElementCount / 2))
+                {
+                    if ({ValidateIterResult})
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (result[i] != 0)
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+
+                if (i == (RetElementCount / 2))
+                {
+                    if (faultResult[i] != 0)
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (faultResult[i] != 1)
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op2BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"       firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"        result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation($"   faultResult: ({faultResult})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;
