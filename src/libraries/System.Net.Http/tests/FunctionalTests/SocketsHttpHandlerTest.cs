@@ -100,6 +100,75 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task ReadAheadTaskOnConnectionReuse_ExceptionsAreObserved()
+        {
+            bool seenUnobservedExceptions = false;
+
+            EventHandler<UnobservedTaskExceptionEventArgs> eventHandler = (_, e) =>
+            {
+                if (e.Exception.InnerException?.Message == nameof(ReadAheadTaskOnConnectionReuse_ExceptionsAreObserved))
+                {
+                    _output.WriteLine(e.Exception.ToString());
+                    seenUnobservedExceptions = true;
+                }
+            };
+
+            TaskScheduler.UnobservedTaskException += eventHandler;
+            try
+            {
+                const string FirstResponse = "HTTP/1.1 200 OK\r\nContent-Length: 3\r\n\r\nfoo";
+                int firstResponseOffset = 0;
+
+                TaskCompletionSource firstWriteCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                using var client = new HttpClient(new SocketsHttpHandler
+                {
+                    PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan,
+                    ConnectCallback = (_, _) =>
+                    {
+                        return ValueTask.FromResult<Stream>(new DelegateDelegatingStream(Stream.Null)
+                        {
+                            ReadAsyncMemoryFunc = async (buffer, ct) =>
+                            {
+                                if (firstResponseOffset < FirstResponse.Length)
+                                {
+                                    await firstWriteCompleted.Task.WaitAsync(ct);
+                                    int toWrite = Math.Min(buffer.Length, FirstResponse.Length - firstResponseOffset);
+                                    Assert.Equal(toWrite, Encoding.ASCII.GetBytes(FirstResponse.AsSpan(firstResponseOffset, toWrite), buffer.Span));
+                                    firstResponseOffset += toWrite;
+                                    return toWrite;
+                                }
+
+                                throw new Exception(nameof(ReadAheadTaskOnConnectionReuse_ExceptionsAreObserved));
+                            },
+                            WriteAsyncMemoryFunc = (_, _) =>
+                            {
+                                firstWriteCompleted.TrySetResult();
+                                return default;
+                            }
+                        });
+                    }
+                });
+
+                // The first request succeeds.
+                Assert.Equal("foo", await client.GetStringAsync("http://foo"));
+
+                // The connection throws an exception after the first request.
+                // No matter what happens with the second request, we should always be observing the connection exception.
+                await Assert.ThrowsAsync<Exception>(() => client.GetAsync("http://foo"));
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= eventHandler;
+            }
+
+            Assert.False(seenUnobservedExceptions);
+        }
+
+        [Fact]
         public async Task ExecutionContext_Suppressed_Success()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(

@@ -10,7 +10,7 @@
 
 using CaValueArrayFactory = Factory<SArray<CaValue>>;
 
-namespace Attribute
+namespace CustomAttribute
 {
     HRESULT ParseArgumentValues(
         void* pCa,

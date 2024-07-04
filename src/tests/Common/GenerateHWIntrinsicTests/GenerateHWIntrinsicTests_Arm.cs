@@ -78,6 +78,25 @@ const string SimpleVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < Re
                 }
             }";
 
+const string SimpleVecOpTest_ValidationLogicForCndSel_FalseValue = @"for (var i = 0; i < RetElementCount; i++)
+            {
+                {Op1BaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
+                if (mask[i] != 0)
+                {
+                    // Pick the trueValue
+                    if (iterResult != result[i])
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    // For false, the values are merged with destination, and we do not know
+                    // those contents would be, so skip verification for them.
+                }              
+            }";
+
 const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing = @"for (var i = 0; i < Op1ElementCount; i++)
             {
                 {Op1BaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
@@ -86,6 +105,25 @@ const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing = @"for (var i
                     succeeded = false;
                     break;
                 }
+            }";
+
+const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing_FalseValue = @"for (var i = 0; i < Op1ElementCount; i++)
+            {
+                {Op1BaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
+                if (mask[i] != 0)
+                {
+                    // Pick the trueValue
+                    if (iterResult != result[i])
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    // For false, the values are merged with destination, and we do not know
+                    // those contents would be, so skip verification for them.
+                }  
             }";
 
 const string SimpleVecOpTest_VectorValidationLogicForCndSel = @"
@@ -104,15 +142,59 @@ const string SimpleVecOpTest_VectorValidationLogicForCndSel = @"
                 }
             }";
 
+const string SimpleVecOpTest_VectorValidationLogicForCndSel_FalseValue = @"
+            {
+                {Op1BaseType}[] vectorResult = {GetVectorResult};
+                {Op1BaseType}[] maskedVectorResult = new {RetBaseType}[vectorResult.Length];
+
+                for (var i = 0; i < vectorResult.Length; i++)
+                {
+                    {Op1BaseType} iterResult = (mask[i] != 0) ? trueVal[i] : vectorResult[i];
+                    if (mask[i] != 0)
+                    {
+                        // Pick the trueValue
+                        if (iterResult != result[i])
+                        {
+                            succeeded = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // For false, the values are merged with destination, and we do not know
+                        // those contents would be, so skip verification for them.
+                    }
+                }
+            }";
+
 const string SimpleTernVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < RetElementCount; i++)
             {
                 {Op1BaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
+                if (mask[i] != 0)
+                {
+                    // Pick the trueValue
+                    if ({ConvertFunc}(iterResult) !=  {ConvertFunc}(result[i]))
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    // For false, the values are merged with destination, and we do not know
+                    // those contents would be, so skip verification for them.
+                }                
+            }";
+
+const string SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue = @"for (var i = 0; i < RetElementCount; i++)
+            {
+                {Op1BaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
                 if ({ConvertFunc}(iterResult) !=  {ConvertFunc}(result[i]))
                 {
                     succeeded = false;
                     break;
                 }
-            }";
+            }";            
 
 const string VecPairBinOpTest_ValidationLogic = @"
             int index = 0;
@@ -176,21 +258,21 @@ const string SecureHashOpTest_ValidationLogic = @"{RetBaseType}[] expectedResult
     ("_UnaryOpTestTemplate.template",                    "SecureHashUnOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "SecureHash", ["TemplateValidationLogic"] = SecureHashOpTest_ValidationLogic }),
     ("_BinaryOpTestTemplate.template",                   "SecureHashBinOpTest.template",                new Dictionary<string, string> { ["TemplateName"] = "SecureHash", ["TemplateValidationLogic"] = SecureHashOpTest_ValidationLogic }),
     ("_TernaryOpTestTemplate.template",                  "SecureHashTernOpTest.template",               new Dictionary<string, string> { ["TemplateName"] = "SecureHash", ["TemplateValidationLogic"] = SecureHashOpTest_ValidationLogic }),
-    ("_SveUnaryOpTestTemplate.template",                 "SveSimpleVecOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveUnaryOpDifferentRetTypeTestTemplate.template", "SveSimpleVecOpDifferentRetTypeTest.template", new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogicForNarrowing, ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSelForNarrowing }),
-    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpTest.template",                    new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpVecTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_VectorValidationLogic,       ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_VectorValidationLogicForCndSel }),
-    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpConvertTest.template",             new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
-    ("_SveBinaryOpDifferentTypesTestTemplate.template",  "SveVecBinOpDifferentTypesTest.template",      new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveBinaryMaskOpTestTemplate.template",            "SveMaskVecBinOpConvertTest.template",         new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveImmBinaryOpTestTemplate.template",             "SveVecImmBinOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveImmUnaryOpTestTemplate.template",              "SveVecImmUnOpTest.template",                  new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel }),
-    ("_SveTernOpTestTemplate.template",                  "SveVecTernOpTest.template",                   new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
-    ("_SveTernOpTestTemplate.template",                  "SveVecTernOpVecTest.template",                new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_VectorValidationLogic,       ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_VectorValidationLogicForCndSel }),
-    ("_SveTernOpFirstArgTestTemplate.template",          "SveVecTernOpFirstArgTest.template",           new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
-    ("_SveImmTernOpTestTemplate.template",               "SveVecImmTernOpTest.template",                new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
-    ("_SveTernOpMaskedOpTestTemplate.template",          "SveVecTernOpMaskedTest.template",             new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
-    ("_SveImmTernOpFirstArgTestTemplate.template",       "SveVecImmTernOpFirstArgTest.template",        new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
+    ("_SveUnaryOpTestTemplate.template",                 "SveSimpleVecOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveUnaryOpDifferentRetTypeTestTemplate.template", "SveSimpleVecOpDifferentRetTypeTest.template", new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogicForNarrowing, ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSelForNarrowing, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSelForNarrowing_FalseValue }),
+    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpTest.template",                    new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpVecTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_VectorValidationLogic,       ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_VectorValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_VectorValidationLogicForCndSel_FalseValue }),
+    ("_SveBinaryOpTestTemplate.template",                "SveVecBinOpConvertTest.template",             new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveBinaryOpDifferentTypesTestTemplate.template",  "SveVecBinOpDifferentTypesTest.template",      new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveBinaryMaskOpTestTemplate.template",            "SveMaskVecBinOpConvertTest.template",         new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveImmBinaryOpTestTemplate.template",             "SveVecImmBinOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveImmUnaryOpTestTemplate.template",              "SveVecImmUnOpTest.template",                  new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveTernOpTestTemplate.template",                  "SveVecTernOpTest.template",                   new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveTernOpTestTemplate.template",                  "SveVecTernOpVecTest.template",                new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_VectorValidationLogic,       ["TemplateValidationLogicForCndSel"] = SimpleVecOpTest_VectorValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleVecOpTest_VectorValidationLogicForCndSel_FalseValue }),
+    ("_SveTernOpFirstArgTestTemplate.template",          "SveVecTernOpFirstArgTest.template",           new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveImmTernOpTestTemplate.template",               "SveVecImmTernOpTest.template",                new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveTernOpMaskedOpTestTemplate.template",          "SveVecTernOpMaskedTest.template",             new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
+    ("_SveImmTernOpFirstArgTestTemplate.template",       "SveVecImmTernOpFirstArgTest.template",        new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,             ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel, ["TemplateValidationLogicForCndSel_FalseValue"] = SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue }),
     ("_SveImm2UnaryOpTestTemplate.template",             "SveVecImm2UnOpTest.template",                 new Dictionary<string, string> { ["TemplateName"] = "Imm",        ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
     ("_SveMinimalUnaryOpTestTemplate.template",          "SveVecReduceUnOpTest.template",               new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = VecReduceOpTest_ValidationLogic }),
     ("_SveMasklessUnaryOpTestTemplate.template",         "SveMasklessSimpleVecOpTest.template",         new Dictionary<string, string> { ["TemplateName"] = "Simple",     ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
@@ -3879,6 +3961,11 @@ const string SecureHashOpTest_ValidationLogic = @"{RetBaseType}[] expectedResult
     ("SveVecBinOpDifferentTypesTest.template", new Dictionary<string, string> { ["TestName"] = "Sve_ShiftRightArithmetic_sbyte_ulong",                                                             ["Isa"] = "Sve",           ["LoadIsa"] = "Sve",     ["Method"] = "ShiftRightArithmetic",                                                 ["RetVectorType"] = "Vector",    ["RetBaseType"] = "SByte",   ["Op1VectorType"] = "Vector",    ["Op1BaseType"] = "SByte",  ["Op2VectorType"] = "Vector",    ["Op2BaseType"] = "UInt64",                                                                       ["LargestVectorSize"] = "64", ["NextValueOp1"] = "TestLibrary.Generator.GetSByte()",         ["NextValueOp2"] = "TestLibrary.Generator.GetUInt64()",                                                      ["ValidateIterResult"] = "Helpers.ShiftRight<sbyte>(left[i], right[(i * sizeof(sbyte)) / sizeof(ulong)]) != result[i]",                 ["GetIterResult"] = "Helpers.ShiftRight<sbyte>(left[i], right[(i * sizeof(sbyte)) / sizeof(ulong)])"}),
     ("SveVecBinOpDifferentTypesTest.template", new Dictionary<string, string> { ["TestName"] = "Sve_ShiftRightArithmetic_short_ulong",                                                             ["Isa"] = "Sve",           ["LoadIsa"] = "Sve",     ["Method"] = "ShiftRightArithmetic",                                                 ["RetVectorType"] = "Vector",    ["RetBaseType"] = "Int16",   ["Op1VectorType"] = "Vector",    ["Op1BaseType"] = "Int16",  ["Op2VectorType"] = "Vector",    ["Op2BaseType"] = "UInt64",                                                                       ["LargestVectorSize"] = "64", ["NextValueOp1"] = "TestLibrary.Generator.GetInt16()",         ["NextValueOp2"] = "TestLibrary.Generator.GetUInt64()",                                                      ["ValidateIterResult"] = "Helpers.ShiftRight<short>(left[i], right[(i * sizeof(short)) / sizeof(ulong)]) != result[i]",                 ["GetIterResult"] = "Helpers.ShiftRight<short>(left[i], right[(i * sizeof(short)) / sizeof(ulong)])"}),
     ("SveVecBinOpDifferentTypesTest.template", new Dictionary<string, string> { ["TestName"] = "Sve_ShiftRightArithmetic_int_ulong",                                                               ["Isa"] = "Sve",           ["LoadIsa"] = "Sve",     ["Method"] = "ShiftRightArithmetic",                                                 ["RetVectorType"] = "Vector",    ["RetBaseType"] = "Int32",   ["Op1VectorType"] = "Vector",    ["Op1BaseType"] = "Int32",  ["Op2VectorType"] = "Vector",    ["Op2BaseType"] = "UInt64",                                                                       ["LargestVectorSize"] = "64", ["NextValueOp1"] = "TestLibrary.Generator.GetInt32()",         ["NextValueOp2"] = "TestLibrary.Generator.GetUInt64()",                                                      ["ValidateIterResult"] = "Helpers.ShiftRight<int>(left[i], right[(i * sizeof(int)) / sizeof(ulong)]) != result[i]",                     ["GetIterResult"] = "Helpers.ShiftRight<int>(left[i], right[(i * sizeof(int)) / sizeof(ulong)])"}),
+                                                                     
+    ("SveVecImmUnOpTest.template",             new Dictionary<string, string> {["TestName"] = "Sve_ShiftRightArithmeticForDivide_sbyte",                                                           ["Isa"] = "Sve",           ["LoadIsa"] = "Sve",     ["Method"] = "ShiftRightArithmeticForDivide",                                        ["RetVectorType"] = "Vector",    ["RetBaseType"] = "SByte",   ["Op1VectorType"] = "Vector",    ["Op1BaseType"] = "SByte",                                                                                                                                     ["LargestVectorSize"] = "64", ["NextValueOp1"] = "TestLibrary.Generator.GetSByte()",         ["InvalidImm"] = "0", ["Imm"] = "(TestLibrary.Generator.GetByte() % 8) + 1",                                 ["ValidateIterResult"] = "Helpers.ShiftRight<sbyte>(firstOp[i], (ulong)imm) != result[i]",                                              ["GetIterResult"] = "Helpers.ShiftRight<sbyte>(firstOp[i], (ulong)imm)"}),
+    ("SveVecImmUnOpTest.template",             new Dictionary<string, string> {["TestName"] = "Sve_ShiftRightArithmeticForDivide_short",                                                           ["Isa"] = "Sve",           ["LoadIsa"] = "Sve",     ["Method"] = "ShiftRightArithmeticForDivide",                                        ["RetVectorType"] = "Vector",    ["RetBaseType"] = "Int16",   ["Op1VectorType"] = "Vector",    ["Op1BaseType"] = "Int16",                                                                                                                                     ["LargestVectorSize"] = "64", ["NextValueOp1"] = "TestLibrary.Generator.GetInt16()",         ["InvalidImm"] = "0", ["Imm"] = "(TestLibrary.Generator.GetByte() % 16) + 1",                                ["ValidateIterResult"] = "Helpers.ShiftRight<short>(firstOp[i], (ulong)imm) != result[i]",                                              ["GetIterResult"] = "Helpers.ShiftRight<short>(firstOp[i], (ulong)imm)"}),
+    ("SveVecImmUnOpTest.template",             new Dictionary<string, string> {["TestName"] = "Sve_ShiftRightArithmeticForDivide_int",                                                             ["Isa"] = "Sve",           ["LoadIsa"] = "Sve",     ["Method"] = "ShiftRightArithmeticForDivide",                                        ["RetVectorType"] = "Vector",    ["RetBaseType"] = "Int32",   ["Op1VectorType"] = "Vector",    ["Op1BaseType"] = "Int32",                                                                                                                                     ["LargestVectorSize"] = "64", ["NextValueOp1"] = "TestLibrary.Generator.GetInt32()",         ["InvalidImm"] = "0", ["Imm"] = "(TestLibrary.Generator.GetByte() % 32) + 1",                                ["ValidateIterResult"] = "Helpers.ShiftRight<int>(firstOp[i], (ulong)imm) != result[i]",                                                ["GetIterResult"] = "Helpers.ShiftRight<int>(firstOp[i], (ulong)imm)"}),
+    ("SveVecImmUnOpTest.template",             new Dictionary<string, string> {["TestName"] = "Sve_ShiftRightArithmeticForDivide_long",                                                            ["Isa"] = "Sve",           ["LoadIsa"] = "Sve",     ["Method"] = "ShiftRightArithmeticForDivide",                                        ["RetVectorType"] = "Vector",    ["RetBaseType"] = "Int64",   ["Op1VectorType"] = "Vector",    ["Op1BaseType"] = "Int64",                                                                                                                                     ["LargestVectorSize"] = "64", ["NextValueOp1"] = "TestLibrary.Generator.GetInt64()",         ["InvalidImm"] = "0", ["Imm"] = "(TestLibrary.Generator.GetByte() % 64) + 1",                                ["ValidateIterResult"] = "Helpers.ShiftRight<long>(firstOp[i], (ulong)imm) != result[i]",                                               ["GetIterResult"] = "Helpers.ShiftRight<long>(firstOp[i], (ulong)imm)"}),
 
     ("SveVecBinOpDifferentTypesTest.template", new Dictionary<string, string> { ["TestName"] = "Sve_ShiftRightLogical_byte",                                                                       ["Isa"] = "Sve",           ["LoadIsa"] = "Sve",     ["Method"] = "ShiftRightLogical",                                                    ["RetVectorType"] = "Vector",    ["RetBaseType"] = "Byte",    ["Op1VectorType"] = "Vector",    ["Op1BaseType"] = "Byte",   ["Op2VectorType"] = "Vector",    ["Op2BaseType"] = "Byte",                                                                         ["LargestVectorSize"] = "64", ["NextValueOp1"] = "TestLibrary.Generator.GetByte()",          ["NextValueOp2"] = "TestLibrary.Generator.GetByte()",                                                        ["ValidateIterResult"] = "Helpers.ShiftRight<byte>(left[i], (ulong)right[i]) != result[i]",                                             ["GetIterResult"] = "Helpers.ShiftRight<byte>(left[i], (ulong)right[i])"}),
     ("SveVecBinOpDifferentTypesTest.template", new Dictionary<string, string> { ["TestName"] = "Sve_ShiftRightLogical_ushort",                                                                     ["Isa"] = "Sve",           ["LoadIsa"] = "Sve",     ["Method"] = "ShiftRightLogical",                                                    ["RetVectorType"] = "Vector",    ["RetBaseType"] = "UInt16",  ["Op1VectorType"] = "Vector",    ["Op1BaseType"] = "UInt16", ["Op2VectorType"] = "Vector",    ["Op2BaseType"] = "UInt16",                                                                       ["LargestVectorSize"] = "64", ["NextValueOp1"] = "TestLibrary.Generator.GetUInt16()",        ["NextValueOp2"] = "TestLibrary.Generator.GetUInt16()",                                                      ["ValidateIterResult"] = "Helpers.ShiftRight<ushort>(left[i], (ulong)right[i]) != result[i]",                                           ["GetIterResult"] = "Helpers.ShiftRight<ushort>(left[i], (ulong)right[i])"}),

@@ -5,14 +5,19 @@
 #include <stdlib.h>
 #include "pal_zlib.h"
 
-#ifdef _WIN32
-    #define c_static_assert(e) static_assert((e),"")
-    #include "../Common/pal_utilities.h"
+#ifdef INTERNAL_ZLIB
+    #ifdef  _WIN32
+        #define c_static_assert(e) static_assert((e),"")
+    #endif
+    #ifdef INTERNAL_ZLIB_INTEL
+        #include <external/zlib-intel/zlib.h>
+    #else
+        #include <external/zlib/zlib.h>
+    #endif
 #else
     #include "pal_utilities.h"
+    #include <zlib.h>
 #endif
-#include <zlib_allocator.h>
-#include <zlib.h>
 
 c_static_assert(PAL_Z_NOFLUSH == Z_NO_FLUSH);
 c_static_assert(PAL_Z_FINISH == Z_FINISH);
@@ -39,10 +44,6 @@ Initializes the PAL_ZStream by creating and setting its underlying z_stream.
 static int32_t Init(PAL_ZStream* stream)
 {
     z_stream* zStream = (z_stream*)calloc(1, sizeof(z_stream));
-
-    zStream->zalloc = z_custom_calloc;
-    zStream->zfree = z_custom_cfree;
-
     stream->internalState = zStream;
 
     if (zStream != NULL)
