@@ -216,6 +216,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 current = next;
             }
 
+
             return
                 pos <= 0 ? new MatchReversal<TSet>(MatchReversalKind.MatchStart, 0) :
                 current == _builder.Epsilon ? new MatchReversal<TSet>(MatchReversalKind.FixedLength, pos) :
@@ -224,8 +225,8 @@ namespace System.Text.RegularExpressions.Symbolic
             // finding anchors inside pattern invalidates this optimization
             (bool, SymbolicRegexNode<TSet>) Bail()
             {
-                pos += 1;
-                // continue with next concat
+                pos = 0;
+                // return original node
                 return (false, node);
             }
 
