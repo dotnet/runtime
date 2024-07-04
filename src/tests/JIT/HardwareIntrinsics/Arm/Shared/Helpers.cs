@@ -1667,6 +1667,271 @@ namespace JIT.HardwareIntrinsics.Arm
             return BitConverter.Int32BitsToSingle(result);
         }
 
+
+        public static double SveAbsoluteCompareGreaterThan(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left > right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveAbsoluteCompareGreaterThan(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left > right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveAbsoluteCompareGreaterThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left >= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveAbsoluteCompareGreaterThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left >= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveAbsoluteCompareLessThan(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left < right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveAbsoluteCompareLessThan(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left < right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveAbsoluteCompareLessThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left <= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveAbsoluteCompareLessThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left <= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveCompareEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveCompareEqual(float left, float right)
+        {
+            int result = 0;
+
+            if (left == right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveCompareGreaterThan(double left, double right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveCompareGreaterThan(float left, float right)
+        {
+            int result = 0;
+
+            if (left > right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveCompareGreaterThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveCompareGreaterThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            if (left >= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveCompareLessThan(double left, double right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveCompareLessThan(float left, float right)
+        {
+            int result = 0;
+
+            if (left < right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveCompareLessThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveCompareLessThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            if (left <= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveCompareTest(double left, double right)
+        {
+            long result = 0;
+
+            if ((BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right)) != 0)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveCompareTest(float left, float right)
+        {
+            int result = 0;
+
+            if ((BitConverter.SingleToInt32Bits(left) & BitConverter.SingleToInt32Bits(right)) != 0)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
         public static double CompareEqual(double left, double right)
         {
             long result = 0;
