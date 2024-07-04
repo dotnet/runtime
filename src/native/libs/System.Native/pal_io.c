@@ -54,6 +54,10 @@
 #endif
 #endif
 
+#ifdef TARGET_SUNOS
+#include <sys/param.h>
+#endif
+
 #ifdef _AIX
 #include <alloca.h>
 // Somehow, AIX mangles the definition for this behind a C++ def
@@ -443,11 +447,10 @@ int32_t SystemNative_GetReadDirRBufferSize(void)
 #if HAVE_READDIR_R
     size_t result = sizeof(struct dirent);
 #ifdef TARGET_SUNOS
-    // The size of the d_name array in direct is:
-    //     1 + pathconf("directory_path", _PC_NAME_MAX).
-    // The largest value observed returned from pathconf was 256 for objfs mounted at /system/object.
-    // d_name is declared as d_name[1], so we add the value from pathconf.
-    result += 256;
+    // The d_name array is declared with only a single byte in it.
+    // We have to add pathconf("dir", _PC_NAME_MAX) more bytes.
+    // MAXNAMELEN is the largest possible value returned from pathconf.
+    result += MAXNAMELEN;
 #endif
     // dirent should be under 2k in size
     assert(result < 2048);
