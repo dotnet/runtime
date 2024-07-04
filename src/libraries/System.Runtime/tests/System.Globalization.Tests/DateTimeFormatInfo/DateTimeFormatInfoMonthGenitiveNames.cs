@@ -31,6 +31,11 @@ namespace System.Globalization.Tests
                     ""
                 }
             };
+            if (PlatformDetection.IsIcuGlobalization)
+            {
+                yield return new object[] { new CultureInfo("en-US").DateTimeFormat, new string[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "" } };
+                yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, new string[] { "janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre", "" } };
+            }
             if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 // see the comments on the right to check the non-Hybrid result, if it differs
