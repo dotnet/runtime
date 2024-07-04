@@ -734,6 +734,86 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> Compact(Vector<ulong> mask, Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
+        ///  Compare equal to
+
+        /// <summary>
+        /// svbool_t svcmpeq[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   CMPEQ Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> CompareEqual(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FCMEQ Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> CompareEqual(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   CMPEQ Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> CompareEqual(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq_wide[_s16](svbool_t pg, svint16_t op1, svint64_t op2)
+        ///   CMPEQ Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<short> CompareEqual(Vector<short> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   CMPEQ Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> CompareEqual(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq_wide[_s32](svbool_t pg, svint32_t op1, svint64_t op2)
+        ///   CMPEQ Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<int> CompareEqual(Vector<int> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   CMPEQ Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> CompareEqual(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   CMPEQ Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareEqual(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq_wide[_s8](svbool_t pg, svint8_t op1, svint64_t op2)
+        ///   CMPEQ Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareEqual(Vector<sbyte> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FCMEQ Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> CompareEqual(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   CMPEQ Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> CompareEqual(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   CMPEQ Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> CompareEqual(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpeq[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   CMPEQ Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> CompareEqual(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
         ///  Compare greater than
 
         /// <summary>
@@ -1128,6 +1208,101 @@ namespace System.Runtime.Intrinsics.Arm
         ///   CMPHS Presult.D, Pg/Z, Zop2.D, Zop1.D
         /// </summary>
         public static unsafe Vector<ulong> CompareLessThanOrEqual(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        ///  Compare not equal to
+
+        /// <summary>
+        /// svbool_t svcmpne[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   CMPNE Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> CompareNotEqualTo(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FCMNE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> CompareNotEqualTo(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   CMPNE Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> CompareNotEqualTo(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne_wide[_s16](svbool_t pg, svint16_t op1, svint64_t op2)
+        ///   CMPNE Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<short> CompareNotEqualTo(Vector<short> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   CMPNE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> CompareNotEqualTo(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne_wide[_s32](svbool_t pg, svint32_t op1, svint64_t op2)
+        ///   CMPNE Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<int> CompareNotEqualTo(Vector<int> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   CMPNE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> CompareNotEqualTo(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   CMPNE Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareNotEqualTo(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne_wide[_s8](svbool_t pg, svint8_t op1, svint64_t op2)
+        ///   CMPNE Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareNotEqualTo(Vector<sbyte> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FCMNE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> CompareNotEqualTo(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   CMPNE Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> CompareNotEqualTo(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   CMPNE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> CompareNotEqualTo(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpne[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   CMPNE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> CompareNotEqualTo(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Compare unordered with
+
+        /// <summary>
+        /// svbool_t svcmpuo[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FCMUO Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> CompareUnordered(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svcmpuo[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FCMUO Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> CompareUnordered(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
 
         ///  Compute vector addresses for 16-bit data
 
