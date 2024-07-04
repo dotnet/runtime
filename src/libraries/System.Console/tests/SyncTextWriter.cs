@@ -12,8 +12,8 @@ using Xunit;
 
 public class SyncTextWriter
 {
-    [Fact]
-    [SkipOnPlatform(TestPlatforms.Browser, "Browser bypasses SyncTextWriter for faster startup")]
+    // Browser bypasses SyncTextWriter for faster startup
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public void SyncTextWriterLockedOnThis()
     {
         TextWriter oldWriter = Console.Out;

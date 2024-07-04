@@ -690,8 +690,8 @@ namespace System.IO.Tests
             Assert.Same(e, vt.AsTask().Exception.InnerException);
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser bypasses SyncTextWriter for faster startup")]
+        // Browser bypasses SyncTextWriter for faster startup
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task FlushAsync_Precanceled()
         {
             Assert.Equal(TaskStatus.RanToCompletion, TextWriter.Null.FlushAsync(new CancellationToken(true)).Status);

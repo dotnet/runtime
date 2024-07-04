@@ -29,8 +29,8 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser bypasses SyncTextWriter for faster startup")]
+        // Browser bypasses SyncTextWriter for faster startup
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Synchronized_NewObject()
         {
             using (Stream str = GetLargeStream())

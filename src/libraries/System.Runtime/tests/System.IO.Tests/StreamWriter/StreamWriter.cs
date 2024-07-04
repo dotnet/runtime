@@ -7,8 +7,8 @@ namespace System.IO.Tests
 {
     public partial class WriteTests
     {
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser bypasses SyncTextWriter for faster startup")]
+        // Browser bypasses SyncTextWriter for faster startup
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Synchronized_NewObject()
         {
             using (Stream str = CreateStream())
