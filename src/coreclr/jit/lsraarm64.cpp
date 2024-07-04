@@ -1981,30 +1981,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             getLowVectorOperandAndCandidates(intrin, &lowVectorOperandNum, &lowVectorCandidates);
         }
 
-        if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
-            (intrin.op2->isRMWHWIntrinsic(compiler)))
-        {
-            // For ConditionalSelect, if there is an embedded operation, and the operation has RMW semantics
-            // then record delay-free for them.
-            GenTreeHWIntrinsic* intrinEmbOp2 = intrin.op2->AsHWIntrinsic();
-            size_t              numArgs      = intrinEmbOp2->GetOperandCount();
-            assert((numArgs == 1) || (numArgs == 2));
-            const HWIntrinsic intrinEmb(intrinEmbOp2);
-            if (HWIntrinsicInfo::IsLowVectorOperation(intrinEmb.id))
-            {
-                getLowVectorOperandAndCandidates(intrinEmb, &lowVectorOperandNum, &lowVectorCandidates);
-            }
-
-            tgtPrefUse = BuildUse(intrinEmbOp2->Op(1));
-            srcCount += 1;
-
-            for (size_t argNum = 2; argNum <= numArgs; argNum++)
-            {
-                srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1),
-                                               (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
-            }
-        }
-        else if (tgtPrefOp2)
+        if (tgtPrefOp2)
         {
             if (!intrin.op2->isContained())
             {
@@ -2059,7 +2036,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
 
-                    if (intrin.op2->gtType == TYP_MASK)
+                    if (intrin.op2->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
                     {
                         assert(lowVectorOperandNum != 2);
                         candidates = RBM_ALLMASK.GetPredicateRegSet();

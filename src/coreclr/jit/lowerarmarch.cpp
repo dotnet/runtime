@@ -1331,12 +1331,18 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
         GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
         GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
+        var_types   nodeType        = simdType;
+
+        if (HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId()))
+        {
+            nodeType = TYP_MASK;
+        }
 
         BlockRange().InsertBefore(node, trueMask);
         BlockRange().InsertBefore(node, falseVal);
 
         GenTreeHWIntrinsic* condSelNode =
-            comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
+            comp->gtNewSimdHWIntrinsicNode(nodeType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
                                            simdBaseJitType, simdSize);
         BlockRange().InsertAfter(node, condSelNode);
         if (foundUse)
