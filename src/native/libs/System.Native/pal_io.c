@@ -441,10 +441,18 @@ static const size_t dirent_alignment = 8;
 int32_t SystemNative_GetReadDirRBufferSize(void)
 {
 #if HAVE_READDIR_R
+    int32_t result = sizeof(struct dirent);
+#ifdef TARGET_SUNOS
+    // The size of the d_name array in direct is:
+    //     1 + pathconf("directory_path", _PC_NAME_MAX).
+    // The largest value observed returned from pathconf was 256 for objfs mounted at /system/object.
+    // d_name is declared as d_name[1], so we add the value from pathconf.
+    result += 256;
+#endif
     // dirent should be under 2k in size
-    assert(sizeof(struct dirent) < 2048);
+    assert(result < 2048);
     // add some extra space so we can align the buffer to dirent.
-    return sizeof(struct dirent) + dirent_alignment - 1;
+    return result + dirent_alignment - 1;
 #else
     return 0;
 #endif
