@@ -40,6 +40,10 @@ static void
 interp_v128_to_v2 (gpointer res, gpointer v1)
 {
 	memcpy(res, v1, SIZEOF_V2);
+
+	guint32 *res_typed = (guint32*)res;
+	res_typed [2] = 0;
+	res_typed [3] = 0;
 }
 
 // Vector3 AsVector3(Vector128<float> v1)
@@ -47,6 +51,9 @@ static void
 interp_v128_to_v3 (gpointer res, gpointer v1)
 {
 	memcpy(res, v1, SIZEOF_V3);
+
+	guint32 *res_typed = (guint32*)res;
+	res_typed [3] = 0;
 }
 
 // Vector128<float> AsVector128(Vector2 v1)
@@ -68,6 +75,7 @@ interp_v2_to_v3 (gpointer res, gpointer v1)
 
 	guint32 *res_typed = (guint32*)res;
 	res_typed [2] = 0;
+	res_typed [3] = 0;
 }
 
 // Vector128<float> AsVector128(Vector3 v1)
@@ -85,6 +93,10 @@ static void
 interp_v3_to_v2 (gpointer res, gpointer v1)
 {
 	memcpy(res, v1, SIZEOF_V2);
+	
+	guint32 *res_typed = (guint32*)res;
+	res_typed [2] = 0;
+	res_typed [3] = 0;
 }
 
 // op_Addition
