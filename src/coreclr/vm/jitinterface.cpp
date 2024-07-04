@@ -9529,15 +9529,15 @@ FpStructInRegistersInfo CEEInfo::getFpStructInRegistersInfo(CORINFO_CLASS_HANDLE
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    JIT_TO_EE_TRANSITION_LEAF();
-
     FpStructInRegistersInfo info = {};
+
+    JIT_TO_EE_TRANSITION();
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     info = MethodTable::GetFpStructInRegistersInfo(TypeHandle(cls));
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
-    EE_TO_JIT_TRANSITION_LEAF();
+    EE_TO_JIT_TRANSITION();
 
     return info;
 }
