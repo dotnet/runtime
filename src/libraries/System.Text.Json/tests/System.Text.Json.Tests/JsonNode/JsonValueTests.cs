@@ -428,6 +428,7 @@ namespace System.Text.Json.Nodes.Tests
         [InlineData("1.1", "-1.1")]
         [InlineData("1.1e5", "-1.1e5")]
         [InlineData("0", "1e-1024")]
+        [InlineData("1", "0.1")]
         [InlineData("1", "1.1")]
         [InlineData("1", "1e1")]
         [InlineData("1", "1.00001")]
@@ -447,6 +448,7 @@ namespace System.Text.Json.Nodes.Tests
         [InlineData("79228162514264337593543950336", "7922816251426433759354395033600e-1")] // decimal.MaxValue + 1
         [InlineData("79228162514.264337593543950336", "7922816251426433759354395033601e-19")]
         [InlineData("1.75e+300", "1.75E+301")] // Variations in exponent casing
+        [InlineData("1e2147483647", "1e-2147483648")] // int.MaxValue, int.MinValue exponents
         [InlineData( // > 256 digits
             "1.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
               "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
@@ -463,6 +465,17 @@ namespace System.Text.Json.Nodes.Tests
             JsonNode right = JsonNode.Parse(rightStr);
 
             JsonNodeTests.AssertNotDeepEqual(left, right);
+        }
+
+        [Theory]
+        [InlineData(int.MinValue - 1L)]
+        [InlineData(int.MaxValue + 1L)]
+        [InlineData(long.MinValue)]
+        [InlineData(long.MaxValue)]
+        public static void DeepEquals_ExponentExceedsInt32_ThrowsArgumentOutOfRangeException(long exponent)
+        {
+            JsonNode node = JsonNode.Parse($"1e{exponent}");
+            Assert.Throws<ArgumentOutOfRangeException>(() => JsonNode.DeepEquals(node, node));
         }
 
         [Fact]

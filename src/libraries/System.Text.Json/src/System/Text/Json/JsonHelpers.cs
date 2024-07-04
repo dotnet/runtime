@@ -398,8 +398,11 @@ namespace System.Text.Json
                 }
 
                 Debug.Assert(span[i] is (byte)'e' or (byte)'E');
-                bool success = Utf8Parser.TryParse(span.Slice(i + 1), out exp, out _);
-                Debug.Assert(success);
+                if (!Utf8Parser.TryParse(span.Slice(i + 1), out exp, out _))
+                {
+                    Debug.Assert(span.Length >= 10);
+                    ThrowHelper.ThrowArgumentOutOfRangeException_JsonNumberExponentTooLarge(nameof(exponent));
+                }
 
             Normalize: // Calculates the normal form of the number.
 
