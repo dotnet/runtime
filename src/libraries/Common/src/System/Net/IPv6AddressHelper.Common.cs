@@ -8,6 +8,8 @@ namespace System.Net
 {
     internal static partial class IPv6AddressHelper
     {
+        private const int Decimal = 10;
+        private const int Hex = 16;
         private const int NumberOfLabels = 8;
 
         // RFC 5952 Section 4.2.3
@@ -193,7 +195,7 @@ namespace System.Net
                             return false;
                         }
 
-                        int numericBase = IPAddressParser.Decimal;
+                        int numericBase = IPv6AddressHelper.Decimal;
 
                         // Skip past the closing bracket and the port separator.
                         i += 2;
@@ -203,7 +205,7 @@ namespace System.Net
                         {
                             i += 2;
 
-                            numericBase = IPAddressParser.Hex;
+                            numericBase = IPv6AddressHelper.Hex;
                         }
 
                         for (; i < name.Length; i++)
@@ -211,7 +213,7 @@ namespace System.Net
                             int ch = int.CreateTruncating(name[i]) | 0x20;
 
                             if ((ch >= '0' && ch <= '9')
-                                || (numericBase == IPAddressParser.Hex
+                                || (numericBase == IPv6AddressHelper.Hex
                                     && ch >= 'a'
                                     && ch <= 'f'))
                             {
@@ -435,7 +437,7 @@ namespace System.Net
                         digitValue = 10 + lowercaseCharacterValue - 'a';
                     }
 
-                    number = number * IPAddressParser.Hex + digitValue;
+                    number = number * IPv6AddressHelper.Hex + digitValue;
                 }
             }
 

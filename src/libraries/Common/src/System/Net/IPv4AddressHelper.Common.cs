@@ -12,6 +12,10 @@ namespace System.Net
         internal const long Invalid = -1;
         private const long MaxIPv4Value = uint.MaxValue; // the native parser cannot handle MaxIPv4Value, only MaxIPv4Value - 1
 
+        private const int Octal = 8;
+        private const int Decimal = 10;
+        private const int Hex = 16;
+
         private const int NumberOfLabels = 4;
 
         // Only called from the IPv6Helper, only parse the canonical format
@@ -150,7 +154,7 @@ namespace System.Net
                     }
 
                     haveNumber = true;
-                    number = number * IPAddressParser.Decimal + parsedCharacter;
+                    number = number * Decimal + parsedCharacter;
                     if (number > byte.MaxValue)
                     {
                         return false;
@@ -189,7 +193,7 @@ namespace System.Net
         internal static long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, out int charsConsumed, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            int numberBase = IPAddressParser.Decimal;
+            int numberBase = IPv4AddressHelper.Decimal;
             Span<long> parts = stackalloc long[4];
             long currentValue = 0;
             bool atLeastOneChar = false;
@@ -208,12 +212,12 @@ namespace System.Net
                 currentValue = 0;
 
                 // Figure out what base this section is in, default to base 10
-                numberBase = IPAddressParser.Decimal;
+                numberBase = IPv4AddressHelper.Decimal;
                 // A number starting with zero should be interpreted in base 8 / octal
                 // If the number starts with 0x, it should be interpreted in base 16 / hex
                 if (ch == TChar.CreateTruncating('0'))
                 {
-                    numberBase = IPAddressParser.Octal;
+                    numberBase = IPv4AddressHelper.Octal;
                     maxDigitValue = 7;
 
                     current++;
@@ -224,7 +228,7 @@ namespace System.Net
 
                         if ((ch == TChar.CreateTruncating('x')) || (ch == TChar.CreateTruncating('X')))
                         {
-                            numberBase = IPAddressParser.Hex;
+                            numberBase = IPv4AddressHelper.Hex;
                             maxDigitValue = 9;
 
                             current++;
@@ -242,7 +246,7 @@ namespace System.Net
 
                     if ((digitValue < 0) || (digitValue > maxDigitValue))
                     {
-                        if (numberBase != IPAddressParser.Hex)
+                        if (numberBase != IPv4AddressHelper.Hex)
                         {
                             break; // Invalid/terminator
                         }

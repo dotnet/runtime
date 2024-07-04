@@ -11,8 +11,11 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    internal static partial class IPAddressParser
+    internal static class IPAddressParser
     {
+        internal const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
+        internal const int MaxIPv6StringLength = 65;
+
         internal static IPAddress? Parse<TChar>(ReadOnlySpan<TChar> ipSpan, bool tryParse)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {

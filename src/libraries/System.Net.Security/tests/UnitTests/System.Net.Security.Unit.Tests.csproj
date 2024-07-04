@@ -179,8 +179,6 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
     <!-- IP parser -->
-    <Compile Include="$(CommonPath)System\Net\IPAddressParser.Common.cs"
-             Link="System\Net\IPAddressParser.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs"
              Link="System\Net\IPv4AddressHelper.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs"

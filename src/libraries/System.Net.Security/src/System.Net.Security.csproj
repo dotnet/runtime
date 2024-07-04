@@ -71,8 +71,6 @@
     <Compile Include="System\Security\Authentication\ExtendedProtection\PolicyEnforcement.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ProtectionScenario.cs" />
     <!-- IP parser -->
-    <Compile Include="$(CommonPath)System\Net\IPAddressParser.Common.cs"
-             Link="System\Net\IPAddressParser.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs"
              Link="System\Net\IPv4AddressHelper.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs"

@@ -18,7 +18,6 @@
   <ItemGroup>
     <Compile Include="System\DomainNameHelper.cs" />
     <Compile Include="System\GenericUriParser.cs" />
-    <Compile Include="$(CommonPath)System\Net\IPAddressParser.Common.cs" Link="System\IPAddressParser.Common.cs" />
     <Compile Include="System\IPv4AddressHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs" Link="System\IPv4AddressHelper.Common.cs" />
     <Compile Include="System\IPv6AddressHelper.cs" />

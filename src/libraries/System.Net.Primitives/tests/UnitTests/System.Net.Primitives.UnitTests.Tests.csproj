@@ -43,8 +43,6 @@
              Link="ProductionCode\System\Net\IPEndPoint.cs" />
     <Compile Include="..\..\src\System\Net\SocketException.cs"
              Link="ProductionCode\System\Net\SocketException.cs" />
-    <Compile Include="$(CommonPath)System\Net\IPAddressParser.Common.cs"
-             Link="ProductionCode\System\Net\IPAddressParser.Common.cs" />
     <Compile Include="..\..\src\System\Net\IPAddressParser.cs"
              Link="ProductionCode\System\Net\IPAddressParser.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
