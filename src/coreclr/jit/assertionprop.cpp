@@ -1184,6 +1184,28 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         assertion.op2.SetIconFlag(GTF_EMPTY);
     }
     //
+    // Are two phi defs are equivalent?
+    //
+    else if (op1->IsPhiDefn() && op2->IsPhiDefn())
+    {
+        GenTreeLclVarCommon* const op1Lcl = op1->AsLclVar();
+        GenTreeLclVarCommon* const op2Lcl = op2->AsLclVar();
+        GenTreePhi* const          op1Phi = op1Lcl->Data()->AsPhi();
+        GenTreePhi* const          op2Phi = op2Lcl->Data()->AsPhi();
+
+        assertion.op1.kind       = O1K_LCLVAR;
+        assertion.op1.lcl.lclNum = op1Lcl->GetLclNum();
+        assertion.op1.lcl.ssaNum = op1Lcl->GetSsaNum();
+        assertion.op1.vn         = optConservativeNormalVN(op1Phi);
+
+        assertion.op2.kind       = O2K_LCLVAR_COPY;
+        assertion.op2.lcl.lclNum = op2Lcl->GetLclNum();
+        assertion.op2.lcl.ssaNum = op2Lcl->GetSsaNum();
+        assertion.op2.vn         = optConservativeNormalVN(op2Phi);
+
+        assertion.assertionKind = assertionKind;
+    }
+    //
     // Are we making an assertion about a local variable?
     //
     else if (op1->OperIsScalarLocal())
@@ -1433,7 +1455,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             }
         }
     }
-
     //
     // Are we making an IsType assertion?
     //
@@ -2321,11 +2342,15 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
     // If this is a loop header (cycle entry), see if this phi-def
     // is value equivalent to some other phi-def in the block. Note
     // value numbering is a one-pass forward algorithm and doesn't
-    // know the value numbers for backege phis, so cycle entry
+    // know the value numbers for back edge phi args, so cycle entry
     // phis will all have novel VNs.
     //
     // We walk "backwards" so that
     // we don't generate the assertion too early...?
+    //
+    // Note we can create at most one assertion, hopefully they chain
+    // so if one phi-def is both non-null and equivalent to another,
+    // the first generates the non-null assertion, the second the eq assertion.
     //
     // Consider: compute hash of forward edge phi inputs during VN,
     // so we can quickly rule out inequivalent cases.
@@ -2333,6 +2358,8 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
     // Consider: tap into reachability logic available to VN, and/or
     // edit out PHIs from impossible preds, or mark the phi nodes
     // in some way so we can ignore them here.
+    //
+    // Consider: might want to skip handler entries?
     //
     FlowGraphNaturalLoop* const loop = m_blockToLoop->GetLoop(compCurBB);
     if ((loop != nullptr) && (loop->GetHeader() == compCurBB))
@@ -2363,9 +2390,15 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
                 GenTreePhiArg* const treePhiArg  = treeIter->GetNode()->AsPhiArg();
                 GenTreePhiArg* const otherPhiArg = otherIter->GetNode()->AsPhiArg();
 
+                // Consider: ignore phi if gtPredBB is unreachable.
+                // But we don't know that here.
+                //
                 assert(treePhiArg->gtPredBB == otherPhiArg->gtPredBB);
 
-                // Consult SSA defs always...
+                // Consult SSA defs always... in principle we could just do this for
+                // back edge PhiArgs and use the Phi Arg VNs for forward edges,
+                // but the loops are invalidated by RBO so we're not sure which is which.
+                // Possibly we could rely on DFS instead.
                 //
                 ValueNum treePhiArgVN =
                     lvaGetDesc(treePhiArg)->GetPerSsaData(treePhiArg->GetSsaNum())->m_vnPair.GetConservative();
@@ -2376,6 +2409,7 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
                 //
                 if (treePhiArgVN != otherPhiArgVN)
                 {
+                    // Consider: in some cases we know hte PHIs can't be equivalent...
                     phiDefsAreEquivalent = false;
                     break;
                 }
@@ -2389,7 +2423,7 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
             if (phiDefsAreEquivalent)
             {
                 JITDUMP("Found equivalent phi defs: [%06u] and [%06u]\n", dspTreeID(treePhi), dspTreeID(otherPhi));
-                // generate assertion!
+                return optCreateAssertion(tree, otherTree, OAK_EQUAL);
             }
         }
     }
@@ -2398,7 +2432,12 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
     bool isNonNull = true;
     for (GenTreePhi::Use& use : tree->AsLclVar()->Data()->AsPhi()->Uses())
     {
-        if (!vnStore->IsKnownNonNull(use.GetNode()->gtVNPair.GetConservative()))
+        // Use same trick as above to get VNs for back edge phi args
+        //
+        GenTreePhiArg* const treePhiArg = use.GetNode()->AsPhiArg();
+        ValueNum             treePhiArgVN =
+            lvaGetDesc(treePhiArg)->GetPerSsaData(treePhiArg->GetSsaNum())->m_vnPair.GetConservative();
+        if (!vnStore->IsKnownNonNull(treePhiArgVN))
         {
             isNonNull = false;
             break;
@@ -6764,7 +6803,10 @@ PhaseStatus Compiler::optAssertionPropMain()
         fgRemoveRestOfBlock = false;
 
         // Walk the statement trees in this basic block
-        Statement* stmt = block->FirstNonPhiDef();
+        // (remember if we generated equiv phi defs?
+        //
+        // Statement* stmt = block->FirstNonPhiDef();
+        Statement* stmt = block->firstStmt();
         while (stmt != nullptr)
         {
             // Propagation tells us to remove the rest of the block. Remove it.
