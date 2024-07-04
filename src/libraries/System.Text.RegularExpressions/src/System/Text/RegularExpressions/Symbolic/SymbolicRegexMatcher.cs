@@ -385,16 +385,16 @@ namespace System.Text.RegularExpressions.Symbolic
                 matchEnd = (_findOpts is not null, _containsAnyAnchor) switch
                 {
                     (true, true) =>
-                        FindEndPositionOptimized<OptimizedSmallInputReader, AcceleratedStateHandler,
+                        FindEndPositionOptimized<AcceleratedStateHandler,
                             AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                     (true, false) =>
-                        FindEndPositionOptimized<OptimizedSmallInputReader, NoAnchorAcceleratedStateHandler,
+                        FindEndPositionOptimized<NoAnchorAcceleratedStateHandler,
                             NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                     (false, false) =>
-                        FindEndPositionOptimized<OptimizedSmallInputReader, NoAcceleratedStateHandler,
+                        FindEndPositionOptimized<NoAcceleratedStateHandler,
                             NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                     (false, true) =>
-                        FindEndPositionOptimized<OptimizedSmallInputReader, NoAcceleratedStateHandler,
+                        FindEndPositionOptimized<NoAcceleratedStateHandler,
                             AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                 };
             }
@@ -508,7 +508,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Streamlined version of <see cref="FindEndPositionFallback"/> that doesn't handle /z anchors or very large sets of minterms.
         /// </summary>
-        private int FindEndPositionOptimized<TOptimizedInputReader, TAcceleratedStateHandler, TOptimizedNullabilityHandler>(
+        private int FindEndPositionOptimized<TAcceleratedStateHandler, TOptimizedNullabilityHandler>(
             ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, PerThreadData perThreadData)
             where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
             where TOptimizedNullabilityHandler : struct, IOptimizedNullabilityHandler
@@ -1641,7 +1641,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 Debug.Assert(pos < input.Length, "pos < input.Length");
                 Debug.Assert(maxChar <= (lookup.Length + 1), $"maxChar = {maxChar}; lookup.Length = {lookup.Length}");
                 char c = input[pos];
-                return (uint)c < (uint)lookup.Length ? lookup[c] : 0;
+                return c < (uint)lookup.Length ? lookup[c] : 0;
             }
         }
 
