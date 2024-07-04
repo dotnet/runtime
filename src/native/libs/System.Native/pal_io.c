@@ -441,7 +441,7 @@ static const size_t dirent_alignment = 8;
 int32_t SystemNative_GetReadDirRBufferSize(void)
 {
 #if HAVE_READDIR_R
-    int32_t result = sizeof(struct dirent);
+    size_t result = sizeof(struct dirent);
 #ifdef TARGET_SUNOS
     // The size of the d_name array in direct is:
     //     1 + pathconf("directory_path", _PC_NAME_MAX).
