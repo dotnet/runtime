@@ -2564,9 +2564,11 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-    if (varDsc->IsAddressExposed())
+    if (varDsc->lvDoNotEnregister)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it has already been marked address exposed\n", lclNum);
+        // Promoting structs that are marked DNER will result in dependent
+        // promotion. Allow physical promotion to handle these.
+        JITDUMP("  struct promotion of V%02u is disabled because it has already been marked DNER\n", lclNum);
         return false;
     }
 
@@ -3178,7 +3180,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             break;
         case DoNotEnregisterReason::HiddenBufferStructArg:
             JITDUMP("it is hidden buffer struct arg\n");
-            assert(varDsc->IsHiddenBufferStructArg());
             break;
         case DoNotEnregisterReason::DontEnregStructs:
             JITDUMP("struct enregistration is disabled\n");
