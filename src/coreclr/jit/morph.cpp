@@ -9809,8 +9809,29 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 //
 GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    assert(!optValnumCSE_phase);
     assert(opts.OptimizationEnabled());
+
+    GenTree* optimizedTree = fgOptimizeHWIntrinsicAssociative(node);
+
+    if (optimizedTree != nullptr)
+    {
+        if (optimizedTree != node)
+        {
+            assert(!fgIsCommaThrow(optimizedTree));
+            INDEBUG(optimizedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            return optimizedTree;
+        }
+        else if (!optimizedTree->OperIsHWIntrinsic())
+        {
+            INDEBUG(optimizedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            return optimizedTree;
+        }
+    }
+
+    if (optValnumCSE_phase)
+    {
+        return node;
+    }
 
     NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
     var_types      retType         = node->TypeGet();
@@ -10366,7 +10387,153 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
     return node;
 }
 
-#endif
+//------------------------------------------------------------------------
+// fgOptimizeHWIntrinsicAssociative: Morph an associative GenTreeHWIntrinsic tree.
+//
+// Arguments:
+//    tree - The tree to morph
+//
+// Return Value:
+//    The fully morphed tree.
+//
+GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
+{
+    // In general this tries to simplify `(v1 op c1) op c2` into `v1 op (c1 op c2)`
+    // so that we can fold it down to `v1 op c3`
+    assert(opts.OptimizationEnabled());
+
+    NamedIntrinsic intrinsicId     = tree->GetHWIntrinsicId();
+    var_types      simdType        = tree->TypeGet();
+    CorInfoType    simdBaseJitType = tree->GetSimdBaseJitType();
+    var_types      simdBaseType    = tree->GetSimdBaseType();
+    unsigned       simdSize        = tree->GetSimdSize();
+
+    if (!varTypeIsSIMD(simdType))
+    {
+        return nullptr;
+    }
+
+    bool       isScalar              = false;
+    genTreeOps oper                  = tree->HWOperGet(&isScalar);
+    bool       needsMatchingBaseType = false;
+
+    switch (oper)
+    {
+        case GT_ADD:
+        case GT_MUL:
+        {
+            if (varTypeIsIntegral(simdBaseType))
+            {
+                needsMatchingBaseType = true;
+                break;
+            }
+            return nullptr;
+        }
+
+        case GT_AND:
+        case GT_OR:
+        case GT_XOR:
+        {
+            break;
+        }
+
+        default:
+        {
+            return nullptr;
+        }
+    }
+
+    // op1 can be GT_COMMA, in which case we're going to fold
+    // `(..., (v1 op c1)) op c2` to `(..., (v1 op c3))`
+
+    GenTree* op1          = tree->Op(1);
+    GenTree* effectiveOp1 = op1->gtEffectiveVal();
+
+    if (!effectiveOp1->OperIsHWIntrinsic())
+    {
+        return nullptr;
+    }
+
+    GenTreeHWIntrinsic* intrinOp1 = effectiveOp1->AsHWIntrinsic();
+
+    bool       op1IsScalar = false;
+    genTreeOps op1Oper     = intrinOp1->HWOperGet(&op1IsScalar);
+
+    if ((op1Oper != oper) || (op1IsScalar != isScalar))
+    {
+        return nullptr;
+    }
+    assert(intrinOp1->GetHWIntrinsicId() == intrinsicId);
+
+    if (needsMatchingBaseType && (intrinOp1->GetSimdBaseType() != simdBaseType))
+    {
+        return nullptr;
+    }
+
+    if (!intrinOp1->Op(2)->IsCnsVec() || !tree->Op(2)->IsCnsVec())
+    {
+        return nullptr;
+    }
+
+    if (!fgGlobalMorph && (effectiveOp1 != op1))
+    {
+        // Since 'tree->Op(1)' can have complex structure; e.g. `(.., (.., op1))`
+        // don't run the optimization for such trees outside of global morph.
+        // Otherwise, there is a chance of violating VNs invariants and/or modifying a tree
+        // that is an active CSE candidate.
+        return nullptr;
+    }
+
+    if (gtIsActiveCSE_Candidate(tree) || gtIsActiveCSE_Candidate(effectiveOp1))
+    {
+        // In the case op1 is a comma, the optimization removes 'tree' from IR and changes
+        // the value of op1 and otherwise we're changing the value of 'tree' instead
+        return nullptr;
+    }
+
+    GenTreeVecCon* cns1 = intrinOp1->Op(2)->AsVecCon();
+    GenTreeVecCon* cns2 = tree->Op(2)->AsVecCon();
+
+    assert(cns1->TypeIs(simdType));
+    assert(cns2->TypeIs(simdType));
+
+    if (gtIsActiveCSE_Candidate(cns1) || gtIsActiveCSE_Candidate(cns2))
+    {
+        // The optimization removes 'cns2' from IR and changes the value of 'cns1'.
+        return nullptr;
+    }
+
+    GenTree* res = gtNewSimdHWIntrinsicNode(simdType, cns1, cns2, intrinsicId, simdBaseJitType, simdSize);
+    res          = gtFoldExprHWIntrinsic(res->AsHWIntrinsic());
+
+    assert(res == cns1);
+    assert(res->IsCnsVec());
+
+    if (effectiveOp1 != op1)
+    {
+        // We had a comma, so pull the VNs from node
+        op1->SetVNsFromNode(tree);
+
+        DEBUG_DESTROY_NODE(cns2);
+        DEBUG_DESTROY_NODE(tree);
+
+        return op1;
+    }
+    else
+    {
+        // We had a simple tree, so pull the value and new constant up
+
+        tree->Op(1) = intrinOp1->Op(1);
+        tree->Op(2) = intrinOp1->Op(2);
+
+        DEBUG_DESTROY_NODE(cns2);
+        DEBUG_DESTROY_NODE(intrinOp1);
+
+        assert(tree->Op(2) == cns1);
+        return tree;
+    }
+}
+#endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // fgOptimizeCommutativeArithmetic: Optimizes commutative operations.
@@ -11408,6 +11575,18 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     if (opts.OptimizationEnabled())
     {
+        if (tree->isCommutativeHWIntrinsic())
+        {
+            assert(tree->GetOperandCount() == 2);
+            GenTree*& op1 = tree->Op(1);
+
+            if (op1->IsVectorConst())
+            {
+                // Move constant vectors from op1 to op2 for commutative operations
+                std::swap(op1, tree->Op(2));
+            }
+        }
+
         // Try to fold it, maybe we get lucky,
         GenTree* foldedTree = gtFoldExpr(tree);
 
@@ -11423,18 +11602,6 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
             return foldedTree;
         }
 
-        // Move constant vectors from op1 to op2 for commutative and compare operations
-        if (tree->isCommutativeHWIntrinsic())
-        {
-            assert(tree->GetOperandCount() == 2);
-            GenTree*& op1 = tree->Op(1);
-
-            if (op1->IsVectorConst())
-            {
-                std::swap(op1, tree->Op(2));
-            }
-        }
-
         if (allArgsAreConst && tree->IsVectorCreate())
         {
             // Avoid unexpected CSE for constant arguments for Vector_.Create
@@ -11446,10 +11613,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
         }
 
-        if (!optValnumCSE_phase)
-        {
-            return fgOptimizeHWIntrinsic(tree->AsHWIntrinsic());
-        }
+        return fgOptimizeHWIntrinsic(tree->AsHWIntrinsic());
     }
 
     return tree;
