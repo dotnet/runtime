@@ -1196,6 +1196,9 @@ static guint16 sri_vector_methods [] = {
 	SN_AsUInt64,
 	SN_AsVector,
 	SN_AsVector128,
+	SN_AsVector128Unsafe,
+	SN_AsVector2,
+	SN_AsVector3,
 	SN_AsVector4,
 	SN_BitwiseAnd,
 	SN_BitwiseOr,
@@ -1640,7 +1643,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_AsVector:
 	case SN_AsVector128:
-	case SN_AsVector4: {
+	case SN_AsVector128Unsafe:
+	case SN_AsVector2:
+	case SN_AsVector3:
+	case SN_AsVector4:
+	case SN_AsVector4Unsafe: {
 		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
 			return NULL;
 
@@ -1650,10 +1657,54 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int arg_size = mono_class_value_size (arg_class, NULL);
 
-		if (arg_size == ret_size)
+		if (arg_size == ret_size) {
 			return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+		}
 
-		return NULL;
+		if ((ret_size != 8) && (ret_size != 12) && (ret_size != 16)) {
+			return NULL;
+		}
+
+		if ((arg_size != 8) && (arg_size != 12) && (arg_size != 16)) {
+			return NULL;
+		}
+
+		bool isUnsafe = (id == SN_AsVector128Unsafe) || (id == SN_AsVector4Unsafe);
+
+		if (arg_size > ret_size) {
+#ifdef TARGET_ARM64
+			if (ret_size == 8) {
+				return emit_simd_ins_for_sig (cfg, klass, OP_XLOWER, 0, arg0_type, fsig, args);
+			}
+#endif
+			return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+		} else {
+#ifdef TARGET_ARM64
+			if (arg_size == 8) {
+				int op = isUnsafe ? OP_XWIDEN : OP_XWIDEN_UNSAFE;
+				return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+			}
+#endif
+			MonoInst *ins  = args [0];
+
+			if (!isUnsafe) {
+				static float r4_0 = 0;
+				MonoInst *zero;
+				int zero_dreg = alloc_freg (cfg);
+				MONO_INST_NEW (cfg, zero, OP_R4CONST);
+				zero->inst_p0 = (void*)&r4_0;
+				zero->dreg = zero_dreg;
+				MONO_ADD_INS (cfg->cbb, zero);
+
+				if (arg_size == 8) {
+					ins = emit_vector_insert_element (cfg, klass, ins, MONO_TYPE_R4, zero, 2, FALSE);
+				}
+				if (ret_size == 16) {
+					ins = emit_vector_insert_element (cfg, klass, ins, MONO_TYPE_R4, zero, 3, FALSE);
+				}
+			}
+			return emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
+		}
 	}
 	case SN_Ceiling:
 	case SN_Floor: {

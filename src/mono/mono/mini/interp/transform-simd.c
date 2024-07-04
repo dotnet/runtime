@@ -72,8 +72,11 @@ static guint16 sri_vector128_methods [] = {
 	SN_AsUInt32,
 	SN_AsUInt64,
 	SN_AsVector,
-	SN_AsVector4,
 	SN_AsVector128,
+	SN_AsVector128Unsafe,
+	SN_AsVector2,
+	SN_AsVector3,
+	SN_AsVector4,
 	SN_ConditionalSelect,
 	SN_Create,
 	SN_CreateScalar,
@@ -470,6 +473,9 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 		}
 		case SN_AsVector:
 		case SN_AsVector128:
+		case SN_AsVector128Unsafe:
+		case SN_AsVector2:
+		case SN_AsVector3:
 		case SN_AsVector4: {
 			if (!is_element_type_primitive (csignature->ret) || !is_element_type_primitive (csignature->params [0]))
 				return FALSE;
@@ -485,7 +491,42 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 				simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITCAST;
 				break;
 			}
-			return FALSE;
+			
+			if ((ret_size != 8) && (ret_size != 12) && (ret_size != 16)) {
+				return FALSE;
+			}
+
+			if ((arg_size != 8) && (arg_size != 12) && (arg_size != 16)) {
+				return FALSE;
+			}
+
+			if (arg_size > ret_size) {
+				simd_opcode = MINT_SIMD_INTRINS_P_P;
+
+				if (ret_size == 8) {
+					if (arg_size == 16) {
+						simd_intrins = INTERP_SIMD_INTRINSIC_V128_TO_V2;
+					} else {
+						simd_intrins = INTERP_SIMD_INTRINSIC_V3_TO_V2;
+					}
+				} else {
+					simd_intrins = INTERP_SIMD_INTRINSIC_V128_TO_V3;
+				}
+				break;
+			} else {
+				simd_opcode = MINT_SIMD_INTRINS_P_P;
+
+				if (arg_size == 8) {
+					if (ret_size == 12) {
+						simd_intrins = INTERP_SIMD_INTRINSIC_V2_TO_V3;
+					} else {
+						simd_intrins = INTERP_SIMD_INTRINSIC_V2_TO_V128;
+					}
+				} else {
+					simd_intrins = INTERP_SIMD_INTRINSIC_V3_TO_V128;
+				}
+				break;
+			}
 		}
 		case SN_ConditionalSelect:
 			simd_opcode = MINT_SIMD_INTRINS_P_PPP;

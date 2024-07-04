@@ -35,6 +35,58 @@ interp_v128_bitcast (gpointer res, gpointer v1)
 	*(v128_i1*)res = *(v128_i1*)v1;
 }
 
+// Vector2 AsVector2(Vector128<float> v1)
+static void
+interp_v128_to_v2 (gpointer res, gpointer v1)
+{
+	memcpy(res, v1, SIZEOF_V2);
+}
+
+// Vector3 AsVector3(Vector128<float> v1)
+static void
+interp_v128_to_v3 (gpointer res, gpointer v1)
+{
+	memcpy(res, v1, SIZEOF_V3);
+}
+
+// Vector128<float> AsVector128(Vector2 v1)
+static void
+interp_v2_to_v128 (gpointer res, gpointer v1)
+{
+	memcpy(res, v1, SIZEOF_V2);
+
+	guint32 *res_typed = (guint32*)res;
+	res_typed [2] = 0;
+	res_typed [3] = 0;
+}
+
+// Vector3 AsVector3(Vector2 v1)
+static void
+interp_v2_to_v3 (gpointer res, gpointer v1)
+{
+	memcpy(res, v1, SIZEOF_V2);
+
+	guint32 *res_typed = (guint32*)res;
+	res_typed [2] = 0;
+}
+
+// Vector128<float> AsVector128(Vector3 v1)
+static void
+interp_v3_to_v128 (gpointer res, gpointer v1)
+{
+	memcpy(res, v1, SIZEOF_V3);
+
+	guint32 *res_typed = (guint32*)res;
+	res_typed [3] = 0;
+}
+
+// Vector2 AsVector128(Vector3 v1)
+static void
+interp_v3_to_v2 (gpointer res, gpointer v1)
+{
+	memcpy(res, v1, SIZEOF_V2);
+}
+
 // op_Addition
 static void
 interp_v128_i1_op_addition (gpointer res, gpointer v1, gpointer v2)
