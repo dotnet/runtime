@@ -466,7 +466,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     }
                     matchStart = matchEnd < startat
-                        ? startat
+                    ? startat
                     : (_containsEndZAnchor, _containsAnyAnchor) switch
                     {
                         (true, true) =>
