@@ -12,7 +12,7 @@ public abstract class ObjectReferenceTests<T> : SerializationTest<T> where T : I
     public void DBNull_Deserialize()
     {
         object deserialized = RoundTrip(DBNull.Value);
-        deserialized.Should().BeSameAs(DBNull.Value);
+        Assert.Same(DBNull.Value, deserialized);
     }
 
     [Theory]
@@ -20,7 +20,7 @@ public abstract class ObjectReferenceTests<T> : SerializationTest<T> where T : I
     public void SupportedTypes_Deserialize(object value)
     {
         object deserialized = RoundTrip(value);
-        deserialized.Should().NotBeNull();
+        Assert.NotNull(deserialized);
     }
 
     public static TheoryData<object> SupportedTypesTestData { get; } = new()
@@ -34,7 +34,7 @@ public abstract class ObjectReferenceTests<T> : SerializationTest<T> where T : I
     {
         // Representing singletons is the most common pattern for IObjectReference.
         object deserialized = RoundTrip(ObjectReferenceNoFields.Value);
-        deserialized.Should().BeSameAs(ObjectReferenceNoFields.Value);
+        Assert.Same(ObjectReferenceNoFields.Value, deserialized);
     }
 
     [Serializable]
@@ -51,7 +51,8 @@ public abstract class ObjectReferenceTests<T> : SerializationTest<T> where T : I
     public void NestedSurrogate_Deserialize()
     {
         object deserialized = RoundTrip(new SerializableWithNestedSurrogate { Message = "Hello" });
-        deserialized.Should().BeOfType<SerializableWithNestedSurrogate>().Which.Message.Should().Be("Hello");
+        Assert.IsType<SerializableWithNestedSurrogate>(deserialized);
+        Assert.Equal("Hello", ((SerializableWithNestedSurrogate)deserialized).Message);
     }
 
     [Serializable]
@@ -89,10 +90,12 @@ public abstract class ObjectReferenceTests<T> : SerializationTest<T> where T : I
     public void NestedSurrogate_NullableEnum_Deserialize()
     {
         object deserialized = RoundTrip(new SerializableWithNestedSurrogate_NullableEnum());
-        deserialized.Should().BeOfType<SerializableWithNestedSurrogate_NullableEnum>().Which.Day.Should().BeNull();
+        Assert.IsType<SerializableWithNestedSurrogate_NullableEnum>(deserialized);
+        Assert.Null(((SerializableWithNestedSurrogate_NullableEnum)deserialized).Day);
 
         deserialized = RoundTrip(new SerializableWithNestedSurrogate_NullableEnum { Day = DayOfWeek.Monday });
-        deserialized.Should().BeOfType<SerializableWithNestedSurrogate_NullableEnum>().Which.Day.Should().Be(DayOfWeek.Monday);
+        Assert.IsType<SerializableWithNestedSurrogate_NullableEnum>(deserialized);
+        Assert.Equal(DayOfWeek.Monday, ((SerializableWithNestedSurrogate_NullableEnum)deserialized).Day);
     }
 
     [Serializable]

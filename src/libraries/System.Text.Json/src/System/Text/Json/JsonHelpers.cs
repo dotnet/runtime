@@ -29,7 +29,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="reader">The reader to advance.</param>
         /// <param name="requiresReadAhead">If reading a partial payload, read ahead to ensure that the full JSON value has been buffered.</param>
-        /// <returns>True if the the reader has been buffered with all required data.</returns>
+        /// <returns>True if the reader has been buffered with all required data.</returns>
         // AggressiveInlining used since this method is on a hot path and short. The AdvanceWithReadAhead method should not be inlined.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryAdvanceWithOptionalReadAhead(this scoped ref Utf8JsonReader reader, bool requiresReadAhead)

@@ -30812,10 +30812,7 @@ retry:
                 else
                 {
                     if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg), true) &&
-                        // We are overestimating here by padding with 2 loh_padding_obj_size objects which we shouldn't need
-                        // to do if it's at the end of the region. However, grow_heap_segment is already overestimating by
-                        // a lot more - it would be worth fixing when we are in extreme low memory situations.
-                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + 2* AlignQword (loh_padding_obj_size)))))
+                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + AlignQword (loh_padding_obj_size)))))
                     {
                         dprintf (1235, ("growing seg from %p to %p\n", heap_segment_committed (seg),
                                          (generation_allocation_pointer (gen) + size)));
@@ -49310,7 +49307,29 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
     }
     Interlocked::Decrement(&OneAtATime);
 #endif // !MULTIPLE_HEAPS
-    if (IsConcurrentGCEnabled())
+
+    if (g_pConfig->GetGCStressLevel() & EEConfig::GCSTRESS_INSTR_JIT)
+    {
+        // When GCSTRESS_INSTR_JIT is set we see lots of GCs - on every GC-eligible instruction.
+        // We do not want all these GC to be gen2 because:
+        // - doing only or mostly gen2 is very expensive in this mode
+        // - doing only or mostly gen2 prevents coverage of generation-aware behaviors
+        // - the main value of this stress mode is to catch stack scanning issues at various/rare locations
+        //    in the code and gen2 is not needed for that.
+
+        int rgen = StressRNG(100);
+
+        // gen0:gen1:gen2 distribution: 90:8:2
+        if (rgen >= 98)
+            rgen = 2;
+        else if (rgen >= 90)
+            rgen = 1;
+        else
+            rgen = 0;
+
+        GarbageCollectTry (rgen, FALSE, collection_gcstress);
+    }
+    else if (IsConcurrentGCEnabled())
     {
         int rgen = StressRNG(10);
 
@@ -49319,7 +49338,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
             rgen = 2;
         else if (rgen >= 4)
             rgen = 1;
-    else
+        else
             rgen = 0;
 
         GarbageCollectTry (rgen, FALSE, collection_gcstress);
@@ -52871,11 +52890,6 @@ int gc_heap::refresh_memory_limit()
 
     GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
 
-
-#ifdef COMMITTED_BYTES_SHADOW
-    decommit_lock.Enter();
-#endif //COMMITTED_BYTES_SHADOW
-
     uint32_t nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 #ifdef MULTIPLE_HEAPS
     uint32_t nhp = n_heaps;
@@ -52892,7 +52906,7 @@ int gc_heap::refresh_memory_limit()
     size_t old_heap_hard_limit_poh = heap_hard_limit_oh[poh];
     bool old_hard_limit_config_p = hard_limit_config_p;
 
-    total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted_physical_mem, true);
+    total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted_physical_mem);
 
     bool succeed = true;
 
@@ -52928,14 +52942,13 @@ int gc_heap::refresh_memory_limit()
 #ifdef COMMITTED_BYTES_SHADOW
     else
     {
+        decommit_lock.Enter();
         verify_committed_bytes ();
+        decommit_lock.Leave();
     }
 #endif //COMMITTED_BYTES_SHADOW
 
     GCToEEInterface::RestartEE(TRUE);
-#ifdef COMMITTED_BYTES_SHADOW
-    decommit_lock.Leave();
-#endif
 
     return (int)status;
 }

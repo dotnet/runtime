@@ -1783,9 +1783,8 @@ void Compiler::fgInterBlockLocalVarLiveness()
     VARSET_TP exceptVars(VarSetOps::MakeEmpty(this));  // vars live on entry to a handler
     VARSET_TP finallyVars(VarSetOps::MakeEmpty(this)); // vars live on exit of a 'finally' block
 
-    for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
+    for (BasicBlock* block : Blocks())
     {
-        BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
         if (block->hasEHBoundaryIn())
         {
             // Note the set of variables live on entry to exception handler.

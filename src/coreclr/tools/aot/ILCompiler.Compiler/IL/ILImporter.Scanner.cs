@@ -32,6 +32,8 @@ namespace Internal.IL
 
         private readonly byte[] _ilBytes;
 
+        private TypeEqualityPatternAnalyzer _typeEqualityPatternAnalyzer;
+
         private sealed class BasicBlock
         {
             // Common fields
@@ -227,6 +229,13 @@ namespace Internal.IL
                     }
                 }
             }
+
+            _typeEqualityPatternAnalyzer = default;
+        }
+
+        partial void StartImportingInstruction(ILOpcode opcode)
+        {
+            _typeEqualityPatternAnalyzer.Advance(opcode, new ILReader(_ilBytes, _currentOffset), _methodIL);
         }
 
         private void EndImportingInstruction()
@@ -867,57 +876,25 @@ namespace Internal.IL
 
             if (obj is TypeDesc type)
             {
-                // If this is a ldtoken Type / Type.GetTypeFromHandle sequence, we need one more helper.
                 // We might also be able to optimize this a little if this is a ldtoken/GetTypeFromHandle/Equals sequence.
                 bool isTypeEquals = false;
-                BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
-                if (nextBasicBlock == null)
+                TypeEqualityPatternAnalyzer analyzer = _typeEqualityPatternAnalyzer;
+                ILReader reader = new ILReader(_ilBytes, _currentOffset);
+                while (!analyzer.IsDefault)
                 {
-                    if ((ILOpcode)_ilBytes[_currentOffset] == ILOpcode.call)
-                    {
-                        int methodToken = ReadILTokenAt(_currentOffset + 1);
-                        var method = (MethodDesc)_methodIL.GetObject(methodToken);
-                        if (IsTypeGetTypeFromHandle(method))
-                        {
-                            // Codegen will swap this one for GetRuntimeTypeHandle when optimizing
-                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
+                    ILOpcode opcode = reader.ReadILOpcode();
+                    analyzer.Advance(opcode, reader, _methodIL);
+                    reader.Skip(opcode);
 
-                            // Is the next instruction a call to Type::Equals?
-                            nextBasicBlock = _basicBlocks[_currentOffset + 5];
-                            if (nextBasicBlock == null)
-                            {
-                                // We expect pattern:
-                                //
-                                // ldtoken Foo
-                                // call GetTypeFromHandle
-                                // ldtoken Bar
-                                // call GetTypeFromHandle
-                                // call Equals
-                                //
-                                // We check for both ldtoken cases
-                                if ((ILOpcode)_ilBytes[_currentOffset + 5] == ILOpcode.call)
-                                {
-                                    methodToken = ReadILTokenAt(_currentOffset + 6);
-                                    method = (MethodDesc)_methodIL.GetObject(methodToken);
-                                    isTypeEquals = IsTypeEquals(method);
-                                }
-                                else if ((ILOpcode)_ilBytes[_currentOffset + 5] == ILOpcode.ldtoken
-                                    && _basicBlocks[_currentOffset + 10] == null
-                                    && (ILOpcode)_ilBytes[_currentOffset + 10] == ILOpcode.call
-                                    && methodToken == ReadILTokenAt(_currentOffset + 11)
-                                    && _basicBlocks[_currentOffset + 15] == null
-                                    && (ILOpcode)_ilBytes[_currentOffset + 15] == ILOpcode.call)
-                                {
-                                    methodToken = ReadILTokenAt(_currentOffset + 16);
-                                    method = (MethodDesc)_methodIL.GetObject(methodToken);
-                                    isTypeEquals = IsTypeEquals(method);
-                                }
-                            }
-                        }
+                    if (analyzer.IsTypeEqualityCheck)
+                    {
+                        isTypeEquals = true;
+                        break;
                     }
                 }
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
 
                 ISymbolNode reference;
                 if (type.IsRuntimeDeterminedSubtype)
@@ -1337,20 +1314,6 @@ namespace Internal.IL
         private static bool IsTypeGetTypeFromHandle(MethodDesc method)
         {
             if (method.IsIntrinsic && method.Name == "GetTypeFromHandle")
-            {
-                MetadataType owningType = method.OwningType as MetadataType;
-                if (owningType != null)
-                {
-                    return owningType.Name == "Type" && owningType.Namespace == "System";
-                }
-            }
-
-            return false;
-        }
-
-        private static bool IsTypeEquals(MethodDesc method)
-        {
-            if (method.IsIntrinsic && method.Name == "op_Equality")
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)

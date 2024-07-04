@@ -2114,11 +2114,14 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
     DWORD numIntroducedFields = GetNumIntroducedInstanceFields();
 
-    // It appears the VM gives a struct with no fields of size 1.
-    // Don't pass in register such structure.
     if (numIntroducedFields == 0)
     {
-        return false;
+        helperPtr->largestFieldOffset = startOffsetOfStruct;
+        LOG((LF_JIT, LL_EVERYTHING, "%*s**** Classify empty struct %s (%p) like padding, startOffset %d, total struct size %d\n",
+            nestingLevel * 5, "", this->GetDebugClassName(), this, startOffsetOfStruct, helperPtr->structSize));
+
+        AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
+        return true;
     }
 
     // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
@@ -2334,7 +2337,12 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     // No fields.
     if (numIntroducedFields == 0)
     {
-        return false;
+        helperPtr->largestFieldOffset = startOffsetOfStruct;
+        LOG((LF_JIT, LL_EVERYTHING, "%*s**** Classify empty struct %s (%p) like padding, startOffset %d, total struct size %d\n",
+            nestingLevel * 5, "", this->GetDebugClassName(), this, startOffsetOfStruct, helperPtr->structSize));
+
+        AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
+        return true;
     }
 
     bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
@@ -2586,8 +2594,12 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
         // Calculate the eightbytes and their types.
 
         int lastFieldOrdinal = sortedFieldOrder[largestFieldOffset];
-        unsigned int offsetAfterLastFieldByte = largestFieldOffset + helperPtr->fieldSizes[lastFieldOrdinal];
-        SystemVClassificationType lastFieldClassification = helperPtr->fieldClassifications[lastFieldOrdinal];
+        unsigned int lastFieldSize = (lastFieldOrdinal >= 0) ? helperPtr->fieldSizes[lastFieldOrdinal] : 0;
+        unsigned int offsetAfterLastFieldByte = largestFieldOffset + lastFieldSize;
+        _ASSERTE(offsetAfterLastFieldByte <= helperPtr->structSize);
+        SystemVClassificationType lastFieldClassification = (lastFieldOrdinal >= 0)
+            ? helperPtr->fieldClassifications[lastFieldOrdinal]
+            : SystemVClassificationTypeNoClass;
 
         unsigned int usedEightBytes = 0;
         unsigned int accumulatedSizeForEightBytes = 0;
@@ -2614,6 +2626,8 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
                 // the SysV ABI spec.
                 fieldSize = 1;
                 fieldClassificationType = offset < offsetAfterLastFieldByte ? SystemVClassificationTypeNoClass : lastFieldClassification;
+                if (offset % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES == 0) // new eightbyte
+                    foundFieldInEightByte = false;
             }
             else
             {
@@ -2666,13 +2680,16 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
                 }
             }
 
-            if ((offset + 1) % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES == 0) // If we just finished checking the last byte of an eightbyte
+            //  If we just finished checking the last byte of an eightbyte or the entire struct
+            if ((offset + 1) % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES == 0 || (offset + 1) == helperPtr->structSize)
             {
                 if (!foundFieldInEightByte)
                 {
-                    // If we didn't find a field in an eight-byte (i.e. there are no explicit offsets that start a field in this eightbyte)
+                    // If we didn't find a field in an eightbyte (i.e. there are no explicit offsets that start a field in this eightbyte)
                     // then the classification of this eightbyte might be NoClass. We can't hand a classification of NoClass to the JIT
                     // so set the class to Integer (as though the struct has a char[8] padding) if the class is NoClass.
+                    //
+                    // TODO: Fix JIT, NoClass eightbytes are valid and passing them is broken because of this.
                     if (helperPtr->eightByteClassifications[offset / SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES] == SystemVClassificationTypeNoClass)
                     {
                         helperPtr->eightByteClassifications[offset / SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES] = SystemVClassificationTypeInteger;
@@ -2705,9 +2722,9 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
         LOG((LF_JIT, LL_EVERYTHING, "     **** Number EightBytes: %d\n", helperPtr->eightByteCount));
         for (unsigned i = 0; i < helperPtr->eightByteCount; i++)
         {
-            _ASSERTE(helperPtr->eightByteClassifications[i] != SystemVClassificationTypeNoClass);
             LOG((LF_JIT, LL_EVERYTHING, "     **** eightByte %d -- classType: %s, eightByteOffset: %d, eightByteSize: %d\n",
                 i, GetSystemVClassificationTypeName(helperPtr->eightByteClassifications[i]), helperPtr->eightByteOffsets[i], helperPtr->eightByteSizes[i]));
+            _ASSERTE(helperPtr->eightByteClassifications[i] != SystemVClassificationTypeNoClass);
         }
 #endif // _DEBUG
     }
@@ -3765,20 +3782,42 @@ void MethodTable::EnsureStaticDataAllocated()
     CONTRACTL_END;
 
     PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
-    if (!pAuxiliaryData->IsStaticDataAllocated() && IsDynamicStatics())
+    if (!pAuxiliaryData->IsStaticDataAllocated())
     {
-        DynamicStaticsInfo *pDynamicStaticsInfo = GetDynamicStaticsInfo();
-        // Allocate space for normal statics if we might have them
-        if (pDynamicStaticsInfo->GetNonGCStaticsPointer() == NULL)
-            GetLoaderAllocator()->AllocateBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNonGCRegularStaticFieldBytes());
+        bool isInitedIfStaticDataAllocated = IsInitedIfStaticDataAllocated();
+        if (IsDynamicStatics() && !IsSharedByGenericInstantiations())
+        {
+            DynamicStaticsInfo *pDynamicStaticsInfo = GetDynamicStaticsInfo();
+            // Allocate space for normal statics if we might have them
+            if (pDynamicStaticsInfo->GetNonGCStaticsPointer() == NULL)
+                GetLoaderAllocator()->AllocateBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNonGCRegularStaticFieldBytes(), isInitedIfStaticDataAllocated);
 
-        if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
-            GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this->HasBoxedRegularStatics() ? this : NULL);
+            if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
+                GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this->HasBoxedRegularStatics() ? this : NULL, isInitedIfStaticDataAllocated);
+        }
+        pAuxiliaryData->SetIsStaticDataAllocated(isInitedIfStaticDataAllocated);
     }
-    pAuxiliaryData->SetIsStaticDataAllocated();
 }
 
-void MethodTable::AttemptToPreinit()
+bool MethodTable::IsClassInitedOrPreinited()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    bool initResult;
+    if (GetAuxiliaryData()->IsClassInitedOrPreinitedDecided(&initResult))
+        return initResult;
+
+    EnsureStaticDataAllocated();
+    return IsClassInited();
+}
+
+bool MethodTable::IsInitedIfStaticDataAllocated()
 {
     CONTRACTL
     {
@@ -3789,33 +3828,32 @@ void MethodTable::AttemptToPreinit()
     CONTRACTL_END;
 
     if (IsClassInited())
-        return;
+    {
+        return true;
+    }
 
     if (HasClassConstructor())
     {
         // If there is a class constructor, then the class cannot be preinitted.
-        return;
+        return false;
     }
     
     if (GetClass()->GetNonGCRegularStaticFieldBytes() == 0 && GetClass()->GetNumHandleRegularStatics() == 0)
     {
-        // If there are static fields that are not thread statics, then the class is preinitted.
-        SetClassInited();
-        return;
+        // If there aren't static fields that are not thread statics, then the class is preinitted.
+        return true;
     }
 
     // At this point, we are looking at a class that has no class constructor, but does have static fields
 
     if (IsSharedByGenericInstantiations())
     {
-        // If we don't know the exact type, we can't pre-allocate the fields
-        return;
+        // If we don't know the exact type, we can't pre-init the the fields
+        return false;
     }
 
     // All this class needs to be initialized is to allocate the memory for the static fields. Do so, and mark the type as initialized
-    EnsureStaticDataAllocated();
-    SetClassInited();
-    return;
+    return true;
 }
 
 void MethodTable::EnsureTlsIndexAllocated()
