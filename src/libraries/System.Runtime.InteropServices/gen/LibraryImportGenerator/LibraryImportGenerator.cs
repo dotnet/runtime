@@ -347,6 +347,12 @@ namespace Microsoft.Interop
                 LibraryImportGeneratorHelpers.CreateGeneratorResolver(pinvokeStub.TargetFramework, pinvokeStub.Options, pinvokeStub.EnvironmentFlags),
                 new CodeEmitOptions(SkipInit: pinvokeStub.TargetFramework is (TargetFramework.Net, _)));
 
+            // For down-level support, if some parameters cannot be marshalled, consider the target framework as not supported
+            if (stubGenerator.HasForwardedTypes && (pinvokeStub.TargetFramework.TargetFramework != TargetFramework.Net || pinvokeStub.TargetFramework.Version.Major < 7))
+            {
+                supportsTargetFramework = false;
+            }
+
             // Check if the generator should produce a forwarder stub - regular DllImport.
             // This is done if the signature is blittable or the target framework is not supported.
             if (stubGenerator.StubIsBasicForwarder
