@@ -75,6 +75,62 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> Abs(Vector<double> value) { throw new PlatformNotSupportedException(); }
 
+        ///  Absolute compare greater than
+
+        /// <summary>
+        /// svbool_t svacgt[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FACGT Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> AbsoluteCompareGreaterThan(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svacgt[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FACGT Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> AbsoluteCompareGreaterThan(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        ///  Absolute compare greater than or equal to
+
+        /// <summary>
+        /// svbool_t svacge[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FACGE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> AbsoluteCompareGreaterThanOrEqual(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svacge[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FACGE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> AbsoluteCompareGreaterThanOrEqual(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        ///  Absolute compare less than
+
+        /// <summary>
+        /// svbool_t svaclt[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FACLT Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> AbsoluteCompareLessThan(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svaclt[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FACLT Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> AbsoluteCompareLessThan(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        ///  Absolute compare less than or equal to
+
+        /// <summary>
+        /// svbool_t svacle[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FACLE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> AbsoluteCompareLessThanOrEqual(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svacle[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FACLE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> AbsoluteCompareLessThanOrEqual(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
         ///  AbsoluteDifference : Absolute difference
 
         /// <summary>
