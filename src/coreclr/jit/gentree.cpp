@@ -20769,7 +20769,7 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
     {
         GenTree* tmp;
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-        GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup1);
+        GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
 
         // op1 = IsNegative(op1)
         op1 = gtNewSimdIsNegativeNode(type, op1, simdBaseJitType, simdSize);
@@ -22844,10 +22844,10 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                     // result = BitwiseOr(op1, op2)
 
                     GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-                    GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup1);
+                    GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
 
                     GenTree* op2Dup1 = fgMakeMultiUse(&op2);
-                    GenTree* op2Dup2 = fgMakeMultiUse(&op2Dup1);
+                    GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
 
                     GenTree* t = gtNewSimdCmpOpNode(op, type, op1, op2, CORINFO_TYPE_INT, simdSize);
                     GenTree* u = gtNewSimdCmpOpNode(GT_EQ, type, op1Dup1, op2Dup1, CORINFO_TYPE_INT, simdSize);
@@ -23099,10 +23099,10 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                     // result = BitwiseOr(op1, op2)
 
                     GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-                    GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup1);
+                    GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
 
                     GenTree* op2Dup1 = fgMakeMultiUse(&op2);
-                    GenTree* op2Dup2 = fgMakeMultiUse(&op2Dup1);
+                    GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
 
                     GenTree* t = gtNewSimdCmpOpNode(op, type, op1, op2, CORINFO_TYPE_INT, simdSize);
                     GenTree* u = gtNewSimdCmpOpNode(GT_EQ, type, op1Dup1, op2Dup1, CORINFO_TYPE_INT, simdSize);
@@ -24936,12 +24936,12 @@ GenTree* Compiler::gtNewSimdMaxNode(
     if (varTypeIsFloating(simdBaseType))
     {
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-        GenTree* op1Dup2 = fgMakeMultiUse(&op1);
-        GenTree* op1Dup3 = fgMakeMultiUse(&op1);
+        GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
+        GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
 
         GenTree* op2Dup1 = fgMakeMultiUse(&op2);
-        GenTree* op2Dup2 = fgMakeMultiUse(&op2);
-        GenTree* op2Dup3 = fgMakeMultiUse(&op2);
+        GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
+        GenTree* op2Dup3 = gtCloneExpr(op2Dup2);
 
         GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
         GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op2Dup1, simdBaseJitType, simdSize);
@@ -25195,12 +25195,12 @@ GenTree* Compiler::gtNewSimdMinNode(
     if (varTypeIsFloating(simdBaseType))
     {
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-        GenTree* op1Dup2 = fgMakeMultiUse(&op1);
-        GenTree* op1Dup3 = fgMakeMultiUse(&op1);
-        GenTree* op1Dup4 = fgMakeMultiUse(&op1);
+        GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
+        GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
+        GenTree* op1Dup4 = gtCloneExpr(op1Dup3);
 
         GenTree* op2Dup1 = fgMakeMultiUse(&op2);
-        GenTree* op2Dup2 = fgMakeMultiUse(&op2);
+        GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
 
         GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
         GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op1Dup1, simdBaseJitType, simdSize);
@@ -25333,7 +25333,7 @@ GenTree* Compiler::gtNewSimdMinNativeNode(
                 GenTree* constVector = gtNewSimdCreateBroadcastNode(type, constVal, CORINFO_TYPE_INT, simdSize);
 
                 GenTree* constVectorDup1 = fgMakeMultiUse(&constVector);
-                GenTree* constVectorDup2 = fgMakeMultiUse(&constVectorDup1);
+                GenTree* constVectorDup2 = gtCloneExpr(constVectorDup1);
 
                 // op1 = op1 - constVector
                 // -or-
