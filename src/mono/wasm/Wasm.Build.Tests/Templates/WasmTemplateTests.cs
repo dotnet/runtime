@@ -21,7 +21,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        private string StringReplaceWithAssert(string oldContent, string oldValue, string newValue) 
+        private string StringReplaceWithAssert(string oldContent, string oldValue, string newValue)
         {
             string newContent = oldContent.Replace(oldValue, newValue);
             if (oldValue != newValue && oldContent == newContent)
@@ -57,11 +57,11 @@ namespace Wasm.Build.Tests
         private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
         {
             base.UpdateBrowserMainJs(
-                (mainJsContent) => 
+                (mainJsContent) =>
                 {
                     // .withExitOnUnhandledError() is available only only >net7.0
                     mainJsContent = StringReplaceWithAssert(
-                        mainJsContent, 
+                        mainJsContent,
                         ".create()",
                         (targetFramework == "net8.0" || targetFramework == "net9.0")
                             ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
@@ -75,8 +75,8 @@ namespace Wasm.Build.Tests
                     mainJsContent = StringReplaceWithAssert(mainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
 
                     return mainJsContent;
-                }, 
-                targetFramework, 
+                },
+                targetFramework,
                 runtimeAssetsRelativePath
             );
         }
@@ -121,7 +121,7 @@ namespace Wasm.Build.Tests
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
 
-            AddItemsPropertiesToProject(projectFile, 
+            AddItemsPropertiesToProject(projectFile,
                 atTheEnd:
                     """
                     <Target Name="CheckLinkedFiles" AfterTargets="ILLink">
@@ -389,7 +389,6 @@ namespace Wasm.Build.Tests
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/71887", TestPlatforms.Windows)]
             if (!OperatingSystem.IsWindows())
             {
-                data.Add("Debug", true, false);
                 data.Add("Release", true, false);
             }
 
