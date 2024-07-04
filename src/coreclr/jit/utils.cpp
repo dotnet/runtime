@@ -308,7 +308,7 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
     {
         regMaskTP regBit = genRegMask(regNum);
 
-        if ((regMask & regBit) != 0)
+        if ((regMask & regBit).IsNonEmpty())
         {
             // We have a register to display. It gets displayed now if:
             // 1. This is the first register to display of a new range of registers (possibly because
@@ -1216,8 +1216,8 @@ void NodeCounts::record(genTreeOps oper)
 
 struct DumpOnShutdownEntry
 {
-    const char* Name;
-    Dumpable*   Dumpable;
+    const char*     Name;
+    class Dumpable* Dumpable;
 };
 
 static DumpOnShutdownEntry s_dumpOnShutdown[16];
@@ -1519,6 +1519,7 @@ void HelperCallProperties::init()
         bool isAllocator   = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
         bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
+        bool isNoEscape    = false; // true if none of the GC ref arguments can escape
 
         switch (helper)
         {
@@ -1659,6 +1660,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHKCASTANY:
             case CORINFO_HELP_CHKCASTCLASS_SPECIAL:
             case CORINFO_HELP_READYTORUN_CHKCAST:
+            case CORINFO_HELP_UNBOX_TYPETEST:
 
                 // These throw for a failing cast
                 // But if given a null input arg will return null
@@ -1667,8 +1669,11 @@ void HelperCallProperties::init()
 
             // helpers returning addresses, these can also throw
             case CORINFO_HELP_UNBOX:
-            case CORINFO_HELP_LDELEMA_REF:
+                isNoEscape = true;
+                isPure     = true;
+                break;
 
+            case CORINFO_HELP_LDELEMA_REF:
                 isPure = true;
                 break;
 
@@ -1830,6 +1835,7 @@ void HelperCallProperties::init()
         m_isAllocator[helper]   = isAllocator;
         m_mutatesHeap[helper]   = mutatesHeap;
         m_mayRunCctor[helper]   = mayRunCctor;
+        m_isNoEscape[helper]    = isNoEscape;
     }
 }
 

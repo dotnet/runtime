@@ -17,9 +17,9 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
+    [SupportedOSPlatform("windows")]
     internal sealed class Http3RequestStream : IHttpStreamHeadersHandler, IAsyncDisposable, IDisposable
     {
         private readonly HttpRequestMessage _request;
@@ -88,7 +88,14 @@ namespace System.Net.Http
             {
                 _disposed = true;
                 AbortStream();
-                _stream.Dispose();
+                if (_stream.WritesClosed.IsCompleted)
+                {
+                    _connection.LogExceptions(_stream.DisposeAsync().AsTask());
+                }
+                else
+                {
+                    _stream.Dispose();
+                }
                 DisposeSyncHelper();
             }
         }
@@ -107,7 +114,14 @@ namespace System.Net.Http
             {
                 _disposed = true;
                 AbortStream();
-                await _stream.DisposeAsync().ConfigureAwait(false);
+                if (_stream.WritesClosed.IsCompleted)
+                {
+                    _connection.LogExceptions(_stream.DisposeAsync().AsTask());
+                }
+                else
+                {
+                    await _stream.DisposeAsync().ConfigureAwait(false);
+                }
                 DisposeSyncHelper();
             }
         }
@@ -275,6 +289,12 @@ namespace System.Net.Http
                 Exception abortException = _connection.Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
                 throw new HttpRequestException(HttpRequestError.HttpProtocolError, SR.net_http_client_execution_error, abortException);
             }
+            catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && cancellationToken.IsCancellationRequested)
+            {
+                // It is possible for QuicStream's code to throw an
+                // OperationAborted QuicException when cancellation is requested.
+                throw new TaskCanceledException(ex.Message, ex, cancellationToken);
+            }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && _connection.AbortException != null)
             {
                 // we closed the connection already, propagate the AbortException
@@ -440,6 +460,7 @@ namespace System.Net.Http
                 else
                 {
                     _stream.CompleteWrites();
+                    await _stream.WritesClosed.ConfigureAwait(false);
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(bytesWritten);
@@ -508,6 +529,11 @@ namespace System.Net.Http
             _sendBuffer.Discard(_sendBuffer.ActiveLength);
 
             await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+            if (endStream)
+            {
+                await _stream.WritesClosed.ConfigureAwait(false);
+            }
         }
 
         private async ValueTask DrainContentLength0Frames(CancellationToken cancellationToken)
@@ -1276,6 +1302,11 @@ namespace System.Net.Http
                         ? HttpRequestError.HttpProtocolError
                         : HttpRequestError.Unknown;
                     throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
+
+                case QuicException e when (e.QuicError == QuicError.OperationAborted && cancellationToken.IsCancellationRequested):
+                    // It is possible for QuicStream's code to throw an
+                    // OperationAborted QuicException when cancellation is requested.
+                    throw new TaskCanceledException(e.Message, e, cancellationToken);
 
                 case HttpIOException:
                     _connection.Abort(ex);

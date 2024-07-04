@@ -445,6 +445,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
     CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
     CORINFO_HELP_UNBOX,
+    CORINFO_HELP_UNBOX_TYPETEST,    // Verify unbox type, throws if incompatible
     CORINFO_HELP_UNBOX_NULLABLE,    // special form of unboxing for Nullable<T>
     CORINFO_HELP_GETREFANY,         // Extract the byref from a TypedReference, checking that it is the expected type
 
@@ -2552,6 +2553,14 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
+    // Get a representation for a stack-allocated boxed value type.
+    //
+    // This differs from getTypeForBox in that it includes an explicit field
+    // for the method table pointer.
+    virtual CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
     // returns the correct box helper for a particular class.  Note
     // that if this returns CORINFO_HELP_BOX, the JIT can assume
     // 'standard' boxing (allocate object and copy), and optimize
@@ -2715,6 +2724,11 @@ public:
 
     // Returns true if a class handle can only describe values of exactly one type.
     virtual bool isExactType(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    // Returns whether a class handle represents a generic type, if that can be statically determined.
+    virtual TypeCompareState isGenericType(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 

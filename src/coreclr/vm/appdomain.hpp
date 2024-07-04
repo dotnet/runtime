@@ -522,7 +522,7 @@ public:
     // Statics and reflection info (Types, MemberInfo,..) are stored this way
     // If pStaticsInfo != 0, allocation will only take place if GC statics in the DynamicStaticsInfo are NULL (and the allocation
     // will be properly serialized)
-    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL);
+    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL, bool isClassInitdeByUpdatingStaticPointer = false);
 
     //****************************************************************************************
     // Handles
@@ -1675,10 +1675,10 @@ public:
     }
 #endif
 
-private:
     // The one and only AppDomain
     SPTR_DECL(AppDomain, m_pTheAppDomain);
 
+private:
     SString         m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
 

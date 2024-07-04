@@ -291,8 +291,10 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     Thread* pThread = NULL;
     while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
     {
-        if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
-            pThread->GetAllocContext(), sc->thread_number))
+        gc_alloc_context* palloc_context = pThread->GetAllocContext();
+        if (palloc_context != nullptr
+            && GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
+                palloc_context, sc->thread_number))
         {
             STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
 
@@ -436,13 +438,12 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThreadNULLOk();
-    if (!pThread)
+    if (!::GetThreadNULLOk())
     {
         return nullptr;
     }
 
-    return pThread->GetAllocContext();
+    return &t_runtime_thread_locals.alloc_context;
 }
 
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
@@ -459,7 +460,11 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
         Thread * pThread = NULL;
         while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
         {
-            fn(pThread->GetAllocContext(), param);
+            gc_alloc_context* palloc_context = pThread->GetAllocContext();
+            if (palloc_context != nullptr)
+            {
+                fn(palloc_context, param);
+            }
         }
     }
     else
@@ -1385,7 +1390,7 @@ struct SuspendableThreadStubArguments
 {
     void* Argument;
     void (*ThreadStart)(void*);
-    Thread* Thread;
+    class Thread* Thread;
     bool HasStarted;
     CLREvent ThreadStartedEvent;
 };
@@ -1732,15 +1737,15 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     // Refer to the comments in src/gc/gcevents.h see which events are enabled.
 
     // WARNING: To change an event's GC level, perfcollect script needs to be updated simultaneously to reflect it.
-    BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2();
-    BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart();
+    BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2() || UserEventsEventEnabledGCJoin_V2();
+    BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart() || UserEventsEventEnabledGCStart();
 
-    BOOL keyword_gc_heapsurvival_and_movement_informational = EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange();
-    BOOL keyword_gchandle_informational = EventXplatEnabledSetGCHandle() || EventPipeEventEnabledSetGCHandle();
-    BOOL keyword_gchandle_prv_informational = EventXplatEnabledPrvSetGCHandle() || EventPipeEventEnabledPrvSetGCHandle();
+    BOOL keyword_gc_heapsurvival_and_movement_informational = EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange() || UserEventsEventEnabledGCGenerationRange();
+    BOOL keyword_gchandle_informational = EventXplatEnabledSetGCHandle() || EventPipeEventEnabledSetGCHandle() || UserEventsEventEnabledSetGCHandle();
+    BOOL keyword_gchandle_prv_informational = EventXplatEnabledPrvSetGCHandle() || EventPipeEventEnabledPrvSetGCHandle() || UserEventsEventEnabledPrvSetGCHandle();
 
-    BOOL prv_gcprv_informational = EventXplatEnabledBGCBegin() || EventPipeEventEnabledBGCBegin();
-    BOOL prv_gcprv_verbose = EventXplatEnabledPinPlugAtGCTime() || EventPipeEventEnabledPinPlugAtGCTime();
+    BOOL prv_gcprv_informational = EventXplatEnabledBGCBegin() || EventPipeEventEnabledBGCBegin() || UserEventsEventEnabledBGCBegin();
+    BOOL prv_gcprv_verbose = EventXplatEnabledPinPlugAtGCTime() || EventPipeEventEnabledPinPlugAtGCTime() || UserEventsEventEnabledPinPlugAtGCTime();
 
     int publicProviderLevel = keyword_gc_verbose ? GCEventLevel_Verbose :
                                  ((keyword_gc_informational || keyword_gc_heapsurvival_and_movement_informational) ? GCEventLevel_Information : GCEventLevel_None);

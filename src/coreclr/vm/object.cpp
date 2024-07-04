@@ -1952,3 +1952,61 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
 #endif // !defined(DACCESS_COMPILE)
 
 }
+
+#ifndef DACCESS_COMPILE
+void LoaderAllocatorObject::SetSlotsUsed(INT32 newSlotsUsed)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pLoaderAllocatorScout->m_nativeLoaderAllocator->HasHandleTableLock());
+    }
+    CONTRACTL_END;
+
+    m_slotsUsed = newSlotsUsed;
+}
+
+PTRARRAYREF LoaderAllocatorObject::GetHandleTable()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pLoaderAllocatorScout->m_nativeLoaderAllocator->HasHandleTableLock());
+    }
+    CONTRACTL_END;
+
+    return (PTRARRAYREF)m_pSlots;
+}
+
+void LoaderAllocatorObject::SetHandleTable(PTRARRAYREF handleTable)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pLoaderAllocatorScout->m_nativeLoaderAllocator->HasHandleTableLock());
+    }
+    CONTRACTL_END;
+
+    SetObjectReference(&m_pSlots, (OBJECTREF)handleTable);
+}
+
+INT32 LoaderAllocatorObject::GetSlotsUsed()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pLoaderAllocatorScout->m_nativeLoaderAllocator->HasHandleTableLock());
+    }
+    CONTRACTL_END;
+
+    return m_slotsUsed;
+}
+#endif // DACCESS_COMPILE

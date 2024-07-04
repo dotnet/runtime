@@ -275,6 +275,9 @@ CorInfoHelpFunc getSharedCCtorHelper(
 CORINFO_CLASS_HANDLE getTypeForBox(
           CORINFO_CLASS_HANDLE cls) override;
 
+CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls) override;
+
 CorInfoHelpFunc getBoxHelper(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -343,6 +346,9 @@ bool isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls2) override;
 
 bool isExactType(
+          CORINFO_CLASS_HANDLE cls) override;
+
+TypeCompareState isGenericType(
           CORINFO_CLASS_HANDLE cls) override;
 
 TypeCompareState isNullableType(

@@ -173,6 +173,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Plane" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
+        [Intrinsic]
         internal static Plane AsPlane(this Vector128<float> value)
         {
 #if MONO
@@ -185,6 +186,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Quaternion" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
+        [Intrinsic]
         internal static Quaternion AsQuaternion(this Vector128<float> value)
         {
 #if MONO
@@ -264,17 +266,17 @@ namespace System.Runtime.Intrinsics
 #endif
         }
 
-        /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" /> with the new elements zeroed.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" /> with the new elements zeroed.</returns>
         [Intrinsic]
-        public static Vector128<float> AsVector128(this Vector2 value) => new Vector4(value.X, value.Y, 0.0f, 0.0f).AsVector128();
+        public static Vector128<float> AsVector128(this Vector2 value) => Vector4.Create(value, 0, 0).AsVector128();
 
-        /// <summary>Reinterprets a <see cref="Vector3" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector3" /> as a new <see cref="Vector128{Single}" /> with the new elements zeroed.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" /> with the new elements zeroed.</returns>
         [Intrinsic]
-        public static Vector128<float> AsVector128(this Vector3 value) => new Vector4(value.X, value.Y, value.Z, 0.0f).AsVector128();
+        public static Vector128<float> AsVector128(this Vector3 value) => Vector4.Create(value, 0).AsVector128();
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
@@ -303,6 +305,34 @@ namespace System.Runtime.Intrinsics
 
             ref byte address = ref Unsafe.As<Vector<T>, byte>(ref value);
             return Unsafe.ReadUnaligned<Vector128<T>>(ref address);
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" />, leaving the new elements undefined.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        [Intrinsic]
+        public static Vector128<float> AsVector128Unsafe(this Vector2 value)
+        {
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+            Unsafe.SkipInit(out Vector128<float> result);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), value);
+            return result;
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector3" /> as a new <see cref="Vector128{Single}" />, leaving the new elements undefined.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        [Intrinsic]
+        public static Vector128<float> AsVector128Unsafe(this Vector3 value)
+        {
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+            Unsafe.SkipInit(out Vector128<float> result);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), value);
+            return result;
         }
 
         /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Vector2" />.</summary>
@@ -1109,6 +1139,14 @@ namespace System.Runtime.Intrinsics
             );
         }
 
+        /// <summary>Creates a new <see cref="Vector128{T}" /> instance with the lower and upper 64-bits initialized to a specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that the lower and upper 64-bits will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> with the lower and upper 64-bits initialized to <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> Create<T>(Vector64<T> value) => Create(value, value);
+
         /// <summary>Creates a new <see cref="Vector128{T}" /> instance from two <see cref="Vector64{T}" /> instances.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
@@ -1398,7 +1436,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="start">The value that element 0 will be initialized to.</param>
         /// <param name="step">The value that indicates how far apart each element should be from the previous.</param>
-        /// <returns>A new <see cref="Vector128{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
+        /// <returns>A new <see cref="Vector128{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the value of the previous element plus <paramref name="step" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> CreateSequence<T>(T start, T step) => (Vector128<T>.Indices * step) + Create(start);

@@ -17,8 +17,28 @@ internal record struct ThreadStoreCounts(
     int PendingThreadCount,
     int DeadThreadCount);
 
+[Flags]
+internal enum ThreadState
+{
+    Unknown             = 0x00000000,
+    Hijacked            = 0x00000080,   // Return address has been hijacked
+    Background          = 0x00000200,   // Thread is a background thread
+    Unstarted           = 0x00000400,   // Thread has never been started
+    Dead                = 0x00000800,   // Thread is dead
+    ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
+}
+
 internal record struct ThreadData(
     uint Id,
+    TargetNUInt OSId,
+    ThreadState State,
+    bool PreemptiveGCDisabled,
+    TargetPointer AllocContextPointer,
+    TargetPointer AllocContextLimit,
+    TargetPointer Frame,
+    TargetPointer FirstNestedException,
+    TargetPointer TEB,
+    TargetPointer LastThrownObjectHandle,
     TargetPointer NextThread);
 
 internal interface IThread : IContract
@@ -85,8 +105,29 @@ internal readonly struct Thread_1 : IThread
     ThreadData IThread.GetThreadData(TargetPointer threadPointer)
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+
+        // Exception tracker is a pointer when EH funclets are enabled
+        TargetPointer address = _target.ReadGlobal<byte>(Constants.Globals.FeatureEHFunclets) != 0
+            ? _target.ReadPointer(thread.ExceptionTracker)
+            : thread.ExceptionTracker;
+        TargetPointer firstNestedException = TargetPointer.Null;
+        if (address != TargetPointer.Null)
+        {
+            Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(address);
+            firstNestedException = exceptionInfo.PreviousNestedInfo;
+        }
+
         return new ThreadData(
             thread.Id,
+            thread.OSId,
+            (ThreadState)thread.State,
+            (thread.PreemptiveGCDisabled & 0x1) != 0,
+            thread.RuntimeThreadLocals?.AllocContext.Pointer ?? TargetPointer.Null,
+            thread.RuntimeThreadLocals?.AllocContext.Limit ?? TargetPointer.Null,
+            thread.Frame,
+            firstNestedException,
+            thread.TEB,
+            thread.LastThrownObject.Handle,
             GetThreadFromLink(thread.LinkNext));
     }
 

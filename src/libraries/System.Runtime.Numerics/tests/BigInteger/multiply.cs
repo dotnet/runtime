@@ -278,12 +278,11 @@ namespace System.Numerics.Tests
         }
     }
 
-
     [Collection(nameof(DisableParallelization))]
     public class multiplyTestThreshold
     {
         [Fact]
-        public static void RunMultiply_TwoLargeBigIntegers_Threshold()
+        public static void RunMultiply_TwoLargeBigIntegers()
         {
             // Again, with lower threshold
             BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>

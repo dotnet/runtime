@@ -5,9 +5,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Tests;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace System.Numerics.Tests
 {
@@ -246,6 +248,19 @@ namespace System.Numerics.Tests
             for (int i = 0; i < s_samples; i++)
             {
                 VerifyParseToString(GetDigitSequence(100, 1000, random));
+            }
+
+            // Trailing Zero - Small
+            VerifyParseToString("99000000000");
+            for (int i = 0; i < s_samples; i++)
+            {
+                VerifyParseToString(GetDigitSequence(1, 10, random) + new string('0', random.Next(10, 50)));
+            }
+
+            // Trailing Zero - Large
+            for (int i = 0; i < s_samples; i++)
+            {
+                VerifyParseToString(GetDigitSequence(10, 100, random) + new string('0', random.Next(100, 1000)));
             }
 
             // Leading White
@@ -509,6 +524,13 @@ namespace System.Numerics.Tests
             for (int i = 0; i < s_samples; i++)
             {
                 VerifyParseToString(GetDigitSequence(100, 1000, random), ns, true);
+            }
+
+            // Trailing Zero
+            VerifyParseToString("99000000000", ns, true);
+            for (int i = 0; i < s_samples; i++)
+            {
+                VerifyParseToString(GetDigitSequence(1, 10, random) + "1000000000", ns, true);
             }
 
             // Leading White
@@ -1160,10 +1182,11 @@ namespace System.Numerics.Tests
         [OuterLoop]
         public static void RunParseToStringTests(CultureInfo culture)
         {
-            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThresholdInRecursive, 10, () =>
             {
                 parseTest.RunParseToStringTests(culture);
-            });
+            }));
         }
 
         public static IEnumerable<object[]> Parse_Subspan_Success_TestData() => parseTest.Parse_Subspan_Success_TestData();
@@ -1172,16 +1195,18 @@ namespace System.Numerics.Tests
         [MemberData(nameof(Parse_Subspan_Success_TestData))]
         public static void Parse_Subspan_Success(string input, int offset, int length, string expected)
         {
-            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThresholdInRecursive, 10, () =>
             {
                 parseTest.Parse_Subspan_Success(input, offset, length, expected);
-            });
+            }));
         }
 
         [Fact]
         public static void Parse_EmptySubspan_Fails()
         {
-            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, parseTest.Parse_EmptySubspan_Fails);
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThresholdInRecursive, 10, parseTest.Parse_EmptySubspan_Fails));
         }
 
         public static IEnumerable<object[]> RegressionIssueRuntime94610_TestData() => parseTest.RegressionIssueRuntime94610_TestData();
@@ -1190,10 +1215,11 @@ namespace System.Numerics.Tests
         [MemberData(nameof(RegressionIssueRuntime94610_TestData))]
         public static void RegressionIssueRuntime94610(string text)
         {
-            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThresholdInRecursive, 10, () =>
             {
                 parseTest.RegressionIssueRuntime94610(text);
-            });
+            }));
         }
     }
 }

@@ -458,6 +458,12 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBox(
     return original_ICorJitInfo->getTypeForBox(cls);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->getTypeForBoxOnStack(cls);
+}
+
 CorInfoHelpFunc interceptor_ICJI::getBoxHelper(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -580,6 +586,12 @@ bool interceptor_ICJI::isExactType(
           CORINFO_CLASS_HANDLE cls)
 {
     return original_ICorJitInfo->isExactType(cls);
+}
+
+TypeCompareState interceptor_ICJI::isGenericType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->isGenericType(cls);
 }
 
 TypeCompareState interceptor_ICJI::isNullableType(

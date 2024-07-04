@@ -261,31 +261,6 @@ check_symbol_exists(
     HAVE_TIOCSWINSZ)
 
 check_symbol_exists(
-    tcgetattr
-    termios.h
-    HAVE_TCGETATTR)
-
-check_symbol_exists(
-    tcsetattr
-    termios.h
-    HAVE_TCSETATTR)
-
-check_symbol_exists(
-    ECHO
-    "termios.h"
-    HAVE_ECHO)
-
-check_symbol_exists(
-    ICANON
-    "termios.h"
-    HAVE_ICANON)
-
-check_symbol_exists(
-    TCSANOW
-    "termios.h"
-    HAVE_TCSANOW)
-
-check_symbol_exists(
     cfsetspeed
     termios.h
     HAVE_CFSETSPEED)
@@ -354,17 +329,7 @@ check_struct_has_member(
     "sys/mount.h"
     HAVE_STATVFS_FSTYPENAME)
 
-check_struct_has_member(
-    "struct statvfs"
-    f_basetype
-    "sys/statvfs.h"
-    HAVE_STATVFS_BASETYPE)
-
 set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
-check_type_size(
-    "((struct dirent*)0)->d_name"
-    DIRENT_NAME_SIZE)
-set(CMAKE_EXTRA_INCLUDE_FILES)
 
 # statfs: Find whether this struct exists
 if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
@@ -437,18 +402,6 @@ check_c_source_compiles(
     }
     "
     KEVENT_HAS_VOID_UDATA)
-
-check_struct_has_member(
-    "struct fd_set"
-    fds_bits
-    "sys/select.h"
-    HAVE_FDS_BITS)
-
-check_struct_has_member(
-    "struct fd_set"
-    __fds_bits
-    "sys/select.h"
-    HAVE_PRIVATE_FDS_BITS)
 
 # do not use sendfile() on iOS/tvOS, it causes SIGSYS at runtime on devices
 if(NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
@@ -733,23 +686,6 @@ set (CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 
 check_c_source_compiles(
     "
-    #include <stddef.h>
-    #include <sys/socket.h>
-
-    int main(void)
-    {
-        int fd = -1;
-        struct sockaddr* addr = NULL;
-        socklen_t addrLen = 0;
-
-        int err = bind(fd, addr, addrLen);
-        return 0;
-    }
-    "
-    BIND_ADDRLEN_UNSIGNED)
-
-check_c_source_compiles(
-    "
     #include <netinet/in.h>
     #include <netinet/tcp.h>
 
@@ -948,10 +884,6 @@ check_include_files(
     "pthread.h"
     HAVE_PTHREAD_H)
 
-check_include_files(
-    "sys/statfs.h"
-    HAVE_SYS_STATFS_H)
-
 if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(HAVE_IOS_NET_IFMEDIA_H 1)
@@ -1014,10 +946,6 @@ check_include_files(
     HAVE_SYS_MNTENT_H)
 
 check_include_files(
-    "mntent.h"
-    HAVE_MNTENT_H)
-
-check_include_files(
     "stdint.h;net/if_media.h"
     HAVE_NET_IFMEDIA_H)
 
@@ -1042,11 +970,6 @@ check_symbol_exists(
     getdomainname
     unistd.h
     HAVE_GETDOMAINNAME)
-
-check_symbol_exists(
-    uname
-    sys/utsname.h
-    HAVE_UNAME)
 
 # getdomainname on OSX takes an 'int' instead of a 'size_t'
 # check if compiling with 'size_t' would cause a warning
