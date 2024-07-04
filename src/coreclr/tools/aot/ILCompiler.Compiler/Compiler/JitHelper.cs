@@ -119,6 +119,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.Unbox_Nullable:
                     mangledName = "RhUnboxNullable";
                     break;
+                case ReadyToRunHelper.Unbox_TypeTest:
+                    mangledName = "RhUnboxTypeTest";
+                    break;
 
                 case ReadyToRunHelper.NewMultiDimArr:
                     methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");

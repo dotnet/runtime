@@ -11,6 +11,8 @@ using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 
+using static Interop;
+
 namespace System.Runtime
 {
     internal static partial class RuntimeExports
@@ -225,6 +227,28 @@ namespace System.Runtime
                 throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
             RhUnbox(obj, ref data, pUnboxToEEType);
+        }
+
+        [RuntimeExport("RhUnboxTypeTest")]
+        public static unsafe void RhUnboxTypeTest(MethodTable* pMT1, MethodTable* pMT2)
+        {
+            var eeType1 = new EETypePtr(pMT1);
+            var eeType2 = new EETypePtr(pMT2);
+
+            if (eeType1.CorElementType == eeType2.CorElementType &&
+                (pMT1->IsEnum || pMT1->IsActualPrimitive) &&
+                (pMT2->IsEnum || pMT2->IsActualPrimitive))
+            {
+                // type test test passes
+            }
+            ////else if (pMT1->IsEquivalentTo(pMT2))
+            ////{
+            ////    // the structures are equivalent
+            ////}
+            else
+            {
+                throw pMT2->GetClasslibException(ExceptionIDs.InvalidCast);
+            }
         }
 
         [RuntimeExport("RhUnbox")]
