@@ -9,7 +9,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct StackAllocatedBox<T>
     {
         // These fields are only accessed from jitted code
-        private MethodTable* _pMethodTable;
+        private IntPtr _pMethodTable;
         private T _value;
     }
 }
