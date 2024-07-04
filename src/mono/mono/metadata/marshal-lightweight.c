@@ -2719,7 +2719,8 @@ static void
 emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig;
-	int i, *tmp_locals;
+	SwiftPhysicalLowering *swift_lowering;
+	int i, *tmp_locals,  *arg_is_lowered_struct;
 	gboolean closed = FALSE;
 	GCUnsafeTransitionBuilder gc_unsafe_builder = {0,};
 
@@ -2754,6 +2755,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	mono_mb_add_local (mb, int_type);
 	/* allocate local 2 (boolean) delete_old */
 	mono_mb_add_local (mb, boolean_type);
+	int struct_locals_start = 100;
 
 	if (!MONO_TYPE_IS_VOID(sig->ret)) {
 		/* allocate local 3 to store the return value */
@@ -2793,6 +2795,38 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	gc_unsafe_transition_builder_emit_enter(&gc_unsafe_builder);
 
+	if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+		swift_lowering = g_newa (SwiftPhysicalLowering, sig->param_count);
+		arg_is_lowered_struct = g_newa (int, sig->param_count);
+		int lowered_struct_count = 0;
+
+		for (int i =0; i < sig->param_count; i++) {
+			MonoType *ptype = sig->params [i];
+			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+			arg_is_lowered_struct [i] = FALSE;
+			if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error)) 
+			{
+				SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+				if (!lowered_swift_struct.by_reference) 
+				{
+					int xdd = mono_mb_add_local (mb, sig->params [i]);
+					struct_locals_start = MIN(xdd, struct_locals_start); 
+					swift_lowering [i] = lowered_swift_struct;
+					arg_is_lowered_struct [i] = 1;
+					lowered_struct_count++;
+				}
+				else
+				{
+					int xdd = mono_mb_add_local (mb, sig->params [i]);
+					struct_locals_start = MIN(xdd, struct_locals_start);
+					arg_is_lowered_struct [i] = 2;
+				}
+			}
+		}
+	}
+
 	/* we first do all conversions */
 	tmp_locals = g_newa (int, sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
@@ -2800,17 +2834,22 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		MonoMarshalSpec *spec = mspecs [i + 1];
 
 		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
-			tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0,  &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+			tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0,  &sig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
 		} else {
 			switch (t->type) {
+			case MONO_TYPE_VALUETYPE:
+				if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL))
+				{
+					tmp_locals [i] = 0;
+					break;
+				}
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_CLASS:
-			case MONO_TYPE_VALUETYPE:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_BOOLEAN:
-				tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+				tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0, &sig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
 				break;
 			default:
 				tmp_locals [i] = 0;
@@ -2834,14 +2873,41 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		mono_mb_emit_icall (mb, mono_gchandle_get_target_internal);
 	}
 
-	for (i = 0; i < sig->param_count; i++) {
-		MonoType *t = sig->params [i];
+	int arg_shift = 0;
+	int lowered_struct_so_far = 0;
+	for (i = 0; i < csig->param_count; i++) {
+		MonoType *t = csig->params [i];
 
-		if (tmp_locals [i]) {
+		if (!mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && tmp_locals [i]) {
 			if (m_type_is_byref (t))
 				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
 			else
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+		}
+		else if(mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && arg_is_lowered_struct[i-arg_shift] == 1){
+			int j = 0;
+			guint8 stind_op;
+			int offset = 0;
+			for (;j < swift_lowering[i-arg_shift].num_lowered_elements; j++) {
+				offset = swift_lowering[i-arg_shift].offsets[j];
+				mono_mb_emit_ldloc_addr (mb, struct_locals_start + lowered_struct_so_far);
+				mono_mb_emit_icon (mb, offset);
+				mono_mb_emit_byte (mb, CEE_ADD);
+
+				mono_mb_emit_ldarg (mb, i + j);
+				stind_op = mono_type_to_stind (csig->params[i+j]);
+				mono_mb_emit_byte (mb, stind_op);
+			}
+
+			i+=j - 1;
+			arg_shift += j - 1;
+			mono_mb_emit_ldloc(mb, struct_locals_start + lowered_struct_so_far);
+			lowered_struct_so_far++;
+		}
+		else if(mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && arg_is_lowered_struct[i-arg_shift] == 2)
+		{
+			mono_mb_emit_ldarg (mb, i);			
+			lowered_struct_so_far++;
 		}
 		else
 			mono_mb_emit_ldarg (mb, i);

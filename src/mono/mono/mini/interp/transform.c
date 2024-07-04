@@ -3401,7 +3401,7 @@ interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *c
 	++td->sp;
 
 	// Create a new dummy signature with the lowered arguments
-	new_csignature = mono_metadata_signature_dup_new_params (NULL, td->mem_manager, csignature, new_param_count, (MonoType**)new_params->data);
+	new_csignature = mono_metadata_signature_dup_new_params (NULL, td->mem_manager, NULL, csignature, new_param_count, (MonoType**)new_params->data);
 
 	// Deallocate temp array
 	g_array_free (new_params, TRUE);

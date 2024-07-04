@@ -4090,6 +4090,8 @@ method_signature_is_usable_when_marshalling_disabled (MonoMethodSignature *sig)
 static MonoMethod *
 marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
+	SwiftPhysicalLowering *swift_lowering;
+	int **tmp_struct_locals;
 	MonoMethodSignature *sig, *csig, *invoke_sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res, *invoke;
@@ -4178,6 +4180,55 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 		csig = mono_metadata_signature_dup_full (get_method_image (method), invoke_sig);
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
+
+	if (invoke)
+		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
+	else
+		mono_marshal_set_callconv_from_unmanaged_callers_only_attribute(method, csig);
+
+	if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+		swift_lowering = g_newa (SwiftPhysicalLowering, sig->param_count);
+		tmp_struct_locals = g_newa (int*, sig->param_count);
+		GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), csig->param_count);
+		uint32_t new_param_count = 0;
+
+
+
+		for (int i =0; i < csig->param_count; i++) {
+			MonoType *ptype = csig->params [i];
+			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+			tmp_struct_locals [i] = NULL;
+
+			if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error)) 
+			{
+				SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+				if (!lowered_swift_struct.by_reference) 
+				{
+					swift_lowering [i] = lowered_swift_struct;
+					tmp_struct_locals [i] = g_newa (int, lowered_swift_struct.num_lowered_elements);
+
+					for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
+						g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
+						new_param_count++;
+					}
+				}
+				else
+				{
+					g_array_append_val (new_params, ptype);
+					new_param_count++;
+				}
+			}
+			else
+			{
+				g_array_append_val (new_params, ptype);
+				new_param_count++;
+			}
+		}
+
+		csig = mono_metadata_signature_dup_new_params (NULL, NULL, get_method_image (method), csig, new_param_count, (MonoType**)new_params->data);
+	}
 
 	if (!marshalling_enabled)
 		csig->marshalling_disabled = 1;
@@ -4270,10 +4321,10 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 			info->d.native_to_managed.klass = delegate_klass;
 
 			res = mono_mb_create_and_cache_full (cache, method,
-												 mb, csig, sig->param_count + 16,
+												 mb, csig, csig->param_count + 16,
 												 info, NULL);
 		} else {
-			res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
+			res = mono_mb_create (mb, csig, csig->param_count + 16, NULL);
 		}
 	}
 
