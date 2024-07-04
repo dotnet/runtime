@@ -63,6 +63,8 @@ namespace System.Text.Json.Tests
             Assert.True(reader.Read());
             element = JsonElement.ParseValue(ref reader);
             Assert.Equal("[43]", element.GetRawText());
+
+            Assert.False(reader.Read());
         }
 
 

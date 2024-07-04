@@ -60,6 +60,8 @@ namespace System.Text.Json.Nodes.Tests
             Assert.True(reader.Read());
             node = JsonNode.Parse(ref reader);
             Assert.Equal("[43]", node.ToJsonString());
+
+            Assert.False(reader.Read());
         }
 
 

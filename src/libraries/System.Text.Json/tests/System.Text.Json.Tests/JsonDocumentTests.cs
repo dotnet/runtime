@@ -3419,6 +3419,8 @@ namespace System.Text.Json.Tests
             Assert.True(reader.Read());
             using JsonDocument doc2 = JsonDocument.ParseValue(ref reader);
             Assert.Equal("[43]", doc2.RootElement.GetRawText());
+
+            Assert.False(reader.Read());
         }
 
 
