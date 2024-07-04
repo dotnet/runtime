@@ -1087,6 +1087,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         // In "fgMorphMultiRegStructArg" we will expand the arg into a GT_FIELD_LIST with multiple indirections, so
         // here we consider spilling it into a local. We also need to spill it in case we have a node that we do not
         // currently handle in multi-reg morphing.
+        // This logic can be skipped when the arg is already in the right multireg arg shape.
         //
         if (varTypeIsStruct(argx) && !arg.m_needTmp && !argx->OperIs(GT_FIELD_LIST))
         {
@@ -1650,36 +1651,64 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
             noway_assert(argx->gtType != TYP_STRUCT);
 #endif
 
-            unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
-
-            setupArg = comp->gtNewTempStore(tmpVarNum, argx);
-
-            LclVarDsc* varDsc     = comp->lvaGetDesc(tmpVarNum);
-            var_types  lclVarType = genActualType(argx->gtType);
-            var_types  scalarType = TYP_UNKNOWN;
-
-            if (setupArg->OperIsCopyBlkOp())
+            if (argx->OperIs(GT_FIELD_LIST))
             {
-                setupArg = comp->fgMorphCopyBlock(setupArg);
-#if defined(TARGET_ARMARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                if ((lclVarType == TYP_STRUCT) && (arg.AbiInfo.ArgType != TYP_STRUCT))
+                GenTreeFieldList* fieldList = argx->AsFieldList();
+                fieldList->gtFlags &= ~GTF_ALL_EFFECT;
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
                 {
-                    scalarType = arg.AbiInfo.ArgType;
-                }
-#endif // TARGET_ARMARCH || defined (UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            }
+                    unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
+                    GenTree* store     = comp->gtNewTempStore(tmpVarNum, use.GetNode());
 
-            // scalarType can be set to a wider type for ARM or unix amd64 architectures: (3 => 4)  or (5,6,7 =>
-            // 8)
-            if ((scalarType != TYP_UNKNOWN) && (scalarType != lclVarType))
-            {
-                // Create a GT_LCL_FLD using the wider type to go to the late argument list
-                defArg = comp->gtNewLclFldNode(tmpVarNum, scalarType, 0);
+                    if (setupArg == nullptr)
+                    {
+                        setupArg = store;
+                    }
+                    else
+                    {
+                        setupArg = comp->gtNewOperNode(GT_COMMA, TYP_VOID, setupArg, store);
+                    }
+
+                    use.SetNode(comp->gtNewLclvNode(tmpVarNum, genActualType(use.GetNode())));
+                    fieldList->AddAllEffectsFlags(use.GetNode());
+                }
+
+                // Keep the field list in the late list
+                defArg = fieldList;
             }
             else
             {
-                // Create a copy of the temp to go to the late argument list
-                defArg = comp->gtNewLclvNode(tmpVarNum, lclVarType);
+                unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
+
+                setupArg = comp->gtNewTempStore(tmpVarNum, argx);
+
+                LclVarDsc* varDsc     = comp->lvaGetDesc(tmpVarNum);
+                var_types  lclVarType = genActualType(argx->gtType);
+                var_types  scalarType = TYP_UNKNOWN;
+
+                if (setupArg->OperIsCopyBlkOp())
+                {
+                    setupArg = comp->fgMorphCopyBlock(setupArg);
+#if defined(TARGET_ARMARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                    if ((lclVarType == TYP_STRUCT) && (arg.AbiInfo.ArgType != TYP_STRUCT))
+                    {
+                        scalarType = arg.AbiInfo.ArgType;
+                    }
+#endif // TARGET_ARMARCH || defined (UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                }
+
+                // scalarType can be set to a wider type for ARM or unix amd64 architectures: (3 => 4)  or (5,6,7 =>
+                // 8)
+                if ((scalarType != TYP_UNKNOWN) && (scalarType != lclVarType))
+                {
+                    // Create a GT_LCL_FLD using the wider type to go to the late argument list
+                    defArg = comp->gtNewLclFldNode(tmpVarNum, scalarType, 0);
+                }
+                else
+                {
+                    // Create a copy of the temp to go to the late argument list
+                    defArg = comp->gtNewLclvNode(tmpVarNum, lclVarType);
+                }
             }
 
 #ifdef DEBUG
@@ -2483,20 +2512,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         GenTree* argObj         = argx->gtEffectiveVal();
         bool     makeOutArgCopy = false;
 
-        if (isStructArg && !reMorphing)
+        if (isStructArg && !reMorphing && !argObj->OperIs(GT_FIELD_LIST))
         {
             unsigned originalSize;
-            if (argObj->TypeGet() == TYP_STRUCT)
+            if (argObj->TypeIs(TYP_STRUCT))
             {
-                if (argObj->OperIs(GT_FIELD_LIST))
-                {
-                    originalSize = typGetObjLayout(arg.GetSignatureClassHandle())->GetSize();
-                }
-                else
-                {
-                    assert(argObj->OperIs(GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
-                    originalSize = argObj->GetLayout(this)->GetSize();
-                }
+                assert(argObj->OperIs(GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
+                originalSize = argObj->GetLayout(this)->GetSize();
             }
             else
             {
@@ -2575,10 +2597,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             {
                                 makeOutArgCopy = true;
                             }
-                        }
-                        else if (argObj->OperIs(GT_FIELD_LIST))
-                        {
-                            // Fall through with makeOutArgCopy = false
                         }
                         else if (!argIsLocal)
                         {
