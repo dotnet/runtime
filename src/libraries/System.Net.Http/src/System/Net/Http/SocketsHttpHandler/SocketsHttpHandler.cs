@@ -529,6 +529,8 @@ namespace System.Net.Http
                 handler = new HttpAuthenticatedConnectionHandler(poolManager);
             }
 
+            // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
+            // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
             handler = new MetricsHandler(handler, settings._meterFactory, out Meter meter);
             settings._metrics = new SocketsHttpHandlerMetrics(meter);
 
