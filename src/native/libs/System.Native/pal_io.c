@@ -452,7 +452,7 @@ int32_t SystemNative_GetReadDirRBufferSize(void)
     // dirent should be under 2k in size
     assert(result < 2048);
     // add some extra space so we can align the buffer to dirent.
-    return result + dirent_alignment - 1;
+    return (int32_t)(result + dirent_alignment - 1);
 #else
     return 0;
 #endif
