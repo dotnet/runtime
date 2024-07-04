@@ -1595,18 +1595,16 @@ namespace System.Text.RegularExpressions.Symbolic
             public static StateFlags GetStateFlags(SymbolicRegexMatcher<TSet> matcher, in CurrentState state)
             {
                 SparseIntMap<int> stateSet = state.NfaState!.NfaStateSet;
+                // Build the flags for the set of states by taking a bitwise Or of all the per-state flags and then
+                // masking out the irrelevant ones. This works because IsNullable and CanBeNullable should be true if
+                // they are true for any state in the set; SimulatesBacktracking is true for all the states if
+                // it is true for any state (since it is a phase-wide property); and all other flags are masked out.
+                StateFlags flags = 0;
+                foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(stateSet.Values))
                 {
-                    // Build the flags for the set of states by taking a bitwise Or of all the per-state flags and then
-                    // masking out the irrelevant ones. This works because IsNullable and CanBeNullable should be true if
-                    // they are true for any state in the set; SimulatesBacktracking is true for all the states if
-                    // it is true for any state (since it is a phase-wide property); and all other flags are masked out.
-                    StateFlags flags = 0;
-                    foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(stateSet.Values))
-                    {
-                        flags |= matcher._stateFlagsArray[matcher.GetCoreStateId(nfaState.Key)];
-                    }
-                    return flags & (StateFlags.IsNullableFlag | StateFlags.CanBeNullableFlag | StateFlags.SimulatesBacktrackingFlag);
+                    flags |= matcher._stateFlagsArray[matcher.GetCoreStateId(nfaState.Key)];
                 }
+                return flags & (StateFlags.IsNullableFlag | StateFlags.CanBeNullableFlag | StateFlags.SimulatesBacktrackingFlag);
             }
 
 #if DEBUG
