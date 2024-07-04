@@ -64,10 +64,10 @@ namespace JIT.HardwareIntrinsics.Arm
                 test.ConditionalSelect_ZeroOp();
 
                 // Validates the API can be used to load the mask
-                //test.RunLoadMask();
+                test.RunLoadMask();
 
                 // Validates the API can be used inside ConditionalSelect
-                //test.ConditionalSelect_MethodMask();
+                test.ConditionalSelect_MethodMask();
             }
             else
             {
