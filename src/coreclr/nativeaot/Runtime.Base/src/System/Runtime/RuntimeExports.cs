@@ -229,27 +229,29 @@ namespace System.Runtime
             RhUnbox(obj, ref data, pUnboxToEEType);
         }
 
+#pragma warning disable IDE0060
         [RuntimeExport("RhUnboxTypeTest")]
         public static unsafe void RhUnboxTypeTest(MethodTable* pMT1, MethodTable* pMT2)
         {
-            var eeType1 = new EETypePtr(pMT1);
-            var eeType2 = new EETypePtr(pMT2);
-
-            if (eeType1.CorElementType == eeType2.CorElementType &&
-                (pMT1->IsEnum || pMT1->IsActualPrimitive) &&
-                (pMT2->IsEnum || pMT2->IsActualPrimitive))
-            {
-                // type test test passes
-            }
-            ////else if (pMT1->IsEquivalentTo(pMT2))
-            ////{
-            ////    // the structures are equivalent
-            ////}
-            else
-            {
-                throw pMT2->GetClasslibException(ExceptionIDs.InvalidCast);
-            }
+            //var eeType1 = new EETypePtr(pMT1);
+            //var eeType2 = new EETypePtr(pMT2);
+            //
+            //if (eeType1.CorElementType == eeType2.CorElementType &&
+            //    (pMT1->IsEnum || pMT1->IsActualPrimitive) &&
+            //    (pMT2->IsEnum || pMT2->IsActualPrimitive))
+            //{
+            //    // type test test passes
+            //}
+            //else if (pMT1->IsEquivalentTo(pMT2))
+            //{
+            //    // the structures are equivalent
+            //}
+            //else
+            //{
+            //    throw pMT2->GetClasslibException(ExceptionIDs.InvalidCast);
+            //}
         }
+#pragma warning restore IDE0060
 
         [RuntimeExport("RhUnbox")]
         public static unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType)
