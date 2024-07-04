@@ -8,6 +8,7 @@
     <EmscriptenUpstreamEmscriptenPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'emscripten'))</EmscriptenUpstreamEmscriptenPath>
 
     <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
+    <!-- how can we be sure it is a correct path? it seems not to exist on CI -->
     <EmscriptenNodeToolsPath Condition="'$(EmscriptenNodeToolsPath)' == ''">$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'node', 'bin'))</EmscriptenNodeToolsPath>
 
     <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>

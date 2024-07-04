@@ -116,7 +116,7 @@
   <PropertyGroup>
     <PrepareInputsForWasmBuildDependsOn>
       $(PrepareInputsForWasmBuildDependsOn);
-      _SetupToolchain;
+      SetupToolchainPRIV;
       _ReadWasmProps;
       _SetWasmBuildNativeDefaults;
       _GetDefaultWasmAssembliesToBundle;
@@ -912,7 +912,7 @@
   </Target>
 
   <!-- Expected to be overridden, or hooked by concrete implementations -->
-  <Target Name="_SetupToolchain" />
+  <Target Name="SetupToolchainPRIV" />
   <Target Name="_CheckToolchainIsExpectedVersion" />
 
   <Target Name="_WasmWriteRspForLinking">
