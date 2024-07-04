@@ -172,10 +172,9 @@ namespace System.Net.Http
                     await FlushSendBufferAsync(endStream: _request.Content == null, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                 }
 
-                // The return value indicates whether we've sent any content / whether we should wait for WritesClosed.
-                Task<bool> sendRequestTask = _request.Content != null
+                Task sendRequestTask = _request.Content != null
                     ? SendContentAsync(_request.Content, _requestBodyCancellationSource.Token)
-                    : Task.FromResult(false);
+                    : Task.CompletedTask;
 
                 // In parallel, send content and read response.
                 // Depending on Expect 100 Continue usage, one will depend on the other making progress.
@@ -215,8 +214,8 @@ namespace System.Net.Http
                 await readResponseTask.ConfigureAwait(false);
 
                 // If we've sent a body, wait for the writes to be closed (most likely already done).
+                // If sendRequestTask hasn't completed yet, we're doing duplex content transfers and can't wait for writes to be closed yet.
                 if (sendRequestTask.IsCompletedSuccessfully &&
-                    sendRequestTask.Result &&
                     _stream.WritesClosed is { IsCompletedSuccessfully: false } writesClosed)
                 {
                     try
@@ -406,7 +405,7 @@ namespace System.Net.Http
             if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop((int)_response.StatusCode);
         }
 
-        private async Task<bool> SendContentAsync(HttpContent content, CancellationToken cancellationToken)
+        private async Task SendContentAsync(HttpContent content, CancellationToken cancellationToken)
         {
             try
             {
@@ -427,7 +426,7 @@ namespace System.Net.Http
                         if (!await _expect100ContinueCompletionSource.Task.ConfigureAwait(false))
                         {
                             // We received an error response code, so the body should not be sent.
-                            return false;
+                            return;
                         }
                     }
                     finally
@@ -475,8 +474,6 @@ namespace System.Net.Http
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(bytesWritten);
-
-                return true;
             }
             finally
             {

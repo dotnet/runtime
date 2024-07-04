@@ -318,7 +318,6 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 }
 
                 _finalTaskSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
                 if (!_isCompleted)
                 {
                     GCHandle handle = GCHandle.Alloc(keepAlive);
