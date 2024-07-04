@@ -51,10 +51,15 @@ namespace System.Text.Json.Nodes.Tests
         public static void Parse_AllowMultipleValues_TrailingJson()
         {
             var options = new JsonReaderOptions { AllowMultipleValues = true };
-            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             null"u8, options);
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             [43]"u8, options);
 
             JsonNode node = JsonNode.Parse(ref reader);
             Assert.Equal("[null,false,42,{},[1]]", node.ToJsonString());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            Assert.True(reader.Read());
+            node = JsonNode.Parse(ref reader);
+            Assert.Equal("[43]", node.ToJsonString());
         }
 
 
@@ -66,6 +71,9 @@ namespace System.Text.Json.Nodes.Tests
 
             JsonNode node = JsonNode.Parse(ref reader);
             Assert.Equal("[null,false,42,{},[1]]", node.ToJsonString());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, (ref Utf8JsonReader reader) => reader.Read());
         }
 
         private static void JsonType_Deserializes_Null<TNode>() where TNode : JsonNode

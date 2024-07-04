@@ -3410,10 +3410,15 @@ namespace System.Text.Json.Tests
         public static void ParseValue_AllowMultipleValues_TrailingJson()
         {
             var options = new JsonReaderOptions { AllowMultipleValues = true };
-            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             null"u8, options);
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             [43]"u8, options);
 
-            using JsonDocument doc = JsonDocument.ParseValue(ref reader);
-            Assert.Equal("[null,false,42,{},[1]]", doc.RootElement.GetRawText());
+            using JsonDocument doc1 = JsonDocument.ParseValue(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", doc1.RootElement.GetRawText());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            Assert.True(reader.Read());
+            using JsonDocument doc2 = JsonDocument.ParseValue(ref reader);
+            Assert.Equal("[43]", doc2.RootElement.GetRawText());
         }
 
 
@@ -3425,6 +3430,9 @@ namespace System.Text.Json.Tests
 
             using JsonDocument doc = JsonDocument.ParseValue(ref reader);
             Assert.Equal("[null,false,42,{},[1]]", doc.RootElement.GetRawText());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, (ref Utf8JsonReader reader) => reader.Read());
         }
 
         [Fact]

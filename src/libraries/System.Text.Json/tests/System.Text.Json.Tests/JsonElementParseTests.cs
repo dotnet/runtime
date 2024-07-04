@@ -53,10 +53,16 @@ namespace System.Text.Json.Tests
         public static void ParseValue_AllowMultipleValues_TrailingJson()
         {
             var options = new JsonReaderOptions { AllowMultipleValues = true };
-            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             null"u8, options);
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             [43]"u8, options);
 
-            JsonElement element = JsonElement.ParseValue(ref reader);
+            JsonElement element;
+            element = JsonElement.ParseValue(ref reader);
             Assert.Equal("[null,false,42,{},[1]]", element.GetRawText());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            Assert.True(reader.Read());
+            element = JsonElement.ParseValue(ref reader);
+            Assert.Equal("[43]", element.GetRawText());
         }
 
 
@@ -68,6 +74,9 @@ namespace System.Text.Json.Tests
 
             JsonElement element = JsonElement.ParseValue(ref reader);
             Assert.Equal("[null,false,42,{},[1]]", element.GetRawText());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, (ref Utf8JsonReader reader) => reader.Read());
         }
 
         public static IEnumerable<object[]> ElementParsePartialDataCases
