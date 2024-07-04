@@ -1132,7 +1132,7 @@ template <class T>
 bool AddOverflows(T x, T y, bool unsignedAdd)
 {
     typedef typename std::make_unsigned<T>::type UT;
-    assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value));
+    assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value || std::is_same<T, ssize_t>::value));
 
     if (unsignedAdd)
     {
