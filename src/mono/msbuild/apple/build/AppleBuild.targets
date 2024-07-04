@@ -6,7 +6,6 @@
     <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true' and '$(ForceLibraryModeGenerateAppBundle)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">false</AppleGenerateAppBundle>
     <_ProcessRuntimeComponentsForLibraryMode Condition="'$(_IsLibraryMode)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">_ProcessRuntimeComponentsForLibraryMode</_ProcessRuntimeComponentsForLibraryMode>
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
-    <UseSystemZlib Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'android' or '$(TargetArchitecture)' == 'armv6'">true</UseSystemZlib>
   </PropertyGroup>
 
   <UsingTask Condition="'$(AppleGenerateAppBundle)' == 'true'"
@@ -71,7 +70,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
-      <_CommonLinkerArgs Include="-lz" Condition="'$(UseSystemZlib)' == 'true'" />
+      <_CommonLinkerArgs Include="-lz" />
       <_CommonLinkerArgs Include="-lc++" />
       <_CommonLinkerArgs Include="-liconv" />
       <_CommonLinkerArgs Include="-licucore" />
