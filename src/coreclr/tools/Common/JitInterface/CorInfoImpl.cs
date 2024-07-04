@@ -2352,14 +2352,8 @@ namespace Internal.JitInterface
             uint result = 0;
 
             MetadataType type = (MetadataType)HandleToObject(cls);
-
-            int pointerSize = PointerSize;
-
-            int ptrsCount = AlignmentHelper.AlignUp(type.InstanceFieldSize.AsInt, pointerSize) / pointerSize;
-
-            // Assume no GC pointers at first
-            for (int i = 0; i < ptrsCount; i++)
-                gcPtrs[i] = (byte)CorInfoGCType.TYPE_GC_NONE;
+            uint size = type.IsValueType ? getClassSize(cls) : getHeapClassSize(cls);
+            new Span<byte>(gcPtrs, (int)((size + PointerSize - 1) / PointerSize)).Clear();
 
             if (type.ContainsGCPointers || type.IsByRefLike)
             {
