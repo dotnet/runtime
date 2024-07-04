@@ -2371,9 +2371,15 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     if (fieldsSize != treeNodes[0].size)
     {
         structPromotionInfo.containsHoles = true;
-    }
 
-    structPromotionInfo.anySignificantPadding = treeNodes[0].hasSignificantPadding && structPromotionInfo.containsHoles;
+        if (treeNodes[0].hasSignificantPadding)
+        {
+            // Struct has significant data not covered by fields we would promote;
+            // this would typically result in dependent promotion, so leave this
+            // struct to physical promotion.
+            return false;
+        }
+    }
 
     // Cool, this struct is promotable.
 
@@ -2716,11 +2722,6 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                 structPromotionInfo.fieldCnt, varDsc->lvFieldAccessed);
         shouldPromote = false;
     }
-    else if (varDsc->lvIsMultiRegRet && structPromotionInfo.anySignificantPadding)
-    {
-        JITDUMP("Not promoting multi-reg returned struct local V%02u with significant padding.\n", lclNum);
-        shouldPromote = false;
-    }
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     else if ((structPromotionInfo.fieldCnt == 2) && (varTypeIsFloating(structPromotionInfo.fields[0].fldType) ||
                                                      varTypeIsFloating(structPromotionInfo.fields[1].fldType)))
@@ -2834,11 +2835,10 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     assert(varDsc->GetLayout()->GetClassHandle() == structPromotionInfo.typeHnd);
     assert(structPromotionInfo.canPromote);
 
-    varDsc->lvFieldCnt              = structPromotionInfo.fieldCnt;
-    varDsc->lvFieldLclStart         = compiler->lvaCount;
-    varDsc->lvPromoted              = true;
-    varDsc->lvContainsHoles         = structPromotionInfo.containsHoles;
-    varDsc->lvAnySignificantPadding = structPromotionInfo.anySignificantPadding;
+    varDsc->lvFieldCnt      = structPromotionInfo.fieldCnt;
+    varDsc->lvFieldLclStart = compiler->lvaCount;
+    varDsc->lvPromoted      = true;
+    varDsc->lvContainsHoles = structPromotionInfo.containsHoles;
 
 #ifdef DEBUG
     // Don't stress this in LCL_FLD stress.
