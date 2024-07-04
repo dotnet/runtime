@@ -358,16 +358,16 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         return *pIatCell;
     }
     // is this an unboxing stub followed by a relative jump?
-    // pcalau12i $r21, imm20; jirl $r0, $r21, imm16
+    // pcaddu18i $r21, imm20; jirl $r0, $r21, imm16
     else if (unboxingStub &&
-             (pCode[0] & 0xfe00001f) == 0x1a000015 &&
+             (pCode[0] & 0xfe00001f) == 0x1e000015 &&
              (pCode[1] & 0xfc0003ff) == 0x4c0002a0)
     {
         // relative jump - dist is relative to the instruction
-        // offset = SignExtend(immhi10:immlo16:'00', 64);
-        int64_t distToTarget = ((((int64_t)pCode[0] & ~0x1f) << 39) >> 32);
+        // offset = SignExtend(immhi20:immlo16:'00', 64);
+        int64_t distToTarget = ((((int64_t)pCode[0] & ~0x1f) << 39) >> 26);
         distToTarget += ((((int64_t)pCode[1] & ~0x3ff) << 38) >> 46);
-        return (uint8_t *)(((int64_t)pCode & ~0xfff) + distToTarget);
+        return (uint8_t *)((int64_t)pCode + distToTarget);
     }
 #else
     UNREFERENCED_PARAMETER(unboxingStub);

@@ -450,7 +450,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
 #elif defined(HOST_LOONGARCH64)
 
-#define CONTEXT_LOONGARCH64   0x00400000L
+#define CONTEXT_LOONGARCH64   0x00800000L
 
 #define CONTEXT_CONTROL (CONTEXT_LOONGARCH64 | 0x1L)
 #define CONTEXT_INTEGER (CONTEXT_LOONGARCH64 | 0x2L)
@@ -471,63 +471,46 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // Integer registers
     //
-    uint32_t Csr;       // NZVF + DAIF + CurrentEL + SPSel
-    union {
-        struct {
-            uint64_t R0;
-            uint64_t R2;
-            uint64_t R4;
-            uint64_t R5;
-            uint64_t R6;
-            uint64_t R7;
-            uint64_t R8;
-            uint64_t R9;
-            uint64_t R10;
-            uint64_t R11;
-            uint64_t R12;
-            uint64_t R13;
-            uint64_t R14;
-            uint64_t R15;
-            uint64_t R16;
-            uint64_t R17;
-            uint64_t R18;
-            uint64_t R19;
-            uint64_t R20;
-            uint64_t R21;
-            uint64_t R23;
-            uint64_t R24;
-            uint64_t R25;
-            uint64_t R26;
-            uint64_t R27;
-            uint64_t R28;
-            uint64_t R29;
-            uint64_t R30;
-            uint64_t R31;
-#pragma warning(push)
-#pragma warning(disable:4201) // nameless struct
-        };
-        uint64_t R[29];
-    };
-#pragma warning(pop)
-    uint64_t Fp; // R22
-    uint64_t Ra; // R1
-    uint64_t Sp; // R3
+    uint64_t R0;
+    uint64_t Ra;
+    uint64_t R2;
+    uint64_t Sp;
+    uint64_t R4;
+    uint64_t R5;
+    uint64_t R6;
+    uint64_t R7;
+    uint64_t R8;
+    uint64_t R9;
+    uint64_t R10;
+    uint64_t R11;
+    uint64_t R12;
+    uint64_t R13;
+    uint64_t R14;
+    uint64_t R15;
+    uint64_t R16;
+    uint64_t R17;
+    uint64_t R18;
+    uint64_t R19;
+    uint64_t R20;
+    uint64_t R21;
+    uint64_t Fp;
+    uint64_t R23;
+    uint64_t R24;
+    uint64_t R25;
+    uint64_t R26;
+    uint64_t R27;
+    uint64_t R28;
+    uint64_t R29;
+    uint64_t R30;
+    uint64_t R31;
     uint64_t Pc;
 
     //
-    // Floating Point Registers
+    // Floating Point Registers: FPR64/LSX/LASX.
     //
-    uint64_t F[32];
-    uint32_t Fpcr;
-    uint32_t Fpsr;
-
-    //
-    // Debug registers
-    //
-    uint32_t Bcr[LOONGARCH64_MAX_BREAKPOINTS];
-    uint64_t Bvr[LOONGARCH64_MAX_BREAKPOINTS];
-    uint32_t Wcr[LOONGARCH64_MAX_WATCHPOINTS];
-    uint64_t Wvr[LOONGARCH64_MAX_WATCHPOINTS];
+    uint64_t F[4*32];
+    uint64_t Fcc;
+    uint32_t Fcsr;
 
     void SetIp(uintptr_t ip) { Pc = ip; }
     void SetArg0Reg(uintptr_t val) { R4 = val; }
