@@ -8312,8 +8312,8 @@ FpStructInRegistersInfo Compiler::GetPassFpStructInRegistersInfo(CORINFO_CLASS_H
             long size2nd   = hasOne ? -1l : ret.Size2nd();
             long offset2nd = hasOne ? -1l : ret.offset2nd;
             printf("        may be passed by floating-point calling convention:\n"
-                   "        flags=%#03x; %s, field sizes={%u, %li}, field offsets={%u, %li}, IntFieldKind=%s\n",
-                   ret.flags, ret.FlagName(), ret.Size1st(), size2nd, ret.offset1st, offset2nd, ret.IntFieldKindName());
+                   "        flags=%#03x; %s, field sizes={%u, %li}, field offsets={%u, %li}\n",
+                   ret.flags, ret.FlagName(), ret.Size1st(), size2nd, ret.offset1st, offset2nd);
         }
     }
 #endif // DEBUG

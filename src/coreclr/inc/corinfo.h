@@ -349,13 +349,6 @@ enum StructFloatFieldInfoFlags
 // Bitfields for FpStructInRegistersInfo::flags
 namespace FpStruct
 {
-    enum class IntKind
-    {
-        Integer,
-        GcRef,
-        GcByRef,
-    };
-
     enum Flags
     {
         // Positions of flags and bitfields
@@ -365,7 +358,6 @@ namespace FpStruct
         PosIntFloat     = 3,
         PosSizeShift1st = 4, // 2 bits
         PosSizeShift2nd = 6, // 2 bits
-        PosIntFieldKind = 8, // 2 bits
 
         UseIntCallConv = 0, // struct is passed according to integer calling convention
 
@@ -376,7 +368,6 @@ namespace FpStruct
         IntFloat         =    1 << PosIntFloat,     // has two fields, 2nd is floating and 1st is integer
         SizeShift1stMask = 0b11 << PosSizeShift1st, // log2(size) of 1st field
         SizeShift2ndMask = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
-        IntFieldKindMask = 0b11 << PosIntFieldKind, // the kind of the integer field (FpStruct::IntKind)
         // Note: flags OnlyOne, BothFloat, FloatInt, and IntFloat are mutually exclusive
     };
 }
@@ -395,19 +386,6 @@ struct FpStructInRegistersInfo
 
     unsigned Size1st() const { return 1u << SizeShift1st(); }
     unsigned Size2nd() const { return 1u << SizeShift2nd(); }
-
-    FpStruct::IntKind IntFieldKind() const
-    {
-        return (FpStruct::IntKind)((flags >> FpStruct::PosIntFieldKind) & 0b11);
-    }
-
-    const char* IntFieldKindName() const
-    {
-        static const char* intKindNames[] = { "Integer", "GcRef", "GcByRef" };
-        return (flags & (FpStruct::FloatInt | FpStruct::IntFloat))
-            ? intKindNames[(int)IntFieldKind()]
-            : "None";
-    }
 
     const char* FlagName() const
     {

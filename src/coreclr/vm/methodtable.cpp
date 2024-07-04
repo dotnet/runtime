@@ -2734,16 +2734,11 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int index,
-    bool isFloating, FpStruct::IntKind intKind, unsigned size, uint32_t offset)
+    bool isFloating, unsigned size, uint32_t offset)
 {
     assert(index < 2);
     if (isFloating)
-    {
         assert(size == sizeof(float) || size == sizeof(double));
-        assert(intKind == FpStruct::IntKind::Integer);
-        static_assert((int)FpStruct::IntKind::Integer == 0,
-            "IntKind for floating fields should not clobber IntKind for int fields");
-    }
 
     assert(size >= 1 && size <= 8);
     assert((size & (size - 1)) == 0); // size needs to be a power of 2
@@ -2758,7 +2753,7 @@ static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int i
     int floatFlag = isFloating << (PosFloatInt + index);
     int sizeShiftMask = sizeShift << (PosSizeShift1st + 2 * index);
 
-    info.flags = FpStruct::Flags(info.flags | floatFlag | sizeShiftMask | ((int)intKind << PosIntFieldKind));
+    info.flags = FpStruct::Flags(info.flags | floatFlag | sizeShiftMask);
     (index == 0 ? info.offset1st : info.offset2nd) = offset;
 }
 
@@ -2856,14 +2851,8 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                 }
 
                 bool isFloating = CorTypeInfo::IsFloat_NoThrow(type);
-                CorInfoGCType gcType = CorTypeInfo::GetGCType_NoThrow(type);
-                FpStruct::IntKind intKind =
-                    (gcType == TYPE_GC_REF)   ? FpStruct::IntKind::GcRef :
-                    (gcType == TYPE_GC_BYREF) ? FpStruct::IntKind::GcByRef :
-                    FpStruct::IntKind::Integer;
-
                 SetFpStructInRegistersInfoField(info, typeIndex++,
-                    isFloating, intKind, CorTypeInfo::Size_NoThrow(type), offset + fields[i].GetOffset());
+                    isFloating, CorTypeInfo::Size_NoThrow(type), offset + fields[i].GetOffset());
 
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
                     nestingLevel * 4, "", fields[i].GetDebugName(),
@@ -2929,7 +2918,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                 bool isFloating = (category == NativeFieldCategory::FLOAT);
 
                 SetFpStructInRegistersInfoField(info, typeIndex++,
-                    isFloating, FpStruct::IntKind::Integer, fields[i].NativeSize(), offset + fields[i].GetExternalOffset());
+                    isFloating, fields[i].NativeSize(), offset + fields[i].GetExternalOffset());
 
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
                     nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(),
@@ -2997,23 +2986,11 @@ FpStructInRegistersInfo MethodTable::GetFpStructInRegistersInfo(TypeHandle th)
     assert(info.offset1st + info.Size1st() <= th.GetSize());
     assert(info.offset2nd + info.Size2nd() <= th.GetSize());
 
-    FpStruct::IntKind intKind = info.IntFieldKind();
-    if (intKind != FpStruct::IntKind::Integer)
-    {
-        assert(info.flags & (FloatInt | IntFloat));
-        assert(intKind == FpStruct::IntKind::GcRef || intKind == FpStruct::IntKind::GcByRef);
-        assert((info.flags & IntFloat) != 0
-            ? ((info.SizeShift1st() == 3) && IS_ALIGNED(info.offset1st, TARGET_POINTER_SIZE))
-            : ((info.SizeShift2nd() == 3) && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
-    }
-    if (info.flags & (OnlyOne | BothFloat))
-        assert(intKind == FpStruct::IntKind::Integer);
-
     LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: "
         "struct %s (%u bytes) can be passed with floating-point calling convention, flags=%#03x; "
-        "%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKindMask=%s\n",
+        "%s, sizes={%u, %u}, offsets={%u, %u}\n",
         (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize(), info.flags,
-        info.FlagName(), info.Size1st(), info.Size2nd(), info.offset1st, info.offset2nd, info.IntFieldKindName()
+        info.FlagName(), info.Size1st(), info.Size2nd(), info.offset1st, info.offset2nd
     ));
     return info;
 }

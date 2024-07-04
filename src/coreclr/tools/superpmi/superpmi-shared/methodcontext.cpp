@@ -6373,9 +6373,9 @@ void MethodContext::recGetFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd
 void MethodContext::dmpGetFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value)
 {
     printf("GetFpStructInRegistersInfo key %016" PRIX64 " value-%#03x-"
-        "{%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKind=%s}\n",
+        "{%s, sizes={%u, %u}, offsets={%u, %u}}\n",
         key, value.flags,
-        value.FlagName(), value.Size1st(), value.Size2nd(), value.offset1st, value.offset2nd, value.IntFieldKindName());
+        value.FlagName(), value.Size1st(), value.Size2nd(), value.offset1st, value.offset2nd);
 }
 
 FpStructInRegistersInfo MethodContext::repGetFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)

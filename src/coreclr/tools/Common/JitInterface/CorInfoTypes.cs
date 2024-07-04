@@ -1252,13 +1252,6 @@ namespace Internal.JitInterface
     };
 
 
-    public enum FpStruct_IntKind
-    {
-        Integer,
-        GcRef,
-        GcByRef,
-    }
-
     // Bitfields for FpStructInRegistersInfo.flags
     [Flags]
     public enum FpStruct
@@ -1270,7 +1263,6 @@ namespace Internal.JitInterface
         PosIntFloat     = 3,
         PosSizeShift1st = 4, // 2 bits
         PosSizeShift2nd = 6, // 2 bits
-        PosIntFieldKind = 8, // 2 bits
 
         UseIntCallConv = 0, // struct is passed according to integer calling convention
 
@@ -1281,7 +1273,6 @@ namespace Internal.JitInterface
         IntFloat         =    1 << PosIntFloat,     // has two fields, 2nd is floating and 1st is integer
         SizeShift1stMask = 0b11 << PosSizeShift1st, // log2(size) of 1st field
         SizeShift2ndMask = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
-        IntFieldKindMask = 0b11 << PosIntFieldKind, // the kind of the integer field (FpStruct::IntKind)
         // Note: flags OnlyOne, BothFloat, FloatInt, and IntFloat are mutually exclusive
     }
 
@@ -1300,11 +1291,6 @@ namespace Internal.JitInterface
 
         public uint Size1st() { return 1u << (int)SizeShift1st(); }
         public uint Size2nd() { return 1u << (int)SizeShift2nd(); }
-
-        public FpStruct_IntKind IntFieldKind()
-        {
-            return (FpStruct_IntKind)(((int)flags >> (int)FpStruct.PosIntFieldKind) & 0b11);
-        }
 
         public StructFloatFieldInfoFlags ToOldFlags()
         {
