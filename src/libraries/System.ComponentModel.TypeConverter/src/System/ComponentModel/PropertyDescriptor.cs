@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Threading;
 
 namespace System.ComponentModel
 {
@@ -21,7 +22,7 @@ namespace System.ComponentModel
         private object?[]? _editors;
         private Type[]? _editorTypes;
         private int _editorCount;
-        private readonly object s_internalSyncObject = new object();
+        private object? _syncObject;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.PropertyDescriptor'/> class with the specified name and
@@ -50,6 +51,8 @@ namespace System.ComponentModel
         protected PropertyDescriptor(MemberDescriptor descr, Attribute[]? attrs) : base(descr, attrs)
         {
         }
+
+        private object SyncObject => LazyInitializer.EnsureInitialized(ref _syncObject);
 
         /// <summary>
         /// When overridden in a derived class, gets the type of the
@@ -167,7 +170,7 @@ namespace System.ComponentModel
             ArgumentNullException.ThrowIfNull(component);
             ArgumentNullException.ThrowIfNull(handler);
 
-            lock (s_internalSyncObject)
+            lock (SyncObject)
             {
                 _valueChangedHandlers ??= new ConcurrentDictionary<object, EventHandler?>();
                 _valueChangedHandlers.AddOrUpdate(component, handler, (k, v) => (EventHandler?)Delegate.Combine(v));
@@ -436,7 +439,7 @@ namespace System.ComponentModel
 
             if (_valueChangedHandlers != null)
             {
-                lock (s_internalSyncObject)
+                lock (SyncObject)
                 {
                     EventHandler? h = _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);
                     h = (EventHandler?)Delegate.Remove(h, handler);
