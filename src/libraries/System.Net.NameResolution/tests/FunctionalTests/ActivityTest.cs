@@ -15,7 +15,7 @@ namespace System.Net.NameResolution.Tests
     public class ActivityTest
     {
         private const string ActivitySourceName = "System.Net.NameResolution";
-        private const string ActivityName = ActivitySourceName + ".DsnLookup";
+        private const string ActivityName = ActivitySourceName + ".DnsLookup";
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
@@ -54,11 +54,10 @@ namespace System.Net.NameResolution.Tests
                 void Verify(int timesLookupRecorded)
                 {
                     recorder.VerifyActivityRecorded(timesLookupRecorded);
-
-                    KeyValuePair<string, object?>[] tags = recorder.LastFinishedActivity.TagObjects.ToArray();
-                    Assert.Equal(ValidHostName, tags.Single(t => t.Key == "dns.question.name").Value);
-                    string[] answers = Assert.IsType<string[]>(tags.Single(t => t.Key == "dns.answer").Value);
-                    Assert.True(answers.Contains(expected4) || answers.Contains(expected6));
+                    Activity activity = recorder.LastFinishedActivity;
+                    VerifyCommonActivityInfo(activity, ValidHostName);
+                    ActivityAssert.HasTag(activity, "dns.answer", (string[] answers) => answers.Contains(expected4) || answers.Contains(expected6));
+                    ActivityAssert.HasNoTag(activity, "error.type");
                 }
 
             }, createParentActivity.ToString()).DisposeAsync();
@@ -100,13 +99,20 @@ namespace System.Net.NameResolution.Tests
                 {
                     recorder.VerifyActivityRecorded(timesLookupRecorded);
 
-                    Assert.Equal(ActivityStatusCode.Error, recorder.LastFinishedActivity.Status);
-
-                    KeyValuePair<string, object?>[] tags = recorder.LastFinishedActivity.TagObjects.ToArray();
-                    Assert.Equal(InvalidHostName, tags.Single(t => t.Key == "dns.question.name").Value);
-                    Assert.Equal("host_not_found", tags.Single(t => t.Key == "error.type").Value);
+                    Activity activity = recorder.LastFinishedActivity;
+                    Assert.Equal(ActivityStatusCode.Error, activity.Status);
+                    VerifyCommonActivityInfo(activity, InvalidHostName);
+                    ActivityAssert.HasTag(activity, "error.type", "host_not_found");
                 }
             }, createParentActivity.ToString()).DisposeAsync();
+        }
+
+        static void VerifyCommonActivityInfo(Activity activity, string host)
+        {
+            Assert.Equal(ActivityKind.Client, activity.Kind);
+            Assert.Equal("System.Net.NameResolution.DnsLookup", activity.OperationName);
+            Assert.Equal($"DNS {host}", activity.DisplayName);
+            ActivityAssert.HasTag(activity, "dns.question.name", host);
         }
     }
 }

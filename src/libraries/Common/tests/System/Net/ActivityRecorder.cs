@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.Net.Test.Common
@@ -66,6 +67,46 @@ namespace System.Net.Test.Common
         {
             Assert.Equal(times, Started);
             Assert.Equal(times, Stopped);
+        }
+    }
+
+    internal static class ActivityAssert
+    {
+        public static void HasTag<T>(Activity activity, string name, T expectedValue)
+        {
+            T? value = (T?)activity.TagObjects.Single(t => t.Key == name).Value;
+            Assert.False(value is null, $"The Activity tags should contain {name}.");
+            Assert.Equal(expectedValue, value);
+        }
+
+        public static void HasTag<T>(Activity activity, string name, Func<T, bool> verifyValue)
+        {
+            T? value = (T?)activity.TagObjects.Single(t => t.Key == name).Value;
+            Assert.False(value is null, $"The Activity tags should contain {name}.");
+            Assert.True(verifyValue(value));
+        }
+
+        public static void HasNoTag(Activity activity, string name)
+        {
+            bool contains = activity.TagObjects.Any(t => t.Key == name);
+            Assert.False(contains, $"The Activity tags should not contain {name}.");
+        }
+
+        public static string CamelToSnake(string camel)
+        {
+            if (string.IsNullOrEmpty(camel)) return camel;
+            StringBuilder bld = new();
+            bld.Append(char.ToLower(camel[0]));
+            for (int i = 1; i < camel.Length; i++)
+            {
+                char c = camel[i];
+                bld.Append(char.ToLower(c));
+                if (char.IsUpper(c))
+                {
+                    bld.Append('_');
+                }
+            }
+            return bld.ToString();
         }
     }
 }

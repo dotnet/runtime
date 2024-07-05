@@ -81,16 +81,17 @@ namespace System.Net
                     ResolutionStart(host);
                 }
 
-                return new(startingTimestamp is not 0 ? startingTimestamp : Stopwatch.GetTimestamp());
+                startingTimestamp = startingTimestamp is not 0 ? startingTimestamp : Stopwatch.GetTimestamp();
             }
 
-            return new(startingTimestamp is not 0 ? startingTimestamp : NameResolutionMetrics.IsEnabled() ? Stopwatch.GetTimestamp() : 0);
+            startingTimestamp = startingTimestamp is not 0 ? startingTimestamp : NameResolutionMetrics.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
+            return new NameResolutionActivity(hostNameOrAddress, startingTimestamp);
         }
 
         [NonEvent]
         public void AfterResolution(object hostNameOrAddress, in NameResolutionActivity activity, object? answer, Exception? exception = null)
         {
-            if (!activity.Stop(hostNameOrAddress, answer, exception, out TimeSpan duration, out string? errorType))
+            if (!activity.Stop(answer, exception, out TimeSpan duration, out string? errorType))
             {
                 // We stopped the System.Diagnostics.Activity at this point and neither metrics nor EventSource is enabled.
                 return;
@@ -156,33 +157,38 @@ namespace System.Net
     internal readonly struct NameResolutionActivity
     {
         private const string ActivitySourceName = "System.Net.NameResolution";
-        private const string ActivityName = ActivitySourceName + ".DsnLookup";
+        private const string ActivityName = ActivitySourceName + ".DnsLookup";
         private static readonly ActivitySource s_activitySource = new(ActivitySourceName);
 
         // _startingTimestamp == 0 means NameResolutionTelemetry and NameResolutionMetrics are both disabled.
         private readonly long _startingTimestamp;
         private readonly Activity? _activity;
 
-        public NameResolutionActivity(long startingTimestamp)
+        public NameResolutionActivity(object hostNameOrAddress, long startingTimestamp)
         {
             _startingTimestamp = startingTimestamp;
             _activity = s_activitySource.StartActivity(ActivityName, ActivityKind.Client);
+            if (_activity is not null)
+            {
+                string host = NameResolutionTelemetry.GetHostnameFromStateObject(hostNameOrAddress);
+                _activity.DisplayName = $"DNS {host}";
+                if (_activity.IsAllDataRequested)
+                {
+                    _activity.SetTag("dns.question.name", host);
+                }
+            }
         }
 
         public static bool IsTracingEnabled() => s_activitySource.HasListeners();
 
         // Returns true if either NameResolutionTelemetry or NameResolutionMetrics is enabled.
-        public bool Stop(object hostNameOrAddress, object? answer, Exception? exception, out TimeSpan duration, out string? errorType)
+        public bool Stop(object? answer, Exception? exception, out TimeSpan duration, out string? errorType)
         {
             errorType = null;
             if (_activity is not null)
             {
                 if (_activity.IsAllDataRequested)
                 {
-                    string host = NameResolutionTelemetry.GetHostnameFromStateObject(hostNameOrAddress);
-
-                    _activity.SetTag("dns.question.name", host);
-
                     if (answer is not null)
                     {
                         string[]? answerValues = answer switch
