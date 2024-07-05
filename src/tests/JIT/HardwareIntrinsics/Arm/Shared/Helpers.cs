@@ -1854,6 +1854,9 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long SveCompareLessThanOrEqual(long left, long right) => (long)((left <= right) ? 1 : 0);
         public static ulong SveCompareLessThanOrEqual(ulong left, ulong right) => (ulong)((left <= right) ? 1 : 0);
 
+        public static double SveCompareUnordered(double left, double right) => BitConverter.Int64BitsToDouble((double.IsNaN(left) || double.IsNaN(right)) ? 1 : 0);
+        public static float SveCompareUnordered(float left, float right) => BitConverter.Int32BitsToSingle((float.IsNaN(left) || float.IsNaN(right)) ? 1 : 0);
+
         public static double CompareEqual(double left, double right)
         {
             long result = 0;
