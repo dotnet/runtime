@@ -806,19 +806,30 @@ bool CanJITOptimizeTLSAccess()
 #elif !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
     // Optimization is enabled for linux/arm64 only for static resolver.
     // For static resolver, the TP offset is same for all threads.
-    // For dynamic resolver, TP offset returned is that of a JIT thread and
-    // will be different for the executing thread.
+    // For dynamic resolver, TP offset returned is for the current thread and
+    // will be different for the other threads.
     uint32_t* resolverAddress = reinterpret_cast<uint32_t*>(GetTLSResolverAddress());
-    if (
+    int ip = 0;
+    if ((resolverAddress[ip] == 0xd503201f) || (resolverAddress[ip] == 0xd503241f))
+    {
+        // nop might not be present in older resolver, so skip it.
+
         // nop or hint 32
-        ((resolverAddress[0] == 0xd503201f) || (resolverAddress[0] == 0xd503241f)) &&
+        ip++;
+    }
+
+    if (
         // ldr x0, [x0, #8]
-        (resolverAddress[1] == 0xf9400400) &&
+        (resolverAddress[ip] == 0xf9400400) &&
         // ret
-        (resolverAddress[2] == 0xd65f03c0)
+        (resolverAddress[ip + 1] == 0xd65f03c0)
     )
     {
         optimizeThreadStaticAccess = true;
+    }
+    else
+    {
+        _ASSERTE(false && "Unexpected code sequence.");
     }
 #else
     optimizeThreadStaticAccess = true;
