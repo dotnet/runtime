@@ -1161,13 +1161,13 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
-        public static void PrioritizationTestConfigVarTest()
+        public static void PrioritizationExperimentConfigVarTest()
         {
             // Avoid contaminating the main process' environment
             RemoteExecutor.Invoke(() =>
             {
                 // The actual test process below will inherit the config var
-                Environment.SetEnvironmentVariable("DOTNET_ThreadPool_PrioritizationTest", "1");
+                Environment.SetEnvironmentVariable("DOTNET_ThreadPool_PrioritizationExperiment", "1");
 
                 RemoteExecutor.Invoke(() =>
                 {
