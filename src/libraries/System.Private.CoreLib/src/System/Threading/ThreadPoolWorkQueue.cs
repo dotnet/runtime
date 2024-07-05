@@ -383,12 +383,12 @@ namespace System.Threading
 
 #if CORECLR
         // This config var can be used to enable an experimental mode that may reduce the effects of some priority inversion
-        // issues seen in cases involving a lot of sync-over-async. See EnqueueForPrioritizationTest() for more information. The
-        // mode is experimental and may change in the future.
-        internal static readonly bool s_prioritizationTest =
+        // issues seen in cases involving a lot of sync-over-async. See EnqueueForPrioritizationExperiment() for more
+        // information. The mode is experimental and may change in the future.
+        internal static readonly bool s_prioritizationExperiment =
             AppContextConfigHelper.GetBooleanConfig(
-                "System.Threading.ThreadPool.PrioritizationTest",
-                "DOTNET_ThreadPool_PrioritizationTest",
+                "System.Threading.ThreadPool.PrioritizationExperiment",
+                "DOTNET_ThreadPool_PrioritizationExperiment",
                 defaultValue: false);
 #endif
 
@@ -407,7 +407,7 @@ namespace System.Threading
 
 #if CORECLR
         internal readonly ConcurrentQueue<object> lowPriorityWorkItems =
-            s_prioritizationTest ? new ConcurrentQueue<object>() : null!;
+            s_prioritizationExperiment ? new ConcurrentQueue<object>() : null!;
 #endif
 
         // SOS's ThreadPool command depends on the following name. The global queue doesn't scale well beyond a point of
@@ -625,9 +625,9 @@ namespace System.Threading
                 FrameworkEventSource.Log.ThreadPoolEnqueueWorkObject(callback);
 
 #if CORECLR
-            if (s_prioritizationTest)
+            if (s_prioritizationExperiment)
             {
-                EnqueueForPrioritizationTest(callback, forceGlobal);
+                EnqueueForPrioritizationExperiment(callback, forceGlobal);
             }
             else
 #endif
@@ -652,7 +652,7 @@ namespace System.Threading
 
 #if CORECLR
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void EnqueueForPrioritizationTest(object callback, bool forceGlobal)
+        private void EnqueueForPrioritizationExperiment(object callback, bool forceGlobal)
         {
             ThreadPoolWorkQueueThreadLocals? tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
             if (!forceGlobal && tl != null)
@@ -773,7 +773,7 @@ namespace System.Threading
 
 #if CORECLR
             // Check for low-priority work items
-            if (s_prioritizationTest && lowPriorityWorkItems.TryDequeue(out workItem))
+            if (s_prioritizationExperiment && lowPriorityWorkItems.TryDequeue(out workItem))
             {
                 return workItem;
             }
@@ -839,7 +839,7 @@ namespace System.Threading
             {
                 long count = (long)highPriorityWorkItems.Count + workItems.Count;
 #if CORECLR
-                if (s_prioritizationTest)
+                if (s_prioritizationExperiment)
                 {
                     count += lowPriorityWorkItems.Count;
                 }
@@ -1880,7 +1880,7 @@ namespace System.Threading
             }
 
 #if CORECLR
-            if (ThreadPoolWorkQueue.s_prioritizationTest)
+            if (ThreadPoolWorkQueue.s_prioritizationExperiment)
             {
                 // Enumerate low-priority global queue
                 foreach (object workItem in s_workQueue.lowPriorityWorkItems)
