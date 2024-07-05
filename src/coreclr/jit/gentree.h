@@ -6624,7 +6624,28 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
 
-    genTreeOps HWOperGet(bool* isScalar) const;
+    static NamedIntrinsic HWIdGetForUnOp(
+        Compiler* comp, genTreeOps oper, GenTree* op1, var_types simdBaseType, unsigned simdSize, bool isScalar);
+    static NamedIntrinsic HWIdGetForBinOp(Compiler*  comp,
+                                          genTreeOps oper,
+                                          GenTree*   op1,
+                                          GenTree*   op2,
+                                          var_types  simdBaseType,
+                                          unsigned   simdSize,
+                                          bool       isScalar);
+    static NamedIntrinsic HWIdGetForCmpOp(Compiler*  comp,
+                                          genTreeOps oper,
+                                          GenTree*   op1,
+                                          GenTree*   op2,
+                                          var_types  simdBaseType,
+                                          unsigned   simdSize,
+                                          bool       isScalar);
+    static genTreeOps     HWOperGet(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
+
+    genTreeOps HWOperGet(bool* isScalar) const
+    {
+        return HWOperGet(GetHWIntrinsicId(), GetSimdBaseType(), isScalar);
+    }
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
 
