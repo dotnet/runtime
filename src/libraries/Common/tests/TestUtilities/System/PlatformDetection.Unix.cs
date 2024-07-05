@@ -32,7 +32,8 @@ namespace System
 
         public static bool IsMonoLinuxArm64 => IsMonoRuntime && IsLinux && IsArm64Process;
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
-        public static bool IsNotQemuLinux => !IsQemuLinux();
+        public static bool IsQemuLinux => IsQemu();
+        public static bool IsNotQemuLinux => !IsQemuLinux;
 
         // OSX family
         public static bool IsApplePlatform => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
@@ -304,13 +305,13 @@ namespace System
             return false;
         }
 
-        private static bool IsQemuLinux()
+        private static bool IsQemu()
         {
             if (IsLinux)
             {
                 foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
                 {
-                    if (((String)entry.Key).ToUpper().Contains("QEMU"))
+                    if (((String)entry.Key).ToUpper() == "DOTNET_RUNNING_UNDER_QEMU")
                     {
                         return true;
                     }
