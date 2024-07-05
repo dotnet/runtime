@@ -1250,12 +1250,10 @@ private:
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
             m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
-            // We will only attempt this optimization for locals that are:
-            // a) Not susceptible to liveness bugs (see "lvaSetHiddenBufferStructArg").
-            // b) Do not later turn into indirections.
-            //
+            // We will only attempt this optimization for locals that do not
+            // later turn into indirections.
             bool isSuitableLocal =
-                varTypeIsStruct(varDsc) && varDsc->lvIsTemp && !m_compiler->lvaIsImplicitByRefLocal(lclNum);
+                varTypeIsStruct(varDsc) && !m_compiler->lvaIsImplicitByRefLocal(lclNum);
 #ifdef TARGET_X86
             if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
             {
