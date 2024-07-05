@@ -7507,16 +7507,6 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pMTParent->EnumMemoryRegions(flags);
     }
 
-    if (HasNonVirtualSlots())
-    {
-        DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableAuxiliaryData::GetNonVirtualSlotsArray(GetAuxiliaryData())) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
-    }
-
-    if (HasGenericsStaticsInfo())
-    {
-        DacEnumMemoryRegion(dac_cast<TADDR>(GetGenericsStaticsInfo()), sizeof(GenericsStaticsInfo));
-    }
-
     if (HasInterfaceMap())
     {
 #ifdef FEATURE_COMINTEROP
@@ -7551,6 +7541,23 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     if (pAuxiliaryData.IsValid())
     {
         pAuxiliaryData.EnumMem();
+
+        if (HasGenericsStaticsInfo())
+        {
+            MethodTableAuxiliaryData::GetGenericStaticsInfo(pAuxiliaryData).EnumMem();
+        }
+        if (IsDynamicStatics())
+        {
+            MethodTableAuxiliaryData::GetDynamicStaticsInfo(pAuxiliaryData).EnumMem();
+        }
+        if (GetNumThreadStaticFields() > 0)
+        {
+            MethodTableAuxiliaryData::GetThreadStaticsInfo(pAuxiliaryData).EnumMem();
+        }
+        if (HasNonVirtualSlots())
+        {
+            DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableAuxiliaryData::GetNonVirtualSlotsArray(pAuxiliaryData)) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
+        }
     }
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
