@@ -1576,7 +1576,7 @@ void DacDbiInterfaceImpl::GetStaticsBases(TypeHandle thExact,
                                          PTR_BYTE *  ppGCStaticsBase,
                                          PTR_BYTE *  ppNonGCStaticsBase)
  {
-    PTR_MethodTable pMT = thExact.GetMethodTable();
+    MethodTable * pMT = thExact.GetMethodTable();
     *ppGCStaticsBase = pMT->GetGCStaticsBasePointer();
     *ppNonGCStaticsBase = pMT->GetNonGCStaticsBasePointer();
 } // DacDbiInterfaceImpl::GetStaticsBases
