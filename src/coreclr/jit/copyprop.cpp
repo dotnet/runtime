@@ -161,9 +161,12 @@ bool Compiler::optCopyProp(
     assert((tree->gtFlags & GTF_VAR_DEF) == 0);
     assert(tree->GetLclNum() == lclNum);
 
-    bool       madeChanges = false;
-    LclVarDsc* varDsc      = lvaGetDesc(lclNum);
-    ValueNum   lclDefVN    = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
+    bool                madeChanges = false;
+    LclVarDsc* const    varDsc      = lvaGetDesc(lclNum);
+    LclSsaVarDsc* const varSsaDsc   = varDsc->GetPerSsaData(tree->GetSsaNum());
+    GenTree* const      varDefTree  = varSsaDsc->GetDefNode();
+    BasicBlock* const   varDefBlock = varSsaDsc->GetBlock();
+    ValueNum            lclDefVN    = varSsaDsc->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
 
     for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
@@ -190,7 +193,85 @@ bool Compiler::optCopyProp(
 
         if (newLclDefVN != lclDefVN)
         {
-            continue;
+            // If the definition is a phi def, and is defined in a block that has a backedge,
+            // we may be able to prove equivalence with some other phi def in that block, despite
+            // the fact that the VNs do not match.
+            //
+            // This happens because VN is one-pass and doesn't know the VNs for backedge PhiArgs,
+            // so the VNs for phi defs for loop entry blocks is always a novel opaque VN. But
+            // we can query those backedge VNs after VN is done, and if all Phi Arg VNs match, then
+            // the two Phi Defs are equivalent and could have had the same VN.
+            //
+            bool foundEquivalentPhi = false;
+
+            if (varDefBlock == newLclSsaDef->GetBlock())
+            {
+                GenTreeLclVarCommon* const otherTree = newLclSsaDef->GetDefNode();
+
+                // Do we have phi definitions? Do the types match?
+                //
+                if ((otherTree != nullptr) && otherTree->IsPhiDefn() && (varDefTree != nullptr) &&
+                    varDefTree->IsPhiDefn() && (otherTree->TypeGet() == tree->TypeGet()))
+                {
+                    // Is the block a cycle entry?
+                    //
+                    FlowGraphNaturalLoop* const loop = m_blockToLoop->GetLoop(varDefBlock);
+                    if ((loop != nullptr) && (loop->GetHeader() == varDefBlock))
+                    {
+                        // Are all the Phi Args VN equivalent?
+                        //
+                        GenTreePhi* const       treePhi   = varDefTree->AsLclVar()->Data()->AsPhi();
+                        GenTreePhi* const       otherPhi  = otherTree->AsLclVar()->Data()->AsPhi();
+                        GenTreePhi::UseIterator treeIter  = treePhi->Uses().begin();
+                        GenTreePhi::UseIterator treeEnd   = treePhi->Uses().end();
+                        GenTreePhi::UseIterator otherIter = otherPhi->Uses().begin();
+                        GenTreePhi::UseIterator otherEnd  = otherPhi->Uses().end();
+
+                        bool phiArgsAreEquivalent = true;
+
+                        for (; (treeIter != treeEnd) && (otherIter != otherEnd); ++treeIter, ++otherIter)
+                        {
+                            GenTreePhiArg* const treePhiArg  = treeIter->GetNode()->AsPhiArg();
+                            GenTreePhiArg* const otherPhiArg = otherIter->GetNode()->AsPhiArg();
+
+                            assert(treePhiArg->gtPredBB == otherPhiArg->gtPredBB);
+
+                            // Consult SSA defs always... in principle we could just do this for
+                            // back edge PhiArgs and use the Phi Arg VNs for forward edges.
+                            //
+                            ValueNum treePhiArgVN = lvaGetDesc(treePhiArg)
+                                                        ->GetPerSsaData(treePhiArg->GetSsaNum())
+                                                        ->m_vnPair.GetConservative();
+                            ValueNum otherPhiArgVN = lvaGetDesc(otherPhiArg)
+                                                         ->GetPerSsaData(otherPhiArg->GetSsaNum())
+                                                         ->m_vnPair.GetConservative();
+
+                            if (treePhiArgVN != otherPhiArgVN)
+                            {
+                                phiArgsAreEquivalent = false;
+                                break;
+                            }
+                        }
+
+                        // If we didn't verify all phi args we have failed to prove equivalence
+                        //
+                        phiArgsAreEquivalent &= (treeIter == treeEnd);
+                        phiArgsAreEquivalent &= (otherIter == otherEnd);
+
+                        if (phiArgsAreEquivalent)
+                        {
+                            JITDUMP("Found equivalent phi defs: [%06u] and [%06u]\n", dspTreeID(treePhi),
+                                    dspTreeID(otherPhi));
+                            foundEquivalentPhi = true;
+                        }
+                    }
+                }
+            }
+
+            if (!foundEquivalentPhi)
+            {
+                continue;
+            }
         }
 
         // It may not be profitable to propagate a 'doNotEnregister' lclVar to an existing use of an
@@ -257,8 +338,24 @@ bool Compiler::optCopyProp(
         unsigned newSsaNum = newLclVarDsc->GetSsaNumForSsaDef(newLclSsaDef);
         assert(newSsaNum != SsaConfig::RESERVED_SSA_NUM);
 
-        tree->AsLclVarCommon()->SetLclNum(newLclNum);
-        tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
+        tree->SetLclNum(newLclNum);
+        tree->SetSsaNum(newSsaNum);
+
+        // Update VN to match.
+        // this is a bit of hack.
+        // can't just do this in isolation, sigh...
+        //
+        if (newLclDefVN != lclDefVN)
+        {
+            tree->SetVNs(newLclSsaDef->m_vnPair);
+            GenTree* const parent = tree->gtGetParent(nullptr);
+
+            if (parent->OperIs(GT_COMMA))
+            {
+                parent->SetVNs(newLclSsaDef->m_vnPair);
+            }
+        }
+
         gtUpdateSideEffects(stmt, tree);
         newLclSsaDef->AddUse(block);
 
@@ -337,7 +434,7 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
         if ((defNode != nullptr) && defNode->IsPhiDefn())
         {
             // TODO-CQ: design better heuristics for propagation and remove this.
-            ssaNum = SsaConfig::RESERVED_SSA_NUM;
+            // ssaNum = SsaConfig::RESERVED_SSA_NUM;
         }
 
         pushDef(lclNum, ssaNum);
