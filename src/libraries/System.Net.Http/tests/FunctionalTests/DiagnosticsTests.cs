@@ -522,7 +522,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString(), method).DisposeAsync();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task SendAsync_DoNotSampleAllData_NoTagsRecorded()
         {
             await RemoteExecutor.Invoke(static async (useVersion, testAsync) =>
