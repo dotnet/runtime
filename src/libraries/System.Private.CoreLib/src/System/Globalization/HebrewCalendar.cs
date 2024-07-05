@@ -432,7 +432,7 @@ namespace System.Globalization
         /// Returns a given date part of this DateTime. This method is used
         /// to compute the year, day-of-year, month, or day part.
         /// </summary>
-        internal virtual int GetDatePart(long ticks, int part)
+        private static int GetDatePart(long ticks, int part)
         {
             // The Gregorian year, month, day value for ticks.
             int hebrewYearType;                // lunar year type
@@ -566,7 +566,7 @@ namespace System.Globalization
                     d = days;
                 }
 
-                return new DateTime(ToDateTime(y, i, d, 0, 0, 0, 0).Ticks + (time.Ticks % TicksPerDay));
+                return new DateTime(ToDateTime(y, i, d, 0, 0, 0, 0).Ticks + (time.Ticks % TimeSpan.TicksPerDay));
             }
             // We expect ArgumentException and ArgumentOutOfRangeException (which is subclass of ArgumentException)
             // If exception is thrown in the calls above, we are out of the supported range of this calendar.
@@ -597,7 +597,7 @@ namespace System.Globalization
                 d = days;
             }
 
-            long ticks = ToDateTime(y, m, d, 0, 0, 0, 0).Ticks + (time.Ticks % TicksPerDay);
+            long ticks = ToDateTime(y, m, d, 0, 0, 0, 0).Ticks + (time.Ticks % TimeSpan.TicksPerDay);
             CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
@@ -647,7 +647,7 @@ namespace System.Globalization
                 beginOfYearDate = ToDateTime(year, 1, 1, 0, 0, 0, 0, CurrentEra);
             }
 
-            return (int)((time.Ticks - beginOfYearDate.Ticks) / TicksPerDay) + 1;
+            return (int)((time.Ticks - beginOfYearDate.Ticks) / TimeSpan.TicksPerDay) + 1;
         }
 
         public override int GetDaysInMonth(int year, int month, int era)
@@ -825,7 +825,7 @@ namespace System.Globalization
             int days = GetDayDifference(lunarYearType, hebrewMonth, hebrewDay, hebrewDateOfJan1.month, hebrewDateOfJan1.day);
 
             DateTime gregorianNewYear = new DateTime(gregorianYear, 1, 1);
-            return new DateTime(gregorianNewYear.Ticks + days * TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
+            return new DateTime(gregorianNewYear.Ticks + days * TimeSpan.TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
         }
 
         public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)

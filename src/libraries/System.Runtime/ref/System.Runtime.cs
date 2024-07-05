@@ -3138,8 +3138,13 @@ namespace System
         public Guid(string g) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public Guid(uint a, ushort b, ushort c, byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k) { throw null; }
+        public static Guid AllBitsSet { get { throw null; } }
+        public int Variant { get { throw null; } }
+        public int Version { get { throw null; } }
         public int CompareTo(System.Guid value) { throw null; }
         public int CompareTo(object? value) { throw null; }
+        public static Guid CreateVersion7() { throw null; }
+        public static Guid CreateVersion7(DateTimeOffset timestamp) { throw null; }
         public bool Equals(System.Guid g) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -5947,6 +5952,22 @@ namespace System
         public const long TicksPerMillisecond = (long)10000;
         public const long TicksPerMinute = (long)600000000;
         public const long TicksPerSecond = (long)10000000;
+        public const long MicrosecondsPerMillisecond = (long)1000;
+        public const long MicrosecondsPerSecond = (long)1000000;
+        public const long MicrosecondsPerMinute = (long)60000000;
+        public const long MicrosecondsPerHour = (long)3600000000;
+        public const long MicrosecondsPerDay = (long)86400000000;
+        public const long MillisecondsPerSecond = (long)1000;
+        public const long MillisecondsPerMinute = (long)60000;
+        public const long MillisecondsPerHour = (long)3600000;
+        public const long MillisecondsPerDay = (long)86400000;
+        public const long SecondsPerMinute = (long)60;
+        public const long SecondsPerHour = (long)3600;
+        public const long SecondsPerDay = (long)86400;
+        public const long MinutesPerHour = (long)60;
+        public const long MinutesPerDay = (long)1440;
+        public const int HoursPerDay = 24;
+
         public static readonly System.TimeSpan Zero;
         public TimeSpan(int hours, int minutes, int seconds) { throw null; }
         public TimeSpan(int days, int hours, int minutes, int seconds) { throw null; }

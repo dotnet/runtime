@@ -171,7 +171,15 @@ namespace System.Net.Http
                     _readAheadTask = _stream.ReadAsync(_readBuffer.AvailableMemory);
 #pragma warning restore CA2012
 
-                    return !_readAheadTask.IsCompleted;
+                    // If the read-ahead task already completed, we can't reuse the connection.
+                    // We're still responsible for observing potential exceptions thrown by the read-ahead task to avoid leaking unobserved exceptions.
+                    if (_readAheadTask.IsCompleted)
+                    {
+                        LogExceptions(_readAheadTask.AsTask());
+                        return false;
+                    }
+
+                    return true;
                 }
                 catch (Exception error)
                 {

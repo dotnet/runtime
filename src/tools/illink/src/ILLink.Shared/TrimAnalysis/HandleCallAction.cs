@@ -133,6 +133,8 @@ namespace ILLink.Shared.TrimAnalysis
 							=> new SystemTypeValue (typeHandle.RepresentedType),
 						RuntimeTypeHandleForGenericParameterValue genericParam
 							=> _annotations.GetGenericParameterValue (genericParam.GenericParameter),
+						RuntimeTypeHandleForValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers
+							=> valueWithDynamicallyAccessedMembers.UnderlyingTypeValue,
 						_ => annotatedMethodReturnValue
 					});
 				}
@@ -157,6 +159,8 @@ namespace ILLink.Shared.TrimAnalysis
 								=> new RuntimeTypeHandleValue (typeHandle.RepresentedType),
 							GenericParameterValue genericParam
 								=> new RuntimeTypeHandleForGenericParameterValue (genericParam.GenericParameter),
+							ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers
+								=> new RuntimeTypeHandleForValueWithDynamicallyAccessedMembers(valueWithDynamicallyAccessedMembers),
 							_ => annotatedMethodReturnValue
 						});
 					else
@@ -286,6 +290,9 @@ namespace ILLink.Shared.TrimAnalysis
 				foreach (var typeHandleValue in argumentValues[0].AsEnumerable ()) {
 					if (typeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
 						MarkStaticConstructor (runtimeTypeHandleValue.RepresentedType);
+					} else if (typeHandleValue is RuntimeTypeHandleForValueWithDynamicallyAccessedMembers damAnnotatedHandle
+						&& (damAnnotatedHandle.UnderlyingTypeValue.DynamicallyAccessedMemberTypes & DynamicallyAccessedMemberTypes.NonPublicConstructors) != 0) {
+						// No action needed, NonPublicConstructors keeps the static constructor on the type
 					} else {
 						_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedTypeInRuntimeHelpersRunClassConstructor, calledMethod.GetDisplayName ());
 					}
