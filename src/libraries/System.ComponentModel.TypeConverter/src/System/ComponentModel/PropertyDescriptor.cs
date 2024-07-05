@@ -170,12 +170,11 @@ namespace System.ComponentModel
             ArgumentNullException.ThrowIfNull(component);
             ArgumentNullException.ThrowIfNull(handler);
 
-            if (_valueChangedHandlers is null)
+            lock (SyncObject)
             {
-                Interlocked.CompareExchange(ref _valueChangedHandlers, new ConcurrentDictionary<object, EventHandler?>(), null);
+                _valueChangedHandlers ??= new ConcurrentDictionary<object, EventHandler?>();
+                _valueChangedHandlers.AddOrUpdate(component, handler, (k, v) => (EventHandler?)Delegate.Combine(v, handler));
             }
-
-            _valueChangedHandlers.AddOrUpdate(component, handler, (k, v) => (EventHandler?)Delegate.Combine(v, handler));
         }
 
         /// <summary>
