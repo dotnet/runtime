@@ -29,7 +29,7 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(string.Empty, activity);
+            NameResolutionTelemetry.Log.AfterResolution(string.Empty, activity, answer: name);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, name);
             return name;
@@ -400,7 +400,7 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(hostName, activity);
+            NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result);
 
             return result;
         }
@@ -440,7 +440,7 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(address, activity);
+            NameResolutionTelemetry.Log.AfterResolution(address, activity, answer: name);
 
             // Do the forward lookup to get the IPs for that host name
             activity = NameResolutionTelemetry.Log.BeforeResolution(name);
@@ -470,7 +470,7 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(name, activity);
+            NameResolutionTelemetry.Log.AfterResolution(name, activity, answer: result);
 
             // One of three things happened:
             // 1. Success.
@@ -595,9 +595,11 @@ namespace System.Net
             {
                 NameResolutionActivity activity = NameResolutionTelemetry.Log.BeforeResolution(hostName, startingTimeStamp);
                 Exception? exception = null;
+                T? result = null;
                 try
                 {
-                    return await ((Task<T>)task).ConfigureAwait(false);
+                    result = await ((Task<T>)task).ConfigureAwait(false);
+                    return result;
                 }
                 catch (Exception ex)
                 {
@@ -606,7 +608,7 @@ namespace System.Net
                 }
                 finally
                 {
-                    NameResolutionTelemetry.Log.AfterResolution(hostName, activity, exception);
+                    NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: exception);
                 }
             }
         }
@@ -633,7 +635,7 @@ namespace System.Net
 
         private static bool LogFailure(object hostNameOrAddress, in NameResolutionActivity activity, Exception exception)
         {
-            NameResolutionTelemetry.Log.AfterResolution(hostNameOrAddress, activity, exception);
+            NameResolutionTelemetry.Log.AfterResolution(hostNameOrAddress, activity, answer: null, exception: exception);
             return false;
         }
 

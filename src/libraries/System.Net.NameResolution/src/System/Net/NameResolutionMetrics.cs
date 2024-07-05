@@ -19,7 +19,7 @@ namespace System.Net
 
         public static bool IsEnabled() => s_lookupDuration.Enabled;
 
-        public static void AfterResolution(TimeSpan duration, string hostName, Exception? exception)
+        public static void AfterResolution(TimeSpan duration, string hostName, string? errorType, Exception? exception)
         {
             var hostNameTag = KeyValuePair.Create("dns.question.name", (object?)hostName);
 
@@ -29,19 +29,10 @@ namespace System.Net
             }
             else
             {
-                var errorTypeTag = KeyValuePair.Create("error.type", (object?)GetErrorType(exception));
+                errorType ??= NameResolutionTelemetry.GetErrorType(exception);
+                var errorTypeTag = KeyValuePair.Create("error.type", (object?)errorType);
                 s_lookupDuration.Record(duration.TotalSeconds, hostNameTag, errorTypeTag);
             }
         }
-
-        private static string GetErrorType(Exception exception) => (exception as SocketException)?.SocketErrorCode switch
-        {
-            SocketError.HostNotFound => "host_not_found",
-            SocketError.TryAgain => "try_again",
-            SocketError.AddressFamilyNotSupported => "address_family_not_supported",
-            SocketError.NoRecovery => "no_recovery",
-
-            _ => exception.GetType().FullName!
-        };
     }
 }
