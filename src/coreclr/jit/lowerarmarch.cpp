@@ -1312,7 +1312,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AdvSimd_FusedMultiplyAddScalar:
             LowerHWIntrinsicFusedMultiplyAddScalar(node);
             break;
-
+        case NI_Sve_ConditionalSelect:
+            return LowerHWIntrinsicCndSel(node);
         default:
             break;
     }
@@ -1320,29 +1321,36 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId))
     {
         LIR::Use use;
-        if (BlockRange().TryGetUse(node, &use))
+        bool     foundUse = BlockRange().TryGetUse(node, &use);
+        JITDUMP("lowering EmbeddedMasked HWIntrinisic (before):\n");
+        DISPTREERANGE(BlockRange(), node);
+        JITDUMP("\n");
+
+        CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+        unsigned    simdSize        = node->GetSimdSize();
+        var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
+        GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+        GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
+
+        BlockRange().InsertBefore(node, trueMask);
+        BlockRange().InsertBefore(node, falseVal);
+
+        GenTreeHWIntrinsic* condSelNode =
+            comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
+                                           simdBaseJitType, simdSize);
+        BlockRange().InsertAfter(node, condSelNode);
+        if (foundUse)
         {
-            GenTree* user = use.User();
-            // Wrap the intrinsic in ConditionalSelect only if it is not already inside another ConditionalSelect
-            if (!user->OperIsHWIntrinsic() || (user->AsHWIntrinsic()->GetHWIntrinsicId() != NI_Sve_ConditionalSelect))
-            {
-                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-                unsigned    simdSize        = node->GetSimdSize();
-                var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
-                GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-                GenTree*    trueVal         = node;
-                GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
-
-                GenTreeHWIntrinsic* condSelNode =
-                    comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal, NI_Sve_ConditionalSelect,
-                                                   simdBaseJitType, simdSize);
-
-                BlockRange().InsertBefore(node, trueMask);
-                BlockRange().InsertBefore(node, falseVal);
-                BlockRange().InsertAfter(node, condSelNode);
-                use.ReplaceWith(condSelNode);
-            }
+            use.ReplaceWith(condSelNode);
         }
+        else
+        {
+            condSelNode->SetUnusedValue();
+        }
+
+        JITDUMP("lowering EmbeddedMasked HWIntrinisic (after):\n");
+        DISPTREERANGE(BlockRange(), condSelNode);
+        JITDUMP("\n");
     }
 
     ContainCheckHWIntrinsic(node);
@@ -3369,8 +3377,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 // Handle op2
-                if (op2->OperIsHWIntrinsic())
+                if (op2->OperIsHWIntrinsic() && !op2->IsEmbMaskOp())
                 {
+                    const GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
+
                     if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatibleHWIntrinsic())
                     {
                         uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
@@ -3386,7 +3396,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             // Else check if this operation has an auxiliary type that matches the
                             // mask size.
-                            GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
 
                             // For now, make sure that we get here only for intrinsics that we are
                             // sure about to rely on auxiliary type's size.
@@ -3403,6 +3412,17 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 MakeSrcContained(node, op2);
                                 op2->MakeEmbMaskOp();
                             }
+                        }
+                    }
+
+                    // Handle intrinsics with embedded masks and immediate operands
+                    // (For now, just handle ShiftRightArithmeticForDivide specifically)
+                    if (embOp->GetHWIntrinsicId() == NI_Sve_ShiftRightArithmeticForDivide)
+                    {
+                        assert(embOp->GetOperandCount() == 2);
+                        if (embOp->Op(2)->IsCnsIntOrI())
+                        {
+                            MakeSrcContained(op2, embOp->Op(2));
                         }
                     }
                 }
@@ -3426,6 +3446,29 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (intrin.op4->IsCnsIntOrI())
                 {
                     MakeSrcContained(node, intrin.op4);
+                }
+                break;
+
+            case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_GatherPrefetch16Bit:
+            case NI_Sve_GatherPrefetch32Bit:
+            case NI_Sve_GatherPrefetch64Bit:
+                assert(hasImmediateOperand);
+                if (!varTypeIsSIMD(intrin.op2->gtType))
+                {
+                    assert(varTypeIsIntegral(intrin.op4));
+                    if (intrin.op4->IsCnsIntOrI())
+                    {
+                        MakeSrcContained(node, intrin.op4);
+                    }
+                }
+                else
+                {
+                    assert(varTypeIsIntegral(intrin.op3));
+                    if (intrin.op3->IsCnsIntOrI())
+                    {
+                        MakeSrcContained(node, intrin.op3);
+                    }
                 }
                 break;
 
@@ -3458,6 +3501,68 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 unreached();
         }
     }
+}
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicCndSel: Lowers a Sve ConditionalSelect call
+//
+//  Arguments:
+//     node - The hardware intrinsic node of the form
+//            ConditionalSelect(mask, trueValue, falseValue)
+//
+GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
+{
+    assert(cndSelNode->OperIsHWIntrinsic(NI_Sve_ConditionalSelect));
+
+    GenTree* op1         = cndSelNode->Op(1);
+    GenTree* op2         = cndSelNode->Op(2);
+    GenTree* op3         = cndSelNode->Op(3);
+    GenTree* lowerCndSel = cndSelNode;
+
+    if (op2->OperIsHWIntrinsic(NI_Sve_ConditionalSelect))
+    {
+        // Handle cases where there is a nested ConditionalSelect for
+        // `trueValue`
+        GenTreeHWIntrinsic* nestedCndSel = op2->AsHWIntrinsic();
+        GenTree*            nestedOp1    = nestedCndSel->Op(1);
+        assert(varTypeIsMask(nestedOp1));
+
+        if (nestedOp1->IsMaskAllBitsSet())
+        {
+            GenTree* nestedOp2 = nestedCndSel->Op(2);
+            GenTree* nestedOp3 = nestedCndSel->Op(3);
+
+            JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
+            DISPTREERANGE(BlockRange(), cndSelNode);
+            JITDUMP("\n");
+
+            // Transform:
+            //
+            // CndSel(mask, CndSel(AllTrue, embeddedMask(trueValOp2), trueValOp3), op3) to
+            // CndSel(mask, embedded(trueValOp2), op3)
+            //
+            cndSelNode->Op(2) = nestedCndSel->Op(2);
+            if (nestedOp3->IsMaskZero())
+            {
+                BlockRange().Remove(nestedOp3);
+            }
+            else
+            {
+                nestedOp3->SetUnusedValue();
+            }
+
+            BlockRange().Remove(nestedOp1);
+            BlockRange().Remove(nestedCndSel);
+
+            JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
+            DISPTREERANGE(BlockRange(), cndSelNode);
+            JITDUMP("\n");
+
+            return cndSelNode;
+        }
+    }
+
+    ContainCheckHWIntrinsic(cndSelNode);
+    return cndSelNode->gtNext;
 }
 #endif // FEATURE_HW_INTRINSICS
 

@@ -57,6 +57,10 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_ARM_PREL31                 = 0x10D,
         IMAGE_REL_ARM_JUMP24                 = 0x10E,
 
+        // Windows arm64 TLS access
+        IMAGE_REL_ARM64_TLS_SECREL_HIGH12A = 0x10F,  // ADD high 12-bit offset for tls
+        IMAGE_REL_ARM64_TLS_SECREL_LOW12L  = 0x110,  // ADD low 12-bit offset for tls
+
         //
         // Relocations for R2R image production
         //
@@ -288,6 +292,28 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GetArm64Rel12(pCode) == imm12);
         }
 
+        //*****************************************************************************
+        //  Deposit the PC-Relative offset 'imm12' into an add instruction
+        //  Same as PutArm64Rel12(), except the assert here checks if "LSL #3" is encoded
+        //  in the instruction.
+        //*****************************************************************************
+        private static unsafe void PutArm64TlsRel12(uint* pCode, int imm12)
+        {
+            // Verify that we got a valid offset
+            Debug.Assert(FitsInRel12(imm12));
+
+            uint addInstr = *pCode;
+            // Check add opcode 1001 0001 00...
+            Debug.Assert((addInstr & 0xFFC00000) == 0x91400000);
+
+            addInstr &= 0xFFC003FF;          // keep bits 31-22, 9-0
+            addInstr |= (uint)(imm12 << 10); // Occupy 21-10.
+
+            *pCode = addInstr;               // write the assembled instruction
+
+            Debug.Assert(GetArm64Rel12(pCode) == imm12);
+        }
+
         private static unsafe int GetArm64Rel28(uint* pCode)
         {
             uint branchInstr = *pCode;
@@ -505,8 +531,12 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
                     PutArm64Rel21((uint*)location, (int)value);
                     break;
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A:
+                    PutArm64TlsRel12((uint*)location, (int)value);
+                    break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12L:
                     PutArm64Rel12((uint*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
@@ -562,6 +592,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                     return GetArm64Rel21((uint*)location);
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12L:
                     return GetArm64Rel12((uint*)location);
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:

@@ -225,7 +225,7 @@ namespace System.Numerics.Tests
                 foreach (double invalidImaginary in s_invalidDoubleValues)
                 {
                     yield return new object[] { RandomPositiveDouble(), invalidImaginary, Math.Abs(invalidImaginary) }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary, (double.IsNaN(invalidReal) || double.IsNaN(invalidImaginary)) ? double.NaN : double.PositiveInfinity }; // Invalid real, invalid imaginary
+                    yield return new object[] { invalidReal, invalidImaginary, (double.IsNaN(invalidReal) && double.IsNaN(invalidImaginary)) ? double.NaN : double.PositiveInfinity }; // Invalid real, invalid imaginary
                 }
             }
 
@@ -245,11 +245,16 @@ namespace System.Numerics.Tests
             yield return new object[] { double.MaxValue, double.NegativeInfinity, double.PositiveInfinity };
             yield return new object[] { double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity };
 
-            // NaN in any slot returns NaN.
+            // NaN and +-inf returns inf
+            yield return new object[] { double.NaN, double.NegativeInfinity, double.PositiveInfinity };
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.PositiveInfinity };
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.PositiveInfinity };
+            yield return new object[] { double.NegativeInfinity, double.NaN, double.PositiveInfinity };
+
+            // Otherwise, NaN in any slot returns NaN.
             yield return new object[] { double.NaN, 0, double.NaN };  // Regression test: Complex.Abs() is inconsistent on NaN / Complex
             yield return new object[] { 0.0, double.NaN, double.NaN };
             yield return new object[] { double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN };
             yield return new object[] { double.NaN, double.NaN, double.NaN };
         }
 
@@ -1560,12 +1565,20 @@ namespace System.Numerics.Tests
             yield return new object[] { RandomPositiveDouble(), double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
             yield return new object[] { RandomNegativeDouble(), double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
 
-            // NaN in any component produces NaNs in both components (except arguably on real line).
+            // (Nan, +-inf) returns (inf, +-inf)
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity };
+            yield return new object[] { double.NaN, double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
+
+            // (inf, NaN) returns (inf, NaN)
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.PositiveInfinity };
+
+            // (-inf, NaN) returns (NaN, inf)
+            yield return new object[] { double.NegativeInfinity, double.NaN, double.PositiveInfinity, double.NaN };
+
+            // Otherwise, NaN in any component produces NaNs in both components.
             yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
             yield return new object[] { double.MaxValue, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.NaN };
             yield return new object[] { double.NaN, -double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
 
         }

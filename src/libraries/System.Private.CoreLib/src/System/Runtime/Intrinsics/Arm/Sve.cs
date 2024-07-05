@@ -2093,6 +2093,306 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> FusedMultiplySubtractNegated(Vector<float> minuend, Vector<float> left, Vector<float> right) => FusedMultiplySubtractNegated(minuend, left, right);
 
 
+        ///  Prefetch halfwords
+
+        /// <summary>
+        /// void svprfh_gather_[s32]index(svbool_t pg, const void *base, svint32_t indices, enum svprfop op)
+        ///   PRFH op, Pg, [Xbase, Zindices.S, SXTW #1]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<short> mask, void* address, Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfh_gather_[s64]index(svbool_t pg, const void *base, svint64_t indices, enum svprfop op)
+        ///   PRFH op, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<short> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfh_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        ///   PRFH op, Pg, [Zbases.S, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<short> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfh_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
+        ///   PRFH op, Pg, [Xbase, Zindices.S, UXTW #1]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<short> mask, void* address, Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfh_gather[_u64base](svbool_t pg, svuint64_t bases, enum svprfop op)
+        ///   PRFH op, Pg, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<short> mask, Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfh_gather_[u64]index(svbool_t pg, const void *base, svuint64_t indices, enum svprfop op)
+        ///   PRFH op, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<short> mask, void* address, Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfh_gather_[s32]index(svbool_t pg, const void *base, svint32_t indices, enum svprfop op)
+        ///   PRFH op, Pg, [Xbase, Zindices.S, SXTW #1]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, void* address, Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfh_gather_[s64]index(svbool_t pg, const void *base, svint64_t indices, enum svprfop op)
+        ///   PRFH op, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfh_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        ///   PRFH op, Pg, [Zbases.S, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfh_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
+        ///   PRFH op, Pg, [Xbase, Zindices.S, UXTW #1]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, void* address, Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfh_gather[_u64base](svbool_t pg, svuint64_t bases, enum svprfop op)
+        ///   PRFH op, Pg, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfh_gather_[u64]index(svbool_t pg, const void *base, svuint64_t indices, enum svprfop op)
+        ///   PRFH op, Pg, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, void* address, Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, address, indices, prefetchType);
+
+
+        ///  Prefetch words
+
+        /// <summary>
+        /// void svprfw_gather_[s32]index(svbool_t pg, const void *base, svint32_t indices, enum svprfop op)
+        ///   PRFW op, Pg, [Xbase, Zindices.S, SXTW #2]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<int> mask, void* address, Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfw_gather_[s64]index(svbool_t pg, const void *base, svint64_t indices, enum svprfop op)
+        ///   PRFW op, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<int> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfw_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        ///   PRFW op, Pg, [Zbases.S, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<int> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfw_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
+        ///   PRFW op, Pg, [Xbase, Zindices.S, UXTW #2]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<int> mask, void* address, Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfw_gather[_u64base](svbool_t pg, svuint64_t bases, enum svprfop op)
+        ///   PRFW op, Pg, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<int> mask, Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfw_gather_[u64]index(svbool_t pg, const void *base, svuint64_t indices, enum svprfop op)
+        ///   PRFW op, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<int> mask, void* address, Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfw_gather_[s32]index(svbool_t pg, const void *base, svint32_t indices, enum svprfop op)
+        ///   PRFW op, Pg, [Xbase, Zindices.S, SXTW #2]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, void* address, Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfw_gather_[s64]index(svbool_t pg, const void *base, svint64_t indices, enum svprfop op)
+        ///   PRFW op, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfw_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        ///   PRFW op, Pg, [Zbases.S, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfw_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
+        ///   PRFW op, Pg, [Xbase, Zindices.S, UXTW #2]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, void* address, Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfw_gather[_u64base](svbool_t pg, svuint64_t bases, enum svprfop op)
+        ///   PRFW op, Pg, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfw_gather_[u64]index(svbool_t pg, const void *base, svuint64_t indices, enum svprfop op)
+        ///   PRFW op, Pg, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, void* address, Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, address, indices, prefetchType);
+
+
+        ///  Prefetch doublewords
+
+        /// <summary>
+        /// void svprfd_gather_[s32]index(svbool_t pg, const void *base, svint32_t indices, enum svprfop op)
+        ///   PRFD op, Pg, [Xbase, Zindices.S, SXTW #3]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<long> mask, void* address, Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfd_gather_[s64]index(svbool_t pg, const void *base, svint64_t indices, enum svprfop op)
+        ///   PRFD op, Pg, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<long> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfd_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        ///   PRFD op, Pg, [Zbases.S, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<long> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfd_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
+        ///   PRFD op, Pg, [Xbase, Zindices.S, UXTW #3]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<long> mask, void* address, Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfd_gather[_u64base](svbool_t pg, svuint64_t bases, enum svprfop op)
+        ///   PRFD op, Pg, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<long> mask, Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfd_gather_[u64]index(svbool_t pg, const void *base, svuint64_t indices, enum svprfop op)
+        ///   PRFD op, Pg, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<long> mask, void* address, Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfd_gather_[s32]index(svbool_t pg, const void *base, svint32_t indices, enum svprfop op)
+        ///   PRFD op, Pg, [Xbase, Zindices.S, SXTW #3]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, void* address, Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfd_gather_[s64]index(svbool_t pg, const void *base, svint64_t indices, enum svprfop op)
+        ///   PRFD op, Pg, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, void* address, Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfd_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        ///   PRFD op, Pg, [Zbases.S, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfd_gather_[u32]index(svbool_t pg, const void *base, svuint32_t indices, enum svprfop op)
+        ///   PRFD op, Pg, [Xbase, Zindices.S, UXTW #3]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, void* address, Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, address, indices, prefetchType);
+
+        /// <summary>
+        /// void svprfd_gather[_u64base](svbool_t pg, svuint64_t bases, enum svprfop op)
+        ///   PRFD op, Pg, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfd_gather_[u64]index(svbool_t pg, const void *base, svuint64_t indices, enum svprfop op)
+        ///   PRFD op, Pg, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, void* address, Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, address, indices, prefetchType);
+
+
+        ///  Prefetch bytes
+
+        /// <summary>
+        /// void svprfb_gather_[s32]offset(svbool_t pg, const void *base, svint32_t offsets, enum svprfop op)
+        ///   PRFB op, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, void* address, Vector<int> offsets, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, address, offsets, prefetchType);
+
+        /// <summary>
+        /// void svprfb_gather_[s64]offset(svbool_t pg, const void *base, svint64_t offsets, enum svprfop op)
+        ///   PRFB op, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, void* address, Vector<long> offsets, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, address, offsets, prefetchType);
+
+        /// <summary>
+        /// void svprfb_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        ///   PRFB op, Pg, [Zbases.S, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfb_gather_[u32]offset(svbool_t pg, const void *base, svuint32_t offsets, enum svprfop op)
+        ///   PRFB op, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, void* address, Vector<uint> offsets, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, address, offsets, prefetchType);
+
+        /// <summary>
+        /// void svprfb_gather[_u64base](svbool_t pg, svuint64_t bases, enum svprfop op)
+        ///   PRFB op, Pg, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfb_gather_[u64]offset(svbool_t pg, const void *base, svuint64_t offsets, enum svprfop op)
+        ///   PRFB op, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<byte> mask, void* address, Vector<ulong> offsets, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, address, offsets, prefetchType);
+
+        /// <summary>
+        /// void svprfb_gather_[s32]offset(svbool_t pg, const void *base, svint32_t offsets, enum svprfop op)
+        ///   PRFB op, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, void* address, Vector<int> offsets, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, address, offsets, prefetchType);
+
+        /// <summary>
+        /// void svprfb_gather_[s64]offset(svbool_t pg, const void *base, svint64_t offsets, enum svprfop op)
+        ///   PRFB op, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, void* address, Vector<long> offsets, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, address, offsets, prefetchType);
+
+        /// <summary>
+        /// void svprfb_gather[_u32base](svbool_t pg, svuint32_t bases, enum svprfop op)
+        ///   PRFB op, Pg, [Zbases.S, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfb_gather_[u32]offset(svbool_t pg, const void *base, svuint32_t offsets, enum svprfop op)
+        ///   PRFB op, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, void* address, Vector<uint> offsets, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, address, offsets, prefetchType);
+
+        /// <summary>
+        /// void svprfb_gather[_u64base](svbool_t pg, svuint64_t bases, enum svprfop op)
+        ///   PRFB op, Pg, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, addresses, prefetchType);
+
+        /// <summary>
+        /// void svprfb_gather_[u64]offset(svbool_t pg, const void *base, svuint64_t offsets, enum svprfop op)
+        ///   PRFB op, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, void* address, Vector<ulong> offsets, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, address, offsets, prefetchType);
+
+
         ///  Unextended load
 
         /// <summary>
@@ -6189,6 +6489,45 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint8_t svasr_wide[_s8]_z(svbool_t pg, svint8_t op1, svuint64_t op2)
         /// </summary>
         public static unsafe Vector<sbyte> ShiftRightArithmetic(Vector<sbyte> left, Vector<ulong> right) => ShiftRightArithmetic(left, right);
+
+
+        ///  Arithmetic shift right for divide by immediate
+
+        /// <summary>
+        /// svint16_t svasrd[_n_s16]_m(svbool_t pg, svint16_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.H, Pg/M, Ztied1.H, #imm2
+        /// svint16_t svasrd[_n_s16]_x(svbool_t pg, svint16_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.H, Pg/M, Ztied1.H, #imm2
+        /// svint16_t svasrd[_n_s16]_z(svbool_t pg, svint16_t op1, uint64_t imm2)
+        /// </summary>
+        public static unsafe Vector<short> ShiftRightArithmeticForDivide(Vector<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte control) => ShiftRightArithmeticForDivide(value, control);
+
+        /// <summary>
+        /// svint32_t svasrd[_n_s32]_m(svbool_t pg, svint32_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.S, Pg/M, Ztied1.S, #imm2
+        /// svint32_t svasrd[_n_s32]_x(svbool_t pg, svint32_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.S, Pg/M, Ztied1.S, #imm2
+        /// svint32_t svasrd[_n_s32]_z(svbool_t pg, svint32_t op1, uint64_t imm2)
+        /// </summary>
+        public static unsafe Vector<int> ShiftRightArithmeticForDivide(Vector<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte control) => ShiftRightArithmeticForDivide(value, control);
+
+        /// <summary>
+        /// svint64_t svasrd[_n_s64]_m(svbool_t pg, svint64_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.D, Pg/M, Ztied1.D, #imm2
+        /// svint64_t svasrd[_n_s64]_x(svbool_t pg, svint64_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.D, Pg/M, Ztied1.D, #imm2
+        /// svint64_t svasrd[_n_s64]_z(svbool_t pg, svint64_t op1, uint64_t imm2)
+        /// </summary>
+        public static unsafe Vector<long> ShiftRightArithmeticForDivide(Vector<long> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte control) => ShiftRightArithmeticForDivide(value, control);
+
+        /// <summary>
+        /// svint8_t svasrd[_n_s8]_m(svbool_t pg, svint8_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.B, Pg/M, Ztied1.B, #imm2
+        /// svint8_t svasrd[_n_s8]_x(svbool_t pg, svint8_t op1, uint64_t imm2)
+        ///   ASRD Ztied1.B, Pg/M, Ztied1.B, #imm2
+        /// svint8_t svasrd[_n_s8]_z(svbool_t pg, svint8_t op1, uint64_t imm2)
+        /// </summary>
+        public static unsafe Vector<sbyte> ShiftRightArithmeticForDivide(Vector<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte control) => ShiftRightArithmeticForDivide(value, control);
 
 
         ///  Logical shift right

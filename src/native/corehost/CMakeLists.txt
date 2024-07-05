@@ -83,6 +83,10 @@ add_library(fxr_resolver INTERFACE)
 target_sources(fxr_resolver INTERFACE fxr_resolver.cpp)
 target_include_directories(fxr_resolver INTERFACE fxr)
 
+if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/)
+endif()
+
 add_subdirectory(hostcommon)
 add_subdirectory(hostmisc)
 add_subdirectory(fxr)

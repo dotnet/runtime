@@ -4487,6 +4487,55 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<double> FusedMultiplySubtractNegated(System.Numerics.Vector<double> minuend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> FusedMultiplySubtractNegated(System.Numerics.Vector<float> minuend, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
 
+        public static unsafe void GatherPrefetch16Bit(System.Numerics.Vector<short> mask, void* address, System.Numerics.Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch16Bit(System.Numerics.Vector<short> mask, void* address, System.Numerics.Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch16Bit(System.Numerics.Vector<short> mask, System.Numerics.Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch16Bit(System.Numerics.Vector<short> mask, void* address, System.Numerics.Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch16Bit(System.Numerics.Vector<short> mask, System.Numerics.Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch16Bit(System.Numerics.Vector<short> mask, void* address, System.Numerics.Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch16Bit(System.Numerics.Vector<ushort> mask, void* address, System.Numerics.Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch16Bit(System.Numerics.Vector<ushort> mask, void* address, System.Numerics.Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch16Bit(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch16Bit(System.Numerics.Vector<ushort> mask, void* address, System.Numerics.Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch16Bit(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch16Bit(System.Numerics.Vector<ushort> mask, void* address, System.Numerics.Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch32Bit(System.Numerics.Vector<int> mask, void* address, System.Numerics.Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch32Bit(System.Numerics.Vector<int> mask, void* address, System.Numerics.Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch32Bit(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch32Bit(System.Numerics.Vector<int> mask, void* address, System.Numerics.Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch32Bit(System.Numerics.Vector<int> mask, System.Numerics.Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch32Bit(System.Numerics.Vector<int> mask, void* address, System.Numerics.Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch32Bit(System.Numerics.Vector<uint> mask, void* address, System.Numerics.Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch32Bit(System.Numerics.Vector<uint> mask, void* address, System.Numerics.Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch32Bit(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch32Bit(System.Numerics.Vector<uint> mask, void* address, System.Numerics.Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch32Bit(System.Numerics.Vector<uint> mask, System.Numerics.Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch32Bit(System.Numerics.Vector<uint> mask, void* address, System.Numerics.Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch64Bit(System.Numerics.Vector<long> mask, void* address, System.Numerics.Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch64Bit(System.Numerics.Vector<long> mask, void* address, System.Numerics.Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch64Bit(System.Numerics.Vector<long> mask, System.Numerics.Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch64Bit(System.Numerics.Vector<long> mask, void* address, System.Numerics.Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch64Bit(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch64Bit(System.Numerics.Vector<long> mask, void* address, System.Numerics.Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch64Bit(System.Numerics.Vector<ulong> mask, void* address, System.Numerics.Vector<int> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch64Bit(System.Numerics.Vector<ulong> mask, void* address, System.Numerics.Vector<long> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch64Bit(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch64Bit(System.Numerics.Vector<ulong> mask, void* address, System.Numerics.Vector<uint> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch64Bit(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch64Bit(System.Numerics.Vector<ulong> mask, void* address, System.Numerics.Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch8Bit(System.Numerics.Vector<byte> mask, void* address, System.Numerics.Vector<int> offsets, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch8Bit(System.Numerics.Vector<byte> mask, void* address, System.Numerics.Vector<long> offsets, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch8Bit(System.Numerics.Vector<byte> mask, System.Numerics.Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch8Bit(System.Numerics.Vector<byte> mask, void* address, System.Numerics.Vector<uint> offsets, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch8Bit(System.Numerics.Vector<byte> mask, System.Numerics.Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch8Bit(System.Numerics.Vector<byte> mask, void* address, System.Numerics.Vector<ulong> offsets, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch8Bit(System.Numerics.Vector<sbyte> mask, void* address, System.Numerics.Vector<int> offsets, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch8Bit(System.Numerics.Vector<sbyte> mask, void* address, System.Numerics.Vector<long> offsets, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch8Bit(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<uint> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch8Bit(System.Numerics.Vector<sbyte> mask, void* address, System.Numerics.Vector<uint> offsets, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static void GatherPrefetch8Bit(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<ulong> addresses, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void GatherPrefetch8Bit(System.Numerics.Vector<sbyte> mask, void* address, System.Numerics.Vector<ulong> offsets, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+
         public static unsafe System.Numerics.Vector<double> GatherVector(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<long> indices) { throw null; }
         public static System.Numerics.Vector<double> GatherVector(System.Numerics.Vector<double> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<double> GatherVector(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<ulong> indices) { throw null; }
@@ -5079,6 +5128,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<long> ShiftRightArithmetic(System.Numerics.Vector<long> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<sbyte> ShiftRightArithmetic(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<sbyte> ShiftRightArithmetic(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<short> ShiftRightArithmeticForDivide(System.Numerics.Vector<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte control) { throw null; }
+        public static System.Numerics.Vector<int> ShiftRightArithmeticForDivide(System.Numerics.Vector<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte control) { throw null; }
+        public static System.Numerics.Vector<long> ShiftRightArithmeticForDivide(System.Numerics.Vector<long> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte control) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftRightArithmeticForDivide(System.Numerics.Vector<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte control) { throw null; }
         public static System.Numerics.Vector<byte> ShiftRightLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<byte> ShiftRightLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<ushort> ShiftRightLogical(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
