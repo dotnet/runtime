@@ -451,13 +451,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void MaxResponseDrainSize_SetAfterUse_Throws()
+        public async Task MaxResponseDrainSize_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.MaxResponseDrainSize = 1;
-                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
+                await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(InvalidUri));
                 Assert.Equal(1, handler.MaxResponseDrainSize);
                 Assert.Throws<InvalidOperationException>(() => handler.MaxResponseDrainSize = 1);
             }
@@ -494,13 +494,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void ResponseDrainTimeout_SetAfterUse_Throws()
+        public async Task ResponseDrainTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42);
-                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
+                await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(InvalidUri));
                 Assert.Equal(TimeSpan.FromSeconds(42), handler.ResponseDrainTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42));
             }
@@ -1343,13 +1343,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void ConnectTimeout_SetAfterUse_Throws()
+        public async Task ConnectTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ConnectTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
+                await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(InvalidUri));
                 Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.ConnectTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.ConnectTimeout = TimeSpan.FromMilliseconds(1));
             }
@@ -1390,13 +1390,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void Expect100ContinueTimeout_SetAfterUse_Throws()
+        public async Task Expect100ContinueTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
+                await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(InvalidUri));
                 Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.Expect100ContinueTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(1));
             }
@@ -3880,14 +3880,7 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    try
-                    {
-                        await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(server.AcceptConnectionSendResponseAndCloseAsync(content: "foo"));
                 }, options: options);
         }
 
@@ -3917,14 +3910,7 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    try
-                    {
-                        await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(server.AcceptConnectionSendResponseAndCloseAsync(content: "foo"));
                 }, options: options);
         }
     }
@@ -4269,14 +4255,7 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                try
-                {
-                    await server.HandleRequestAsync();
-                }
-                catch (Exception ex)
-                {
-                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                }
+                await IgnoreExceptions(server.HandleRequestAsync());
 
                 // On HTTP/1.x, an exception being thrown while sending the request content will result in the connection being closed.
                 // This test is ensuring that a subsequent request can succeed on a new connection.

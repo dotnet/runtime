@@ -385,12 +385,7 @@ namespace Wasm.Build.Tests
             data.Add("Debug", false, false);
             data.Add("Debug", false, true);
             data.Add("Release", false, false); // Release relinks by default
-
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/71887", TestPlatforms.Windows)]
-            if (!OperatingSystem.IsWindows())
-            {
-                data.Add("Release", true, false);
-            }
+            data.Add("Release", true, false);
 
             return data;
         }

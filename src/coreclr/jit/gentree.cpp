@@ -4193,13 +4193,6 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool co
         }
         op1 = addOp1;
 
-        // If op1 is a GT_NOP then swap op1 and op2.
-        // (Why? Also, presumably op2 is not a GT_NOP in this case?)
-        if (op1->OperIs(GT_NOP))
-        {
-            std::swap(op1, op2);
-        }
-
         if (!constOnly && ((op2 == base) || !op2->IsCnsIntOrI() || !op2->AsIntCon()->ImmedValCanBeFolded(this, GT_ADD)))
         {
             break;
@@ -4813,8 +4806,6 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
 
         assert((base != nullptr) || (idx != nullptr && mul >= 2));
 
-        INDEBUG(GenTree* op1Save = addr);
-
         // Walk 'addr' identifying non-overflow ADDs that will be part of the address mode.
         // Note that we will be modifying 'op1' and 'op2' so that eventually they should
         // map to the base and index.
@@ -4823,9 +4814,6 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         gtWalkOp(&op1, &op2, base, false);
 
         // op1 and op2 are now descendents of the root GT_ADD of the addressing mode.
-        assert(op1 != op1Save);
-        assert(op2 != nullptr);
-
 #if defined(TARGET_XARCH)
         // Walk the operands again (the third operand is unused in this case).
         // This time we will only consider adds with constant op2's, since
@@ -4845,95 +4833,9 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         gtWalkOp(&op2, &op1, nullptr, true);
 #endif // defined(TARGET_XARCH)
 
-        // OK we are done walking the tree
-        // Now assert that op1 and op2 correspond with base and idx
-        // in one of the several acceptable ways.
-
-        // Note that sometimes op1/op2 is equal to idx/base
-        // and other times op1/op2 is a GT_COMMA node with
-        // an effective value that is idx/base
-
-        if (mul > 1)
+        if ((mul > 1) && (op2 != nullptr) && op2->OperIs(GT_LSH, GT_MUL))
         {
-            if ((op1 != base) && (op1->gtOper == GT_LSH))
-            {
-                op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                if (op1->AsOp()->gtOp1->gtOper == GT_MUL)
-                {
-                    op1->AsOp()->gtOp1->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                }
-                assert((base == nullptr) || (op2 == base) || (op2->gtEffectiveVal() == base->gtEffectiveVal()) ||
-                       (gtWalkOpEffectiveVal(op2) == gtWalkOpEffectiveVal(base)));
-            }
-            else
-            {
-                assert(op2 != nullptr);
-                assert(op2->OperIs(GT_LSH, GT_MUL));
-                op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                // We may have eliminated multiple shifts and multiplies in the addressing mode,
-                // so navigate down through them to get to "idx".
-                GenTree* op2op1 = op2->AsOp()->gtOp1;
-                while ((op2op1->gtOper == GT_LSH || op2op1->gtOper == GT_MUL) && op2op1 != idx)
-                {
-                    op2op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                    op2op1 = op2op1->AsOp()->gtOp1;
-                }
-
-                // if genCreateAddrMode reported base as nullptr it means that op1 is effectively null address
-                assert((op1->gtEffectiveVal() == base) ||
-                       (base == nullptr && op1->gtEffectiveVal()->IsIntegralConst(0)));
-                assert(op2op1 == idx);
-            }
-        }
-        else
-        {
-            assert(mul == 0);
-
-            if ((op1 == idx) || (op1->gtEffectiveVal() == idx))
-            {
-                if (idx != nullptr)
-                {
-                    if ((op1->gtOper == GT_MUL) || (op1->gtOper == GT_LSH))
-                    {
-                        GenTree* op1op1 = op1->AsOp()->gtOp1;
-                        if ((op1op1->gtOper == GT_NOP) ||
-                            (op1op1->gtOper == GT_MUL && op1op1->AsOp()->gtOp1->gtOper == GT_NOP))
-                        {
-                            op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                            if (op1op1->gtOper == GT_MUL)
-                            {
-                                op1op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                            }
-                        }
-                    }
-                }
-                assert((op2 == base) || (op2->gtEffectiveVal() == base));
-            }
-            else if ((op1 == base) || (op1->gtEffectiveVal() == base))
-            {
-                if (idx != nullptr)
-                {
-                    assert(op2 != nullptr);
-                    if (op2->OperIs(GT_MUL, GT_LSH))
-                    {
-                        GenTree* op2op1 = op2->AsOp()->gtOp1;
-                        if ((op2op1->gtOper == GT_NOP) ||
-                            (op2op1->gtOper == GT_MUL && op2op1->AsOp()->gtOp1->gtOper == GT_NOP))
-                        {
-                            op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                            if (op2op1->gtOper == GT_MUL)
-                            {
-                                op2op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                            }
-                        }
-                    }
-                    assert((op2 == idx) || (op2->gtEffectiveVal() == idx));
-                }
-            }
-            else
-            {
-                // op1 isn't base or idx. Is this possible? Or should there be an assert?
-            }
+            op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
         }
 
         // Finally, adjust the costs on the parenting COMMAs.
