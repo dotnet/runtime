@@ -1028,6 +1028,8 @@ namespace System.Text.Json.Serialization
         Always = 1,
         WhenWritingDefault = 2,
         WhenWritingNull = 3,
+        WhenWriting = 4,
+        WhenReading = 5,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonIncludeAttribute : System.Text.Json.Serialization.JsonAttribute
