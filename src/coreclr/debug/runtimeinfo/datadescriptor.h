@@ -144,8 +144,10 @@ CDAC_TYPE_END(GCAllocContext)
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
 #if FEATURE_EH_FUNCLETS
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExceptionTrackerBase, m_hThrowable))
 CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExceptionTrackerBase, m_pPrevNestedInfo))
 #else
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExInfo, m_hThrowable))
 CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
 #endif
 CDAC_TYPE_END(ExceptionInfo)
