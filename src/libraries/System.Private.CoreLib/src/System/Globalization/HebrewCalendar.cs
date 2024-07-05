@@ -432,7 +432,7 @@ namespace System.Globalization
         /// Returns a given date part of this DateTime. This method is used
         /// to compute the year, day-of-year, month, or day part.
         /// </summary>
-        private int GetDatePart(long ticks, int part)
+        private static int GetDatePart(long ticks, int part)
         {
             // The Gregorian year, month, day value for ticks.
             int hebrewYearType;                // lunar year type
