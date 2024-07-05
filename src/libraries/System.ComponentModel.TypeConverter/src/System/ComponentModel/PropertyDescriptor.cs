@@ -173,7 +173,7 @@ namespace System.ComponentModel
             lock (SyncObject)
             {
                 _valueChangedHandlers ??= new ConcurrentDictionary<object, EventHandler?>();
-                _valueChangedHandlers.AddOrUpdate(component, handler, (k, v) => (EventHandler?)Delegate.Combine(v));
+                _valueChangedHandlers.AddOrUpdate(component, handler, (k, v) => (EventHandler?)Delegate.Combine(v, handler));
             }
         }
 
