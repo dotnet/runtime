@@ -2784,7 +2784,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op4     = getArgForHWIntrinsic(argType, argClass);
 
                 assert(HWIntrinsicInfo::isImmOp(intrinsic, op4));
-                op3 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, immLowerBound, immUpperBound);
+                op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, immLowerBound, immUpperBound);
 
                 argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
                 op3                        = getArgForHWIntrinsic(argType, argClass);
