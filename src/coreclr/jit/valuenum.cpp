@@ -1635,7 +1635,23 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
     }
 
     VNFuncApp funcAttr;
-    return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0;
+    if (!GetVNFunc(vn, &funcAttr))
+    {
+        return false;
+    }
+
+    if ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0)
+    {
+        return true;
+    }
+
+    if (funcAttr.m_func == VNF_Cast)
+    {
+		// any cast on top of non-null/0 is non-null?
+        return IsKnownNonNull(funcAttr.m_args[0]);
+    }
+
+    return false;
 }
 
 bool ValueNumStore::IsSharedStatic(ValueNum vn)
@@ -11135,12 +11151,6 @@ void Compiler::fgValueNumberStore(GenTree* store)
             }
 
             valueVNPair.SetBoth(initObjVN);
-        }
-        else if (value->TypeGet() == TYP_REF)
-        {
-            // If we have an unsafe IL store of a TYP_REF to a non-ref (typically a TYP_BYREF)
-            // then don't propagate this ValueNumber to the lhs, instead create a new unique VN.
-            valueVNPair.SetBoth(vnStore->VNForExpr(compCurBB, store->TypeGet()));
         }
         else
         {

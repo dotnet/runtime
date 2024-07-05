@@ -1149,15 +1149,13 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             }
         }
 
-        if (fgIsBigOffset(offset) || op1->gtOper != GT_LCL_VAR)
+        if (fgIsBigOffset(offset) || !op1->IsLocal())
         {
             goto DONE_ASSERTION; // Don't make an assertion
         }
 
         unsigned   lclNum = op1->AsLclVarCommon()->GetLclNum();
         LclVarDsc* lclVar = lvaGetDesc(lclNum);
-
-        ValueNum vn;
 
         // We only perform null-checks on byrefs and GC refs
         if (!varTypeIsGC(lclVar->TypeGet()))
@@ -1174,9 +1172,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         assertion.op1.kind       = O1K_LCLVAR;
         assertion.op1.lcl.lclNum = lclNum;
         assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
-        vn                       = optConservativeNormalVN(op1);
-
-        assertion.op1.vn         = vn;
+        assertion.op1.vn         = optConservativeNormalVN(op1->OperIsLocalStore() ? op1->gtGetOp1() : op1);
         assertion.assertionKind  = assertionKind;
         assertion.op2.kind       = O2K_CONST_INT;
         assertion.op2.vn         = ValueNumStore::VNForNull();
@@ -2329,10 +2325,10 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
         }
     }
 
-    // All phi arguments are non-null implies phi rhs is non-null.
+    // All phi arguments are non-null implies the phi itself is non-null.
     if (isNonNull)
     {
-        return optCreateAssertion(tree->AsOp()->gtOp1, nullptr, OAK_NOT_EQUAL);
+        return optCreateAssertion(tree, nullptr, OAK_NOT_EQUAL);
     }
     return NO_ASSERTION_INDEX;
 }
@@ -6686,7 +6682,7 @@ PhaseStatus Compiler::optAssertionPropMain()
         fgRemoveRestOfBlock = false;
 
         // Walk the statement trees in this basic block
-        Statement* stmt = block->FirstNonPhiDef();
+        Statement* stmt = block->firstStmt();
         while (stmt != nullptr)
         {
             // Propagation tells us to remove the rest of the block. Remove it.
