@@ -11,8 +11,6 @@ using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 
-using static Interop;
-
 namespace System.Runtime
 {
     internal static partial class RuntimeExports
@@ -230,11 +228,13 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhUnboxTypeTest")]
-        public static unsafe void RhUnboxTypeTest(MethodTable* pMT1, MethodTable* pMT2)
+        public static unsafe void RhUnboxTypeTest(MethodTable* pType, MethodTable* pBoxType)
         {
-            if (!UnboxAnyTypeCompare(pMT1, pMT2))
+            Debug.Assert(pType->IsValueType);
+
+            if (!UnboxAnyTypeCompare(pType, pBoxType))
             {
-                throw pMT2->GetClasslibException(ExceptionIDs.InvalidCast);
+                throw pType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
         }
 
