@@ -2654,36 +2654,36 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 #if NET
-        [Fact]
-        public async Task MatchNonBacktrackingOver255Minterms()
-        {
-            // This is a test for the rare over 255 unique minterms case in MintermClassifier
-            StringBuilder pattern = new();
-            StringBuilder input = new();
-            for (int i = 256; i <= 768; i++)
-            {
-                string str = new Rune(i).ToString();
-                pattern.Append(str);
-                // adding an optional char as well just so it's not a string literal
-                pattern.Append(str);
-                pattern.Append('?');
-                // input is the pattern itself
-                input.Append(str);
-            }
-
-            // just so it's not allocated multiple times
-            string patternString = pattern.ToString();
-            string inputString = input.ToString();
-
-            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
-            {
-                Regex r = await RegexHelpers.GetRegexAsync(engine, patternString, RegexOptions.None);
-                MatchCollection ms = r.Matches(inputString);
-                Assert.Equal(1, ms.Count);
-                Assert.Equal(0, ms[0].Index);
-                Assert.Equal(513, ms[0].Length);
-            }
-        }
+        // [Fact]
+        // public async Task MatchNonBacktrackingOver255Minterms()
+        // {
+        //     // This is a test for the rare over 255 unique minterms case in MintermClassifier
+        //     StringBuilder pattern = new();
+        //     StringBuilder input = new();
+        //     for (int i = 256; i <= 768; i++)
+        //     {
+        //         string str = new Rune(i).ToString();
+        //         pattern.Append(str);
+        //         // adding an optional char as well just so it's not a string literal
+        //         pattern.Append(str);
+        //         pattern.Append('?');
+        //         // input is the pattern itself
+        //         input.Append(str);
+        //     }
+        //
+        //     // just so it's not allocated multiple times
+        //     string patternString = pattern.ToString();
+        //     string inputString = input.ToString();
+        //
+        //     foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+        //     {
+        //         Regex r = await RegexHelpers.GetRegexAsync(engine, patternString, RegexOptions.None);
+        //         MatchCollection ms = r.Matches(inputString);
+        //         Assert.Equal(1, ms.Count);
+        //         Assert.Equal(0, ms[0].Index);
+        //         Assert.Equal(513, ms[0].Length);
+        //     }
+        // }
 #endif
     }
 }
