@@ -4309,12 +4309,16 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         genTreeOps   newOper  = GT_COUNT;
         GenCondition cc;
 
-        if (cond->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0) && !relopOp1->SupportsSettingZeroFlag())
+        if (cond->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
         {
             // Codegen will use cbz or cbnz in codegen which do not affect the flag register
-            // However if relopOp1 can set flags, then we do not need to compare and branch, can just branch
-            newOper = GT_JCMP;
-            cc      = GenCondition::FromRelop(cond);
+            // However if relopOp1 can set flags and we expect TryLowerConditionToFlagsNode will later transform the nodes 
+            // to reuse the set flags, then we can avoid changing to compare + branch here
+            if (!relopOp1->SupportsSettingZeroFlag() || !IsInvariantInRange(relopOp1, jtrue))
+            {
+                newOper = GT_JCMP;
+                cc      = GenCondition::FromRelop(cond);
+            }
         }
         else if (cond->OperIs(GT_LT, GT_GE) && !cond->IsUnsigned() && relopOp2->IsIntegralConst(0))
         {
