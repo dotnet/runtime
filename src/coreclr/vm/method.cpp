@@ -2771,14 +2771,8 @@ void MethodDescChunk::DetermineAndSetIsEligibleForTieredCompilation()
             {
                 for (int i = 0; i < count; ++i)
                 {
-                    if (pMD->DetermineAndSetIsEligibleForTieredCompilation())
-                    {
-                        _ASSERTE(pMD->IsEligibleForTieredCompilation_NoCheckMethodDescChunk());
-                    }
-                    else
-                    {
-                        _ASSERTE(!pMD->IsEligibleForTieredCompilation_NoCheckMethodDescChunk());
-                    }
+                    bool isEligible = pMD->DetermineAndSetIsEligibleForTieredCompilation();
+                    _ASSERTE(isEligible == pMD->IsEligibleForTieredCompilation_NoCheckMethodDescChunk());
 
                     pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
                 }
