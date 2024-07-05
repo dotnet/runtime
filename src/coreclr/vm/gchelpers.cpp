@@ -228,7 +228,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     } CONTRACTL_END;
 
     Object* retVal = nullptr;
-    gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
+    gc_alloc_context* pAllocContext = &pEEAllocContext->gc_allocation_context;
     auto pCurrentThread = GetThread();
 
     bool isSampled = false;

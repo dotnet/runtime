@@ -443,13 +443,13 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
         return nullptr;
     }
 
-    return &t_runtime_thread_locals.alloc_context.gc_alloc_context;
+    return &t_runtime_thread_locals.alloc_context.gc_allocation_context;
 }
 
 void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context_func* fn, void* param)
 {
     // NOTE: Its possible that alloc_ptr = alloc_limit = combined_limit = NULL at this point
-    gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
+    gc_alloc_context* pAllocContext = &pEEAllocContext->gc_allocation_context;
 
     // The allocation context might be modified by the callback, so we need to save
     // the remaining sampling budget and restore it after the callback if needed.

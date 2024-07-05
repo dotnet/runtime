@@ -47,14 +47,14 @@ typedef struct _ee_alloc_context
     //   of sampled bytes didn't select a byte in this AC.
     // - if combined_limit < alloc_limit there is a sample limit in the AC. sample_limit = combined_limit.
     uint8_t* combined_limit;
-    gc_alloc_context gc_alloc_context;
+    gc_alloc_context gc_allocation_context;
 
  public:
     void init()
     {
         LIMITED_METHOD_CONTRACT;
         combined_limit = nullptr;
-        gc_alloc_context.init();
+        gc_allocation_context.init();
     }
 
     static inline bool IsRandomizedSamplingEnabled()
@@ -78,15 +78,15 @@ typedef struct _ee_alloc_context
     {
         if (!samplingEnabled)
         {
-            combined_limit = gc_alloc_context.alloc_limit;
+            combined_limit = gc_allocation_context.alloc_limit;
         }
         else
         {
             // compute the next sampling limit based on a geometric distribution
-            uint8_t* sampling_limit = gc_alloc_context.alloc_ptr + ComputeGeometricRandom();
+            uint8_t* sampling_limit = gc_allocation_context.alloc_ptr + ComputeGeometricRandom();
 
             // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
-            combined_limit = Min(sampling_limit, gc_alloc_context.alloc_limit);
+            combined_limit = Min(sampling_limit, gc_allocation_context.alloc_limit);
         }
     }
 
