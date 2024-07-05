@@ -1788,149 +1788,71 @@ namespace JIT.HardwareIntrinsics.Arm
             return BitConverter.Int32BitsToSingle(result);
         }
 
-        public static double SveCompareEqual(double left, double right)
-        {
-            long result = 0;
+        public static double SveCompareEqual(double left, double right) => BitConverter.Int64BitsToDouble((left == right) ? 1 : 0);
+        public static float SveCompareEqual(float left, float right) => BitConverter.Int32BitsToSingle((left == right) ? 1 : 0);
+        public static sbyte SveCompareEqual(sbyte left, sbyte right) => (sbyte)((left == right) ? 1 : 0);
+        public static byte SveCompareEqual(byte left, byte right) => (byte)((left == right) ? 1 : 0);
+        public static short SveCompareEqual(short left, short right) => (short)((left == right) ? 1 : 0);
+        public static ushort SveCompareEqual(ushort left, ushort right) => (ushort)((left == right) ? 1 : 0);
+        public static int SveCompareEqual(int left, int right) => (int)((left == right) ? 1 : 0);
+        public static uint SveCompareEqual(uint left, uint right) => (uint)((left == right) ? 1 : 0);
+        public static long SveCompareEqual(long left, long right) => (long)((left == right) ? 1 : 0);
+        public static ulong SveCompareEqual(ulong left, ulong right) => (ulong)((left == right) ? 1 : 0);
 
-            if (left == right)
-            {
-                result = 1;
-            }
+        public static double SveCompareNotEqual(double left, double right) => BitConverter.Int64BitsToDouble((left != right) ? 1 : 0);
+        public static float SveCompareNotEqual(float left, float right) => BitConverter.Int32BitsToSingle((left != right) ? 1 : 0);
+        public static sbyte SveCompareNotEqual(sbyte left, sbyte right) => (sbyte)((left != right) ? 1 : 0);
+        public static byte SveCompareNotEqual(byte left, byte right) => (byte)((left != right) ? 1 : 0);
+        public static short SveCompareNotEqual(short left, short right) => (short)((left != right) ? 1 : 0);
+        public static ushort SveCompareNotEqual(ushort left, ushort right) => (ushort)((left != right) ? 1 : 0);
+        public static int SveCompareNotEqual(int left, int right) => (int)((left != right) ? 1 : 0);
+        public static uint SveCompareNotEqual(uint left, uint right) => (uint)((left != right) ? 1 : 0);
+        public static long SveCompareNotEqual(long left, long right) => (long)((left != right) ? 1 : 0);
+        public static ulong SveCompareNotEqual(ulong left, ulong right) => (ulong)((left != right) ? 1 : 0);
+        
+        public static double SveCompareGreaterThan(double left, double right) => BitConverter.Int64BitsToDouble((left > right) ? 1 : 0);
+        public static float SveCompareGreaterThan(float left, float right) => BitConverter.Int32BitsToSingle((left > right) ? 1 : 0);
+        public static sbyte SveCompareGreaterThan(sbyte left, sbyte right) => (sbyte)((left > right) ? 1 : 0);
+        public static byte SveCompareGreaterThan(byte left, byte right) => (byte)((left > right) ? 1 : 0);
+        public static short SveCompareGreaterThan(short left, short right) => (short)((left > right) ? 1 : 0);
+        public static ushort SveCompareGreaterThan(ushort left, ushort right) => (ushort)((left > right) ? 1 : 0);
+        public static int SveCompareGreaterThan(int left, int right) => (int)((left > right) ? 1 : 0);
+        public static uint SveCompareGreaterThan(uint left, uint right) => (uint)((left > right) ? 1 : 0);
+        public static long SveCompareGreaterThan(long left, long right) => (long)((left > right) ? 1 : 0);
+        public static ulong SveCompareGreaterThan(ulong left, ulong right) => (ulong)((left > right) ? 1 : 0);
+        
+        public static double SveCompareGreaterThanOrEqual(double left, double right) => BitConverter.Int64BitsToDouble((left >= right) ? 1 : 0);
+        public static float SveCompareGreaterThanOrEqual(float left, float right) => BitConverter.Int32BitsToSingle((left >= right) ? 1 : 0);
+        public static sbyte SveCompareGreaterThanOrEqual(sbyte left, sbyte right) => (sbyte)((left >= right) ? 1 : 0);
+        public static byte SveCompareGreaterThanOrEqual(byte left, byte right) => (byte)((left >= right) ? 1 : 0);
+        public static short SveCompareGreaterThanOrEqual(short left, short right) => (short)((left >= right) ? 1 : 0);
+        public static ushort SveCompareGreaterThanOrEqual(ushort left, ushort right) => (ushort)((left >= right) ? 1 : 0);
+        public static int SveCompareGreaterThanOrEqual(int left, int right) => (int)((left >= right) ? 1 : 0);
+        public static uint SveCompareGreaterThanOrEqual(uint left, uint right) => (uint)((left >= right) ? 1 : 0);
+        public static long SveCompareGreaterThanOrEqual(long left, long right) => (long)((left >= right) ? 1 : 0);
+        public static ulong SveCompareGreaterThanOrEqual(ulong left, ulong right) => (ulong)((left >= right) ? 1 : 0);
 
-            return BitConverter.Int64BitsToDouble(result);
-        }
+        public static double SveCompareLessThan(double left, double right) => BitConverter.Int64BitsToDouble((left < right) ? 1 : 0);
+        public static float SveCompareLessThan(float left, float right) => BitConverter.Int32BitsToSingle((left < right) ? 1 : 0);
+        public static sbyte SveCompareLessThan(sbyte left, sbyte right) => (sbyte)((left < right) ? 1 : 0);
+        public static byte SveCompareLessThan(byte left, byte right) => (byte)((left < right) ? 1 : 0);
+        public static short SveCompareLessThan(short left, short right) => (short)((left < right) ? 1 : 0);
+        public static ushort SveCompareLessThan(ushort left, ushort right) => (ushort)((left < right) ? 1 : 0);
+        public static int SveCompareLessThan(int left, int right) => (int)((left < right) ? 1 : 0);
+        public static uint SveCompareLessThan(uint left, uint right) => (uint)((left < right) ? 1 : 0);
+        public static long SveCompareLessThan(long left, long right) => (long)((left < right) ? 1 : 0);
+        public static ulong SveCompareLessThan(ulong left, ulong right) => (ulong)((left < right) ? 1 : 0);      
 
-        public static float SveCompareEqual(float left, float right)
-        {
-            int result = 0;
-
-            if (left == right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double SveCompareGreaterThan(double left, double right)
-        {
-            long result = 0;
-
-            if (left > right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float SveCompareGreaterThan(float left, float right)
-        {
-            int result = 0;
-
-            if (left > right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double SveCompareGreaterThanOrEqual(double left, double right)
-        {
-            long result = 0;
-
-            if (left >= right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float SveCompareGreaterThanOrEqual(float left, float right)
-        {
-            int result = 0;
-
-            if (left >= right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double SveCompareLessThan(double left, double right)
-        {
-            long result = 0;
-
-            if (left < right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float SveCompareLessThan(float left, float right)
-        {
-            int result = 0;
-
-            if (left < right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double SveCompareLessThanOrEqual(double left, double right)
-        {
-            long result = 0;
-
-            if (left <= right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float SveCompareLessThanOrEqual(float left, float right)
-        {
-            int result = 0;
-
-            if (left <= right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double SveCompareTest(double left, double right)
-        {
-            long result = 0;
-
-            if ((BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right)) != 0)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float SveCompareTest(float left, float right)
-        {
-            int result = 0;
-
-            if ((BitConverter.SingleToInt32Bits(left) & BitConverter.SingleToInt32Bits(right)) != 0)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
+        public static double SveCompareLessThanOrEqual(double left, double right) => BitConverter.Int64BitsToDouble((left <= right) ? 1 : 0);
+        public static float SveCompareLessThanOrEqual(float left, float right) => BitConverter.Int32BitsToSingle((left <= right) ? 1 : 0);
+        public static sbyte SveCompareLessThanOrEqual(sbyte left, sbyte right) => (sbyte)((left <= right) ? 1 : 0);
+        public static byte SveCompareLessThanOrEqual(byte left, byte right) => (byte)((left <= right) ? 1 : 0);
+        public static short SveCompareLessThanOrEqual(short left, short right) => (short)((left <= right) ? 1 : 0);
+        public static ushort SveCompareLessThanOrEqual(ushort left, ushort right) => (ushort)((left <= right) ? 1 : 0);
+        public static int SveCompareLessThanOrEqual(int left, int right) => (int)((left <= right) ? 1 : 0);
+        public static uint SveCompareLessThanOrEqual(uint left, uint right) => (uint)((left <= right) ? 1 : 0);
+        public static long SveCompareLessThanOrEqual(long left, long right) => (long)((left <= right) ? 1 : 0);
+        public static ulong SveCompareLessThanOrEqual(ulong left, ulong right) => (ulong)((left <= right) ? 1 : 0);
 
         public static double CompareEqual(double left, double right)
         {
