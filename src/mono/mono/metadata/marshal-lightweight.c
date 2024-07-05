@@ -2878,42 +2878,43 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	arg_shift = 0;
 	int lowered_struct_so_far = 0;
-	for (i = 0; i < csig->param_count; i++) {
-		MonoType *t = csig->params [i];
+	for (i = 0; i < sig->param_count; i++) {
+		MonoType *t = sig->params [i];
 
-		if (!mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && tmp_locals [i]) {
+		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && arg_is_lowered_struct[i] == 1)
+		{
+			uint32_t j = 0;
+			guint8 stind_op;
+			int offset = 0;
+
+			for (;j < swift_lowering[i].num_lowered_elements; j++) {
+				offset = swift_lowering[i].offsets[j];
+				mono_mb_emit_ldloc_addr (mb, struct_locals_start + lowered_struct_so_far);
+				mono_mb_emit_icon (mb, offset);
+				mono_mb_emit_byte (mb, CEE_ADD);
+
+				mono_mb_emit_ldarg (mb, i + j + arg_shift);
+				stind_op = mono_type_to_stind (csig->params[i+j + arg_shift]);
+				mono_mb_emit_byte (mb, stind_op);
+			}
+
+			arg_shift+=swift_lowering[i].num_lowered_elements - 1;
+			mono_mb_emit_ldloc(mb, struct_locals_start + lowered_struct_so_far);
+			lowered_struct_so_far++;
+		}
+		else if (tmp_locals [i]) {
 			if (m_type_is_byref (t))
 				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
 			else
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
 		}
-		else if(mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && arg_is_lowered_struct[i-arg_shift] == 1){
-			uint32_t j = 0;
-			guint8 stind_op;
-			int offset = 0;
-			for (;j < swift_lowering[i-arg_shift].num_lowered_elements; j++) {
-				offset = swift_lowering[i-arg_shift].offsets[j];
-				mono_mb_emit_ldloc_addr (mb, struct_locals_start + lowered_struct_so_far);
-				mono_mb_emit_icon (mb, offset);
-				mono_mb_emit_byte (mb, CEE_ADD);
-
-				mono_mb_emit_ldarg (mb, i + j);
-				stind_op = mono_type_to_stind (csig->params[i+j]);
-				mono_mb_emit_byte (mb, stind_op);
-			}
-
-			i+=j - 1;
-			arg_shift += j - 1;
-			mono_mb_emit_ldloc(mb, struct_locals_start + lowered_struct_so_far);
-			lowered_struct_so_far++;
-		}
-		else if(mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && arg_is_lowered_struct[i-arg_shift] == 2)
+		else if(mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && arg_is_lowered_struct[i] == 2)
 		{
-			mono_mb_emit_ldarg (mb, i);			
+			mono_mb_emit_ldarg (mb, i + arg_shift);			
 			lowered_struct_so_far++;
 		}
 		else
-			mono_mb_emit_ldarg (mb, i);
+			mono_mb_emit_ldarg (mb, i + arg_shift);
 	}
 
 	/* ret = method (...) */
