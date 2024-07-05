@@ -44,7 +44,7 @@ Documentation for VS debugger format specifiers: https://learn.microsoft.com/vis
   <!-- GenTree -->
 
   <Type Name="GenTree">
-    <DisplayString>{gtTreeID, d}::: [{gtOper,en}, {gtType,en}], {gtVNPair}</DisplayString>
+    <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en}], {gtVNPair}</DisplayString>
   </Type>
   <Type Name="GenTreeIntCon">
     <DisplayString>{gtTreeID, d}: [IntCon={((GenTreeIntCon*)this)-&gt;gtIconVal, d}], {gtVNPair}</DisplayString>
