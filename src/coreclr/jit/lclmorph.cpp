@@ -1252,8 +1252,7 @@ private:
         {
             // We will only attempt this optimization for locals that do not
             // later turn into indirections.
-            bool isSuitableLocal =
-                varTypeIsStruct(varDsc) && !m_compiler->lvaIsImplicitByRefLocal(lclNum);
+            bool isSuitableLocal = varTypeIsStruct(varDsc) && !m_compiler->lvaIsImplicitByRefLocal(lclNum);
 #ifdef TARGET_X86
             if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
             {
