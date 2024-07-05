@@ -2802,7 +2802,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		arg_is_lowered_struct = g_newa (int, sig->param_count);
 		int lowered_struct_count = 0;
 
-		for (int i =0; i < sig->param_count; i++) {
+		for (i =0; i < sig->param_count; i++) {
 			MonoType *ptype = sig->params [i];
 			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
 			arg_is_lowered_struct [i] = FALSE;
@@ -2888,7 +2888,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
 		}
 		else if(mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && arg_is_lowered_struct[i-arg_shift] == 1){
-			int j = 0;
+			uint32_t j = 0;
 			guint8 stind_op;
 			int offset = 0;
 			for (;j < swift_lowering[i-arg_shift].num_lowered_elements; j++) {
