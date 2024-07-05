@@ -4090,7 +4090,6 @@ method_signature_is_usable_when_marshalling_disabled (MonoMethodSignature *sig)
 static MonoMethod *
 marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
-	SwiftPhysicalLowering *swift_lowering;
 	MonoMethodSignature *sig, *csig, *invoke_sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res, *invoke;
@@ -4188,7 +4187,6 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-		swift_lowering = g_newa (SwiftPhysicalLowering, sig->param_count);
 		GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), csig->param_count);
 		uint32_t new_param_count = 0;
 
@@ -4203,7 +4201,6 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 				SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
 				if (!lowered_swift_struct.by_reference) 
 				{
-					swift_lowering [j] = lowered_swift_struct;
 
 					for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
 						g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
@@ -4212,6 +4209,8 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 				}
 				else
 				{
+					MonoClass* klass2 = mono_class_from_mono_type_internal (ptype);
+					ptype = mono_class_get_byref_type (klass2);
 					g_array_append_val (new_params, ptype);
 					new_param_count++;
 				}

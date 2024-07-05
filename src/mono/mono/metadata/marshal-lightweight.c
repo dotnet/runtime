@@ -2719,8 +2719,8 @@ static void
 emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig;
-	SwiftPhysicalLowering *swift_lowering;
-	int i, *tmp_locals,  *arg_is_lowered_struct;
+	SwiftPhysicalLowering *swift_lowering = NULL;
+	int i, *tmp_locals,  *arg_is_lowered_struct = NULL;
 	gboolean closed = FALSE;
 	GCUnsafeTransitionBuilder gc_unsafe_builder = {0,};
 
@@ -2800,7 +2800,6 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 		swift_lowering = g_newa (SwiftPhysicalLowering, sig->param_count);
 		arg_is_lowered_struct = g_newa (int, sig->param_count);
-		int lowered_struct_count = 0;
 
 		for (i =0; i < sig->param_count; i++) {
 			MonoType *ptype = sig->params [i];
@@ -2815,7 +2814,6 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 					struct_locals_start = MIN(xdd, struct_locals_start); 
 					swift_lowering [i] = lowered_swift_struct;
 					arg_is_lowered_struct [i] = 1;
-					lowered_struct_count++;
 				}
 				else
 				{
@@ -2910,7 +2908,9 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		}
 		else if(mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && arg_is_lowered_struct[i] == 2)
 		{
-			mono_mb_emit_ldarg (mb, i + arg_shift);			
+			mono_mb_emit_ldarg (mb, i + arg_shift);
+			MonoClass* klass = mono_class_from_mono_type_internal (sig->params [i]);
+			mono_mb_emit_op (mb, CEE_LDOBJ, klass);
 			lowered_struct_so_far++;
 		}
 		else
