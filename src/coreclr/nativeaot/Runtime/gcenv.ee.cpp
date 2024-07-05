@@ -56,7 +56,7 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
 {
     FireEtwGCRestartEEBegin_V1(GetClrInstanceId());
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_X86) && !defined(TARGET_AMD64)
     // Flush the store buffers on all CPUs, to ensure that they all see changes made
     // by the GC threads. This only matters on weak memory ordered processors as
     // the strong memory ordered processors wouldn't have reordered the relevant reads.
@@ -64,7 +64,7 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
     // the runtime was suspended and that will return to cooperative mode after the runtime
     // is restarted.
     ::FlushProcessWriteBuffers();
-#endif //TARGET_ARM || TARGET_ARM64
+#endif // !defined(TARGET_X86) && !defined(TARGET_AMD64)
 
     SyncClean::CleanUp();
 
