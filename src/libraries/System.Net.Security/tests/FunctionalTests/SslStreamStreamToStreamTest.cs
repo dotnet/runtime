@@ -63,7 +63,9 @@ namespace System.Net.Security.Tests
             using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
             {
                 yield return new object[] { new X509Certificate2(serverCert), new X509Certificate2(clientCert) };
+#pragma warning disable SYSLIB0057 // Test case is explicitly testing X509Certificate instances.
                 yield return new object[] { new X509Certificate(serverCert.Export(X509ContentType.Pfx), (string)null), new X509Certificate(clientCert.Export(X509ContentType.Pfx), (string)null) };
+#pragma warning restore SYSLIB0057
             }
         }
 

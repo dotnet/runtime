@@ -4,7 +4,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_TEST</DefineConstants>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
@@ -157,5 +156,6 @@
     <Reference Include="System.DirectoryServices.Protocols" />
     <Reference Include="System.Net.Http" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Http.Json\src\System.Net.Http.Json.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Cryptography\src\Microsoft.Bcl.Cryptography.csproj" />
   </ItemGroup>
 </Project>

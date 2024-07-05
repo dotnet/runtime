@@ -243,7 +243,7 @@ namespace System.Net.Security.Tests
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                X509Certificate2 temp = new X509Certificate2(serverCert.Export(X509ContentType.Pkcs12));
+                X509Certificate2 temp = X509CertificateLoader.LoadPkcs12(serverCert.Export(X509ContentType.Pkcs12), (string?)null);
                 serverCert.Dispose();
                 serverCert = temp;
             }

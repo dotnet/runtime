@@ -48,11 +48,11 @@ namespace System.Net.Test.Common
                         Assert.True(mutex?.WaitOne(MutexTimeoutMs) ?? true, "Could not acquire the global certificate mutex.");
                         try
                         {
-                            s_serverCertificate = new X509Certificate2(serverCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
-                            s_clientCertificate = new X509Certificate2(clientCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
-                            s_noEKUCertificate = new X509Certificate2(noEKUCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
-                            s_selfSignedServerCertificate = new X509Certificate2(selfSignedServerCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
-                            s_selfSignedClientCertificate = new X509Certificate2(selfSignedClientCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
+                            s_serverCertificate = X509CertificateLoader.LoadPkcs12(serverCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
+                            s_clientCertificate = X509CertificateLoader.LoadPkcs12(clientCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
+                            s_noEKUCertificate = X509CertificateLoader.LoadPkcs12(noEKUCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
+                            s_selfSignedServerCertificate = X509CertificateLoader.LoadPkcs12(selfSignedServerCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
+                            s_selfSignedClientCertificate = X509CertificateLoader.LoadPkcs12(selfSignedClientCertificateBytes, CertificatePassword, X509KeyStorageFlags.Exportable);
                         }
                         finally { mutex?.ReleaseMutex(); }
                     }
@@ -92,7 +92,7 @@ namespace System.Net.Test.Common
                         {
                             using (innerCert)
                             {
-                                cert = new X509Certificate2(innerCert.Export(X509ContentType.Pfx));
+                                cert = X509CertificateLoader.LoadPkcs12(innerCert.Export(X509ContentType.Pfx), (string?)null);
                             }
                         }
                         else
