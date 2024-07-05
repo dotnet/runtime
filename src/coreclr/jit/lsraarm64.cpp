@@ -1944,7 +1944,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             srcCount += BuildDelayFreeUses(intrin.op3, embOp2Node->Op(1));
         }
     }
-
     else if (intrin.op2 != nullptr)
     {
         // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
@@ -1955,28 +1954,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         bool             forceOp2DelayFree   = false;
         SingleTypeRegSet lowVectorCandidates = RBM_NONE;
         size_t           lowVectorOperandNum = 0;
-        if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
-        {
-            if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
-            {
-                // If the index is not a constant and the object is not contained or is a local
-                // we will need a general purpose register to calculate the address
-                // internal register must not clobber input index
-                // TODO-Cleanup: An internal register will never clobber a source; this code actually
-                // ensures that the index (op2) doesn't interfere with the target.
-                buildInternalIntRegisterDefForNode(intrinsicTree);
-                forceOp2DelayFree = true;
-            }
 
-            if (!intrin.op2->IsCnsIntOrI() && !intrin.op1->isContained())
-            {
-                // If the index is not a constant or op1 is in register,
-                // we will use the SIMD temp location to store the vector.
-                var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
-                compiler->getSIMDInitTempVarNum(requiredSimdTempType);
-            }
-        }
-        else if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
+        if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
         {
             getLowVectorOperandAndCandidates(intrin, &lowVectorOperandNum, &lowVectorCandidates);
         }
