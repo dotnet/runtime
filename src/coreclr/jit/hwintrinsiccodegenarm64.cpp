@@ -586,7 +586,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 case 2:
                 {
-                    assert(instrIsRMW);
+                    if (!instrIsRMW)
+                    {
+                        // Perform the actual "predicated" operation so that `embMaskOp1Reg` is the first operand
+                        // and `embMaskOp2Reg` is the second operand.
+                        GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                      embMaskOp2Reg, opt);
+                        break;
+                    }
 
                     insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
                     bool            hasShift = false;

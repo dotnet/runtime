@@ -103,6 +103,63 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> Abs(Vector<double> value) => Abs(value);
 
+
+        ///  Absolute compare greater than
+
+        /// <summary>
+        /// svbool_t svacgt[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FACGT Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> AbsoluteCompareGreaterThan(Vector<float> left, Vector<float> right) => AbsoluteCompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svacgt[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FACGT Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> AbsoluteCompareGreaterThan(Vector<double> left, Vector<double> right) => AbsoluteCompareGreaterThan(left, right);
+
+        ///  Absolute compare greater than or equal to
+
+        /// <summary>
+        /// svbool_t svacge[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FACGE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> AbsoluteCompareGreaterThanOrEqual(Vector<float> left, Vector<float> right) => AbsoluteCompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svacge[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FACGE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> AbsoluteCompareGreaterThanOrEqual(Vector<double> left, Vector<double> right) => AbsoluteCompareGreaterThanOrEqual(left, right);
+
+        ///  Absolute compare less than
+
+        /// <summary>
+        /// svbool_t svaclt[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FACLT Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> AbsoluteCompareLessThan(Vector<float> left, Vector<float> right) => AbsoluteCompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svaclt[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FACLT Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> AbsoluteCompareLessThan(Vector<double> left, Vector<double> right) => AbsoluteCompareLessThan(left, right);
+
+        ///  Absolute compare less than or equal to
+
+        /// <summary>
+        /// svbool_t svacle[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FACLE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> AbsoluteCompareLessThanOrEqual(Vector<float> left, Vector<float> right) => AbsoluteCompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svacle[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FACLE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> AbsoluteCompareLessThanOrEqual(Vector<double> left, Vector<double> right) => AbsoluteCompareLessThanOrEqual(left, right);
+
         ///  AbsoluteDifference : Absolute difference
 
         /// <summary>
@@ -669,6 +726,614 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> BooleanNot(Vector<ulong> value) => BooleanNot(value);
 
+        ///  Shuffle active elements of vector to the right and fill with zero
+
+        /// <summary>
+        /// svfloat64_t svcompact[_f64](svbool_t pg, svfloat64_t op)
+        ///   COMPACT Zresult.D, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> Compact(Vector<double> mask, Vector<double> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svint32_t svcompact[_s32](svbool_t pg, svint32_t op)
+        ///   COMPACT Zresult.S, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> Compact(Vector<int> mask, Vector<int> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svint64_t svcompact[_s64](svbool_t pg, svint64_t op)
+        ///   COMPACT Zresult.D, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> Compact(Vector<long> mask, Vector<long> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svfloat32_t svcompact[_f32](svbool_t pg, svfloat32_t op)
+        ///   COMPACT Zresult.S, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> Compact(Vector<float> mask, Vector<float> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svuint32_t svcompact[_u32](svbool_t pg, svuint32_t op)
+        ///   COMPACT Zresult.S, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> Compact(Vector<uint> mask, Vector<uint> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svuint64_t svcompact[_u64](svbool_t pg, svuint64_t op)
+        ///   COMPACT Zresult.D, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> Compact(Vector<ulong> mask, Vector<ulong> value) => Compact(mask, value);
+
+
+        ///  Compare equal to
+
+        /// <summary>
+        /// svbool_t svcmpeq[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   CMPEQ Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> CompareEqual(Vector<byte> left, Vector<byte> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FCMEQ Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> CompareEqual(Vector<double> left, Vector<double> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   CMPEQ Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> CompareEqual(Vector<short> left, Vector<short> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq_wide[_s16](svbool_t pg, svint16_t op1, svint64_t op2)
+        ///   CMPEQ Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<short> CompareEqual(Vector<short> left, Vector<long> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   CMPEQ Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> CompareEqual(Vector<int> left, Vector<int> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq_wide[_s32](svbool_t pg, svint32_t op1, svint64_t op2)
+        ///   CMPEQ Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<int> CompareEqual(Vector<int> left, Vector<long> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   CMPEQ Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> CompareEqual(Vector<long> left, Vector<long> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   CMPEQ Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareEqual(Vector<sbyte> left, Vector<sbyte> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq_wide[_s8](svbool_t pg, svint8_t op1, svint64_t op2)
+        ///   CMPEQ Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareEqual(Vector<sbyte> left, Vector<long> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FCMEQ Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> CompareEqual(Vector<float> left, Vector<float> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   CMPEQ Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> CompareEqual(Vector<ushort> left, Vector<ushort> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   CMPEQ Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> CompareEqual(Vector<uint> left, Vector<uint> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpeq[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   CMPEQ Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> CompareEqual(Vector<ulong> left, Vector<ulong> right) => CompareEqual(left, right);
+
+        ///  Compare greater than
+
+        /// <summary>
+        /// svbool_t svcmpgt[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   CMPHI Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> CompareGreaterThan(Vector<byte> left, Vector<byte> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt_wide[_u8](svbool_t pg, svuint8_t op1, svuint64_t op2)
+        ///   CMPHI Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<byte> CompareGreaterThan(Vector<byte> left, Vector<ulong> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FCMGT Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> CompareGreaterThan(Vector<double> left, Vector<double> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   CMPGT Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> CompareGreaterThan(Vector<short> left, Vector<short> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt_wide[_s16](svbool_t pg, svint16_t op1, svint64_t op2)
+        ///   CMPGT Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<short> CompareGreaterThan(Vector<short> left, Vector<long> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   CMPGT Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> CompareGreaterThan(Vector<int> left, Vector<int> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt_wide[_s32](svbool_t pg, svint32_t op1, svint64_t op2)
+        ///   CMPGT Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<int> CompareGreaterThan(Vector<int> left, Vector<long> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   CMPGT Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> CompareGreaterThan(Vector<long> left, Vector<long> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   CMPGT Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareGreaterThan(Vector<sbyte> left, Vector<sbyte> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt_wide[_s8](svbool_t pg, svint8_t op1, svint64_t op2)
+        ///   CMPGT Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareGreaterThan(Vector<sbyte> left, Vector<long> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FCMGT Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> CompareGreaterThan(Vector<float> left, Vector<float> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   CMPHI Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> CompareGreaterThan(Vector<ushort> left, Vector<ushort> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt_wide[_u16](svbool_t pg, svuint16_t op1, svuint64_t op2)
+        ///   CMPHI Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ushort> CompareGreaterThan(Vector<ushort> left, Vector<ulong> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   CMPHI Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> CompareGreaterThan(Vector<uint> left, Vector<uint> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt_wide[_u32](svbool_t pg, svuint32_t op1, svuint64_t op2)
+        ///   CMPHI Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<uint> CompareGreaterThan(Vector<uint> left, Vector<ulong> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpgt[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   CMPHI Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> CompareGreaterThan(Vector<ulong> left, Vector<ulong> right) => CompareGreaterThan(left, right);
+
+
+        ///  Compare greater than or equal to
+
+        /// <summary>
+        /// svbool_t svcmpge[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   CMPHS Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> CompareGreaterThanOrEqual(Vector<byte> left, Vector<byte> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge_wide[_u8](svbool_t pg, svuint8_t op1, svuint64_t op2)
+        ///   CMPHS Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<byte> CompareGreaterThanOrEqual(Vector<byte> left, Vector<ulong> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FCMGE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> CompareGreaterThanOrEqual(Vector<double> left, Vector<double> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   CMPGE Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> CompareGreaterThanOrEqual(Vector<short> left, Vector<short> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge_wide[_s16](svbool_t pg, svint16_t op1, svint64_t op2)
+        ///   CMPGE Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<short> CompareGreaterThanOrEqual(Vector<short> left, Vector<long> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   CMPGE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> CompareGreaterThanOrEqual(Vector<int> left, Vector<int> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge_wide[_s32](svbool_t pg, svint32_t op1, svint64_t op2)
+        ///   CMPGE Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<int> CompareGreaterThanOrEqual(Vector<int> left, Vector<long> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   CMPGE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> CompareGreaterThanOrEqual(Vector<long> left, Vector<long> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   CMPGE Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareGreaterThanOrEqual(Vector<sbyte> left, Vector<sbyte> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge_wide[_s8](svbool_t pg, svint8_t op1, svint64_t op2)
+        ///   CMPGE Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareGreaterThanOrEqual(Vector<sbyte> left, Vector<long> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FCMGE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> CompareGreaterThanOrEqual(Vector<float> left, Vector<float> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   CMPHS Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> CompareGreaterThanOrEqual(Vector<ushort> left, Vector<ushort> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge_wide[_u16](svbool_t pg, svuint16_t op1, svuint64_t op2)
+        ///   CMPHS Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ushort> CompareGreaterThanOrEqual(Vector<ushort> left, Vector<ulong> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   CMPHS Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> CompareGreaterThanOrEqual(Vector<uint> left, Vector<uint> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge_wide[_u32](svbool_t pg, svuint32_t op1, svuint64_t op2)
+        ///   CMPHS Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<uint> CompareGreaterThanOrEqual(Vector<uint> left, Vector<ulong> right) => CompareGreaterThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpge[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   CMPHS Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> CompareGreaterThanOrEqual(Vector<ulong> left, Vector<ulong> right) => CompareGreaterThanOrEqual(left, right);
+
+        ///  Compare less than
+
+        /// <summary>
+        /// svbool_t svcmplt[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   CMPHI Presult.B, Pg/Z, Zop2.B, Zop1.B
+        /// </summary>
+        public static unsafe Vector<byte> CompareLessThan(Vector<byte> left, Vector<byte> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt_wide[_u8](svbool_t pg, svuint8_t op1, svuint64_t op2)
+        ///   CMPLO Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<byte> CompareLessThan(Vector<byte> left, Vector<ulong> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FCMGT Presult.D, Pg/Z, Zop2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<double> CompareLessThan(Vector<double> left, Vector<double> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   CMPGT Presult.H, Pg/Z, Zop2.H, Zop1.H
+        /// </summary>
+        public static unsafe Vector<short> CompareLessThan(Vector<short> left, Vector<short> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt_wide[_s16](svbool_t pg, svint16_t op1, svint64_t op2)
+        ///   CMPLT Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<short> CompareLessThan(Vector<short> left, Vector<long> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   CMPGT Presult.S, Pg/Z, Zop2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<int> CompareLessThan(Vector<int> left, Vector<int> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt_wide[_s32](svbool_t pg, svint32_t op1, svint64_t op2)
+        ///   CMPLT Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<int> CompareLessThan(Vector<int> left, Vector<long> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   CMPGT Presult.D, Pg/Z, Zop2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<long> CompareLessThan(Vector<long> left, Vector<long> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   CMPGT Presult.B, Pg/Z, Zop2.B, Zop1.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareLessThan(Vector<sbyte> left, Vector<sbyte> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt_wide[_s8](svbool_t pg, svint8_t op1, svint64_t op2)
+        ///   CMPLT Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareLessThan(Vector<sbyte> left, Vector<long> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FCMGT Presult.S, Pg/Z, Zop2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<float> CompareLessThan(Vector<float> left, Vector<float> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   CMPHI Presult.H, Pg/Z, Zop2.H, Zop1.H
+        /// </summary>
+        public static unsafe Vector<ushort> CompareLessThan(Vector<ushort> left, Vector<ushort> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt_wide[_u16](svbool_t pg, svuint16_t op1, svuint64_t op2)
+        ///   CMPLO Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ushort> CompareLessThan(Vector<ushort> left, Vector<ulong> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   CMPHI Presult.S, Pg/Z, Zop2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<uint> CompareLessThan(Vector<uint> left, Vector<uint> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt_wide[_u32](svbool_t pg, svuint32_t op1, svuint64_t op2)
+        ///   CMPLO Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<uint> CompareLessThan(Vector<uint> left, Vector<ulong> right) => CompareLessThan(left, right);
+
+        /// <summary>
+        /// svbool_t svcmplt[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   CMPHI Presult.D, Pg/Z, Zop2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<ulong> CompareLessThan(Vector<ulong> left, Vector<ulong> right) => CompareLessThan(left, right);
+
+
+        ///  Compare less than or equal to
+
+        /// <summary>
+        /// svbool_t svcmple[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   CMPHS Presult.B, Pg/Z, Zop2.B, Zop1.B
+        /// </summary>
+        public static unsafe Vector<byte> CompareLessThanOrEqual(Vector<byte> left, Vector<byte> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple_wide[_u8](svbool_t pg, svuint8_t op1, svuint64_t op2)
+        ///   CMPLS Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<byte> CompareLessThanOrEqual(Vector<byte> left, Vector<ulong> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FCMGE Presult.D, Pg/Z, Zop2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<double> CompareLessThanOrEqual(Vector<double> left, Vector<double> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   CMPGE Presult.H, Pg/Z, Zop2.H, Zop1.H
+        /// </summary>
+        public static unsafe Vector<short> CompareLessThanOrEqual(Vector<short> left, Vector<short> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple_wide[_s16](svbool_t pg, svint16_t op1, svint64_t op2)
+        ///   CMPLE Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<short> CompareLessThanOrEqual(Vector<short> left, Vector<long> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   CMPGE Presult.S, Pg/Z, Zop2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<int> CompareLessThanOrEqual(Vector<int> left, Vector<int> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple_wide[_s32](svbool_t pg, svint32_t op1, svint64_t op2)
+        ///   CMPLE Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<int> CompareLessThanOrEqual(Vector<int> left, Vector<long> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   CMPGE Presult.D, Pg/Z, Zop2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<long> CompareLessThanOrEqual(Vector<long> left, Vector<long> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   CMPGE Presult.B, Pg/Z, Zop2.B, Zop1.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareLessThanOrEqual(Vector<sbyte> left, Vector<sbyte> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple_wide[_s8](svbool_t pg, svint8_t op1, svint64_t op2)
+        ///   CMPLE Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareLessThanOrEqual(Vector<sbyte> left, Vector<long> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FCMGE Presult.S, Pg/Z, Zop2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<float> CompareLessThanOrEqual(Vector<float> left, Vector<float> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   CMPHS Presult.H, Pg/Z, Zop2.H, Zop1.H
+        /// </summary>
+        public static unsafe Vector<ushort> CompareLessThanOrEqual(Vector<ushort> left, Vector<ushort> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple_wide[_u16](svbool_t pg, svuint16_t op1, svuint64_t op2)
+        ///   CMPLS Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ushort> CompareLessThanOrEqual(Vector<ushort> left, Vector<ulong> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   CMPHS Presult.S, Pg/Z, Zop2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<uint> CompareLessThanOrEqual(Vector<uint> left, Vector<uint> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple_wide[_u32](svbool_t pg, svuint32_t op1, svuint64_t op2)
+        ///   CMPLS Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<uint> CompareLessThanOrEqual(Vector<uint> left, Vector<ulong> right) => CompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// svbool_t svcmple[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   CMPHS Presult.D, Pg/Z, Zop2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<ulong> CompareLessThanOrEqual(Vector<ulong> left, Vector<ulong> right) => CompareLessThanOrEqual(left, right);
+
+        ///  Compare not equal to
+
+        /// <summary>
+        /// svbool_t svcmpne[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   CMPNE Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> CompareNotEqualTo(Vector<byte> left, Vector<byte> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FCMNE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> CompareNotEqualTo(Vector<double> left, Vector<double> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   CMPNE Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> CompareNotEqualTo(Vector<short> left, Vector<short> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne_wide[_s16](svbool_t pg, svint16_t op1, svint64_t op2)
+        ///   CMPNE Presult.H, Pg/Z, Zop1.H, Zop2.D
+        /// </summary>
+        public static unsafe Vector<short> CompareNotEqualTo(Vector<short> left, Vector<long> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   CMPNE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> CompareNotEqualTo(Vector<int> left, Vector<int> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne_wide[_s32](svbool_t pg, svint32_t op1, svint64_t op2)
+        ///   CMPNE Presult.S, Pg/Z, Zop1.S, Zop2.D
+        /// </summary>
+        public static unsafe Vector<int> CompareNotEqualTo(Vector<int> left, Vector<long> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   CMPNE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> CompareNotEqualTo(Vector<long> left, Vector<long> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   CMPNE Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareNotEqualTo(Vector<sbyte> left, Vector<sbyte> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne_wide[_s8](svbool_t pg, svint8_t op1, svint64_t op2)
+        ///   CMPNE Presult.B, Pg/Z, Zop1.B, Zop2.D
+        /// </summary>
+        public static unsafe Vector<sbyte> CompareNotEqualTo(Vector<sbyte> left, Vector<long> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FCMNE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> CompareNotEqualTo(Vector<float> left, Vector<float> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   CMPNE Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> CompareNotEqualTo(Vector<ushort> left, Vector<ushort> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   CMPNE Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> CompareNotEqualTo(Vector<uint> left, Vector<uint> right) => CompareNotEqualTo(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpne[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   CMPNE Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> CompareNotEqualTo(Vector<ulong> left, Vector<ulong> right) => CompareNotEqualTo(left, right);
+
+
+        ///  Compare unordered with
+
+        /// <summary>
+        /// svbool_t svcmpuo[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FCMUO Presult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> CompareUnordered(Vector<double> left, Vector<double> right) => CompareUnordered(left, right);
+
+        /// <summary>
+        /// svbool_t svcmpuo[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FCMUO Presult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> CompareUnordered(Vector<float> left, Vector<float> right) => CompareUnordered(left, right);
+
         ///  Compute vector addresses for 16-bit data
 
         /// <summary>
@@ -775,45 +1440,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ADR Zresult.D, [Zbases.D, Zoffsets.D]
         /// </summary>
         public static unsafe Vector<ulong> Compute8BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute8BitAddresses(bases, indices);
-
-        ///  Shuffle active elements of vector to the right and fill with zero
-
-        /// <summary>
-        /// svfloat64_t svcompact[_f64](svbool_t pg, svfloat64_t op)
-        ///   COMPACT Zresult.D, Pg, Zop.D
-        /// </summary>
-        public static unsafe Vector<double> Compact(Vector<double> mask, Vector<double> value) => Compact(mask, value);
-
-        /// <summary>
-        /// svint32_t svcompact[_s32](svbool_t pg, svint32_t op)
-        ///   COMPACT Zresult.S, Pg, Zop.S
-        /// </summary>
-        public static unsafe Vector<int> Compact(Vector<int> mask, Vector<int> value) => Compact(mask, value);
-
-        /// <summary>
-        /// svint64_t svcompact[_s64](svbool_t pg, svint64_t op)
-        ///   COMPACT Zresult.D, Pg, Zop.D
-        /// </summary>
-        public static unsafe Vector<long> Compact(Vector<long> mask, Vector<long> value) => Compact(mask, value);
-
-        /// <summary>
-        /// svfloat32_t svcompact[_f32](svbool_t pg, svfloat32_t op)
-        ///   COMPACT Zresult.S, Pg, Zop.S
-        /// </summary>
-        public static unsafe Vector<float> Compact(Vector<float> mask, Vector<float> value) => Compact(mask, value);
-
-        /// <summary>
-        /// svuint32_t svcompact[_u32](svbool_t pg, svuint32_t op)
-        ///   COMPACT Zresult.S, Pg, Zop.S
-        /// </summary>
-        public static unsafe Vector<uint> Compact(Vector<uint> mask, Vector<uint> value) => Compact(mask, value);
-
-        /// <summary>
-        /// svuint64_t svcompact[_u64](svbool_t pg, svuint64_t op)
-        ///   COMPACT Zresult.D, Pg, Zop.D
-        /// </summary>
-        public static unsafe Vector<ulong> Compact(Vector<ulong> mask, Vector<ulong> value) => Compact(mask, value);
-
 
         ///  Compare equal to
         ///  ConditionalSelect : Conditionally select elements
