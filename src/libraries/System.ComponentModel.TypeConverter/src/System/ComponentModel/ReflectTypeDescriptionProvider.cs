@@ -82,7 +82,6 @@ namespace System.ComponentModel
 
         internal static Guid ExtenderProviderKey { get; } = Guid.NewGuid();
 
-        private static readonly object s_internalSyncObject = new object();
         /// <summary>
         /// Creates a new ReflectTypeDescriptionProvider. The type is the
         /// type we will obtain type information for.
@@ -224,7 +223,7 @@ namespace System.ComponentModel
 
             Debug.Assert(table != null, "COMPAT: Editor table should not be null"); // don't throw; RTM didn't so we can't do it either.
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 Hashtable editorTables = EditorTables;
                 if (!editorTables.ContainsKey(editorBaseType))
@@ -436,7 +435,7 @@ namespace System.ComponentModel
                 //
                 if (table == null)
                 {
-                    lock (s_internalSyncObject)
+                    lock (TypeDescriptor.s_commonSyncObject)
                     {
                         table = editorTables[editorBaseType];
                         if (table == null)
@@ -863,7 +862,7 @@ namespace System.ComponentModel
         {
             List<Type> typeList = new List<Type>();
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 Dictionary<Type, ReflectedTypeData>? typeData = _typeData;
                 if (typeData != null)
@@ -936,7 +935,7 @@ namespace System.ComponentModel
                 return td;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 if (_typeData != null && _typeData.TryGetValue(type, out td))
                 {
@@ -999,7 +998,7 @@ namespace System.ComponentModel
                 return;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 if (_typeData != null && _typeData.ContainsKey(componentType))
                 {
@@ -1024,7 +1023,7 @@ namespace System.ComponentModel
                 return td;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 if (_typeData != null && _typeData.TryGetValue(type, out td))
                 {
@@ -1122,7 +1121,7 @@ namespace System.ComponentModel
                 return attrs;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 attrs = (Attribute[]?)attributeCache[type];
                 if (attrs == null)
@@ -1150,7 +1149,7 @@ namespace System.ComponentModel
                 return attrs;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 attrs = (Attribute[]?)attributeCache[member];
                 if (attrs == null)
@@ -1178,7 +1177,7 @@ namespace System.ComponentModel
                 return events;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 events = (EventDescriptor[]?)eventCache[type];
                 if (events == null)
@@ -1275,7 +1274,7 @@ namespace System.ComponentModel
             ReflectPropertyDescriptor[]? extendedProperties = (ReflectPropertyDescriptor[]?)extendedPropertyCache[providerType];
             if (extendedProperties == null)
             {
-                lock (s_internalSyncObject)
+                lock (TypeDescriptor.s_commonSyncObject)
                 {
                     extendedProperties = (ReflectPropertyDescriptor[]?)extendedPropertyCache[providerType];
 
@@ -1363,7 +1362,7 @@ namespace System.ComponentModel
                 return properties;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 properties = (PropertyDescriptor[]?)propertyCache[type];
 

@@ -1259,6 +1259,28 @@ FCIMPL1(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pF
 }
 FCIMPLEND
 
+extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, void** address, UINT* size)
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = FALSE;
+
+    BEGIN_QCALL;
+
+    if (pField != NULL && pField->IsRVA())
+    {
+        Module* pModule = pField->GetModule();
+        *address = pModule->GetRvaField(pField->GetOffset());
+        *size = pField->LoadSize();
+        
+        ret = TRUE;
+    }
+
+    END_QCALL;
+
+    return ret;
+}
+
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD)
 {
     QCALL_CONTRACT;
@@ -1928,25 +1950,6 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectIn
 
     END_QCALL;
 }
-
-//*************************************************************************************************
-//*************************************************************************************************
-//*************************************************************************************************
-//      ReflectionEnum
-//*************************************************************************************************
-//*************************************************************************************************
-//*************************************************************************************************
-
-FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, MethodTable* pMT) {
-    FCALL_CONTRACT;
-
-    _ASSERTE(pMT->IsEnum());
-
-    // MethodTable::GetInternalCorElementType has unnecessary overhead for enums
-    // Call EEClass::GetInternalCorElementType directly to avoid it
-    return pMT->GetClass()->GetInternalCorElementType();
-}
-FCIMPLEND
 
 //*******************************************************************************
 struct TempEnumValue

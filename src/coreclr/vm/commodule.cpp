@@ -626,7 +626,7 @@ extern "C" void QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandl
 
     HRESULT hr = S_OK;
 
-    if (!pModule->GetPEAssembly()->IsDynamic())
+    if (!pModule->IsReflectionEmit())
     {
         LPCWSTR fileName = pModule->GetPath();
         if (*fileName != W('\0'))
@@ -662,8 +662,7 @@ extern "C" HINSTANCE QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pM
 
     // This returns the base address
     // Other modules should have zero base
-    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
-    if (!pPEAssembly->IsDynamic())
+    if (!pModule->IsReflectionEmit())
     {
         hMod = (HMODULE) pModule->GetPEAssembly()->GetManagedFileContents();
     }
