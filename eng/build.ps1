@@ -29,7 +29,7 @@ Param(
 
 function Get-Default-Arch() {
   if ($env:DOTNET_RUNTIME_BUILD_PS1_DEFAULT_ARCH) {
-    return $env:DOTNET_RUNTIME_DEFAULT_ARCH
+    return $env:DOTNET_RUNTIME_BUILD_PS1_DEFAULT_ARCH
   }
 
   return [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()
