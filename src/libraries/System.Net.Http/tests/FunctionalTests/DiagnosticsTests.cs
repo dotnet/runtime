@@ -457,6 +457,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString(), method).DisposeAsync();
         }
 
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(200, "GET")]
         [InlineData(404, "GET")]
@@ -467,27 +468,18 @@ namespace System.Net.Http.Functional.Tests
             {
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 Activity? activity = null;
-                bool sampled = false;
                 Uri? currentUri = null;
                 string? expectedUriFull = null;
 
                 using ActivityListener listener = new ActivityListener()
                 {
                     ShouldListenTo = s => s.Name is "System.Net.Http",
-                    Sample = (ref ActivityCreationOptions<ActivityContext> options) =>
-                    {
-                        sampled = true;
-                        VerifyRequestTags(options.Tags, currentUri, expectedUriFull, expectedMethodTag: method is "CUSTOM" ? "_OTHER" : method);
-                        return ActivitySamplingResult.AllData;
-                    },
-                    ActivityStarted = a =>
-                    {
-                        VerifyRequestTags(a.TagObjects, currentUri, expectedUriFull, expectedMethodTag: method is "CUSTOM" ? "_OTHER" : method);
-                    },
+                    Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
                     ActivityStopped = a =>
                     {
                         activity = a;
                         var tags = activity.TagObjects;
+                        VerifyRequestTags(a.TagObjects, currentUri, expectedUriFull, expectedMethodTag: method is "CUSTOM" ? "_OTHER" : method);
                         VerifyTag(tags, "http.request.method_original", method is "CUSTOM" ? method : null);
                         VerifyTag(tags, "network.protocol.version", GetVersionString(Version.Parse(useVersion)));
                         VerifyTag(tags, "http.response.status_code", int.Parse(statusCodeStr));
@@ -527,8 +519,43 @@ namespace System.Net.Http.Functional.Tests
                         });
 
                 Assert.NotNull(activity);
-                Assert.True(sampled);
             }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString(), method).DisposeAsync();
+        }
+
+        [Fact]
+        public async Task SendAsync_DoNotSampleAllData_NoTagsRecorded()
+        {
+            await RemoteExecutor.Invoke(static async (useVersion, testAsync) =>
+            {
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                Activity? activity = null;
+                using ActivityListener listener = new ActivityListener()
+                {
+                    ShouldListenTo = s => s.Name is "System.Net.Http",
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.PropagationData,
+                    ActivityStopped = a =>
+                    {
+                        activity = a;
+                        activityStopTcs.SetResult();
+                    }
+                };
+                ActivitySource.AddActivityListener(listener);
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                            async uri =>
+                            {
+
+                                await GetAsync(useVersion, testAsync, uri);
+                                await activityStopTcs.Task;
+                            },
+                            async server =>
+                            {
+                                _ = await server.AcceptConnectionSendResponseAndCloseAsync();
+                            });
+
+                Assert.NotNull(activity);
+                Assert.Empty(activity.TagObjects);
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         protected static void VerifyRequestTags(IEnumerable<KeyValuePair<string, object?>> tags, Uri uri, string expectedUriFull, string expectedMethodTag = "GET")

@@ -58,65 +58,14 @@ namespace System.Net.Http
             Activity? activity = null;
             if (s_activitySource.HasListeners())
             {
-                Uri? requestUri = request.RequestUri;
-                if (requestUri?.IsAbsoluteUri == false)
-                {
-                    requestUri = null;
-                }
-
-                // The following tags might be important for making sampling decisions and should be provided at span creation time.
-                // https://github.com/open-telemetry/semantic-conventions/blob/5077fd5ccf64e3ad0821866cc80d77bb24098ba2/docs/http/http-spans.md?plain=1#L213-L219
-                KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method, out bool isUnknownMethod);
-                int tagCount = requestUri is not null ? 4 : 1;
-                if (isUnknownMethod)
-                {
-                    tagCount++;
-                }
-
-                KeyValuePair<string, object?>[] tags = new KeyValuePair<string, object?>[tagCount];
-                int i = 0;
-
-                tags[i++] = methodTag;
-                if (isUnknownMethod)
-                {
-                    tags[i++] = new("http.request.method_original", request.Method.Method);
-                }
-
-                if (requestUri is not null)
-                {
-                    tags[i++] = new("server.address", requestUri.Host);
-                    tags[i++] = new("server.port", requestUri.Port);
-                    tags[i++] = new("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
-                }
-                Debug.Assert(i == tagCount);
-
-                activity = s_activitySource.StartActivity(ActivityKind.Client, name: DiagnosticsHandlerLoggingStrings.ActivityName, tags: tags);
+                activity = s_activitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ActivityName, ActivityKind.Client);
             }
 
             if (activity is null &&
                 (Activity.Current is not null ||
                 s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request)))
             {
-                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
-
-                if (activity.IsAllDataRequested)
-                {
-                    KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method, out bool isUnknownMethod);
-                    activity.SetTag(methodTag.Key, methodTag.Value);
-                    if (isUnknownMethod)
-                    {
-                        activity.SetTag("http.request.method_original", request.Method.Method);
-                    }
-
-                    if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
-                    {
-                        activity.SetTag("server.address", requestUri.Host);
-                        activity.SetTag("server.port", requestUri.Port);
-                        activity.SetTag("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
-                    }
-                }
-
-                activity.Start();
+                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName).Start();
             }
 
             return activity;
@@ -163,6 +112,24 @@ namespace System.Net.Http
 
             if (activity is not null)
             {
+                if (activity.IsAllDataRequested)
+                {
+                    // Add standard tags known before sending the request.
+                    KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method, out bool isUnknownMethod);
+                    activity.SetTag(methodTag.Key, methodTag.Value);
+                    if (isUnknownMethod)
+                    {
+                        activity.SetTag("http.request.method_original", request.Method.Method);
+                    }
+
+                    if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
+                    {
+                        activity.SetTag("server.address", requestUri.Host);
+                        activity.SetTag("server.port", requestUri.Port);
+                        activity.SetTag("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
+                    }
+                }
+
                 // Only send start event to users who subscribed for it.
                 if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
                 {
@@ -227,7 +194,7 @@ namespace System.Net.Http
 
                     if (activity.IsAllDataRequested)
                     {
-                        // Set tags known at activity Stop.
+                        // Add standard tags known at request completion.
                         if (response is not null)
                         {
                             activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
