@@ -2829,18 +2829,21 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	/* we first do all conversions */
 	tmp_locals = g_newa (int, sig->param_count);
+	int arg_shift = 0; // used to skip arguments when we have lowered structs
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
 		MonoMarshalSpec *spec = mspecs [i + 1];
 
 		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
-			tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0,  &sig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+			tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0,  &csig->params [i + arg_shift], MARSHAL_ACTION_MANAGED_CONV_IN);
 		} else {
 			switch (t->type) {
 			case MONO_TYPE_VALUETYPE:
 				if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL))
 				{
 					tmp_locals [i] = 0;
+					if(!swift_lowering[i].by_reference)
+						arg_shift+=swift_lowering[i].num_lowered_elements - 1;
 					break;
 				}
 			case MONO_TYPE_OBJECT:
@@ -2849,7 +2852,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_BOOLEAN:
-				tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0, &sig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+				tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0, &csig->params [i + arg_shift], MARSHAL_ACTION_MANAGED_CONV_IN);
 				break;
 			default:
 				tmp_locals [i] = 0;
@@ -2873,7 +2876,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		mono_mb_emit_icall (mb, mono_gchandle_get_target_internal);
 	}
 
-	int arg_shift = 0;
+	arg_shift = 0;
 	int lowered_struct_so_far = 0;
 	for (i = 0; i < csig->param_count; i++) {
 		MonoType *t = csig->params [i];
