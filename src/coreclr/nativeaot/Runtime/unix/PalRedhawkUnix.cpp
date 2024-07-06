@@ -90,6 +90,16 @@ extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, ui
     abort();
 }
 
+static void UnmaskActivationSignal()
+{
+    sigset_t signal_set;
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
+
+    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
+    _ASSERTE(sigmaskRet == 0);
+}
+
 static void TimeSpecAdd(timespec* time, uint32_t milliseconds)
 {
     uint64_t nsec = time->tv_nsec + (uint64_t)milliseconds * tccMilliSecondsToNanoSeconds;
@@ -501,6 +511,8 @@ extern "C" void PalAttachThread(void* thread)
 #else
     tls_destructionMonitor.SetThread(thread);
 #endif
+
+    UnmaskActivationSignal();
 }
 
 // Detach thread from OS notifications.
@@ -621,6 +633,11 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI __stdcall PalSwitchToThread()
     // The return value of sched_yield indicates the success of the call and does not tell whether a context switch happened.
     // On Linux sched_yield is documented as never failing.
     // Since we do not know if there was a context switch, we will just return `false`.
+    return false;
+}
+
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled()
+{
     return false;
 }
 
@@ -1034,7 +1051,33 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
     ASSERT(g_pHijackCallback == NULL);
     g_pHijackCallback = callback;
 
+#ifdef __APPLE__
+    void *libSystem = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY);
+    if (libSystem != NULL)
+    {
+        int (*dispatch_allow_send_signals_ptr)(int) = (int (*)(int))dlsym(libSystem, "dispatch_allow_send_signals");
+        if (dispatch_allow_send_signals_ptr != NULL)
+        {
+            int status = dispatch_allow_send_signals_ptr(INJECT_ACTIVATION_SIGNAL);
+            _ASSERTE(status == 0);
+        }
+    }
+
+    // TODO: Once our CI tools can get upgraded to xcode >= 15.3, replace the code above by this:
+    // if (__builtin_available(macOS 14.4, iOS 17.4, tvOS 17.4, *))
+    // {
+    //    // Allow sending the activation signal to dispatch queue threads
+    //    int status = dispatch_allow_send_signals(INJECT_ACTIVATION_SIGNAL);
+    //    _ASSERTE(status == 0);
+    // }
+#endif // __APPLE__
+
     return AddSignalHandler(INJECT_ACTIVATION_SIGNAL, ActivationHandler, &g_previousActivationHandler);
+}
+
+REDHAWK_PALIMPORT HijackFunc* REDHAWK_PALAPI PalGetHijackTarget(HijackFunc* defaultHijackTarget)
+{
+    return defaultHijackTarget;
 }
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
@@ -1049,11 +1092,10 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
     // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
     // the process exits.
     // ESRCH may happen on some OSes when the thread is exiting.
-    // The thread should leave cooperative mode, but we could have seen it in its earlier state.
     if ((status == EAGAIN)
      || (status == ESRCH)
 #ifdef __APPLE__
-        // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
+        // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads on macOS older than 14.4 or iOS/tvOS older than 17.4
      || (status == ENOTSUP)
 #endif
        )
@@ -1092,6 +1134,11 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
     ASSERT(handleCount == 1);
 
     return WaitForSingleObjectEx(pHandles[0], timeout, alertable);
+}
+
+REDHAWK_PALEXPORT HANDLE PalCreateLowMemoryResourceNotification()
+{
+    return NULL;
 }
 
 #if !__has_builtin(_mm_pause)

@@ -65,7 +65,8 @@ namespace System.Numerics
 
         public static Complex FromPolarCoordinates(double magnitude, double phase)
         {
-            return new Complex(magnitude * Math.Cos(phase), magnitude * Math.Sin(phase));
+            (double sin, double cos) = Math.SinCos(phase);
+            return new Complex(magnitude * cos, magnitude * sin);
         }
 
         public static Complex Negate(Complex value)
@@ -288,46 +289,7 @@ namespace System.Numerics
 
         public static double Abs(Complex value)
         {
-            return Hypot(value.m_real, value.m_imaginary);
-        }
-
-        private static double Hypot(double a, double b)
-        {
-            // Using
-            //   sqrt(a^2 + b^2) = |a| * sqrt(1 + (b/a)^2)
-            // we can factor out the larger component to dodge overflow even when a * a would overflow.
-
-            a = Math.Abs(a);
-            b = Math.Abs(b);
-
-            double small, large;
-            if (a < b)
-            {
-                small = a;
-                large = b;
-            }
-            else
-            {
-                small = b;
-                large = a;
-            }
-
-            if (small == 0.0)
-            {
-                return (large);
-            }
-            else if (double.IsPositiveInfinity(large) && !double.IsNaN(small))
-            {
-                // The NaN test is necessary so we don't return +inf when small=NaN and large=+inf.
-                // NaN in any other place returns NaN without any special handling.
-                return (double.PositiveInfinity);
-            }
-            else
-            {
-                double ratio = small / large;
-                return (large * Math.Sqrt(1.0 + ratio * ratio));
-            }
-
+            return double.Hypot(value.m_real, value.m_imaginary);
         }
 
         private static double Log1P(double x)
@@ -414,13 +376,8 @@ namespace System.Numerics
 
         public static Complex Sin(Complex value)
         {
-            // We need both sinh and cosh of imaginary part. To avoid multiple calls to Math.Exp with the same value,
-            // we compute them both here from a single call to Math.Exp.
-            double p = Math.Exp(value.m_imaginary);
-            double q = 1.0 / p;
-            double sinh = (p - q) * 0.5;
-            double cosh = (p + q) * 0.5;
-            return new Complex(Math.Sin(value.m_real) * cosh, Math.Cos(value.m_real) * sinh);
+            (double sin, double cos) = Math.SinCos(value.m_real);
+            return new Complex(sin * Math.Cosh(value.m_imaginary), cos * Math.Sinh(value.m_imaginary));
             // There is a known limitation with this algorithm: inputs that cause sinh and cosh to overflow, but for
             // which sin or cos are small enough that sin * cosh or cos * sinh are still representable, nonetheless
             // produce overflow. For example, Sin((0.01, 711.0)) should produce (~3.0E306, PositiveInfinity), but
@@ -457,11 +414,8 @@ namespace System.Numerics
 
         public static Complex Cos(Complex value)
         {
-            double p = Math.Exp(value.m_imaginary);
-            double q = 1.0 / p;
-            double sinh = (p - q) * 0.5;
-            double cosh = (p + q) * 0.5;
-            return new Complex(Math.Cos(value.m_real) * cosh, -Math.Sin(value.m_real) * sinh);
+            (double sin, double cos) = Math.SinCos(value.m_real);
+            return new Complex(cos * Math.Cosh(value.m_imaginary), -sin * Math.Sinh(value.m_imaginary));
         }
 
         public static Complex Cosh(Complex value)
@@ -504,19 +458,17 @@ namespace System.Numerics
 
             double x2 = 2.0 * value.m_real;
             double y2 = 2.0 * value.m_imaginary;
-            double p = Math.Exp(y2);
-            double q = 1.0 / p;
-            double cosh = (p + q) * 0.5;
+            (double sin, double cos) = Math.SinCos(x2);
+            double cosh = Math.Cosh(y2);
             if (Math.Abs(value.m_imaginary) <= 4.0)
             {
-                double sinh = (p - q) * 0.5;
-                double D = Math.Cos(x2) + cosh;
-                return new Complex(Math.Sin(x2) / D, sinh / D);
+                double D = cos + cosh;
+                return new Complex(sin / D, Math.Sinh(y2) / D);
             }
             else
             {
-                double D = 1.0 + Math.Cos(x2) / cosh;
-                return new Complex(Math.Sin(x2) / cosh / D, Math.Tanh(y2) / D);
+                double D = 1.0 + cos / cosh;
+                return new Complex(sin / cosh / D, Math.Tanh(y2) / D);
             }
         }
 
@@ -599,8 +551,8 @@ namespace System.Numerics
             }
             else
             {
-                double r = Hypot((x + 1.0), y);
-                double s = Hypot((x - 1.0), y);
+                double r = double.Hypot((x + 1.0), y);
+                double s = double.Hypot((x - 1.0), y);
 
                 double a = (r + s) * 0.5;
                 b = x / a;
@@ -676,13 +628,33 @@ namespace System.Numerics
         public static Complex Exp(Complex value)
         {
             double expReal = Math.Exp(value.m_real);
-            double cosImaginary = expReal * Math.Cos(value.m_imaginary);
-            double sinImaginary = expReal * Math.Sin(value.m_imaginary);
-            return new Complex(cosImaginary, sinImaginary);
+            return FromPolarCoordinates(expReal, value.m_imaginary);
         }
 
         public static Complex Sqrt(Complex value)
         {
+
+            // Handle NaN input cases according to IEEE 754
+            if (double.IsNaN(value.m_real))
+            {
+                if (double.IsInfinity(value.m_imaginary))
+                {
+                    return new Complex(double.PositiveInfinity, value.m_imaginary);
+                }
+                return new Complex(double.NaN, double.NaN);
+            }
+            if (double.IsNaN(value.m_imaginary))
+            {
+                if (double.IsPositiveInfinity(value.m_real))
+                {
+                    return new Complex(double.NaN, double.PositiveInfinity);
+                }
+                if (double.IsNegativeInfinity(value.m_real))
+                {
+                    return new Complex(double.PositiveInfinity, double.NaN);
+                }
+                return new Complex(double.NaN, double.NaN);
+            }
 
             if (value.m_imaginary == 0.0)
             {
@@ -726,11 +698,10 @@ namespace System.Numerics
             double imaginaryCopy = value.m_imaginary;
             if ((Math.Abs(realCopy) >= s_sqrtRescaleThreshold) || (Math.Abs(imaginaryCopy) >= s_sqrtRescaleThreshold))
             {
-                if (double.IsInfinity(value.m_imaginary) && !double.IsNaN(value.m_real))
+                if (double.IsInfinity(value.m_imaginary))
                 {
                     // We need to handle infinite imaginary parts specially because otherwise
-                    // our formulas below produce inf/inf = NaN. The NaN test is necessary
-                    // so that we return NaN rather than (+inf,inf) for (NaN,inf).
+                    // our formulas below produce inf/inf = NaN.
                     return (new Complex(double.PositiveInfinity, imaginaryCopy));
                 }
 
@@ -743,12 +714,12 @@ namespace System.Numerics
             double x, y;
             if (realCopy >= 0.0)
             {
-                x = Math.Sqrt((Hypot(realCopy, imaginaryCopy) + realCopy) * 0.5);
+                x = Math.Sqrt((double.Hypot(realCopy, imaginaryCopy) + realCopy) * 0.5);
                 y = imaginaryCopy / (2.0 * x);
             }
             else
             {
-                y = Math.Sqrt((Hypot(realCopy, imaginaryCopy) - realCopy) * 0.5);
+                y = Math.Sqrt((double.Hypot(realCopy, imaginaryCopy) - realCopy) * 0.5);
                 if (imaginaryCopy < 0.0) y = -y;
                 x = imaginaryCopy / (2.0 * y);
             }
@@ -783,9 +754,9 @@ namespace System.Numerics
             double theta = Math.Atan2(valueImaginary, valueReal);
             double newRho = powerReal * theta + powerImaginary * Math.Log(rho);
 
-            double t = Math.Pow(rho, powerReal) * Math.Pow(Math.E, -powerImaginary * theta);
+            double t = Math.Pow(rho, powerReal) * Math.Exp(-powerImaginary * theta);
 
-            return new Complex(t * Math.Cos(newRho), t * Math.Sin(newRho));
+            return FromPolarCoordinates(t, newRho);
         }
 
         public static Complex Pow(Complex value, double power)
@@ -2142,7 +2113,7 @@ namespace System.Numerics
                 return false;
             }
 
-            if (!double.TryParse(s.Slice(openBracket + 1, semicolon), style, provider, out double real))
+            if (!double.TryParse(s.Slice(openBracket + 1, semicolon - openBracket - 1), style, provider, out double real))
             {
                 result = default;
                 return false;
@@ -2155,7 +2126,7 @@ namespace System.Numerics
                 semicolon += 1;
             }
 
-            if (!double.TryParse(s.Slice(semicolon + 1, closeBracket - semicolon), style, provider, out double imaginary))
+            if (!double.TryParse(s.Slice(semicolon + 1, closeBracket - semicolon - 1), style, provider, out double imaginary))
             {
                 result = default;
                 return false;

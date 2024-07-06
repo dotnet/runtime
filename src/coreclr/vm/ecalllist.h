@@ -352,6 +352,7 @@ FCFuncStart(gCastHelpers)
     FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
     FCFuncElement("Unbox_Helper", ::Unbox_Helper)
+    FCFuncElement("JIT_Unbox_TypeTest", ::JIT_Unbox_TypeTest)
     FCFuncElement("WriteBarrier", ::WriteBarrier_Helper)
 FCFuncEnd()
 
@@ -472,9 +473,7 @@ FCFuncStart(gStubHelperFuncs)
     FCFuncElement("ValidateByref", StubHelpers::ValidateByref)
     FCFuncElement("LogPinnedArgument", StubHelpers::LogPinnedArgument)
     FCFuncElement("GetStubContext", StubHelpers::GetStubContext)
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     FCFuncElement("MulticastDebuggerTraceHelper", StubHelpers::MulticastDebuggerTraceHelper)
-#endif //FEATURE_MULTICASTSTUB_AS_IL
     FCFuncElement("NextCallReturnAddress", StubHelpers::NextCallReturnAddress)
 FCFuncEnd()
 
