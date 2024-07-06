@@ -19,7 +19,7 @@ namespace System.Net
         private const int NumberOfLabels = 4;
 
         // Only called from the IPv6Helper, only parse the canonical format
-        internal static int ParseHostNumber<TChar>(in ReadOnlySpan<TChar> str)
+        internal static int ParseHostNumber<TChar>(ReadOnlySpan<TChar> str)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Span<byte> numbers = stackalloc byte[NumberOfLabels];
@@ -78,17 +78,17 @@ namespace System.Net
         //
 
         //Remark: MUST NOT be used unless all input indexes are verified and trusted.
-        internal static bool IsValid<TChar>(in ReadOnlySpan<TChar> name, out int charsConsumed, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+        internal static bool IsValid<TChar>(ReadOnlySpan<TChar> name, out int charsConsumed, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // IPv6 can only have canonical IPv4 embedded. Unknown schemes will not attempt parsing of non-canonical IPv4 addresses.
             if (allowIPv6 || unknownScheme)
             {
-                return IsValidCanonical(in name, out charsConsumed, allowIPv6, notImplicitFile);
+                return IsValidCanonical(name, out charsConsumed, allowIPv6, notImplicitFile);
             }
             else
             {
-                return ParseNonCanonical(in name, out charsConsumed, notImplicitFile) != Invalid;
+                return ParseNonCanonical(name, out charsConsumed, notImplicitFile) != Invalid;
             }
         }
 
@@ -105,7 +105,7 @@ namespace System.Net
         //                 / "2" %x30-34 DIGIT     ; 200-249
         //                 / "25" %x30-35          ; 250-255
         //
-        internal static bool IsValidCanonical<TChar>(in ReadOnlySpan<TChar> name, out int charsConsumed, bool allowIPv6, bool notImplicitFile)
+        internal static bool IsValidCanonical<TChar>(ReadOnlySpan<TChar> name, out int charsConsumed, bool allowIPv6, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int dots = 0;
@@ -190,7 +190,7 @@ namespace System.Net
         // Return Invalid (-1) for failures.
         // If the address has less than three dots, only the rightmost section is assumed to contain the combined value for
         // the missing sections: 0xFF00FFFF == 0xFF.0x00.0xFF.0xFF == 0xFF.0xFFFF
-        internal static long ParseNonCanonical<TChar>(in ReadOnlySpan<TChar> name, out int charsConsumed, bool notImplicitFile)
+        internal static long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, out int charsConsumed, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int numberBase = IPv4AddressHelper.Decimal;

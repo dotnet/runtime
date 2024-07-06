@@ -13,7 +13,7 @@ namespace System.Net
     {
         // methods
         // Parse and canonicalize
-        internal static string ParseCanonicalName(in ReadOnlySpan<char> str, ref bool isLoopback)
+        internal static string ParseCanonicalName(ReadOnlySpan<char> str, ref bool isLoopback)
         {
             Span<byte> numbers = stackalloc byte[NumberOfLabels];
             isLoopback = Parse(str, numbers);
@@ -36,10 +36,10 @@ namespace System.Net
         //
         //  Convert this IPv4 address into a sequence of 4 8-bit numbers
         //
-        private static bool Parse(in ReadOnlySpan<char> name, Span<byte> numbers)
+        private static bool Parse(ReadOnlySpan<char> name, Span<byte> numbers)
         {
             // "name" parameter includes ports, so charsConsumed may be different from span length
-            long result = ParseNonCanonical(in name, out _, true);
+            long result = ParseNonCanonical(name, out _, true);
 
             Debug.Assert(result != Invalid, $"Failed to parse after already validated: {name}");
 

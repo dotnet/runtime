@@ -15,7 +15,7 @@ namespace System.Net
         // RFC 5952 Section 4.2.3
         // Longest consecutive sequence of zero segments, minimum 2.
         // On equal, first sequence wins. <-1, -1> for no compression.
-        internal static (int longestSequenceStart, int longestSequenceLength) FindCompressionRange(in ReadOnlySpan<ushort> numbers)
+        internal static (int longestSequenceStart, int longestSequenceLength) FindCompressionRange(ReadOnlySpan<ushort> numbers)
         {
             int longestSequenceLength = 0, longestSequenceStart = -1, currentSequenceLength = 0;
 
@@ -43,7 +43,7 @@ namespace System.Net
 
         // Returns true if the IPv6 address should be formatted with an embedded IPv4 address:
         // ::192.168.1.1
-        internal static bool ShouldHaveIpv4Embedded(in ReadOnlySpan<ushort> numbers)
+        internal static bool ShouldHaveIpv4Embedded(ReadOnlySpan<ushort> numbers)
         {
             // 0:0 : 0:0 : x:x : x.x.x.x
             if (numbers[0] == 0 && numbers[1] == 0 && numbers[2] == 0 && numbers[3] == 0 && numbers[6] != 0)
@@ -96,7 +96,7 @@ namespace System.Net
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        internal static bool IsValidStrict<TChar>(in ReadOnlySpan<TChar> name)
+        internal static bool IsValidStrict<TChar>(ReadOnlySpan<TChar> name)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // Number of components in this IPv6 address
@@ -261,9 +261,7 @@ namespace System.Net
                             return false;
                         }
 
-                        ReadOnlySpan<TChar> remainderOfSequence = name.Slice(lastSequence);
-
-                        if (!IPv4AddressHelper.IsValid(in remainderOfSequence, out int ipv4AddressLength, true, false, false))
+                        if (!IPv4AddressHelper.IsValid(name.Slice(lastSequence), out int ipv4AddressLength, true, false, false))
                         {
                             return false;
                         }
@@ -326,7 +324,7 @@ namespace System.Net
         //  Nothing
         //
 
-        internal static void Parse<TChar>(in ReadOnlySpan<TChar> address, scoped Span<ushort> numbers, out ReadOnlySpan<TChar> scopeId)
+        internal static void Parse<TChar>(ReadOnlySpan<TChar> address, scoped Span<ushort> numbers, out ReadOnlySpan<TChar> scopeId)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int number = 0;
@@ -413,10 +411,7 @@ namespace System.Net
                             {
                                 ++j;
                             }
-
-                            ReadOnlySpan<TChar> ipv4Address = address.Slice(i, j - i);
-
-                            number = IPv4AddressHelper.ParseHostNumber(in ipv4Address);
+                            number = IPv4AddressHelper.ParseHostNumber(address.Slice(i, j - i));
                             numbers[index++] = (ushort)(number >> 16);
                             numbers[index++] = (ushort)number;
                             i = j;

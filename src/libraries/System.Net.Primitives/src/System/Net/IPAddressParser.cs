@@ -16,7 +16,7 @@ namespace System.Net
         internal const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
         internal const int MaxIPv6StringLength = 65;
 
-        internal static IPAddress? Parse<TChar>(scoped in ReadOnlySpan<TChar> ipSpan, bool tryParse)
+        internal static IPAddress? Parse<TChar>(ReadOnlySpan<TChar> ipSpan, bool tryParse)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(byte) || typeof(TChar) == typeof(char));
@@ -27,12 +27,12 @@ namespace System.Net
                 // we don't support/parse a port specification at the end of an IPv4 address.
                 Span<ushort> numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
                 numbers.Clear();
-                if (TryParseIPv6(in ipSpan, numbers, IPAddressParserStatics.IPv6AddressShorts, out uint scope))
+                if (TryParseIPv6(ipSpan, numbers, IPAddressParserStatics.IPv6AddressShorts, out uint scope))
                 {
                     return new IPAddress(numbers, scope);
                 }
             }
-            else if (TryParseIpv4(in ipSpan, out long address))
+            else if (TryParseIpv4(ipSpan, out long address))
             {
                 return new IPAddress(address);
             }
@@ -45,10 +45,10 @@ namespace System.Net
             throw new FormatException(SR.dns_bad_ip_address, new SocketException(SocketError.InvalidArgument));
         }
 
-        private static bool TryParseIpv4<TChar>(in ReadOnlySpan<TChar> ipSpan, out long address)
+        private static bool TryParseIpv4<TChar>(ReadOnlySpan<TChar> ipSpan, out long address)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            long tmpAddr = IPv4AddressHelper.ParseNonCanonical(in ipSpan, out int end, notImplicitFile: true);
+            long tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, out int end, notImplicitFile: true);
 
             if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
             {
@@ -63,16 +63,16 @@ namespace System.Net
             return false;
         }
 
-        private static bool TryParseIPv6<TChar>(in ReadOnlySpan<TChar> ipSpan, in Span<ushort> numbers, int numbersLength, out uint scope)
+        private static bool TryParseIPv6<TChar>(ReadOnlySpan<TChar> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
 
             scope = 0;
-            if (IPv6AddressHelper.IsValidStrict(in ipSpan))
+            if (IPv6AddressHelper.IsValidStrict(ipSpan))
             {
-                IPv6AddressHelper.Parse(in ipSpan, numbers, out ReadOnlySpan<TChar> scopeIdSpan);
+                IPv6AddressHelper.Parse(ipSpan, numbers, out ReadOnlySpan<TChar> scopeIdSpan);
 
                 if (scopeIdSpan.Length > 1)
                 {
@@ -171,15 +171,11 @@ namespace System.Net
         {
             int pos = 0;
 
-            ReadOnlySpan<ushort> addressSpan = address;
-            ReadOnlySpan<ushort> formattableAddresses;
-
-            if (IPv6AddressHelper.ShouldHaveIpv4Embedded(in addressSpan))
+            if (IPv6AddressHelper.ShouldHaveIpv4Embedded(address))
             {
                 // We need to treat the last 2 ushorts as a 4-byte IPv4 address,
                 // so output the first 6 ushorts normally, followed by the IPv4 address.
-                formattableAddresses = addressSpan.Slice(0, 6);
-                AppendSections(in formattableAddresses, destination, ref pos);
+                AppendSections(address.AsSpan(0, 6), destination, ref pos);
                 if (destination[pos - 1] != TChar.CreateTruncating(':'))
                 {
                     destination[pos++] = TChar.CreateTruncating(':');
@@ -191,8 +187,7 @@ namespace System.Net
             {
                 // No IPv4 address.  Output all 8 sections as part of the IPv6 address
                 // with normal formatting rules.
-                formattableAddresses = addressSpan.Slice(0, 8);
-                AppendSections(in formattableAddresses, destination, ref pos);
+                AppendSections(address.AsSpan(0, 8), destination, ref pos);
             }
 
             // If there's a scope ID, append it.
@@ -219,10 +214,10 @@ namespace System.Net
             // Appends each of the numbers in address in indexed range [fromInclusive, toExclusive),
             // while also replacing the longest sequence of 0s found in that range with "::", as long
             // as the sequence is more than one 0.
-            static void AppendSections(in ReadOnlySpan<ushort> address, Span<TChar> destination, ref int offset)
+            static void AppendSections(ReadOnlySpan<ushort> address, Span<TChar> destination, ref int offset)
             {
                 // Find the longest sequence of zeros to be combined into a "::"
-                (int zeroStart, int zeroEnd) = IPv6AddressHelper.FindCompressionRange(in address);
+                (int zeroStart, int zeroEnd) = IPv6AddressHelper.FindCompressionRange(address);
                 bool needsColon = false;
 
                 // Handle a zero sequence if there is one
