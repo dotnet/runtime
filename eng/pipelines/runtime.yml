@@ -1910,7 +1910,7 @@ extends:
         # - Linux-x64 portable (used for dependency flow and downstream PR verification)
         # - Banana.24 - Non-existent RID to ensure we don't break RIDs we don't know about.
         #
-        # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.8 in rolling CI,
+        # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.9 in rolling CI,
         # Run Linux-x64 in PR.
         - template: /eng/common/templates/jobs/source-build.yml
           parameters:
