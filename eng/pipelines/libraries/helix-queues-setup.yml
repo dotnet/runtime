@@ -69,11 +69,11 @@ jobs:
             - (openSUSE.15.2.Amd64.Open)Ubuntu.2204.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.2-helix-amd64
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - (Centos.9.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9-helix
-            - (Debian.11.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
+            - (Debian.12.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-amd64
             - Ubuntu.2204.Amd64.Open
       - ${{ if or(eq(parameters.jobParameters.interpreter, 'true'), eq(parameters.jobParameters.isSingleFile, true)) }}:
-        # Limiting interp runs as we don't need as much coverage.
-        - (Debian.11.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
+        # Limiting interop runs as we don't need as much coverage.
+        - (Debian.12.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-amd64
 
     # Linux s390x
     - ${{ if eq(parameters.platform, 'linux_s390x') }}:
