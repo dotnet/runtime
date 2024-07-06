@@ -15,6 +15,7 @@ namespace System.Net.Test.Common
         private string _activityName;
 
         private readonly ActivityListener _listener;
+        private List<Activity> _finishedActivities = new();
 
         public Predicate<Activity> Filter { get; set; } = _ => true;
         public bool VerifyParent { get; set; } = true;
@@ -24,6 +25,7 @@ namespace System.Net.Test.Common
         public int Stopped { get; private set; }
         public Activity LastStartedActivity { get; private set; }
         public Activity LastFinishedActivity { get; private set; }
+        public IEnumerable<Activity> FinishedActivities => _finishedActivities;
 
         public ActivityRecorder(string activitySourceName, string activityName)
         {
@@ -55,6 +57,7 @@ namespace System.Net.Test.Common
 
                         Stopped++;
                         LastFinishedActivity = activity;
+                        _finishedActivities.Add(activity);
                     }
                 }
             };
