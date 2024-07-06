@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="System.ObjectModel.Forwards.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Collections\CollectionHelpers.cs" />
     <Compile Include="System\Collections\Generic\DebugView.cs" />
     <Compile Include="System\Collections\Specialized\INotifyCollectionChanged.cs" />

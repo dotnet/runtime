@@ -71,7 +71,10 @@ namespace System.Collections.ObjectModel
 
         public bool Contains(TKey key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(key));
+            }
 
             if (dict != null)
             {
@@ -91,7 +94,10 @@ namespace System.Collections.ObjectModel
 
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TItem item)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(key));
+            }
 
             if (dict != null)
             {
@@ -131,7 +137,10 @@ namespace System.Collections.ObjectModel
 
         public bool Remove(TKey key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(key));
+            }
 
             if (dict != null)
             {
