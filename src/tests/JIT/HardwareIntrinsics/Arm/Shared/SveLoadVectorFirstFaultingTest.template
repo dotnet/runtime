@@ -326,7 +326,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op2BaseType}[] inArray = new {Op2BaseType}[size / Unsafe.SizeOf<{Op2BaseType}>()];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref firstOp, (uint)(size));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref firstOp, (uint)(inArray.Length * Unsafe.SizeOf<{Op2BaseType}>()));
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
             ValidateFirstFaultingResult(inArray, outArray, faultResult, method);
