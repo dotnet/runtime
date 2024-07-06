@@ -10,5 +10,10 @@
     <Compile Include="Program.Sve.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.cs" />
+    <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Creation.cs" />
+    <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Unix.cs" />
+    <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Windows.cs" />
+    <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/PoisonPagePlacement.cs" />
   </ItemGroup>
 </Project>

@@ -288,38 +288,38 @@ namespace System.Buffers
                 UnsafeNativeMethods.VirtualFree(handle, IntPtr.Zero, VirtualAllocAllocationType.MEM_RELEASE);
         }
 
-        private static partial class UnsafeNativeMethods
+        private static class UnsafeNativeMethods
         {
             private const string KERNEL32_LIB = "kernel32.dll";
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366887(v=vs.85).aspx
-            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
-            public static partial VirtualAllocHandle VirtualAlloc(
+            [DllImport(KERNEL32_LIB, SetLastError = true)]
+            public static extern VirtualAllocHandle VirtualAlloc(
                 IntPtr lpAddress,
                 IntPtr dwSize,
                 VirtualAllocAllocationType flAllocationType,
                 VirtualAllocProtection flProtect);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366892(v=vs.85).aspx
-            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
+            [DllImport(KERNEL32_LIB, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static partial bool VirtualFree(
+            public static extern bool VirtualFree(
                 IntPtr lpAddress,
                 IntPtr dwSize,
                 VirtualAllocAllocationType dwFreeType);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366898(v=vs.85).aspx
-            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
+            [DllImport(KERNEL32_LIB, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static partial bool VirtualProtect(
+            public static extern bool VirtualProtect(
                 IntPtr lpAddress,
                 IntPtr dwSize,
                 VirtualAllocProtection flNewProtect,
                 out VirtualAllocProtection lpflOldProtect);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366902(v=vs.85).aspx
-            [LibraryImport(KERNEL32_LIB, SetLastError = true)]
-            public static partial IntPtr VirtualQuery(
+            [DllImport(KERNEL32_LIB, SetLastError = true)]
+            public static extern IntPtr VirtualQuery(
                 IntPtr lpAddress,
                 out MEMORY_BASIC_INFORMATION lpBuffer,
                 IntPtr dwLength);
