@@ -168,7 +168,43 @@ namespace JIT.HardwareIntrinsics.Arm
             return -1;
         }
 
+        public static int LastActiveElement(sbyte[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(short[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         public static int LastActiveElement(ushort[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(int[] v)
         {
             for (var i = v.Length - 1; i >= 0; i--)
             {
@@ -192,11 +228,47 @@ namespace JIT.HardwareIntrinsics.Arm
             return -1;
         }
 
+        public static int LastActiveElement(long[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         public static int LastActiveElement(ulong[] v)
         {
             for (var i = v.Length - 1; i >= 0; i--)
             {
                 if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static int LastActiveElement(float[] v)
+        {
+            for (int i = v.Length - 1; i >= 0; i--)
+            {
+                if (Unsafe.BitCast<float, int>(v[i]) != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static int LastActiveElement(double[] v)
+        {
+            for (int i = v.Length - 1; i >= 0; i--)
+            {
+                if (Unsafe.BitCast<double, long>(v[i]) != 0)
                 {
                     return i;
                 }
@@ -7888,6 +7960,816 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
             return result;
+        }
+
+        private static byte ConditionalExtract(byte[] op1, byte op2, byte[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static byte[] ConditionalExtract(byte[] op1, byte[] op2, byte[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            byte[] result = new byte[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<byte>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static byte ConditionalExtractAfterLastActiveElement(byte[] op1, byte op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static byte ConditionalExtractLastActiveElement(byte[] op1, byte op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static byte[] ConditionalExtractAfterLastActiveElement(byte[] op1, byte[] op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static byte[] ConditionalExtractAfterLastActiveElementAndReplicate(byte[] op1, byte[] op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static byte[] ConditionalExtractLastActiveElement(byte[] op1, byte[] op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static byte[] ConditionalExtractLastActiveElementAndReplicate(byte[] op1, byte[] op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static sbyte ConditionalExtract(sbyte[] op1, sbyte op2, sbyte[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static sbyte[] ConditionalExtract(sbyte[] op1, sbyte[] op2, sbyte[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            sbyte[] result = new sbyte[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<sbyte>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static sbyte ConditionalExtractAfterLastActiveElement(sbyte[] op1, sbyte op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static sbyte ConditionalExtractLastActiveElement(sbyte[] op1, sbyte op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static sbyte[] ConditionalExtractAfterLastActiveElement(sbyte[] op1, sbyte[] op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static sbyte[] ConditionalExtractAfterLastActiveElementAndReplicate(sbyte[] op1, sbyte[] op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static sbyte[] ConditionalExtractLastActiveElement(sbyte[] op1, sbyte[] op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static sbyte[] ConditionalExtractLastActiveElementAndReplicate(sbyte[] op1, sbyte[] op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static short ConditionalExtract(short[] op1, short op2, short[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static short[] ConditionalExtract(short[] op1, short[] op2, short[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            short[] result = new short[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<short>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static short ConditionalExtractAfterLastActiveElement(short[] op1, short op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static short ConditionalExtractLastActiveElement(short[] op1, short op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static short[] ConditionalExtractAfterLastActiveElement(short[] op1, short[] op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static short[] ConditionalExtractAfterLastActiveElementAndReplicate(short[] op1, short[] op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static short[] ConditionalExtractLastActiveElement(short[] op1, short[] op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static short[] ConditionalExtractLastActiveElementAndReplicate(short[] op1, short[] op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static ushort ConditionalExtract(ushort[] op1, ushort op2, ushort[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static ushort[] ConditionalExtract(ushort[] op1, ushort[] op2, ushort[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            ushort[] result = new ushort[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<ushort>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static ushort ConditionalExtractAfterLastActiveElement(ushort[] op1, ushort op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static ushort ConditionalExtractLastActiveElement(ushort[] op1, ushort op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static ushort[] ConditionalExtractAfterLastActiveElement(ushort[] op1, ushort[] op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static ushort[] ConditionalExtractAfterLastActiveElementAndReplicate(ushort[] op1, ushort[] op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static ushort[] ConditionalExtractLastActiveElement(ushort[] op1, ushort[] op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static ushort[] ConditionalExtractLastActiveElementAndReplicate(ushort[] op1, ushort[] op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static int ConditionalExtract(int[] op1, int op2, int[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static int[] ConditionalExtract(int[] op1, int[] op2, int[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int[] result = new int[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<int>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static int ConditionalExtractAfterLastActiveElement(int[] op1, int op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static int ConditionalExtractLastActiveElement(int[] op1, int op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static int[] ConditionalExtractAfterLastActiveElement(int[] op1, int[] op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static int[] ConditionalExtractAfterLastActiveElementAndReplicate(int[] op1, int[] op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static int[] ConditionalExtractLastActiveElement(int[] op1, int[] op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static int[] ConditionalExtractLastActiveElementAndReplicate(int[] op1, int[] op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static uint ConditionalExtract(uint[] op1, uint op2, uint[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static uint[] ConditionalExtract(uint[] op1, uint[] op2, uint[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            uint[] result = new uint[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<uint>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static uint ConditionalExtractAfterLastActiveElement(uint[] op1, uint op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static uint ConditionalExtractLastActiveElement(uint[] op1, uint op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static uint[] ConditionalExtractAfterLastActiveElement(uint[] op1, uint[] op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static uint[] ConditionalExtractAfterLastActiveElementAndReplicate(uint[] op1, uint[] op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static uint[] ConditionalExtractLastActiveElement(uint[] op1, uint[] op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static uint[] ConditionalExtractLastActiveElementAndReplicate(uint[] op1, uint[] op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static long ConditionalExtract(long[] op1, long op2, long[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static long[] ConditionalExtract(long[] op1, long[] op2, long[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            long[] result = new long[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<long>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static long ConditionalExtractAfterLastActiveElement(long[] op1, long op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static long ConditionalExtractLastActiveElement(long[] op1, long op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static long[] ConditionalExtractAfterLastActiveElement(long[] op1, long[] op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static long[] ConditionalExtractAfterLastActiveElementAndReplicate(long[] op1, long[] op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static long[] ConditionalExtractLastActiveElement(long[] op1, long[] op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static long[] ConditionalExtractLastActiveElementAndReplicate(long[] op1, long[] op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        public static ulong ConditionalExtractAfterLastActiveElement(ulong[] op1, ulong op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        private static ulong ConditionalExtract(ulong[] op1, ulong op2, ulong[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static ulong[] ConditionalExtract(ulong[] op1, ulong[] op2, ulong[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            ulong[] result = new ulong[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<ulong>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static ulong ConditionalExtractLastActiveElement(ulong[] op1, ulong op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static ulong[] ConditionalExtractAfterLastActiveElement(ulong[] op1, ulong[] op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static ulong[] ConditionalExtractAfterLastActiveElementAndReplicate(ulong[] op1, ulong[] op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static ulong[] ConditionalExtractLastActiveElement(ulong[] op1, ulong[] op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static ulong[] ConditionalExtractLastActiveElementAndReplicate(ulong[] op1, ulong[] op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static float ConditionalExtract(float[] op1, float op2, float[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static float[] ConditionalExtract(float[] op1, float[] op2, float[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            float[] result = new float[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<float>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static float ConditionalExtractAfterLastActiveElement(float[] op1, float op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static float ConditionalExtractLastActiveElement(float[] op1, float op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static float[] ConditionalExtractAfterLastActiveElement(float[] op1, float[] op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static float[] ConditionalExtractAfterLastActiveElementAndReplicate(float[] op1, float[] op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static float[] ConditionalExtractLastActiveElement(float[] op1, float[] op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static float[] ConditionalExtractLastActiveElementAndReplicate(float[] op1, float[] op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static double ConditionalExtract(double[] op1, double op2, double[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static double[] ConditionalExtract(double[] op1, double[] op2, double[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            double[] result = new double[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<double>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static double ConditionalExtractAfterLastActiveElement(double[] op1, double op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static double ConditionalExtractLastActiveElement(double[] op1, double op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static double[] ConditionalExtractAfterLastActiveElement(double[] op1, double[] op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static double[] ConditionalExtractAfterLastActiveElementAndReplicate(double[] op1, double[] op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static double[] ConditionalExtractLastActiveElement(double[] op1, double[] op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static double[] ConditionalExtractLastActiveElementAndReplicate(double[] op1, double[] op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
         }
     }
 }
