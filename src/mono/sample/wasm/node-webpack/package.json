@@ -13,6 +13,6 @@
   },
   "dependencies": {
     "@microsoft/dotnet-runtime": "file:bin/dotnet-runtime",
-    "console-log-colors": "0.2.3"
+    "console-log-colors": "0.4.0"
   }
 }
