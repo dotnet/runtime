@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -132,6 +133,7 @@ namespace System.Tests
         public static void SplitNoMatchSingleResult()
         {
             const string Value = "a b";
+            ReadOnlySpan<char> SpanValue = "a b";
             const int Count = int.MaxValue;
             const StringSplitOptions Options = StringSplitOptions.None;
 
@@ -152,17 +154,22 @@ namespace System.Tests
             Assert.Equal(expected, Value.Split(new[] { "," }, Count, Options));
 
             Range[] ranges = new Range[10];
-            Assert.Equal(1, Value.AsSpan().Split(ranges, ',', Options));
+            Assert.Equal(1, SpanValue.Split(ranges, ',', Options));
             Assert.Equal(0..3, ranges[0]);
             Array.Clear(ranges);
 
-            Assert.Equal(1, Value.AsSpan().Split(ranges, ",", Options));
+            Assert.Equal(1, SpanValue.Split(ranges, ",", Options));
             Assert.Equal(0..3, ranges[0]);
             Array.Clear(ranges);
 
-            Assert.Equal(1, Value.AsSpan().SplitAny(ranges, ",", Options));
+            Assert.Equal(1, SpanValue.SplitAny(ranges, ",", Options));
             Assert.Equal(0..3, ranges[0]);
             Array.Clear(ranges);
+
+            AssertEqual(expected, SpanValue, SpanValue.Split(','));
+            AssertEqual(expected, SpanValue, SpanValue.Split(","));
+            AssertEqual(expected, SpanValue, SpanValue.SplitAny(','));
+            AssertEqual(expected, SpanValue, SpanValue.SplitAny(Buffers.SearchValues.Create([','])));
         }
 
         private const int M = int.MaxValue;
@@ -519,6 +526,9 @@ namespace System.Tests
                 Assert.Equal(expected, value.Split(new[] { separator }));
                 Assert.Equal(expected, value.Split((ReadOnlySpan<char>)new[] { separator }));
                 Assert.Equal(expected, value.Split(separator.ToString()));
+
+                AssertEqual(expected, value.AsSpan(), value.AsSpan().Split(separator));
+                AssertEqual(expected, value.AsSpan(), value.AsSpan().SplitAny(Buffers.SearchValues.Create([separator])));
             }
 
             Range[] ranges = new Range[count == int.MaxValue ? value.Length + 1 : count];
@@ -576,6 +586,7 @@ namespace System.Tests
             if (count == int.MaxValue && options == StringSplitOptions.None)
             {
                 Assert.Equal(expected, value.Split(separator));
+                AssertEqual(expected, value.AsSpan(), value.AsSpan().Split(separator));
             }
 
             Range[] ranges = new Range[count == int.MaxValue ? value.Length + 1 : count];
@@ -634,6 +645,13 @@ namespace System.Tests
             Range[] ranges = new Range[count == int.MaxValue ? value.Length + 1 : count];
             Assert.Equal(expected.Length, value.AsSpan().SplitAny(ranges, separators, options));
             Assert.Equal(expected, ranges.Take(expected.Length).Select(r => value[r]).ToArray());
+
+            // The SpanSplitEnumerator does not replicate the behaviour of splitting on a whitespace char when input char[] is null or empty.
+            if (count == int.MaxValue && options is StringSplitOptions.None && separators is { Length: > 0 })
+            {
+                AssertEqual(expected, value.AsSpan(), value.AsSpan().SplitAny(separators));
+                AssertEqual(expected, value.AsSpan(), value.AsSpan().SplitAny(Buffers.SearchValues.Create(separators)));
+            }
         }
 
         [Theory]
@@ -696,6 +714,17 @@ namespace System.Tests
                 result[i] = source[i].ToString();
             }
             return result;
+        }
+
+        private static void AssertEqual(string[] items, ReadOnlySpan<char> source, MemoryExtensions.SpanSplitEnumerator<char> enumerator)
+        {
+            foreach (var item in items)
+            {
+                Assert.True(enumerator.MoveNext());
+                var slice = source[enumerator.Current];
+                Assert.Equal(item, new string(slice));
+            }
+            Assert.False(enumerator.MoveNext());
         }
     }
 }

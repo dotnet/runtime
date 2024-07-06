@@ -350,6 +350,10 @@ namespace System
         public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items, System.Comparison<TKey> comparison) { }
         public static void Sort<T, TComparer>(this System.Span<T> span, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<T>? { }
         public static void Sort<TKey, TValue, TComparer>(this System.Span<TKey> keys, System.Span<TValue> items, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<TKey>? { }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> Split<T>(this System.ReadOnlySpan<T> source, T separator) where T : IEquatable<T> { throw null; }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> Split<T>(this System.ReadOnlySpan<T> source, System.ReadOnlySpan<T> separator) where T : IEquatable<T> { throw null; }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> SplitAny<T>(this System.ReadOnlySpan<T> source, [System.Diagnostics.CodeAnalysis.UnscopedRef] params System.ReadOnlySpan<T> separators) where T : IEquatable<T> { throw null; }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> SplitAny<T>(this System.ReadOnlySpan<T> source, System.Buffers.SearchValues<T> separators) where T : IEquatable<T> { throw null; }
         public static int Split(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public static int Split(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, System.ReadOnlySpan<char> separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public static int SplitAny(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, System.ReadOnlySpan<char> separators, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
@@ -429,6 +433,12 @@ namespace System
             public bool AppendFormatted(object? value, int alignment = 0, string? format = null) { throw null; }
             public bool AppendFormatted(string? value) { throw null; }
             public bool AppendFormatted(string? value, int alignment = 0, string? format = null) { throw null; }
+        }
+        public ref struct SpanSplitEnumerator<T> where T : System.IEquatable<T>
+        {
+            public System.MemoryExtensions.SpanSplitEnumerator<T> GetEnumerator() { throw null; }
+            public readonly System.Range Current { get { throw null; } }
+            public bool MoveNext() { throw null; }
         }
     }
 }

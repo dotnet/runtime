@@ -573,6 +573,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Globalization.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Globalization.Utf8.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Split.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Trim.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Trim.Utf8.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MethodAccessException.cs" />
