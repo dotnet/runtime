@@ -55,11 +55,11 @@ namespace System.Net.Security
                 // we don't support/parse a port specification at the end of an IPv4 address.
                 Span<ushort> numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
 
-                return IPv6AddressHelper.IsValidStrict(ipSpan);
+                return IPv6AddressHelper.IsValidStrict(in ipSpan);
             }
             else if (char.IsDigit(ipSpan[0]))
             {
-                long tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, out int end, notImplicitFile: true);
+                long tmpAddr = IPv4AddressHelper.ParseNonCanonical(in ipSpan, out int end, notImplicitFile: true);
 
                 if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
                 {

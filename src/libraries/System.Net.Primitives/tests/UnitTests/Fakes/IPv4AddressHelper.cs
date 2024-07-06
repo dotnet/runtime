@@ -8,7 +8,7 @@ namespace System.Net
     internal static class IPv4AddressHelper
     {
         internal const int Invalid = -1;
-        internal static unsafe long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, out int bytesConsumed, bool notImplicitFile)
+        internal static unsafe long ParseNonCanonical<TChar>(in ReadOnlySpan<TChar> name, out int bytesConsumed, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             bytesConsumed = 0;

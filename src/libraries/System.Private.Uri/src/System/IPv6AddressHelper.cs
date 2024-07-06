@@ -10,11 +10,11 @@ namespace System.Net
     // The idea is to stay with static helper methods and strings
     internal static partial class IPv6AddressHelper
     {
-        internal static string ParseCanonicalName(ReadOnlySpan<char> str, ref bool isLoopback, out ReadOnlySpan<char> scopeId)
+        internal static string ParseCanonicalName(in ReadOnlySpan<char> str, ref bool isLoopback, out ReadOnlySpan<char> scopeId)
         {
             Span<ushort> numbers = stackalloc ushort[NumberOfLabels];
             numbers.Clear();
-            Parse(str, numbers, out scopeId);
+            Parse(in str, numbers, out scopeId);
             isLoopback = IsLoopback(numbers);
 
             // RFC 5952 Sections 4 & 5 - Compressed, lower case, with possible embedded IPv4 addresses.
