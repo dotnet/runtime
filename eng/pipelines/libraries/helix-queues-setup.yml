@@ -40,7 +40,7 @@ jobs:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Ubuntu.2204.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-arm64v8
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Ubuntu.2004.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-arm64v8
+        - (Ubuntu.1804.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Debian.12.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm64v8
 
@@ -49,12 +49,12 @@ jobs:
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Alpine.318.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-amd64
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.320.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-amd64
+        - (Alpine.318.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-amd64
 
     # Linux musl arm64
     - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
       - (Alpine.318.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-arm64v8
-      - (Alpine.320.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-arm64v8
+      - (Alpine.319.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-helix-arm64v8
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
@@ -171,15 +171,15 @@ jobs:
 
     # WASI
     - ${{ if eq(parameters.platform, 'wasi_wasm') }}:
-      - (Ubuntu.2004.Amd64)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-wasm-amd64
+      - (Ubuntu.1804.Amd64)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-wasm-amd64
 
     # Browser WebAssembly
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
-      - (Ubuntu.2004.Amd64)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-webassembly
+      - (Ubuntu.1804.Amd64)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-webassembly
 
     # Browser WebAssembly Firefox
     - ${{ if eq(parameters.platform, 'browser_wasm_firefox') }}:
-      - (Ubuntu.2004.Amd64)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-webassembly
+      - (Ubuntu.1804.Amd64)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-webassembly
 
     # Browser WebAssembly windows
     - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
