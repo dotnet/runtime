@@ -653,11 +653,6 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	guint32 nelems;
  	mini_get_simd_type_info (vector_class, &nelems);
 
-	// Override nelems for Vector3, with actual number of elements, instead of treating it as a 4-element vector (three elements + zero).
-	const char *klass_name = m_class_get_name (vector_class);
-	if (!strcmp (klass_name, "Vector3"))
-		nelems = 3;
-
 	element_size = vector_size / nelems;
 	gboolean has_single_element = vector_size == element_size;
 
@@ -1656,6 +1651,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int arg_size = mono_class_value_size (arg_class, NULL);
+		
+		if (id == SN_AsVector2) {
+			g_assert(ret_size == 8);
+			g_assert((arg_size == 12) || (arg_size == 16));
+		} else if (id == SN_AsVector3) {
+			g_assert(ret_size == 12);
+			g_assert((arg_size == 8) || (arg_size == 16));
+		}
+
 
 		if (arg_size == ret_size) {
 			return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);

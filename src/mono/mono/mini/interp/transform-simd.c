@@ -486,6 +486,14 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			MonoClass *arg_class = mono_class_from_mono_type_internal (csignature->params [0]);
 			int arg_size = mono_class_value_size (arg_class, NULL);
 
+			if (id == SN_AsVector2) {
+				g_assert(ret_size == 8);
+				g_assert((arg_size == 12) || (arg_size == 16));
+			} else if (id == SN_AsVector3) {
+				g_assert(ret_size == 12);
+				g_assert((arg_size == 8) || (arg_size == 16));
+			}
+
 			if (arg_size == ret_size) {
 				simd_opcode = MINT_SIMD_INTRINS_P_P;
 				simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITCAST;

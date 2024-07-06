@@ -4599,8 +4599,7 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 		*nelems = 2;
 		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector3")) {
-		// For LLVM SIMD support, Vector3 is treated as a 4-element vector (three elements + zero).
-		*nelems = 4;
+		*nelems = 3;
 		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];

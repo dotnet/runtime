@@ -676,6 +676,10 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 	} else {
 		guint32 nelems;
 		MonoTypeEnum type = mini_get_simd_type_info (klass, &nelems);
+		if (nelems == 3) {
+			// Override to 3 elements + zero
+			nelems == 4;
+		}
 		return LLVMVectorType (primitive_type_to_llvm_type (type), nelems);
 	}
 	g_assert_not_reached ();
@@ -8276,6 +8280,11 @@ MONO_RESTORE_WARNING
 		case OP_XCONST: {
 			int ecount;
 			MonoTypeEnum etype = mini_get_simd_type_info (ins->klass, (guint32*)&ecount);
+			
+			if (ecount == 3) {
+				// Override to 3 elements + zero
+				ecount == 4;
+			}
 
 			LLVMTypeRef llvm_type = primitive_type_to_llvm_type (etype);
 			LLVMValueRef vals [64];
