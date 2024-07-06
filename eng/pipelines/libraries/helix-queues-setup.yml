@@ -35,13 +35,13 @@ jobs:
     # Linux arm64
     - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - (Ubuntu.204.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-arm64v8
+        - (Ubuntu.1804.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - (Ubuntu.204.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-arm64v8
+        - (Ubuntu.1804.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
-      - (Alpine.319.Amd64.Open)ubuntu.2204.amd64.open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-helix-amd64
+      - (Alpine.318.Amd64.Open)ubuntu.2204.amd64.open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-amd64
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
         - (Alpine.318.Amd64.Open)ubuntu.2204.amd64.open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-amd64
 
