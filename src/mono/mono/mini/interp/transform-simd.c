@@ -379,7 +379,6 @@ emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMetho
 		g_assert (allow_void);
 		interp_ins_set_dummy_dreg (td->last_ins, td);
 	} else if (ret_mt == MINT_TYPE_VT) {
-		// For these intrinsics, if we return a VT then it is a V128
 		push_type_vt (td, vector_klass, vector_size);
 		interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 	} else {
@@ -486,6 +485,9 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			MonoClass *arg_class = mono_class_from_mono_type_internal (csignature->params [0]);
 			int arg_size = mono_class_value_size (arg_class, NULL);
 
+			vector_klass = ret_class;
+			vector_size = ret_size;
+
 			if (id == SN_AsVector2) {
 				g_assert(ret_size == 8);
 				g_assert((arg_size == 12) || (arg_size == 16));
@@ -515,9 +517,12 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 					if (arg_size == 16) {
 						simd_intrins = INTERP_SIMD_INTRINSIC_V128_TO_V2;
 					} else {
+						g_assert (arg_size == 12);
 						simd_intrins = INTERP_SIMD_INTRINSIC_V3_TO_V2;
 					}
 				} else {
+					g_assert (arg_size == 16);
+					g_assert (ret_size == 12);
 					simd_intrins = INTERP_SIMD_INTRINSIC_V128_TO_V3;
 				}
 				break;
@@ -528,9 +533,12 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 					if (ret_size == 12) {
 						simd_intrins = INTERP_SIMD_INTRINSIC_V2_TO_V3;
 					} else {
+						g_assert (ret_size == 16);
 						simd_intrins = INTERP_SIMD_INTRINSIC_V2_TO_V128;
 					}
 				} else {
+					g_assert (arg_size == 12);
+					g_assert (ret_size == 16);
 					simd_intrins = INTERP_SIMD_INTRINSIC_V3_TO_V128;
 				}
 				break;
