@@ -1416,7 +1416,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     bool       isScalar = false;
-    genTreeOps oper     = node->HWOperGet(&isScalar);
+    genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar);
 
     switch (oper)
     {
@@ -1452,7 +1452,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 bool       nestedIsScalar = false;
-                genTreeOps nestedOper     = second->AsHWIntrinsic()->HWOperGet(&isScalar);
+                genTreeOps nestedOper     = second->AsHWIntrinsic()->GetOperForHWIntrinsicId(&isScalar);
 
                 if (nestedOper == GT_NONE)
                 {

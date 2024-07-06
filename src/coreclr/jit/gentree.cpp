@@ -20890,7 +20890,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
     }
 
     NamedIntrinsic intrinsic =
-        GenTreeHWIntrinsic::HWIdGetForBinOp(this, op, op1, op2ForLookup, simdBaseType, simdSize, false);
+        GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, op, op1, op2ForLookup, simdBaseType, simdSize, false);
 
     if (intrinsic != NI_Illegal)
     {
@@ -20906,9 +20906,9 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             // by shifting 32-bit values and masking off the bits that should be zeroed.
 
             assert(varTypeIsByte(simdBaseType));
-            assert(simdSize != 64);
 
-            intrinsic = GenTreeHWIntrinsic::HWIdGetForBinOp(this, op, op1, op2ForLookup, TYP_INT, simdSize, false);
+            intrinsic =
+                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, op, op1, op2ForLookup, TYP_INT, simdSize, false);
             assert(intrinsic != NI_Illegal);
 
             GenTree* maskAmountOp;
@@ -21127,8 +21127,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
             else if (varTypeIsInt(simdBaseType))
             {
-                assert(!compIsaSupportedDebugOnly(InstructionSet_SSE41));
-
                 // op1Dup = op1
                 GenTree* op1Dup = fgMakeMultiUse(&op1);
 
@@ -21784,7 +21782,8 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
     }
 #endif // TARGET_XARCH
 
-    NamedIntrinsic intrinsic = GenTreeHWIntrinsic::HWIdGetForCmpOp(this, op, op1, op2, simdBaseType, simdSize, false);
+    NamedIntrinsic intrinsic =
+        GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, op, op1, op2, simdBaseType, simdSize, false);
 
     if (intrinsic != NI_Illegal)
     {
@@ -21805,7 +21804,6 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         {
             assert(varTypeIsLong(simdBaseType));
             assert(simdSize == 16);
-            assert(!compIsaSupportedDebugOnly(InstructionSet_SSE41));
 
             // There is no direct SSE2 support for comparing TYP_LONG vectors.
             // These have to be implemented in terms of TYP_INT vector comparison operations.
@@ -21980,7 +21978,6 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
             {
                 assert(varTypeIsLong(simdBaseType));
                 assert(simdSize == 16);
-                assert(!compIsaSupportedDebugOnly(InstructionSet_SSE42));
 
                 // There is no direct SSE2 support for comparing TYP_LONG vectors.
                 // These have to be implemented in terms of TYP_INT vector comparison operations.
@@ -25471,7 +25468,8 @@ GenTree* Compiler::gtNewSimdUnOpNode(
     }
 #endif // TARGET_ARM64
 
-    NamedIntrinsic intrinsic = GenTreeHWIntrinsic::HWIdGetForUnOp(this, op, op1, simdBaseType, simdSize, false);
+    NamedIntrinsic intrinsic =
+        GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(this, op, op1, simdBaseType, simdSize, false);
 
     if (intrinsic != NI_Illegal)
     {
@@ -26642,7 +26640,7 @@ bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(genTreeOps oper)
 bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
 {
     bool       isScalar = false;
-    genTreeOps oper     = HWOperGet(&isScalar);
+    genTreeOps oper     = GetOperForHWIntrinsicId(&isScalar);
     return OperIsBitwiseHWIntrinsic(oper);
 }
 
@@ -27007,7 +27005,7 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 }
 
 //------------------------------------------------------------------------------
-// HWOperGet: Returns oper based on the intrinsic ID and base type
+// GetOperForHWIntrinsicId: Returns oper based on the intrinsic ID and base type
 //
 // Arguments:
 //    id           - The intrinsic ID for which to get the oper
@@ -27017,7 +27015,7 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 // Returns:
 //    The oper based on the intrinsic ID and base type
 //
-genTreeOps GenTreeHWIntrinsic::HWOperGet(NamedIntrinsic id, var_types simdBaseType, bool* isScalar)
+genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar)
 {
     *isScalar = false;
 
@@ -27569,7 +27567,7 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(NamedIntrinsic id, var_types simdBaseTy
 }
 
 //------------------------------------------------------------------------------
-// HWIdGetForUnOp: Returns intrinsic ID based on the oper, base type, and simd size
+// GetHWIntrinsicIdForUnOp: Returns intrinsic ID based on the oper, base type, and simd size
 //
 // Arguments:
 //    comp         - The compiler instance
@@ -27582,7 +27580,7 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(NamedIntrinsic id, var_types simdBaseTy
 // Returns:
 //    The intrinsic ID based on the oper, base type, and simd size
 //
-NamedIntrinsic GenTreeHWIntrinsic::HWIdGetForUnOp(
+NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
     Compiler* comp, genTreeOps oper, GenTree* op1, var_types simdBaseType, unsigned simdSize, bool isScalar)
 {
     var_types simdType = comp->getSIMDTypeForSize(simdSize);
@@ -27662,7 +27660,7 @@ NamedIntrinsic GenTreeHWIntrinsic::HWIdGetForUnOp(
 }
 
 //------------------------------------------------------------------------------
-// HWIdGetForBinOp: Returns intrinsic ID based on the oper, base type, and simd size
+// GetHWIntrinsicIdForBinOp: Returns intrinsic ID based on the oper, base type, and simd size
 //
 // Arguments:
 //    comp         - The compiler instance
@@ -27676,13 +27674,13 @@ NamedIntrinsic GenTreeHWIntrinsic::HWIdGetForUnOp(
 // Returns:
 //    The intrinsic ID based on the oper, base type, and simd size
 //
-NamedIntrinsic GenTreeHWIntrinsic::HWIdGetForBinOp(Compiler*  comp,
-                                                   genTreeOps oper,
-                                                   GenTree*   op1,
-                                                   GenTree*   op2,
-                                                   var_types  simdBaseType,
-                                                   unsigned   simdSize,
-                                                   bool       isScalar)
+NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
+                                                            genTreeOps oper,
+                                                            GenTree*   op1,
+                                                            GenTree*   op2,
+                                                            var_types  simdBaseType,
+                                                            unsigned   simdSize,
+                                                            bool       isScalar)
 {
     var_types simdType = comp->getSIMDTypeForSize(simdSize);
 
@@ -28035,8 +28033,6 @@ NamedIntrinsic GenTreeHWIntrinsic::HWIdGetForBinOp(Compiler*  comp,
                 id = NI_SSE2_MultiplyLow;
             }
 #elif defined(TARGET_ARM64)
-            assert(op2->TypeIs(simdType) || op2->TypeIs(simdBaseType));
-
             if ((simdSize == 8) && (isScalar || (simdBaseType == TYP_DOUBLE)))
             {
                 id = NI_AdvSimd_MultiplyScalar;
@@ -28436,7 +28432,7 @@ NamedIntrinsic GenTreeHWIntrinsic::HWIdGetForBinOp(Compiler*  comp,
 }
 
 //------------------------------------------------------------------------------
-// HWIdGetForCmpOp: Returns intrinsic ID based on the oper, base type, and simd size
+// GetHWIntrinsicIdForCmpOp: Returns intrinsic ID based on the oper, base type, and simd size
 //
 // Arguments:
 //    comp         - The compiler instance
@@ -28450,13 +28446,13 @@ NamedIntrinsic GenTreeHWIntrinsic::HWIdGetForBinOp(Compiler*  comp,
 // Returns:
 //    The intrinsic ID based on the oper, base type, and simd size
 //
-NamedIntrinsic GenTreeHWIntrinsic::HWIdGetForCmpOp(Compiler*  comp,
-                                                   genTreeOps oper,
-                                                   GenTree*   op1,
-                                                   GenTree*   op2,
-                                                   var_types  simdBaseType,
-                                                   unsigned   simdSize,
-                                                   bool       isScalar)
+NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
+                                                            genTreeOps oper,
+                                                            GenTree*   op1,
+                                                            GenTree*   op2,
+                                                            var_types  simdBaseType,
+                                                            unsigned   simdSize,
+                                                            bool       isScalar)
 {
     var_types simdType = comp->getSIMDTypeForSize(simdSize);
 
@@ -29716,10 +29712,10 @@ uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) co
 
     bool isScalar = false;
 
-    genTreeOps firstOper = HWOperGet(&isScalar);
+    genTreeOps firstOper = GetOperForHWIntrinsicId(&isScalar);
     assert(!isScalar);
 
-    genTreeOps secondOper = second->HWOperGet(&isScalar);
+    genTreeOps secondOper = second->GetOperForHWIntrinsicId(&isScalar);
     assert(!isScalar);
 
     uint8_t AB  = 0;
@@ -29842,7 +29838,7 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
         }
 
         bool       isScalar = false;
-        genTreeOps oper     = intrinsic->HWOperGet(&isScalar);
+        genTreeOps oper     = intrinsic->GetOperForHWIntrinsicId(&isScalar);
 
         switch (oper)
         {
@@ -30154,7 +30150,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
 
     bool       isScalar = false;
-    genTreeOps oper     = tree->HWOperGet(&isScalar);
+    genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
 #if defined(TARGET_XARCH)
     if (oper == GT_AND_NOT)
