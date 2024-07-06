@@ -7283,6 +7283,7 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     CopyOSContext(&tempContext, pContextToCheck);
     KNONVOLATILE_CONTEXT_POINTERS ctxPtrs;
     ZeroMemory(&ctxPtrs, sizeof(ctxPtrs));
+
     personalityRoutine = RtlVirtualUnwind(UNW_FLAG_EHANDLER,     // HandlerType
                      imageBase,
                      ipToCheck,
