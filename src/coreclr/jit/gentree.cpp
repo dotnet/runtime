@@ -27620,7 +27620,7 @@ NamedIntrinsic GenTreeHWIntrinsic::HWIdGetForUnOp(
         case GT_NEG:
         {
 #if defined(TARGET_ARM64)
-            assert(varTypeIsSigned(simdBaseType));
+            assert(varTypeIsSigned(simdBaseType) || varTypeIsFloating(simdBaseType));
 
             if (varTypeIsLong(simdBaseType))
             {
