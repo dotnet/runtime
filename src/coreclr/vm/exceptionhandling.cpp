@@ -242,7 +242,7 @@ void InitializeExceptionHandling()
 #ifdef TARGET_UNIX
     // Register handler of hardware exceptions like null reference in PAL
     PAL_SetHardwareExceptionHandler(HandleHardwareException, IsSafeToHandleHardwareException);
-
+    
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
 
@@ -5442,7 +5442,6 @@ static inline BOOL HandleSingleStep(PCONTEXT pContext, PEXCEPTION_RECORD pExcept
 
 BOOL HandleHardwareException(PAL_SEHException* ex)
 {
-    LOG((LF_CORDB, LL_INFO100000, "HandleHardwareException: The exception address is %p.\n", ex->GetExceptionRecord()->ExceptionAddress));
     _ASSERTE(IsSafeToHandleHardwareException(ex->GetContextRecord(), ex->GetExceptionRecord()));
 
     if (ex->GetExceptionRecord()->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
@@ -5587,7 +5586,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 return TRUE;
             }
         }
-    }
+    } 
 
     return FALSE;
 }

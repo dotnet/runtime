@@ -663,7 +663,6 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     int st;
     unw_context_t unwContext;
     unw_cursor_t cursor;
-    LOG((LF_CORDB, LL_EVERYTHING, "Inside PAL_VirtualUnwind\n"));
 
     DWORD64 curPc = CONTEXTGetPC(context);
 
