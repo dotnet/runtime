@@ -20867,6 +20867,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             break;
         }
 #endif // TARGET_XARCH
+
+        default:
+        {
+            break;
+        }
     }
 
     if (needsReverseOps)
