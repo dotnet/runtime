@@ -21764,14 +21764,14 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         case GT_GE:
         case GT_LE:
         {
-            needsConvertMaskToVector = (simdSize == 64) || (canUseEvexEncoding() && !varTypeIsFloating(simdBaseType));
+            needsConvertMaskToVector = (simdSize == 64) || (varTypeIsIntegral(simdBaseType) && canUseEvexEncoding());
             break;
         }
 
         case GT_GT:
         case GT_LT:
         {
-            needsConvertMaskToVector = (simdSize == 64) || (canUseEvexEncoding() && varTypeIsUnsigned(simdBaseType));
+            needsConvertMaskToVector = (simdSize == 64) || (varTypeIsUnsigned(simdBaseType) && canUseEvexEncoding());
             break;
         }
 
@@ -28585,13 +28585,13 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             assert(op2->TypeIs(simdType));
 
 #if defined(TARGET_XARCH)
-            if (varTypeIsIntegral(simdBaseType))
+            if (simdSize == 64)
             {
-                if (comp->canUseEvexEncoding())
-                {
-                    id = NI_EVEX_CompareGreaterThanMask;
-                }
-                else if (varTypeIsSigned(simdBaseType))
+                id = NI_EVEX_CompareGreaterThanMask;
+            }
+            else if (varTypeIsIntegral(simdBaseType))
+            {
+                if (varTypeIsSigned(simdBaseType))
                 {
                     if (simdSize == 32)
                     {
@@ -28611,10 +28611,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                         id = NI_SSE2_CompareGreaterThan;
                     }
                 }
-            }
-            else if (simdSize == 64)
-            {
-                id = NI_EVEX_CompareGreaterThanMask;
+                else if (comp->canUseEvexEncoding())
+                {
+                    id = NI_EVEX_CompareGreaterThanMask;
+                }
             }
             else if (simdSize == 32)
             {
@@ -28690,13 +28690,13 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             assert(op2->TypeIs(simdType));
 
 #if defined(TARGET_XARCH)
-            if (varTypeIsIntegral(simdBaseType))
+            if (simdSize == 64)
             {
-                if (comp->canUseEvexEncoding())
-                {
-                    id = NI_EVEX_CompareLessThanMask;
-                }
-                else if (varTypeIsSigned(simdBaseType))
+                id = NI_EVEX_CompareLessThanMask;
+            }
+            else if (varTypeIsIntegral(simdBaseType))
+            {
+                if (varTypeIsSigned(simdBaseType))
                 {
                     if (simdSize == 32)
                     {
@@ -28716,10 +28716,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                         id = NI_SSE2_CompareLessThan;
                     }
                 }
-            }
-            else if (simdSize == 64)
-            {
-                id = NI_EVEX_CompareLessThanMask;
+                else if (comp->canUseEvexEncoding())
+                {
+                    id = NI_EVEX_CompareLessThanMask;
+                }
             }
             else if (simdSize == 32)
             {
