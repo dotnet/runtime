@@ -532,7 +532,7 @@ void FrameInfo::AssertValid()
 
     // Can't be both Stub & Chain
     _ASSERTE(!fStub || !fChain);
-
+    
     // Must be at least a Method, Stub or Chain or Internal
     _ASSERTE(fMethod || fStub || fChain || this->internal);
 

@@ -381,46 +381,6 @@ static void PAL_DispatchExceptionInner(PCONTEXT pContext, PEXCEPTION_RECORD pExR
     pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     bool continueExecution;
     {
-        uint64_t PointerToStructureCopy = pContext->Rbp-0x50;
-        uint64_t PointerToStructure = pContext->Rbp-0xf0;
-        M128A ymm_register_l = pContext->Xmm0;
-        M128A ymm_register_h = pContext->Ymm0H;
-    
-        if (PointerToStructure > 1000000000 && PointerToStructureCopy > 1000000000)
-        {
-            printf("In Pal dispatch exception inner The value of the structure is ");
-            for(int i = 0; i < 40; i++)
-            {
-                printf("%d.", *(BYTE*)(PointerToStructure + i));
-                //list_structure.push_back(*(BYTE*)PointerToStructure + i);
-                //list_structure_copy.push_back(*(BYTE*)PointerToStructureCopy + i);
-            }
-            printf("\n");
-            printf("The value of the copy of the structure is ");
-            for(int i = 0; i < 40; i++)
-            {
-                printf("%d.", *(BYTE*)(PointerToStructureCopy + i));
-            }
-            printf( "\n");  
-        }
-        printf("The value of the ymm register is ");
-        for(int i = 0; i < 8; i++)
-        {
-            printf("%d.", *(((BYTE*)&(ymm_register_l.Low))+i));
-        }
-        for(int i = 0; i < 8; i++)
-        {
-            printf("%d.", *(((BYTE*)&(ymm_register_l.High))+i));
-        }
-        for(int i = 0; i < 8; i++)
-        {
-            printf("%d.", *(((BYTE*)&(ymm_register_h.Low))+i));
-        }
-        for(int i = 0; i < 8; i++)
-        {
-            printf("%d.", *(((BYTE*)&(ymm_register_h.High))+i));
-        }
-        printf("\n");
         PAL_SEHException exception(pExRecord, pContext, true);
 
         TRACE("PAL_DispatchException(EC %08x EA %p)\n", pExRecord->ExceptionCode, pExRecord->ExceptionAddress);
@@ -467,44 +427,6 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
     // We need to let ASAN know that its stack tracking is out of date.
     __asan_handle_no_return();
     CPalThread *pThread = InternalGetCurrentThread();
-    uint64_t PointerToStructureCopy = pContext->Rbp-0x50;
-    uint64_t PointerToStructure = pContext->Rbp-0xf0;
-    M128A ymm_register_l = pContext->Xmm0;
-    M128A ymm_register_h = pContext->Ymm0H;
-    
-    if (PointerToStructure > 1000000000 && PointerToStructureCopy > 1000000000)
-    {
-        printf("Near the top of Pal dispatch exception The value of the structure is ");
-        for(int i = 0; i < 40; i++)
-        {
-            printf("%d.", *(BYTE*)(PointerToStructure + i));
-        }
-        printf("\n");
-        printf("The value of the copy of the structure is ");
-        for(int i = 0; i < 40; i++)
-        {
-            printf("%d.", *(BYTE*)(PointerToStructureCopy + i));
-        }
-        printf("\n");  
-    }
-    printf("The value of the ymm register is ");
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.High))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.High))+i));
-    }
-    printf("\n");
     PAL_DispatchExceptionInner(pContext, pExRecord);
 
     // Send the forward request to the exception thread to process
@@ -754,35 +676,17 @@ HijackFaultingThread(
     EXCEPTION_RECORD exceptionRecord;
     CONTEXT threadContext;
     kern_return_t machret;
-    printf("Experiment before calling BuildExceptionRecord ymm reg val is \n");
-    for(int i = 0; i < 16; i++)
-    {
-        printf("%d.", *(((BYTE*)&(exceptionInfo.AVXState.ufs.as64.__fpu_xmm0))+i));
-    }
-    for(int i = 0; i < 16; i++)
-    {
-        printf("%d.", *(((BYTE*)&(exceptionInfo.AVXState.ufs.as64.__fpu_ymmh0))+i));
-    }
+
     // Fill in the exception record from the exception info
     BuildExceptionRecord(exceptionInfo, &exceptionRecord);
 
 #if defined(HOST_AMD64)
     int cpuFeatures = minipal_getcpufeatures();
     threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
-    printf("Right before we call GTCFTS the value of the ymm register is ");
-    for(int i = 0; i < 16; i++)
-    {
-        printf("%d.", *(((BYTE*)&(exceptionInfo.AVXState.ufs.as64.__fpu_xmm0))+i));
-    }
-    for(int i = 0; i < 16; i++)
-    {
-        printf("%d.", *(((BYTE*)&(exceptionInfo.AVXState.ufs.as64.__fpu_ymmh0))+i));
-    }
-    printf("\n");
-    // CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
+
     if (((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0))
     {
-        threadContext.ContextFlags |= CONTEXT_XSTATE; //TODO: Mikelle check if this is where this should be set.
+        threadContext.ContextFlags |= CONTEXT_XSTATE;
         CONTEXT_GetThreadContextFromThreadState(x86_AVX512_STATE, (thread_state_t)&exceptionInfo.AVX512State, &threadContext);
     }
     else if(((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0))
@@ -794,57 +698,9 @@ HijackFaultingThread(
     {
         CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
     }
-    printf("After CONTEXT_GetThreadContextFromThreadState. We should not see this unless AVX isn't available\n");
-    printf("After CONTEXT_GetThreadContextFromThreadState.\n");
-    M128A ymm_register_l = threadContext.Xmm0;
-    M128A ymm_register_h = threadContext.Ymm0H;
-    uint64_t PointerToStructureCopy = threadContext.Rbp-0x38;
-    uint64_t PointerToStructure = threadContext.Rbp-0x68;
-    printf("The value of the ymm register is ");
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.High))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.High))+i));
-    }
-    printf("\n");
     
-
     threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
     CONTEXT_GetThreadContextFromThreadState(x86_THREAD_STATE, (thread_state_t)&exceptionInfo.ThreadState, &threadContext);
-    printf("After x86 CONTEXT_GetThreadContextFromThreadState.\n"); //It is correct here
-    ymm_register_l = threadContext.Xmm0;
-    ymm_register_h = threadContext.Ymm0H;
-    PointerToStructureCopy = threadContext.Rbp-0x38;
-    PointerToStructure = threadContext.Rbp-0x68;
-    printf("The value of the ymm register is ");
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.High))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.High))+i));
-    }
-    printf("\n");
 
     void **targetSP = (void **)threadContext.Rsp;
 #elif defined(HOST_ARM64)
@@ -1048,66 +904,7 @@ HijackFaultingThread(
     // Make sure it's aligned - CONTEXT has 16-byte alignment
     FramePointer = (void **)((ULONG_PTR)FramePointer - ((ULONG_PTR)FramePointer % 16));
     CONTEXT *pContext = (CONTEXT *)FramePointer;
-    M128A ymm_register_l_thread = threadContext.Xmm0;
-    M128A ymm_register_h_thread = threadContext.Ymm0H;
-    PointerToStructureCopy = threadContext.Rbp-0x38;
-    PointerToStructure = threadContext.Rbp-0x68;
-    printf("Right after the CONTEXT * FramePointer call.\n");
-    printf("The value of the structure is ");
-    for(int i = 0; i < 40; i++)
-    {
-        printf("%d.", *(BYTE*)(PointerToStructure + i));
-    }
-    printf("\n");
-    printf("The value of the copy of the structure is ");
-    for(int i = 0; i < 40; i++)
-    {
-        printf("%d.", *(BYTE*)(PointerToStructureCopy + i));
-    }
-    printf("\n");
-    
-    printf("The value of the ymm register is ");
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l_thread.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l_thread.High))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h_thread.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h_thread.High))+i));
-    }
-    printf("\n");
     *pContext = threadContext;
-    M128A ymm_register_l_check = pContext->Xmm0;
-    M128A ymm_register_h_check = pContext->Ymm0H;
-    PointerToStructureCopy = pContext->Rbp-0x38;
-    PointerToStructure = pContext->Rbp-0x68;
-    printf("After *pContext = threadContext.\n");
-    printf("The value of the ymm register using pContext->Xmm0 after *pContext = threadContext is ");
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l_check.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l_check.High))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h_check.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h_check.High))+i));
-    }
-    printf("\n");
 
     // Put the exception record on the stack
     FramePointer = (void **)((ULONG_PTR)FramePointer - sizeof(EXCEPTION_RECORD));
@@ -1127,27 +924,7 @@ HijackFaultingThread(
     FramePointer[0] = pContext;
     FramePointer[1] = pExceptionRecord;
     FramePointer[2] = pMachExceptionInfo;
-    ymm_register_l = pContext->Xmm0;
-    ymm_register_h = pContext->Ymm0H;
-    printf("After FramePointer[0] = pContext;.\n");
-    printf("The value of the ymm register is ");
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.High))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.High))+i));
-    }
-    printf("\n");
+ 
     // Place the return address to right after the fake call in PAL_DispatchExceptionWrapper
     FramePointer[-1] = (void *)((ULONG_PTR)PAL_DispatchExceptionWrapper + PAL_DispatchExceptionReturnOffset);
 
@@ -1163,54 +940,11 @@ HijackFaultingThread(
     ts64.__x[0] = (uint64_t)pContext;
     ts64.__x[1] = (uint64_t)pExceptionRecord;
     ts64.__x[2] = (uint64_t)pMachExceptionInfo;
-    ymm_register_l = ts64.__x[0]->Xmm0;
-    ymm_register_h = ts64.__x[0]->Ymm0H;
-    PointerToStructureCopy = ts64.__x[0]->Rbp-0x38;
-    PointerToStructure = ts64.__x[0]->Rbp-0x68;
-    printf("After ts64.__x[0] = (uint64_t)pContext;\n");
-    
-    printf("The value of the ymm register is ");
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.High))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.High))+i));
-    }
-    printf("\n");
+
     // Make sure it's aligned - SP has 16-byte alignment
     FramePointer = (void **)((ULONG_PTR)FramePointer - ((ULONG_PTR)FramePointer % 16));
     arm_thread_state64_set_sp(ts64, FramePointer);
 
-    ymm_register_l = pContext->Xmm0;
-    ymm_register_h = pContext->Ymm0H;
-    printf("The value of the ymm register is ");
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_l.High))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.Low))+i));
-    }
-    for(int i = 0; i < 8; i++)
-    {
-        printf("%d.", *(((BYTE*)&(ymm_register_h.High))+i));
-    }
-    printf("\n");
     // Make the call to DispatchException
     arm_thread_state64_set_lr_fptr(ts64, (uint64_t)PAL_DispatchExceptionWrapper + PAL_DispatchExceptionReturnOffset);
     arm_thread_state64_set_pc_fptr(ts64, PAL_DispatchException);
@@ -1454,7 +1188,6 @@ SEHExceptionThread(void *args)
 
             if (!feFound)
             {
-                printf("feFound was false\n");
                 MachExceptionInfo exceptionInfo(thread, sMessage);
 
 #if defined(HOST_ARM64)
@@ -1470,7 +1203,6 @@ SEHExceptionThread(void *args)
 #endif // HOST_ARM64
                 {
                     NONPAL_TRACE("HijackFaultingThread thread %08x\n", thread);
-                    printf("We called HijackFaultingThread\n");
                     HijackFaultingThread(thread, exceptionInfo);
                 }
 
@@ -1544,29 +1276,28 @@ MachExceptionInfo::MachExceptionInfo(mach_port_t thread, MachMessage& message)
         Subcodes[i] = message.GetExceptionCode(i);
 
 #if defined(HOST_AMD64)
+    int cpuFeatures = minipal_getcpufeatures();
     mach_msg_type_number_t count = x86_THREAD_STATE_COUNT;
     machret = thread_get_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, &count);
     CHECK_MACH("thread_get_state", machret);
 
-    count = x86_FLOAT_STATE_COUNT;
-    machret = thread_get_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, &count);
-    CHECK_MACH("thread_get_state(float)", machret);
-    printf("Right before the AVX Call\n");
-#if defined(XSTATE_SUPPORTED)
-    mach_msg_type_number_t avx_count = x86_AVX_STATE_COUNT;
-    machret = thread_get_state(thread, x86_AVX_STATE, (thread_state_t)&AVXState, &avx_count);
-    printf("After we do thread_get_state_avx: %d\n", machret);
-    CHECK_MACH("thread_get_state(avx)", machret);
-#endif
-    printf("Inside the constructor for MachExceptionInfo, after Float_STATE has changed, the thread state value of the ymm register is ");
-
-    for(int i = 0; i < 16; i++)
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0))
     {
-        printf("%d.", *(((BYTE*)&(AVXState.ufs.as64.__fpu_xmm0))+i));
+        count = x86_AVX512_STATE_COUNT;
+        machret = thread_get_state(thread, x86_AVX512_STATE, (thread_state_t)&AVX512State, &count);
+        CHECK_MACH("thread_get_state(avx512)", machret);
     }
-    for(int i = 0; i < 16; i++)
+    else if(((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0))
     {
-        printf("%d.", *(((BYTE*)&(AVXState.ufs.as64.__fpu_ymmh0))+i));
+        count = x86_AVX_STATE_COUNT;
+        machret = thread_get_state(thread, x86_AVX_STATE, (thread_state_t)&AVXState, &count);
+        CHECK_MACH("thread_get_state(avx)", machret);
+    }
+    else
+    {
+        count = x86_FLOAT_STATE_COUNT;
+        machret = thread_get_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, &count);
+        CHECK_MACH("thread_get_state(float)", machret);
     }
     count = x86_DEBUG_STATE_COUNT;
     machret = thread_get_state(thread, x86_DEBUG_STATE, (thread_state_t)&DebugState, &count);
