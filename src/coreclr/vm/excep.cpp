@@ -7255,7 +7255,6 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     CopyOSContext(&tempContext, pContextToCheck);
     KNONVOLATILE_CONTEXT_POINTERS ctxPtrs;
     ZeroMemory(&ctxPtrs, sizeof(ctxPtrs));
-    LOG((LF_CORDB, LL_EVERYTHING, "RVU: in RtlVirtualUnwind in excep.cpp, ipToCheck=0x%p\n", ipToCheck));
     personalityRoutine = RtlVirtualUnwind(UNW_FLAG_EHANDLER,     // HandlerType
                      imageBase,
                      ipToCheck,

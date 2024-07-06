@@ -157,13 +157,11 @@ RtlVirtualUnwind (
     CONTRACTL_END;
 
     // The indirection should be taken care of by the caller
-    LOG((LF_CORDB, LL_INFO100000, "Inside RtlVirtualUnwind with ControlPc: %llu.\n", ControlPc));
     _ASSERTE((FunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
 
 #ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerAttached())
     {
-        LOG((LF_CORDB, LL_INFO100000, "Right before we call the RtlVirtualUnwind_Worker with ControlPc: %llu.\n", ControlPc));
         return RtlVirtualUnwind_Worker(HandlerType, ImageBase, ControlPc, FunctionEntry, ContextRecord, HandlerData, EstablisherFrame, ContextPointers);
     }
     else
@@ -197,7 +195,7 @@ RtlVirtualUnwind_Worker (
     // that the debugger is attched when we get here.
     _ASSERTE(CORDebuggerAttached());
 
-    LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: in RtlVirtualUnwind_ClrDbgSafeWorker, ControlPc=0x%p\n", ControlPc));    
+    LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: in RtlVirtualUnwind_ClrDbgSafeWorker, ControlPc=0x%p\n", ControlPc));
 
     BOOL     InEpilogue = FALSE;
     BOOL     HasManagedBreakpoint = FALSE;

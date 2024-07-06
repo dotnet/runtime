@@ -5483,7 +5483,7 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
 
     {
         // Don't stop for native debugging anywhere inside our inproc-Filters.
-        CantStopHolder hHolder;  
+        CantStopHolder hHolder;
 
         if (!CORDBUnrecoverableError(this))
         {
@@ -8505,7 +8505,7 @@ LONG Debugger::LastChanceManagedException(EXCEPTION_POINTERS * pExceptionInfo,
     {
         return ExceptionContinueExecution;
     }
-    
+
     // Otherwise, run our last chance exception logic
     ATTACH_ACTION action;
     action = ATTACH_NO;
