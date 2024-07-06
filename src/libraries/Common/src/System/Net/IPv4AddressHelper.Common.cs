@@ -194,7 +194,7 @@ namespace System.Net
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int numberBase = IPv4AddressHelper.Decimal;
-            Span<long> parts = stackalloc long[4];
+            Span<uint> parts = stackalloc uint[4];
             long currentValue = 0;
             bool atLeastOneChar = false;
 
@@ -208,7 +208,7 @@ namespace System.Net
             for (current = 0; current < name.Length; current++)
             {
                 TChar ch = name[current];
-                int maxDigitValue = 9;
+                int maxCharacterValue = '9';
                 currentValue = 0;
 
                 // Figure out what base this section is in, default to base 10
@@ -217,9 +217,6 @@ namespace System.Net
                 // If the number starts with 0x, it should be interpreted in base 16 / hex
                 if (ch == TChar.CreateTruncating('0'))
                 {
-                    numberBase = IPv4AddressHelper.Octal;
-                    maxDigitValue = 7;
-
                     current++;
                     atLeastOneChar = true;
                     if (current < name.Length)
@@ -229,10 +226,14 @@ namespace System.Net
                         if ((ch == TChar.CreateTruncating('x')) || (ch == TChar.CreateTruncating('X')))
                         {
                             numberBase = IPv4AddressHelper.Hex;
-                            maxDigitValue = 9;
 
                             current++;
                             atLeastOneChar = false;
+                        }
+                        else
+                        {
+                            numberBase = IPv4AddressHelper.Octal;
+                            maxCharacterValue = '7';
                         }
                     }
                 }
@@ -242,25 +243,30 @@ namespace System.Net
                 {
                     ch = name[current];
                     int characterValue = int.CreateTruncating(ch);
-                    int digitValue = characterValue - '0';
+                    int digitValue;
 
-                    if ((digitValue < 0) || (digitValue > maxDigitValue))
+                    if (characterValue >= '0' && characterValue <= maxCharacterValue)
                     {
-                        if (numberBase != IPv4AddressHelper.Hex)
+                        digitValue = characterValue - '0';
+                    }
+                    else if (numberBase == IPv4AddressHelper.Hex)
+                    {
+                        if (characterValue >= 'a' && characterValue <= 'f')
                         {
-                            break; // Invalid/terminator
+                            digitValue = 10 + characterValue - 'a';
+                        }
+                        else if (characterValue >= 'A' && characterValue <= 'F')
+                        {
+                            digitValue = 10 + characterValue - 'A';
                         }
                         else
                         {
-                            int lowercaseCharacterValue = characterValue | 0x20;
-
-                            digitValue = 10 + lowercaseCharacterValue - 'a';
-
-                            if ((digitValue < 10) || (digitValue > 16))
-                            {
-                                break; // Invalid/terminator
-                            }
+                            break; // Invalid/terminator
                         }
+                    }
+                    else
+                    {
+                        break; // Invalid/terminator
                     }
 
                     currentValue = (currentValue * numberBase) + digitValue;
@@ -273,7 +279,7 @@ namespace System.Net
                     atLeastOneChar = true;
                 }
 
-                if (current < name.Length && name[current] == TChar.CreateTruncating('.'))
+                if (ch == TChar.CreateTruncating('.'))
                 {
                     if (dotCount >= 3 // Max of 3 dots and 4 segments
                         || !atLeastOneChar // No empty segments: 1...1
@@ -282,7 +288,7 @@ namespace System.Net
                     {
                         return Invalid;
                     }
-                    parts[dotCount] = currentValue;
+                    parts[dotCount] = unchecked((uint)currentValue);
                     dotCount++;
                     atLeastOneChar = false;
                     continue;
@@ -305,7 +311,7 @@ namespace System.Net
             else if (name[current] == TChar.CreateTruncating('/') || name[current] == TChar.CreateTruncating('\\')
                     || (notImplicitFile && (name[current] == TChar.CreateTruncating(':') || name[current] == TChar.CreateTruncating('?') || name[current] == TChar.CreateTruncating('#'))))
             {
-                charsConsumed = current;
+                // end of string, (as terminated) allowed
             }
             else
             {
@@ -313,35 +319,32 @@ namespace System.Net
                 return Invalid;
             }
 
-            parts[dotCount] = currentValue;
+            parts[dotCount] = unchecked((uint)currentValue);
+            charsConsumed = current;
 
-            // Parsed, reassemble and check for overflows
+            // Parsed, reassemble and check for overflows in the last part. Previous parts have already been checked in the loop
             switch (dotCount)
             {
                 case 0: // 0xFFFFFFFF
-                    charsConsumed = current;
                     return parts[0];
                 case 1: // 0xFF.0xFFFFFF
                     if (parts[1] > 0xffffff)
                     {
                         return Invalid;
                     }
-                    charsConsumed = current;
-                    return (parts[0] << 24) | (parts[1] & 0xffffff);
+                    return (parts[0] << 24) | parts[1];
                 case 2: // 0xFF.0xFF.0xFFFF
                     if (parts[2] > 0xffff)
                     {
                         return Invalid;
                     }
-                    charsConsumed = current;
-                    return (parts[0] << 24) | ((parts[1] & 0xff) << 16) | (parts[2] & 0xffff);
+                    return (parts[0] << 24) | (parts[1] << 16) | parts[2];
                 case 3: // 0xFF.0xFF.0xFF.0xFF
                     if (parts[3] > 0xff)
                     {
                         return Invalid;
                     }
-                    charsConsumed = current;
-                    return (parts[0] << 24) | ((parts[1] & 0xff) << 16) | ((parts[2] & 0xff) << 8) | (parts[3] & 0xff);
+                    return (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3];
                 default:
                     return Invalid;
             }
