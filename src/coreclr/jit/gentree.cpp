@@ -20813,7 +20813,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 #if defined(TARGET_ARM64)
                 if (!varTypeIsByte(simdBaseType))
                 {
-                    // MultiplyByScalar requires the scalar op to be op2
+                    // MultiplyByScalar requires the scalar op to be op2fGetHWIntrinsicIdForBinOp
                     needsReverseOps = true;
                 }
 #endif // TARGET_ARM64
@@ -20845,17 +20845,20 @@ GenTree* Compiler::gtNewSimdBinOpNode(
         case GT_OR:
         case GT_XOR:
         {
-            if (varTypeIsIntegral(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            if (simdSize == 32)
             {
-                if (varTypeIsLong(simdBaseType))
+                if (varTypeIsIntegral(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
-                    simdBaseJitType = CORINFO_TYPE_DOUBLE;
-                    simdBaseType    = TYP_DOUBLE;
-                }
-                else
-                {
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
-                    simdBaseType    = TYP_FLOAT;
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        simdBaseJitType = CORINFO_TYPE_DOUBLE;
+                        simdBaseType    = TYP_DOUBLE;
+                    }
+                    else
+                    {
+                        simdBaseJitType = CORINFO_TYPE_FLOAT;
+                        simdBaseType    = TYP_FLOAT;
+                    }
                 }
             }
 
@@ -28226,7 +28229,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                 if (simdSize == 32)
                 {
                     assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                    id = varTypeIsInt(op2) ? NI_AVX2_ShiftRightLogical : NI_AVX2_ShiftRightLogicalVariable;
+                    id = varTypeIsInt(op2) ? NI_AVX2_ShiftRightArithmetic : NI_AVX2_ShiftRightArithmeticVariable;
                 }
                 else if (varTypeIsInt(op2))
                 {
