@@ -427,6 +427,7 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
     // We need to let ASAN know that its stack tracking is out of date.
     __asan_handle_no_return();
     CPalThread *pThread = InternalGetCurrentThread();
+
     PAL_DispatchExceptionInner(pContext, pExRecord);
 
     // Send the forward request to the exception thread to process
