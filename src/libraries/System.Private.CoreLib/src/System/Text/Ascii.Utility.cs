@@ -152,7 +152,7 @@ namespace System.Text
         private static nuint GetIndexOfFirstNonAsciiByte_Vector(ref byte pBuffer, nuint bufferLength)
         {
             Debug.Assert(bufferLength >= 16);
-            if (bufferLength < 32)
+            if (bufferLength <= 32)
             {
                 Vector128<byte> first = Vector128.GreaterThanOrEqual(
                     Vector128.LoadUnsafe(ref pBuffer),
@@ -185,7 +185,7 @@ namespace System.Text
                 return ComputeIndex(found) + offset;
             }
 
-            if (bufferLength < 64)
+            if (bufferLength <= 64)
             {
                 Vector256<byte> first = Vector256.LoadUnsafe(ref pBuffer);
                 Vector256<byte> last = Vector256.LoadUnsafe(ref pBuffer, bufferLength - 32);
