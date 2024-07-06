@@ -871,6 +871,12 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CanCastTo(TypeHandle destTH)
         {
+            if (m_asTAddr == destTH.m_asTAddr)
+                return true;
+
+            if (!IsTypeDesc && destTH.IsTypeDesc)
+                return false;
+
             CastResult result = CastCache.TryGet(CastHelpers.s_table!, (nuint)m_asTAddr, (nuint)destTH.m_asTAddr);
 
             if (result != CastResult.MaybeCast)

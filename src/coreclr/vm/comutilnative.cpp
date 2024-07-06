@@ -1854,7 +1854,25 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo(void* fromTypeHnd, void* toTypeHn
 
     BEGIN_QCALL;
 
-    ret = TypeHandle::FromPtr(fromTypeHnd).CanCastTo(TypeHandle::FromPtr(toTypeHnd));
+    // Cache lookup and trivial cases are already handled at managed side. Call the uncached versions directly.
+    _ASSERTE(fromTypeHnd != toTypeHnd);
+
+    TypeHandle fromTH = TypeHandle::FromPtr(fromTypeHnd);
+    TypeHandle toTH = TypeHandle::FromPtr(toTypeHnd);
+    
+    if (fromTH.IsTypeDesc())
+    {
+        ret = fromTH.AsTypeDesc()->CanCastTo(toTH, NULL);
+    }
+    else if (Nullable::IsNullableForType(toTH, fromTH.AsMethodTable()))
+    {
+        // do not allow type T to be cast to Nullable<T>
+        ret = FALSE;
+    }
+    else
+    {
+        ret = fromTH.AsMethodTable()->CanCastTo(toTH.AsMethodTable(), NULL);
+    }
 
     END_QCALL;
 
