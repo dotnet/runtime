@@ -242,7 +242,7 @@ void InitializeExceptionHandling()
 #ifdef TARGET_UNIX
     // Register handler of hardware exceptions like null reference in PAL
     PAL_SetHardwareExceptionHandler(HandleHardwareException, IsSafeToHandleHardwareException);
-    
+
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
 
@@ -4628,7 +4628,6 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
             // Create a copy of the current context because we don't want
             // the current context record to be updated by RtlVirtualUnwind.
             memcpy(callerFrameContext, currentFrameContext, sizeof(CONTEXT));
-	    LOG((LF_CORDB, LL_EVERYTHING, "RVU: in UnwindManagedExceptionPass2 in exceptionhandling.cpp, ControlPc=0x%p\n", dispatcherContext.ControlPc));
             RtlVirtualUnwind(UNW_FLAG_EHANDLER,
                 dispatcherContext.ImageBase,
                 dispatcherContext.ControlPc,
@@ -4829,7 +4828,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             KNONVOLATILE_CONTEXT currentNonVolatileContext;
             CaptureNonvolatileRegisters(&currentNonVolatileContext, frameContext);
 #endif // USE_CURRENT_CONTEXT_IN_FILTER
-	    LOG((LF_CORDB, LL_EVERYTHING, "RVU: in UnwindManagedExceptionPass1 in exceptionhandling.cpp, ControlPc=0x%p\n", dispatcherContext.ControlPc));
+
             RtlVirtualUnwind(UNW_FLAG_EHANDLER,
                 dispatcherContext.ImageBase,
                 dispatcherContext.ControlPc,
@@ -5025,7 +5024,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             // If the exception is hardware exceptions, we use the exception's context record directly
             if (isHardwareException)
             {
-		LOG((LF_CORDB, LL_EVERYTHING, "DME this is a hardware exception. \n"));
                 frameContext = *ex.GetContextRecord();
             }
             else
@@ -5055,7 +5053,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
             if (ex.IsFirstPass())
             {
-		LOG((LF_CORDB, LL_EVERYTHING, "DME: exception first pass\n" ));
                 UnwindManagedExceptionPass1(ex, &frameContext);
             }
             else
@@ -5619,7 +5616,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 return TRUE;
             }
         }
-    } 
+    }
 
     return FALSE;
 }
@@ -5952,7 +5949,6 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
 
     // RtlVirtualUnwind returns the language specific handler for the ControlPC in question
     // on ARM and AMD64.
-    LOG((LF_CORDB, LL_EVERYTHING, "RVU: in FixupDispatcherContext in exceptionhandling.cpp, ControlPc=0x%p\n", pDispatcherContext->ControlPc));
     pDispatcherContext->LanguageHandler = RtlVirtualUnwind(
                      NULL,     // HandlerType
                      pDispatcherContext->ImageBase,

@@ -2710,7 +2710,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         tpr != TPR_TRIGGER_ONLY_THIS)
     {
         LOG((LF_CORDB, LL_INFO10000, "DC::SFT: Trigger controllers with single step\n"));
-   
+
         //
         // Now, go ahead & trigger all controllers with
         // single step events

@@ -924,7 +924,7 @@ HijackFaultingThread(
     FramePointer[0] = pContext;
     FramePointer[1] = pExceptionRecord;
     FramePointer[2] = pMachExceptionInfo;
- 
+
     // Place the return address to right after the fake call in PAL_DispatchExceptionWrapper
     FramePointer[-1] = (void *)((ULONG_PTR)PAL_DispatchExceptionWrapper + PAL_DispatchExceptionReturnOffset);
 
