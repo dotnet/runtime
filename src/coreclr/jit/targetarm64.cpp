@@ -32,7 +32,9 @@ const regMaskTP fltArgMasks[] = {RBM_V0, RBM_V1, RBM_V2, RBM_V3, RBM_V4, RBM_V5,
 //   info - Info about the method being classified.
 //
 Arm64Classifier::Arm64Classifier(const ClassifierInfo& info)
-    : m_info(info), m_intRegs(intArgRegs, ArrLen(intArgRegs)), m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
+    : m_info(info)
+    , m_intRegs(intArgRegs, ArrLen(intArgRegs))
+    , m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
 {
 }
 
@@ -74,20 +76,20 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
             ABIPassingInformation info;
             if (m_floatRegs.Count() >= slots)
             {
-                info.NumSegments = slots;
-                info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[slots];
+                info = ABIPassingInformation(comp, slots);
 
                 for (unsigned i = 0; i < slots; i++)
                 {
-                    info.Segments[i] = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), i * elemSize, elemSize);
+                    info.Segment(i) = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), i * elemSize, elemSize);
                 }
             }
             else
             {
-                unsigned alignment = compAppleArm64Abi() ? min(elemSize, TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
-                m_stackArgSize     = roundUp(m_stackArgSize, alignment);
-                info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
-                                                                                           structLayout->GetSize()));
+                unsigned alignment =
+                    compAppleArm64Abi() ? min(elemSize, (unsigned)TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
+                m_stackArgSize = roundUp(m_stackArgSize, alignment);
+                info           = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
+                                                                                                     structLayout->GetSize()));
                 m_stackArgSize += roundUp(structLayout->GetSize(), alignment);
                 // After passing any float value on the stack, we should not enregister more float values.
                 m_floatRegs.Clear();
@@ -129,11 +131,13 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
         // case. Normally a struct that does not fit in registers will always
         // be passed on stack.
         assert(compFeatureArgSplit());
-        info.NumSegments = 2;
-        info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[2];
-        info.Segments[0] = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, TARGET_POINTER_SIZE);
-        info.Segments[1] = ABIPassingSegment::OnStack(m_stackArgSize, TARGET_POINTER_SIZE,
-                                                      structLayout->GetSize() - TARGET_POINTER_SIZE);
+        info = ABIPassingInformation::FromSegments(comp,
+                                                   ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0,
+                                                                                 TARGET_POINTER_SIZE),
+                                                   ABIPassingSegment::OnStack(m_stackArgSize, TARGET_POINTER_SIZE,
+                                                                              structLayout->GetSize() -
+                                                                                  TARGET_POINTER_SIZE));
+
         m_stackArgSize += TARGET_POINTER_SIZE;
     }
     else
@@ -149,15 +153,14 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
 
         if (regs->Count() >= slots)
         {
-            info.NumSegments  = slots;
-            info.Segments     = new (comp, CMK_ABI) ABIPassingSegment[slots];
-            unsigned slotSize = varTypeIsStruct(type) ? TARGET_POINTER_SIZE : genTypeSize(type);
-            info.Segments[0]  = ABIPassingSegment::InRegister(regs->Dequeue(), 0, slotSize);
+            info              = ABIPassingInformation(comp, slots);
+            unsigned slotSize = min(passedSize, (unsigned)TARGET_POINTER_SIZE);
+            info.Segment(0)   = ABIPassingSegment::InRegister(regs->Dequeue(), 0, slotSize);
             if (slots == 2)
             {
                 assert(varTypeIsStruct(type));
                 unsigned tailSize = structLayout->GetSize() - slotSize;
-                info.Segments[1]  = ABIPassingSegment::InRegister(regs->Dequeue(), slotSize, tailSize);
+                info.Segment(1)   = ABIPassingSegment::InRegister(regs->Dequeue(), slotSize, tailSize);
             }
         }
         else

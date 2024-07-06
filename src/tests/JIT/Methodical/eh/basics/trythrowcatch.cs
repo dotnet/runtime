@@ -37,6 +37,7 @@ namespace hello_trythrowcatch_basics_cs
         static public void inFinally() { }
 
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             //Start recording

@@ -13,6 +13,7 @@
 
 #include <crtwrap.h>
 #include <winwrap.h>
+#include <algorithm>
 #include <utilcode.h>
 
 #include <cor.h>
@@ -24,5 +25,8 @@
 #include "nsutilpriv.h"
 
 #include "utsem.h"
+
+using std::min;
+using std::max;
 
 #endif  // __STDAFX_H_

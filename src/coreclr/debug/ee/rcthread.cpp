@@ -126,7 +126,7 @@ HANDLE CreateWin32EventOrThrow(
     CONTRACT_END;
 
     HANDLE h = NULL;
-    h = WszCreateEvent(lpEventAttributes, (BOOL) eType, bInitialState, NULL);
+    h = CreateEvent(lpEventAttributes, (BOOL) eType, bInitialState, NULL);
 
     if (h == NULL)
         ThrowLastError();
@@ -151,7 +151,7 @@ HANDLE OpenWin32EventOrThrow(
     }
     CONTRACT_END;
 
-    HANDLE h = WszOpenEvent(
+    HANDLE h = OpenEvent(
         dwDesiredAccess,
         bInheritHandle,
         lpName
@@ -345,7 +345,7 @@ HRESULT DebuggerRCThread::Init(void)
     // We will not fail out if CreateEvent fails for RSEA or RSER. Because
     // the worst case is that debugger cannot attach to debuggee.
     //
-    HandleHolder rightSideEventAvailable(WszCreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
+    HandleHolder rightSideEventAvailable(CreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
 
     // Security fix:
     // We need to check the last error to see if the event was precreated or not
@@ -358,7 +358,7 @@ HRESULT DebuggerRCThread::Init(void)
         rightSideEventAvailable.Clear();
     }
 
-    HandleHolder rightSideEventRead(WszCreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
+    HandleHolder rightSideEventRead(CreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
 
     // Security fix:
     // We need to check the last error to see if the event was precreated or not
@@ -858,7 +858,7 @@ void DebuggerRCThread::MainLoop()
         PRECONDITION(m_thread != NULL);
         PRECONDITION(ThisIsHelperThreadWorker());
         PRECONDITION(IsDbgHelperSpecialThread());   // Can only be called on native debugger helper thread
-        PRECONDITION((!ThreadStore::HoldingThreadStore()) || g_fProcessDetach);
+        PRECONDITION((!ThreadStore::HoldingThreadStore()) || IsAtProcessExit());
     }
     CONTRACTL_END;
 
@@ -960,7 +960,7 @@ void DebuggerRCThread::MainLoop()
             {
 
                 // If they called continue, then we must have released the TSL.
-                _ASSERTE(!ThreadStore::HoldingThreadStore() || g_fProcessDetach);
+                _ASSERTE(!ThreadStore::HoldingThreadStore() || IsAtProcessExit());
 
                 // Let's release the lock here since runtime is resumed.
                 debugLockHolderSuspended.Release();
@@ -1062,7 +1062,7 @@ LWaitTimedOut:
                 // We also hold debugger lock the whole time that Runtime is stopped. We will release the debugger lock
                 // when we receive the Continue event that resumes the runtime.
 
-                _ASSERTE(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
+                _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
             }
             else
             {
@@ -1107,7 +1107,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
         // It should be holding the debugger lock!!!
         //
         PRECONDITION(m_debugger->ThreadHoldsLock());
-        PRECONDITION((ThreadStore::HoldingThreadStore()) || g_fProcessDetach);
+        PRECONDITION((ThreadStore::HoldingThreadStore()) || IsAtProcessExit());
         PRECONDITION(ThisIsTempHelperThread());
     }
     CONTRACTL_END;
@@ -1177,7 +1177,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
             if (fWasContinue)
             {
                 // If they called continue, then we must have released the TSL.
-                _ASSERTE(!ThreadStore::HoldingThreadStore() || g_fProcessDetach);
+                _ASSERTE(!ThreadStore::HoldingThreadStore() || IsAtProcessExit());
 
 #ifdef _DEBUG
                 // Always reset the syncSpinCount to 0 on a continue so that we have the maximum number of possible
@@ -1241,7 +1241,7 @@ LWaitTimedOut:
             dwWaitTimeout = INFINITE;
 
             // Note: we hold the thread store lock now and debugger lock...
-            _ASSERTE(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
+            _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
 
         }
     }

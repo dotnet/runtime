@@ -34,8 +34,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal struct SupportedCapability
     {
-        public static string ADOid = "1.2.840.113556.1.4.800";
-        public static string ADAMOid = "1.2.840.113556.1.4.1851";
+        public const string ADOid = "1.2.840.113556.1.4.800";
+        public const string ADAMOid = "1.2.840.113556.1.4.1851";
     }
 
     internal sealed class Utils

@@ -43,6 +43,7 @@ namespace Dynamic
 
             String();
             Date();
+            SpecialCasedValueTypes();
             ComObject();
             Null();
 
@@ -383,6 +384,16 @@ namespace Dynamic
 
             // Pass as variant
             Variant<DateTime>(val, expected);
+        }
+
+        private void SpecialCasedValueTypes()
+        {
+            {
+                var val = Guid.NewGuid();
+                var expected = val;
+                // Pass as variant
+                Variant<Guid>(val, expected);
+            }
         }
 
         private void ComObject()

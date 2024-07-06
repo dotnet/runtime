@@ -1,28 +1,126 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
-using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
+        public static unsafe void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
+        {
+            if (array is null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void* GetSpanDataFrom(
+            if (fldHandle.IsNullHandle())
+                throw new ArgumentException(SR.Argument_InvalidHandle);
+
+            IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
+
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out void* address, out uint size))
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            // Note that we do not check that the field is actually in the PE file that is initializing
+            // the array. Basically, the data being published can be accessed by anyone with the proper
+            // permissions (C# marks these as assembly visibility, and thus are protected from outside
+            // snooping)
+
+            MethodTable* pMT = GetMethodTable(array);
+            TypeHandle elementTH = pMT->GetArrayElementTypeHandle();
+
+            if (elementTH.IsTypeDesc || !elementTH.AsMethodTable()->IsPrimitive) // Enum is included
+                throw new ArgumentException(SR.Argument_BadArrayForInitializeArray);
+
+            nuint totalSize = pMT->ComponentSize * array.NativeLength;
+
+            // make certain you don't go off the end of the rva static
+            if (totalSize > size)
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            ref byte src = ref *(byte*)address; // Ref is extending the lifetime of the static field.
+            GC.KeepAlive(fldInfo);
+
+            ref byte dst = ref MemoryMarshal.GetArrayDataReference(array);
+
+            Debug.Assert(!elementTH.AsMethodTable()->ContainsGCPointers);
+
+            if (BitConverter.IsLittleEndian)
+            {
+                SpanHelpers.Memmove(ref dst, ref src, totalSize);
+            }
+            else
+            {
+                switch (pMT->ComponentSize)
+                {
+                    case sizeof(byte):
+                        SpanHelpers.Memmove(ref dst, ref src, totalSize);
+                        break;
+                    case sizeof(ushort):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<ushort>(ref Unsafe.As<byte, ushort>(ref src), array.Length),
+                            new Span<ushort>(ref Unsafe.As<byte, ushort>(ref dst), array.Length));
+                        break;
+                    case sizeof(uint):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<uint>(ref Unsafe.As<byte, uint>(ref src), array.Length),
+                            new Span<uint>(ref Unsafe.As<byte, uint>(ref dst), array.Length));
+                        break;
+                    case sizeof(ulong):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<ulong>(ref Unsafe.As<byte, ulong>(ref src), array.Length),
+                            new Span<ulong>(ref Unsafe.As<byte, ulong>(ref dst), array.Length));
+                        break;
+                    default:
+                        Debug.Fail("Incorrect primitive type size!");
+                        break;
+                }
+            }
+        }
+
+        private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
-            out int count);
+            out int count)
+        {
+            if (fldHandle.IsNullHandle())
+                throw new ArgumentException(SR.Argument_InvalidHandle);
+
+            IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
+
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out void* data, out uint totalSize))
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            TypeHandle th = targetTypeHandle.GetNativeTypeHandle();
+            Debug.Assert(!th.IsTypeDesc); // TypeDesc can't be used as generic parameter
+            MethodTable* targetMT = th.AsMethodTable();
+
+            if (!targetMT->IsPrimitive) // Enum is included
+                throw new ArgumentException(SR.Argument_BadArrayForInitializeArray);
+
+            uint targetTypeSize = targetMT->GetNumInstanceFieldBytes();
+            Debug.Assert(uint.IsPow2(targetTypeSize));
+
+            if (((nuint)data & (targetTypeSize - 1)) != 0)
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
+
+            if (!BitConverter.IsLittleEndian)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            count = (int)(totalSize / targetTypeSize);
+            ref byte dataRef = ref *(byte*)data; // Ref is extending the lifetime of the static field.
+            GC.KeepAlive(fldInfo);
+
+            return ref dataRef;
+        }
 
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
         // but have aliasing behavior of a value class.  The intent is that you would use
@@ -221,15 +319,6 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(QCall, EntryPoint = "ObjectNative_AllocateUninitializedClone")]
         internal static partial void AllocateUninitializedClone(ObjectHandleOnStack objHandle);
 
-        /// <returns>true if given type is reference type or value type that contains references</returns>
-        [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>()
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-            throw new InvalidOperationException();
-        }
-
         /// <returns>true if given type is bitwise equatable (memcmp can be used for equality checking)</returns>
         /// <remarks>
         /// Only use the result of this for Equals() comparison, not for CompareTo() comparison.
@@ -416,6 +505,49 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
+
+        /// <summary>
+        /// Create a boxed object of the specified type from the data located at the target reference.
+        /// </summary>
+        /// <param name="target">The target data</param>
+        /// <param name="type">The type of box to create.</param>
+        /// <returns>A boxed object containing the specified data.</returns>
+        /// <exception cref="ArgumentNullException">The specified type handle is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">The specified type cannot have a boxed instance of itself created.</exception>
+        /// <exception cref="NotSupportedException">The passed in type is a by-ref-like type.</exception>
+        public static unsafe object? Box(ref byte target, RuntimeTypeHandle type)
+        {
+            if (type.IsNullHandle())
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+
+            return type.GetRuntimeType().Box(ref target);
+        }
+
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_SizeOf")]
+        [SuppressGCTransition]
+        private static partial int SizeOf(QCallTypeHandle handle);
+
+        /// <summary>
+        /// Get the size of an object of the given type.
+        /// </summary>
+        /// <param name="type">The type to get the size of.</param>
+        /// <returns>The size of instances of the type.</returns>
+        /// <exception cref="ArgumentException">The passed-in type is not a valid type to get the size of.</exception>
+        /// <remarks>
+        /// This API returns the same value as <see cref="Unsafe.SizeOf{T}"/> for the type that <paramref name="type"/> represents.
+        /// </remarks>
+        public static unsafe int SizeOf(RuntimeTypeHandle type)
+        {
+            if (type.IsNullHandle())
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+
+            int result = SizeOf(new QCallTypeHandle(ref type));
+
+            if (result <= 0)
+                throw new ArgumentException(SR.Arg_TypeNotSupported);
+
+            return result;
+        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
@@ -523,8 +655,10 @@ namespace System.Runtime.CompilerServices
 
         // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
+        private const uint enum_flag_ContainsGenericVariables = 0x20000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
+        private const uint enum_flag_HasFinalizer = 0x00100000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_Nullable = 0x00050000;
@@ -579,6 +713,8 @@ namespace System.Runtime.CompilerServices
 
         public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
 
+        public bool HasFinalizer => (Flags & enum_flag_HasFinalizer) != 0;
+
         internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => mt1 == mt2;
 
         public bool HasDefaultConstructor => (Flags & (enum_flag_HasComponentSize | enum_flag_HasDefaultCtor)) == enum_flag_HasDefaultCtor;
@@ -617,6 +753,8 @@ namespace System.Runtime.CompilerServices
         // Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
         public bool IsPrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_PrimitiveValueType or enum_flag_Category_TruePrimitive;
 
+        public bool IsTruePrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_TruePrimitive;
+
         public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
 
         public bool IsGenericTypeDefinition => (Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == enum_flag_GenericsMask_TypicalInst;
@@ -629,6 +767,8 @@ namespace System.Runtime.CompilerServices
                 return genericsFlags == enum_flag_GenericsMask_GenericInst || genericsFlags == enum_flag_GenericsMask_SharedInst;
             }
         }
+
+        public bool ContainsGenericVariables => (Flags & enum_flag_ContainsGenericVariables) != 0;
 
         /// <summary>
         /// Gets a <see cref="TypeHandle"/> for the element type of the current type.
@@ -644,6 +784,13 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern uint GetNumInstanceFieldBytes();
+
+        /// <summary>
+        /// Get the <see cref="CorElementType"/> representing primitive-like type. Enums are represented by underlying type.
+        /// </summary>
+        /// <remarks>This method should only be called when <see cref="IsPrimitive"/> returns <see langword="true"/>.</remarks>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern CorElementType GetPrimitiveCorElementType();
     }
 
     // Subset of src\vm\methodtable.h
@@ -653,8 +800,8 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(0)]
         private uint Flags;
 
-        private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0001;     // Is any field type or sub field type overrode Equals or GetHashCode
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
+        private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
 
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
 

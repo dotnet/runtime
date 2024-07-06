@@ -339,7 +339,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeBit(VARSET_TP& set, LclVarDsc* dsc, 
 // can be dumped after potential updates.
 //
 template <bool ForCodeGen>
-void           TreeLifeUpdater<ForCodeGen>::StoreCurrentLifeForDump()
+void TreeLifeUpdater<ForCodeGen>::StoreCurrentLifeForDump()
 {
 #ifdef DEBUG
     if (compiler->verbose)

@@ -10,12 +10,12 @@ class CILJit : public ICorJitCompiler
                                unsigned             flags,           /* IN */
                                uint8_t**            nativeEntry,     /* OUT */
                                uint32_t*            nativeSizeOfCode /* OUT */
-                               );
+    );
 
     void ProcessShutdownWork(ICorStaticInfo* statInfo);
 
     void getVersionIdentifier(GUID* versionIdentifier /* OUT */
-                              );
+    );
 
     void setTargetOS(CORINFO_OS os);
 };
@@ -51,6 +51,12 @@ FORCEINLINE
 bool Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
 {
     return info.compCompHnd->isValueClass(clsHnd);
+}
+
+FORCEINLINE
+bool Compiler::eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd)
+{
+    return (info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_BYREF_LIKE) != 0;
 }
 
 FORCEINLINE

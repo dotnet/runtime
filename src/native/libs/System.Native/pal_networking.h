@@ -184,6 +184,7 @@ typedef enum
     SocketOptionName_SO_TCP_KEEPALIVE_RETRYCOUNT = 16,
     SocketOptionName_SO_TCP_KEEPALIVE_TIME = 3,
     SocketOptionName_SO_TCP_KEEPALIVE_INTERVAL = 17,
+    SocketOptionName_SO_TCP_FASTOPEN = 15,
 
     // Names for SocketOptionLevel_SOL_UDP
     // SocketOptionName_SO_UDP_NOCHECKSUM = 1,
@@ -206,6 +207,8 @@ typedef enum
     SocketFlags_MSG_DONTROUTE = 0x0004, // SocketFlags.DontRoute
     SocketFlags_MSG_TRUNC = 0x0100,     // SocketFlags.Truncated
     SocketFlags_MSG_CTRUNC = 0x0200,    // SocketFlags.ControlDataTruncated
+    SocketFlags_MSG_DONTWAIT = 0x1000,  // used privately by Ping
+    SocketFlags_MSG_ERRQUEUE = 0x2000,  // used privately by Ping
 } SocketFlags;
 
 /*
@@ -356,6 +359,8 @@ PALEXPORT int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bu
 
 PALEXPORT int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
 
+PALEXPORT int32_t SystemNative_ReceiveSocketError(intptr_t socket, MessageHeader* messageHeader);
+
 PALEXPORT int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent);
 
 PALEXPORT int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);
@@ -365,6 +370,8 @@ PALEXPORT int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, i
 PALEXPORT int32_t SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8_t* socketAddress, int32_t socketAddressLen);
 
 PALEXPORT int32_t SystemNative_Connect(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
+
+PALEXPORT int32_t SystemNative_Connectx(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* data, int32_t dataLen, int32_t tfo, int* sent);
 
 PALEXPORT int32_t SystemNative_GetPeerName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
 

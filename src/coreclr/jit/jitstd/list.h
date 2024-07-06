@@ -14,7 +14,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "iterator.h"
 #include "functional.h"
-#include "clr_std/utility"
+#include <utility>
 
 namespace jitstd
 {

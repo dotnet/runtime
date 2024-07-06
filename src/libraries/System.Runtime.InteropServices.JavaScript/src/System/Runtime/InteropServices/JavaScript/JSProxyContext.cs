@@ -42,9 +42,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public JSSynchronizationContext SynchronizationContext;
         public JSAsyncTaskScheduler? AsyncTaskScheduler;
 
-        public static MainThreadingMode MainThreadingMode = MainThreadingMode.DeputyThread;
-        public static JSThreadBlockingMode ThreadBlockingMode = JSThreadBlockingMode.AllowBlockingWaitInAsyncCode;
-        public static JSThreadInteropMode ThreadInteropMode = JSThreadInteropMode.SimpleSynchronousJSInterop;
+        public static JSThreadBlockingMode ThreadBlockingMode = JSThreadBlockingMode.PreventSynchronousJSExport;
         public bool IsPendingSynchronousCall;
 
 #if !DEBUG
@@ -52,7 +50,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         public bool IsCurrentThread()
         {
-            return ManagedTID == Environment.CurrentManagedThreadId && (!IsMainThread || MainThreadingMode == MainThreadingMode.UIThread);
+            return ManagedTID == Environment.CurrentManagedThreadId && !IsMainThread;
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "thread_id")]

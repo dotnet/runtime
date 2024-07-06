@@ -4,6 +4,9 @@
     <TieredCompilation>false</TieredCompilation>
     <EventSourceSupport>true</EventSourceSupport>
     <OptimizationPreference>Speed</OptimizationPreference>
+    <ControlFlowGuard>Guard</ControlFlowGuard>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StripSymbols Condition="'$(KeepNativeSymbols)' == 'true'">false</StripSymbols>
   </PropertyGroup>
 
   <ItemGroup>

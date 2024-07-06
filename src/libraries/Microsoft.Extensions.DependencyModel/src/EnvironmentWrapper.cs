@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyModel
 {
     internal sealed class EnvironmentWrapper : IEnvironment
     {
-        public static IEnvironment Default = new EnvironmentWrapper();
+        public static readonly IEnvironment Default = new EnvironmentWrapper();
 
         public string? GetEnvironmentVariable(string name) => Environment.GetEnvironmentVariable(name);
 

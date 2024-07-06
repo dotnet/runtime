@@ -98,7 +98,7 @@ namespace System.Runtime.Caching
 #pragma warning disable IDE0074 // Use compound assignment
                 if (fcn == null)
                 {
-#if NETCOREAPP
+#if NET
                     if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                     {
                         throw new PlatformNotSupportedException();

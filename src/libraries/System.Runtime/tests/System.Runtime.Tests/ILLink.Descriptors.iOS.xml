@@ -1,0 +1,24 @@
+<linker>
+  <assembly fullname="TestLoadAssembly" />
+  <assembly fullname="TestILAssembly" />
+  <assembly fullname="mscorlib" />
+  <assembly fullname="System.Threading.Overlapped" />
+  <assembly fullname="System.Reflection.TestModule" />
+  <assembly fullname="System.TestStructs" />
+  <assembly fullname="System.Runtime.Tests" >
+    <type fullname="System.Tests.EnumTests" />
+    <type fullname="System.Tests.ArrayTests" />
+    <type fullname="System.Reflection.Tests.InvokeRefReturnNetcoreTests" />
+    <type fullname="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1" />
+    <type fullname="System.Reflection.Tests.MethodBaseTests" />
+    <type fullname="System.Tests.Types.ModifiedTypeTests+ModifiedTypeHolder" />
+    <type fullname="System.Tests.ArrayTests" />
+    <type fullname="System.Tests.ArrayTests+GenericStruct`1" />
+  </assembly>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Array" />
+    <type fullname="System.Int128" />
+    <type fullname="System.Half" />
+    <type fullname="System.Collections.Generic.NonRandomizedStringEqualityComparer" />
+  </assembly>
+</linker>

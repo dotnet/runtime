@@ -35,12 +35,6 @@
 #define __has_cpp_attribute(x) (0)
 #endif
 
-#if __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH [[fallthrough]]
-#else
-#define FALLTHROUGH
-#endif
-
 #include <algorithm>
 
 #if HAVE_SYS_TIME_H
@@ -868,31 +862,30 @@ done:
     return result;
 }
 
-#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > ((long)cacheSize)) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
-
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cacheLevel = 0;
     size_t cacheSize = 0;
-    long size;
 
-    // sysconf can return -1 if the cache size is unavailable in some distributions and 0 in others.
-    // UPDATE_CACHE_SIZE_AND_LEVEL should handle both the cases by not updating cacheSize if either of cases are met.
-#ifdef _SC_LEVEL1_DCACHE_SIZE
-    size = sysconf(_SC_LEVEL1_DCACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 1)
-#endif
-#ifdef _SC_LEVEL2_CACHE_SIZE
-    size = sysconf(_SC_LEVEL2_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 2)
-#endif
-#ifdef _SC_LEVEL3_CACHE_SIZE
-    size = sysconf(_SC_LEVEL3_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 3)
-#endif
-#ifdef _SC_LEVEL4_CACHE_SIZE
-    size = sysconf(_SC_LEVEL4_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 4)
+#if defined(_SC_LEVEL1_DCACHE_SIZE) || defined(_SC_LEVEL2_CACHE_SIZE) || defined(_SC_LEVEL3_CACHE_SIZE) || defined(_SC_LEVEL4_CACHE_SIZE)
+    const int cacheLevelNames[] =
+    {
+        _SC_LEVEL1_DCACHE_SIZE,
+        _SC_LEVEL2_CACHE_SIZE,
+        _SC_LEVEL3_CACHE_SIZE,
+        _SC_LEVEL4_CACHE_SIZE,
+    };
+
+    for (int i = ARRAY_SIZE(cacheLevelNames) - 1; i >= 0; i--)
+    {
+        long size = sysconf(cacheLevelNames[i]);
+        if (size > 0)
+        {
+            cacheSize = (size_t)size;
+            cacheLevel = i + 1;
+            break;
+        }
+    }
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
@@ -918,49 +911,15 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 
             if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
             {
-                // uint64_t to long conversion as ReadMemoryValueFromFile takes a uint64_t* as an argument for the val argument.
-                size = (long)cache_size_from_sys_file;
-                path_to_level_file[index] = (char)(48 + i);
+                cacheSize = std::max(cacheSize, (size_t)cache_size_from_sys_file);
 
+                path_to_level_file[index] = (char)(48 + i);
                 if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
-                    UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
-                }
-
-                else
-                {
-                    cacheSize = std::max((long)cacheSize, size);
+                    cacheLevel = level;
                 }
             }
         }
-    }
-#endif
-
-#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
-    if (cacheSize == 0)
-    {
-        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
-        // from most of the machines.
-        //
-        // _SC_LEVEL*_*CACHE_SIZE is not yet present.  Work is in progress to enable this for arm64
-        //
-        // /sys/devices/system/cpu/cpu*/cache/index*/ is also not yet present in most systems.
-        // Arm64 patch is in Linux kernel tip.
-        //
-        // midr_el1 is available in "/sys/devices/system/cpu/cpu0/regs/identification/midr_el1",
-        // but without an exhaustive list of ARM64 processors any decode of midr_el1
-        // Would likely be incomplete
-
-        // Published information on ARM64 architectures is limited.
-        // If we use recent high core count chips as a guide for state of the art, we find
-        // total L3 cache to be 1-2MB/core.  As always, there are exceptions.
-
-        // Estimate cache size based on CPU count
-        // Assume lower core count are lighter weight parts which are likely to have smaller caches
-        // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
-        DWORD logicalCPUs = g_processAffinitySet.Count();
-
-        cacheSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
     }
 #endif
 
@@ -981,7 +940,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         if (success)
         {
             assert(cacheSizeFromSysctl > 0);
-            cacheSize = ( size_t) cacheSizeFromSysctl;
+            cacheSize = (size_t) cacheSizeFromSysctl;
         }
     }
 #endif
@@ -1259,13 +1218,8 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     if (is_restricted)
         *is_restricted = false;
 
-    // The limit was not cached
-    if (g_RestrictedPhysicalMemoryLimit == 0)
-    {
-        restricted_limit = GetRestrictedPhysicalMemoryLimit();
-        VolatileStore(&g_RestrictedPhysicalMemoryLimit, restricted_limit);
-    }
-    restricted_limit = g_RestrictedPhysicalMemoryLimit;
+    restricted_limit = GetRestrictedPhysicalMemoryLimit();
+    VolatileStore(&g_RestrictedPhysicalMemoryLimit, restricted_limit);
 
     if (restricted_limit != 0 && restricted_limit != SIZE_T_MAX)
     {
@@ -1426,8 +1380,15 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 
         if (memory_load != NULL)
         {
-            bool isRestricted;
-            uint64_t total = GetPhysicalMemoryLimit(&isRestricted);
+            uint64_t total;
+            if (restricted_limit != 0 && restricted_limit != SIZE_T_MAX)
+            {
+                total = restricted_limit;
+            }
+            else
+            {
+                total = g_totalPhysicalMemSize;
+            }
 
             if (total > available)
             {

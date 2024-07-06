@@ -216,13 +216,13 @@ namespace System.Speech.Internal
         private int _currentLangId;
         private PhoneMapData _phoneMap;
 
-        private static int[] s_langIds = new int[] { 0x804, 0x404, 0x407, 0x409, 0x40A, 0x40C, 0x411 };
-        private static string[] s_resourceNames =
+        private static readonly int[] s_langIds = new int[] { 0x804, 0x404, 0x407, 0x409, 0x40A, 0x40C, 0x411 };
+        private static readonly string[] s_resourceNames =
                     new string[] { "upstable_chs.upsmap", "upstable_cht.upsmap", "upstable_deu.upsmap", "upstable_enu.upsmap",
                                    "upstable_esp.upsmap", "upstable_fra.upsmap", "upstable_jpn.upsmap",
 };
-        private static PhoneMapData[] s_phoneMaps = new PhoneMapData[7];
-        private static object s_staticLock = new();
+        private static readonly PhoneMapData[] s_phoneMaps = new PhoneMapData[7];
+        private static readonly object s_staticLock = new();
 
         #endregion
 

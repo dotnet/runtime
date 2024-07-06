@@ -21,24 +21,17 @@ namespace System.Text.Json
             ReadOnlySpan<byte> unescapedPropertyName,
             ref ReadStack state,
             JsonSerializerOptions options,
+            out byte[] utf8PropertyName,
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-#if DEBUG
-            if (jsonTypeInfo.Kind != JsonTypeInfoKind.Object)
-            {
-                string objTypeName = obj?.GetType().FullName ?? "<null>";
-                Debug.Fail($"obj.GetType() => {objTypeName}; {jsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
-            }
-#endif
-
             useExtensionProperty = false;
 
             JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.GetProperty(
                 unescapedPropertyName,
                 ref state.Current,
-                out byte[] utf8PropertyName);
+                out utf8PropertyName);
 
             // Increment PropertyIndex so GetProperty() checks the next property first when called again.
             state.Current.PropertyIndex++;

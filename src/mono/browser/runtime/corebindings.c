@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <sys/types.h>
+#include <uchar.h>
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/class.h>
@@ -34,7 +35,7 @@ typedef void (*background_job_cb)(void);
 
 void mono_wasm_bind_assembly_exports (char *assembly_name);
 void mono_wasm_assembly_get_entry_point (char *assembly_name, int auto_insert_breakpoint, MonoMethod **method_out);
-void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *classname, char *methodname, MonoMethod **method_out);
+void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *classname, char *methodname, int signature_hash, MonoMethod **method_out);
 
 #ifndef DISABLE_THREADS
 void mono_wasm_release_cs_owned_object_post (pthread_t target_tid, int js_handle);
@@ -51,23 +52,23 @@ void mono_wasm_invoke_js_function_send (pthread_t target_tid, int function_js_ha
 extern void mono_threads_wasm_async_run_in_target_thread_vi (pthread_t target_thread, void (*func) (gpointer), gpointer user_data1);
 extern void mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 extern void mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args);
+extern void mono_wasm_warn_about_blocking_wait (void* ptr, int32_t length);
 #else
 extern void* mono_wasm_bind_js_import_ST (void *signature);
 extern void mono_wasm_invoke_jsimport_ST (int function_handle, void *args);
 #endif /* DISABLE_THREADS */
 
 // HybridGlobalization
-extern void mono_wasm_change_case_invariant (const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper, int *is_exception, MonoObject** ex_result);
-extern void mono_wasm_change_case (MonoString **culture, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper, int *is_exception, MonoObject** ex_result);
-extern int mono_wasm_compare_string (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
-extern mono_bool mono_wasm_starts_with (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
-extern mono_bool mono_wasm_ends_with (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
-extern int mono_wasm_index_of (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *is_exception, MonoObject** ex_result);
-extern int mono_wasm_get_calendar_info (MonoString **culture, int32_t calendarId, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
-extern int mono_wasm_get_locale_info (MonoString **locale, MonoString **culture, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
-extern int mono_wasm_get_culture_info (MonoString **culture, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
-extern int mono_wasm_get_first_day_of_week (MonoString **culture, int *is_exception, MonoObject** ex_result);
-extern int mono_wasm_get_first_week_of_year (MonoString **culture, int *is_exception, MonoObject** ex_result);
+extern char16_t* mono_wasm_change_case (const uint16_t* culture, int32_t cultureLength, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
+extern char16_t* mono_wasm_compare_string (const uint16_t* culture, int32_t cultureLength, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *resultPtr);
+extern char16_t* mono_wasm_starts_with (const uint16_t* culture, int32_t cultureLength, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool *resultPtr);
+extern char16_t* mono_wasm_ends_with (const uint16_t* culture, int32_t cultureLength, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool *resultPtr);
+extern char16_t* mono_wasm_index_of (const uint16_t* culture, int32_t cultureLength, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *resultPtr);
+extern char16_t* mono_wasm_get_calendar_info (const uint16_t* culture, int32_t cultureLength, int32_t calendarId, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
+extern char16_t* mono_wasm_get_culture_info (const uint16_t* culture, int32_t cultureLength, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
+extern char16_t* mono_wasm_get_locale_info (const uint16_t* locale, int32_t localeLength, const uint16_t* culture, int32_t cultureLength, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
+extern char16_t* mono_wasm_get_first_day_of_week (const uint16_t* culture, int32_t cultureLength, int *resultPtr);
+extern char16_t* mono_wasm_get_first_week_of_year (const uint16_t* culture, int32_t cultureLength, int *resultPtr);
 
 void bindings_initialize_internals (void)
 {
@@ -86,6 +87,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::InvokeJSImportAsyncPost", mono_wasm_invoke_jsimport_async_post);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunctionSend", mono_wasm_invoke_js_function_send);
 	mono_add_internal_call ("Interop/Runtime::CancelPromisePost", mono_wasm_cancel_promise_post);
+	mono_add_internal_call ("System.Threading.Thread::WarnAboutBlockingWait", mono_wasm_warn_about_blocking_wait);
 #else
 	mono_add_internal_call ("Interop/Runtime::BindJSImportST", mono_wasm_bind_js_import_ST);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSImportST", mono_wasm_invoke_jsimport_ST);
@@ -98,8 +100,9 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::AssemblyGetEntryPoint", mono_wasm_assembly_get_entry_point);
 	mono_add_internal_call ("Interop/Runtime::BindAssemblyExports", mono_wasm_bind_assembly_exports);
 	mono_add_internal_call ("Interop/Runtime::GetAssemblyExport", mono_wasm_get_assembly_export);
+	mono_add_internal_call ("System.ConsolePal::Clear", mono_wasm_console_clear);
 
-	mono_add_internal_call ("Interop/JsGlobalization::ChangeCaseInvariant", mono_wasm_change_case_invariant);
+	// HybridGlobalization
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
 	mono_add_internal_call ("Interop/JsGlobalization::CompareString", mono_wasm_compare_string);
 	mono_add_internal_call ("Interop/JsGlobalization::StartsWith", mono_wasm_starts_with);
@@ -110,7 +113,6 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::GetCultureInfo", mono_wasm_get_culture_info);
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstDayOfWeek", mono_wasm_get_first_day_of_week);
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstWeekOfYear", mono_wasm_get_first_week_of_year);
-	mono_add_internal_call ("System.ConsolePal::Clear", mono_wasm_console_clear);
 }
 
 static MonoAssembly* _mono_wasm_assembly_load (char *assembly_name)
@@ -228,13 +230,14 @@ void mono_wasm_bind_assembly_exports (char *assembly_name)
 	}
 }
 
-void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *classname, char *methodname, MonoMethod **method_out)
+void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *classname, char *methodname, int signature_hash, MonoMethod **method_out)
 {
 	MonoError error;
 	MonoAssembly* assembly;
 	MonoImage *image;
 	MonoClass *klass;
 	MonoMethod *method=NULL;
+    char real_method_name_buffer[4096];
 	*method_out = NULL;
 
 	assert (assembly_name);
@@ -245,10 +248,15 @@ void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *
 
 	klass = mono_class_from_name (image, namespace, classname);
 	assert (klass);
-	method = mono_class_get_method_from_name (klass, methodname, -1);
+
+    snprintf(real_method_name_buffer, 4096, "__Wrapper_%s_%d", methodname, signature_hash);
+
+	method = mono_class_get_method_from_name (klass, real_method_name_buffer, -1);
 	assert (method);
 
 	*method_out = method;
+    // This is freed by _mono_wasm_assembly_load for some reason
+    // free (assembly_name);
 	free (namespace);
 	free (classname);
 	free (methodname);

@@ -251,6 +251,27 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
+        public void EmptyEnvironmentVariable(EnvironmentVariableTarget target)
+        {
+            string varName = $"Test_EmptyEnvironmentVariable({target})";
+            const string value = "false";
+
+            ExecuteAgainstTarget(target,
+            () =>
+            {
+                // First set the value to something and then ensure that it can be deleted.
+                Environment.SetEnvironmentVariable(varName, value);
+                Environment.SetEnvironmentVariable(varName, string.Empty);
+                Assert.Equal(string.Empty, Environment.GetEnvironmentVariable(varName));
+
+                Environment.SetEnvironmentVariable(varName, value);
+                Environment.SetEnvironmentVariable(varName, NullString);
+                Assert.Equal(string.Empty, Environment.GetEnvironmentVariable(varName));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
         public void DeleteEnvironmentVariable(EnvironmentVariableTarget target)
         {
             string varName = $"Test_DeleteEnvironmentVariable ({target})";
@@ -261,16 +282,9 @@ namespace System.Tests
             {
                 // First set the value to something and then ensure that it can be deleted.
                 Environment.SetEnvironmentVariable(varName, value);
-                Environment.SetEnvironmentVariable(varName, string.Empty);
-                Assert.Null(Environment.GetEnvironmentVariable(varName));
-
-                Environment.SetEnvironmentVariable(varName, value);
                 Environment.SetEnvironmentVariable(varName, null);
                 Assert.Null(Environment.GetEnvironmentVariable(varName));
-
-                Environment.SetEnvironmentVariable(varName, value);
-                Environment.SetEnvironmentVariable(varName, NullString);
-                Assert.Null(Environment.GetEnvironmentVariable(varName));
+                Assert.False(Environment.GetEnvironmentVariables().Contains(varName));
             });
         }
 
@@ -305,11 +319,11 @@ namespace System.Tests
             try
             {
                 Environment.SetEnvironmentVariable(varName, value);
-                Assert.Null(Environment.GetEnvironmentVariable(varName));
+                Assert.Equal("", Environment.GetEnvironmentVariable(varName));
             }
             finally
             {
-                Environment.SetEnvironmentVariable(varName, string.Empty);
+                Environment.SetEnvironmentVariable(varName, null);
             }
         }
 
@@ -329,8 +343,8 @@ namespace System.Tests
             }
             finally
             {
-                Environment.SetEnvironmentVariable(varName, string.Empty);
-                Environment.SetEnvironmentVariable(varNamePrefix, string.Empty);
+                Environment.SetEnvironmentVariable(varName, null);
+                Environment.SetEnvironmentVariable(varNamePrefix, null);
             }
         }
 
@@ -349,7 +363,7 @@ namespace System.Tests
             }
             finally
             {
-                Environment.SetEnvironmentVariable(varName, string.Empty);
+                Environment.SetEnvironmentVariable(varName, null);
             }
         }
 
@@ -363,7 +377,7 @@ namespace System.Tests
                 Environment.SetEnvironmentVariable(varName, null);
             }
 
-            Environment.SetEnvironmentVariable("TestDeletingNonExistingEnvironmentVariable", string.Empty);
+            Environment.SetEnvironmentVariable("TestDeletingNonExistingEnvironmentVariable", null);
         }
     }
 }

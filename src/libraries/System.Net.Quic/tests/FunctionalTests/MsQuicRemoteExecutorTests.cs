@@ -20,27 +20,43 @@ namespace System.Net.Quic.Tests
         public MsQuicRemoteExecutorTests()
             : base(null!) { }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SslKeyLogFile_IsCreatedAndFilled()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
         {
-            if (PlatformDetection.IsReleaseLibrary(typeof(QuicConnection).Assembly))
+            if (PlatformDetection.IsDebugLibrary(typeof(QuicConnection).Assembly) && !enabledBySwitch)
             {
-                throw new SkipTestException("Retrieving SSL secrets is not supported in Release mode.");
+                // AppCtxSwitch is not checked for SSLKEYLOGFILE in Debug builds, the same code path
+                // will be tested by the enabledBySwitch = true case. Skip it here.
+                return;
             }
 
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);
 
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async (enabledBySwitch) =>
             {
+                if (bool.Parse(enabledBySwitch))
+                {
+                    AppContext.SetSwitch("System.Net.EnableSslKeyLogging", true);
+                }
+
                 (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
                 await clientConnection.DisposeAsync();
                 await serverConnection.DisposeAsync();
-            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }
+            , enabledBySwitch.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
 
-            Assert.True(File.Exists(tempFile));
-            Assert.True(File.ReadAllText(tempFile).Length > 0);
+            if (enabledBySwitch)
+            {
+                Assert.True(File.ReadAllText(tempFile).Length > 0);
+            }
+            else
+            {
+                Assert.True(File.ReadAllText(tempFile).Length == 0);
+            }
         }
     }
 }

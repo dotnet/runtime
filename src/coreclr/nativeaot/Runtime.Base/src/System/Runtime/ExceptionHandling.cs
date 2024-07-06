@@ -375,6 +375,7 @@ namespace System.Runtime
         // RhExceptionHandling_ functions are used to throw exceptions out of our asm helpers. We tail-call from
         // the asm helpers to these functions, which performs the throw. The tail-call is important: it ensures that
         // the stack is crawlable from within these functions.
+        [StackTraceHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
         public static void ThrowClasslibOverflowException(IntPtr address)
         {
@@ -384,6 +385,7 @@ namespace System.Runtime
             throw GetClasslibException(ExceptionIDs.Overflow, address);
         }
 
+        [StackTraceHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
         public static void ThrowClasslibDivideByZeroException(IntPtr address)
         {
@@ -393,6 +395,7 @@ namespace System.Runtime
             throw GetClasslibException(ExceptionIDs.DivideByZero, address);
         }
 
+        [StackTraceHidden]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
         public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
         {
@@ -405,7 +408,7 @@ namespace System.Runtime
         }
 
 #if !INPLACE_RUNTIME
-        private static OutOfMemoryException s_theOOMException = new OutOfMemoryException();
+        private static readonly OutOfMemoryException s_theOOMException = new OutOfMemoryException();
 
         // MRT exports GetRuntimeException for the few cases where we have a helper that throws an exception
         // and may be called by either MRT or other classlibs and that helper needs to throw an exception.
@@ -458,7 +461,7 @@ namespace System.Runtime
             // the rest of the struct is left unspecified.
         }
 
-        // N.B. -- These values are burned into the throw helper assembly code and are also known the the
+        // N.B. -- These values are burned into the throw helper assembly code and are also known to the
         //         StackFrameIterator code.
         [Flags]
         internal enum ExKind : byte

@@ -73,6 +73,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (ShouldEmitMethods(MethodsToGen.ConfigBinder_GetValue_T_key_defaultValue))
                 {
                     EmitStartDefinition_Get_Or_GetValue_Overload(MethodsToGen.ConfigBinder_GetValue_T_key_defaultValue, documentation);
+                    EmitNotNullIfNotNull(Identifier.defaultValue);
                     _writer.WriteLine($"public static T? {Identifier.GetValue}<T>(this {Identifier.IConfiguration} {Identifier.configuration}, string {Identifier.key}, T {Identifier.defaultValue}) => " +
                         $"(T?)({expressionForGetValueCore}({Identifier.configuration}, typeof(T), {Identifier.key}) ?? {Identifier.defaultValue});");
                 }
@@ -87,8 +88,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (ShouldEmitMethods(MethodsToGen.ConfigBinder_GetValue_TypeOf_key_defaultValue))
                 {
                     EmitStartDefinition_Get_Or_GetValue_Overload(MethodsToGen.ConfigBinder_GetValue_TypeOf_key_defaultValue, documentation);
+                    EmitNotNullIfNotNull(Identifier.defaultValue);
                     _writer.WriteLine($"public static object? {Identifier.GetValue}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, string {Identifier.key}, object? {Identifier.defaultValue}) => " +
                         $"{expressionForGetValueCore}({Identifier.configuration}, {Identifier.type}, {Identifier.key}) ?? {Identifier.defaultValue};");
+                }
+            }
+
+            private void EmitNotNullIfNotNull(string parameterName)
+            {
+                if (_emitNotNullIfNotNull)
+                {
+                    _writer.WriteLine($"[return: global::System.Diagnostics.CodeAnalysis.NotNullIfNotNull(nameof({parameterName}))]");
                 }
             }
 

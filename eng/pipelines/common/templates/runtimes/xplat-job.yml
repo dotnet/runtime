@@ -9,6 +9,7 @@ parameters:
   crossBuild: false
   strategy: ''
   pool: ''
+  logsName: ''
 
   # arcade-specific parameters
   condition: ''
@@ -72,6 +73,12 @@ jobs:
     # that gathers asset manifests and publishes them to pipeline
     # storage. Only relevant for build jobs.
     enablePublishBuildAssets: ${{ parameters.gatherAssetManifests }}
+
+    artifacts:
+      publish:
+        ${{ if ne(parameters.logsName, '') }}:
+          logs:
+            name: '${{ parameters.logsName }}'
 
     variables:
     - name: buildConfig

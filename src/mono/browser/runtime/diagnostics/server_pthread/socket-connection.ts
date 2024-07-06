@@ -100,7 +100,7 @@ export class EventPipeSocketConnection {
     }
 
     private _onError (event: Event) {
-        mono_log_debug("EventPipe session stream websocket error", event);
+        mono_log_debug(() => `EventPipe session stream websocket error ${event}`);
         this._state = ListenerState.Error;
         this.stream.close();
         // TODO: notify runtime that connection had an error

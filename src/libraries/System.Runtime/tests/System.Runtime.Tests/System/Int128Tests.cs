@@ -107,6 +107,51 @@ namespace System.Tests
             Assert.Equal(expected, i1.Equals(obj));
         }
 
+        [Fact]
+        public static void CheckedConvertToInt64()
+        {
+            Assert.Equal(123L, checked((long)new Int128(0, 123)));
+            Assert.Equal(-123L, checked((long)(Int128)(-123)));
+            Assert.Throws<OverflowException>(() => checked((long)new Int128(1, 1)));
+            Assert.Throws<OverflowException>(() => checked((long)new Int128(ulong.MaxValue, 42)));
+        }
+
+        [Fact]
+        public static void CheckedConvertToInt32()
+        {
+            Assert.Equal(123, checked((int)new Int128(0, 123)));
+            Assert.Equal(-123, checked((int)(Int128)(-123)));
+            Assert.Throws<OverflowException>(() => checked((int)new Int128(1, 1)));
+            Assert.Throws<OverflowException>(() => checked((int)new Int128(ulong.MaxValue, 42)));
+        }
+
+        [Fact]
+        public static void CheckedConvertToInt16()
+        {
+            Assert.Equal((short)123, checked((short)new Int128(0, 123)));
+            Assert.Equal((short)(-123), checked((short)(Int128)(-123)));
+            Assert.Throws<OverflowException>(() => checked((short)new Int128(1, 1)));
+            Assert.Throws<OverflowException>(() => checked((short)new Int128(ulong.MaxValue, 42)));
+        }
+
+        [Fact]
+        public static void CheckedConvertToSByte()
+        {
+            Assert.Equal((sbyte)123, checked((sbyte)new Int128(0, 123)));
+            Assert.Equal((sbyte)(-123), checked((sbyte)(Int128)(-123)));
+            Assert.Throws<OverflowException>(() => checked((sbyte)new Int128(1, 1)));
+            Assert.Throws<OverflowException>(() => checked((sbyte)new Int128(ulong.MaxValue, 42)));
+        }
+
+        [Fact]
+        public static void CheckedConvertToIntPtr()
+        {
+            Assert.Equal((nint)123, checked((nint)new Int128(0, 123)));
+            Assert.Equal((nint)(-123), checked((nint)(Int128)(-123)));
+            Assert.Throws<OverflowException>(() => checked((nint)new Int128(1, 1)));
+            Assert.Throws<OverflowException>(() => checked((nint)new Int128(ulong.MaxValue, 42)));
+        }
+
         public static IEnumerable<object[]> ToString_TestData()
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })

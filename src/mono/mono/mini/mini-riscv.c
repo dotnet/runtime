@@ -2155,7 +2155,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		NULLIFY_INS (ins);
 		break;
 	default:
-		g_print ("Can't decompose the OP %s\n", mono_inst_name (ins->opcode));
+		g_print ("Can't decompose the OP " M_PRI_INST "\n", mono_inst_name (ins->opcode));
 		NOT_IMPLEMENTED;
 	}
 }
@@ -2801,7 +2801,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->sreg2 = RISCV_ZERO;
 				} else {
 					if (cfg->verbose_level > 1) {
-						g_print ("Unhandaled op %s following after OP_RCOMPARE\n", mono_inst_name (next_ins->opcode));
+						g_print ("Unhandaled op " M_PRI_INST " following after OP_RCOMPARE\n", mono_inst_name (next_ins->opcode));
 					}
 					NULLIFY_INS (ins);
 				}
@@ -2885,7 +2885,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->sreg2 = RISCV_ZERO;
 				} else {
 					if (cfg->verbose_level > 1) {
-						g_print ("Unhandaled op %s following after OP_FCOMPARE\n", mono_inst_name (next_ins->opcode));
+						g_print ("Unhandaled op " M_PRI_INST " following after OP_FCOMPARE\n", mono_inst_name (next_ins->opcode));
 					}
 					NULLIFY_INS (ins);
 				}
@@ -3302,7 +3302,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					 * what should I do?
 					 */
 					if (cfg->verbose_level > 1) {
-						g_print ("Unhandaled op %s following after OP_{I|L}COMPARE{|_IMM}\n",
+						g_print ("Unhandaled op " M_PRI_INST " following after OP_{I|L}COMPARE{|_IMM}\n",
 						         mono_inst_name (next_ins->opcode));
 					}
 					NULLIFY_INS (ins);
@@ -5632,7 +5632,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		g_assertf ((code - cfg->native_code - offset) <= max_len,
-		           "wrong maximal instruction length of instruction %s (expected %d, got %d)",
+		           "wrong maximal instruction length of instruction " M_PRI_INST " (expected %d, got %d)",
 		           mono_inst_name (ins->opcode), max_len, (int)(code - cfg->native_code - offset));
 	}
 	set_code_cursor (cfg, code);

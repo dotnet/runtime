@@ -24,15 +24,12 @@
     <DotnetPgoToolPath>$([MSBuild]::NormalizePath('$(DotnetPgoToolDir)', 'dotnet-pgo'))</DotnetPgoToolPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'">
+  <!-- When tests are built on Helix, we don't want to invoke ILLink on build machines -->
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(BuildTestsOnHelix)' != 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress trimming warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <NoWarn>$(NoWarn);IL2103;IL2105;IL2025;IL2111</NoWarn>
-    <!-- Warns about missing Xamarin.iOS.dll -->
-    <NoWarn Condition="'$(EnableSoftTrimming)' == 'true'">$(NoWarn);IL2035</NoWarn>
-    <!-- https://github.com/dotnet/sdk/issues/18581 tracks needing to set 2 properties to disable warnings. -->
-    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
 
     <!-- Reduce library test app size by trimming framework library features  -->
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
@@ -93,10 +90,9 @@
 
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
   should be considered if we ever want to change the Condition of the ConfigureTrimming target -->
-  <Target Name="ConfigureTrimming" Condition="('$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true') And '$(SkipConfigureTrimming)' != 'true'" AfterTargets="AddTestRunnersToPublishedFiles">
+  <Target Name="ConfigureTrimming" Condition="'$(EnableAggressiveTrimming)' == 'true' And '$(SkipConfigureTrimming)' != 'true'" AfterTargets="AddTestRunnersToPublishedFiles">
     <PropertyGroup>
-      <TrimMode Condition="'$(EnableAggressiveTrimming)' == 'true'">link</TrimMode>
-      <TrimMode Condition="'$(EnableSoftTrimming)' == 'true'">copyused</TrimMode>
+      <TrimMode>link</TrimMode>
     </PropertyGroup>
 
     <ItemGroup>
@@ -107,24 +103,11 @@
            TrimMode="" is needed so the root assemblies are correctly identified -->
       <ResolvedFileToPublish TrimMode="" Condition="'%(FileName)' == '$(AssemblyName)'" />
 
-      <!-- TODO: find out why these assemblies aren't copied by copyused even though they're referenced -->
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.ComponentModel.EventBasedAsync'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Diagnostics.FileVersionInfo'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Drawing.Primitives'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.IO.Pipelines'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Memory'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Net.WebHeaderCollection'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Runtime.Serialization.Formatters'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.AccessControl'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Claims'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Permissions'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Transactions.Local'" />
-
       <!-- Even though we are trimming the test runner assembly, we want it to be treated
            as a root -->
       <TrimmerRootAssembly
           Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('TestRunner.dll'))"
-          Include="%(ResolvedFileToPublish.FullPath)" />
+          Include="%(ResolvedFileToPublish.FileName)" />
     </ItemGroup>
 
     <ItemGroup>

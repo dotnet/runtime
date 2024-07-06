@@ -141,6 +141,7 @@
     <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <UseAppHost>false</UseAppHost>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <!-- Set arch specific properties -->
@@ -212,6 +213,7 @@
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
     <_targetOS>$(TargetOS)</_targetOS>
+    <_targetArchitecture>$(TargetArchitecture)</_targetArchitecture>
     <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
     <NativeLib>static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>

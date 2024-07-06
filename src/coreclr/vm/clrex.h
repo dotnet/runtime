@@ -129,8 +129,10 @@ public:
     }
 
     HRESULT GetHR();
+#ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
     HRESULT SetErrorInfo();
+#endif // FEATURE_COMINTEROP
 
     void GetMessage(SString &result);
 
@@ -222,7 +224,9 @@ class EEException : public CLRException
 
     // Virtual overrides
     HRESULT GetHR();
+#ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
+#endif // FEATURE_COMINTEROP
     void GetMessage(SString &result);
     OBJECTREF CreateThrowable();
 
@@ -842,6 +846,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 //
 // Thus, the scoped use of FAULT_NOT_FATAL macro.
 #undef EX_CATCH_HRESULT
+#ifdef FEATURE_COMINTEROP
 #define EX_CATCH_HRESULT(_hr)                                                   \
     EX_CATCH                                                                    \
     {                                                                           \
@@ -857,6 +862,15 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
         _ASSERTE(FAILED(_hr));                                                  \
     }                                                                           \
     EX_END_CATCH(SwallowAllExceptions)
+#else // FEATURE_COMINTEROP
+#define EX_CATCH_HRESULT(_hr)                                                   \
+    EX_CATCH                                                                    \
+    {                                                                           \
+        (_hr) = GET_EXCEPTION()->GetHR();                                       \
+        _ASSERTE(FAILED(_hr));                                                  \
+    }                                                                           \
+    EX_END_CATCH(SwallowAllExceptions)
+#endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
 
@@ -934,7 +948,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 // ---------------------------------------------------------------------------
 
 inline CLRException::CLRException()
-  : m_throwableHandle(NULL)
+  : m_throwableHandle{}
 {
     LIMITED_METHOD_CONTRACT;
 }

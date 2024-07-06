@@ -1,9 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- always set SelfContained when running to use Mono on desktop -->
     <SelfContained>true</SelfContained>
+    <PublishTrimmed Condition="'$(SampleTrim)' == 'true'">true</PublishTrimmed>
+    <RunAOTCompilation Condition="'$(SampleUseAOT)' == 'true' or '$(SampleUseFullAOT)' == 'true'">true</RunAOTCompilation>
+    <SampleAOTMode Condition="'$(SampleAOTMode)' == '' and '$(SampleUseAOT)' == 'true'">normal</SampleAOTMode>
+    <SampleAOTMode Condition="'$(SampleAOTMode)' == '' and '$(SampleUseFullAOT)' == 'true'">full</SampleAOTMode>
   </PropertyGroup>
 
   <UsingTask TaskName="MonoAOTCompiler"
@@ -32,7 +37,9 @@
       UseAotDataFile="$(UseAotDataFile)"
       MibcProfilePath="$(MibcProfilePath)"
       UseLLVM="$(MonoEnableLLVM)"
-      LLVMPath="$(MonoAotCrossDir)">
+      LLVMPath="$(MonoAotCrossDir)"
+      Mode="$(SampleAOTMode)"
+       >
       <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
   </Target>

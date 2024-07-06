@@ -131,6 +131,18 @@ public class My {
             return memberVar;
         }
     }
+    struct StructToString<T>
+    {
+        string memberVar;
+        public StructToString()
+        {
+            memberVar = typeof(T).Name;
+        }
+        public override string ToString()
+        {
+            return memberVar;
+        }
+    }
     class SomeUnrealtedType<T>
     {
         string memberVar;
@@ -195,5 +207,7 @@ public class My {
         AllocViaGVMBase typeWithGVM = AllocViaGVMDerived.Alloc();
         Assert.AreEqual("ToStringIsInteresting1", typeWithGVM.Alloc<ToStringIsInteresting1>().ToString());
         Assert.AreEqual("ToStringIsInteresting2", typeWithGVM.Alloc<ToStringIsInteresting2>().ToString());
+        Assert.AreEqual("ToStringIsInteresting1", typeWithGVM.Alloc<StructToString<ToStringIsInteresting1>>().ToString());
+        Assert.AreEqual("ToStringIsInteresting2", typeWithGVM.Alloc<StructToString<ToStringIsInteresting2>>().ToString());
     }
 }

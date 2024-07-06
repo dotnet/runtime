@@ -7514,6 +7514,85 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->gsharedvt_min && mini_is_gsharedvt_variable_signature (fsig))
 				GSHAREDVT_FAILURE (il_op);
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			/*
+			 * We need to modify the signature of the swiftcall calli to account for the lowering of Swift structs.
+ 			 * This is done by replacing struct arguments on stack with a lowered sequence and updating the signature.
+			 */
+			if (fsig->pinvoke && mono_method_signature_has_ext_callconv (fsig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+				g_assert (!fsig->hasthis); // Swift P/Invoke calls shouldn't contain 'this'
+				
+				n = fsig->param_count;
+				sp -= n;
+				// Save the old arguments				
+				MonoInst **old_params = (MonoInst**) mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * n);
+				for (int idx_param = 0; idx_param < n; ++idx_param) {
+					old_params [idx_param] = sp [idx_param];
+				}
+
+				GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), n);
+				uint32_t new_param_count = 0;
+				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+				MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
+				/*
+				 * Go through the lowered arguments, if the argument is a struct, 
+				 * we need to replace it with a sequence of lowered arguments.
+				 * Also record the updated parameters for the new signature.
+				 */
+				for (int idx_param = 0; idx_param < n; ++idx_param) {
+					MonoType *ptype = fsig->params [idx_param];
+					MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+
+					// SwiftSelf, SwiftError, and SwiftIndirectResult are special cases where we need to preserve the class information for the codegen to handle them correctly.
+					if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) {
+						SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+						if (!lowered_swift_struct.by_reference) {
+							// Create a new local variable to store the base address of the struct
+							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+							CHECK_ARG (idx_param);
+							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
+							MONO_ADD_INS (cfg->cbb, struct_base_address);
+
+							for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
+								MonoInst *lowered_arg = NULL;
+								// Load the lowered elements of the struct
+								lowered_arg = mini_emit_memory_load (cfg, lowered_swift_struct.lowered_elements [idx_lowered], struct_base_address, lowered_swift_struct.offsets [idx_lowered], 0);
+								*sp++ = lowered_arg;
+
+								++new_param_count;
+								g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
+							}
+						} else {
+							// For structs that cannot be lowered, we change the argument to byref type
+							ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
+							// Load the address of the struct
+							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+							CHECK_ARG (idx_param);
+							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
+							MONO_ADD_INS (cfg->cbb, struct_base_address);
+							*sp++ = struct_base_address;
+
+							++new_param_count;
+							g_array_append_val (new_params, ptype);
+						}
+					} else {
+						// Copy over non-struct arguments
+						*sp++ = old_params [idx_param];
+
+						++new_param_count;
+						g_array_append_val (new_params, ptype);
+					}
+				}
+
+				// Create a new dummy signature with the lowered arguments				
+				fsig = mono_metadata_signature_dup_new_params (cfg->mempool, NULL, fsig, new_param_count, (MonoType**)new_params->data);
+
+				// Deallocate temp array
+				g_array_free (new_params, TRUE);
+			}
+#endif
+
 			if (method->dynamic && fsig->pinvoke) {
 				MonoInst *args [3];
 
@@ -7864,7 +7943,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				UNVERIFIED;
 
 			if (!cfg->gshared)
-				g_assert (!mono_method_check_context_used (cmethod));
+				g_assertf (!mono_method_check_context_used (cmethod), "cmethod is %s", mono_method_get_full_name (cmethod));
 
 			CHECK_STACK (n);
 
@@ -9595,8 +9674,7 @@ calli_end:
 
 			if (klass == mono_defaults.void_class)
 				UNVERIFIED;
-			if (target_type_is_incompatible (cfg, m_class_get_byval_arg (klass), val))
-				UNVERIFIED;
+
 			/* frequent check in generic code: box (struct), brtrue */
 
 			/*
@@ -9955,6 +10033,8 @@ calli_end:
 				MONO_ADD_INS (cfg->cbb, ins);
 				*sp++ = ins;
 			} else {
+				if (target_type_is_incompatible (cfg, m_class_get_byval_arg (klass), val))
+					UNVERIFIED;
 				*sp++ = mini_emit_box (cfg, val, klass, context_used);
 			}
 			CHECK_CFG_EXCEPTION;
@@ -10561,7 +10641,6 @@ field_access_end:
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
-#ifndef TARGET_S390X
 			if (sp [0]->type == STACK_I8 && TARGET_SIZEOF_VOID_P == 4) {
 				MONO_INST_NEW (cfg, ins, OP_LCONV_TO_OVF_U4);
 				ins->sreg1 = sp [0]->dreg;
@@ -10570,7 +10649,8 @@ field_access_end:
 				MONO_ADD_INS (cfg->cbb, ins);
 				*sp = mono_decompose_opcode (cfg, ins);
 			}
-#else
+
+#if defined(TARGET_S390X) || defined(TARGET_POWERPC64)
 			/* The array allocator expects a 64-bit input, and we cannot rely
 			   on the high bits of a 32-bit result, so we have to extend.  */
 			if (sp [0]->type == STACK_I4 && TARGET_SIZEOF_VOID_P == 8) {

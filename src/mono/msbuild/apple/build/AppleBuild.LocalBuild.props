@@ -34,15 +34,19 @@
     <MicrosoftNetCoreAppRuntimePackLibDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', '$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())', 'lib', '$(_NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackLibDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', '$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
 
-    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(_NetCoreAppToolCurrent)'))</AppleAppBuilderDir>
-    <LibraryBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'LibraryBuilder', 'Debug', '$(_NetCoreAppToolCurrent)'))</LibraryBuilderDir>
-    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(_NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
-    <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', 'Debug', '$(_NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
+    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(Configuration)', '$(_NetCoreAppToolCurrent)'))</AppleAppBuilderDir>
+    <LibraryBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'LibraryBuilder', '$(Configuration)', '$(_NetCoreAppToolCurrent)'))</LibraryBuilderDir>
+    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', '$(Configuration)', '$(_NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
+    <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', '$(Configuration)', '$(_NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
 
     <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mono', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfig)'))</MonoArtifactsPath>
     <MonoAotCrossDir>$([MSBuild]::NormalizePath($(MonoArtifactsPath), 'cross', '$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))</MonoAotCrossDir>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
+
+    <ILLinkPropsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLink.Tasks', '$(Configuration)', '$(_NetCoreAppToolCurrent)', 'build', 'Microsoft.NET.ILLink.Tasks.props'))</ILLinkPropsPath>
+    <ILLinkTargetsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLink.Tasks', '$(Configuration)', '$(_NetCoreAppToolCurrent)', 'build', 'Microsoft.NET.ILLink.targets'))</ILLinkTargetsPath>
+    <_ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLink.Tasks', '$(Configuration)', '$(_NetCoreAppToolCurrent)', 'ILLink.Tasks.dll'))</_ILLinkTasksAssembly>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' == '' and '$(AppleBuildSupportDir)' != ''">
@@ -64,8 +68,9 @@
     <IlcSdkPath>$([MSBuild]::NormalizeDirectory('$(BuildBaseDir)', 'aotsdk'))</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackLibDir)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
-    <ILLinkTargetsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', '$(_NetCoreAppToolCurrent)', 'build', 'Microsoft.NET.ILLink.targets'))</ILLinkTargetsPath>
-    <ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', '$(_NetCoreAppToolCurrent)', 'ILLink.Tasks.dll'))</ILLinkTasksAssembly>
+    <ILLinkPropsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', '$(_NetCoreAppToolCurrent)', 'build', ''Microsoft.NET.ILLink.Tasks.props''))</ILLinkPropsPath>
+    <ILLinkTargetsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', '$(_NetCoreAppToolCurrent)', 'build', 'Microsoft.NET.ILLink.targets'))</ILLinkTargetsPath>
+    <_ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(BuildBaseDir)', '$(_NetCoreAppToolCurrent)', 'ILLink.Tasks.dll'))</_ILLinkTasksAssembly>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>
@@ -81,6 +86,12 @@
     <LibraryBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(LibraryBuilderDir)', 'LibraryBuilder.dll'))</LibraryBuilderTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
+  </PropertyGroup>
+
+  <Import Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Project="$(ILLinkPropsPath)" />
+  <!-- The ILLinkTasksAssembly cannot be overridden. This is the way to update the property from Microsoft.NET.ILLink.Tasks.props -->
+  <PropertyGroup>
+    <ILLinkTasksAssembly>$(_ILLinkTasksAssembly)</ILLinkTasksAssembly>
   </PropertyGroup>
 
   <!-- Due to dependencies on resolving properties like: $(MicrosoftNetCoreAppRuntimePackRidDir) we need to import the default props at the end -->

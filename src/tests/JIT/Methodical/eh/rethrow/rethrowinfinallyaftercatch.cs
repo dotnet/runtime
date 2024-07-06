@@ -38,6 +38,7 @@ namespace Test_rethrowinfinallyaftercatch_cs
         }
 
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             //Start recording

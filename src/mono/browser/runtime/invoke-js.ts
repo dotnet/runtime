@@ -59,8 +59,8 @@ export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, ar
                     }
                 }
                 return;
-            } catch (ex2: any) {
-                runtimeHelpers.nativeExit(ex2);
+            } catch (ex: any) {
+                loaderHelpers.mono_exit(1, ex);
                 return;
             }
         }
@@ -89,7 +89,7 @@ function bind_js_import (signature: JSFunctionSignature): Function {
     const js_module_name = get_signature_module_name(signature)!;
     const function_handle = get_signature_handle(signature);
 
-    mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name} module`);
+    mono_log_debug(() => `Binding [JSImport] ${js_function_name} from ${js_module_name} module`);
 
     const fn = mono_wasm_lookup_js_import(js_function_name, js_module_name);
     const args_count = get_signature_argument_count(signature);
@@ -369,7 +369,7 @@ export function mono_wasm_invoke_js_function_impl (bound_function_js_handle: JSH
 
 export function mono_wasm_set_module_imports (module_name: string, moduleImports: any) {
     importedModules.set(module_name, moduleImports);
-    mono_log_debug(`added module imports '${module_name}'`);
+    mono_log_debug(() => `added module imports '${module_name}'`);
 }
 
 function mono_wasm_lookup_js_import (function_name: string, js_module_name: string | null): Function {
@@ -446,7 +446,7 @@ export function dynamic_import (module_name: string, module_url: string): Promis
     let promise = importedModulesPromises.get(module_name);
     const newPromise = !promise;
     if (newPromise) {
-        mono_log_debug(`importing ES6 module '${module_name}' from '${module_url}'`);
+        mono_log_debug(() => `importing ES6 module '${module_name}' from '${module_url}'`);
         promise = import(/*! webpackIgnore: true */module_url);
         importedModulesPromises.set(module_name, promise);
     }
@@ -455,7 +455,7 @@ export function dynamic_import (module_name: string, module_url: string): Promis
         const module = await promise;
         if (newPromise) {
             importedModules.set(module_name, module);
-            mono_log_debug(`imported ES6 module '${module_name}' from '${module_url}'`);
+            mono_log_debug(() => `imported ES6 module '${module_name}' from '${module_url}'`);
         }
         return module;
     });

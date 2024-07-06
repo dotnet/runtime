@@ -23,6 +23,8 @@ pr: none
 
 variables:
 - template: /eng/pipelines/common/variables.yml
+  parameters:
+    templatePath: 'templates-official'
 - template: /eng/pipelines/common/internal-variables.yml
   parameters:
     teamName: dotnet-core-acquisition
@@ -65,6 +67,7 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
+          - windows_x86
           - windows_arm64
           jobParameters:
             templatePath: 'templates-official'
@@ -89,41 +92,6 @@ extends:
               parameters:
                 name: $(osGroup)$(osSubgroup)_$(archType)
 
-
-      #
-      # Build CoreCLR runtime packs
-      # Windows x86
-      # No NativeAOT as NativeAOT is not supported on x86
-      # Sign diagnostic files after native build
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - windows_x86
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -s clr.runtime+clr.alljits -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
-            nameSuffix: CoreCLR
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            timeoutInMinutes: 120
-            postBuildSteps:
-            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
-              parameters:
-                basePath: $(Build.SourcesDirectory)/artifacts/bin/coreclr
-                isOfficialBuild: ${{ variables.isOfficialBuild }}
-                timeoutInMinutes: 30
-            # Now that we've signed the diagnostic files, do the rest of the build.
-            - template: /eng/pipelines/common/templates/global-build-step.yml
-              parameters:
-                buildArgs: -s clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
-                displayName: Build managed CoreCLR components, all libraries, hosts, and packs
-
-            # Upload the results.
-            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-              parameters:
-                name: $(osGroup)$(osSubgroup)_$(archType)
       #
       # Build CoreCLR runtime packs
       # Mac x64/arm64
@@ -213,21 +181,17 @@ extends:
                   PublishLocation: Container
                   ArtifactName: CoreCLRCrossDacArtifacts
               # Create RPMs and DEBs
-              - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+              - template: /eng/pipelines/installer/steps/build-linux-package.yml
                 parameters:
                   packageType: deb
                   target: debpkg
-                  packageStepDescription: Runtime Deps, Runtime, Framework Packs Deb installers
-                  subsetArg: -s packs.installers
-                  packagingArgs: -c $(_BuildConfig) --arch $(archType) --os $(osGroup) --ci /p:OfficialBuildId=$(Build.BuildNumber) /p:BuildDebPackage=true
+                  packagingArgs: -c $(_BuildConfig) /p:BuildDebPackage=true
                   condition: and(succeeded(), eq(variables.osSubgroup, ''), eq(variables.archType, 'x64'))
-              - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+              - template: /eng/pipelines/installer/steps/build-linux-package.yml
                 parameters:
                   packageType: rpm
                   target: rpmpkg
-                  packageStepDescription: Runtime Deps, Runtime, Framework Packs RPM installers
-                  subsetArg: -s packs.installers
-                  packagingArgs: -c $(_BuildConfig) --arch $(archType) --os $(osGroup) --ci /p:OfficialBuildId=$(Build.BuildNumber) /p:BuildRpmPackage=true
+                  packagingArgs: -c $(_BuildConfig) /p:BuildRpmPackage=true
                   condition: and(succeeded(), eq(variables.osSubgroup, ''), in(variables.archType, 'x64', 'arm64'))
 
               # Upload the results.
@@ -417,11 +381,12 @@ extends:
                 parameters:
                   name: MonoRuntimePacks
 
+
       # Build Mono AOT offset headers once, for consumption elsewhere
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
           - android_x64
@@ -430,9 +395,31 @@ extends:
           - tvos_arm64
           - ios_arm64
           - maccatalyst_x64
+          variables:
+            - name: _osParameter
+              value: -os linux
+            - name: _archParameter
+              value: -arch x64
           jobParameters:
             templatePath: 'templates-official'
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            nameSuffix: MonoAOTOffsets
+            buildArgs: -s mono.aotcross -c $(_BuildConfig) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
+            postBuildSteps:
+              # Upload offset files
+              - task: CopyFiles@2
+                displayName: Collect offset files
+                inputs:
+                  sourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/'
+                  contents: '**/offsets-*.h'
+                  targetFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles/'
+
+            templateContext:
+              outputs:
+              - output: pipelineArtifact
+                displayName: 'Publish Mono AOT offsets'
+                condition: succeeded()
+                targetPath: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
+                artifactName: 'Mono_Offsets_$(osGroup)$(osSubGroup)'
 
       #
       # Build Mono release AOT cross-compilers
@@ -454,9 +441,9 @@ extends:
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
-            - mono_android_offsets
-            - mono_browser_offsets
-            - mono_wasi_offsets
+            - build_android_x64_release_MonoAOTOffsets
+            - build_browser_wasm_linux_release_MonoAOTOffsets
+            - build_wasi_wasm_linux_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
@@ -482,9 +469,9 @@ extends:
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
-            - mono_android_offsets
-            - mono_browser_offsets
-            - mono_wasi_offsets
+            - build_android_x64_release_MonoAOTOffsets
+            - build_browser_wasm_linux_release_MonoAOTOffsets
+            - build_wasi_wasm_linux_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
@@ -510,12 +497,12 @@ extends:
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
-            - mono_android_offsets
-            - mono_browser_offsets
-            - mono_wasi_offsets
-            - mono_tvos_offsets
-            - mono_ios_offsets
-            - mono_maccatalyst_offsets
+            - build_android_x64_release_MonoAOTOffsets
+            - build_browser_wasm_linux_release_MonoAOTOffsets
+            - build_wasi_wasm_linux_release_MonoAOTOffsets
+            - build_tvos_arm64_release_MonoAOTOffsets
+            - build_ios_arm64_release_MonoAOTOffsets
+            - build_maccatalyst_x64_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - android
             - browser
@@ -598,22 +585,12 @@ extends:
       #
       # Build SourceBuild packages
       #
-      - template: /eng/pipelines/common/platform-matrix.yml
+      - template: /eng/common/templates-official/jobs/source-build.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
-          helixQueueGroup: ci
           platforms:
-          - SourceBuild_linux_x64
-          jobParameters:
-            templatePath: 'templates-official'
-            nameSuffix: PortableSourceBuild
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: SourceBuildPackages
-            timeoutInMinutes: 95
+          - name: Linux_x64
+            targetRid: linux-x64
+            container: SourceBuild_linux_x64
 
       #
       # Build PGO Instrumented CoreCLR Release
@@ -645,12 +622,80 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/mono/templates/workloads-build.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
+            nameSuffix: Workloads
+            preBuildSteps:
+            - task: DownloadPipelineArtifact@2
+              inputs:
+                artifact: 'IntermediateArtifacts'
+                path: $(Build.SourcesDirectory)/artifacts/workloadPackages
+                patterns: |
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.android-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.browser-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.wasi-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.wasi-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvos-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvossimulator-*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.wasi-wasm*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net6.Manifest*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net7.Manifest*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net8.Manifest*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoTargets.Sdk*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoAOTCompiler.Task*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Sdk*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Wasi*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Templates*.nupkg
+                  IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.win-arm64*.nupkg
+                  IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.win-x64*.nupkg
+                  IntermediateArtifacts/windows_x86/Shipping/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
+                  IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
+
+            - task: CopyFiles@2
+              displayName: Flatten packages
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
+                contents: '*/Shipping/*.nupkg'
+                cleanTargetFolder: false
+                targetFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
+                flattenFolders: true
+
+            buildArgs: -s mono.workloads -c $(_BuildConfig) /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads
+            
+            postBuildSteps:
+            # Upload packages wrapping msis
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              parameters:
+                name: workloads
+
+            # Delete wixpdb files before they are uploaded to artifacts
+            - task: DeleteFiles@1
+              displayName: Delete wixpdb's
+              inputs:
+                SourceFolder: $(Build.SourcesDirectory)/artifacts/workloads
+                Contents: '*.wixpdb'
+
+            # Upload artifacts to be used for generating VS components
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              parameters:
+                name: workloads-vs
+                publishPackagesCondition: false
+                publishVSSetupCondition: always()
+
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             dependsOn:

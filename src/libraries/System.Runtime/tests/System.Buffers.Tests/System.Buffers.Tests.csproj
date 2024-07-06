@@ -5,6 +5,9 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="ArrayPool\ArrayPoolTest.cs" />
     <Compile Include="ArrayPool\CollectionTests.cs" />

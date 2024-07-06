@@ -41,6 +41,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/metadata-update.h>
+#include <mono/metadata/method-builder-ilgen.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -49,6 +50,8 @@
 #include <mono/utils/unlocked.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/checked-build.h>
+// for dn_simdhash_ght_t
+#include "../native/containers/dn-simdhash-specializations.h"
 
 MonoStats mono_stats;
 
@@ -1168,7 +1171,7 @@ MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error)
 {
 	MonoMethod *result;
-	MonoMethodInflated *iresult, *cached;
+	MonoMethodInflated *iresult, *cached = NULL;
 	MonoMethodSignature *sig;
 	MonoGenericContext tmp_context;
 
@@ -1223,8 +1226,8 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	// check cache
 	mono_mem_manager_lock (mm);
 	if (!mm->gmethod_cache)
-		mm->gmethod_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
+		mm->gmethod_cache = dn_simdhash_ght_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method, 0, NULL);
+	dn_simdhash_ght_try_get_value (mm->gmethod_cache, iresult, (void **)&cached);
 	mono_mem_manager_unlock (mm);
 
 	if (cached) {
@@ -1263,6 +1266,17 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 		resw->method_data = (void **)g_malloc (sizeof (gpointer) * (len + 1));
 		memcpy (resw->method_data, mw->method_data, sizeof (gpointer) * (len + 1));
+		if (mw->inflate_wrapper_data) {
+			mono_mb_inflate_generic_wrapper_data (context, (gpointer*)resw->method_data, error);
+			if (!is_ok (error)) {
+				g_free (resw->method_data);
+				goto fail;
+			}
+			// we can't set inflate_wrapper_data to 0 on the result, it's possible it
+			// will need to be inflated again (for example in the method_inst ==
+			// generic_container->context.method_inst case, below)
+			resw->inflate_wrapper_data = 1;
+		}
 	}
 
 	if (iresult->context.method_inst) {
@@ -1319,9 +1333,10 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	// check cache
 	mono_mem_manager_lock (mm);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
+	cached = NULL;
+	dn_simdhash_ght_try_get_value (mm->gmethod_cache, iresult, (void **)&cached);
 	if (!cached) {
-		g_hash_table_insert (mm->gmethod_cache, iresult, iresult);
+		dn_simdhash_ght_insert (mm->gmethod_cache, iresult, iresult);
 		iresult->owner = mm;
 		cached = iresult;
 	}
@@ -3037,18 +3052,22 @@ mono_image_init_name_cache (MonoImage *image)
 	const char *name;
 	const char *nspace;
 	guint32 visib, nspace_index;
-	GHashTable *name_cache2, *nspace_table, *the_name_cache;
+	dn_simdhash_u32_ptr_t *name_cache2;
+	dn_simdhash_string_ptr_t *nspace_table, *the_name_cache;
 
 	if (image->name_cache)
 		return;
 
-	the_name_cache = g_hash_table_new (g_str_hash, g_str_equal);
+	// TODO: Figure out a good initial capacity for this table by doing a scan,
+	//  or just pre-reserve a reasonable amount of space based on how many nspaces
+	//  an image typically has
+	the_name_cache = dn_simdhash_string_ptr_new (0, NULL);
 
 	if (image_is_dynamic (image)) {
 		mono_image_lock (image);
 		if (image->name_cache) {
 			/* Somebody initialized it before us */
-			g_hash_table_destroy (the_name_cache);
+			dn_simdhash_free (the_name_cache);
 		} else {
 			mono_atomic_store_release (&image->name_cache, the_name_cache);
 		}
@@ -3057,7 +3076,7 @@ mono_image_init_name_cache (MonoImage *image)
 	}
 
 	/* Temporary hash table to avoid lookups in the nspace_table */
-	name_cache2 = g_hash_table_new (NULL, NULL);
+	name_cache2 = dn_simdhash_u32_ptr_new (0, NULL);
 
 	/* FIXME: metadata-update */
 	int rows = table_info_get_rows (t);
@@ -3074,14 +3093,13 @@ mono_image_init_name_cache (MonoImage *image)
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
 		nspace_index = cols [MONO_TYPEDEF_NAMESPACE];
-		nspace_table = (GHashTable *)g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
-		if (!nspace_table) {
-			nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-			g_hash_table_insert (the_name_cache, (char*)nspace, nspace_table);
-			g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
-								 nspace_table);
+		if (!dn_simdhash_u32_ptr_try_get_value (name_cache2, nspace_index, (void **)&nspace_table)) {
+			// FIXME: Compute an appropriate capacity for this table to avoid growing it
+			nspace_table = dn_simdhash_string_ptr_new (0, NULL);
+			dn_simdhash_string_ptr_try_add (the_name_cache, nspace, nspace_table);
+			dn_simdhash_u32_ptr_try_add (name_cache2, nspace_index, nspace_table);
 		}
-		g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (i));
+		dn_simdhash_string_ptr_try_add (nspace_table, name, GUINT_TO_POINTER (i));
 	}
 
 	/* Load type names from EXPORTEDTYPES table */
@@ -3102,23 +3120,22 @@ mono_image_init_name_cache (MonoImage *image)
 			nspace = mono_metadata_string_heap (image, exptype_cols [MONO_EXP_TYPE_NAMESPACE]);
 
 			nspace_index = exptype_cols [MONO_EXP_TYPE_NAMESPACE];
-			nspace_table = (GHashTable *)g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
-			if (!nspace_table) {
-				nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-				g_hash_table_insert (the_name_cache, (char*)nspace, nspace_table);
-				g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
-									 nspace_table);
+			if (!dn_simdhash_u32_ptr_try_get_value (name_cache2, nspace_index, (void **)&nspace_table)) {
+				// FIXME: Compute an appropriate capacity for this table to avoid growing it
+				nspace_table = dn_simdhash_string_ptr_new (0, NULL);
+				dn_simdhash_string_ptr_try_add (the_name_cache, nspace, nspace_table);
+				dn_simdhash_u32_ptr_try_add (name_cache2, nspace_index, nspace_table);
 			}
-			g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (mono_metadata_make_token (MONO_TABLE_EXPORTEDTYPE, i + 1)));
+			dn_simdhash_string_ptr_try_add (nspace_table, name, GUINT_TO_POINTER (mono_metadata_make_token (MONO_TABLE_EXPORTEDTYPE, i + 1)));
 		}
 	}
 
-	g_hash_table_destroy (name_cache2);
+	dn_simdhash_free (name_cache2);
 
 	mono_image_lock (image);
 	if (image->name_cache) {
 		/* Somebody initialized it before us */
-		g_hash_table_destroy (the_name_cache);
+		dn_simdhash_free (the_name_cache);
 	} else {
 		mono_atomic_store_release (&image->name_cache, the_name_cache);
 	}
@@ -3133,23 +3150,19 @@ void
 mono_image_add_to_name_cache (MonoImage *image, const char *nspace,
 							  const char *name, guint32 index)
 {
-	GHashTable *nspace_table;
-	GHashTable *name_cache;
-	guint32 old_index;
+	dn_simdhash_string_ptr_t *nspace_table, *name_cache;
 
 	mono_image_init_name_cache (image);
 	mono_image_lock (image);
 
 	name_cache = image->name_cache;
-	if (!(nspace_table = (GHashTable *)g_hash_table_lookup (name_cache, nspace))) {
-		nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-		g_hash_table_insert (name_cache, (char *)nspace, (char *)nspace_table);
+	if (!dn_simdhash_string_ptr_try_get_value (name_cache, nspace, (void **)&nspace_table)) {
+		nspace_table = dn_simdhash_string_ptr_new (0, NULL);
+		dn_simdhash_string_ptr_try_add (name_cache, nspace, nspace_table);
 	}
 
-	if ((old_index = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, (char*) name))))
-		g_error ("overrwritting old token %x on image %s for type %s::%s", old_index, image->name, nspace, name);
-
-	g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (index));
+	if (!dn_simdhash_string_ptr_try_add (nspace_table, name, GUINT_TO_POINTER (index)))
+		g_error ("overrwritting old token ? on image %s for type %s::%s", image->name, nspace, name);
 
 	mono_image_unlock (image);
 }
@@ -3160,9 +3173,8 @@ typedef struct {
 } FindAllUserData;
 
 static void
-find_all_nocase (gpointer key, gpointer value, gpointer user_data)
+find_all_nocase (const char *name, gpointer value, gpointer user_data)
 {
-	char *name = (char*)key;
 	FindAllUserData *data = (FindAllUserData*)user_data;
 	if (mono_utf8_strcasecmp (name, (char*)data->key) == 0)
 		data->values = g_slist_prepend (data->values, value);
@@ -3174,9 +3186,8 @@ typedef struct {
 } FindUserData;
 
 static void
-find_nocase (gpointer key, gpointer value, gpointer user_data)
+find_nocase (const char *name, gpointer value, gpointer user_data)
 {
-	char *name = (char*)key;
 	FindUserData *data = (FindUserData*)user_data;
 
 	if (!data->value && (mono_utf8_strcasecmp (name, (char*)data->key) == 0))
@@ -3303,7 +3314,7 @@ search_modules (MonoImage *image, const char *name_space, const char *name, gboo
 static MonoClass *
 mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, const char *name, GHashTable* visited_images, gboolean case_sensitive, MonoError *error)
 {
-	GHashTable *nspace_table = NULL;
+	dn_simdhash_string_ptr_t *nspace_table = NULL;
 	MonoImage *loaded_image = NULL;
 	guint32 token = 0;
 	MonoClass *klass;
@@ -3350,10 +3361,11 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 	mono_image_lock (image);
 
 	if (case_sensitive) {
-		nspace_table = (GHashTable *)g_hash_table_lookup (image->name_cache, name_space);
-
-		if (nspace_table)
-			token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name));
+		if (dn_simdhash_string_ptr_try_get_value (image->name_cache, name_space, (void **)&nspace_table)) {
+			void * temp;
+			if (dn_simdhash_string_ptr_try_get_value (nspace_table, name, &temp))
+				token = GPOINTER_TO_UINT(temp);
+		}
 	} else {
 		FindAllUserData all_user_data = { name_space, NULL };
 		FindUserData user_data = { name, NULL };
@@ -3361,12 +3373,12 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 
 		// We're forced to check all matching namespaces, not just the first one found,
 		// because our desired type could be in any of the ones that match case-insensitively.
-		g_hash_table_foreach (image->name_cache, find_all_nocase, &all_user_data);
+		dn_simdhash_string_ptr_foreach (image->name_cache, find_all_nocase, &all_user_data);
 
 		values = all_user_data.values;
 		while (values && !user_data.value) {
-			nspace_table = (GHashTable*)values->data;
-			g_hash_table_foreach (nspace_table, find_nocase, &user_data);
+			nspace_table = (dn_simdhash_string_ptr_t *)values->data;
+			dn_simdhash_string_ptr_foreach (nspace_table, find_nocase, &user_data);
 			values = values->next;
 		}
 
@@ -4334,12 +4346,16 @@ mono_class_is_variant_compatible_slow (MonoClass *klass, MonoClass *oklass)
 	}
 	return TRUE;
 }
-/*Check if @candidate implements the interface @target*/
+
 static gboolean
-mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
+mono_class_implement_interface_slow_cached (MonoClass *target, MonoClass *candidate, dn_simdhash_ptrpair_ptr_t *cache);
+
+static gboolean
+mono_class_implement_interface_slow_uncached (MonoClass *target, MonoClass *candidate, dn_simdhash_ptrpair_ptr_t *cache)
 {
 	ERROR_DECL (error);
 	int i;
+
 	gboolean is_variant = mono_class_has_variant_generic_params (target);
 
 	if (is_variant && MONO_CLASS_IS_INTERFACE_INTERNAL (candidate)) {
@@ -4368,7 +4384,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 						return TRUE;
 					if (is_variant && mono_class_is_variant_compatible_slow (target, iface_class))
 						return TRUE;
-					if (mono_class_implement_interface_slow (target, iface_class))
+					if (mono_class_implement_interface_slow_cached (target, iface_class, cache))
 						return TRUE;
 				}
 			}
@@ -4393,7 +4409,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 				if (is_variant && mono_class_is_variant_compatible_slow (target, candidate_interfaces [i]))
 					return TRUE;
 
-				if (mono_class_implement_interface_slow (target, candidate_interfaces [i]))
+				if (mono_class_implement_interface_slow_cached (target, candidate_interfaces [i], cache))
 					return TRUE;
 			}
 		}
@@ -4401,6 +4417,107 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 	} while (candidate);
 
 	return FALSE;
+}
+
+// #define LOG_INTERFACE_CACHE_HITS 1
+
+#if LOG_INTERFACE_CACHE_HITS
+static gint64 implement_interface_hits = 0, implement_interface_misses = 0;
+
+static void
+log_hit_rate (dn_simdhash_ptrpair_ptr_t *cache)
+{
+	gint64 total_calls = implement_interface_hits + implement_interface_misses;
+	if ((total_calls % 500) != 0)
+		return;
+	double hit_rate = implement_interface_hits * 100.0 / total_calls;
+	g_printf ("implement_interface cache hit rate: %f (%lld total calls). Overflow count: %u\n", hit_rate, total_calls, dn_simdhash_overflow_count (cache));
+}
+#endif
+
+static gboolean
+mono_class_implement_interface_slow_cached (MonoClass *target, MonoClass *candidate, dn_simdhash_ptrpair_ptr_t *cache)
+{
+	gpointer cached_result = NULL;
+	dn_ptrpair_t key = { target, candidate };
+	gboolean result = 0, cache_hit = 0;
+
+	// Skip the caching logic for exact matches
+	if (candidate == target)
+		return TRUE;
+
+	cache_hit = dn_simdhash_ptrpair_ptr_try_get_value (cache, key, &cached_result);
+	if (cache_hit) {
+		// Testing shows a cache hit rate of 60% on S.R.Tests and S.T.J.Tests,
+		//  and 40-50% for small app startup. Near-zero overflow count.
+#if LOG_INTERFACE_CACHE_HITS
+		implement_interface_hits++;
+		log_hit_rate (cache);
+#endif
+		result = (cached_result != NULL);
+#ifndef ENABLE_CHECKED_BUILD
+		return result;
+#endif
+	}
+
+	gboolean uncached_result = mono_class_implement_interface_slow_uncached (target, candidate, cache);
+
+	if (!cache_hit) {
+#if LOG_INTERFACE_CACHE_HITS
+		implement_interface_misses++;
+		log_hit_rate (cache);
+#endif
+		dn_simdhash_ptrpair_ptr_try_add (cache, key, uncached_result ? GUINT_TO_POINTER(1) : NULL);
+	}
+
+#ifdef ENABLE_CHECKED_BUILD
+	if (cache_hit) {
+		if (result != uncached_result)
+			g_print (
+				"Cache mismatch for %s.%s and %s.%s: cached=%d, uncached=%d\n",
+				m_class_get_name_space (target), m_class_get_name (target),
+				m_class_get_name_space (candidate), m_class_get_name (candidate),
+				result, uncached_result
+			);
+		g_assert (result == uncached_result);
+	}
+#endif
+	return uncached_result;
+}
+
+static dn_simdhash_ptrpair_ptr_t *implement_interface_scratch_cache = NULL;
+
+/*Check if @candidate implements the interface @target*/
+static gboolean
+mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
+{
+	gpointer cas_result;
+	gboolean result;
+	dn_simdhash_ptrpair_ptr_t *cache = (dn_simdhash_ptrpair_ptr_t *)mono_atomic_xchg_ptr ((volatile gpointer *)&implement_interface_scratch_cache, NULL);
+	if (!cache)
+		// Roughly 64KB of memory usage and big enough to have fast lookups
+		// Smaller is viable but makes the hit rate worse
+		cache = dn_simdhash_ptrpair_ptr_new (2048, NULL);
+	else if (dn_simdhash_count (cache) >= 2250) {
+		// FIXME: 2250 is arbitrary (roughly 256 11-item buckets w/load factor)
+		// One step down reduces hit rate by approximately 2-4%
+		// HACK: Only clear the scratch cache once it gets too big.
+		// The pattern is that (especially during startup), we have lots
+		//  of mono_class_implement_interface_slow calls back to back that
+		//  perform similar checks, so keeping the cache data around between
+		//  sequential calls will potentially optimize them a lot.
+		dn_simdhash_clear (cache);
+	}
+
+	result = mono_class_implement_interface_slow_cached (target, candidate, cache);
+
+	// Under most circumstances we won't have multiple threads competing to run implement_interface_slow,
+	//  so it's not worth making this thread-local and potentially keeping a cache instance around per-thread.
+	cas_result = mono_atomic_cas_ptr ((volatile gpointer *)&implement_interface_scratch_cache, cache, NULL);
+	if (cas_result != NULL)
+		dn_simdhash_free (cache);
+
+	return result;
 }
 
 /*
@@ -4419,8 +4536,9 @@ mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
 		return TRUE;
 
 	/*If target is not an interface there is no need to check them.*/
-	if (MONO_CLASS_IS_INTERFACE_INTERNAL (target))
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (target)) {
 		return mono_class_implement_interface_slow (target, candidate);
+	}
 
 	if (m_class_is_delegate (target) && mono_class_has_variant_generic_params (target))
 		return mono_class_is_variant_compatible (target, candidate, FALSE);
@@ -5161,7 +5279,7 @@ mono_class_get_fields_internal (MonoClass *klass, gpointer *iter)
  * mono_class_get_methods:
  * \param klass the \c MonoClass to act on
  *
- * This routine is an iterator routine for retrieving the fields in a class.
+ * This routine is an iterator routine for retrieving the methods in a class.
  *
  * You must pass a \c gpointer that points to zero and is treated as an opaque handle to
  * iterate over all of the elements.  When no more values are

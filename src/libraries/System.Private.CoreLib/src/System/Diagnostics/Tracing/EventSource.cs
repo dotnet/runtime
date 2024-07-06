@@ -212,7 +212,7 @@ namespace System.Diagnostics.Tracing
     /// [EventSource(Name="Samples.Demos.Minimal")]
     /// sealed class MinimalEventSource : EventSource
     /// {
-    ///     public static MinimalEventSource Log = new MinimalEventSource();
+    ///     public static readonly MinimalEventSource Log = new MinimalEventSource();
     ///     public void Load(long ImageBase, string Name) { WriteEvent(1, ImageBase, Name); }
     ///     public void Unload(long ImageBase) { WriteEvent(2, ImageBase); }
     ///     private MinimalEventSource() {}
@@ -338,7 +338,7 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
-        /// documented at in EventManifest Schema https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-schema.
+        /// documented at in EventManifest Schema https://learn.microsoft.com/windows/desktop/WES/eventmanifestschema-schema.
         /// This is the preferred way of generating a manifest to be embedded in the ETW stream as it is fast and
         /// the fact that it only includes localized entries for the current UI culture is an acceptable tradeoff.
         /// </summary>
@@ -359,7 +359,7 @@ namespace System.Diagnostics.Tracing
         }
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
-        /// documented at in EventManifest Schema https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-schema.
+        /// documented at in EventManifest Schema https://learn.microsoft.com/windows/desktop/WES/eventmanifestschema-schema.
         /// Pass EventManifestOptions.AllCultures when generating a manifest to be registered on the machine. This
         /// ensures that the entries in the event log will be "optimally" localized.
         /// </summary>
@@ -1461,6 +1461,8 @@ namespace System.Diagnostics.Tracing
         /// <param name="disposing">True if called from Dispose(), false if called from the finalizer.</param>
         protected virtual void Dispose(bool disposing)
         {
+            // NOTE: If !IsSupported, we use ILLink.Substitutions to nop out the finalizer.
+            //       Do not add any code before this line (or you'd need to delete the substitution).
             if (!IsSupported)
             {
                 return;
@@ -1504,6 +1506,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         ~EventSource()
         {
+            // NOTE: we nop out this method body if !IsSupported using ILLink.Substitutions.
             this.Dispose(false);
         }
 #endregion
@@ -4851,12 +4854,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventId">ID of the ETW event (an integer between 1 and 65535)</param>
         public EventAttribute(int eventId)
         {
-            this.EventId = eventId;
+            EventId = eventId;
             Level = EventLevel.Informational;
         }
 
         /// <summary>Event's ID</summary>
-        public int EventId { get; private set; }
+        public int EventId { get; }
         /// <summary>Event's severity level: indicates the severity or verbosity of the event</summary>
         public EventLevel Level { get; set; }
         /// <summary>Event's keywords: allows classification of events by "categories"</summary>
@@ -4867,8 +4870,8 @@ namespace System.Diagnostics.Tracing
             get => m_opcode;
             set
             {
-                this.m_opcode = value;
-                this.m_opcodeSet = true;
+                m_opcode = value;
+                m_opcodeSet = true;
             }
         }
 
@@ -5155,8 +5158,11 @@ namespace System.Diagnostics.Tracing
             if (dllName != null)
                 sb.Append($" resourceFileName=\"{dllName}\" messageFileName=\"{dllName}\"");
 
-            string symbolsName = providerName.Replace("-", "").Replace('.', '_');  // Period and - are illegal replace them.
-            sb.AppendLine($" symbol=\"{symbolsName}\">");
+            sb.Append(" symbol=\"");
+            int pos = sb.Length;
+            sb.Append(providerName); // Period and dash are illegal; replace them.
+            sb.Replace('.', '_', pos, sb.Length - pos).Replace("-", "", pos, sb.Length - pos);
+            sb.AppendLine("\">");
         }
 
         /// <summary>

@@ -6,7 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 using System.Security.Cryptography;
@@ -74,7 +74,7 @@ namespace System
             // Create user and remove/create if already exists
             uint result = NetUserAdd(null, 1, ref userInfo, out uint param_err);
 
-            // error codes https://docs.microsoft.com/en-us/windows/desktop/netmgmt/network-management-error-codes
+            // error codes https://learn.microsoft.com/windows/desktop/netmgmt/network-management-error-codes
             // 0 == NERR_Success
             if (result == 2224) // NERR_UserExists
             {
@@ -127,7 +127,7 @@ namespace System
         [LibraryImport("netapi32.dll")]
         internal static partial uint NetUserDel([MarshalAs(UnmanagedType.LPWStr)] string servername, [MarshalAs(UnmanagedType.LPWStr)] string username);
 
-#if NET7_0_OR_GREATER
+#if NET
         [NativeMarshalling(typeof(USER_INFO_1.Marshaller))]
 #endif
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -142,7 +142,7 @@ namespace System
             public uint usri1_flags;
             public string usri1_script_path;
 
-#if NET7_0_OR_GREATER
+#if NET
             [CustomMarshaller(typeof(USER_INFO_1), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {

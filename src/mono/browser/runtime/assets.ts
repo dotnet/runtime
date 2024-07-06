@@ -5,17 +5,16 @@ import type { AssetEntryInternal } from "./types/internal";
 
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
-import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { Module, globalizationHelpers, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_debug, parseSymbolMapFile } from "./logging";
-import { mono_wasm_load_bytes_into_heap } from "./memory";
+import { mono_wasm_load_bytes_into_heap_persistent } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { AssetEntry } from "./types";
 import { VoidPtr } from "./types/emscripten";
-import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-segmenter";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8Array): void {
-    mono_log_debug(`Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
+    mono_log_debug(() => `Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
     const mark = startMeasure();
 
     const virtualName: string = typeof (asset.virtualPath) === "string"
@@ -26,6 +25,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
     switch (asset.behavior) {
         case "dotnetwasm":
         case "js-module-threads":
+        case "js-module-globalization":
         case "symbols":
         case "segmentation-rules":
             // do nothing
@@ -37,21 +37,24 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
         // falls through
         case "heap":
         case "icu":
-            offset = mono_wasm_load_bytes_into_heap(bytes);
+            offset = mono_wasm_load_bytes_into_heap_persistent(bytes);
             break;
 
         case "vfs": {
             // FIXME
             const lastSlash = virtualName.lastIndexOf("/");
             let parentDirectory = (lastSlash > 0)
-                ? virtualName.substr(0, lastSlash)
+                ? virtualName.substring(0, lastSlash)
                 : null;
             let fileName = (lastSlash > 0)
-                ? virtualName.substr(lastSlash + 1)
+                ? virtualName.substring(lastSlash + 1)
                 : virtualName;
             if (fileName.startsWith("/"))
-                fileName = fileName.substr(1);
+                fileName = fileName.substring(1);
             if (parentDirectory) {
+                if (!parentDirectory.startsWith("/"))
+                    parentDirectory = "/" + parentDirectory;
+
                 mono_log_debug(`Creating directory '${parentDirectory}'`);
 
                 Module.FS_createPath(
@@ -61,7 +64,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
                 parentDirectory = "/";
             }
 
-            mono_log_debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
+            mono_log_debug(() => `Creating file '${fileName}' in directory '${parentDirectory}'`);
 
             Module.FS_createDataFile(
                 parentDirectory, fileName,
@@ -85,8 +88,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
     } else if (asset.behavior === "pdb") {
         cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
     } else if (asset.behavior === "icu") {
-        if (!mono_wasm_load_icu_data(offset!))
-            Module.err(`Error loading ICU asset ${asset.name}`);
+        mono_wasm_load_icu_data(offset!);
     } else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
     }
@@ -108,7 +110,7 @@ export async function instantiate_segmentation_rules_asset (pendingAsset: AssetE
     try {
         const response = await pendingAsset.pendingDownloadInternal!.response;
         const json = await response.json();
-        setSegmentationRulesFromJson(json);
+        globalizationHelpers.setSegmentationRulesFromJson(json);
     } catch (error: any) {
         mono_log_info(`Error loading static json asset ${pendingAsset.name}: ${JSON.stringify(error)}`);
     }

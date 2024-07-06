@@ -58,7 +58,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <winwrap.h>
-
+#include <algorithm>
 
 #include <windef.h>
 #include <winnt.h>
@@ -66,12 +66,15 @@
 #include <wchar.h>
 #include <objbase.h>
 #include <float.h>
-#include <math.h>
+#include <cmath>
 #include <time.h>
 #include <limits.h>
 #include <assert.h>
 
 #include <olectl.h>
+
+using std::max;
+using std::min;
 
 #ifdef _MSC_VER
 //non inline intrinsics are faster
@@ -108,7 +111,7 @@ typedef DPTR(class AssemblyNameBaseObject) PTR_AssemblyNameBaseObject;
 typedef VPTR(class BaseDomain)          PTR_BaseDomain;
 typedef DPTR(class ClassLoader)         PTR_ClassLoader;
 typedef DPTR(class ComCallMethodDesc)   PTR_ComCallMethodDesc;
-typedef DPTR(class ComPlusCallMethodDesc) PTR_ComPlusCallMethodDesc;
+typedef DPTR(class CLRToCOMCallMethodDesc) PTR_CLRToCOMCallMethodDesc;
 typedef VPTR(class DebugInterface)      PTR_DebugInterface;
 typedef DPTR(class Dictionary)          PTR_Dictionary;
 typedef DPTR(class DomainAssembly)      PTR_DomainAssembly;
@@ -116,7 +119,6 @@ typedef DPTR(struct FailedAssembly)     PTR_FailedAssembly;
 typedef VPTR(class EditAndContinueModule) PTR_EditAndContinueModule;
 typedef DPTR(class EEClass)             PTR_EEClass;
 typedef DPTR(class DelegateEEClass)     PTR_DelegateEEClass;
-typedef DPTR(struct DomainLocalModule)  PTR_DomainLocalModule;
 typedef VPTR(class EECodeManager)       PTR_EECodeManager;
 typedef DPTR(class RangeSectionMap)     PTR_RangeSectionMap;
 typedef DPTR(class EEConfig)            PTR_EEConfig;
@@ -198,15 +200,6 @@ Thread * const CURRENT_THREAD = NULL;
 #ifndef DACCESS_COMPILE
 EXTERN_C AppDomain* STDCALL GetAppDomain();
 #endif //!DACCESS_COMPILE
-
-inline void RetailBreak()
-{
-#ifdef TARGET_X86
-    __asm int 3
-#else
-    DebugBreak();
-#endif
-}
 
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
 

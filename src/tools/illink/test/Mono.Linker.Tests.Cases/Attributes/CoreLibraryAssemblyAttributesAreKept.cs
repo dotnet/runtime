@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[KeptAttributeInAssembly (PlatformAssemblies.CoreLib, typeof (AssemblyDescriptionAttribute))]
 	[KeptAttributeInAssembly (PlatformAssemblies.CoreLib, typeof (AssemblyCompanyAttribute))]
-#if !NETCOREAPP
+#if !NET
 	[KeptAttributeInAssembly ("System.dll", typeof (AssemblyDescriptionAttribute))]
 	[KeptAttributeInAssembly ("System.dll", typeof (AssemblyCompanyAttribute))]
 #endif

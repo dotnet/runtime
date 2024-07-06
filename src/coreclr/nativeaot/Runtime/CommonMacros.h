@@ -89,16 +89,6 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #define ZeroMemory(_dst, _size) memset((_dst), 0, (_size))
 #endif
 
-//-------------------------------------------------------------------------------------------------
-// min/max
-
-#ifndef min
-#define min(_a, _b) ((_a) < (_b) ? (_a) : (_b))
-#endif
-#ifndef max
-#define max(_a, _b) ((_a) < (_b) ? (_b) : (_a))
-#endif
-
 #endif // !DACCESS_COMPILE
 
 //-------------------------------------------------------------------------------------------------
@@ -129,41 +119,19 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
+#elif defined(HOST_LOONGARCH64)
+
+#define LOG2_PTRSIZE 3
+#define POINTER_SIZE 8
+
 #else
 #error Unsupported target architecture
 #endif
 
 #ifndef __GCENV_BASE_INCLUDED__
 
-#if defined(HOST_WASM)
-#define OS_PAGE_SIZE    0x4
-#else
 #define OS_PAGE_SIZE    PalOsPageSize()
-#endif
 
-#if defined(HOST_AMD64)
-
-#define DATA_ALIGNMENT  8
-
-#elif defined(HOST_X86)
-
-#define DATA_ALIGNMENT  4
-
-#elif defined(HOST_ARM)
-
-#define DATA_ALIGNMENT  4
-
-#elif defined(HOST_ARM64)
-
-#define DATA_ALIGNMENT  8
-
-#elif defined(HOST_WASM)
-
-#define DATA_ALIGNMENT  4
-
-#else
-#error Unsupported target architecture
-#endif
 #endif // __GCENV_BASE_INCLUDED__
 
 #if defined(TARGET_ARM)
@@ -355,7 +323,7 @@ enum STARTUP_TIMELINE_EVENT_ID
 };
 
 #ifdef PROFILE_STARTUP
-extern unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
+extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
 #define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = PalQueryPerformanceCounter();
 #else // PROFILE_STARTUP
 #define STARTUP_TIMELINE_EVENT(eventid)

@@ -48,7 +48,9 @@ struct Scev
     const ScevOper  Oper;
     const var_types Type;
 
-    Scev(ScevOper oper, var_types type) : Oper(oper), Type(type)
+    Scev(ScevOper oper, var_types type)
+        : Oper(oper)
+        , Type(type)
     {
     }
 
@@ -70,11 +72,17 @@ struct Scev
 #endif
     template <typename TVisitor>
     ScevVisit Visit(TVisitor visitor);
+
+    bool IsInvariant();
+
+    static bool Equals(Scev* left, Scev* right);
 };
 
 struct ScevConstant : Scev
 {
-    ScevConstant(var_types type, int64_t value) : Scev(ScevOper::Constant, type), Value(value)
+    ScevConstant(var_types type, int64_t value)
+        : Scev(ScevOper::Constant, type)
+        , Value(value)
     {
     }
 
@@ -84,7 +92,9 @@ struct ScevConstant : Scev
 struct ScevLocal : Scev
 {
     ScevLocal(var_types type, unsigned lclNum, unsigned ssaNum)
-        : Scev(ScevOper::Local, type), LclNum(lclNum), SsaNum(ssaNum)
+        : Scev(ScevOper::Local, type)
+        , LclNum(lclNum)
+        , SsaNum(ssaNum)
     {
     }
 
@@ -96,7 +106,9 @@ struct ScevLocal : Scev
 
 struct ScevUnop : Scev
 {
-    ScevUnop(ScevOper oper, var_types type, Scev* op1) : Scev(oper, type), Op1(op1)
+    ScevUnop(ScevOper oper, var_types type, Scev* op1)
+        : Scev(oper, type)
+        , Op1(op1)
     {
     }
 
@@ -105,7 +117,9 @@ struct ScevUnop : Scev
 
 struct ScevBinop : ScevUnop
 {
-    ScevBinop(ScevOper oper, var_types type, Scev* op1, Scev* op2) : ScevUnop(oper, type, op1), Op2(op2)
+    ScevBinop(ScevOper oper, var_types type, Scev* op1, Scev* op2)
+        : ScevUnop(oper, type, op1)
+        , Op2(op2)
     {
     }
 
@@ -118,7 +132,9 @@ struct ScevBinop : ScevUnop
 struct ScevAddRec : Scev
 {
     ScevAddRec(var_types type, Scev* start, Scev* step DEBUGARG(FlowGraphNaturalLoop* loop))
-        : Scev(ScevOper::AddRec, type), Start(start), Step(step) DEBUGARG(Loop(loop))
+        : Scev(ScevOper::AddRec, type)
+        , Start(start)
+        , Step(step) DEBUGARG(Loop(loop))
     {
     }
 
@@ -178,7 +194,22 @@ ScevVisit Scev::Visit(TVisitor visitor)
     return ScevVisit::Continue;
 }
 
+enum class RelopEvaluationResult
+{
+    Unknown,
+    True,
+    False,
+};
+
 typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Scev*> ScalarEvolutionMap;
+
+struct SimplificationAssumptions
+{
+    // A bound on the number of times a backedge will be taken; the backedge
+    // taken count is <= min(BackEdgeTakenBound).
+    Scev**   BackEdgeTakenBound    = nullptr;
+    unsigned NumBackEdgeTakenBound = 0;
+};
 
 // Scalar evolution is analyzed in the context of a single loop, and are
 // computed on-demand by the use of the "Analyze" method on this class, which
@@ -204,7 +235,14 @@ class ScalarEvolutionContext
     Scev* MakeAddRecFromRecursiveScev(Scev* start, Scev* scev, Scev* recursiveScev);
     Scev* CreateSimpleInvariantScev(GenTree* tree);
     Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
-    void ExtractAddOperands(ScevBinop* add, ArrayStack<Scev*>& operands);
+    void  ExtractAddOperands(ScevBinop* add, ArrayStack<Scev*>& operands);
+
+    VNFunc                MapRelopToVNFunc(genTreeOps oper, bool isUnsigned);
+    RelopEvaluationResult EvaluateRelop(ValueNum relop);
+    bool                  MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, VNFunc exitOp);
+    bool AddRecMayOverflow(ScevAddRec* addRec, bool signedBound, const SimplificationAssumptions& assumptions);
+
+    bool Materialize(Scev* scev, bool createIR, GenTree** result, ValueNum* resultVN);
 
 public:
     ScalarEvolutionContext(Compiler* comp);
@@ -212,11 +250,18 @@ public:
     void ResetForLoop(FlowGraphNaturalLoop* loop);
 
     ScevConstant* NewConstant(var_types type, int64_t value);
-    ScevLocal* NewLocal(unsigned lclNum, unsigned ssaNum);
-    ScevUnop* NewExtension(ScevOper oper, var_types targetType, Scev* op);
-    ScevBinop* NewBinop(ScevOper oper, Scev* op1, Scev* op2);
-    ScevAddRec* NewAddRec(Scev* start, Scev* step);
+    ScevLocal*    NewLocal(unsigned lclNum, unsigned ssaNum);
+    ScevUnop*     NewExtension(ScevOper oper, var_types targetType, Scev* op);
+    ScevBinop*    NewBinop(ScevOper oper, Scev* op1, Scev* op2);
+    ScevAddRec*   NewAddRec(Scev* start, Scev* step);
 
     Scev* Analyze(BasicBlock* block, GenTree* tree);
-    Scev* Simplify(Scev* scev);
+
+    static const SimplificationAssumptions NoAssumptions;
+    Scev* Simplify(Scev* scev, const SimplificationAssumptions& assumptions = NoAssumptions);
+
+    Scev* ComputeExitNotTakenCount(BasicBlock* exiting);
+
+    GenTree* Materialize(Scev* scev);
+    ValueNum MaterializeVN(Scev* scev);
 };

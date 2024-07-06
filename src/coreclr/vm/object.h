@@ -263,6 +263,7 @@ class Object
     }
 
     static DWORD ComputeHashCode();
+    static DWORD GetGlobalNewHashCode();
 
 #ifndef DACCESS_COMPILE
     INT32 GetHashCodeEx();
@@ -382,10 +383,10 @@ class Object
         return * PTR_BYTE(GetData() + dwOffset);
     }
 
-    __int64 GetOffset64(DWORD dwOffset)
+    int64_t GetOffset64(DWORD dwOffset)
     {
         WRAPPER_NO_CONTRACT;
-        return (__int64) * PTR_ULONG64(GetData() + dwOffset);
+        return (int64_t) * PTR_ULONG64(GetData() + dwOffset);
     }
 
     void *GetPtrOffset(DWORD dwOffset)
@@ -422,10 +423,10 @@ class Object
         *(BYTE *) &GetData()[dwOffset] = (BYTE) dwValue;
     }
 
-    void SetOffset64(DWORD dwOffset, __int64 qwValue)
+    void SetOffset64(DWORD dwOffset, int64_t qwValue)
     {
         WRAPPER_NO_CONTRACT;
-        *(__int64 *) &GetData()[dwOffset] = qwValue;
+        *(int64_t *) &GetData()[dwOffset] = qwValue;
     }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -731,9 +732,7 @@ public:
     }
 
     friend class StubLinkerCPU;
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     friend class ArrayOpLinker;
-#endif
 public:
     OBJECTREF    m_Array[1];
 };
@@ -1345,12 +1344,6 @@ public:
         m_StartHelper = NULL;
     }
 
-    void ResetName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Name = NULL;
-    }
-
     void SetPriority(INT32 priority)
     {
         LIMITED_METHOD_CONTRACT;
@@ -1853,7 +1846,7 @@ class DelegateObject : public Object
     friend class CoreLibBinder;
 
 public:
-    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == NULL; }
+    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == 0; }
 
     OBJECTREF GetTarget() { LIMITED_METHOD_CONTRACT; return _target; }
     void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
@@ -2088,30 +2081,22 @@ class LoaderAllocatorObject : public Object
     friend class CoreLibBinder;
 
 public:
-    PTRARRAYREF GetHandleTable()
+    // All uses of this api must be safe lock-free reads used only for reading from the handle table
+    // The normal GetHandleTable can only be called while holding the handle table lock, but
+    // this is for use in lock-free scenarios
+    PTRARRAYREF DangerousGetHandleTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (PTRARRAYREF)m_pSlots;
+        return (PTRARRAYREF)ObjectToOBJECTREF(VolatileLoadWithoutBarrier((Object**)&m_pSlots));
     }
 
-    void SetHandleTable(PTRARRAYREF handleTable)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetObjectReference(&m_pSlots, (OBJECTREF)handleTable);
-    }
-
-    INT32 GetSlotsUsed()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_slotsUsed;
-    }
-
-    void SetSlotsUsed(INT32 newSlotsUsed)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_slotsUsed = newSlotsUsed;
-    }
-
+#ifndef DACCESS_COMPILE
+    PTRARRAYREF GetHandleTable();
+    void SetHandleTable(PTRARRAYREF handleTable);
+    INT32 GetSlotsUsed();
+    void SetSlotsUsed(INT32 newSlotsUsed);
+#endif // DACCESS_COMPILE
+    
     void SetNativeLoaderAllocator(LoaderAllocator * pLoaderAllocator)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2324,7 +2309,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (_ipForWatsonBuckets != NULL);
+        return (_ipForWatsonBuckets != 0);
     }
 
     // This method returns the IP for Watson Buckets.
@@ -2455,7 +2440,7 @@ public:
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
-    static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return 0; }
+    static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return NULL; }
 
     // if 'Obj' is a true boxed nullable, return the form we want (either null or a boxed T)
     static OBJECTREF NormalizeBox(OBJECTREF obj);
@@ -2471,6 +2456,8 @@ public:
         Nullable *nullable = (Nullable *)src;
         return nullable->ValueAddr(nullableMT);
     }
+
+    static int32_t GetValueAddrOffset(MethodTable* nullableMT);
 
 private:
     static BOOL IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* paramMT);

@@ -347,12 +347,6 @@ mono_wasm_exit (int exit_code)
 	emscripten_force_exit (exit_code);
 }
 
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_abort ()
-{
-	abort ();
-}
-
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_set_main_args (int argc, char* argv[])
 {
@@ -441,9 +435,7 @@ mono_wasm_init_finalizer_thread (void)
 {
 	// in the single threaded build, finalizers periodically run on the main thread instead.
 #ifndef DISABLE_THREADS
-	MONO_ENTER_GC_UNSAFE;
 	mono_gc_init_finalizer_thread ();
-	MONO_EXIT_GC_UNSAFE;
 #endif
 }
 

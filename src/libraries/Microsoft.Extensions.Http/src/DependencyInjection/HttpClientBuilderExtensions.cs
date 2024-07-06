@@ -265,7 +265,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
-#if NET5_0_OR_GREATER
+#if NET
         /// <summary>
         /// Adds or updates <see cref="SocketsHttpHandler"/> as a primary handler for a named <see cref="HttpClient"/>. If provided,
         /// also adds a delegate that will be used to configure the primary <see cref="SocketsHttpHandler"/>.
@@ -307,7 +307,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// and configures it using <see cref="ISocketsHttpHandlerBuilder"/>.
         /// </summary>
         /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
-        /// <param name="configureBuilder">Delegate that is used to set up the configuration of the the primary <see cref="SocketsHttpHandler"/>
+        /// <param name="configureBuilder">Delegate that is used to set up the configuration of the primary <see cref="SocketsHttpHandler"/>
         /// on <see cref="ISocketsHttpHandlerBuilder"/> that will later be applied on the primary handler during its creation.</param>
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>

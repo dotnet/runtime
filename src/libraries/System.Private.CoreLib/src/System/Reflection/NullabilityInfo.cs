@@ -8,7 +8,12 @@ namespace System.Reflection
     /// <summary>
     /// A class that represents nullability info
     /// </summary>
-    public sealed class NullabilityInfo
+#if NET
+    public
+#else
+    internal
+#endif
+    sealed class NullabilityInfo
     {
         internal NullabilityInfo(Type type, NullabilityState readState, NullabilityState writeState,
             NullabilityInfo? elementType, NullabilityInfo[] typeArguments)
@@ -46,7 +51,12 @@ namespace System.Reflection
     /// <summary>
     /// An enum that represents nullability state
     /// </summary>
-    public enum NullabilityState
+#if NET
+    public
+#else
+    internal
+#endif
+    enum NullabilityState
     {
         /// <summary>
         /// Nullability context not enabled (oblivious)

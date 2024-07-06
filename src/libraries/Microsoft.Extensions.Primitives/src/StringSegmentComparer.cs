@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>A hash code for a <see cref="StringSegment"/>, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public int GetHashCode(StringSegment obj)
         {
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
             return string.GetHashCode(obj.AsSpan(), Comparison);
 #else
             if (!obj.HasValue)

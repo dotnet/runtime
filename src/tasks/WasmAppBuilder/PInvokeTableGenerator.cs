@@ -24,12 +24,14 @@ internal sealed class PInvokeTableGenerator
     private readonly List<PInvoke> pinvokes = new();
     private readonly List<PInvokeCallback> callbacks = new();
     private readonly PInvokeCollector _pinvokeCollector;
+    private readonly bool _isLibraryMode;
 
-    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log)
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode = false)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
         _pinvokeCollector = new(log);
+        _isLibraryMode = isLibraryMode;
     }
 
     public void ScanAssembly(Assembly asm)
@@ -179,7 +181,8 @@ internal sealed class PInvokeTableGenerator
         if (pinvoke.WasmLinkage)
         {
             // We mangle the name to avoid collisions with symbols in other modules
-            return _fixupSymbolName($"{pinvoke.Module}_{pinvoke.EntryPoint}");
+            string namespaceName = pinvoke.Method.DeclaringType?.Namespace ?? string.Empty;
+            return _fixupSymbolName($"{namespaceName}#{pinvoke.Module}#{pinvoke.EntryPoint}");
         }
         return _fixupSymbolName(pinvoke.EntryPoint);
     }
@@ -293,8 +296,13 @@ internal sealed class PInvokeTableGenerator
         }
 
         var method = export.Method;
-        // EntryPoint wasn't specified generate a name for the entry point
-        return _fixupSymbolName($"wasm_native_to_interp_{method.DeclaringType!.Module!.Assembly!.GetName()!.Name!}_{method.DeclaringType.Name}_{method.Name}");
+        string namespaceName = method.DeclaringType?.Namespace ?? string.Empty;
+        string assemblyName = method.DeclaringType?.Module?.Assembly?.GetName()?.Name ?? string.Empty;
+        string declaringTypeName = method.DeclaringType?.Name ?? string.Empty;
+
+        string entryPoint = $"wasm_native_to_interp_{namespaceName}_{assemblyName}_{declaringTypeName}_{method.Name}";
+
+        return _fixupSymbolName(entryPoint);
     }
 
     private string DelegateKey(PInvokeCallback export)
@@ -304,7 +312,7 @@ internal sealed class PInvokeTableGenerator
         // it needs to match the key generated in get_native_to_interp
         var method = export.Method;
         string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
-        return $"\"{module_symbol}_{method.DeclaringType.Name}_{method.Name}\"".Replace('.', '_');
+        return $"\"{_fixupSymbolName($"{module_symbol}_{method.DeclaringType.Name}_{method.Name}")}\"";
     }
 
 #pragma warning disable SYSLIB1045 // framework doesn't support GeneratedRegexAttribute
@@ -379,14 +387,20 @@ internal sealed class PInvokeTableGenerator
             if (!is_void)
                 sb.Append($"  {MapType(method.ReturnType)} res;\n");
 
+            if (_isLibraryMode && HasAttribute(method, "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"))
+            {
+                sb.Append($"  initialize_runtime(); \n");
+            }
+
             // In case when null force interpreter to initialize the pointers
             sb.Append($"  if (!(WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) {{\n");
             var assemblyFullName = cb.Method.DeclaringType == null ? "" : cb.Method.DeclaringType.Assembly.FullName;
             var assemblyName = assemblyFullName != null && assemblyFullName.Split(',').Length > 0 ? assemblyFullName.Split(',')[0].Trim() : "";
-            var typeName = cb.Method.DeclaringType == null  || cb.Method.DeclaringType.FullName == null ? "" : cb.Method.DeclaringType.FullName;
+            var namespaceName = cb.Method.DeclaringType == null ? "" : cb.Method.DeclaringType.Namespace;
+            var typeName = cb.Method.DeclaringType == null  || cb.Method.DeclaringType.Name == null ? "" : cb.Method.DeclaringType.Name;
             var methodName = cb.Method.Name;
             int numParams = method.GetParameters().Length;
-            sb.Append($"   mono_wasm_marshal_get_managed_wrapper (\"{assemblyName}\", \"{typeName}\", \"{methodName}\", {numParams});\n");
+            sb.Append($"   mono_wasm_marshal_get_managed_wrapper (\"{assemblyName}\",\"{namespaceName}\", \"{typeName}\", \"{methodName}\", {numParams});\n");
             sb.Append($"  }}\n");
 
             sb.Append($"  ((WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) (");

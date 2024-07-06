@@ -236,13 +236,13 @@ public:
 
     // Set up static data structures - called during EEStartup
     static void InitStatic();
-    static void UninitStatic();
+    static void LogFinalStats();
 
     // Per instance initialization - called during AppDomain::Init and ::Uninit and for collectible loader allocators
     void Init(BaseDomain* pDomain, LoaderAllocator *pLoaderAllocator);
     void Uninit();
 
-    //@TODO: the logging should be tied into the VMs normal loggin mechanisms,
+    //@TODO: the logging should be tied into the VMs normal logging mechanisms,
     //@TODO: for now we just always write a short log file called "StubLog_<pid>.log"
     static void StartupLogging();
     static void LoggingDump();
@@ -282,7 +282,7 @@ public:
           m_counters(NULL),
           m_cur_counter_block(NULL),
           m_cur_counter_block_for_reclaim(NULL),
-          m_cur_counter_block_for_reclaim_index(NULL),
+          m_cur_counter_block_for_reclaim_index(0),
           m_pNext(NULL)
     {
         LIMITED_METHOD_CONTRACT;

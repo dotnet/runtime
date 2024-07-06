@@ -81,7 +81,7 @@ struct TailCallInfo
     TypeHandle RetTyHnd;
     ArgBufferLayout ArgBufLayout;
     bool HasGCDescriptor;
-    GCRefMapBuilder GCRefMapBuilder;
+    class GCRefMapBuilder GCRefMapBuilder;
 
     TailCallInfo(
         MethodDesc* pCallerMD, MethodDesc* pCalleeMD,

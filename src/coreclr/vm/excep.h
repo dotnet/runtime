@@ -286,7 +286,9 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind  reKind, UINT resID
 // passed as the first substitution string (%1).
 //==========================================================================
 
+#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exception * pInnerException = NULL);
+#endif // FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg1 = NULL, LPCWSTR wszArg2 = NULL,
                                           LPCWSTR wszArg3 = NULL, LPCWSTR wszArg4 = NULL, LPCWSTR wszArg5 = NULL,
@@ -359,7 +361,9 @@ void ExceptionPreserveStackTrace(OBJECTREF throwable);
 // Create an exception object for an HRESULT
 //==========================================================================
 
+#ifdef FEATURE_COMINTEROP
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable);
+#endif // FEATURE_COMINTEROP
 void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable);
 HRESULT GetHRFromThrowable(OBJECTREF throwable);
 
@@ -503,7 +507,7 @@ extern "C" BOOL ExceptionIsOfRightType(TypeHandle clauseType, TypeHandle thrownT
 
 
 // Specify NULL for uTryCatchResumeAddress when not checking for a InducedThreadRedirectAtEndOfCatch
-EXTERN_C LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress = NULL);
+EXTERN_C LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress = 0);
 
 BOOL        IsThreadHijackedForThreadStop(Thread* pThread, EXCEPTION_RECORD* pExceptionRecord);
 void        AdjustContextForThreadStop(Thread* pThread, T_CONTEXT* pContext);

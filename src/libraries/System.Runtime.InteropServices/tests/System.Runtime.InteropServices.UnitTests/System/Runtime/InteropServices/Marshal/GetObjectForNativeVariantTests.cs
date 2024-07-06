@@ -246,14 +246,38 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
-        public void GetObjectForNativeVariant_NoDataForRecord_ThrowsArgumentException()
+        public void GetObjectForNativeVariant_NoRecordInfo_ThrowsArgumentException()
         {
             Variant variant = CreateVariant(VT_RECORD, new UnionTypes { _record = new Record { _recordInfo = IntPtr.Zero } });
             AssertExtensions.Throws<ArgumentException>(null, () => GetObjectForNativeVariant(variant));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
+        public void GetObjectForNativeVariant_NoRecordData_ReturnsNull()
+        {
+            var recordInfo = new RecordInfo();
+            IntPtr pRecordInfo = Marshal.GetComInterfaceForObject<RecordInfo, IRecordInfo>(recordInfo);
+            try
+            {
+                Variant variant = CreateVariant(VT_RECORD, new UnionTypes
+                {
+                    _record = new Record
+                    {
+                        _record = IntPtr.Zero,
+                        _recordInfo = pRecordInfo
+                    }
+                });
+                Assert.Null(GetObjectForNativeVariant(variant));
+            }
+            finally
+            {
+                Marshal.Release(pRecordInfo);
+            }
+        }
+
         public static IEnumerable<object[]> GetObjectForNativeVariant_NoSuchGuid_TestData()
         {
+            yield return new object[] { typeof(object).GUID };
             yield return new object[] { typeof(string).GUID };
             yield return new object[] { Guid.Empty };
         }

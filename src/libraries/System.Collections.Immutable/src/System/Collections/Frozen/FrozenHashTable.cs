@@ -159,7 +159,7 @@ namespace System.Collections.Frozen
             if (!hashCodesAreUnique)
             {
                 codes =
-#if NETCOREAPP2_0_OR_GREATER
+#if NET
                     new HashSet<int>(hashCodes.Length);
 #else
                     new HashSet<int>();

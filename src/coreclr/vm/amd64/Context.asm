@@ -63,8 +63,9 @@ NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
         mov     eax, [r10 + OFFSETOF__CONTEXT__EFlags]
         push    rax
         popfq
+        mov     rax, [r10 + OFFSETOF__CONTEXT__Rip]
         mov     rsp, [r10 + OFFSETOF__CONTEXT__Rsp]
-        jmp     qword ptr [r10 + OFFSETOF__CONTEXT__Rip]
+        jmp     rax
     Done_Restore_CONTEXT_CONTROL:
     
         ; The function was not asked to restore the control registers so we return back to the caller

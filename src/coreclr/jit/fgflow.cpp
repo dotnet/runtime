@@ -191,42 +191,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
             //
             flow->setLikelihood(oldEdge->getLikelihood());
         }
-
-        if (fgHaveValidEdgeWeights)
-        {
-            // We are creating an edge from blockPred to block
-            // and we have already computed the edge weights, so
-            // we will try to setup this new edge with valid edge weights.
-            //
-            if (oldEdge != nullptr)
-            {
-                // If our caller has given us the old edge weights
-                // then we will use them.
-                //
-                flow->setEdgeWeights(oldEdge->edgeWeightMin(), oldEdge->edgeWeightMax(), block);
-            }
-            else
-            {
-                // Set the max edge weight to be the minimum of block's or blockPred's weight
-                //
-                weight_t newWeightMax = min(block->bbWeight, blockPred->bbWeight);
-
-                // If we are inserting a conditional block the minimum weight is zero,
-                // otherwise it is the same as the edge's max weight.
-                if (blockPred->NumSucc() > 1)
-                {
-                    flow->setEdgeWeights(BB_ZERO_WEIGHT, newWeightMax, block);
-                }
-                else
-                {
-                    flow->setEdgeWeights(flow->edgeWeightMax(), newWeightMax, block);
-                }
-            }
-        }
-        else
-        {
-            flow->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, block);
-        }
     }
 
     // Pred list should (still) be ordered.
