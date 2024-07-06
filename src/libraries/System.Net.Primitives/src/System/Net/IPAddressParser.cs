@@ -72,7 +72,7 @@ namespace System.Net
             scope = 0;
             if (IPv6AddressHelper.IsValidStrict(in ipSpan))
             {
-                IPv6AddressHelper.Parse(in ipSpan, in numbers, out ReadOnlySpan<TChar> scopeIdSpan);
+                IPv6AddressHelper.Parse(in ipSpan, numbers, out ReadOnlySpan<TChar> scopeIdSpan);
 
                 if (scopeIdSpan.Length > 1)
                 {
