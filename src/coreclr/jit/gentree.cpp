@@ -27378,6 +27378,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE41_CompareEqual:
         case NI_AVX_CompareEqual:
         case NI_AVX2_CompareEqual:
+        case NI_EVEX_CompareEqualMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareEqual:
         case NI_AdvSimd_Arm64_CompareEqual:
@@ -27412,6 +27413,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE42_CompareGreaterThan:
         case NI_AVX_CompareGreaterThan:
         case NI_AVX2_CompareGreaterThan:
+        case NI_EVEX_CompareGreaterThanMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareGreaterThan:
         case NI_AdvSimd_Arm64_CompareGreaterThan:
@@ -27444,6 +27446,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE_CompareGreaterThanOrEqual:
         case NI_SSE2_CompareGreaterThanOrEqual:
         case NI_AVX_CompareGreaterThanOrEqual:
+        case NI_EVEX_CompareGreaterThanOrEqualMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareGreaterThanOrEqual:
         case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
@@ -27478,6 +27481,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE42_CompareLessThan:
         case NI_AVX_CompareLessThan:
         case NI_AVX2_CompareLessThan:
+        case NI_EVEX_CompareLessThanMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareLessThan:
         case NI_AdvSimd_Arm64_CompareLessThan:
@@ -27510,6 +27514,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE_CompareLessThanOrEqual:
         case NI_SSE2_CompareLessThanOrEqual:
         case NI_AVX_CompareLessThanOrEqual:
+        case NI_EVEX_CompareLessThanOrEqualMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareLessThanOrEqual:
         case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
@@ -27542,6 +27547,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE_CompareNotEqual:
         case NI_SSE2_CompareNotEqual:
         case NI_AVX_CompareNotEqual:
+        case NI_EVEX_CompareNotEqualMask:
         {
             return GT_NE;
         }
@@ -29821,6 +29827,11 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
                 unreached();
         }
     }
+    else if (TypeIs(TYP_MASK))
+    {
+        // We directly return a per-element mask
+        return true;
+    }
     else if (OperIsHWIntrinsic())
     {
         const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
@@ -30180,6 +30191,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     if (otherNode == nullptr)
     {
+        assert(!varTypeIsMask(retType));
+
         assert(op2 == nullptr);
         assert(op3 == nullptr);
 
@@ -30420,10 +30433,20 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
 
             cnsNode->AsVecCon()->EvaluateBinaryInPlace(oper, isScalar, simdBaseType, otherNode->AsVecCon());
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+            if (varTypeIsMask(retType))
+            {
+                cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+            }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
             resultNode = cnsNode;
         }
         else
         {
+            assert(!varTypeIsMask(retType));
+
             switch (ni)
             {
                 case NI_Vector128_GetElement:
@@ -30620,6 +30643,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         {
             case GT_ADD:
             {
+                assert(!varTypeIsMask(retType));
+
                 if (varTypeIsFloating(simdBaseType))
                 {
                     // Handle `x + NaN == NaN` and `NaN + x == NaN`
@@ -30656,6 +30681,13 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 // Handle `x & 0 == 0` and `0 & x == 0`
                 if (cnsNode->IsVectorZero())
                 {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                    if (varTypeIsMask(retType))
+                    {
+                        cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                     resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                     break;
                 }
@@ -30663,6 +30695,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 // Handle `x & AllBitsSet == x` and `AllBitsSet & x == x`
                 if (cnsNode->IsVectorAllBitsSet())
                 {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                    if (varTypeIsMask(retType))
+                    {
+                        otherNode = gtNewSimdCvtVectorToMaskNode(retType, otherNode, simdBaseJitType, simdSize);
+                        otherNode = gtFoldExprHWIntrinsic(otherNode->AsHWIntrinsic());
+                    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                     resultNode = otherNode;
                 }
                 break;
@@ -30675,11 +30715,26 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     if (cnsNode == op1)
                     {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
                     else
                     {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            otherNode = gtNewSimdCvtVectorToMaskNode(retType, otherNode, simdBaseJitType, simdSize);
+                            otherNode = gtFoldExprHWIntrinsic(otherNode->AsHWIntrinsic());
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = otherNode;
                     }
                     break;
@@ -30688,6 +30743,13 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 // Handle `x & ~AllBitsSet == 0`
                 if (cnsNode->IsVectorAllBitsSet() && (cnsNode == op2))
                 {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                    if (varTypeIsMask(retType))
+                    {
+                        cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                     resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                 }
                 break;
@@ -30695,6 +30757,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             case GT_DIV:
             {
+                assert(!varTypeIsMask(retType));
+
                 if (varTypeIsFloating(simdBaseType))
                 {
                     // Handle `x / NaN == NaN` and `NaN / x == NaN`
@@ -30736,6 +30800,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     {
                         int64_t zero = 0;
                         cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
@@ -30752,6 +30824,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     {
                         int64_t zero = 0;
                         cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
@@ -30763,6 +30843,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     {
                         int64_t zero = 0;
                         cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
@@ -30779,6 +30867,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     {
                         int64_t allBitsSet = -1;
                         cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, allBitsSet);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
@@ -30790,6 +30886,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     {
                         int64_t zero = 0;
                         cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
@@ -30806,6 +30910,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     {
                         int64_t zero = 0;
                         cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
@@ -30817,6 +30929,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     {
                         int64_t zero = 0;
                         cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
@@ -30833,6 +30953,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     {
                         int64_t allBitsSet = -1;
                         cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, allBitsSet);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
@@ -30844,6 +30972,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     {
                         int64_t zero = 0;
                         cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, zero);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
@@ -30853,6 +30989,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             case GT_MUL:
             {
+                assert(!varTypeIsMask(retType));
+
                 if (!varTypeIsFloating(simdBaseType))
                 {
                     // Handle `x * 0 == 0` and `0 * x == 0`
@@ -30902,6 +31040,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     {
                         int64_t allBitsSet = -1;
                         cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, allBitsSet);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        if (varTypeIsMask(retType))
+                        {
+                            cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                         resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
@@ -30914,6 +31060,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 // Handle `x | 0 == x` and `0 | x == x`
                 if (cnsNode->IsVectorZero())
                 {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                    if (varTypeIsMask(retType))
+                    {
+                        otherNode = gtNewSimdCvtVectorToMaskNode(retType, otherNode, simdBaseJitType, simdSize);
+                        otherNode = gtFoldExprHWIntrinsic(otherNode->AsHWIntrinsic());
+                    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                     resultNode = otherNode;
                     break;
                 }
@@ -30921,6 +31075,13 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 // Handle `x | AllBitsSet == AllBitsSet` and `AllBitsSet | x == AllBitsSet`
                 if (cnsNode->IsVectorAllBitsSet())
                 {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                    if (varTypeIsMask(retType))
+                    {
+                        cnsNode = gtNewSimdCvtVectorToMaskNode(retType, cnsNode, simdBaseJitType, simdSize);
+                    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                     resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                 }
                 break;
@@ -30932,6 +31093,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             case GT_RSH:
             case GT_RSZ:
             {
+                assert(!varTypeIsMask(retType));
+
                 // Handle `x rol 0 == x` and `0 rol x == 0`
                 // Handle `x ror 0 == x` and `0 ror x == 0`
                 // Handle `x <<  0 == x` and `0 <<  x == 0`
@@ -30959,6 +31122,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             case GT_SUB:
             {
+                assert(!varTypeIsMask(retType));
+
                 if (varTypeIsFloating(simdBaseType))
                 {
                     // Handle `x - NaN == NaN` and `NaN - x == NaN`
@@ -30986,6 +31151,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 // Handle `x | 0 == x` and `0 | x == x`
                 if (cnsNode->IsVectorZero())
                 {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                    if (varTypeIsMask(retType))
+                    {
+                        otherNode = gtNewSimdCvtVectorToMaskNode(retType, otherNode, simdBaseJitType, simdSize);
+                        otherNode = gtFoldExprHWIntrinsic(otherNode->AsHWIntrinsic());
+                    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
                     resultNode = otherNode;
                 }
                 break;
@@ -31003,6 +31176,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             case NI_AdvSimd_MultiplyByScalar:
             case NI_AdvSimd_Arm64_MultiplyByScalar:
             {
+                assert(!varTypeIsMask(retType));
+
                 if (!varTypeIsFloating(simdBaseType))
                 {
                     // Handle `x * 0 == 0` and `0 * x == 0`
@@ -31081,6 +31256,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     if (op3 != nullptr)
     {
+        assert(!varTypeIsMask(retType));
+
         switch (ni)
         {
             case NI_Vector128_ConditionalSelect:
@@ -31137,6 +31314,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
         }
     }
+
+    assert(resultNode->TypeIs(retType));
 
     if (resultNode != tree)
     {

@@ -7491,6 +7491,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
 
     if (IsVNConstant(arg0VN))
     {
+        assert(!varTypeIsMask(type));
+
         bool       isScalar = false;
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
@@ -7816,6 +7818,20 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
     var_types      type     = tree->TypeGet();
     var_types      baseType = tree->GetSimdBaseType();
     NamedIntrinsic ni       = tree->GetHWIntrinsicId();
+
+    if (varTypeIsMask(type))
+    {
+        // We intentionally don't support TYP_MASK constants and instead
+        // represent these as `CvtVectorToMask(CNS_VEC)`. This simplifies
+        // the overall handling while improving throughput and still gets
+        // the desired outcome.
+
+        if (encodeResultType)
+        {
+            return VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
+        }
+        return VNForFunc(type, func, arg0VN, arg1VN);
+    }
 
     ValueNum cnsVN = NoVN;
     ValueNum argVN = NoVN;
