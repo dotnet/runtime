@@ -2266,6 +2266,145 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicTernaryLogic(node);
         }
 
+        case NI_EVEX_ConvertVectorToMask:
+        {
+            GenTree* op1 = node->Op(1);
+
+            if (op1->IsCnsVec())
+            {
+                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+                var_types   simdBaseType    = node->GetSimdBaseType();
+                unsigned    simdSize        = node->GetSimdSize();
+
+                GenTreeVecCon* vecCon       = op1->AsVecCon();
+                uint32_t       elementCount = GenTreeVecCon::ElementCount(simdSize, simdBaseType);
+
+                bool     isHandled = true;
+                uint64_t mask      = 0;
+
+                switch (simdBaseType)
+                {
+                    case TYP_BYTE:
+                    case TYP_UBYTE:
+                    {
+                        for (uint32_t i = 0; i < elementCount; i++)
+                        {
+                            int8_t val = vecCon->gtSimdVal.i8[i];
+
+                            if (val == -1)
+                            {
+                                mask |= (static_cast<uint64_t>(1) << i);
+                            }
+                            else if (val != 0)
+                            {
+                                isHandled = false;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                    {
+                        for (uint32_t i = 0; i < elementCount; i++)
+                        {
+                            int16_t val = vecCon->gtSimdVal.i16[i];
+
+                            if (val == -1)
+                            {
+                                mask |= (static_cast<uint64_t>(1) << i);
+                            }
+                            else if (val != 0)
+                            {
+                                isHandled = false;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_INT:
+                    case TYP_UINT:
+                    case TYP_FLOAT:
+                    {
+                        for (uint32_t i = 0; i < elementCount; i++)
+                        {
+                            int32_t val = vecCon->gtSimdVal.i32[i];
+
+                            if (val == -1)
+                            {
+                                mask |= (static_cast<uint64_t>(1) << i);
+                            }
+                            else if (val != 0)
+                            {
+                                isHandled = false;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_LONG:
+                    case TYP_ULONG:
+                    case TYP_DOUBLE:
+                    {
+                        for (uint32_t i = 0; i < elementCount; i++)
+                        {
+                            int64_t val = vecCon->gtSimdVal.i64[i];
+
+                            if (val == -1)
+                            {
+                                mask |= (static_cast<uint64_t>(1) << i);
+                            }
+                            else if (val != 0)
+                            {
+                                isHandled = false;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+
+                    default:
+                        unreached();
+                }
+
+                if (isHandled)
+                {
+                    GenTree* maskIcon;
+
+                    if (elementCount <= 32)
+                    {
+                        maskIcon = comp->gtNewIconNode(static_cast<int32_t>(mask));
+                    }
+                    else
+                    {
+                        maskIcon = comp->gtNewLconNode(static_cast<int64_t>(mask));
+                    }
+                    BlockRange().InsertAfter(node, maskIcon);
+
+                    GenTreeHWIntrinsic* moveMask =
+                        comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskIcon, NI_EVEX_MoveMask, simdBaseJitType, simdSize);
+                    BlockRange().InsertAfter(node, moveMask);
+
+                    LIR::Use use;
+                    if (BlockRange().TryGetUse(node, &use))
+                    {
+                        use.ReplaceWith(moveMask);
+                    }
+                    else
+                    {
+                        moveMask->SetUnusedValue();
+                    }
+
+                    BlockRange().Remove(node);
+                    node = moveMask;
+                }
+            }
+            break;
+        }
+
         default:
             break;
     }
