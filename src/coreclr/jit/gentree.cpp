@@ -20615,10 +20615,17 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
 
         GenTree* bitMask;
 
-        bitMask = gtNewDconNode(-0.0, simdBaseType);
-        bitMask = gtNewSimdCreateBroadcastNode(type, bitMask, simdBaseJitType, simdSize);
-
-        return gtNewSimdBinOpNode(GT_AND_NOT, type, op1, bitMask, simdBaseJitType, simdSize);
+        if (simdBaseType == TYP_FLOAT)
+        {
+            bitMask = gtNewIconNode(0x7FFFFFFF);
+            bitMask = gtNewSimdCreateBroadcastNode(type, bitMask, CORINFO_TYPE_INT, simdSize);
+        }
+        else
+        {
+            bitMask = gtNewLconNode(0x7FFFFFFFFFFFFFFF);
+            bitMask = gtNewSimdCreateBroadcastNode(type, bitMask, CORINFO_TYPE_LONG, simdSize);
+        }
+        return gtNewSimdBinOpNode(GT_AND, type, op1, bitMask, simdBaseJitType, simdSize);
     }
 
     NamedIntrinsic intrinsic = NI_Illegal;
