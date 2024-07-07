@@ -384,7 +384,7 @@ namespace System.Net
                     // The current value of intermediateCert is still in elements, which will
                     // get Disposed at the end of this method.  The new value will be
                     // in the intermediate certs array, which also gets serially Disposed.
-                    intermediateCert = new X509Certificate2(intermediateCert.RawDataMemory.Span);
+                    intermediateCert = X509CertificateLoader.LoadCertificate(intermediateCert.RawDataMemory.Span);
                 }
 
                 ptrs[i + 1] = intermediateCert.Handle;

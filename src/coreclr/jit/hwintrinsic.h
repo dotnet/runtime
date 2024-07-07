@@ -957,6 +957,12 @@ struct HWIntrinsicInfo
 
         switch (id)
         {
+            case NI_Sve_ConditionalExtractAfterLastActiveElement:
+                return NI_Sve_ConditionalExtractAfterLastActiveElementScalar;
+
+            case NI_Sve_ConditionalExtractLastActiveElement:
+                return NI_Sve_ConditionalExtractLastActiveElementScalar;
+
             case NI_Sve_SaturatingDecrementBy16BitElementCount:
                 return NI_Sve_SaturatingDecrementBy16BitElementCountScalar;
 

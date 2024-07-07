@@ -3782,20 +3782,42 @@ void MethodTable::EnsureStaticDataAllocated()
     CONTRACTL_END;
 
     PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
-    if (!pAuxiliaryData->IsStaticDataAllocated() && IsDynamicStatics())
+    if (!pAuxiliaryData->IsStaticDataAllocated())
     {
-        DynamicStaticsInfo *pDynamicStaticsInfo = GetDynamicStaticsInfo();
-        // Allocate space for normal statics if we might have them
-        if (pDynamicStaticsInfo->GetNonGCStaticsPointer() == NULL)
-            GetLoaderAllocator()->AllocateBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNonGCRegularStaticFieldBytes());
+        bool isInitedIfStaticDataAllocated = IsInitedIfStaticDataAllocated();
+        if (IsDynamicStatics() && !IsSharedByGenericInstantiations())
+        {
+            DynamicStaticsInfo *pDynamicStaticsInfo = GetDynamicStaticsInfo();
+            // Allocate space for normal statics if we might have them
+            if (pDynamicStaticsInfo->GetNonGCStaticsPointer() == NULL)
+                GetLoaderAllocator()->AllocateBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNonGCRegularStaticFieldBytes(), isInitedIfStaticDataAllocated);
 
-        if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
-            GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this->HasBoxedRegularStatics() ? this : NULL);
+            if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
+                GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this->HasBoxedRegularStatics() ? this : NULL, isInitedIfStaticDataAllocated);
+        }
+        pAuxiliaryData->SetIsStaticDataAllocated(isInitedIfStaticDataAllocated);
     }
-    pAuxiliaryData->SetIsStaticDataAllocated();
 }
 
-void MethodTable::AttemptToPreinit()
+bool MethodTable::IsClassInitedOrPreinited()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    bool initResult;
+    if (GetAuxiliaryData()->IsClassInitedOrPreinitedDecided(&initResult))
+        return initResult;
+
+    EnsureStaticDataAllocated();
+    return IsClassInited();
+}
+
+bool MethodTable::IsInitedIfStaticDataAllocated()
 {
     CONTRACTL
     {
@@ -3806,33 +3828,32 @@ void MethodTable::AttemptToPreinit()
     CONTRACTL_END;
 
     if (IsClassInited())
-        return;
+    {
+        return true;
+    }
 
     if (HasClassConstructor())
     {
         // If there is a class constructor, then the class cannot be preinitted.
-        return;
+        return false;
     }
     
     if (GetClass()->GetNonGCRegularStaticFieldBytes() == 0 && GetClass()->GetNumHandleRegularStatics() == 0)
     {
-        // If there are static fields that are not thread statics, then the class is preinitted.
-        SetClassInited();
-        return;
+        // If there aren't static fields that are not thread statics, then the class is preinitted.
+        return true;
     }
 
     // At this point, we are looking at a class that has no class constructor, but does have static fields
 
     if (IsSharedByGenericInstantiations())
     {
-        // If we don't know the exact type, we can't pre-allocate the fields
-        return;
+        // If we don't know the exact type, we can't pre-init the the fields
+        return false;
     }
 
     // All this class needs to be initialized is to allocate the memory for the static fields. Do so, and mark the type as initialized
-    EnsureStaticDataAllocated();
-    SetClassInited();
-    return;
+    return true;
 }
 
 void MethodTable::EnsureTlsIndexAllocated()
@@ -7486,16 +7507,6 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pMTParent->EnumMemoryRegions(flags);
     }
 
-    if (HasNonVirtualSlots())
-    {
-        DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableAuxiliaryData::GetNonVirtualSlotsArray(GetAuxiliaryData())) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
-    }
-
-    if (HasGenericsStaticsInfo())
-    {
-        DacEnumMemoryRegion(dac_cast<TADDR>(GetGenericsStaticsInfo()), sizeof(GenericsStaticsInfo));
-    }
-
     if (HasInterfaceMap())
     {
 #ifdef FEATURE_COMINTEROP
@@ -7530,6 +7541,23 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     if (pAuxiliaryData.IsValid())
     {
         pAuxiliaryData.EnumMem();
+
+        if (HasGenericsStaticsInfo())
+        {
+            MethodTableAuxiliaryData::GetGenericStaticsInfo(pAuxiliaryData).EnumMem();
+        }
+        if (IsDynamicStatics())
+        {
+            MethodTableAuxiliaryData::GetDynamicStaticsInfo(pAuxiliaryData).EnumMem();
+        }
+        if (GetNumThreadStaticFields() > 0)
+        {
+            MethodTableAuxiliaryData::GetThreadStaticsInfo(pAuxiliaryData).EnumMem();
+        }
+        if (HasNonVirtualSlots())
+        {
+            DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableAuxiliaryData::GetNonVirtualSlotsArray(pAuxiliaryData)) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
+        }
     }
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
