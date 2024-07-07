@@ -888,6 +888,8 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 }
                 break;
 
+                case IMAGE_REL_ARM64_SECREL_HIGH12A:
+                case IMAGE_REL_ARM64_SECREL_LOW12A:
                 case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                 case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12: // TLSDESC ADD for corresponding ADRP
                 case IMAGE_REL_AARCH64_TLSDESC_CALL:
