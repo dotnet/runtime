@@ -6509,24 +6509,32 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     bool OperIsConvertMaskToVector() const
     {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
         return GetHWIntrinsicId() == NI_EVEX_ConvertMaskToVector;
 #elif defined(TARGET_ARM64)
         return GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector;
 #else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+#else
         return false;
-#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
+#endif // FEATURE_MASKED_HW_INTRINSICS
     }
 
     bool OperIsConvertVectorToMask() const
     {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
         return GetHWIntrinsicId() == NI_EVEX_ConvertVectorToMask;
 #elif defined(TARGET_ARM64)
         return GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask;
 #else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+#else
         return false;
-#endif
+#endif // FEATURE_MASKED_HW_INTRINSICS
     }
 
     bool OperRequiresAsgFlag() const;
@@ -6656,7 +6664,7 @@ private:
 };
 #endif // FEATURE_HW_INTRINSICS
 
-// GenTreeVecCon -- vector  constant (GT_CNS_VEC)
+// GenTreeVecCon -- vector constant (GT_CNS_VEC)
 //
 struct GenTreeVecCon : public GenTree
 {
@@ -6670,10 +6678,6 @@ struct GenTreeVecCon : public GenTree
         simd32_t gtSimd32Val;
         simd64_t gtSimd64Val;
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        simdmask_t gtSimdMaskVal;
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
         simd_t gtSimdVal;
     };
@@ -7098,13 +7102,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            case TYP_MASK:
-            {
-                return gtSimdMaskVal.IsAllBitsSet();
-            }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             default:
@@ -7155,13 +7152,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            case TYP_MASK:
-            {
-                return left->gtSimdMaskVal == right->gtSimdMaskVal;
-            }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             default:
@@ -7207,13 +7197,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            case TYP_MASK:
-            {
-                return gtSimdMaskVal.IsZero();
-            }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             default:

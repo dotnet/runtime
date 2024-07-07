@@ -305,58 +305,6 @@ struct simd64_t
 static_assert_no_msg(sizeof(simd64_t) == 64);
 #endif // TARGET_XARCH
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-struct simdmask_t
-{
-    union
-    {
-        int8_t   i8[8];
-        int16_t  i16[4];
-        int32_t  i32[2];
-        int64_t  i64[1];
-        uint8_t  u8[8];
-        uint16_t u16[4];
-        uint32_t u32[2];
-        uint64_t u64[1];
-    };
-
-    bool operator==(const simdmask_t& other) const
-    {
-        return (u64[0] == other.u64[0]);
-    }
-
-    bool operator!=(const simdmask_t& other) const
-    {
-        return !(*this == other);
-    }
-
-    static simdmask_t AllBitsSet()
-    {
-        simdmask_t result;
-
-        result.u64[0] = 0xFFFFFFFFFFFFFFFF;
-
-        return result;
-    }
-
-    bool IsAllBitsSet() const
-    {
-        return *this == AllBitsSet();
-    }
-
-    bool IsZero() const
-    {
-        return *this == Zero();
-    }
-
-    static simdmask_t Zero()
-    {
-        return {};
-    }
-};
-static_assert_no_msg(sizeof(simdmask_t) == 8);
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
 #if defined(TARGET_XARCH)
 typedef simd64_t simd_t;
 #else

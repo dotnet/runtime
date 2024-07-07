@@ -991,15 +991,6 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-                    case TYP_MASK:
-                    {
-                        simdmask_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simdmask_t));
-                        return OperandDesc(emit->emitSimdMaskConst(constValue));
-                    }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
                     default:
@@ -2280,13 +2271,13 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
             return ins_Store(dstType, aligned);
         }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (genIsValidMaskReg(srcReg))
         {
             // mask to int, treat as mask so it works on 32-bit
             return ins_Store(TYP_MASK, aligned);
         }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_XARCH
 
         // float to int, treat as float to float
         assert(genIsValidFloatReg(srcReg));

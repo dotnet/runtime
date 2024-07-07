@@ -3309,15 +3309,6 @@ AGAIN:
                 switch (vecCon->TypeGet())
                 {
 #if defined(FEATURE_SIMD)
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-                    case TYP_MASK:
-                    {
-                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[1]);
-                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[0]);
-                        break;
-                    }
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
 #if defined(TARGET_XARCH)
                     case TYP_SIMD64:
                     {
@@ -12104,14 +12095,6 @@ void Compiler::gtDispConst(GenTree* tree)
                 }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-                case TYP_MASK:
-                {
-                    printf("<0x%08x, 0x%08x>", vecCon->gtSimdVal.u32[0], vecCon->gtSimdVal.u32[1]);
-                    break;
-                }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
                 default:
                 {
@@ -21314,6 +21297,7 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType s
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
 }
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // gtNewSimdCvtMaskToVectorNode: Convert a HW instrinsic mask node to a vector
 //
@@ -21342,6 +21326,7 @@ GenTree* Compiler::gtNewSimdCvtMaskToVectorNode(var_types   type,
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
                                     GenTree*    op1,
@@ -21705,6 +21690,7 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdSourceBaseJitType, simdSize);
 }
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // gtNewSimdCvtVectorToMaskNode: Convert a HW instrinsic vector node to a mask
 //
@@ -21735,6 +21721,7 @@ GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 GenTree* Compiler::gtNewSimdCmpOpNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
@@ -21790,11 +21777,16 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
     if (intrinsic != NI_Illegal)
     {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         if (needsConvertMaskToVector)
         {
             GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, intrinsic, simdBaseJitType, simdSize);
             return gtNewSimdCvtMaskToVectorNode(type, retNode, simdBaseJitType, simdSize);
         }
+#else
+        assert(!needsConvertMaskToVector);
+#endif // !FEATURE_MASKED_HW_INTRINSICS
+
         return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
     }
 
@@ -30072,6 +30064,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (tree->OperIsConvertMaskToVector())
     {
         GenTree* op = op1;
@@ -30151,6 +30144,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         DEBUG_DESTROY_NODE(op, tree);
         return maskNode;
     }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     bool       isScalar = false;
     genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);

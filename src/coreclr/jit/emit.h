@@ -2526,10 +2526,6 @@ private:
     CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
     CORINFO_FIELD_HANDLE emitSimd64Const(simd64_t constValue);
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-    CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);

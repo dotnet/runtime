@@ -101,9 +101,9 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
             sigTyp = comp->impNormStructType(clsHnd);
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             if (varTypeIsMask(operand->TypeGet()))
             {
-#if defined(FEATURE_HW_INTRINSICS)
                 // No managed call takes TYP_MASK, so convert it back to a TYP_SIMD
 
                 unsigned    simdSize;
@@ -113,10 +113,9 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                 GenTree* cvtNode = comp->gtNewSimdCvtMaskToVectorNode(sigTyp, operand, simdBaseJitType, simdSize);
                 BlockRange().InsertAfter(operand, LIR::Range(comp->fgSetTreeSeq(cvtNode), cvtNode));
                 operand = cvtNode;
-#else
-                unreached();
-#endif // FEATURE_HW_INTRINSICS
             }
+#endif // !FEATURE_MASKED_HW_INTRINSICS
+
             arg = NewCallArg::Struct(operand, sigTyp, clsHnd);
         }
         else
@@ -162,9 +161,9 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
             result = comp->gtNewLclvNode(tmpNum, retType);
         }
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         if (varTypeIsMask(tree->TypeGet()))
         {
-#if defined(FEATURE_HW_INTRINSICS)
             // No managed call returns TYP_MASK, so convert it from a TYP_SIMD
 
             unsigned    simdSize;
@@ -178,10 +177,8 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                 // Propagate flags of "call" to its parent.
                 result->gtFlags |= (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
             }
-#else
-            unreached();
-#endif // FEATURE_HW_INTRINSICS
         }
+#endif // !FEATURE_MASKED_HW_INTRINSICS
 
         parents.Top(1)->ReplaceOperand(use, result);
 

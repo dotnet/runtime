@@ -2998,20 +2998,6 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         break;
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        case TYP_MASK:
-        {
-            simdmask_t value = vnStore->ConstantValue<simdmask_t>(vnCns);
-
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, &value, sizeof(simdmask_t));
-
-            conValTree = vecCon;
-            break;
-        }
-        break;
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
         case TYP_BYREF:
