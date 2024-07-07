@@ -11442,6 +11442,34 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
                 std::swap(op1, tree->Op(2));
             }
         }
+        else if (!optValnumCSE_phase)
+        {
+            bool       isScalar = false;
+            genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
+
+            // We can't handle scalar operations since they can copy upper bits from op1
+            if (GenTree::OperIsCompare(oper) && !isScalar)
+            {
+                assert(tree->GetOperandCount() == 2);
+
+                GenTree* op1 = tree->Op(1);
+                GenTree* op2 = tree->Op(2);
+
+                if (op1->IsVectorConst())
+                {
+                    // Move constant vectors from op1 to op2 for comparison operations
+
+                    var_types simdBaseType = tree->GetSimdBaseType();
+                    unsigned  simdSize     = tree->GetSimdSize();
+
+                    genTreeOps     newOper = GenTree::SwapRelop(oper);
+                    NamedIntrinsic newId   = GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, op2, op1,
+                                                                                          simdBaseType, simdSize, false);
+
+                    tree->ResetHWIntrinsicId(newId, op2, op1);
+                }
+            }
+        }
 
         // Try to fold it, maybe we get lucky,
         GenTree* foldedTree = gtFoldExpr(tree);
