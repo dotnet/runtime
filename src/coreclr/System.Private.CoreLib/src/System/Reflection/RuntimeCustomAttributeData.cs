@@ -1635,15 +1635,24 @@ namespace System.Reflection
             RuntimeType attributeFilterType,
             bool mustBeInheritable,
             ref RuntimeType.ListBuilder<object> derivedAttributes,
-            out RuntimeType attributeType,
+            [MaybeNullWhen(false)] out RuntimeType attributeType,
             out IRuntimeMethodInfo? ctorWithParameters,
             out bool isVarArg)
         {
             ctorWithParameters = null;
             isVarArg = false;
 
-            // Resolve attribute type from ctor parent token found in decorated decoratedModule scope
-            attributeType = (decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null) as RuntimeType)!;
+            try
+            {
+                // Resolve attribute type from ctor parent token found in decorated decoratedModule scope
+                attributeType = (decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null) as RuntimeType)!;
+            }
+            catch
+            {
+                // Skip attributes whose type cannot be resolved.
+                attributeType = null;
+                return false;
+            }
 
             // Test attribute type against user provided attribute type filter
             if (!MatchesTypeFilter(attributeType, attributeFilterType))
