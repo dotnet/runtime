@@ -885,7 +885,7 @@ namespace System.Runtime.CompilerServices
             return CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
     }

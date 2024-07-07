@@ -1846,7 +1846,7 @@ extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, Metho
     return bResult;
 }
 
-extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo(void* fromTypeHnd, void* toTypeHnd)
+extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd)
 {
     QCALL_CONTRACT;
 
