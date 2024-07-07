@@ -640,7 +640,7 @@ namespace System.Numerics
 
                 int iu = _bits.Length - 1;
 
-                return BitOperations.IsPow2(_bits[iu]) && _bits.AsSpan().IndexOfAnyExcept(0u) == iu;
+                return BitOperations.IsPow2(_bits[iu]) && !_bits.AsSpan(0, iu).ContainsAnyExcept(0u);
             }
         }
 
