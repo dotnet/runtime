@@ -333,7 +333,7 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
     int result;
     while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
 #if !HAVE_O_CLOEXEC
-    if (old_flags & PAL_O_CLOEXEC)
+    if (result != -1 && old_flags & PAL_O_CLOEXEC)
     {
         fcntl(result, F_SETFD, FD_CLOEXEC);
     }
