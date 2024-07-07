@@ -39,30 +39,34 @@ interp_v128_bitcast (gpointer res, gpointer v1)
 static void
 interp_v128_to_v2 (gpointer res, gpointer v1)
 {
-	memcpy(res, v1, SIZEOF_V2);
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
 
-	guint32 *res_typed = (guint32*)res;
-	res_typed [2] = 0;
-	res_typed [3] = 0;
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
 }
 
 // Vector3 AsVector3(Vector128<float> v1)
 static void
 interp_v128_to_v3 (gpointer res, gpointer v1)
 {
-	memcpy(res, v1, SIZEOF_V3);
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
 
-	guint32 *res_typed = (guint32*)res;
-	res_typed [3] = 0;
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
+	res_typed [2] = v1_typed [2];
 }
 
 // Vector128<float> AsVector128(Vector2 v1)
 static void
 interp_v2_to_v128 (gpointer res, gpointer v1)
 {
-	memcpy(res, v1, SIZEOF_V2);
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
 
-	guint32 *res_typed = (guint32*)res;
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
 	res_typed [2] = 0;
 	res_typed [3] = 0;
 }
@@ -71,20 +75,24 @@ interp_v2_to_v128 (gpointer res, gpointer v1)
 static void
 interp_v2_to_v3 (gpointer res, gpointer v1)
 {
-	memcpy(res, v1, SIZEOF_V2);
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
 
-	guint32 *res_typed = (guint32*)res;
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
 	res_typed [2] = 0;
-	res_typed [3] = 0;
 }
 
 // Vector128<float> AsVector128(Vector3 v1)
 static void
 interp_v3_to_v128 (gpointer res, gpointer v1)
 {
-	memcpy(res, v1, SIZEOF_V3);
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
 
-	guint32 *res_typed = (guint32*)res;
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
+	res_typed [2] = v1_typed [2];
 	res_typed [3] = 0;
 }
 
@@ -92,11 +100,11 @@ interp_v3_to_v128 (gpointer res, gpointer v1)
 static void
 interp_v3_to_v2 (gpointer res, gpointer v1)
 {
-	memcpy(res, v1, SIZEOF_V2);
-	
-	guint32 *res_typed = (guint32*)res;
-	res_typed [2] = 0;
-	res_typed [3] = 0;
+	float *res_typed = (float*)res;
+	float *v1_typed = (float*)v1;
+
+	res_typed [0] = v1_typed [0];
+	res_typed [1] = v1_typed [1];
 }
 
 // op_Addition
