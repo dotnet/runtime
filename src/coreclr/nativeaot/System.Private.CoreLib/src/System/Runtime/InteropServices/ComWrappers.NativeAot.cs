@@ -42,7 +42,7 @@ namespace System.Runtime.InteropServices
 
         private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
         private static readonly List<GCHandle> s_referenceTrackerNativeObjectWrapperCache = new List<GCHandle>();
-        private static readonly Lock s_nativeObjectWrapperLockCache = new Lock(useTrivialWaits: true);
+        private static readonly Lock s_nativeObjectWrapperCacheLock = new Lock(useTrivialWaits: true);
 
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _ccwTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
         private readonly Lock _lock = new Lock(useTrivialWaits: true);
@@ -638,7 +638,7 @@ namespace System.Runtime.InteropServices
                 // Remove the entry from the cache that keeps track of the active NativeObjectWrappers.
                 if (_nativeObjectWrapperWeakHandle.IsAllocated)
                 {
-                    using (s_nativeObjectWrapperLockCache.EnterScope())
+                    using (s_nativeObjectWrapperCacheLock.EnterScope())
                     {
                         s_referenceTrackerNativeObjectWrapperCache.Remove(_nativeObjectWrapperWeakHandle);
                     }
@@ -988,13 +988,7 @@ namespace System.Runtime.InteropServices
                             throw new NotSupportedException();
                         }
                         _rcwCache.Add(identity, wrapper._proxyHandle);
-                        if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
-                        {
-                            using (s_nativeObjectWrapperLockCache.EnterScope())
-                            {
-                                s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
-                            }
-                        }
+                        AddWrapperToReferenceTrackerHandleCache(wrapper);
                         return true;
                     }
                 }
@@ -1047,13 +1041,7 @@ namespace System.Runtime.InteropServices
                     wrapper.Release();
                     throw new NotSupportedException();
                 }
-                if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
-                {
-                    using (s_nativeObjectWrapperLockCache.EnterScope())
-                    {
-                        s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
-                    }
-                }
+                AddWrapperToReferenceTrackerHandleCache(wrapper);
                 return true;
             }
 
@@ -1089,19 +1077,24 @@ namespace System.Runtime.InteropServices
                         throw new NotSupportedException();
                     }
                     _rcwCache.Add(identity, wrapper._proxyHandle);
-                    if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
-                    {
-                        using (s_nativeObjectWrapperLockCache.EnterScope())
-                        {
-                            s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
-                        }
-                    }
+                    AddWrapperToReferenceTrackerHandleCache(wrapper);
                 }
             }
 
             return true;
         }
 #pragma warning restore IDE0060
+
+        private static void AddWrapperToReferenceTrackerHandleCache(NativeObjectWrapper wrapper)
+        {
+            if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
+            {
+                using (s_nativeObjectWrapperCacheLock.EnterScope())
+                {
+                    s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                }
+            }
+        }
 
         private void RemoveRCWFromCache(IntPtr comPointer, GCHandle expectedValue)
         {
@@ -1234,7 +1227,7 @@ namespace System.Runtime.InteropServices
 
             List<object> objects = new List<object>();
 
-            using (s_nativeObjectWrapperLockCache.EnterScope())
+            using (s_nativeObjectWrapperCacheLock.EnterScope())
             {
                 foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
                 {
