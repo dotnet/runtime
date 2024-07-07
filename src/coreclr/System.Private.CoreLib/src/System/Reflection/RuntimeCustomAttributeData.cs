@@ -1516,7 +1516,7 @@ namespace System.Reflection
                 if (!FilterCustomAttributeRecord(caRecord.tkCtor, in scope,
                                                  decoratedModule, decoratedMetadataToken, attributeFilterType!, mustBeInheritable,
                                                  ref derivedAttributes,
-                                                 out RuntimeType attributeType, out IRuntimeMethodInfo? ctorWithParameters, out bool isVarArg))
+                                                 out RuntimeType? attributeType, out IRuntimeMethodInfo? ctorWithParameters, out bool isVarArg))
                 {
                     continue;
                 }
@@ -1635,7 +1635,7 @@ namespace System.Reflection
             RuntimeType attributeFilterType,
             bool mustBeInheritable,
             ref RuntimeType.ListBuilder<object> derivedAttributes,
-            [MaybeNullWhen(false)] out RuntimeType attributeType,
+            [NotNullWhen(true)] out RuntimeType? attributeType,
             out IRuntimeMethodInfo? ctorWithParameters,
             out bool isVarArg)
         {
