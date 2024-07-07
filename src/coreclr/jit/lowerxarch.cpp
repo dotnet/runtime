@@ -1508,43 +1508,41 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                         +- t1
                     t2 = binary logical op2
                 */
-                GenTree* second = use.User();
-                if (!second->OperIs(GT_HWINTRINSIC))
+                GenTree* user = use.User();
+                if (!user->OperIs(GT_HWINTRINSIC))
                 {
                     break;
                 }
 
-                bool       nestedIsScalar = false;
-                genTreeOps nestedOper     = second->AsHWIntrinsic()->GetOperForHWIntrinsicId(&isScalar);
+                GenTreeHWIntrinsic* userIntrin = user->AsHWIntrinsic();
 
-                if (nestedOper == GT_NONE)
+                bool       userIsScalar = false;
+                genTreeOps userOper     = userIntrin->GetOperForHWIntrinsicId(&isScalar);
+
+                if ((userOper != GT_AND) && (userOper != GT_OR) && (userOper != GT_XOR))
                 {
-                    // TODO: We should support cases like CNDSEL
+                    // TODO: We should support other cases like AND_NOT, CNDSEL, and TernaryLogic
                     break;
                 }
+                assert(!userIsScalar);
 
-                if (nestedIsScalar)
+                if ((userOper == GT_AND) && (oper == GT_XOR) && op2->IsVectorAllBitsSet())
                 {
-                    break;
+                    // We have something that will transform to AND_NOT, which we want to
+                    // prefer over TernaryLogic or any other transform.
+                    return node->gtNext;
                 }
 
-                if ((nestedOper != GT_AND) && (nestedOper != GT_OR) && (nestedOper != GT_XOR))
-                {
-                    // TODO: We should support other cases like AND_NOT, NOT, and CNDSEL
-                    break;
-                }
-
-                GenTree*    op3             = second->AsHWIntrinsic()->Op(1) == node ? second->AsHWIntrinsic()->Op(2)
-                                                                                     : second->AsHWIntrinsic()->Op(1);
-                GenTree*    control         = comp->gtNewIconNode(node->GetTernaryControlByte(second->AsHWIntrinsic()));
+                GenTree*    op3             = userIntrin->Op(1) == node ? userIntrin->Op(2) : userIntrin->Op(1);
+                GenTree*    control         = comp->gtNewIconNode(node->GetTernaryControlByte(userIntrin));
                 CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
                 unsigned    simdSize        = node->GetSimdSize();
                 var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
                 GenTree*    ternaryNode =
                     comp->gtNewSimdTernaryLogicNode(simdType, op1, op2, op3, control, simdBaseJitType, simdSize);
-                BlockRange().InsertBefore(second, control, ternaryNode);
+                BlockRange().InsertBefore(userIntrin, control, ternaryNode);
                 LIR::Use finalRes;
-                if (BlockRange().TryGetUse(second, &finalRes))
+                if (BlockRange().TryGetUse(userIntrin, &finalRes))
                 {
                     finalRes.ReplaceWith(ternaryNode);
                 }
@@ -1554,7 +1552,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 GenTree* next = node->gtNext;
                 BlockRange().Remove(node);
-                BlockRange().Remove(second);
+                BlockRange().Remove(userIntrin);
                 return next;
             }
             break;
