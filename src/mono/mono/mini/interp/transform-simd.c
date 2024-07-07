@@ -482,18 +482,34 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			MonoClass *ret_class = mono_class_from_mono_type_internal (csignature->ret);
 			int ret_size = mono_class_value_size (ret_class, NULL);
 
+			if (!strcmp (m_class_get_name (ret_class), "Vector2")) {
+				g_assert (ret_size == 8);
+			} else if (!strcmp (m_class_get_name (ret_class), "Vector3")) {
+				g_assert (ret_size == 12);
+			} else {
+				g_assert (ret_size == 16);
+			}
+
 			MonoClass *arg_class = mono_class_from_mono_type_internal (csignature->params [0]);
 			int arg_size = mono_class_value_size (arg_class, NULL);
+
+			if (!strcmp (m_class_get_name (arg_class), "Vector2")) {
+				g_assert (arg_size == 8);
+			} else if (!strcmp (m_class_get_name (arg_class), "Vector3")) {
+				g_assert (arg_size == 12);
+			} else {
+				g_assert (arg_size == 16);
+			}
 
 			vector_klass = ret_class;
 			vector_size = ret_size;
 
 			if (id == SN_AsVector2) {
-				g_assert(ret_size == 8);
-				g_assert((arg_size == 12) || (arg_size == 16));
+				g_assert (ret_size == 8);
+				g_assert ((arg_size == 12) || (arg_size == 16));
 			} else if (id == SN_AsVector3) {
-				g_assert(ret_size == 12);
-				g_assert((arg_size == 8) || (arg_size == 16));
+				g_assert (ret_size == 12);
+				g_assert ((arg_size == 8) || (arg_size == 16));
 			}
 
 			if (arg_size == ret_size) {
