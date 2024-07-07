@@ -42,6 +42,7 @@ namespace System.Runtime.InteropServices
 
         private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
         private static readonly List<GCHandle> s_referenceTrackerNativeObjectWrapperCache = new List<GCHandle>();
+        private static readonly Lock s_nativeObjectWrapperLockCache = new Lock(useTrivialWaits: true);
 
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _ccwTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
         private readonly Lock _lock = new Lock(useTrivialWaits: true);
@@ -637,7 +638,10 @@ namespace System.Runtime.InteropServices
                 // Remove the entry from the cache that keeps track of the active NativeObjectWrappers.
                 if (_nativeObjectWrapperWeakHandle.IsAllocated)
                 {
-                    s_referenceTrackerNativeObjectWrapperCache.Remove(_nativeObjectWrapperWeakHandle);
+                    using (s_nativeObjectWrapperLockCache.EnterScope())
+                    {
+                        s_referenceTrackerNativeObjectWrapperCache.Remove(_nativeObjectWrapperWeakHandle);
+                    }
                     _nativeObjectWrapperWeakHandle.Free();
                 }
 
@@ -986,7 +990,10 @@ namespace System.Runtime.InteropServices
                         _rcwCache.Add(identity, wrapper._proxyHandle);
                         if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
                         {
-                            s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                            using (s_nativeObjectWrapperLockCache.EnterScope())
+                            {
+                                s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                            }
                         }
                         return true;
                     }
@@ -1042,7 +1049,10 @@ namespace System.Runtime.InteropServices
                 }
                 if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
                 {
-                    s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                    using (s_nativeObjectWrapperLockCache.EnterScope())
+                    {
+                        s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                    }
                 }
                 return true;
             }
@@ -1081,7 +1091,10 @@ namespace System.Runtime.InteropServices
                     _rcwCache.Add(identity, wrapper._proxyHandle);
                     if (wrapper is ReferenceTrackerNativeObjectWrapper referenceTrackerNativeObjectWrapper)
                     {
-                        s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                        using (s_nativeObjectWrapperLockCache.EnterScope())
+                        {
+                            s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
+                        }
                     }
                 }
             }
@@ -1220,17 +1233,21 @@ namespace System.Runtime.InteropServices
             IntPtr contextToken = GetContextToken();
 
             List<object> objects = new List<object>();
-            foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
-            {
-                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
-                if (nativeObjectWrapper != null &&
-                    nativeObjectWrapper._contextToken == contextToken)
-                {
-                    objects.Add(nativeObjectWrapper._proxyHandle.Target);
 
-                    // Separate the wrapper from the tracker runtime prior to
-                    // passing them.
-                    nativeObjectWrapper.DisconnectTracker();
+            using (s_nativeObjectWrapperLockCache.EnterScope())
+            {
+                foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
+                {
+                    ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                    if (nativeObjectWrapper != null &&
+                        nativeObjectWrapper._contextToken == contextToken)
+                    {
+                        objects.Add(nativeObjectWrapper._proxyHandle.Target);
+
+                        // Separate the wrapper from the tracker runtime prior to
+                        // passing them.
+                        nativeObjectWrapper.DisconnectTracker();
+                    }
                 }
             }
 
@@ -1242,6 +1259,7 @@ namespace System.Runtime.InteropServices
         {
             bool walkFailed = false;
 
+            // No lock needed to access s_referenceTrackerNativeObjectWrapperCache as this is during GC callback.
             foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
             {
                 ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
@@ -1270,6 +1288,7 @@ namespace System.Runtime.InteropServices
         // Used during GC callback
         internal static void DetachNonPromotedObjects()
         {
+            // No lock needed to access s_referenceTrackerNativeObjectWrapperCache as this is during GC callback.
             foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
             {
                 ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
