@@ -2453,8 +2453,20 @@ void CodeGen::genReportEH()
     // The JIT's ordering of EH clauses does not guarantee that clauses covering the same try region are contiguous.
     // We need this property to hold true so the CORINFO_EH_CLAUSE_SAMETRY flag is accurate.
     jitstd::sort(clauses, clauses + compiler->compHndBBtabCount,
-                 [](const EHClauseInfo& left, const EHClauseInfo& right) {
-        return left.HBtab->ebdTryBeg->bbTryIndex < right.HBtab->ebdTryBeg->bbTryIndex;
+                 [this](const EHClauseInfo& left, const EHClauseInfo& right) {
+        const unsigned short leftTryIndex  = left.HBtab->ebdTryBeg->bbTryIndex;
+        const unsigned short rightTryIndex = right.HBtab->ebdTryBeg->bbTryIndex;
+
+        if (leftTryIndex == rightTryIndex)
+        {
+            // We have two clauses mapped to the same try region.
+            // Make sure we report the clause with the smaller index first.
+            const auto leftIndex  = left.HBtab - this->compiler->compHndBBtab;
+            const auto rightIndex = right.HBtab - this->compiler->compHndBBtab;
+            return leftIndex < rightIndex;
+        }
+
+        return leftTryIndex < rightTryIndex;
     });
 
     // Now, report EH clauses to the VM in order of increasing try region index.
