@@ -73,52 +73,45 @@ namespace System.Text
         /// <returns>An ASCII byte is defined as 0x00 - 0x7F, inclusive.</returns>
         internal static nuint GetIndexOfFirstNonAsciiByte(ref byte pBuffer, nuint bufferLength)
         {
-            uint found4;
             nuint index = 0;
-
-            if (bufferLength >= 8)
+            if (bufferLength < 8)
             {
-                goto Above7;
-            }
-
-            if ((bufferLength & 4) != 0)
-            {
-                uint test4 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pBuffer, index)) & 0x80808080;
-                if (test4 != 0)
+                uint found4;
+                if ((bufferLength & 4) != 0)
                 {
-                    found4 = test4;
-                    goto Found1to7;
+                    uint test4 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pBuffer, index)) & 0x80808080;
+                    if (test4 != 0)
+                    {
+                        found4 = test4;
+                        goto Found1to7;
+                    }
+                    index = 4;
                 }
-                index += 4;
-            }
-
-            if ((bufferLength & 2) != 0)
-            {
-                uint test2 = (uint)Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref pBuffer, index)) & 0x8080;
-                if (test2 != 0)
+                if ((bufferLength & 2) != 0)
                 {
-                    found4 = test2;
-                    goto Found1to7;
+                    uint test2 = (uint)Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref pBuffer, index)) & 0x8080;
+                    if (test2 != 0)
+                    {
+                        found4 = test2;
+                        goto Found1to7;
+                    }
+                    index += 2;
                 }
-                index += 2;
-            }
-
-            if ((bufferLength & 1) != 0)
-            {
-                if (Unsafe.Add(ref pBuffer, index) < 0x80)
+                if ((bufferLength & 1) != 0)
                 {
-                    index++;
+                    if (Unsafe.Add(ref pBuffer, index) < 0x80)
+                    {
+                        index++;
+                    }
                 }
+
+                goto Done;
+
+            Found1to7:
+                index += uint.TrailingZeroCount(found4) / 8;
+                goto Done;
             }
 
-        Done:
-            return index;
-
-        Found1to7:
-            index += uint.TrailingZeroCount(found4) / 8;
-            goto Done;
-
-        Above7:
             ulong found8;
             if (bufferLength <= 16)
             {
@@ -139,30 +132,33 @@ namespace System.Text
                 }
                 else
                 {
-                    return bufferLength;
+                    index = bufferLength;
+                    goto Done;
                 }
 
-                return index += (nuint)(ulong.TrailingZeroCount(found8) / 8);
+                return index + (nuint)(ulong.TrailingZeroCount(found8) / 8);
             }
 
             return GetIndexOfFirstNonAsciiByte_Vector(ref pBuffer, bufferLength);
+
+        Done:
+            return index;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static nuint GetIndexOfFirstNonAsciiByte_Vector(ref byte pBuffer, nuint bufferLength)
+        // Another case where we want to bypass Dynamic PGO - it is very easy to hit
+        // a condition where a profile with longer path blocks marked as cold leads
+        // to TestXXX helpers prevented from being inlined, which is disastrous for performance.
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        private static unsafe nuint GetIndexOfFirstNonAsciiByte_Vector(ref byte pBuffer, nuint bufferLength)
         {
             Debug.Assert(bufferLength >= 16);
             if (bufferLength <= 32)
             {
-                Vector128<byte> first = Vector128.GreaterThanOrEqual(
-                    Vector128.LoadUnsafe(ref pBuffer),
-                    Vector128.Create((byte)0x80));
-                Vector128<byte> last = Vector128.GreaterThanOrEqual(
-                    Vector128.LoadUnsafe(ref pBuffer, bufferLength - 16),
-                    Vector128.Create((byte)0x80));
+                Vector128<byte> first = Vector128.LoadUnsafe(ref pBuffer);
+                Vector128<byte> last = Vector128.LoadUnsafe(ref pBuffer, bufferLength - 16);
 
-                bool foundFirst = first != Vector128<byte>.Zero;
-                bool foundLast = last != Vector128<byte>.Zero;
+                bool foundFirst = Test128(first);
+                bool foundLast = Test128(last);
 
                 nuint offset;
                 Vector128<byte> found;
@@ -182,6 +178,7 @@ namespace System.Text
                 return bufferLength;
 
             Found128:
+                found = Vector128.GreaterThanOrEqual(found, Vector128.Create((byte)0x80));
                 return ComputeIndex(found) + offset;
             }
 
@@ -212,20 +209,40 @@ namespace System.Text
                 return ComputeIndex(found) + offset;
             }
 
+            Vector512<byte> found512;
             ref byte pCurrent = ref pBuffer;
             ref byte pLast = ref Unsafe.Add(ref pBuffer, bufferLength - 64);
-            Vector512<byte> found512;
-            do
+
+            // SAFETY: We only use the value of .AsPointer to calculate the byte offset
+            // to the next 64B boundary. Should GC relocate the buffer, we will lose the
+            // alignment which is an acceptable trade-off over pinning the buffer, once
+            // the callers of this method are updated to use byrefs.
+            nuint toAlign = (nuint)Unsafe.AsPointer(ref pCurrent) % 64;
+            if (toAlign != 0)
             {
-                Vector512<byte> current512 = Vector512.LoadUnsafe(ref pCurrent);
-                if (Test512(current512))
+                Vector512<byte> first512 = Vector512.LoadUnsafe(ref pCurrent);
+                if (Test512(first512))
                 {
-                    found512 = current512;
+                    found512 = first512;
                     goto Found512;
                 }
 
-                pCurrent = ref Unsafe.Add(ref pCurrent, 64);
-            } while (!Unsafe.IsAddressGreaterThan(ref pCurrent, ref pLast));
+                pCurrent = ref Unsafe.Add(ref pCurrent, toAlign);
+            }
+
+            while (!Unsafe.IsAddressGreaterThan(ref pCurrent, ref pLast))
+            {
+                Vector512<byte> current512 = Vector512.LoadUnsafe(ref pCurrent);
+                if (!Test512(current512))
+                {
+                    // Better loop ordering
+                    pCurrent = ref Unsafe.Add(ref pCurrent, 64);
+                    continue;
+                }
+
+                found512 = current512;
+                goto Found512;
+            }
 
             Vector512<byte> last512 = Vector512.LoadUnsafe(ref pLast);
             if (Test512(last512))
@@ -242,35 +259,41 @@ namespace System.Text
             return ComputeIndex(found512) + (nuint)Unsafe.ByteOffset(ref pBuffer, ref pCurrent);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool Test256(Vector256<byte> value)
+            static bool Test128(Vector128<byte> value)
             {
-                if (Vector256.IsHardwareAccelerated)
+                if (Sse2.IsSupported)
                 {
-                    return (value & Vector256.Create((byte)0x80)) != Vector256<byte>.Zero;
+                    return value.ExtractMostSignificantBits() != 0;
                 }
 
-                return ((value.GetLower() | value.GetUpper()) & Vector128.Create((byte)0x80)) != Vector128<byte>.Zero;
+                return Vector128.GreaterThanOrEqualAny(value, Vector128.Create((byte)0x80));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static bool Test256(Vector256<byte> value)
+            {
+                if (Avx.IsSupported)
+                {
+                    return value.ExtractMostSignificantBits() != 0;
+                }
+
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return Vector256.GreaterThanOrEqualAny(value, Vector256.Create((byte)0x80));
+                }
+
+                return Test128(value.GetLower() | value.GetUpper());
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static bool Test512(Vector512<byte> value)
             {
-                if (Vector512.IsHardwareAccelerated)
+                if (Avx512F.IsSupported)
                 {
-                    return (value & Vector512.Create((byte)0x80)) != Vector512<byte>.Zero;
+                    return value.ExtractMostSignificantBits() != 0;
                 }
 
-                if (Vector256.IsHardwareAccelerated)
-                {
-                    return ((value.GetLower() | value.GetUpper()) & Vector256.Create((byte)0x80)) != Vector256<byte>.Zero;
-                }
-
-                Vector128<byte> reduced = (
-                    value.GetLower().GetLower() |
-                    value.GetLower().GetUpper() |
-                    value.GetUpper().GetLower() |
-                    value.GetUpper().GetUpper()) & Vector128.Create((byte)0x80);
-                return reduced != Vector128<byte>.Zero;
+                return Test256(value.GetLower() | value.GetUpper());
             }
         }
 
