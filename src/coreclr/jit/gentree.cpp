@@ -30468,6 +30468,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     uint32_t result = BitOperations::LeadingZeroCount(static_cast<uint64_t>(value));
 
                     cnsNode->AsIntConCommon()->SetIconValue(static_cast<int32_t>(result));
+                    cnsNode->gtType = retType;
+
                     resultNode = cnsNode;
                     break;
                 }
