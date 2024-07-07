@@ -1254,25 +1254,36 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (op2->OperIsHWIntrinsic())
             {
+                GenTreeHWIntrinsic* op2Intrin = op2->AsHWIntrinsic();
+
                 bool       op2IsScalar = false;
-                genTreeOps op2Oper     = op2->AsHWIntrinsic()->GetOperForHWIntrinsicId(&op2IsScalar);
+                genTreeOps op2Oper     = op2Intrin->GetOperForHWIntrinsicId(&op2IsScalar);
 
                 if (op2Oper == GT_NOT)
                 {
                     assert(!op2IsScalar);
                     transform = true;
+
+                    op2 = op2Intrin->Op(1);
+                    BlockRange().Remove(op2Intrin);
                 }
             }
 
             if (!transform && op1->OperIsHWIntrinsic())
             {
+                GenTreeHWIntrinsic* opIntrin = op1->AsHWIntrinsic();
+
                 bool       op1IsScalar = false;
-                genTreeOps op1Oper     = op1->AsHWIntrinsic()->GetOperForHWIntrinsicId(&op1IsScalar);
+                genTreeOps op1Oper     = opIntrin->GetOperForHWIntrinsicId(&op1IsScalar);
 
                 if (op1Oper == GT_NOT)
                 {
                     assert(!op1IsScalar);
                     transform = true;
+
+                    op1 = opIntrin->Op(1);
+                    BlockRange().Remove(opIntrin);
+
                     std::swap(op1, op2);
                 }
             }

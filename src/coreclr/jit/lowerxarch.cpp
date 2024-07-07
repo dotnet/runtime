@@ -1433,29 +1433,38 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
         if (op1->OperIsHWIntrinsic())
         {
-            GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
+            GenTreeHWIntrinsic* opIntrin = op1->AsHWIntrinsic();
 
             bool       op1IsScalar = false;
-            genTreeOps op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar);
+            genTreeOps op1Oper     = opIntrin->GetOperForHWIntrinsicId(&op1IsScalar);
 
-            if ((op1Oper == GT_XOR) && op1Intrin->Op(2)->IsVectorAllBitsSet())
+            if ((op1Oper == GT_XOR) && opIntrin->Op(2)->IsVectorAllBitsSet())
             {
                 assert(!op1IsScalar);
                 transform = true;
+
+                op1 = opIntrin->Op(1);
+                BlockRange().Remove(opIntrin->Op(2));
+                BlockRange().Remove(opIntrin);
             }
         }
 
         if (!transform && op2->OperIsHWIntrinsic())
         {
-            GenTreeHWIntrinsic* op2Intrin = op2->AsHWIntrinsic();
+            GenTreeHWIntrinsic* opIntrin = op2->AsHWIntrinsic();
 
             bool       op2IsScalar = false;
-            genTreeOps op2Oper     = op2Intrin->GetOperForHWIntrinsicId(&op2IsScalar);
+            genTreeOps op2Oper     = opIntrin->GetOperForHWIntrinsicId(&op2IsScalar);
 
-            if ((op2Oper == GT_XOR) && op2Intrin->Op(2)->IsVectorAllBitsSet())
+            if ((op2Oper == GT_XOR) && opIntrin->Op(2)->IsVectorAllBitsSet())
             {
                 assert(!op2IsScalar);
                 transform = true;
+
+                op2 = opIntrin->Op(1);
+                BlockRange().Remove(opIntrin->Op(2));
+                BlockRange().Remove(opIntrin);
+
                 std::swap(op1, op2);
             }
         }
@@ -1810,21 +1819,30 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (op1->OperIsHWIntrinsic(NI_EVEX_NotMask))
             {
-                unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+                GenTreeHWIntrinsic* opIntrin         = op1->AsHWIntrinsic();
+                unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
 
-                if (genTypeSize(op1->AsHWIntrinsic()->GetSimdBaseType()) == simdBaseTypeSize)
+                if (genTypeSize(opIntrin->GetSimdBaseType()) == simdBaseTypeSize)
                 {
                     transform = true;
+
+                    op1 = opIntrin->Op(1);
+                    BlockRange().Remove(opIntrin);
                 }
             }
 
             if (!transform && op2->OperIsHWIntrinsic(NI_EVEX_NotMask))
             {
-                unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+                GenTreeHWIntrinsic* opIntrin         = op2->AsHWIntrinsic();
+                unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
 
-                if (genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType()) == simdBaseTypeSize)
+                if (genTypeSize(opIntrin->GetSimdBaseType()) == simdBaseTypeSize)
                 {
                     transform = true;
+
+                    op1 = opIntrin->Op(1);
+                    BlockRange().Remove(opIntrin);
+
                     std::swap(op1, op2);
                 }
             }
@@ -1846,25 +1864,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (op1->OperIsHWIntrinsic(NI_EVEX_XorMask))
             {
-                unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+                GenTreeHWIntrinsic* opIntrin         = op1->AsHWIntrinsic();
+                unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
 
-                if (genTypeSize(op1->AsHWIntrinsic()->GetSimdBaseType()) == simdBaseTypeSize)
+                if (genTypeSize(opIntrin->GetSimdBaseType()) == simdBaseTypeSize)
                 {
-                    LIR::Use use;
-                    if (BlockRange().TryGetUse(node, &use))
-                    {
-                        use.ReplaceWith(op1);
-                    }
-                    else
-                    {
-                        op1->SetUnusedValue();
-                    }
-
-                    BlockRange().Remove(node);
-                    node = op1->AsHWIntrinsic();
-
                     intrinsicId = NI_EVEX_XnorMask;
-                    node->ChangeHWIntrinsicId(intrinsicId, node->Op(1), node->Op(2));
+                    node->ResetHWIntrinsicId(intrinsicId, comp, opIntrin->Op(1), opIntrin->Op(2));
+                    BlockRange().Remove(opIntrin);
                 }
             }
             break;
