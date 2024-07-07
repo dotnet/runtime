@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Runtime.Intrinsics
 {
@@ -19,7 +20,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new byte[Vector256<byte>.Count];
-                Unsafe.WriteUnaligned(ref items[0], _value);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetArrayDataReference(items), _value);
                 return items;
             }
         }
@@ -29,7 +30,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new double[Vector256<double>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<double, byte>(ref items[0]), _value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<double, byte>(ref MemoryMarshal.GetArrayDataReference(items)), _value);
                 return items;
             }
         }
@@ -39,7 +40,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new short[Vector256<short>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<short, byte>(ref items[0]), _value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<short, byte>(ref MemoryMarshal.GetArrayDataReference(items)), _value);
                 return items;
             }
         }
@@ -49,7 +50,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new int[Vector256<int>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<int, byte>(ref items[0]), _value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<int, byte>(ref MemoryMarshal.GetArrayDataReference(items)), _value);
                 return items;
             }
         }
@@ -59,7 +60,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new long[Vector256<long>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<long, byte>(ref items[0]), _value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<long, byte>(ref MemoryMarshal.GetArrayDataReference(items)), _value);
                 return items;
             }
         }
@@ -69,7 +70,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new nint[Vector256<nint>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<nint, byte>(ref items[0]), _value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<nint, byte>(ref MemoryMarshal.GetArrayDataReference(items)), _value);
                 return items;
             }
         }
@@ -79,7 +80,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new nuint[Vector256<nuint>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<nuint, byte>(ref items[0]), _value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<nuint, byte>(ref MemoryMarshal.GetArrayDataReference(items)), _value);
                 return items;
             }
         }
@@ -89,7 +90,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new sbyte[Vector256<sbyte>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<sbyte, byte>(ref items[0]), _value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<sbyte, byte>(ref MemoryMarshal.GetArrayDataReference(items)), _value);
                 return items;
             }
         }
@@ -99,7 +100,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new float[Vector256<float>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref items[0]), _value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetArrayDataReference(items)), _value);
                 return items;
             }
         }
@@ -109,7 +110,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new ushort[Vector256<ushort>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref items[0]), _value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref MemoryMarshal.GetArrayDataReference(items)), _value);
                 return items;
             }
         }
@@ -119,7 +120,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new uint[Vector256<uint>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref items[0]), _value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref MemoryMarshal.GetArrayDataReference(items)), _value);
                 return items;
             }
         }
@@ -129,7 +130,7 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new ulong[Vector256<ulong>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<ulong, byte>(ref items[0]), _value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<ulong, byte>(ref MemoryMarshal.GetArrayDataReference(items)), _value);
                 return items;
             }
         }
