@@ -1418,6 +1418,60 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     bool       isScalar = false;
     genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar);
 
+    if (oper == GT_AND)
+    {
+        // We want to recognize (~op1 & op2) and transform it
+        // into XarchIsa.AndNot(op1, op2) as well as (op1 & ~op2)
+        // transforming it into XarchIsa.AndNot(op2, op1), which
+        // takes into account that the XARCH apis operate more like
+        // NotAnd
+
+        bool transform = false;
+
+        GenTree* op1 = node->Op(1);
+        GenTree* op2 = node->Op(2);
+
+        if (op1->OperIsHWIntrinsic())
+        {
+            GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
+
+            bool       op1IsScalar = false;
+            genTreeOps op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar);
+
+            if ((op1Oper == GT_XOR) && op1Intrin->Op(2)->IsVectorAllBitsSet())
+            {
+                assert(!op1IsScalar);
+                transform = true;
+            }
+        }
+
+        if (!transform && op2->OperIsHWIntrinsic())
+        {
+            GenTreeHWIntrinsic* op2Intrin = op2->AsHWIntrinsic();
+
+            bool       op2IsScalar = false;
+            genTreeOps op2Oper     = op2Intrin->GetOperForHWIntrinsicId(&op2IsScalar);
+
+            if ((op2Oper == GT_XOR) && op2Intrin->Op(2)->IsVectorAllBitsSet())
+            {
+                assert(!op2IsScalar);
+                transform = true;
+                std::swap(op1, op2);
+            }
+        }
+
+        if (transform)
+        {
+            var_types simdBaseType = node->GetSimdBaseType();
+            unsigned  simdSize     = node->GetSimdSize();
+
+            oper = GT_AND_NOT;
+            intrinsicId =
+                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, oper, op1, op2, simdBaseType, simdSize, false);
+            node->ChangeHWIntrinsicId(intrinsicId, op1, op2);
+        }
+    }
+
     switch (oper)
     {
         case GT_AND:
@@ -1737,6 +1791,81 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 node->ChangeHWIntrinsicId(testIntrinsicId);
                 return LowerNode(node);
+            }
+            break;
+        }
+
+        case NI_EVEX_AndMask:
+        {
+            // We want to recognize (~op1 & op2) and transform it
+            // into Evex.AndNotMask(op1, op2) as well as (op1 & ~op2)
+            // transforming it into Evex.AndNotMask(op2, op1), which
+            // takes into account that the XARCH APIs operate more like
+            // NotAnd
+
+            bool transform = false;
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (op1->OperIsHWIntrinsic(NI_EVEX_NotMask))
+            {
+                unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+
+                if (genTypeSize(op1->AsHWIntrinsic()->GetSimdBaseType()) == simdBaseTypeSize)
+                {
+                    transform = true;
+                }
+            }
+
+            if (!transform && op2->OperIsHWIntrinsic(NI_EVEX_NotMask))
+            {
+                unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+
+                if (genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType()) == simdBaseTypeSize)
+                {
+                    transform = true;
+                    std::swap(op1, op2);
+                }
+            }
+
+            if (transform)
+            {
+                intrinsicId = NI_EVEX_AndNotMask;
+                node->ChangeHWIntrinsicId(intrinsicId, op1, op2);
+            }
+            break;
+        }
+
+        case NI_EVEX_NotMask:
+        {
+            // We want to recognize ~(op1 ^ op2) and transform it
+            // into Evex.XnorMask(op1, op2)
+
+            GenTree* op1 = node->Op(1);
+
+            if (op1->OperIsHWIntrinsic(NI_EVEX_XorMask))
+            {
+                unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+
+                if (genTypeSize(op1->AsHWIntrinsic()->GetSimdBaseType()) == simdBaseTypeSize)
+                {
+                    LIR::Use use;
+                    if (BlockRange().TryGetUse(node, &use))
+                    {
+                        use.ReplaceWith(op1);
+                    }
+                    else
+                    {
+                        op1->SetUnusedValue();
+                    }
+
+                    BlockRange().Remove(node);
+                    node = op1->AsHWIntrinsic();
+
+                    intrinsicId = NI_EVEX_XnorMask;
+                    node->ChangeHWIntrinsicId(intrinsicId, node->Op(1), node->Op(2));
+                }
             }
             break;
         }

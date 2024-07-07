@@ -20861,12 +20861,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     }
                 }
             }
-
-            if (op == GT_AND_NOT)
-            {
-                // GT_AND_NOT expects `op1 & ~op2`, but xarch does `~op1 & op2`
-                needsReverseOps = true;
-            }
             break;
         }
 #endif // TARGET_XARCH
@@ -20897,11 +20891,34 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
     if (intrinsic != NI_Illegal)
     {
+        if (op == GT_AND_NOT)
+        {
+            assert(fgNodeThreading == NodeThreading::LIR);
+
+#if defined(TARGET_XARCH)
+            // GT_AND_NOT expects `op1 & ~op2`, but xarch does `~op1 & op2`
+            // We specially handle this here since we're only producing a
+            // native intrinsic node in LIR
+
+            std::swap(op1, op2);
+#endif // TARGET_XARCH
+        }
         return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
     }
 
     switch (op)
     {
+        case GT_AND_NOT:
+        {
+            // Prior to LIR, we want to explicitly decompose this operation so that downstream phases can
+            // appropriately optimize around the individual operations being performed, particularly ~op2,
+            // and produce overall better codegen.
+            assert(fgNodeThreading != NodeThreading::LIR);
+
+            op2 = gtNewSimdUnOpNode(GT_NOT, type, op2, simdBaseJitType, simdSize);
+            return gtNewSimdBinOpNode(GT_AND, type, op1, op2, simdBaseJitType, simdSize);
+        }
+
 #if defined(TARGET_XARCH)
         case GT_RSZ:
         {
@@ -21065,9 +21082,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                         {
                             vecCon1->gtSimdVal.u64[i] = 0x00FF00FF00FF00FF;
                         }
-
-                        // Validate we can't use AVX512F_VL_TernaryLogic here
-                        assert(!canUseEvexEncodingDebugOnly());
 
                         // Vector256<short> maskedProduct = Avx2.And(widenedProduct, vecCon1).AsInt16()
                         GenTree* maskedProduct    = gtNewSimdBinOpNode(GT_AND, widenedType, widenedProduct, vecCon1,
@@ -22032,9 +22046,6 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                                                CORINFO_TYPE_INT, simdSize);
                 v   = gtNewSimdHWIntrinsicNode(type, v, gtNewIconNode(SHUFFLE_ZZXX, TYP_INT), NI_SSE2_Shuffle,
                                                CORINFO_TYPE_INT, simdSize);
-
-                // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!canUseEvexEncodingDebugOnly());
 
                 op2 = gtNewSimdBinOpNode(GT_AND, type, u, v, simdBaseJitType, simdSize);
                 return gtNewSimdBinOpNode(GT_OR, type, op1, op2, simdBaseJitType, simdSize);
@@ -24146,9 +24157,6 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
-                // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!canUseEvexEncodingDebugOnly());
-
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
                 tmp3 = gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_AVX2_PackUnsignedSaturate, CORINFO_TYPE_UBYTE,
@@ -24186,9 +24194,6 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
-
-                // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!canUseEvexEncodingDebugOnly());
 
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -24291,9 +24296,6 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
-                // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!canUseEvexEncodingDebugOnly());
-
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
 
@@ -24329,9 +24331,6 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                     }
 
                     GenTree* vecCon2 = gtCloneExpr(vecCon1);
-
-                    // Validate we can't use AVX512F_VL_TernaryLogic here
-                    assert(!canUseEvexEncodingDebugOnly());
 
                     tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                     tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -27821,6 +27820,14 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             assert(!isScalar);
             assert(op2->TypeIs(simdType));
 
+            if (comp->fgNodeThreading != NodeThreading::LIR)
+            {
+                // We don't want to support creating AND_NOT nodes prior to LIR
+                // as it can break important optimizations. We'll produces this
+                // in lowering instead.
+                break;
+            }
+
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
             {
@@ -30155,13 +30162,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     bool       isScalar = false;
     genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
-#if defined(TARGET_XARCH)
-    if (oper == GT_AND_NOT)
-    {
-        // xarch does: ~op1 & op2, we need op1 & ~op2
-        std::swap(op1, op2);
-    }
-#endif // TARGET_XARCH
+    // We shouldn't find AND_NOT nodes since it should only be produced in lowering
+    assert(oper != GT_AND_NOT);
 
     GenTree* cnsNode   = nullptr;
     GenTree* otherNode = nullptr;
@@ -30674,31 +30676,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 break;
             }
 
-            case GT_AND_NOT:
-            {
-                // Handle `x & ~0 == x` and `0 & ~x == 0`
-                if (cnsNode->IsVectorZero())
-                {
-                    if (cnsNode == op1)
-                    {
-                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
-                        break;
-                    }
-                    else
-                    {
-                        resultNode = otherNode;
-                    }
-                    break;
-                }
-
-                // Handle `x & ~AllBitsSet == 0`
-                if (cnsNode->IsVectorAllBitsSet() && (cnsNode == op2))
-                {
-                    resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
-                }
-                break;
-            }
-
             case GT_DIV:
             {
                 if (varTypeIsFloating(simdBaseType))
@@ -31089,12 +31066,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     {
         switch (ni)
         {
-            case NI_Vector128_ConditionalSelect:
 #if defined(TARGET_XARCH)
+            case NI_Vector128_ConditionalSelect:
             case NI_Vector256_ConditionalSelect:
             case NI_Vector512_ConditionalSelect:
 #elif defined(TARGET_ARM64)
-            case NI_Vector64_ConditionalSelect:
+            case NI_AdvSimd_BitwiseSelect:
             case NI_Sve_ConditionalSelect:
 #endif
             {
