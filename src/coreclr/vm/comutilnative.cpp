@@ -1857,6 +1857,8 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo(void* fromTypeHnd, void* toTypeHn
     // Cache lookup and trivial cases are already handled at managed side. Call the uncached versions directly.
     _ASSERTE(fromTypeHnd != toTypeHnd);
 
+    GCX_COOP();
+
     TypeHandle fromTH = TypeHandle::FromPtr(fromTypeHnd);
     TypeHandle toTH = TypeHandle::FromPtr(toTypeHnd);
     
