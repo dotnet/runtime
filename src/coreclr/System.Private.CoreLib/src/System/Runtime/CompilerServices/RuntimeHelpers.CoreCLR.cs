@@ -818,7 +818,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// A type handle, which can wrap either a pointer to a <c>TypeDesc</c> or to a <see cref="MethodTable"/>.
     /// </summary>
-    internal unsafe struct TypeHandle
+    internal readonly unsafe partial struct TypeHandle
     {
         // Subset of src\vm\typehandle.h
 
@@ -865,6 +865,29 @@ namespace System.Runtime.CompilerServices
         {
             return new TypeHandle((void*)RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle));
         }
+
+        public static bool AreSameType(TypeHandle left, TypeHandle right) => left.m_asTAddr == right.m_asTAddr;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool CanCastTo(TypeHandle destTH)
+        {
+            if (m_asTAddr == destTH.m_asTAddr)
+                return true;
+
+            if (!IsTypeDesc && destTH.IsTypeDesc)
+                return false;
+
+            CastResult result = CastCache.TryGet(CastHelpers.s_table!, (nuint)m_asTAddr, (nuint)destTH.m_asTAddr);
+
+            if (result != CastResult.MaybeCast)
+                return result == CastResult.CanCast;
+
+            return CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
     }
 
     // Helper structs used for tail calls via helper.
