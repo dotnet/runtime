@@ -6,6 +6,8 @@
 #include <wasm_simd128.h>
 #endif
 
+#include <mono/utils/mono-math.h>
+
 #ifdef INTERP_ENABLE_SIMD
 
 gboolean interp_simd_enabled = TRUE;
@@ -175,13 +177,18 @@ interp_v128_op_bitwise_or (gpointer res, gpointer v1, gpointer v2)
 static void
 interp_v128_op_bitwise_equality (gpointer res, gpointer v1, gpointer v2)
 {
-	gint64 *v1_cast = (gint64*)v1;
-	gint64 *v2_cast = (gint64*)v2;
+	gint64 *v1_typed = (gint64*)v1;
+	gint64 *v2_typed = (gint64*)v2;
 
-	if (*v1_cast == *v2_cast && *(v1_cast + 1) == *(v2_cast + 1))
-		*(gint32*)res = 1;
-	else
-		*(gint32*)res = 0;
+	bool succeeded = true;
+
+	if (v1_typed [0] != v2_typed [0]) {
+		succeeded = false;
+	} else if (v1_typed [1] != v2_typed [1]) {
+		succeeded = false;
+	}
+
+	*(gint32*)res = succeeded ? 1 : 0;
 }
 
 // op_ExclusiveOr
@@ -195,36 +202,81 @@ interp_v128_op_exclusive_or (gpointer res, gpointer v1, gpointer v2)
 static void
 interp_v128_op_bitwise_inequality (gpointer res, gpointer v1, gpointer v2)
 {
-	gint64 *v1_cast = (gint64*)v1;
-	gint64 *v2_cast = (gint64*)v2;
+	gint64 *v1_typed = (gint64*)v1;
+	gint64 *v2_typed = (gint64*)v2;
 
-	if (*v1_cast == *v2_cast && *(v1_cast + 1) == *(v2_cast + 1))
-		*(gint32*)res = 0;
-	else
-		*(gint32*)res = 1;
+	bool succeeded = false;
+
+	if (v1_typed [0] != v2_typed [0]) {
+		succeeded = true;
+	} else if (v1_typed [1] != v2_typed [1]) {
+		succeeded = true;
+	}
+
+	*(gint32*)res = succeeded ? 1 : 0;
 }
 
-// Vector128<float>EqualsFloatingPoint
+static bool
+r4_float_equality(float v1, float v2)
+{
+	if (v1 == v2) {
+		return true;
+	} else if (mono_isnan (v1) && mono_isnan (v2)) {
+		return true;
+	}
+
+	return false;
+}
+
+// Vector128<float>.EqualsFloatingPoint
 static void
 interp_v128_r4_float_equality (gpointer res, gpointer v1, gpointer v2)
 {
-	v128_r4 v1_cast = *(v128_r4*)v1;
-	v128_r4 v2_cast = *(v128_r4*)v2;
-	v128_r4 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
-	memset (&v1_cast, 0xff, SIZEOF_V128);
+	float *v1_typed = (float*)v1;
+	float *v2_typed = (float*)v2;
 
-	*(gint32*)res = memcmp (&v1_cast, &result, SIZEOF_V128) == 0;
+	bool succeeded = true;
+
+	if (!r4_float_equality(v1_typed [0], v2_typed [0])) {
+		succeeded = false;
+	} else if (!r4_float_equality(v1_typed [1], v2_typed [1])) {
+		succeeded = false;
+	} else if (!r4_float_equality(v1_typed [2], v2_typed [2])) {
+		succeeded = false;
+	} else if (!r4_float_equality(v1_typed [3], v2_typed [3])) {
+		succeeded = false;
+	}
+
+	*(gint32*)res = succeeded ? 1 : 0;
+}
+
+static bool
+r8_float_equality(double v1, double v2)
+{
+	if (v1 == v2) {
+		return true;
+	} else if (mono_isnan (v1) && mono_isnan (v2)) {
+		return true;
+	}
+
+	return false;
 }
 
 static void
 interp_v128_r8_float_equality (gpointer res, gpointer v1, gpointer v2)
 {
-	v128_r8 v1_cast = *(v128_r8*)v1;
-	v128_r8 v2_cast = *(v128_r8*)v2;
-	v128_r8 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
-	memset (&v1_cast, 0xff, SIZEOF_V128);
+	double *v1_typed = (double*)v1;
+	double *v2_typed = (double*)v2;
 
-	*(gint32*)res = memcmp (&v1_cast, &result, SIZEOF_V128) == 0;
+	bool succeeded = true;
+
+	if (!r8_float_equality(v1_typed [0], v2_typed [0])) {
+		succeeded = false;
+	} else if (!r8_float_equality(v1_typed [1], v2_typed [1])) {
+		succeeded = false;
+	}
+
+	*(gint32*)res = succeeded ? 1 : 0;
 }
 
 // op_Multiply
