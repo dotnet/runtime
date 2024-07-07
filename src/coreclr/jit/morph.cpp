@@ -9968,7 +9968,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         default:
         {
             bool       isScalar   = false;
-            genTreeOps actualOper = node->HWOperGet(&isScalar);
+            genTreeOps actualOper = node->GetOperForHWIntrinsicId(&isScalar);
             genTreeOps oper       = actualOper;
 
             if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
@@ -10125,7 +10125,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     bool       isScalar = false;
-    genTreeOps oper     = node->HWOperGet(&isScalar);
+    genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar);
 
     if (isScalar)
     {
@@ -10148,7 +10148,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 // Try handle: ~op1 & op2
                 GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
 
                 if (isScalar)
                 {
@@ -10174,7 +10174,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 // Try handle: op1 & ~op2
                 GenTreeHWIntrinsic* hw     = op2->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
 
                 if (isScalar)
                 {
@@ -10229,7 +10229,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             if (op1->OperIsHWIntrinsic())
             {
                 GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
 
                 if (isScalar)
                 {
@@ -10266,7 +10266,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             if (op1->OperIsHWIntrinsic())
             {
                 GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
 
                 if (isScalar)
                 {
@@ -10308,7 +10308,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (op2->OperIsHWIntrinsic())
                 {
                     GenTreeHWIntrinsic* hw             = op2->AsHWIntrinsic();
-                    genTreeOps          hwOper         = hw->HWOperGet(&isScalar);
+                    genTreeOps          hwOper         = hw->GetOperForHWIntrinsicId(&isScalar);
                     var_types           hwSimdBaseType = hw->GetSimdBaseType();
 
                     if (isScalar)
@@ -10414,7 +10414,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
     }
 
     bool       isScalar              = false;
-    genTreeOps oper                  = tree->HWOperGet(&isScalar);
+    genTreeOps oper                  = tree->GetOperForHWIntrinsicId(&isScalar);
     bool       needsMatchingBaseType = false;
 
     switch (oper)
@@ -10457,7 +10457,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
     GenTreeHWIntrinsic* intrinOp1 = effectiveOp1->AsHWIntrinsic();
 
     bool       op1IsScalar = false;
-    genTreeOps op1Oper     = intrinOp1->HWOperGet(&op1IsScalar);
+    genTreeOps op1Oper     = intrinOp1->GetOperForHWIntrinsicId(&op1IsScalar);
 
     if ((op1Oper != oper) || (op1IsScalar != isScalar))
     {
