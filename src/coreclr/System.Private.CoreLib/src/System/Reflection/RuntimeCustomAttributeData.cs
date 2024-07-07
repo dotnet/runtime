@@ -1647,9 +1647,12 @@ namespace System.Reflection
                 // Resolve attribute type from ctor parent token found in decorated decoratedModule scope
                 attributeType = (decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null) as RuntimeType)!;
             }
-            catch
+            catch when (attributeFilterType.IsSealed)
             {
-                // Skip attributes whose type cannot be resolved.
+                // If the type of one of the attributes cannot be resolved and the filter type is sealed, we can ignore
+                // the error and return false. We can do this only when looking for sealed attribute types because otherwise,
+                // that type that failed to be resolved could have been a subclass of the filter type, and by ignoring the
+                // error we are potentially returning false information.
                 attributeType = null;
                 return false;
             }
