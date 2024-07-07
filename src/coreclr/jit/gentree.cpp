@@ -28902,6 +28902,21 @@ bool GenTreeHWIntrinsic::ShouldConstantProp(GenTree* operand, GenTreeVecCon* vec
             return IsUserCall() && (operand == Op(2));
         }
 
+#if defined(TARGET_XARCH)
+        case NI_SSE_Xor:
+        case NI_SSE2_Xor:
+        case NI_AVX_Xor:
+        case NI_AVX2_Xor:
+        case NI_AVX512F_Xor:
+        case NI_AVX512DQ_Xor:
+        case NI_AVX10v1_V512_Xor:
+        {
+            // We recognize this as GT_NOT which can enable other optimizations
+            assert(GetOperandCount() == 2);
+            return vecCon->IsVectorAllBitsSet();
+        }
+#endif // TARGET_XARCH
+
         default:
         {
             break;
