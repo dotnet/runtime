@@ -839,8 +839,6 @@ extends:
           platforms:
             - browser_wasm
             #- browser_wasm_win
-          jobParameters:
-            timeoutInMinutes: 240
           nameSuffix: _Threading
           extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           extraHelixArguments: /p:WasmEnableThreads=true
