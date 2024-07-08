@@ -607,7 +607,7 @@ namespace System.Net.Http
                     // meaning that PrepareForReuse would have failed, and we wouldn't have called SendAsync.
                     // The task therefore shouldn't be 'default', as it's representing an async operation that had to yield at some point.
                     Debug.Assert(_readAheadTask != default);
-                    Debug.Assert(_readAheadTaskStatus == ReadAheadTask_CompletionReserved);
+                    Debug.Assert(_readAheadTaskStatus is ReadAheadTask_CompletionReserved or ReadAheadTask_Completed);
 
                     // Handle the pre-emptive read.  For the async==false case, hopefully the read has
                     // already completed and this will be a nop, but if it hasn't, the caller will be forced to block
@@ -852,7 +852,7 @@ namespace System.Net.Http
 
                 if (_readAheadTask != default)
                 {
-                    Debug.Assert(_readAheadTaskStatus == ReadAheadTask_CompletionReserved);
+                    Debug.Assert(_readAheadTaskStatus is ReadAheadTask_CompletionReserved or ReadAheadTask_Completed);
 
                     LogExceptions(_readAheadTask.AsTask());
                 }

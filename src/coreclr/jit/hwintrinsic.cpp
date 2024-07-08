@@ -1856,14 +1856,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         break;
 
 #elif defined(TARGET_ARM64)
-                    case NI_Sve_GatherPrefetch8Bit:
-                    case NI_Sve_GatherPrefetch16Bit:
-                    case NI_Sve_GatherPrefetch32Bit:
-                    case NI_Sve_GatherPrefetch64Bit:
-                        assert(varTypeIsSIMD(op2->TypeGet()));
-                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
-                        break;
-
                     case NI_Sve_GatherVector:
                     case NI_Sve_GatherVectorByteZeroExtend:
                     case NI_Sve_GatherVectorInt16SignExtend:
@@ -1893,22 +1885,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 assert(!isScalar);
                 retNode =
                     gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
-
-#if defined(TARGET_ARM64)
-                switch (intrinsic)
-                {
-                    case NI_Sve_GatherPrefetch8Bit:
-                    case NI_Sve_GatherPrefetch16Bit:
-                    case NI_Sve_GatherPrefetch32Bit:
-                    case NI_Sve_GatherPrefetch64Bit:
-                        assert(varTypeIsSIMD(op3->TypeGet()));
-                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
-                        break;
-
-                    default:
-                        break;
-                }
-#endif
                 break;
             }
 
