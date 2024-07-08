@@ -33,4 +33,29 @@ public unsafe class Program
         GUID guid = GetGUID(ref g);
         Unsafe.CopyBlock(result, &guid, (uint)sizeof(GUID));
     }
+
+    struct X
+    {
+        byte x;
+        BigArray a;
+    }
+
+    struct Y
+    {
+        BigArray a;
+        byte y;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Size = int.MaxValue)] 
+    struct BigArray
+    {
+    }
+
+    [Fact]
+    public static int TestLargeStructSize()
+    {
+        Assert.Equal(int.MaxValue, sizeof(BigArray));
+        Assert.Throws<TypeLoadException>(() => { sizeof(X); });
+        Assert.Throws<TypeLoadException>(() => { sizeof(Y); });
+    }
 }

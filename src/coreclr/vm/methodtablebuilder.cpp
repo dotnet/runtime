@@ -3805,6 +3805,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
     DWORD   dwR8Fields              = 0;        // Number of R8's the class has
 
+    UINT32 accumulatedSize = 0;
+
 #ifdef FEATURE_64BIT_ALIGNMENT
     // Track whether any field in this type requires 8-byte alignment
     BOOL    fFieldRequiresAlign8 = HasParent() ? GetParentMethodTable()->RequiresAlign8() : FALSE;
@@ -4311,6 +4313,9 @@ IS_VALUETYPE:
                   pszFieldName
                   );
 
+        if (pLayoutFieldInfo)
+            accumulatedSize += pLayoutFieldInfo->m_placement.m_size;
+
         // We're using FieldDesc::m_pMTOfEnclosingClass to temporarily store the field's size.
         //
         if (fIsByValue)
@@ -4468,6 +4473,7 @@ IS_VALUETYPE:
         }
     }
     // We processed all fields
+    IfFailThrow((accumulatedSize > FIELD_OFFSET_LAST_REAL_OFFSET) ? COR_E_TYPELOAD : S_OK);
 
     //#SelfReferencingStaticValueTypeField_Checks
     if (bmtFP->fHasSelfReferencingStaticValueTypeField_WithRVA)
