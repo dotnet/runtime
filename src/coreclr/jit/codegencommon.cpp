@@ -2461,8 +2461,8 @@ void CodeGen::genReportEH()
         {
             // We have two clauses mapped to the same try region.
             // Make sure we report the clause with the smaller index first.
-            const auto leftIndex  = left.HBtab - this->compiler->compHndBBtab;
-            const auto rightIndex = right.HBtab - this->compiler->compHndBBtab;
+            const ptrdiff_t leftIndex  = left.HBtab - this->compiler->compHndBBtab;
+            const ptrdiff_t rightIndex = right.HBtab - this->compiler->compHndBBtab;
             return leftIndex < rightIndex;
         }
 
