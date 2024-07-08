@@ -199,11 +199,6 @@ ves_icall_System_Array_GetValueImpl (MonoObjectHandleOnStack array_handle, MonoO
 	MonoClass * const array_class = mono_object_class (array);
 	MonoClass * const element_class = m_class_get_element_class (array_class);
 
-	if (m_class_is_native_pointer (element_class)) {
-		mono_error_set_not_supported (error, NULL);
-		return;
-	}
-
 	if (m_class_is_valuetype (element_class)) {
 		gsize element_size = mono_array_element_size (array_class);
 		gpointer element_address = mono_array_addr_with_size_fast (array, element_size, (gsize)pos);

@@ -169,6 +169,7 @@ namespace System
             if (reliable)
             {
                 if (!dst_type.Equals(src_type) &&
+                    !(dst_type.IsPointer && src_type.IsPointer) &&
                     !(dst_type.IsPrimitive && src_type.IsPrimitive &&
                       CanChangePrimitive(ObjectHandleOnStack.Create(ref dst_type), ObjectHandleOnStack.Create(ref src_type), true)))
                 {
@@ -329,9 +330,6 @@ namespace System
 
         internal object? InternalGetValue(nint index)
         {
-            if (GetType().GetElementType()!.IsPointer)
-                throw new NotSupportedException(SR.NotSupported_Type);
-
             Array self = this;
             object? res = null;
             GetValueImpl(ObjectHandleOnStack.Create(ref self), ObjectHandleOnStack.Create(ref res), (int)index);
@@ -340,9 +338,6 @@ namespace System
 
         internal void InternalSetValue(object? value, nint index)
         {
-            if (GetType().GetElementType()!.IsPointer)
-                throw new NotSupportedException(SR.NotSupported_Type);
-
             Array self = this;
             SetValueImpl(ObjectHandleOnStack.Create(ref self), ObjectHandleOnStack.Create(ref value), (int)index);
         }
