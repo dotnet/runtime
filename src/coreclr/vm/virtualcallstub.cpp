@@ -769,9 +769,7 @@ void VirtualCallStubManager::InitStatic()
     VirtualCallStubManagerManager::InitStatic();
 }
 
-// Static shutdown code.
-// At the moment, this doesn't do anything more than log statistics.
-void VirtualCallStubManager::UninitStatic()
+void VirtualCallStubManager::LogFinalStats()
 {
     CONTRACTL
     {
@@ -1188,7 +1186,7 @@ size_t VirtualCallStubManager::GetTokenFromStub(PCODE stub)
     }
     CONTRACTL_END
 
-    _ASSERTE(stub != NULL);
+    _ASSERTE(stub != (PCODE)NULL);
     StubCodeBlockKind         stubKind = STUB_CODE_BLOCK_UNKNOWN;
     VirtualCallStubManager *  pMgr     = FindStubManager(stub, &stubKind);
 
@@ -1206,7 +1204,7 @@ size_t VirtualCallStubManager::GetTokenFromStubQuick(VirtualCallStubManager * pM
     CONTRACTL_END
 
     _ASSERTE(pMgr != NULL);
-    _ASSERTE(stub != NULL);
+    _ASSERTE(stub != (PCODE)NULL);
     _ASSERTE(kind != STUB_CODE_BLOCK_UNKNOWN);
 
 #ifndef DACCESS_COMPILE
@@ -1349,7 +1347,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     MethodTable * pRepresentativeMT = pObj->GetMethodTable();
     if (representativeToken.IsTypedToken())
     {
-        pRepresentativeMT = CURRENT_THREAD->GetDomain()->LookupType(representativeToken.GetTypeID());
+        pRepresentativeMT = AppDomain::GetCurrentDomain()->LookupType(representativeToken.GetTypeID());
         CONSISTENCY_CHECK(CheckPointer(pRepresentativeMT));
     }
 
@@ -1366,7 +1364,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
 
     PCODE callSiteTarget = callSite.GetSiteTarget();
-    CONSISTENCY_CHECK(callSiteTarget != NULL);
+    CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
 
     StubCodeBlockKind   stubKind = STUB_CODE_BLOCK_UNKNOWN;
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
@@ -1412,7 +1410,7 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
 
     PCODE callSiteTarget = callSite.GetSiteTarget();
-    CONSISTENCY_CHECK(callSiteTarget != NULL);
+    CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
 
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget);
     PREFIX_ASSUME(pMgr != NULL);
@@ -1579,7 +1577,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 #endif // _DEBUG
     }
 
-    CONSISTENCY_CHECK(target != NULL);
+    CONSISTENCY_CHECK(target != (PCODE)NULL);
 
     // Now that we've successfully determined the target, we will wrap the remaining logic in a giant
     // TRY/CATCH statement because it is there purely to emit stubs and cache entries. In the event
@@ -1674,7 +1672,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                         }
                         CONSISTENCY_CHECK(CheckPointer(pResolveHolder));
                         stub = pResolveHolder->stub()->resolveEntryPoint();
-                        CONSISTENCY_CHECK(stub != NULL);
+                        CONSISTENCY_CHECK(stub != (PCODE)NULL);
                     }
 
                     // Only create a dispatch stub if:
@@ -1716,7 +1714,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                             // Now assign the entrypoint to stub
                             CONSISTENCY_CHECK(CheckPointer(pDispatchHolder));
                             stub = pDispatchHolder->stub()->entryPoint();
-                            CONSISTENCY_CHECK(stub != NULL);
+                            CONSISTENCY_CHECK(stub != (PCODE)NULL);
                         }
                         else
                         {
@@ -1854,7 +1852,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     EX_END_CATCH (SwallowAllExceptions);
 
     // Target can be NULL only if we can't resolve to an address
-    _ASSERTE(target != NULL);
+    _ASSERTE(target != (PCODE)NULL);
 
     return target;
 }
@@ -1886,7 +1884,7 @@ VirtualCallStubManager::Resolver(
     MethodDesc *  dbg_pTokenMD = NULL;
     if (token.IsTypedToken())
     {
-        dbg_pTokenMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+        dbg_pTokenMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
         dbg_pTokenMD = dbg_pTokenMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
     }
 #endif // _DEBUG
@@ -2042,7 +2040,7 @@ VirtualCallStubManager::Resolver(
         MethodDesc *  pTokenMD = NULL;
         if (token.IsTypedToken())
         {
-            pTokenMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+            pTokenMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
             pTokenMD = pTokenMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
         }
 
@@ -2101,8 +2099,8 @@ BOOL VirtualCallStubManager::IsInterfaceToken(DispatchToken token)
     } CONTRACT_END;
     BOOL ret = token.IsTypedToken();
     // For now, only interfaces have typed dispatch tokens.
-    CONSISTENCY_CHECK(!ret || CheckPointer(GetThread()->GetDomain()->LookupType(token.GetTypeID())));
-    CONSISTENCY_CHECK(!ret || GetThread()->GetDomain()->LookupType(token.GetTypeID())->IsInterface());
+    CONSISTENCY_CHECK(!ret || CheckPointer(AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())));
+    CONSISTENCY_CHECK(!ret || AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())->IsInterface());
     RETURN (ret);
 }
 
@@ -2128,7 +2126,7 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
 
     if (token.IsTypedToken())
     {
-        pMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+        pMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
         CONSISTENCY_CHECK(CheckPointer(pMT));
         token = DispatchToken::CreateDispatchToken(token.GetSlotNumber());
     }
@@ -2143,7 +2141,7 @@ MethodTable *VirtualCallStubManager::GetTypeFromToken(DispatchToken token)
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
     } CONTRACTL_END;
-    MethodTable *pMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+    MethodTable *pMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
     _ASSERTE(pMT != NULL);
     _ASSERTE(pMT->LookupTypeID() == token.GetTypeID());
     return pMT;
@@ -2234,7 +2232,7 @@ VirtualCallStubManager::GetTarget(
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
     // We need to review if this is the case and refactor this code if we want ICastable to become officially supported
     fPatch = Resolver(pMT, token, NULL, &target, throwOnConflict);
-    _ASSERTE(!throwOnConflict || target != NULL);
+    _ASSERTE(!throwOnConflict || target != (PCODE)NULL);
 
 #ifndef STUB_DISPATCH_PORTABLE
     if (fPatch)

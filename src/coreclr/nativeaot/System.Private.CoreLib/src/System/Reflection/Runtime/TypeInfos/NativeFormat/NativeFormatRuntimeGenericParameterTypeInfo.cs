@@ -62,7 +62,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                if (_genericParameter.Name.IsNull(Reader))
+                if (_genericParameter.Name.IsNil)
                     return string.Empty;
                 return _genericParameter.Name.GetString(Reader);
             }

@@ -29,6 +29,7 @@ public struct Tuple<T0, T1>
 public static class M
 {
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         return meth<int>(8, 100);

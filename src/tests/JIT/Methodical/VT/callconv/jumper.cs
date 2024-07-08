@@ -16,6 +16,7 @@ namespace MS_jumper_cs
         private VT sub(VT what) { _m_n -= what._m_n; return this; }   //this will be implemented via NEG+JMP in IL
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             VT vt = new VT(100);

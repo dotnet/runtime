@@ -188,7 +188,6 @@ jobs:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals windows.vs2022.amd64.open
 
-
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
       # macOS hosted pool machines are slower so we need to give a greater timeout than the 60 mins default.
       ${{ if and(eq(parameters.jobParameters.timeoutInMinutes, ''), in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'tvos')) }}:

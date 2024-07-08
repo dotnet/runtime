@@ -42,11 +42,6 @@ else()
 set(metadata_platform_sources ${metadata_unix_sources})
 endif()
 
-set(imported_native_sources
-    ../../../native/containers/dn-simdhash.c
-    ../../../native/containers/dn-simdhash-string-ptr.c
-    ../../../native/containers/dn-simdhash-u32-ptr.c)
-
 set(metadata_common_sources
     appdomain.c
     domain.c
@@ -200,7 +195,7 @@ elseif(MONO_GC STREQUAL "boehm")
     set(metadata_compile_definitions "HAVE_BOEHM_GC")
 endif()
 
-set(metadata_sources "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_gc_sources};${ilgen_sources};${imported_native_sources}")
+set(metadata_sources "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_gc_sources};${ilgen_sources}")
 
 if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
     add_library(metadata_objects_shared OBJECT ${metadata_sources})

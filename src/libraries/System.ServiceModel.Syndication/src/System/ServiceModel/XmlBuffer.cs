@@ -87,7 +87,7 @@ namespace System.ServiceModel
             _buffer = new byte[_stream.Length];
             _stream.Position = 0;
 
-#if NET7_0_OR_GREATER
+#if NET
             _stream.ReadExactly(_buffer);
 #else
             int totalRead = 0;

@@ -78,7 +78,6 @@ public class SimpleRunTests : BlazorWasmTestBase
 
     [Theory]
     [InlineData("Debug", false)]
-    [InlineData("Debug", true)]
     [InlineData("Release", false)]
     [InlineData("Release", true)]
     public async Task BlazorPublishRunTest(string config, bool aot)

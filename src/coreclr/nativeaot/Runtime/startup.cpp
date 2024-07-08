@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "common.h"
+#ifdef HOST_WINDOWS
+#include <windows.h>
+#endif
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
@@ -33,13 +36,13 @@
 #ifndef DACCESS_COMPILE
 
 #ifdef PROFILE_STARTUP
-unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
+uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 #endif // PROFILE_STARTUP
 
-#ifdef TARGET_UNIX
-int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
+#ifdef HOST_WINDOWS
+EXTERN_C LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 #else
-int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
+int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 #endif
 
 extern "C" void PopulateDebugHeaders();
@@ -123,8 +126,8 @@ static bool InitDLL(HANDLE hPalInstance)
 
     // Note: The global exception handler uses RuntimeInstance
 #if !defined(USE_PORTABLE_HELPERS)
-#ifndef TARGET_UNIX
-    PalAddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
+#ifdef HOST_WINDOWS
+    AddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
 #else
     PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
 #endif
@@ -284,7 +287,7 @@ static void UninitDLL()
 #endif // PROFILE_STARTUP
 }
 
-#ifdef _WIN32
+#ifdef HOST_WINDOWS
 // This is set to the thread that initiates and performs the shutdown and may run
 // after other threads are rudely terminated. So far this is a Windows-specific concern.
 //
@@ -292,15 +295,22 @@ static void UninitDLL()
 // the process is terminated via `exit()` or a signal. Thus there is no such distinction
 // between threads.
 Thread* g_threadPerformingShutdown = NULL;
+
+static BOOLEAN WINAPI RtlDllShutdownInProgressFallback()
+{
+    return g_threadPerformingShutdown == ThreadStore::GetCurrentThread();
+}
+typedef BOOLEAN (WINAPI* PRTLDLLSHUTDOWNINPROGRESS)();
+PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress = &RtlDllShutdownInProgressFallback;
 #endif
 
-#if defined(_WIN32) && defined(FEATURE_PERFTRACING)
+#if defined(HOST_WINDOWS) && defined(FEATURE_PERFTRACING)
 bool g_safeToShutdownTracing;
 #endif
 
 static void __cdecl OnProcessExit()
 {
-#ifdef _WIN32
+#ifdef HOST_WINDOWS
     // The process is exiting and the current thread is performing the shutdown.
     // When this thread exits some threads may be already rudely terminated.
     // It would not be a good idea for this thread to wait on any locks
@@ -310,7 +320,7 @@ static void __cdecl OnProcessExit()
 #endif
 
 #ifdef FEATURE_PERFTRACING
-#ifdef _WIN32
+#ifdef HOST_WINDOWS
     // We forgo shutting down event pipe if it wouldn't be safe and could lead to a hang.
     // If there was an active trace session, the trace will likely be corrupted without
     // orderly shutdown. See https://github.com/dotnet/runtime/issues/89346.
@@ -325,18 +335,11 @@ static void __cdecl OnProcessExit()
 
 void RuntimeThreadShutdown(void* thread)
 {
-    // Note: loader lock is normally *not* held here!
-    // The one exception is that the loader lock may be held during the thread shutdown callback
-    // that is made for the single thread that runs the final stages of orderly process
-    // shutdown (i.e., the thread that delivers the DLL_PROCESS_DETACH notifications when the
-    // process is being torn down via an ExitProcess call).
-    // In such case we do not detach.
-
-#ifdef _WIN32
+#ifdef HOST_WINDOWS
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 
-    // Do not try detaching the thread that performs the shutdown.
-    if (g_threadPerformingShutdown == thread)
+    // Do not try detaching the thread during process shutdown.
+    if (g_pfnRtlDllShutdownInProgress())
     {
         // At this point other threads could be terminated rudely while leaving runtime
         // in inconsistent state, so we would be risking blocking the process from exiting.
@@ -362,11 +365,19 @@ extern "C" bool RhInitialize(bool isDll)
     if (!PalInit())
         return false;
 
-#if defined(_WIN32) || defined(FEATURE_PERFTRACING)
+#if defined(HOST_WINDOWS)
+    // RtlDllShutdownInProgress provides more accurate information about whether the process is shutting down.
+    // Use it if it is available to avoid shutdown deadlocks.
+    PRTLDLLSHUTDOWNINPROGRESS pfn = (PRTLDLLSHUTDOWNINPROGRESS)GetProcAddress(GetModuleHandleW(W("ntdll.dll")), "RtlDllShutdownInProgress");
+    if (pfn != NULL)
+        g_pfnRtlDllShutdownInProgress = pfn;
+#endif
+
+#if defined(HOST_WINDOWS) || defined(FEATURE_PERFTRACING)
     atexit(&OnProcessExit);
 #endif
 
-#if defined(_WIN32) && defined(FEATURE_PERFTRACING)
+#if defined(HOST_WINDOWS) && defined(FEATURE_PERFTRACING)
     g_safeToShutdownTracing = !isDll;
 #endif
 

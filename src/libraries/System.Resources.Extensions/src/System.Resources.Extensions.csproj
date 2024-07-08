@@ -38,8 +38,33 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <Compile Include="System\Resources\Extensions\PreserializedResourceWriter.cs" />
     <Compile Include="System\Resources\Extensions\SerializationFormat.cs" />
     <Compile Include="System\Resources\Extensions\TypeNameComparer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.IParseState.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.ITypeResolver.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.Options.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.ParseState.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.TypeResolver.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\SerializationEvents.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\SerializationExtensions.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\SerializationInfoExtensions.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ArrayRecordDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ArrayUpdater.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ClassRecordDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ClassRecordFieldInfoDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ClassRecordSerializationInfoDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\Deserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\FieldValueUpdater.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\IDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ObjectRecordDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\PendingSerializationInfo.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\SerializationInfoValueUpdater.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ValueUpdater.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -47,6 +72,14 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
              Link="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
              Link="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs"
+             Link="System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs"
+             Link="System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs"
+             Link="System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs"
+             Link="System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

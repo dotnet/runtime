@@ -192,9 +192,9 @@
         <target state="translated">Upłynął limit czasu podczas próby dopasowania przez aparat wyrażeń regularnych wzorca do ciągu wejściowego. Mogło to być spowodowane wieloma przyczynami, w tym bardzo dużą ilością danych wejściowych, nadmiernym wykorzystaniem algorytmu wycofywania związanym z kwantyfikatorami zagnieżdżonymi, odwołaniami wstecznymi i innymi czynnikami.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
-        <target state="translated">Metoda GeneratedRegexAttribute musi być częściowa, bez parametrów, niestanowa, nieabstrakcyjna i zwracać wyrażenia regularne.</target>
+      <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
+        <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
+        <target state="new">GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">

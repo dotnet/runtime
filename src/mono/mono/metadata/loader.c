@@ -1182,12 +1182,12 @@ mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, Mono
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_METHOD) {
 		if (!image->method_cache)
-			image->method_cache = g_hash_table_new (NULL, NULL);
-		result = (MonoMethod *)g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (mono_metadata_token_index (token)));
+			image->method_cache = dn_simdhash_u32_ptr_new (0, NULL);
+		dn_simdhash_u32_ptr_try_get_value (image->method_cache, mono_metadata_token_index (token), (void **)&result);
 	} else if (!image_is_dynamic (image)) {
 		if (!image->methodref_cache)
-			image->methodref_cache = g_hash_table_new (NULL, NULL);
-		result = (MonoMethod *)g_hash_table_lookup (image->methodref_cache, GINT_TO_POINTER (token));
+			image->methodref_cache = dn_simdhash_u32_ptr_new (0, NULL);
+		dn_simdhash_u32_ptr_try_get_value (image->methodref_cache, token, (void **)&result);
 	}
 	mono_image_unlock (image);
 
@@ -1204,9 +1204,9 @@ mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, Mono
 		MonoMethod *result2 = NULL;
 
 		if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
-			result2 = (MonoMethod *)g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (mono_metadata_token_index (token)));
+			dn_simdhash_u32_ptr_try_get_value (image->method_cache, mono_metadata_token_index (token), (void **)&result2);
 		else if (!image_is_dynamic (image))
-			result2 = (MonoMethod *)g_hash_table_lookup (image->methodref_cache, GINT_TO_POINTER (token));
+			dn_simdhash_u32_ptr_try_get_value (image->methodref_cache, token, (void **)&result2);
 
 		if (result2) {
 			mono_image_unlock (image);
@@ -1214,9 +1214,9 @@ mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, Mono
 		}
 
 		if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
-			g_hash_table_insert (image->method_cache, GINT_TO_POINTER (mono_metadata_token_index (token)), result);
+			dn_simdhash_u32_ptr_try_add (image->method_cache, mono_metadata_token_index (token), result);
 		else if (!image_is_dynamic (image))
-			g_hash_table_insert (image->methodref_cache, GINT_TO_POINTER (token), result);
+			dn_simdhash_u32_ptr_try_add (image->methodref_cache, token, result);
 	}
 
 	mono_image_unlock (image);
@@ -1514,7 +1514,7 @@ mono_method_get_param_token (MonoMethod *method, int index)
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
 		guint param_index = mono_metadata_get_method_params (klass_image, idx, NULL);
-		
+
 		if (index == -1)
 			/* Return value */
 			return mono_metadata_make_token (MONO_TABLE_PARAM, 0);

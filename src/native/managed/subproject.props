@@ -1,0 +1,13 @@
+<Project>
+    <!-- properties to pass down to the subproject builds -->
+    <ItemGroup>
+        <SubprojectProps Include="Configuration" Value="$(Configuration)" />
+        <SubprojectProps Include="RuntimeConfiguration" Value="$(RuntimeConfiguration)" />
+        <SubprojectProps Include="LibrariesConfiguration" Value="$(LibrariesConfiguration)" />
+        <SubprojectProps Include="RuntimeIdentifier" Value="$(OutputRID)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <SplitSubprojectProps>@(SubprojectProps->'%(Identity)=%(Value)', ';')</SplitSubprojectProps>
+    </PropertyGroup>
+</Project>

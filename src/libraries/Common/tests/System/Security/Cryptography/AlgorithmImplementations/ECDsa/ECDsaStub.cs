@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             throw new NotImplementedException();
         }
 
-#if NETCOREAPP
+#if NET
         public override void ImportParameters(ECParameters parameters)
         {
             throw new NotImplementedException();

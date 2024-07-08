@@ -59,7 +59,7 @@ namespace System.Net.Http
         private SslClientAuthenticationOptions? _sslOptionsHttp3;
         private readonly SslClientAuthenticationOptions? _sslOptionsProxy;
 
-        private readonly CredentialCache? _preAuthCredentials;
+        private readonly PreAuthCredentialCache? _preAuthCredentials;
 
         /// <summary>Whether the pool has been used since the last time a cleanup occurred.</summary>
         private bool _usedSinceLastCleanup = true;
@@ -237,13 +237,17 @@ namespace System.Net.Http
             // Set up for PreAuthenticate.  Access to this cache is guarded by a lock on the cache itself.
             if (_poolManager.Settings._preAuthenticate)
             {
-                _preAuthCredentials = new CredentialCache();
+                _preAuthCredentials = new PreAuthCredentialCache();
             }
 
             _http11RequestQueue = new RequestQueue<HttpConnection>();
             if (_http2Enabled)
             {
                 _http2RequestQueue = new RequestQueue<Http2Connection?>();
+            }
+            if (IsHttp3Supported() && _http3Enabled)
+            {
+                _http3RequestQueue = new RequestQueue<Http3Connection?>();
             }
 
             if (_proxyUri != null && HttpUtilities.IsSupportedSecureScheme(_proxyUri.Scheme))
@@ -296,7 +300,7 @@ namespace System.Net.Http
         public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.SslSocksTunnel;
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
-        public CredentialCache? PreAuthCredentials => _preAuthCredentials;
+        public PreAuthCredentialCache? PreAuthCredentials => _preAuthCredentials;
         public bool IsDefaultPort => OriginAuthority.Port == (IsSecure ? DefaultHttpsPort : DefaultHttpPort);
         private bool DoProxyAuth => (_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect);
 
@@ -380,7 +384,7 @@ namespace System.Net.Http
         {
             if (doRequestAuth && Settings._credentials != null)
             {
-                return AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, connection, this, cancellationToken);
+                return AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, Settings._impersonationLevel, connection, this, cancellationToken);
             }
 
             return SendWithNtProxyAuthAsync(connection, request, async, cancellationToken);
@@ -390,7 +394,7 @@ namespace System.Net.Http
         {
             if (DoProxyAuth && ProxyCredentials is not null)
             {
-                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, connection, this, cancellationToken);
+                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, HttpHandlerDefaults.DefaultImpersonationLevel, connection, this, cancellationToken);
             }
 
             return connection.SendAsync(request, async, cancellationToken);
@@ -881,11 +885,12 @@ namespace System.Net.Http
                     _availableHttp2Connections.Clear();
                 }
 
-                if (_http3Connection is not null)
+                if (IsHttp3Supported() && _availableHttp3Connections is not null)
                 {
                     toDispose ??= new();
-                    toDispose.Add(_http3Connection);
-                    _http3Connection = null;
+                    toDispose.AddRange(_availableHttp3Connections);
+                    _associatedHttp3ConnectionCount -= _availableHttp3Connections.Count;
+                    _availableHttp3Connections.Clear();
                 }
 
                 if (_authorityExpireTimer != null)
@@ -955,6 +960,14 @@ namespace System.Net.Http
 
                     // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
                     // Http2 connections will not, hence the difference in handing _associatedHttp2ConnectionCount.
+                }
+                if (IsHttp3Supported() && _availableHttp3Connections is not null)
+                {
+                    int removed = ScavengeHttp3ConnectionList(_availableHttp3Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
+                    _associatedHttp3ConnectionCount -= removed;
+
+                    // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
+                    // Http3 connections will not, hence the difference in handing _associatedHttp3ConnectionCount.
                 }
             }
 

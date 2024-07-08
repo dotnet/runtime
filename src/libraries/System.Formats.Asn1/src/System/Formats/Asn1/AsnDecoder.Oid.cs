@@ -61,7 +61,7 @@ namespace System.Formats.Asn1
                 UniversalTagNumber.ObjectIdentifier,
                 out int consumed);
 
-#if NETCOREAPP
+#if NET
             string? wellKnown = WellKnownOids.GetValue(contents);
 
             if (wellKnown is not null)

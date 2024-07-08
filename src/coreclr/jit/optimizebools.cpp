@@ -1062,9 +1062,9 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
-    if (m_b1->NextIs(m_b2) && m_comp->fgCanCompactBlocks(m_b1, m_b2))
+    if (m_comp->fgCanCompactBlock(m_b1))
     {
-        m_comp->fgCompactBlocks(m_b1, m_b2);
+        m_comp->fgCompactBlock(m_b1);
     }
 
 #ifdef DEBUG
@@ -1248,7 +1248,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         optReturnBlock = true;
     }
 
-    assert(m_cmpOp != NULL && m_c1 != nullptr && m_c2 != nullptr);
+    assert(m_cmpOp != GT_NONE && m_c1 != nullptr && m_c2 != nullptr);
 
     GenTree* cmpOp1 = m_foldOp == GT_NONE ? m_c1 : m_comp->gtNewOperNode(m_foldOp, m_foldType, m_c1, m_c2);
     if (m_testInfo1.isBool && m_testInfo2.isBool)
