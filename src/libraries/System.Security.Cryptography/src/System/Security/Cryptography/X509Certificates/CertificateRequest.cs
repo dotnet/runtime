@@ -890,7 +890,7 @@ namespace System.Security.Cryptography.X509Certificates
             };
 
             certificate.Encode(writer);
-            X509Certificate2 ret = new X509Certificate2(writer.Encode());
+            X509Certificate2 ret = X509CertificateLoader.LoadCertificate(writer.Encode());
             CryptoPool.Return(normalizedSerial);
             return ret;
         }

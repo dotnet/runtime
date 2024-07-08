@@ -253,35 +253,62 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public void ConditionalSelect_FalseOp()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_FalseOp));
-            ConditionalSelectScenario(_mask, _fld1, _falseFld);
+            TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_FalseOp) + " - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue(_mask, _fld1, _falseFld);
             
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero");
-            ConditionalSelectScenario({Op1VectorType}<{RetBaseType}>.Zero, _fld1, _falseFld);
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue({Op1VectorType}<{RetBaseType}>.Zero, _fld1, _falseFld);
             
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all");
-            ConditionalSelectScenario({Op1VectorType}<{RetBaseType}>.AllBitsSet, _fld1, _falseFld);            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue({Op1VectorType}<{RetBaseType}>.AllBitsSet, _fld1, _falseFld);
+
+            TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_FalseOp) + " - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue(_mask, _fld1, _falseFld);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue({Op1VectorType}<{RetBaseType}>.Zero, _fld1, _falseFld);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue({Op1VectorType}<{RetBaseType}>.AllBitsSet, _fld1, _falseFld);
         }
 
         public void ConditionalSelect_ZeroOp()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_ZeroOp));
-            ConditionalSelectScenario(_mask, _fld1, {Op1VectorType}<{RetBaseType}>.Zero);
+            TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_ZeroOp) + " - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue(_mask, _fld1, {Op1VectorType}<{RetBaseType}>.Zero);
             
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero");
-            ConditionalSelectScenario({Op1VectorType}<{RetBaseType}>.Zero, _fld1, {Op1VectorType}<{RetBaseType}>.Zero);
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue({Op1VectorType}<{RetBaseType}>.Zero, _fld1, {Op1VectorType}<{RetBaseType}>.Zero);
             
-            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all");
-            ConditionalSelectScenario({Op1VectorType}<{RetBaseType}>.AllBitsSet, _fld1, {Op1VectorType}<{RetBaseType}>.Zero);            
-        }        
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in TrueValue");
+            ConditionalSelectScenario_TrueValue({Op1VectorType}<{RetBaseType}>.AllBitsSet, _fld1, {Op1VectorType}<{RetBaseType}>.Zero);
+
+            TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_ZeroOp) + " - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue(_mask, _fld1, {Op1VectorType}<{RetBaseType}>.Zero);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue({Op1VectorType}<{RetBaseType}>.Zero, _fld1, {Op1VectorType}<{RetBaseType}>.Zero);
+            
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in FalseValue");
+            ConditionalSelectScenario_FalseValue({Op1VectorType}<{RetBaseType}>.AllBitsSet, _fld1, {Op1VectorType}<{RetBaseType}>.Zero);
+        }
 
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ConditionalSelectScenario({Op1VectorType}<{RetBaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{RetBaseType}> falseOp)
+        private void ConditionalSelectScenario_TrueValue({Op1VectorType}<{RetBaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{RetBaseType}> falseOp)
         {
             var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1), falseOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateConditionalSelectResult(mask, op1, falseOp, _dataTable.outArrayPtr);
+            ValidateConditionalSelectResult_TrueValue(mask, op1, falseOp, _dataTable.outArrayPtr);
+        }
+
+        [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ConditionalSelectScenario_FalseValue({Op1VectorType}<{RetBaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{RetBaseType}> trueOp)
+        {
+            var result = Sve.ConditionalSelect(mask, trueOp, {Isa}.{Method}(op1));
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateConditionalSelectResult_FalseValue(mask, op1, trueOp, _dataTable.outArrayPtr);
         }
 
         public void RunUnsupportedScenario()
@@ -305,7 +332,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateConditionalSelectResult({Op1VectorType}<{RetBaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> leftOp, {Op1VectorType}<{RetBaseType}> falseOp, void* output, [CallerMemberName] string method = "")
+        private void ValidateConditionalSelectResult_TrueValue({Op1VectorType}<{RetBaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> leftOp, {Op1VectorType}<{RetBaseType}> falseOp, void* output, [CallerMemberName] string method = "")
         {
             {RetBaseType}[] mask = new {RetBaseType}[Op1ElementCount];
             {Op1BaseType}[] left = new {Op1BaseType}[Op1ElementCount];
@@ -327,6 +354,35 @@ namespace JIT.HardwareIntrinsics.Arm
                 TestLibrary.TestFramework.LogInformation($"    mask: ({string.Join(", ", mask)})");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($" falseOp: ({string.Join(", ", falseVal)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateConditionalSelectResult_FalseValue({Op1VectorType}<{RetBaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> leftOp, {Op1VectorType}<{RetBaseType}> trueOp, void* output, [CallerMemberName] string method = "")
+        {
+            {RetBaseType}[] mask = new {RetBaseType}[Op1ElementCount];
+            {Op1BaseType}[] left = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] trueVal = new {RetBaseType}[Op1ElementCount];
+            {RetBaseType}[] result = new {RetBaseType}[Op1ElementCount];
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref mask[0]), maskOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref left[0]), leftOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref trueVal[0]), trueOp);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref result[0]), ref Unsafe.AsRef<byte>(output), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            bool succeeded = true;
+
+            {TemplateValidationLogicForCndSel_FalseValue}
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"    mask: ({string.Join(", ", mask)})");
+                TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
+                TestLibrary.TestFramework.LogInformation($" trueOp: ({string.Join(", ", trueVal)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 

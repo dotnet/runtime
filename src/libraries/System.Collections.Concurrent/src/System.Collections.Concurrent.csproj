@@ -21,6 +21,8 @@
              Link="System\Collections\HashHelpers.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs"
              Link="System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\DebugViewDictionaryItem.cs"
+            Link="Common\System\Collections\Generic\DebugViewDictionaryItem.cs" />
   </ItemGroup>
 
   <ItemGroup>
