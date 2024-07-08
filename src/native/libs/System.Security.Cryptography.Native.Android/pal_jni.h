@@ -491,6 +491,7 @@ extern jclass    g_SSLEngineResult;
 extern jmethodID g_SSLEngineResultGetStatus;
 extern jmethodID g_SSLEngineResultGetHandshakeStatus;
 extern bool      g_SSLEngineResultStatusLegacyOrder;
+extern jmethodID g_SSLEngineResultBytesConsumed;
 
 // javax/crypto/KeyAgreement
 extern jclass    g_KeyAgreementClass;

@@ -477,6 +477,7 @@ jclass    g_SSLEngineResult;
 jmethodID g_SSLEngineResultGetStatus;
 jmethodID g_SSLEngineResultGetHandshakeStatus;
 bool      g_SSLEngineResultStatusLegacyOrder;
+jmethodID g_SSLEngineResultBytesConsumed;
 
 // javax/crypto/KeyAgreement
 jclass    g_KeyAgreementClass;
@@ -1096,6 +1097,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngineResult =                     GetClassGRef(env, "javax/net/ssl/SSLEngineResult");
     g_SSLEngineResultGetStatus =            GetMethod(env, false, g_SSLEngineResult, "getStatus", "()Ljavax/net/ssl/SSLEngineResult$Status;");
     g_SSLEngineResultGetHandshakeStatus =   GetMethod(env, false, g_SSLEngineResult, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
+    g_SSLEngineResultBytesConsumed =        GetMethod(env, false, g_SSLEngineResult, "bytesConsumed", "()I");
     g_SSLEngineResultStatusLegacyOrder = android_get_device_api_level() < 24;
 
     g_KeyAgreementClass          = GetClassGRef(env, "javax/crypto/KeyAgreement");
