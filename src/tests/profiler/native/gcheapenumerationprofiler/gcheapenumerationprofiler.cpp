@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "gcheapenumerationprofiler.h"
-#include <wchar.h>
+#include "../profilerstring.h"
 
 #if WIN32
 #define EXPORT
@@ -34,7 +34,9 @@ HRESULT GCHeapEnumerationProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
         printf("FAIL: ICorProfilerInfo::GetEnvironmentVariable() failed hr=0x%x", hr);
         return hr;
     }
-    if (wcscmp(envVar, L"TRUE") == 0)
+    String envVarStr = envVar;
+    String expectedEnvVarStr = reinterpret_cast<const WCHAR*>(u"TRUE");
+    if (envVarStr == expectedEnvVarStr)
     {
         printf("Setting GarbageCollectionStarted event masks\n");
         eventMask |= COR_PRF_MONITOR_GC;
@@ -128,7 +130,8 @@ static BOOL STDMETHODCALLTYPE heap_walk_fn(ObjectID object, void* callbackState)
     }
 
     String classIdName = state->instance->GetClassIDNameHelper(classId);
-    if (classIdName.ToWString() == L"CustomGCHeapObject")
+    String expectedCustomObjectClass = reinterpret_cast<const WCHAR*>(u"CustomGCHeapObject");
+    if (classIdName == expectedCustomObjectClass)
     {
         state->customGcHeapObjectTypeCount->fetch_add(1, std::memory_order_relaxed);
     }
