@@ -56,36 +56,33 @@ namespace System.Text.Json.Serialization.Metadata
 
         /// <summary>
         /// Get a key from the property name.
-        /// The key consists of the first 7 bytes of the property name and then the length.
+        /// The key consists of the first 7 bytes of the property name and then the least significant bits of the length.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong GetKey(ReadOnlySpan<byte> name)
         {
-            ulong key;
-
             ref byte reference = ref MemoryMarshal.GetReference(name);
             int length = name.Length;
+            ulong key = (ulong)(byte)length << 56;
 
-            if (length > 7)
+            switch (length)
             {
-                key = Unsafe.ReadUnaligned<ulong>(ref reference) & 0x00ffffffffffffffL;
-                key |= (ulong)Math.Min(length, 0xff) << 56;
-            }
-            else
-            {
-                key =
-                    length > 5 ? Unsafe.ReadUnaligned<uint>(ref reference) | (ulong)Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref reference, 4)) << 32 :
-                    length > 3 ? Unsafe.ReadUnaligned<uint>(ref reference) :
-                    length > 1 ? Unsafe.ReadUnaligned<ushort>(ref reference) : 0UL;
-                key |= (ulong)length << 56;
-
-                if ((length & 1) != 0)
-                {
-                    int offset = length - 1;
-                    key |= (ulong)Unsafe.Add(ref reference, offset) << (offset * 8);
-                }
+                case 0: goto ComputedKey;
+                case 1: goto OddLength;
+                case 2: key |= Unsafe.ReadUnaligned<ushort>(ref reference); goto ComputedKey;
+                case 3: key |= Unsafe.ReadUnaligned<ushort>(ref reference); goto OddLength;
+                case 4: key |= Unsafe.ReadUnaligned<uint>(ref reference); goto ComputedKey;
+                case 5: key |= Unsafe.ReadUnaligned<uint>(ref reference); goto OddLength;
+                case 6: key |= Unsafe.ReadUnaligned<uint>(ref reference) | (ulong)Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref reference, 4)) << 32; goto ComputedKey;
+                case 7: key |= Unsafe.ReadUnaligned<uint>(ref reference) | (ulong)Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref reference, 4)) << 32; goto OddLength;
+                default: key |= (Unsafe.ReadUnaligned<ulong>(ref reference) & 0x00ffffffffffffffL); goto ComputedKey;
             }
 
+        OddLength:
+            int offset = length - 1;
+            key |= (ulong)Unsafe.Add(ref reference, offset) << (offset * 8);
+
+        ComputedKey:
 #if DEBUG
             // Verify key contains the embedded bytes as expected.
             // Note: the expected properties do not hold true on big-endian platforms
@@ -102,8 +99,7 @@ namespace System.Text.Json.Serialization.Metadata
                     (name.Length < 6 || name[5] == ((key & ((ulong)0xFF << BitsInByte * 5)) >> BitsInByte * 5)) &&
                     (name.Length < 7 || name[6] == ((key & ((ulong)0xFF << BitsInByte * 6)) >> BitsInByte * 6)) &&
                     // Verify embedded length.
-                    (name.Length >= 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == (ulong)name.Length) &&
-                    (name.Length < 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == 0xFF),
+                    (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == (byte)name.Length,
                     "Embedded bytes not as expected");
             }
 #endif
