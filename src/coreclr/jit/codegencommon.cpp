@@ -2412,7 +2412,7 @@ void CodeGen::genReportEH()
         EHblkDsc*         HBtab;
     };
 
-    EHClauseInfo* clauses = new EHClauseInfo[compiler->compHndBBtabCount];
+    EHClauseInfo* clauses = new (compiler, CMK_Codegen) EHClauseInfo[compiler->compHndBBtabCount];
 
     // Set up EH clause table, but don't report anything to the VM, yet.
     XTnum = 0;
