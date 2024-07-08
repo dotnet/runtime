@@ -1542,19 +1542,22 @@ bool Compiler::fgIsHiddenBufferAddressDef(LIR::Range& range, GenTree* node)
         return false;
     }
 
-    LIR::Use use;
+    GenTree* curNode = node;
     do
     {
-        if (!range.TryGetUse(node, &use))
+        LIR::Use use;
+        if (!range.TryGetUse(curNode, &use))
         {
             return false;
         }
 
-        if (use.User()->IsCall())
+        curNode = use.User();
+
+        if (curNode->IsCall())
         {
-            return gtCallGetDefinedRetBufLclAddr(use.User()->AsCall()) == node;
+            return gtCallGetDefinedRetBufLclAddr(curNode->AsCall()) == node;
         }
-    } while (use.User()->OperIs(GT_FIELD_LIST) || use.User()->OperIsPutArg());
+    } while (curNode->OperIs(GT_FIELD_LIST) || curNode->OperIsPutArg());
 
     return false;
 }
