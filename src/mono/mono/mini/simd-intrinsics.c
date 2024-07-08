@@ -2221,40 +2221,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		xnot->inst_c1 = arg0_type;
 		return xnot;
 	}
-	case SN_IsNegative: {
-		if (!is_element_type_primitive (fsig->params [0]))
-			return NULL;
-		if (type_enum_is_unsigned(arg0_type)) {
-			return emit_xzero (cfg, klass);
-		}
-
-		MonoInst *arg0 = args [0];
-		MonoClass *op_klass = klass;
-
-		if (type_enum_is_float (arg0_type)) {
-			if (arg0_type == MONO_TYPE_R4) {
-				arg0_type = MONO_TYPE_I4;
-				op_klass = mono_defaults.int32_class;
-			} else {
-				arg0_type = MONO_TYPE_I8;
-				op_klass = mono_defaults.int64_class;
-			}
-			op_klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (op_klass));
-			arg0 = emit_simd_ins (cfg, op_klass, OP_XCAST, arg0->dreg, -1);
-		}
-
-		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, op_klass, SN_LessThan, arg0_type, arg0, emit_xzero (cfg, op_klass));
-
-		if (op_klass != NULL) {
-			ins = emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
-		}
-		return ins;
-	}
+	case SN_IsNegative:
 	case SN_IsPositive: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		if (type_enum_is_unsigned(arg0_type)) {
-			return emit_xones (cfg, klass);
+			if (id == SN_IsNegative) {
+				return emit_xzero (cfg, klass);
+			} else {
+				return emit_xones (cfg, klass);
+			}
 		}
 
 		MonoInst *arg0 = args [0];
@@ -2272,7 +2248,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			arg0 = emit_simd_ins (cfg, op_klass, OP_XCAST, arg0->dreg, -1);
 		}
 
-		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, op_klass, SN_GreaterThanOrEqual, arg0_type, arg0, emit_xzero (cfg, op_klass));
+		int cmpId = (id == SN_IsNegative) ? SN_LessThan : SN_GreaterThanOrEqual;
+		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, op_klass, cmpId, arg0_type, arg0, emit_xzero (cfg, op_klass));
 
 		if (op_klass != NULL) {
 			ins = emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
