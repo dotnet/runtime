@@ -3217,6 +3217,31 @@ void gc_heap::fire_pevents()
 #endif //FEATURE_EVENT_TRACE
 }
 
+void gc_heap::fire_fragmentation_measurement_event()
+{
+#if defined(FEATURE_EVENT_TRACE) && defined(USE_REGIONS)
+    if (!EVENT_ENABLED (GCMarkWithType)) return;
+
+    uint64_t total_reserved[total_generation_count] = {};
+    uint64_t total_allocated[total_generation_count] = {};
+    compute_fragmentation_measurement (total_reserved, total_allocated);
+    GCEventFireFragmentationMeasurement_V1 (
+        (uint64_t)(global_region_allocator.get_left_used_unsafe() - global_region_allocator.get_start()),
+        (uint64_t)global_region_allocator.get_used_region_count() * global_region_allocator.get_region_alignment(),
+        (uint64_t)total_reserved[0],
+        (uint64_t)total_allocated[0],
+        (uint64_t)total_reserved[1],
+        (uint64_t)total_allocated[1],
+        (uint64_t)total_reserved[2],
+        (uint64_t)total_allocated[2],
+        (uint64_t)total_reserved[3],
+        (uint64_t)total_allocated[3],
+        (uint64_t)total_reserved[4],
+        (uint64_t)total_allocated[4]
+    );
+#endif //FEATURE_EVENT_TRACE && USE_REGIONS
+}
+
 // This fires the amount of total committed in use, in free and on the decommit list.
 // It's fired on entry and exit of each blocking GC and on entry of each BGC (not firing this on exit of a GC
 // because EE is not suspended then. On entry it's fired after the GCStart event, on exit it's fire before the GCStop event.
@@ -49867,6 +49892,7 @@ void gc_heap::do_pre_gc()
 
     GCHeap::UpdatePreGCCounters();
     fire_committed_usage_event();
+    fire_fragmentation_measurement_event();
 
 #if defined(__linux__)
     GCToEEInterface::UpdateGCEventStatus(static_cast<int>(GCEventStatus::GetEnabledLevel(GCEventProvider_Default)),
@@ -50420,6 +50446,7 @@ void gc_heap::do_post_gc()
     if (!settings.concurrent)
     {
         fire_committed_usage_event ();
+        fire_fragmentation_measurement_event ();
     }
     GCHeap::UpdatePostGCCounters();
 
@@ -52727,6 +52754,35 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
 
     return true;
 }
+
+#ifdef USE_REGIONS
+void gc_heap::compute_fragmentation_measurement_per_heap(uint64_t total_reserved[total_generation_count], uint64_t total_allocated[total_generation_count])
+{
+    for (int gen = 0; gen < total_generation_count; gen++)
+    {
+        heap_segment* seg = heap_segment_rw ( generation_start_segment (generation_of (gen)));
+        while (seg)
+        {
+            total_reserved[gen] += (heap_segment_reserved (seg) - get_region_start (seg));
+            total_allocated[gen] += (heap_segment_allocated (seg) - get_region_start (seg));
+            seg = heap_segment_next_rw (seg);
+        }
+    }
+}
+
+void gc_heap::compute_fragmentation_measurement(uint64_t total_reserved[total_generation_count], uint64_t total_allocated[total_generation_count])
+{
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+        hp->compute_fragmentation_measurement_per_heap (total_reserved, total_allocated);
+    }
+#else
+    compute_fragmentation_measurement_per_heap (total_reserved, total_allocated);
+#endif
+}
+#endif //USE_REGIONS
 
 size_t gc_heap::compute_committed_bytes_per_heap(int oh, size_t& committed_bookkeeping)
 {

@@ -1590,6 +1590,8 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void fire_committed_usage_event();
 
+    PER_HEAP_ISOLATED_METHOD void fire_fragmentation_measurement_event();
+
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_METHOD void walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef);
 #endif
@@ -3372,6 +3374,12 @@ private:
     PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
                                   size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
                                   size_t* new_committed_by_oh);
+
+#ifdef USE_REGIONS
+    PER_HEAP_METHOD void compute_fragmentation_measurement_per_heap(uint64_t total_reserved[total_generation_count], uint64_t total_allocated[total_generation_count]);
+
+    PER_HEAP_ISOLATED_METHOD void compute_fragmentation_measurement(uint64_t total_reserved[total_generation_count], uint64_t total_allocated[total_generation_count]);
+#endif //USE_REGIONS
 
     PER_HEAP_METHOD void update_collection_counts ();
 
