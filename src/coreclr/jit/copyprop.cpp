@@ -169,6 +169,15 @@ bool Compiler::optCopyProp(
     ValueNum            lclDefVN    = varSsaDsc->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
 
+    bool const varDefTreeIsPhiDef             = (varDefTree != nullptr) && varDefTree->IsPhiDefn();
+    bool       varDefTreeIsPhiDefAtCycleEntry = false;
+
+    if (varDefTreeIsPhiDef)
+    {
+        FlowGraphNaturalLoop* const loop = m_blockToLoop->GetLoop(varDefBlock);
+        varDefTreeIsPhiDefAtCycleEntry   = (loop != nullptr) && (loop->GetHeader() == varDefBlock);
+    }
+
     for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
         unsigned newLclNum = iter->GetKey();
@@ -204,70 +213,114 @@ bool Compiler::optCopyProp(
             //
             bool foundEquivalentPhi = false;
 
-            if (varDefBlock == newLclSsaDef->GetBlock())
+            // Is the new local def from the same block?
+            //
+            if (varDefTreeIsPhiDefAtCycleEntry && (varDefBlock == newLclSsaDef->GetBlock()))
             {
                 GenTreeLclVarCommon* const otherTree = newLclSsaDef->GetDefNode();
 
-                // Do we have phi definitions? Do the types match?
+                // Is it also a phi definition? Do the types match?
                 //
-                if ((otherTree != nullptr) && otherTree->IsPhiDefn() && (varDefTree != nullptr) &&
-                    varDefTree->IsPhiDefn() && (otherTree->TypeGet() == tree->TypeGet()))
+                if ((otherTree != nullptr) && otherTree->IsPhiDefn() && (otherTree->TypeGet() == tree->TypeGet()))
                 {
-                    // Is the block a cycle entry?
+                    // Are all the Phi Args VN equivalent?
                     //
-                    FlowGraphNaturalLoop* const loop = m_blockToLoop->GetLoop(varDefBlock);
-                    if ((loop != nullptr) && (loop->GetHeader() == varDefBlock))
+                    GenTreePhi* const       treePhi   = varDefTree->AsLclVar()->Data()->AsPhi();
+                    GenTreePhi* const       otherPhi  = otherTree->AsLclVar()->Data()->AsPhi();
+                    GenTreePhi::UseIterator treeIter  = treePhi->Uses().begin();
+                    GenTreePhi::UseIterator treeEnd   = treePhi->Uses().end();
+                    GenTreePhi::UseIterator otherIter = otherPhi->Uses().begin();
+                    GenTreePhi::UseIterator otherEnd  = otherPhi->Uses().end();
+
+                    bool phiArgsAreEquivalent = true;
+
+                    for (; (treeIter != treeEnd) && (otherIter != otherEnd); ++treeIter, ++otherIter)
                     {
-                        // Are all the Phi Args VN equivalent?
-                        //
-                        GenTreePhi* const       treePhi   = varDefTree->AsLclVar()->Data()->AsPhi();
-                        GenTreePhi* const       otherPhi  = otherTree->AsLclVar()->Data()->AsPhi();
-                        GenTreePhi::UseIterator treeIter  = treePhi->Uses().begin();
-                        GenTreePhi::UseIterator treeEnd   = treePhi->Uses().end();
-                        GenTreePhi::UseIterator otherIter = otherPhi->Uses().begin();
-                        GenTreePhi::UseIterator otherEnd  = otherPhi->Uses().end();
+                        GenTreePhiArg* const treePhiArg  = treeIter->GetNode()->AsPhiArg();
+                        GenTreePhiArg* const otherPhiArg = otherIter->GetNode()->AsPhiArg();
 
-                        bool phiArgsAreEquivalent = true;
+                        assert(treePhiArg->gtPredBB == otherPhiArg->gtPredBB);
 
-                        for (; (treeIter != treeEnd) && (otherIter != otherEnd); ++treeIter, ++otherIter)
+                        ValueNum treePhiArgVN  = treePhiArg->gtVNPair.GetConservative();
+                        ValueNum otherPhiArgVN = otherPhiArg->gtVNPair.GetConservative();
+
+                        const bool phiArgIsFromDfsBackedge = m_dfsTree->IsAncestor(varDefBlock, treePhiArg->gtPredBB);
+
+                        if ((treePhiArgVN == ValueNumStore::NoVN) && phiArgIsFromDfsBackedge)
                         {
-                            GenTreePhiArg* const treePhiArg  = treeIter->GetNode()->AsPhiArg();
-                            GenTreePhiArg* const otherPhiArg = otherIter->GetNode()->AsPhiArg();
-
-                            assert(treePhiArg->gtPredBB == otherPhiArg->gtPredBB);
-
-                            // Consult SSA defs always... in principle we could just do this for
-                            // back edge PhiArgs and use the Phi Arg VNs for forward edges.
+                            // Consult SSA defs
                             //
-                            ValueNum treePhiArgVN = lvaGetDesc(treePhiArg)
-                                                        ->GetPerSsaData(treePhiArg->GetSsaNum())
-                                                        ->m_vnPair.GetConservative();
-                            ValueNum otherPhiArgVN = lvaGetDesc(otherPhiArg)
-                                                         ->GetPerSsaData(otherPhiArg->GetSsaNum())
-                                                         ->m_vnPair.GetConservative();
+                            LclSsaVarDsc* const treePhiArgSsaDef =
+                                lvaGetDesc(treePhiArg)->GetPerSsaData(treePhiArg->GetSsaNum());
+                            ValueNum treePhiArgSsaDefVN = treePhiArgSsaDef->m_vnPair.GetConservative();
 
-                            if (treePhiArgVN != otherPhiArgVN)
+                            // Opportunisitcally update the PhiArgVNs, both to short-circuit future checks here
+                            // in copy prop, and help later phases that also scan phi arg lists (eg RBO).
+                            // (consider doing this as a VN post pass?)
+                            //
+                            if (treePhiArgSsaDefVN != treePhiArgVN)
                             {
-                                phiArgsAreEquivalent = false;
-                                break;
+                                JITDUMP("Updating backedge phi arg [%06u] vn to " FMT_VN "\n", dspTreeID(treePhiArg),
+                                        treePhiArgSsaDefVN);
+                                treePhiArg->SetVNs(treePhiArgSsaDef->m_vnPair);
                             }
+
+                            treePhiArgVN = treePhiArgSsaDefVN;
                         }
 
-                        // If we didn't verify all phi args we have failed to prove equivalence
-                        //
-                        phiArgsAreEquivalent &= (treeIter == treeEnd);
-                        phiArgsAreEquivalent &= (otherIter == otherEnd);
-
-                        if (phiArgsAreEquivalent)
+                        if ((otherPhiArgVN == ValueNumStore::NoVN) && phiArgIsFromDfsBackedge)
                         {
-                            JITDUMP("Found equivalent phi defs: [%06u] and [%06u]\n", dspTreeID(treePhi),
-                                    dspTreeID(otherPhi));
-                            foundEquivalentPhi = true;
+                            LclSsaVarDsc* const otherPhiArgSsaDef =
+                                lvaGetDesc(otherPhiArg)->GetPerSsaData(otherPhiArg->GetSsaNum());
+                            ValueNum otherPhiArgSsaDefVN = otherPhiArgSsaDef->m_vnPair.GetConservative();
+
+                            // Opportunisitcally update the PhiArgVNs, both to short-circuit future checks here
+                            // in copy prop, and help later phases that also scan phi arg lists (eg RBO).
+                            // (consider doing this as a VN post pass?)
+                            //
+                            if (otherPhiArgSsaDefVN != otherPhiArgVN)
+                            {
+                                JITDUMP("Updating backedge phi arg [%06u] vn to " FMT_VN "\n", dspTreeID(otherPhiArg),
+                                        otherPhiArgSsaDefVN);
+                                otherPhiArg->SetVNs(otherPhiArgSsaDef->m_vnPair);
+                            }
+
+                            otherPhiArgVN = otherPhiArgSsaDefVN;
                         }
+
+                        // If the updated VNs differ, the phis are not equivalent
+                        //
+                        if (treePhiArgVN != otherPhiArgVN)
+                        {
+                            phiArgsAreEquivalent = false;
+                            break;
+                        }
+
+                        // If we failed to find meaningful VNs, the phis are not equivalent
+                        //
+                        if (treePhiArgVN == ValueNumStore::NoVN)
+                        {
+                            phiArgsAreEquivalent = false;
+                            break;
+                        }
+                    }
+
+                    // If we didn't verify all phi args we have failed to prove equivalence
+                    //
+                    phiArgsAreEquivalent &= (treeIter == treeEnd);
+                    phiArgsAreEquivalent &= (otherIter == otherEnd);
+
+                    if (phiArgsAreEquivalent)
+                    {
+                        JITDUMP("Found equivalent phi defs: [%06u] and [%06u]\n", dspTreeID(treePhi),
+                                dspTreeID(otherPhi));
+                        foundEquivalentPhi = true;
                     }
                 }
             }
 
+            // VNs differed, and we didn't find phis equivalent, move on to the next candidate.
+            //
             if (!foundEquivalentPhi)
             {
                 continue;
@@ -341,18 +394,21 @@ bool Compiler::optCopyProp(
         tree->SetLclNum(newLclNum);
         tree->SetSsaNum(newSsaNum);
 
-        // Update VN to match.
-        // this is a bit of hack.
-        // can't just do this in isolation, sigh...
+        // Update VN to match, and propagate up through any enclosing commas.
+        // (we could in principle try updating through other parents, but
+        // we lack VN's context for memory, so can't get them all).
         //
         if (newLclDefVN != lclDefVN)
         {
             tree->SetVNs(newLclSsaDef->m_vnPair);
-            GenTree* const parent = tree->gtGetParent(nullptr);
+            GenTree* parent = tree->gtGetParent(nullptr);
 
-            if (parent->OperIs(GT_COMMA))
+            while ((parent != nullptr) && parent->OperIs(GT_COMMA))
             {
-                parent->SetVNs(newLclSsaDef->m_vnPair);
+                JITDUMP(" Updating COMMA parent VN [%06u]\n", dspTreeID(parent));
+                ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(parent->AsOp()->gtOp1->gtVNPair);
+                parent->SetVNs(vnStore->VNPWithExc(parent->AsOp()->gtOp2->gtVNPair, op1Xvnp));
+                parent = tree->gtGetParent(nullptr);
             }
         }
 
