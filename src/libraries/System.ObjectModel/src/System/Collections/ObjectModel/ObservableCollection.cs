@@ -133,8 +133,8 @@ namespace System.Collections.ObjectModel
             CheckReentrancy();
 
             NotifyCollectionChangedEventArgs collectionChangedEventArgs = EventArgsCache.ResetCollectionChanged;
-            bool ignore = _skipRaisingEvents;
-            if (!ignore)
+            bool skipEvents = _skipRaisingEvents;
+            if (!skipEvents)
             {
                 _skipRaisingEvents = true;
 
@@ -156,7 +156,7 @@ namespace System.Collections.ObjectModel
             }
             finally
             {
-                if (!ignore)
+                if (!skipEvents)
                 {
                     _skipRaisingEvents = false;
                 }
@@ -254,8 +254,8 @@ namespace System.Collections.ObjectModel
             CheckReentrancy();
 
             int countBefore = default;
-            bool ignore = _skipRaisingEvents;
-            if (!ignore)
+            bool skipEvents = _skipRaisingEvents;
+            if (!skipEvents)
             {
                 _skipRaisingEvents = true;
                 countBefore = Count;
@@ -267,7 +267,7 @@ namespace System.Collections.ObjectModel
             }
             finally
             {
-                if (!ignore)
+                if (!skipEvents)
                 {
                     _skipRaisingEvents = false;
                 }
