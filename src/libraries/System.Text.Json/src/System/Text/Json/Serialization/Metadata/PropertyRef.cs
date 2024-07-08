@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Metadata
                 case 5: key |= Unsafe.ReadUnaligned<uint>(ref reference); goto OddLength;
                 case 6: key |= Unsafe.ReadUnaligned<uint>(ref reference) | (ulong)Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref reference, 4)) << 32; goto ComputedKey;
                 case 7: key |= Unsafe.ReadUnaligned<uint>(ref reference) | (ulong)Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref reference, 4)) << 32; goto OddLength;
-                default: key |= (Unsafe.ReadUnaligned<ulong>(ref reference) & 0x00ffffffffffffffL); goto ComputedKey;
+                default: key |= Unsafe.ReadUnaligned<ulong>(ref reference) & 0x00ffffffffffffffL; goto ComputedKey;
             }
 
         OddLength:

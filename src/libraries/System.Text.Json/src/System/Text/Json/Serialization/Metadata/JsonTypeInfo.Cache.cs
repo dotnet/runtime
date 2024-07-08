@@ -143,18 +143,11 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             // No cached item was found. Try the main dictionary which has all of the properties.
-            if (PropertyIndex.TryLookupUtf8Key(propertyName, out JsonPropertyInfo? info))
+            if (PropertyIndex.TryLookupUtf8Key(propertyName, out JsonPropertyInfo? info) &&
+                (!Options.PropertyNameCaseInsensitive || propertyName.SequenceEqual(info.NameAsUtf8Bytes)))
             {
-                if (!Options.PropertyNameCaseInsensitive || propertyName.SequenceEqual(info.NameAsUtf8Bytes))
-                {
-                    // We have an exact match in UTF8 encoding.
-                    utf8PropertyName = info.NameAsUtf8Bytes;
-                }
-                else
-                {
-                    // Make a copy of the original Span.
-                    utf8PropertyName = propertyName.ToArray();
-                }
+                // We have an exact match in UTF8 encoding.
+                utf8PropertyName = info.NameAsUtf8Bytes;
             }
             else
             {
