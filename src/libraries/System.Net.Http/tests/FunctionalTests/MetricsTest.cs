@@ -161,6 +161,8 @@ namespace System.Net.Http.Functional.Tests
             private Meter? _meter;
 
             public Action? MeasurementRecorded;
+            public Action<IReadOnlyList<T>> VerifyHistogramBucketBoundaries;
+            public int MeasurementCount => _values.Count;
 
             public InstrumentRecorder(string instrumentName)
             {
@@ -193,6 +195,13 @@ namespace System.Net.Http.Functional.Tests
             {
                 _values.Enqueue(new Measurement<T>(measurement, tags));
                 MeasurementRecorded?.Invoke();
+                if (VerifyHistogramBucketBoundaries is not null)
+                {
+                    Histogram<T> histogram = (Histogram<T>)instrument;
+                    IReadOnlyList<T> boundaries = histogram.Advice.HistogramBucketBoundaries;
+                    Assert.NotNull(boundaries);
+                    VerifyHistogramBucketBoundaries(boundaries);
+                }
             }
 
             public IReadOnlyList<Measurement<T>> GetMeasurements() => _values.ToArray();
@@ -328,6 +337,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+
                 using HttpRequestMessage request = new(HttpMethod.Parse(method), uri) { Version = UseVersion };
 
                 using HttpResponseMessage response = await SendAsync(client, request);
@@ -922,6 +932,40 @@ namespace System.Net.Http.Functional.Tests
                 {
                     _output.WriteLine($"Ignored exception: {ex}");
                 }
+            });
+        }
+
+        [Fact]
+        public Task DurationHistograms_HaveBucketSizeHints()
+        {
+            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<double> requestDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+                using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
+                using InstrumentRecorder<double> connectionDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.ConnectionDuration);
+
+                requestDurationRecorder.VerifyHistogramBucketBoundaries = b =>
+                {
+                    // Verify first and last value of the boundaries defined in
+                    // https://github.com/open-telemetry/semantic-conventions/blob/release/v1.23.x/docs/http/http-metrics.md#metric-httpserverrequestduration
+                    Assert.Equal(0.005, b.First());
+                    Assert.Equal(10, b.Last());
+                };
+                timeInQueueRecorder.VerifyHistogramBucketBoundaries = requestDurationRecorder.VerifyHistogramBucketBoundaries;
+                connectionDurationRecorder.VerifyHistogramBucketBoundaries =
+                    b => Assert.True(b.Last() > 180); // At least 3 minutes for the highest bucket.
+
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                using HttpResponseMessage response = await SendAsync(client, request);
+
+                Assert.Equal(1, requestDurationRecorder.MeasurementCount);
+                Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
+                client.Dispose(); // terminate the connection
+                Assert.Equal(1, connectionDurationRecorder.MeasurementCount);
+            }, async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync();
             });
         }
     }
