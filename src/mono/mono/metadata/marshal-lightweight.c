@@ -2841,11 +2841,16 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 			case MONO_TYPE_VALUETYPE:
 				if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL))
 				{
-					tmp_locals [i] = mono_mb_add_local (mb, sig->params [i]);
 					if (swift_lowering [i].num_lowered_elements > 0) {
+						tmp_locals [i] = mono_mb_add_local (mb, sig->params [i]);
 						emit_swift_lowered_struct_load (mb, csig, swift_lowering [i], tmp_locals [i], csig_argnum);
+						break;
 					}
-					break;
+					else if (swift_lowering [i].by_reference) {
+						/* Structs passed by reference are handled during arg loading emission */
+						tmp_locals [i] = 0;
+						break;
+					}
 				}
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_CLASS:
