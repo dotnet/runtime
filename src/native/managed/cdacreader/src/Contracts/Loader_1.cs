@@ -16,6 +16,9 @@ internal readonly struct Loader_1 : ILoader
 
     ModuleHandle ILoader.GetModuleHandle(TargetPointer modulePointer)
     {
+        if (modulePointer == TargetPointer.Null)
+            throw new ArgumentNullException(nameof(modulePointer));
+
         return new ModuleHandle(modulePointer);
     }
 

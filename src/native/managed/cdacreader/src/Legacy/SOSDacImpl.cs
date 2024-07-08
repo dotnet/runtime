@@ -153,6 +153,9 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 
     public unsafe int GetModuleData(ulong moduleAddr, DacpModuleData* data)
     {
+        if (moduleAddr == 0 || data == null)
+            return HResults.E_INVALIDARG;
+
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
