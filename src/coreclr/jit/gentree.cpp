@@ -29666,7 +29666,8 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
 unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
 #if defined(TARGET_XARCH)
-    assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId) || HWIntrinsicInfo::IsPermuteVar2x(gtHWIntrinsicId));
+    assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId) || HWIntrinsicInfo::IsPermuteVar2x(gtHWIntrinsicId) ||
+           HWIntrinsicInfo::IsTernaryLogic(gtHWIntrinsicId));
 #elif defined(TARGET_ARM64)
     assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId));
 #endif

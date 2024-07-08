@@ -353,6 +353,18 @@ const TernaryLogicInfo& TernaryLogicInfo::lookup(uint8_t control)
     return ternaryLogicFlags[control];
 }
 
+//------------------------------------------------------------------------
+// GetTernaryControlByte: Get the control byte for a TernaryLogic operation
+//   given the oper and two existing control bytes
+//
+// Arguments:
+//    oper -- the operation being performed
+//    op1  -- the control byte for op1
+//    op2  -- the control byte for op2
+//
+// Return Value:
+//    The new control byte evaluated from performing oper on op1 and op2
+//
 uint8_t TernaryLogicInfo::GetTernaryControlByte(genTreeOps oper, uint8_t op1, uint8_t op2)
 {
     switch (oper)
@@ -369,12 +381,12 @@ uint8_t TernaryLogicInfo::GetTernaryControlByte(genTreeOps oper, uint8_t op1, ui
 
         case GT_OR:
         {
-            return static_cast<uint8_t>(op1 & op2);
+            return static_cast<uint8_t>(op1 | op2);
         }
 
         case GT_XOR:
         {
-            return static_cast<uint8_t>(op1 & op2);
+            return static_cast<uint8_t>(op1 ^ op2);
         }
 
         default:
@@ -382,6 +394,322 @@ uint8_t TernaryLogicInfo::GetTernaryControlByte(genTreeOps oper, uint8_t op1, ui
             unreached();
         }
     }
+}
+
+//------------------------------------------------------------------------
+// GetTernaryControlByte: Get the control byte for a TernaryLogic operation
+//   given a ternary logic oper and two inputs
+//
+// Arguments:
+//    oper -- the operation being performed
+//    op1  -- the control byte for op1, this is ignored for unary oper
+//    op2  -- the control byte for op2
+//
+// Return Value:
+//    The new control byte evaluated from performing oper on op1 and op2
+//
+uint8_t TernaryLogicInfo::GetTernaryControlByte(TernaryLogicOperKind oper, uint8_t op1, uint8_t op2)
+{
+    switch (oper)
+    {
+        case TernaryLogicOperKind::Select:
+        {
+            return op2;
+        }
+
+        case TernaryLogicOperKind::Not:
+        {
+            return ~op2;
+        }
+
+        case TernaryLogicOperKind::And:
+        {
+            return op1 & op2;
+        }
+
+        case TernaryLogicOperKind::Nand:
+        {
+            return ~(op1 & op2);
+        }
+
+        case TernaryLogicOperKind::Or:
+        {
+            return op1 | op2;
+        }
+
+        case TernaryLogicOperKind::Nor:
+        {
+            return ~(op1 | op2);
+        }
+
+        case TernaryLogicOperKind::Xor:
+        {
+            return op1 ^ op2;
+        }
+
+        case TernaryLogicOperKind::Xnor:
+        {
+            return ~(op1 ^ op2);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// GetTernaryControlByte: Get the control byte for a TernaryLogic operation
+//   given an existing info and three control bytes
+//
+// Arguments:
+//    info -- the info describing the operation being performed
+//    op1  -- the control byte for op1
+//    op2  -- the control byte for op2
+//    op3  -- the control byte for op3
+//
+// Return Value:
+//    The new control byte evaluated from performing info on op1, op2, and op3
+//
+uint8_t TernaryLogicInfo::GetTernaryControlByte(const TernaryLogicInfo& info, uint8_t op1, uint8_t op2, uint8_t op3)
+{
+    uint8_t oper1Result;
+
+    switch (info.oper1Use)
+    {
+        case TernaryLogicUseFlags::None:
+        {
+            assert(info.oper2 == TernaryLogicOperKind::None);
+            assert(info.oper2Use == TernaryLogicUseFlags::None);
+
+            assert(info.oper3 == TernaryLogicOperKind::None);
+            assert(info.oper3Use == TernaryLogicUseFlags::None);
+
+            switch (info.oper1)
+            {
+                case TernaryLogicOperKind::False:
+                {
+                    oper1Result = 0x00;
+                    break;
+                }
+
+                case TernaryLogicOperKind::True:
+                {
+                    oper1Result = 0xFF;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+            break;
+        }
+
+        case TernaryLogicUseFlags::A:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, 0x00, op1);
+            break;
+        }
+
+        case TernaryLogicUseFlags::B:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, 0x00, op2);
+            break;
+        }
+
+        case TernaryLogicUseFlags::C:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, 0x00, op3);
+            break;
+        }
+
+        case TernaryLogicUseFlags::AB:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, op1, op2);
+            break;
+        }
+
+        case TernaryLogicUseFlags::AC:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, op1, op3);
+            break;
+        }
+
+        case TernaryLogicUseFlags::BC:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, op2, op3);
+            break;
+        }
+
+        case TernaryLogicUseFlags::ABC:
+        {
+            assert(info.oper2 == TernaryLogicOperKind::None);
+            assert(info.oper2Use == TernaryLogicUseFlags::None);
+
+            assert(info.oper3 == TernaryLogicOperKind::None);
+            assert(info.oper3Use == TernaryLogicUseFlags::None);
+
+            switch (info.oper1)
+            {
+                case TernaryLogicOperKind::Nor:
+                {
+                    oper1Result = ~(op1 | op2 | op3);
+                    break;
+                }
+
+                case TernaryLogicOperKind::Minor:
+                {
+                    oper1Result = 0x17;
+                    break;
+                }
+
+                case TernaryLogicOperKind::Xnor:
+                {
+                    oper1Result = ~(op1 ^ op2 ^ op3);
+                    break;
+                }
+
+                case TernaryLogicOperKind::Nand:
+                {
+                    oper1Result = ~(op1 & op2 & op3);
+                    break;
+                }
+
+                case TernaryLogicOperKind::And:
+                {
+                    oper1Result = op1 & op2 & op3;
+                    break;
+                }
+
+                case TernaryLogicOperKind::Xor:
+                {
+                    oper1Result = op1 ^ op2 ^ op3;
+                    break;
+                }
+
+                case TernaryLogicOperKind::Major:
+                {
+                    oper1Result = 0xE8;
+                    break;
+                }
+
+                case TernaryLogicOperKind::Or:
+                {
+                    oper1Result = op1 | op2 | op3;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    uint8_t oper2Result;
+
+    switch (info.oper2Use)
+    {
+        case TernaryLogicUseFlags::None:
+        {
+            assert(info.oper3 == TernaryLogicOperKind::None);
+            assert(info.oper3Use == TernaryLogicUseFlags::None);
+
+            oper2Result = oper1Result;
+            break;
+        }
+
+        case TernaryLogicUseFlags::A:
+        {
+            oper2Result = GetTernaryControlByte(info.oper2, oper1Result, op1);
+            break;
+        }
+
+        case TernaryLogicUseFlags::B:
+        {
+            oper2Result = GetTernaryControlByte(info.oper2, oper1Result, op2);
+            break;
+        }
+
+        case TernaryLogicUseFlags::C:
+        {
+            oper2Result = GetTernaryControlByte(info.oper2, oper1Result, op3);
+            break;
+        }
+
+        case TernaryLogicUseFlags::AB:
+        {
+            oper2Result = GetTernaryControlByte(info.oper1, op1, op2);
+            break;
+        }
+
+        case TernaryLogicUseFlags::AC:
+        {
+            oper2Result = GetTernaryControlByte(info.oper1, op1, op3);
+            break;
+        }
+
+        case TernaryLogicUseFlags::BC:
+        {
+            oper2Result = GetTernaryControlByte(info.oper1, op2, op3);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    uint8_t oper3Result;
+
+    switch (info.oper3Use)
+    {
+        case TernaryLogicUseFlags::None:
+        {
+            assert(info.oper3 == TernaryLogicOperKind::None);
+            oper3Result = oper2Result;
+            break;
+        }
+
+        case TernaryLogicUseFlags::A:
+        {
+            assert(info.oper3 == TernaryLogicOperKind::Cond);
+            oper3Result = (oper1Result & op1) | (oper2Result & ~op1);
+            break;
+        }
+
+        case TernaryLogicUseFlags::B:
+        {
+            assert(info.oper3 == TernaryLogicOperKind::Cond);
+            oper3Result = (oper1Result & op2) | (oper2Result & ~op2);
+            break;
+        }
+
+        case TernaryLogicUseFlags::C:
+        {
+            assert(info.oper3 == TernaryLogicOperKind::Cond);
+            oper3Result = (oper1Result & op3) | (oper2Result & ~op3);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    return oper3Result;
 }
 #endif // TARGET_XARCH
 
