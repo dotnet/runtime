@@ -107,7 +107,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
                 int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>();
                 int sizeOfinArray3 = inArray3.Length * Unsafe.SizeOf<{Op3BaseType}>();
-                int sizeOfinBounded = new Random().Next(Unsafe.SizeOf<{Op2BaseType}>(), sizeOfinArray2 - 1);
+                int sizeOfinBounded = new Random().Next(Unsafe.SizeOf<{Op2BaseType}>(), Vector<{Op2BaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>() - 1);
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
 
                 if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray3 || (alignment * 2) < sizeOfoutArray)
@@ -288,7 +288,8 @@ namespace JIT.HardwareIntrinsics.Arm
             // So set the first active element of the index vector to 0.
             for (var i = 0; i < Vector<{Op3BaseType}>.Count; i++)
             {
-                if (loadMask3[i] != 0)
+                // op1 is the mask for GatherVector.
+                if (op1[i] != 0)
                 {
                     op3 = op3.WithElement<{Op3BaseType}>(i, 0);
                     break;
@@ -618,10 +619,10 @@ namespace JIT.HardwareIntrinsics.Arm
             if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}, {Op2BaseType}, {Op3BaseType}): {method} failed:");
-                TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
-                TestLibrary.TestFramework.LogInformation($"  secondOp: ({string.Join(", ", secondOp)})");
-                TestLibrary.TestFramework.LogInformation($"  thirdOp: ({string.Join(", ", thirdOp)})");
-                TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation($"       firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"      secondOp: ({string.Join(", ", secondOp)})");
+                TestLibrary.TestFramework.LogInformation($"       thirdOp: ({string.Join(", ", thirdOp)})");
+                TestLibrary.TestFramework.LogInformation($"        result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation($"   faultResult: ({faultResult})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 

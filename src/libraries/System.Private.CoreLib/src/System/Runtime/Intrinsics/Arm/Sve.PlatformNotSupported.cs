@@ -4208,7 +4208,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   RDFFR Presult.B
         /// </summary>
         public static Vector<byte> GetFfrByte() { throw new PlatformNotSupportedException(); }
-    
+
         /// <summary>
         /// svbool_t svrdffr()
         ///   RDFFR Presult.B
