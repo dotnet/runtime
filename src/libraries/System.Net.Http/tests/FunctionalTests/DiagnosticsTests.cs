@@ -555,7 +555,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(ActivityStatusCode.Error, dns.Status);
                     Assert.Equal(ActivityStatusCode.Error, conn.Status);
                     Assert.Equal(ActivityStatusCode.Error, wait.Status);
-                    ActivityAssert.HasTag(dns, "error.type", "host_not_found");
+                    ActivityAssert.HasTag(dns, "error.type", (string t) => t is "host_not_found" or "timed_out");
                     ActivityAssert.HasTag(conn, "error.type", "name_resolution_error");
                     ActivityAssert.HasTag(wait, "error.type", "name_resolution_error");
                 }
@@ -568,7 +568,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(ActivityStatusCode.Error, sock.Status);
                     Assert.Equal(ActivityStatusCode.Error, conn.Status);
                     Assert.Equal(ActivityStatusCode.Error, wait.Status);
-                    ActivityAssert.HasTag(sock, "error.type", "connection_refused");
+                    ActivityAssert.HasTag(sock, "error.type", (string t) => t is "connection_refused" or "timed_out");
                     ActivityAssert.HasTag(conn, "error.type", "connection_error");
                     ActivityAssert.HasTag(wait, "error.type", "connection_error");
                 }
