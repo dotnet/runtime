@@ -1284,7 +1284,8 @@ namespace System.Text.Json
                         }
                     }
 
-                    return !arrayEnumerator2.MoveNext();
+                    Debug.Assert(!arrayEnumerator2.MoveNext());
+                    return true;
 
                 default:
                     Debug.Assert(kind is JsonValueKind.Object);
