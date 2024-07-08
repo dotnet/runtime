@@ -1240,6 +1240,7 @@ public:
     HRESULT GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTableData *data);
     HRESULT GetMethodTableForEEClassImpl (CLRDATA_ADDRESS eeClassReallyMT, CLRDATA_ADDRESS *value);
     HRESULT GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
+    HRESULT GetMethodDescDataImpl(CLRDATA_ADDRESS methodDesc, CLRDATA_ADDRESS ip, struct DacpMethodDescData *data, ULONG cRevertedRejitVersions, DacpReJitData * rgRevertedRejitData, ULONG * pcNeededRevertedRejitData);
 
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
 #ifndef TARGET_UNIX
