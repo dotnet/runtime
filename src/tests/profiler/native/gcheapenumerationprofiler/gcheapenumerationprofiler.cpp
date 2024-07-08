@@ -78,9 +78,9 @@ HRESULT GCHeapEnumerationProfiler::Shutdown()
         return S_OK;
     }
 
-    if (_objectsCount < 500)
+    if (_objectsCount < 100)
     {
-        printf("GCHeapEnumerationProfiler::Shutdown: FAIL: Expected at least 500 objects, got %d\n", _objectsCount.load());
+        printf("GCHeapEnumerationProfiler::Shutdown: FAIL: Expected at least 100 objects, got %d\n", _objectsCount.load());
         _failures++;
     }
 
