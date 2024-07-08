@@ -2719,7 +2719,7 @@ static void
 emit_swift_lowered_struct_load (MonoMethodBuilder *mb, MonoMethodSignature *csig, SwiftPhysicalLowering swift_lowering, int tmp_local, uint32_t csig_argnum)
 {
 	guint8 stind_op;
-    uint32_t offset = 0;
+	uint32_t offset = 0;
 
 	for (uint32_t idx_lowered = 0; idx_lowered < swift_lowering.num_lowered_elements; idx_lowered++) {
         offset = swift_lowering.offsets [idx_lowered];
@@ -2741,7 +2741,9 @@ get_csig_argnum (int i, EmitMarshalContext* m)
 {
 	if (m->swift_sig_to_csig_mp) {
 		g_assert (i < m->sig->param_count);
-		return m->swift_sig_to_csig_mp [i];
+		int csig_argnum = m->swift_sig_to_csig_mp [i];
+		g_assert (csig_argnum >= 0 && csig_argnum < m->csig->param_count);
+		return csig_argnum;
 	}
 	return i;
 }
@@ -2841,8 +2843,8 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 				if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL))
 				{
 					tmp_locals [i] = mono_mb_add_local (mb, sig->params [i]);
-					if (!swift_lowering[i].by_reference) {
-						emit_swift_lowered_struct_load (mb, csig, swift_lowering[i], tmp_locals[i], csig_argnum);
+					if (swift_lowering [i].num_lowered_elements > 0) {
+						emit_swift_lowered_struct_load (mb, csig, swift_lowering [i], tmp_locals [i], csig_argnum);
 					}
 					break;
 				}
