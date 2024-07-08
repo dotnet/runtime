@@ -638,7 +638,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
         case CORINFO_TYPE_UNDEF:
         case CORINFO_TYPE_VOID:
         default:
-            __debugbreak();
+            DEBUG_BREAK;
             return 0;
     }
     return -1;
@@ -1937,6 +1937,30 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeForBox(CORINFO_CLASS_HANDLE cls)
     DWORDLONG key = CastHandle(cls);
     DWORDLONG value = LookupByKeyOrMiss(GetTypeForBox, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpGetTypeForBox(key, value));
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
+    return result;
+}
+
+void MethodContext::recGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetTypeForBoxOnStack == nullptr)
+        GetTypeForBoxOnStack = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = CastHandle(result);
+    GetTypeForBoxOnStack->Add(key, value);
+    DEBUG_REC(dmpGetTypeForBoxOnStack(key, value));
+}
+void MethodContext::dmpGetTypeForBoxOnStack(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetTypeForBoxOnStack key cls-%016" PRIX64 ", value res-%016" PRIX64 "", key, value);
+}
+
+CORINFO_CLASS_HANDLE MethodContext::repGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = LookupByKeyOrMiss(GetTypeForBoxOnStack, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetTypeForBoxOnStack(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
 }
@@ -3620,7 +3644,7 @@ uint32_t MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, b
     return value;
 }
 
-void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     if (GetThreadLocalStaticBlocksInfo == nullptr)
         GetThreadLocalStaticBlocksInfo = new LightWeightMap<DWORD, Agnostic_GetThreadLocalStaticBlocksInfo>();
@@ -3635,10 +3659,10 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     value.offsetOfThreadLocalStoragePointer     = pInfo->offsetOfThreadLocalStoragePointer;
     value.offsetOfMaxThreadStaticBlocks         = pInfo->offsetOfMaxThreadStaticBlocks;
     value.offsetOfThreadStaticBlocks            = pInfo->offsetOfThreadStaticBlocks;
-    value.offsetOfGCDataPointer                 = pInfo->offsetOfGCDataPointer;
+    value.offsetOfBaseOfThreadLocalData         = pInfo->offsetOfBaseOfThreadLocalData;
 
     // This data is same for entire process, so just add it against key '0'.
-    DWORD key = isGCType ? 0 : 1;
+    DWORD key = 0;
     GetThreadLocalStaticBlocksInfo->Add(key, value);
     DEBUG_REC(dmpGetThreadLocalStaticBlocksInfo(key, value));
 }
@@ -3648,16 +3672,18 @@ void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_
     printf("GetThreadLocalStaticBlocksInfo key %u, tlsIndex-%s, "
            ", tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject - %016" PRIX64 
            ", threadVarsSection - %016" PRIX64
-           ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%u"
-           ", offsetOfThreadStaticBlocks-%u, offsetOfGCDataPointer-%u",           
+           ", offsetOfThreadLocalStoragePointer-%u"
+           ", offsetOfMaxThreadStaticBlocks-%u"
+           ", offsetOfThreadStaticBlocks-%u"
+           ", offsetOfBaseOfThreadLocalData-%u",
            key, SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndex).c_str(), value.tlsGetAddrFtnPtr,
            value.tlsIndexObject, value.threadVarsSection, value.offsetOfThreadLocalStoragePointer,
-           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer);
+           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfBaseOfThreadLocalData);
 }
 
-void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
-    int key = isGCType ? 0 : 1;
+    int key = 0;
     Agnostic_GetThreadLocalStaticBlocksInfo value = LookupByKeyOrMiss(GetThreadLocalStaticBlocksInfo, key, ": key %u", key);
 
     DEBUG_REP(dmpGetThreadLocalStaticBlocksInfo(key, value));
@@ -3667,9 +3693,9 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     pInfo->tlsIndexObject                       = (void*)value.tlsIndexObject;
     pInfo->threadVarsSection                    = (void*)value.threadVarsSection;
     pInfo->offsetOfThreadLocalStoragePointer    = value.offsetOfThreadLocalStoragePointer;
-    pInfo->offsetOfMaxThreadStaticBlocks        = value.offsetOfMaxThreadStaticBlocks;    
+    pInfo->offsetOfMaxThreadStaticBlocks        = value.offsetOfMaxThreadStaticBlocks;
     pInfo->offsetOfThreadStaticBlocks           = value.offsetOfThreadStaticBlocks;
-    pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
+    pInfo->offsetOfBaseOfThreadLocalData        = value.offsetOfBaseOfThreadLocalData;
 }
 
 void MethodContext::recGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
@@ -4647,37 +4673,60 @@ int32_t* MethodContext::repGetAddrOfCaptureThreadGlobal(void** ppIndirection)
     return (int32_t*)value.B;
 }
 
-void MethodContext::recGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection, unsigned result)
+void MethodContext::recGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result)
 {
-    if (GetClassDomainID == nullptr)
-        GetClassDomainID = new LightWeightMap<DWORDLONG, DLD>();
+    if (GetClassStaticDynamicInfo == nullptr)
+        GetClassStaticDynamicInfo = new LightWeightMap<DWORDLONG, DLD>();
 
     DLD value;
 
-    if (ppIndirection != nullptr)
-        value.A = CastPointer(*ppIndirection);
-    else
-        value.A = 0;
-    value.B     = (DWORD)result;
+    value.A = result;
+    value.B = 0;
 
     DWORDLONG key = CastHandle(cls);
-    GetClassDomainID->Add(key, value);
-    DEBUG_REC(dmpGetClassDomainID(key, value));
+    GetClassStaticDynamicInfo->Add(key, value);
+    DEBUG_REC(dmpGetClassStaticDynamicInfo(key, value));
 }
-void MethodContext::dmpGetClassDomainID(DWORDLONG key, DLD value)
+void MethodContext::dmpGetClassStaticDynamicInfo(DWORDLONG key, DLD value)
 {
-    printf("GetClassDomainID key cls-%016" PRIX64 ", value pp-%016" PRIX64 " res-%u", key, value.A, value.B);
+    printf("GetClassStaticDynamicInfo key cls-%016" PRIX64 ", value pp-%016" PRIX64 " res-%u", key, value.A, value.B);
 }
-unsigned MethodContext::repGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection)
+size_t MethodContext::repGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    DLD value = LookupByKeyOrMiss(GetClassDomainID, key, ": key %016" PRIX64 "", key);
+    DLD value = LookupByKeyOrMiss(GetClassStaticDynamicInfo, key, ": key %016" PRIX64 "", key);
 
-    DEBUG_REP(dmpGetClassDomainID(key, value));
+    DEBUG_REP(dmpGetClassStaticDynamicInfo(key, value));
 
-    if (ppIndirection != nullptr)
-        *ppIndirection = (void*)value.A;
-    return (unsigned)value.B;
+    return (size_t)value.A;
+}
+
+void MethodContext::recGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result)
+{
+    if (GetClassThreadStaticDynamicInfo == nullptr)
+        GetClassThreadStaticDynamicInfo = new LightWeightMap<DWORDLONG, DLD>();
+
+    DLD value;
+
+    value.A = result;
+    value.B = 0;
+
+    DWORDLONG key = CastHandle(cls);
+    GetClassThreadStaticDynamicInfo->Add(key, value);
+    DEBUG_REC(dmpGetClassThreadStaticDynamicInfo(key, value));
+}
+void MethodContext::dmpGetClassThreadStaticDynamicInfo(DWORDLONG key, DLD value)
+{
+    printf("GetClassThreadStaticDynamicInfo key cls-%016" PRIX64 ", value pp-%016" PRIX64 " res-%u", key, value.A, value.B);
+}
+size_t MethodContext::repGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DLD value = LookupByKeyOrMiss(GetClassThreadStaticDynamicInfo, key, ": key %016" PRIX64 "", key);
+
+    DEBUG_REP(dmpGetClassThreadStaticDynamicInfo(key, value));
+
+    return (size_t)value.A;
 }
 
 void MethodContext::recGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* result)
@@ -5901,6 +5950,28 @@ bool MethodContext::repIsExactType(CORINFO_CLASS_HANDLE cls)
     return value != 0;
 }
 
+void MethodContext::recIsGenericType(CORINFO_CLASS_HANDLE cls, TypeCompareState result)
+{
+    if (IsGenericType == nullptr)
+        IsGenericType = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = (DWORD)result;
+    IsGenericType->Add(key, value);
+    DEBUG_REC(dmpIsGenericType(key, value));
+}
+void MethodContext::dmpIsGenericType(DWORDLONG key, DWORD value)
+{
+    printf("IsGenericType key cls-%016" PRIX64 ", value res-%d", key, value);
+}
+TypeCompareState MethodContext::repIsGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(IsGenericType, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsGenericType(key, value));
+    return (TypeCompareState)value;
+}
+
 void MethodContext::recIsNullableType(CORINFO_CLASS_HANDLE cls, TypeCompareState result)
 {
     if (IsNullableType == nullptr)
@@ -6226,13 +6297,13 @@ bool MethodContext::repGetSystemVAmd64PassStructInRegisterDescriptor(
     DEBUG_REP(dmpGetSystemVAmd64PassStructInRegisterDescriptor(key, value));
 
     structPassInRegDescPtr->passedInRegisters = value.passedInRegisters ? true : false;
-    structPassInRegDescPtr->eightByteCount    = (unsigned __int8)value.eightByteCount;
+    structPassInRegDescPtr->eightByteCount    = (uint8_t)value.eightByteCount;
     for (int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
     {
         structPassInRegDescPtr->eightByteClassifications[i] =
             (SystemVClassificationType)value.eightByteClassifications[i];
-        structPassInRegDescPtr->eightByteSizes[i]   = (unsigned __int8)value.eightByteSizes[i];
-        structPassInRegDescPtr->eightByteOffsets[i] = (unsigned __int8)value.eightByteOffsets[i];
+        structPassInRegDescPtr->eightByteSizes[i]   = (uint8_t)value.eightByteSizes[i];
+        structPassInRegDescPtr->eightByteOffsets[i] = (uint8_t)value.eightByteOffsets[i];
     }
 
     return value.result ? true : false;

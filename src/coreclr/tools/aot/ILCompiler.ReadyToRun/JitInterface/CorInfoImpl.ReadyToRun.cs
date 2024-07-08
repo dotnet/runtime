@@ -96,7 +96,7 @@ namespace Internal.JitInterface
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.GetMangledFieldName(Field));
-            sb.Append("; ");
+            sb.Append("; "u8);
             sb.Append(Token.ToString());
         }
 
@@ -336,19 +336,19 @@ namespace Internal.JitInterface
             sb.Append(nameMangler.GetMangledMethodName(Method));
             if (ConstrainedType != null)
             {
-                sb.Append(" @ ");
+                sb.Append(" @ "u8);
                 sb.Append(nameMangler.GetMangledTypeName(ConstrainedType));
             }
-            sb.Append("; ");
+            sb.Append("; "u8);
             sb.Append(Token.ToString());
             if (OwningTypeNotDerivedFromToken)
             {
-                sb.Append("; OWNINGTYPE");
+                sb.Append("; OWNINGTYPE"u8);
                 sb.Append(nameMangler.GetMangledTypeName(OwningType));
-                sb.Append("; ");
+                sb.Append("; "u8);
             }
             if (Unboxing)
-                sb.Append("; UNBOXING");
+                sb.Append("; UNBOXING"u8);
         }
 
         public override string ToString()
@@ -1012,19 +1012,19 @@ namespace Internal.JitInterface
                     break;
 
 
-                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_GET_GCSTATIC_BASE:
                     id = ReadyToRunHelper.GenericGcStaticBase;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_GET_NONGCSTATIC_BASE:
                     id = ReadyToRunHelper.GenericNonGcStaticBase;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
                     id = ReadyToRunHelper.GenericGcTlsBase;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
                     id = ReadyToRunHelper.GenericNonGcTlsBase;
                     break;
 
@@ -1714,14 +1714,14 @@ namespace Internal.JitInterface
                     if (field.IsThreadStatic)
                     {
                         pResult->helper = (field.HasGCStaticBase ?
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE :
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE);
+                            CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE :
+                            CorInfoHelpFunc.CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE);
                     }
                     else
                     {
                         pResult->helper = (field.HasGCStaticBase ?
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE :
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE);
+                            CorInfoHelpFunc.CORINFO_HELP_GET_GCSTATIC_BASE :
+                            CorInfoHelpFunc.CORINFO_HELP_GET_NONGCSTATIC_BASE);
                     }
 
                     if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))

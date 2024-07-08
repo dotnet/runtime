@@ -3,7 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <NoWarn>$(NoWarn);SYSLIB0021;SYSLIB0026;SYSLIB0027;SYSLIB0028</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB0021;SYSLIB0026;SYSLIB0027;SYSLIB0028;SYSLIB0057</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -19,6 +19,8 @@
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs"
+             Link="Common\System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
@@ -205,6 +207,16 @@
              Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
              Link="CommonTest\System\Security\Cryptography\509Certificates\RevocationResponder.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\TempFileHolder.cs"
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\TempFileHolder.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\TestData.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\TestData.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12CollectionTests.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\X509CertificateLoaderPkcs12CollectionTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\X509CertificateLoaderPkcs12Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderTests.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\X509CertificateLoaderTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngPlatformProviderKey.cs"
@@ -351,8 +363,6 @@
     <Compile Include="X509Certificates\PublicKeyTests.cs" />
     <Compile Include="X509Certificates\RSAOther.cs" />
     <Compile Include="X509Certificates\SignatureSupport.cs" />
-    <Compile Include="X509Certificates\TempFileHolder.cs" />
-    <Compile Include="X509Certificates\TestData.cs" />
     <Compile Include="X509Certificates\TestDataGenerator.cs" />
     <Compile Include="X509Certificates\TestEnvironmentConfiguration.cs" />
     <Compile Include="X509Certificates\TestFiles.cs" />
@@ -389,6 +399,8 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="DefaultECDsaProvider.Windows.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Windows.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs"
+             Link="CommonTest\System\Security\Cryptography\509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="DefaultECDsaProvider.Unix.cs" />

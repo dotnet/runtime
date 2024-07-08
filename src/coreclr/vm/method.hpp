@@ -35,7 +35,6 @@ class Dictionary;
 class GCCoverageInfo;
 class DynamicMethodDesc;
 class ReJitManager;
-class CodeVersionManager;
 class PrepareCodeConfig;
 
 typedef DPTR(FCallMethodDesc)        PTR_FCallMethodDesc;
@@ -159,6 +158,15 @@ enum MethodDescFlags
     mdfIsIntrinsic                      = 0x8000  // Jit may expand method as an intrinsic
 };
 
+// Used for storing additional items related to native code
+struct MethodDescCodeData final
+{
+    PTR_MethodDescVersioningState VersioningState;
+
+    // [TODO] Move temporary entry points here.
+};
+using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
+
 // The size of this structure needs to be a multiple of MethodDesc::ALIGNMENT
 //
 // @GENERICS:
@@ -177,18 +185,6 @@ enum MethodDescFlags
 // It also knows how to get at its IL code (code:IMAGE_COR_ILMETHOD)
 class MethodDesc
 {
-    friend class EEClass;
-    friend class MethodTableBuilder;
-    friend class ArrayClass;
-    friend class NDirect;
-    friend class MethodDescChunk;
-    friend class InstantiatedMethodDesc;
-    friend class MethodImpl;
-    friend class CheckAsmOffsets;
-    friend class ClrDataAccess;
-
-    friend class MethodDescCallSite;
-
 public:
 
 #ifdef TARGET_64BIT
@@ -605,14 +601,14 @@ public:
     BOOL ShouldSuppressGCTransition();
 
 #ifdef FEATURE_COMINTEROP
-    inline DWORD IsComPlusCall()
+    inline DWORD IsCLRToCOMCall()
     {
         WRAPPER_NO_CONTRACT;
         return mcComInterop == GetClassification();
     }
 #else // !FEATURE_COMINTEROP
      // hardcoded to return FALSE to improve code readability
-    inline DWORD IsComPlusCall()
+    inline DWORD IsCLRToCOMCall()
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
@@ -1223,7 +1219,7 @@ private:
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
-        _ASSERTE(entryPoint != NULL);
+        _ASSERTE(entryPoint != (PCODE)NULL);
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
         // At the moment this is the only case, see MayHaveEntryPointSlotsToBackpatch(). If that changes in the future, this
@@ -1519,7 +1515,7 @@ public:
     // This method is used to restore ReturnKind using the class handle, it is fully supported only on x64 Ubuntu,
     // other platforms do not support multi-reg return case with pointers.
     // Use this method only when you can't hit this case
-    // (like ComPlusMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
+    // (like CLRToCOMMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
     // Also, on the other platforms for a single field struct return case
     // the function can't distinguish RT_Object and RT_ByRef.
     ReturnKind GetReturnKind(INDEBUG(bool supportStringConstructors = false));
@@ -1624,6 +1620,7 @@ protected:
 
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
     WORD m_wFlags; // See MethodDescFlags
+    PTR_MethodDescCodeData m_codeData;
 
 public:
 #ifdef DACCESS_COMPILE
@@ -1632,14 +1629,24 @@ public:
 
     BYTE GetMethodDescIndex()
     {
+        LIMITED_METHOD_CONTRACT;
         return m_methodIndex;
     }
 
     void SetMethodDescIndex(COUNT_T index)
     {
+        LIMITED_METHOD_CONTRACT;
         _ASSERTE(index <= 255);
         m_methodIndex = (BYTE)index;
     }
+
+#ifndef DACCESS_COMPILE
+    HRESULT EnsureCodeDataExists();
+
+    HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+#endif //!DACCESS_COMPILE
+
+    PTR_MethodDescVersioningState GetMethodDescVersionState();
 
 public:
     inline DWORD GetClassification() const
@@ -2108,7 +2115,6 @@ public:
 class MethodDescChunk
 {
     friend class MethodDesc;
-    friend class CheckAsmOffsets;
 
     enum {
         enum_flag_TokenRangeMask                           = 0x0FFF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
@@ -2411,9 +2417,7 @@ typedef DPTR(DynamicResolver)         PTR_DynamicResolver;
 class DynamicMethodDesc : public StoredSigMethodDesc
 {
     friend class ILStubCache;
-    friend class ILStubState;
     friend class DynamicMethodTable;
-    friend class MethodDesc;
 
 protected:
     PTR_CUTF8           m_pszMethodName;
@@ -2428,12 +2432,8 @@ public:
         StubNativeToCLRInterop,
         StubCOMToCLRInterop,
         StubStructMarshalInterop,
-#ifdef FEATURE_ARRAYSTUB_AS_IL
         StubArrayOp,
-#endif
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
         StubMulticastDelegate,
-#endif
         StubWrapperDelegate,
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
         StubUnboxingIL,
@@ -2496,6 +2496,7 @@ public:
     void SetILStubType(ILStubType type)
     {
         _ASSERTE(HasFlags(FlagIsILStub));
+        m_dwExtendedFlags &= ~ILStubTypeMask;
         m_dwExtendedFlags |= type;
     }
 
@@ -2584,14 +2585,12 @@ public:
             && GetILStubType() == StubCLRToNativeInterop;
     }
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     bool IsMulticastStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubMulticastDelegate;
     }
-#endif
     bool IsWrapperDelegateStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2991,7 +2990,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         MethodTable * pMT = GetMethodTable();
         // Try to avoid touching the EEClass if possible
-        if (pMT->IsClassPreInited())
+        if (!pMT->HasClassConstructor())
             return FALSE;
         return !pMT->GetClass()->IsBeforeFieldInit();
     }
@@ -3011,13 +3010,13 @@ class EEImplMethodDesc : public StoredSigMethodDesc
 #ifdef FEATURE_COMINTEROP
 
 // This is the extra information needed to be associated with a method in order to use it for
-// CLR->COM calls. It is currently used by code:ComPlusCallMethodDesc (ordinary CLR->COM calls).
-typedef DPTR(struct ComPlusCallInfo) PTR_ComPlusCallInfo;
-struct ComPlusCallInfo
+// CLR->COM calls. It is currently used by code:CLRToCOMCallMethodDesc (ordinary CLR->COM calls).
+typedef DPTR(struct CLRToCOMCallInfo) PTR_CLRToCOMCallInfo;
+struct CLRToCOMCallInfo
 {
-    // Returns ComPlusCallInfo associated with a method. pMD must be a ComPlusCallMethodDesc or
+    // Returns CLRToCOMCallInfo associated with a method. pMD must be a CLRToCOMCallMethodDesc or
     // EEImplMethodDesc that has already been initialized for COM interop.
-    inline static ComPlusCallInfo *FromMethodDesc(MethodDesc *pMD);
+    inline static CLRToCOMCallInfo *FromMethodDesc(MethodDesc *pMD);
 
     union
     {
@@ -3098,14 +3097,14 @@ struct ComPlusCallInfo
 
 
 //-----------------------------------------------------------------------
-// Operations specific to ComPlusCall methods. We use a derived class to get
+// Operations specific to CLRToCOMCall methods. We use a derived class to get
 // the compiler involved in enforcing proper method type usage.
 // DO NOT ADD FIELDS TO THIS CLASS.
 //-----------------------------------------------------------------------
-class ComPlusCallMethodDesc : public MethodDesc
+class CLRToCOMCallMethodDesc : public MethodDesc
 {
 public:
-    ComPlusCallInfo *m_pComPlusCallInfo; // initialized in code:ComPlusCall.PopulateComPlusCallMethodDesc
+    CLRToCOMCallInfo *m_pCLRToCOMCallInfo; // initialized in code:CLRToCOMCall.PopulateCLRToCOMCallMethodDesc
 
     void InitRetThunk();
     void InitComEventCallInfo();
@@ -3113,21 +3112,21 @@ public:
     PCODE * GetAddrOfILStubField()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pComPlusCallInfo->GetAddrOfILStubField();
+        return m_pCLRToCOMCallInfo->GetAddrOfILStubField();
     }
 
     MethodTable* GetInterfaceMethodTable()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pComPlusCallInfo->m_pInterfaceMT != NULL);
-        return m_pComPlusCallInfo->m_pInterfaceMT;
+        _ASSERTE(m_pCLRToCOMCallInfo->m_pInterfaceMT != NULL);
+        return m_pCLRToCOMCallInfo->m_pInterfaceMT;
     }
 
     MethodDesc* GetEventProviderMD()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pComPlusCallInfo->m_pEventProviderMD;
+        return m_pCLRToCOMCallInfo->m_pEventProviderMD;
     }
 
 
@@ -3135,27 +3134,27 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (m_pComPlusCallInfo->m_flags & ComPlusCallInfo::kRequiresArgumentWrapping) != 0;
+        return (m_pCLRToCOMCallInfo->m_flags & CLRToCOMCallInfo::kRequiresArgumentWrapping) != 0;
     }
 
     void SetLateBoundFlags(BYTE newFlags)
     {
         LIMITED_METHOD_CONTRACT;
 
-        InterlockedOr((LONG*)&m_pComPlusCallInfo->m_flags, newFlags);
+        InterlockedOr((LONG*)&m_pCLRToCOMCallInfo->m_flags, newFlags);
     }
 
 #ifdef TARGET_X86
     WORD GetStackArgumentSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pComPlusCallInfo->GetStackArgumentSize();
+        return m_pCLRToCOMCallInfo->GetStackArgumentSize();
     }
 
     void SetStackArgumentSize(WORD cbDstBuffer)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pComPlusCallInfo->SetStackArgumentSize(cbDstBuffer);
+        m_pCLRToCOMCallInfo->SetStackArgumentSize(cbDstBuffer);
     }
 #else // TARGET_X86
     void SetStackArgumentSize(WORD cbDstBuffer)

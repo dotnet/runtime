@@ -10,3 +10,4 @@ EXTERN_C void* AppleCryptoNative_ChaCha20Poly1305Encrypt;
 EXTERN_C void* AppleCryptoNative_ChaCha20Poly1305Decrypt;
 EXTERN_C void* AppleCryptoNative_AesGcmEncrypt;
 EXTERN_C void* AppleCryptoNative_AesGcmDecrypt;
+EXTERN_C void* AppleCryptoNative_IsAuthenticationFailure;

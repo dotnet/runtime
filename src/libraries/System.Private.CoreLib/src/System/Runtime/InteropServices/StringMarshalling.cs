@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices
     enum StringMarshalling
     {
         /// <summary>
-        /// Indicates the user is suppling a specific marshaller in <see cref="LibraryImportAttribute.StringMarshallingCustomType"/>.
+        /// Indicates the user is supplying a specific marshaller in <see cref="LibraryImportAttribute.StringMarshallingCustomType"/>.
         /// </summary>
         Custom = 0,
         /// <summary>

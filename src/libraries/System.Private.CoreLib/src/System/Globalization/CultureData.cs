@@ -628,7 +628,7 @@ namespace System.Globalization
             // all available calendar type(s).  The first one is the default calendar
             invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };
 
-            if (!GlobalizationMode.Invariant)
+            if (!GlobalizationMode.InvariantNoLoad)
             {
                 // Store for specific data about each calendar
                 invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
@@ -646,7 +646,7 @@ namespace System.Globalization
             invariant._iDefaultMacCodePage = 10000;         // default macintosh code page
             invariant._iDefaultEbcdicCodePage = 037;        // default EBCDIC code page
 
-            if (GlobalizationMode.Invariant)
+            if (GlobalizationMode.InvariantNoLoad)
             {
                 invariant._sLocalizedCountry = invariant._sNativeCountry;
             }
@@ -814,7 +814,7 @@ namespace System.Globalization
             {
                 return null;
             }
-#if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
+#if TARGET_BROWSER
             // populate fields for which ICU does not provide data in Hybrid mode
             if (GlobalizationMode.Hybrid && !string.IsNullOrEmpty(culture._sName))
             {
@@ -976,11 +976,10 @@ namespace System.Globalization
         private string GetLanguageDisplayNameCore(string cultureName) => GlobalizationMode.UseNls ?
                                                                             NlsGetLanguageDisplayName(cultureName) :
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                                                                            GlobalizationMode.Hybrid ? GetLocaleInfoNative(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name) :
-                                                                            IcuGetLanguageDisplayName(cultureName);
-#else
-                                                                            IcuGetLanguageDisplayName(cultureName);
+                                                                         GlobalizationMode.Hybrid ?
+                                                                            GetLocaleInfoNative(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name) :
 #endif
+                                                                            IcuGetLanguageDisplayName(cultureName);
 
         /// <summary>
         /// English pretty name for this locale (ie: English (United States))
@@ -1545,7 +1544,11 @@ namespace System.Globalization
                 if (_iFirstDayOfWeek == undef && !GlobalizationMode.Invariant)
                 {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    _iFirstDayOfWeek = GlobalizationMode.Hybrid ? GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek) : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+                    if (GlobalizationMode.Hybrid)
+                    {
+                        _iFirstDayOfWeek = GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek);
+                    }
+                    else
 #elif TARGET_BROWSER
                     if (GlobalizationMode.Hybrid)
                     {
@@ -1553,12 +1556,10 @@ namespace System.Globalization
                         _iFirstDayOfWeek = GetFirstDayOfWeek(_sName);
                     }
                     else
-                    {
-                        _iFirstDayOfWeek = IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
-                    }
-#else
-                    _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
 #endif
+                    {
+                        _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+                    }
                 }
                 return _iFirstDayOfWeek;
             }
@@ -1581,12 +1582,10 @@ namespace System.Globalization
                         _iFirstWeekOfYear = GetFirstWeekOfYear(_sName);
                     }
                     else
+#endif
                     {
                         _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
                     }
-#else
-                    _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
-#endif
                 }
                 return _iFirstWeekOfYear;
             }
@@ -1978,11 +1977,7 @@ namespace System.Globalization
                     }
                     else
                     {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                        string? longTimeFormat = GlobalizationMode.Hybrid ? GetTimeFormatStringNative() : IcuGetTimeFormatString();
-#else
                         string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
-#endif
                         if (string.IsNullOrEmpty(longTimeFormat))
                         {
                             longTimeFormat = LongTimes[0];
@@ -2228,7 +2223,7 @@ namespace System.Globalization
 
         internal void GetNFIValues(NumberFormatInfo nfi)
         {
-            if (GlobalizationMode.Invariant || IsInvariantCulture)
+            if (GlobalizationMode.InvariantNoLoad || IsInvariantCulture)
             {
                 nfi._positiveSign = _sPositiveSign!;
                 nfi._negativeSign = _sNegativeSign!;

@@ -237,15 +237,23 @@ acquire_new_pages_initialized (uint32_t page_count) {
 
 	// We know that on WASM, sbrk grows the heap as necessary in order to return,
 	//  a region of N zeroed bytes, which isn't necessarily aligned or page-sized
-	uint8_t *allocation = sbrk ((uint32_t)bytes),
-		*allocation_end = allocation + bytes;
+	uint8_t *allocation = sbrk ((uint32_t)bytes);
 
 	if (allocation == (uint8_t *)-1) {
+		// HACK: It is theoretically possible for sbrk to fail in a non-OOM condition
+		//  due to identical bugs in v8 and spidermonkey, so retry exactly once.
+		allocation = sbrk ((uint32_t)bytes);
+		if (allocation == (uint8_t *)-1) {
 #ifdef MWPM_LOGGING
-		g_print ("mwpm failed to acquire memory\n");
+			g_print ("mwpm failed to acquire memory\n");
 #endif
-		return NULL;
+			return NULL;
+		} else {
+			g_print ("MWPM WARNING: sbrk() failed once, then succeeded. Continuing.\n");
+		}
 	}
+
+	uint8_t *allocation_end = allocation + bytes;
 
 	g_assert (allocation_end != allocation);
 

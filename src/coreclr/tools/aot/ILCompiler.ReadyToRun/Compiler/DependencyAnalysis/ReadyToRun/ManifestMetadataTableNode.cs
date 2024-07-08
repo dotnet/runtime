@@ -264,7 +264,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("ManifestMetadataTableNode");
+            sb.Append("ManifestMetadataTableNode"u8);
         }
 
         private void ComputeLastSetOfModuleIndices()

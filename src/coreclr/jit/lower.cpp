@@ -414,8 +414,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         }
 
         case GT_STOREIND:
-            LowerStoreIndirCommon(node->AsStoreInd());
-            break;
+            return LowerStoreIndirCommon(node->AsStoreInd());
 
         case GT_ADD:
         {
@@ -1496,6 +1495,14 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     return true;
 }
 
+//------------------------------------------------------------------------
+// ReplaceArgWithPutArgOrBitcast: Insert a PUTARG_* node in the right location
+// and replace the call operand with that node.
+//
+// Arguments:
+//    argSlot         - slot in call of argument
+//    putArgOrBitcast - the node that is being inserted
+//
 void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgOrBitcast)
 {
     assert(argSlot != nullptr);
@@ -1753,18 +1760,23 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
         }
         else if (arg->OperIs(GT_HWINTRINSIC))
         {
-            GenTreeJitIntrinsic* jitIntrinsic = reinterpret_cast<GenTreeJitIntrinsic*>(arg);
+            GenTreeHWIntrinsic* hwintrinsic = arg->AsHWIntrinsic();
 
             // For HWIntrinsic, there are some intrinsics like ExtractVector128 which have
-            // a gtType of TYP_SIMD16 but a SimdSize of 32, so we need to include that in
-            // the assert below.
+            // a gtType of TYP_SIMD16 but a SimdSize of 32, so we can't necessarily assert
+            // the simd size
 
-            assert((jitIntrinsic->GetSimdSize() == 12) || (jitIntrinsic->GetSimdSize() == 16) ||
-                   (jitIntrinsic->GetSimdSize() == 32) || (jitIntrinsic->GetSimdSize() == 64));
-
-            if (jitIntrinsic->GetSimdSize() == 12)
+            if (hwintrinsic->GetSimdSize() == 12)
             {
-                type = TYP_SIMD12;
+                if (hwintrinsic->GetHWIntrinsicId() != NI_Vector128_AsVector128Unsafe)
+                {
+                    // Most nodes that have a simdSize of 12 are actually producing a TYP_SIMD12
+                    // and have been massaged to TYP_SIMD16 to match the actual product size. This
+                    // is not the case for NI_Vector128_AsVector128Unsafe which is explicitly taking
+                    // a TYP_SIMD12 and producing a TYP_SIMD16.
+
+                    type = TYP_SIMD12;
+                }
             }
         }
     }
@@ -1785,6 +1797,28 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     assert(!arg->OperIsPutArg());
 
 #if !defined(TARGET_64BIT)
+    if (comp->opts.compUseSoftFP && (type == TYP_DOUBLE))
+    {
+        // Unlike TYP_LONG we do no decomposition for doubles, yet we maintain
+        // it as a primitive type until lowering. So we need to get it into the
+        // right form here.
+
+        unsigned argLclNum = comp->lvaGrabTemp(false DEBUGARG("double arg on softFP"));
+        GenTree* store     = comp->gtNewTempStore(argLclNum, arg);
+        GenTree* low       = comp->gtNewLclFldNode(argLclNum, TYP_INT, 0);
+        GenTree* high      = comp->gtNewLclFldNode(argLclNum, TYP_INT, 4);
+        GenTree* longNode  = new (comp, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, low, high);
+        BlockRange().InsertAfter(arg, store, low, high, longNode);
+
+        *ppArg = arg = longNode;
+        type         = TYP_LONG;
+
+        comp->lvaSetVarDoNotEnregister(argLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+
+        JITDUMP("Created new nodes for double-typed arg on softFP:\n");
+        DISPRANGE(LIR::ReadOnlyRange(store, longNode));
+    }
+
     if (varTypeIsLong(type))
     {
         noway_assert(arg->OperIs(GT_LONG));
@@ -1822,9 +1856,8 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (call->IsVarargs() || comp->opts.compUseSoftFP || callArg->AbiInfo.IsMismatchedArgType())
         {
-            // For vararg call or on armel, reg args should be all integer.
-            // For arg type and arg reg mismatch, reg arg should be integer on riscv64
-            // Insert copies as needed to move float value to integer register.
+            // Insert copies as needed to move float value to integer register
+            // if the ABI requires it.
             GenTree* newNode = LowerFloatArg(ppArg, callArg);
             if (newNode != nullptr)
             {
@@ -1938,18 +1971,6 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
     GenTree*  intArg    = comp->gtNewBitCastNode(intType, arg);
     intArg->SetRegNum(regNum);
 
-#ifdef TARGET_ARM
-    if (floatType == TYP_DOUBLE)
-    {
-        // A special case when we introduce TYP_LONG
-        // during lowering for arm32 softFP to pass double
-        // in int registers.
-        assert(comp->opts.compUseSoftFP);
-
-        regNumber nextReg                  = REG_NEXT(regNum);
-        intArg->AsMultiRegOp()->gtOtherReg = nextReg;
-    }
-#endif
     return intArg;
 }
 #endif
@@ -1968,6 +1989,113 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
     {
         LowerArg(call, &arg, true);
     }
+
+    LegalizeArgPlacement(call);
+}
+
+//------------------------------------------------------------------------
+// LegalizeArgPlacement: Move arg placement nodes (PUTARG_*) into a legal
+// ordering after they have been created.
+//
+// Arguments:
+//   call - GenTreeCall node that has had PUTARG_* nodes created for arguments.
+//
+// Remarks:
+//   PUTARG_* nodes are created and inserted right after the definitions of the
+//   argument values. However, there are constraints on how the PUTARG nodes
+//   can appear:
+//
+//   - No other GT_CALL nodes are allowed between a PUTARG_REG/PUTARG_SPLIT
+//   node and the call. For FEATURE_FIXED_OUT_ARGS this condition is also true
+//   for PUTARG_STK.
+//   - For !FEATURE_FIXED_OUT_ARGS, the PUTARG_STK nodes must come in push
+//   order.
+//
+//   Morph has mostly already solved this problem, but transformations on LIR
+//   can make the ordering we end up with here illegal. This function legalizes
+//   the placement while trying to minimize the distance between an argument
+//   definition and its corresponding placement node.
+//
+void Lowering::LegalizeArgPlacement(GenTreeCall* call)
+{
+    size_t numMarked = MarkCallPutArgAndFieldListNodes(call);
+
+    // We currently do not try to resort the PUTARG_STK nodes, but rather just
+    // assert here that they are ordered.
+#if defined(DEBUG) && !FEATURE_FIXED_OUT_ARGS
+    unsigned nextPushOffset = UINT_MAX;
+#endif
+
+    GenTree* cur = call->gtPrev;
+    while (numMarked > 0)
+    {
+        assert(cur != nullptr);
+
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            numMarked--;
+            cur->gtLIRFlags &= ~LIR::Flags::Mark;
+
+#if defined(DEBUG) && !FEATURE_FIXED_OUT_ARGS
+            if (cur->OperIs(GT_PUTARG_STK))
+            {
+                // For !FEATURE_FIXED_OUT_ARGS (only x86) byte offsets are
+                // subtracted from the top of the stack frame; so last pushed
+                // arg has highest offset.
+                assert(nextPushOffset > cur->AsPutArgStk()->getArgOffset());
+                nextPushOffset = cur->AsPutArgStk()->getArgOffset();
+            }
+#endif
+        }
+
+        if (cur->IsCall())
+        {
+            break;
+        }
+
+        cur = cur->gtPrev;
+    }
+
+    if (numMarked == 0)
+    {
+        // Already legal; common case
+        return;
+    }
+
+    JITDUMP("Call [%06u] has %zu PUTARG nodes that interfere with [%06u]; will move them after it\n",
+            Compiler::dspTreeID(call), numMarked, Compiler::dspTreeID(cur));
+
+    // We found interference; remaining PUTARG nodes need to be moved after
+    // this point.
+    GenTree* insertionPoint = cur;
+
+    while (numMarked > 0)
+    {
+        assert(cur != nullptr);
+
+        GenTree* prev = cur->gtPrev;
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            numMarked--;
+            cur->gtLIRFlags &= ~LIR::Flags::Mark;
+
+            // For FEATURE_FIXED_OUT_ARGS: all PUTARG nodes must be moved after the interfering call
+            // For !FEATURE_FIXED_OUT_ARGS: only PUTARG_REG nodes must be moved after the interfering call
+            if (FEATURE_FIXED_OUT_ARGS || cur->OperIs(GT_FIELD_LIST, GT_PUTARG_REG))
+            {
+                JITDUMP("Relocating [%06u] after [%06u]\n", Compiler::dspTreeID(cur),
+                        Compiler::dspTreeID(insertionPoint));
+
+                BlockRange().Remove(cur);
+                BlockRange().InsertAfter(insertionPoint, cur);
+            }
+        }
+
+        cur = prev;
+    }
+
+    JITDUMP("Final result after legalization:\n");
+    DISPTREERANGE(BlockRange(), call);
 }
 
 // helper that create a node representing a relocatable physical address computation
@@ -1984,6 +2112,7 @@ GenTree* Lowering::AddrGen(void* addr)
     return AddrGen((ssize_t)addr);
 }
 
+//------------------------------------------------------------------------
 // LowerCallMemset: Replaces the following memset-like special intrinsics:
 //
 //    SpanHelpers.Fill<T>(ref dstRef, CNS_SIZE, CNS_VALUE)
@@ -2767,19 +2896,7 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
 //
 GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
 {
-    size_t numMarkedNodes = 0;
-    for (CallArg& arg : call->gtArgs.Args())
-    {
-        if (arg.GetEarlyNode() != nullptr)
-        {
-            numMarkedNodes += MarkPutArgNodes(arg.GetEarlyNode());
-        }
-
-        if (arg.GetLateNode() != nullptr)
-        {
-            numMarkedNodes += MarkPutArgNodes(arg.GetLateNode());
-        }
-    }
+    size_t numMarkedNodes = MarkCallPutArgAndFieldListNodes(call);
 
     if (numMarkedNodes <= 0)
     {
@@ -2805,32 +2922,67 @@ GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// MarkPutArgNodes: Mark all direct operand PUTARG nodes with a LIR mark.
+// MarkCallPutArgNodes: Mark all operand FIELD_LIST and PUTARG nodes
+// corresponding to a call.
 //
 // Arguments:
-//    node - the node (either a field list or PUTARG node)
+//   call - the call
 //
 // Returns:
-//    The number of marks added.
+//   The number of nodes marked.
 //
-size_t Lowering::MarkPutArgNodes(GenTree* node)
+// Remarks:
+//   FIELD_LIST operands are marked too, and their PUTARG operands are in turn
+//   marked as well.
+//
+size_t Lowering::MarkCallPutArgAndFieldListNodes(GenTreeCall* call)
+{
+    size_t numMarkedNodes = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (arg.GetEarlyNode() != nullptr)
+        {
+            numMarkedNodes += MarkPutArgAndFieldListNodes(arg.GetEarlyNode());
+        }
+
+        if (arg.GetLateNode() != nullptr)
+        {
+            numMarkedNodes += MarkPutArgAndFieldListNodes(arg.GetLateNode());
+        }
+    }
+
+    return numMarkedNodes;
+}
+
+//------------------------------------------------------------------------
+// MarkPutArgAndFieldListNodes: Mark all operand FIELD_LIST and PUTARG nodes
+// with a LIR mark.
+//
+// Arguments:
+//   node - the node (either a FIELD_LIST or PUTARG operand)
+//
+// Returns:
+//   The number of marks added.
+//
+// Remarks:
+//   FIELD_LIST operands are marked too, and their PUTARG operands are in turn
+//   marked as well.
+//
+size_t Lowering::MarkPutArgAndFieldListNodes(GenTree* node)
 {
     assert(node->OperIsPutArg() || node->OperIsFieldList());
 
-    size_t result = 0;
+    assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
+    node->gtLIRFlags |= LIR::Flags::Mark;
+
+    size_t result = 1;
     if (node->OperIsFieldList())
     {
         for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
         {
             assert(operand.GetNode()->OperIsPutArg());
-            result += MarkPutArgNodes(operand.GetNode());
+            result += MarkPutArgAndFieldListNodes(operand.GetNode());
         }
-    }
-    else
-    {
-        assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
-        node->gtLIRFlags |= LIR::Flags::Mark;
-        result++;
     }
 
     return result;
@@ -3444,10 +3596,13 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             call->gtArgs.PushLateBack(targetArg);
 
             // Set up ABI information for this arg.
+            targetArg->NewAbiInfo =
+                ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
+                                                                                       0, TARGET_POINTER_SIZE));
             targetArg->AbiInfo.ArgType = callTarget->TypeGet();
             targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
-            targetArg->AbiInfo.NumRegs = 1;
-            targetArg->AbiInfo.SetByteSize(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE, false, false);
+            targetArg->AbiInfo.NumRegs  = 1;
+            targetArg->AbiInfo.ByteSize = TARGET_POINTER_SIZE;
 
             // Lower the newly added args now that call is updated
             LowerArg(call, targetArg, true /* late */);
@@ -3591,12 +3746,8 @@ void Lowering::MoveCFGCallArgs(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* node = arg.GetEarlyNode();
-        // Non-value nodes in early args are setup nodes for late args.
-        if (node->IsValue())
-        {
-            assert(node->OperIsPutArg() || node->OperIsFieldList());
-            MoveCFGCallArg(call, node);
-        }
+        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        MoveCFGCallArg(call, node);
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
@@ -6356,7 +6507,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         else
         {
             bool shouldOptimizeVirtualStubCall = false;
-#if defined(TARGET_ARMARCH) || defined(TARGET_AMD64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_AMD64) || defined(TARGET_LOONGARCH64)
             // Skip inserting the indirection node to load the address that is already
             // computed in the VSD stub arg register as a hidden parameter. Instead during the
             // codegen, just load the call target from there.
@@ -7547,29 +7698,34 @@ PhaseStatus Lowering::DoPhase()
     const bool setSlotNumbers = false;
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    comp->fgLocalVarLiveness();
-    // local var liveness can delete code, which may create empty blocks
-    if (comp->opts.OptimizationEnabled())
+    // Remove dead blocks and compute DFS (we want to remove unreachable blocks
+    // even in MinOpts).
+    comp->fgDfsBlocksAndRemove();
+
+    if (comp->backendRequiresLocalVarLifetimes())
     {
-        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
-        modified |= comp->fgRemoveDeadBlocks();
+        assert(comp->opts.OptimizationEnabled());
+
+        comp->fgLocalVarLiveness();
+        // local var liveness can delete code, which may create empty blocks
+        // Don't churn the flowgraph with aggressive compaction since we've already run block layout
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
+                                                /* doAggressiveCompaction */ false);
 
         if (modified)
         {
+            comp->fgDfsBlocksAndRemove();
             JITDUMP("had to run another liveness pass:\n");
             comp->fgLocalVarLiveness();
         }
-    }
-    else
-    {
-        // If we are not optimizing, remove the dead blocks regardless.
-        comp->fgRemoveDeadBlocks();
+
+        // Recompute local var ref counts again after liveness to reflect
+        // impact of any dead code removal. Note this may leave us with
+        // tracked vars that have zero refs.
+        comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
     }
 
-    // Recompute local var ref counts again after liveness to reflect
-    // impact of any dead code removal. Note this may leave us with
-    // tracked vars that have zero refs.
-    comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+    comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -8899,7 +9055,10 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 // Arguments:
 //    ind - the store indirection node we are lowering.
 //
-void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
+// Return Value:
+//    Next node to lower.
+//
+GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
 
@@ -8914,28 +9073,30 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 #endif
     TryCreateAddrMode(ind->Addr(), isContainable, ind);
 
-    if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
+    if (comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
-#ifndef TARGET_XARCH
-        if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
-        {
-            const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
-            if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))
-            {
-                // On platforms with weaker memory model we need to make sure we use a store with the release semantic
-                // when we publish a potentially mutable object
-                // See relevant discussions https://github.com/dotnet/runtime/pull/76135#issuecomment-1257258310 and
-                // https://github.com/dotnet/runtime/pull/76112#discussion_r980639782
+        return ind->gtNext;
+    }
 
-                // This can be relaxed to "just make sure to use stlr/memory barrier" if needed
-                ind->gtFlags |= GTF_IND_VOLATILE;
-            }
+#ifndef TARGET_XARCH
+    if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
+        if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))
+        {
+            // On platforms with weaker memory model we need to make sure we use a store with the release semantic
+            // when we publish a potentially mutable object
+            // See relevant discussions https://github.com/dotnet/runtime/pull/76135#issuecomment-1257258310 and
+            // https://github.com/dotnet/runtime/pull/76112#discussion_r980639782
+
+            // This can be relaxed to "just make sure to use stlr/memory barrier" if needed
+            ind->gtFlags |= GTF_IND_VOLATILE;
         }
+    }
 #endif
 
-        LowerStoreIndirCoalescing(ind);
-        LowerStoreIndir(ind);
-    }
+    LowerStoreIndirCoalescing(ind);
+    return LowerStoreIndir(ind);
 }
 
 //------------------------------------------------------------------------
@@ -9018,7 +9179,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 #ifdef TARGET_ARM64
     if (comp->opts.OptimizationEnabled() && ind->OperIs(GT_IND))
     {
-        OptimizeForLdp(ind);
+        OptimizeForLdpStp(ind);
     }
 #endif
 
@@ -9033,7 +9194,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 // cases passing the distance check, but 82 out of these 112 extra cases were
 // then rejected due to interference. So 16 seems like a good number to balance
 // the throughput costs.
-const int LDP_REORDERING_MAX_DISTANCE = 16;
+const int LDP_STP_REORDERING_MAX_DISTANCE = 16;
 
 //------------------------------------------------------------------------
 // OptimizeForLdp: Record information about an indirection, and try to optimize
@@ -9046,7 +9207,7 @@ const int LDP_REORDERING_MAX_DISTANCE = 16;
 // Returns:
 //    True if the optimization was successful.
 //
-bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
+bool Lowering::OptimizeForLdpStp(GenTreeIndir* ind)
 {
     if (!ind->TypeIs(TYP_INT, TYP_LONG, TYP_FLOAT, TYP_DOUBLE, TYP_SIMD8, TYP_SIMD16) || ind->IsVolatile())
     {
@@ -9064,7 +9225,7 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
 
     // Every indirection takes an expected 2+ nodes, so we only expect at most
     // half the reordering distance to be candidates for the optimization.
-    int maxCount = min(m_blockIndirs.Height(), LDP_REORDERING_MAX_DISTANCE / 2);
+    int maxCount = min(m_blockIndirs.Height(), LDP_STP_REORDERING_MAX_DISTANCE / 2);
     for (int i = 0; i < maxCount; i++)
     {
         SavedIndir& prev = m_blockIndirs.TopRef(i);
@@ -9079,11 +9240,22 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
             continue;
         }
 
+        if (prevIndir->gtNext == nullptr)
+        {
+            // Deleted by other optimization
+            continue;
+        }
+
+        if (prevIndir->OperIsStore() != ind->OperIsStore())
+        {
+            continue;
+        }
+
         JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
                 Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), (unsigned)offs, (unsigned)prev.Offset);
         if (std::abs(offs - prev.Offset) == genTypeSize(ind))
         {
-            JITDUMP("  ..and they are amenable to ldp optimization\n");
+            JITDUMP("  ..and they are amenable to ldp/stp optimization\n");
             if (TryMakeIndirsAdjacent(prevIndir, ind))
             {
                 // Do not let the previous one participate in
@@ -9119,7 +9291,7 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
 bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir)
 {
     GenTree* cur = prevIndir;
-    for (int i = 0; i < LDP_REORDERING_MAX_DISTANCE; i++)
+    for (int i = 0; i < LDP_STP_REORDERING_MAX_DISTANCE; i++)
     {
         cur = cur->gtNext;
         if (cur == indir)
@@ -9176,8 +9348,16 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     INDEBUG(dumpWithMarks());
     JITDUMP("\n");
 
+    if ((prevIndir->gtLIRFlags & LIR::Flags::Mark) != 0)
+    {
+        JITDUMP("Previous indir is part of the data flow of current indir\n");
+        UnmarkTree(indir);
+        return false;
+    }
+
     m_scratchSideEffects.Clear();
 
+    bool sawData = false;
     for (GenTree* cur = prevIndir->gtNext; cur != indir; cur = cur->gtNext)
     {
         if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
@@ -9190,6 +9370,11 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 UnmarkTree(indir);
                 return false;
             }
+
+            if (indir->OperIsStore())
+            {
+                sawData |= cur == indir->Data();
+            }
         }
         else
         {
@@ -9201,6 +9386,13 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
     if (m_scratchSideEffects.InterferesWith(comp, indir, true))
     {
+        if (!indir->OperIsLoad())
+        {
+            JITDUMP("Have conservative interference with last store. Giving up.\n");
+            UnmarkTree(indir);
+            return false;
+        }
+
         // Try a bit harder, making use of the following facts:
         //
         // 1. We know the indir is non-faulting, so we do not need to worry
@@ -9297,8 +9489,39 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         }
     }
 
-    JITDUMP("Interference checks passed. Moving nodes that are not part of data flow of [%06u]\n\n",
-            Compiler::dspTreeID(indir));
+    JITDUMP("Interference checks passed: can move unrelated nodes past second indir.\n");
+
+    if (sawData)
+    {
+        // If the data node of 'indir' is between 'prevIndir' and 'indir' then
+        // try to move the previous indir up to happen after the data
+        // computation. We will be moving all nodes unrelated to the data flow
+        // past 'indir', so we only need to check interference between
+        // 'prevIndir' and all nodes that are part of 'indir's dataflow.
+        m_scratchSideEffects.Clear();
+        m_scratchSideEffects.AddNode(comp, prevIndir);
+
+        for (GenTree* cur = prevIndir->gtNext;; cur = cur->gtNext)
+        {
+            if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+            {
+                if (m_scratchSideEffects.InterferesWith(comp, cur, true))
+                {
+                    JITDUMP("Cannot move prev indir [%06u] up past [%06u] to get it past the data computation\n",
+                            Compiler::dspTreeID(prevIndir), Compiler::dspTreeID(cur));
+                    UnmarkTree(indir);
+                    return false;
+                }
+            }
+
+            if (cur == indir->Data())
+            {
+                break;
+            }
+        }
+    }
+
+    JITDUMP("Moving nodes that are not part of data flow of [%06u]\n\n", Compiler::dspTreeID(indir));
 
     GenTree* previous = prevIndir;
     for (GenTree* node = prevIndir->gtNext;;)
@@ -9319,6 +9542,22 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         }
 
         node = next;
+    }
+
+    if (sawData)
+    {
+        // For some reason LSRA is not able to reuse a constant if both LIR
+        // temps are live simultaneously, so skip moving in those cases and
+        // expect LSRA to reuse the constant instead.
+        if (indir->Data()->OperIs(GT_CNS_INT, GT_CNS_DBL) && GenTree::Compare(indir->Data(), prevIndir->Data()))
+        {
+            JITDUMP("Not moving previous indir since we are expecting constant reuse for the data\n");
+        }
+        else
+        {
+            BlockRange().Remove(prevIndir);
+            BlockRange().InsertAfter(indir->Data(), prevIndir);
+        }
     }
 
     JITDUMP("Result:\n\n");

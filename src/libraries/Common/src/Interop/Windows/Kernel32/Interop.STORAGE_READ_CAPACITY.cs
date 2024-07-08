@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        // https://docs.microsoft.com/en-us/windows/win32/devio/storage-read-capacity
+        // https://learn.microsoft.com/windows/win32/devio/storage-read-capacity
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct STORAGE_READ_CAPACITY
         {

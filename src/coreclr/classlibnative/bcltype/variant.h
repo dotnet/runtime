@@ -40,5 +40,8 @@ private:
     static int GetEnumFlags(TypeHandle th);
 };
 
+extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::ObjectHandleOnStack obj);
+extern "C" void QCALLTYPE Variant_ConvertOleColorToSystemColor(QCall::ObjectHandleOnStack objRet, uint32_t oleColor, MethodTable* pMT);
+
 #endif // _VARIANT_H_
 

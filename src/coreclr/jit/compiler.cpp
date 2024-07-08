@@ -66,7 +66,7 @@ LONG GlobalJitOptions::compUseSoftFPConfigured = 0;
 #if defined(_MSC_VER)
 
 #include <intrin.h>
-inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
+inline bool _our_GetThreadCycles(uint64_t* cycleOut)
 {
     *cycleOut = __rdtsc();
     return true;
@@ -74,11 +74,11 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 
 #elif defined(__GNUC__)
 
-inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
+inline bool _our_GetThreadCycles(uint64_t* cycleOut)
 {
     uint32_t hi, lo;
     __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
-    *cycleOut = (static_cast<unsigned __int64>(hi) << 32) | static_cast<unsigned __int64>(lo);
+    *cycleOut = (static_cast<uint64_t>(hi) << 32) | static_cast<uint64_t>(lo);
     return true;
 }
 
@@ -1990,6 +1990,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
     m_signatureToLookupInfoMap = nullptr;
+    m_significantSegmentsMap   = nullptr;
     fgSsaPassesCompleted       = 0;
     fgSsaValid                 = false;
     fgVNPassesCompleted        = 0;
@@ -2000,7 +2001,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     // check that HelperCallProperties are initialized
 
-    assert(s_helperCallProperties.IsPure(CORINFO_HELP_GETSHARED_GCSTATIC_BASE));
+    assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
     assert(!s_helperCallProperties.IsPure(CORINFO_HELP_GETFIELDOBJ)); // quick sanity check
 
     // We start with the flow graph in tree-order
@@ -2046,7 +2047,7 @@ void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum, /* IN  */
     else
     {
         // If we don't have a matched VM, we won't get valid results when asking for a helper function.
-        addr = UlongToPtr(0xCA11CA11); // "callcall"
+        addr = (void*)(uintptr_t)(0xCA11CA11); // "callcall"
     }
 
     return addr;
@@ -2308,37 +2309,45 @@ void Compiler::compSetProcessor()
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
 
-    // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
-    // These have been shipped together historically and at the time of this writing
-    // there exists no hardware which doesn't support the entire feature set. To simplify
-    // the overall JIT implementation, we currently require the entire set of ISAs to be
-    // supported and disable AVX512 support otherwise.
-
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_EVEX))
     {
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
-
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
-
-        if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
+        if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
         {
-            // Some architectures can experience frequency throttling when
-            // executing 512-bit width instructions. To account for this we set the
-            // default preferred vector width to 256-bits in some scenarios. Power
-            // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
-            // allow using such instructions where hardware support is available.
-            //
-            // Do not condition this based on stress mode as it makes the support
-            // reported inconsistent across methods and breaks expectations/functionality
+            // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
+            // These have been shipped together historically and at the time of this writing
+            // there exists no hardware which doesn't support the entire feature set. To simplify
+            // the overall JIT implementation, we currently require the entire set of ISAs to be
+            // supported and disable AVX512 support otherwise.
 
-            preferredVectorByteLength = 256 / 8;
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
+
+            instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
+
+            if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
+            {
+                // Some architectures can experience frequency throttling when
+                // executing 512-bit width instructions. To account for this we set the
+                // default preferred vector width to 256-bits in some scenarios. Power
+                // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
+                // allow using such instructions where hardware support is available.
+                //
+                // Do not condition this based on stress mode as it makes the support
+                // reported inconsistent across methods and breaks expectations/functionality
+
+                preferredVectorByteLength = 256 / 8;
+            }
+        }
+        else
+        {
+            // We shouldn't have EVEX enabled if neither AVX512 nor AVX10v1 are supported
+            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX10v1));
         }
     }
 
@@ -3741,6 +3750,29 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
 //
 // Arguments:
 //   regs - The set of registers to display
+//   type - The type of `regs`
+//
+void Compiler::dumpRegMask(SingleTypeRegSet regs, var_types type) const
+{
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    if (varTypeIsMask(type))
+    {
+        dumpRegMask(regMaskTP(RBM_NONE, regs));
+    }
+    else
+#endif
+    {
+        assert(varTypeUsesIntReg(type) || varTypeUsesFloatReg(type));
+        dumpRegMask(regMaskTP(regs, RBM_NONE));
+    }
+}
+
+//------------------------------------------------------------------------
+// dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
+// a potentially large number of registers.
+//
+// Arguments:
+//   regs - The set of registers to display
 //
 void Compiler::dumpRegMask(regMaskTP regs) const
 {
@@ -4839,6 +4871,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Canonicalize entry to have unique entry BB to put IR in for the upcoming phases
+        //
+        DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
+
+        // Build post-order and remove dead blocks
+        //
+        DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+
         fgNodeThreading = NodeThreading::AllLocals;
     }
 
@@ -4875,13 +4915,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     lvaStressLclFld();
     fgStress64RsltMul();
 #endif // DEBUG
-
-    if (opts.OptimizationEnabled())
-    {
-        // Build post-order that morph will use, and remove dead blocks
-        //
-        DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
-    }
 
     // Morph the trees in all the blocks of the method
     //
@@ -5026,7 +5059,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doSsa                     = (JitConfig.JitDoSsa() != 0);
         doEarlyProp               = doSsa && (JitConfig.JitDoEarlyProp() != 0);
         doValueNum                = doSsa && (JitConfig.JitDoValueNumber() != 0);
-        doOptimizeIVs             = doSsa && (JitConfig.JitDoOptimizeIVs() != 0);
         doLoopHoisting            = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
         doCopyProp                = doValueNum && (JitConfig.JitDoCopyProp() != 0);
         doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
@@ -5034,6 +5066,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doVNBasedIntrinExpansion  = doValueNum;
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
+        doOptimizeIVs             = doValueNum && (JitConfig.JitDoOptimizeIVs() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 #endif // defined(OPT_CONFIG)
 
@@ -5669,12 +5702,20 @@ void Compiler::SplitTreesRandomly()
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
     // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
-    unsigned maxLvaCount = max(lvaCount * 2, 50000u);
+    unsigned  maxLvaCount = max(lvaCount * 2, 50000u);
+    int       numSplit    = 0;
+    const int splitLimit  = JitConfig.JitStressSplitTreeLimit();
 
     for (BasicBlock* block : Blocks())
     {
         for (Statement* stmt : block->NonPhiStatements())
         {
+            if ((splitLimit >= 0) && (numSplit >= splitLimit))
+            {
+                JITDUMP("Reached split limit (%d) -- stopping\n", splitLimit);
+                return;
+            }
+
             int numTrees = 0;
             for (GenTree* tree : stmt->TreeList())
             {
@@ -5707,6 +5748,7 @@ void Compiler::SplitTreesRandomly()
 
                         fgMorphStmtBlockOps(block, stmt);
                         gtUpdateStmtSideEffects(stmt);
+                        numSplit++;
                     }
 
                     break;
@@ -5722,6 +5764,9 @@ void Compiler::SplitTreesRandomly()
             }
         }
     }
+
+    JITDUMP("Split %d trees\n", numSplit);
+
 #endif
 }
 
@@ -8215,8 +8260,8 @@ var_types Compiler::GetEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASS
 void Compiler::GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
                                    var_types*                                                 type0,
                                    var_types*                                                 type1,
-                                   unsigned __int8*                                           offset0,
-                                   unsigned __int8*                                           offset1)
+                                   uint8_t*                                                   offset0,
+                                   uint8_t*                                                   offset1)
 {
     *offset0 = structDesc.eightByteOffsets[0];
     *offset1 = structDesc.eightByteOffsets[1];
@@ -8247,11 +8292,8 @@ void Compiler::GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSIN
 //    'offset0'    -  out param; returns the offset of the first eightbyte.
 //    'offset1'    -  out param; returns the offset of the second eightbyte.
 //
-void Compiler::GetStructTypeOffset(CORINFO_CLASS_HANDLE typeHnd,
-                                   var_types*           type0,
-                                   var_types*           type1,
-                                   unsigned __int8*     offset0,
-                                   unsigned __int8*     offset1)
+void Compiler::GetStructTypeOffset(
+    CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1)
 {
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
     eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -8331,6 +8373,67 @@ void Compiler::TransferTestDataToNode(GenTree* from, GenTree* to)
 }
 
 #endif // DEBUG
+
+//------------------------------------------------------------------------
+// GetSignificantSegments:
+//   Compute a segment tree containing all significant (non-padding) segments
+//   for the specified class layout.
+//
+// Parameters:
+//   layout - The layout
+//
+// Returns:
+//   Segment tree containing all significant parts of the layout.
+//
+const StructSegments& Compiler::GetSignificantSegments(ClassLayout* layout)
+{
+    StructSegments* cached;
+    if ((m_significantSegmentsMap != nullptr) && m_significantSegmentsMap->Lookup(layout, &cached))
+    {
+        return *cached;
+    }
+
+    COMP_HANDLE compHnd = info.compCompHnd;
+
+    StructSegments* newSegments = new (this, CMK_Promotion) StructSegments(getAllocator(CMK_Promotion));
+
+    if (layout->IsBlockLayout())
+    {
+        newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
+    }
+    else
+    {
+        CORINFO_TYPE_LAYOUT_NODE nodes[256];
+        size_t                   numNodes = ArrLen(nodes);
+        GetTypeLayoutResult      result   = compHnd->getTypeLayout(layout->GetClassHandle(), nodes, &numNodes);
+
+        if (result != GetTypeLayoutResult::Success)
+        {
+            newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
+        }
+        else
+        {
+            for (size_t i = 0; i < numNodes; i++)
+            {
+                const CORINFO_TYPE_LAYOUT_NODE& node = nodes[i];
+                if ((node.type != CORINFO_TYPE_VALUECLASS) || (node.simdTypeHnd != NO_CLASS_HANDLE) ||
+                    node.hasSignificantPadding)
+                {
+                    newSegments->Add(StructSegments::Segment(node.offset, node.offset + node.size));
+                }
+            }
+        }
+    }
+
+    if (m_significantSegmentsMap == nullptr)
+    {
+        m_significantSegmentsMap = new (this, CMK_Promotion) ClassLayoutStructSegmentsMap(getAllocator(CMK_Promotion));
+    }
+
+    m_significantSegmentsMap->Set(layout, newSegments);
+
+    return *newSegments;
+}
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -8899,8 +9002,8 @@ void CompTimeSummaryInfo::Print(FILE* f)
                 if (calls == 0)
                     continue;
 
-                unsigned __int64 cycles = m_total.m_perClrAPIcycles[i];
-                double           millis = 1000.0 * cycles / countsPerSec;
+                uint64_t cycles = m_total.m_perClrAPIcycles[i];
+                double   millis = 1000.0 * cycles / countsPerSec;
 
                 // Don't show the small fry to keep the results manageable
                 if (millis < 0.5)
@@ -8924,8 +9027,8 @@ void CompTimeSummaryInfo::Print(FILE* f)
                     continue;
                 }
 
-                unsigned __int32 maxcyc = m_maximum.m_maxClrAPIcycles[i];
-                double           max_ms = 1000.0 * maxcyc / countsPerSec;
+                uint32_t maxcyc = m_maximum.m_maxClrAPIcycles[i];
+                double   max_ms = 1000.0 * maxcyc / countsPerSec;
 
                 fprintf(f, "     %-40s", APInames[i]);                                 // API name
                 fprintf(f, " %8u %9.1f ms", calls, millis);                            // #calls, total time
@@ -8975,7 +9078,7 @@ JitTimer::JitTimer(unsigned byteCodeSize)
 #endif
 #endif
 
-    unsigned __int64 threadCurCycles;
+    uint64_t threadCurCycles;
     if (_our_GetThreadCycles(&threadCurCycles))
     {
         m_start         = threadCurCycles;
@@ -8989,10 +9092,10 @@ void JitTimer::EndPhase(Compiler* compiler, Phases phase)
     // We re-run some phases currently, so this following assert doesn't work.
     // assert((int)phase > (int)m_lastPhase);  // We should end phases in increasing order.
 
-    unsigned __int64 threadCurCycles;
+    uint64_t threadCurCycles;
     if (_our_GetThreadCycles(&threadCurCycles))
     {
-        unsigned __int64 phaseCycles = (threadCurCycles - m_curPhaseStart);
+        uint64_t phaseCycles = (threadCurCycles - m_curPhaseStart);
 
         // If this is not a leaf phase, the assumption is that the last subphase must have just recently ended.
         // Credit the duration to "slop", the total of which should be very small.
@@ -9094,7 +9197,7 @@ void JitTimer::CLRApiCallLeave(unsigned apix)
     {
         if (JitConfig.JitEECallTimingInfo() != 0)
         {
-            unsigned __int64 threadCurCycles;
+            uint64_t threadCurCycles;
             if (_our_GetThreadCycles(&threadCurCycles))
             {
                 // Compute the cycles spent in the call.
@@ -9110,7 +9213,7 @@ void JitTimer::CLRApiCallLeave(unsigned apix)
 
                 m_info.m_perClrAPIcalls[apix] += 1;
                 m_info.m_perClrAPIcycles[apix] += threadCurCycles;
-                m_info.m_maxClrAPIcycles[apix] = max(m_info.m_maxClrAPIcycles[apix], (unsigned __int32)threadCurCycles);
+                m_info.m_maxClrAPIcycles[apix] = max(m_info.m_maxClrAPIcycles[apix], (uint32_t)threadCurCycles);
 
                 // Subtract the cycles from the enclosing phase by bumping its start time
                 m_curPhaseStart += threadCurCycles;
@@ -9254,7 +9357,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%d,", comp->Metrics.LoopsAligned);
 #endif // DEBUG
 #endif // FEATURE_LOOP_ALIGN
-    unsigned __int64 totCycles = 0;
+    uint64_t totCycles = 0;
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
     {
         if (!PhaseHasChildren[i])
@@ -9399,8 +9502,8 @@ void Compiler::RecordStateAtEndOfCompilation()
 
     // Common portion
     m_compCycles = 0;
-    unsigned __int64 compCyclesAtEnd;
-    bool             b = CycleTimer::GetThreadCyclesS(&compCyclesAtEnd);
+    uint64_t compCyclesAtEnd;
+    bool     b = CycleTimer::GetThreadCyclesS(&compCyclesAtEnd);
     if (!b)
     {
         return; // We don't have a thread cycle counter.
@@ -10882,9 +10985,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
             case DoNotEnregisterReason::NoRegVars:
                 m_noRegVars++;
                 break;
-            case DoNotEnregisterReason::MinOptsGC:
-                m_minOptsGC++;
-                break;
 #if !defined(TARGET_64BIT)
             case DoNotEnregisterReason::LongParamField:
                 m_longParamField++;
@@ -11039,7 +11139,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_structArg, notEnreg);
     PRINT_STATS(m_depField, notEnreg);
     PRINT_STATS(m_noRegVars, notEnreg);
-    PRINT_STATS(m_minOptsGC, notEnreg);
 #if !defined(TARGET_64BIT)
     PRINT_STATS(m_longParamField, notEnreg);
 #endif // !TARGET_64BIT

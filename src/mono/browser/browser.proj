@@ -23,6 +23,10 @@
   <PropertyGroup>
     <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
     <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
+    <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+    <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">true</WasmEnableSIMD>
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
@@ -325,7 +329,15 @@
     ],
     "WasmOptConfigurationFlags": [@(WasmOptConfigurationFlags -> '%22%(Identity)%22', ',')],
     "EmccDefaultExportedFunctions": [@(EmccExportedFunction -> '%22%(Identity)%22', ',')],
-    "EmccDefaultExportedRuntimeMethods": [@(EmccExportedRuntimeMethod -> '%22%(Identity)%22', ',')]
+    "EmccDefaultExportedRuntimeMethods": [@(EmccExportedRuntimeMethod -> '%22%(Identity)%22', ',')],
+    "BoolPropertiesThatTriggerRelinking": [
+      { "identity": "InvariantTimezone",            "defaultValueInRuntimePack": "$(InvariantTimezone)" },
+      { "identity": "InvariantGlobalization",       "defaultValueInRuntimePack": "$(InvariantGlobalization)" },
+      { "identity": "WasmNativeStrip",              "defaultValueInRuntimePack": "$(WasmNativeStrip)" },
+      { "identity": "WasmSingleFileBundle",         "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
+      { "identity": "WasmEnableSIMD",               "defaultValueInRuntimePack": "$(WasmEnableSIMD)" },
+      { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "$(WasmEnableExceptionHandling)" }
+    ]
   }
 }
 ]]>
@@ -480,13 +492,14 @@
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)package.json;
-                       $(NativeBinDir)dotnet.native.wasm"
+                       $(NativeBinDir)dotnet.native.wasm;
+                       $(NativeBinDir)dotnet.globalization.js"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.native.worker.js"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
-	  Condition="Exists('$(NativeBinDir)dotnet.native.worker.js')"
+	        Condition="Exists('$(NativeBinDir)dotnet.native.worker.js')"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.native.js.symbols"

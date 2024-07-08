@@ -1,2 +1,0 @@
-# The root .gitignore doens't mark this as ignored:
-__pycache__

@@ -246,6 +246,9 @@
   <data name="JsonElementHasWrongType" xml:space="preserve">
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>
+  <data name="JsonNumberExponentTooLarge" xml:space="preserve">
+    <value>The exponent value in the specified JSON number is too large.</value>
+  </data>
   <data name="DefaultTypeInfoResolverImmutable" xml:space="preserve">
     <value>Cannot add callbacks to the 'Modifiers' property after the resolver has been used for the first time.</value>
   </data>
@@ -304,7 +307,7 @@
     <value>Expected a digit ('0'-'9'), but instead reached end of data.</value>
   </data>
   <data name="SpecialNumberValuesNotSupported" xml:space="preserve">
-    <value>.NET number values such as positive and negative infinity cannot be written as valid JSON. To make it work when using 'JsonSerializer', consider specifying 'JsonNumberHandling.AllowNamedFloatingPointLiterals' (see https://docs.microsoft.com/dotnet/api/system.text.json.serialization.jsonnumberhandling).</value>
+    <value>.NET number values such as positive and negative infinity cannot be written as valid JSON. To make it work when using 'JsonSerializer', consider specifying 'JsonNumberHandling.AllowNamedFloatingPointLiterals' (see https://learn.microsoft.com/dotnet/api/system.text.json.serialization.jsonnumberhandling).</value>
   </data>
   <data name="ValueTooLarge" xml:space="preserve">
     <value>The JSON value of length {0} is too large and not supported.</value>
@@ -359,6 +362,9 @@
   </data>
   <data name="SerializationDataExtensionPropertyInvalid" xml:space="preserve">
     <value>The extension data property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</value>
+  </data>
+  <data name="PropertyTypeNotNullable" xml:space="preserve">
+    <value>The property type '{0}' does not support null values and therefore cannot be marked as nullable.</value>
   </data>
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
     <value>The type '{0}' cannot have more than one member that has the attribute '{1}'.</value>
@@ -690,7 +696,7 @@
     <value>JsonPropertyInfo '{0}' defined in type '{1}' is marked both as required and as an extension data property. This combination is not supported.</value>
   </data>
   <data name="JsonRequiredPropertiesMissing" xml:space="preserve">
-    <value>JSON deserialization for type '{0}' was missing required properties, including the following: {1}</value>
+    <value>JSON deserialization for type '{0}' was missing required properties including: {1}.</value>
   </data>
   <data name="ObjectCreationHandlingPopulateNotSupportedByConverter" xml:space="preserve">
     <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but it doesn't support populating. This can be either because the property type is immutable or it could use a custom converter.</value>
@@ -731,10 +737,25 @@
   <data name="PipeWriterCanceled" xml:space="preserve">
     <value>PipeWriter.FlushAsync was canceled.</value>
   </data>
-  <data name="PipeWriterCompleted" xml:space="preserve">
-    <value>PipeWriter has been completed, nothing more can be written to it.</value>
+  <data name="PipeWriter_DoesNotImplementUnflushedBytes" xml:space="preserve">
+    <value>The PipeWriter '{0}' does not implement PipeWriter.UnflushedBytes.</value>
   </data>
   <data name="InvalidNewLine" xml:space="preserve">
     <value>New line can be only "\n" or "\r\n".</value>
+  </data>
+  <data name="PropertyGetterDisallowNull" xml:space="preserve">
+    <value>The property or field '{0}' on type '{1}' doesn't allow getting null values. Consider updating its nullability annotation.</value>
+  </data>
+  <data name="PropertySetterDisallowNull" xml:space="preserve">
+    <value>The property or field '{0}' on type '{1}' doesn't allow setting null values. Consider updating its nullability annotation.</value>
+  </data>
+  <data name="ConstructorParameterDisallowNull" xml:space="preserve">
+    <value>The constructor parameter '{0}' on type '{1}' doesn't allow null values. Consider updating its nullability annotation.</value>
+  </data>
+  <data name="JsonSchemaExporter_ReferenceHandlerPreserve_NotSupported" xml:space="preserve">
+    <value>JSON schema generation is not supported for contracts using ReferenceHandler.Preserve.</value>
+  </data>
+  <data name="JsonSchemaExporter_DepthTooLarge" xml:space="preserve">
+    <value>The depth of the generated JSON schema exceeds the JsonSerializerOptions.MaxDepth setting.</value>
   </data>
 </root>

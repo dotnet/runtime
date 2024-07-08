@@ -9,11 +9,15 @@
 // (C) 2006 John Luke
 //
 
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Systen.Net.Mail.Tests;
 using System.Net.Test.Common;
 using Xunit;
@@ -572,6 +576,42 @@ namespace System.Net.Mail.Tests
             client.Send(msg);
 
             Assert.Equal("GSSAPI", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Theory]
+        [MemberData(nameof(SendMail_MultiLineDomainLiterals_Data))]
+        public async Task SendMail_MultiLineDomainLiterals_Disabled_Throws(string from, string to, bool asyncSend)
+        {
+            using var server = new LoopbackSmtpServer();
+
+            using SmtpClient client = server.CreateClient();
+            client.Credentials = new NetworkCredential("Foo", "Bar");
+
+            using var msg = new MailMessage(@from, @to, "subject", "body");
+
+            await Assert.ThrowsAsync<SmtpException>(async () =>
+            {
+                if (asyncSend)
+                {
+                    await client.SendMailAsync(msg).WaitAsync(TimeSpan.FromSeconds(30));
+                }
+                else
+                {
+                    client.Send(msg);
+                }
+            });
+        }
+
+        public static IEnumerable<object[]> SendMail_MultiLineDomainLiterals_Data()
+        {
+            foreach (bool async in new[] { true, false })
+            {
+                foreach (string address in new[] { "foo@[\r\n bar]", "foo@[bar\r\n ]", "foo@[bar\r\n baz]" })
+                {
+                    yield return new object[] { address, "foo@example.com", async };
+                    yield return new object[] { "foo@example.com", address, async };
+                }
+            }
         }
     }
 }

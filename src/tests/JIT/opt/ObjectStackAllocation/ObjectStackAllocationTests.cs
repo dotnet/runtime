@@ -152,6 +152,9 @@ namespace ObjectStackAllocation
 
             CallTestAndVerifyAllocation(AllocateClassWithGcFieldAndInt, 5, expectedAllocationKind);
 
+            // Stack allocation of boxed structs is now enabled
+            CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
+
             // The remaining tests currently never allocate on the stack
             if (expectedAllocationKind == AllocationKind.Stack) {
                 expectedAllocationKind = AllocationKind.Heap;
@@ -162,9 +165,6 @@ namespace ObjectStackAllocation
 
             // This test calls CORINFO_HELP_CHKCASTCLASS_SPECIAL
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCast, 7, expectedAllocationKind);
-
-            // Stack allocation of boxed structs is currently disabled
-            CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
 
             return methodResult;
         }

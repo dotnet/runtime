@@ -158,13 +158,13 @@ NOINLINE Object* FC_GCPoll(void* __me, Object* objToProtect)
 
 /**************************************************************************************/
 #if defined(TARGET_X86) && defined(ENABLE_PERF_COUNTERS)
-static __int64 getCycleCount() {
+static int64_t getCycleCount() {
 
     LIMITED_METHOD_CONTRACT;
     return GET_CYCLE_COUNT();
 }
 #else
-static __int64 getCycleCount() { LIMITED_METHOD_CONTRACT; return(0); }
+static int64_t getCycleCount() { LIMITED_METHOD_CONTRACT; return(0); }
 #endif
 
 /**************************************************************************************/

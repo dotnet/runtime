@@ -270,24 +270,27 @@ namespace System
             RuntimeType rt,
             out delegate*<void*, object> pfnAllocator,
             out void* vAllocatorFirstArg,
-            out delegate*<object, void> pfnCtor,
+            out delegate*<object, void> pfnRefCtor,
+            out delegate*<ref byte, void> pfnValueCtor,
             out bool ctorIsPublic)
         {
             Debug.Assert(rt != null);
 
             delegate*<void*, object> pfnAllocatorTemp = default;
             void* vAllocatorFirstArgTemp = default;
-            delegate*<object, void> pfnCtorTemp = default;
+            delegate*<object, void> pfnRefCtorTemp = default;
+            delegate*<ref byte, void> pfnValueCtorTemp = default;
             Interop.BOOL fCtorIsPublicTemp = default;
 
             GetActivationInfo(
                 ObjectHandleOnStack.Create(ref rt),
                 &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
-                &pfnCtorTemp, &fCtorIsPublicTemp);
+                &pfnRefCtorTemp, &pfnValueCtorTemp, &fCtorIsPublicTemp);
 
             pfnAllocator = pfnAllocatorTemp;
             vAllocatorFirstArg = vAllocatorFirstArgTemp;
-            pfnCtor = pfnCtorTemp;
+            pfnRefCtor = pfnRefCtorTemp;
+            pfnValueCtor = pfnValueCtorTemp;
             ctorIsPublic = fCtorIsPublicTemp != Interop.BOOL.FALSE;
         }
 
@@ -296,7 +299,8 @@ namespace System
             ObjectHandleOnStack pRuntimeType,
             delegate*<void*, object>* ppfnAllocator,
             void** pvAllocatorFirstArg,
-            delegate*<object, void>* ppfnCtor,
+            delegate*<object, void>* ppfnRefCtor,
+            delegate*<ref byte, void>* ppfnValueCtor,
             Interop.BOOL* pfCtorIsPublic);
 
 #if FEATURE_COMINTEROP
@@ -1085,7 +1089,7 @@ namespace System
     }
 
     [NonVersionable]
-    public unsafe struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
+    public unsafe partial struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal RuntimeFieldHandle GetNativeHandle()
@@ -1188,6 +1192,10 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStaticFieldAddress(RtFieldInfo field);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetRVAFieldInfo")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetRVAFieldInfo(RuntimeFieldHandleInternal field, out void* address, out uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RtFieldInfo field);

@@ -41,6 +41,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/metadata-update.h>
+#include <mono/metadata/method-builder-ilgen.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -49,6 +50,8 @@
 #include <mono/utils/unlocked.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/checked-build.h>
+// for dn_simdhash_ght_t
+#include "../native/containers/dn-simdhash-specializations.h"
 
 MonoStats mono_stats;
 
@@ -1263,6 +1266,17 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 		resw->method_data = (void **)g_malloc (sizeof (gpointer) * (len + 1));
 		memcpy (resw->method_data, mw->method_data, sizeof (gpointer) * (len + 1));
+		if (mw->inflate_wrapper_data) {
+			mono_mb_inflate_generic_wrapper_data (context, (gpointer*)resw->method_data, error);
+			if (!is_ok (error)) {
+				g_free (resw->method_data);
+				goto fail;
+			}
+			// we can't set inflate_wrapper_data to 0 on the result, it's possible it
+			// will need to be inflated again (for example in the method_inst ==
+			// generic_container->context.method_inst case, below)
+			resw->inflate_wrapper_data = 1;
+		}
 	}
 
 	if (iresult->context.method_inst) {

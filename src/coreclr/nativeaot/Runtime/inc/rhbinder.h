@@ -338,6 +338,67 @@ enum PInvokeTransitionFrameFlags : uint64_t
     PTFF_THREAD_ABORT   = 0x0000001000000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
 
+#elif defined(TARGET_LOONGARCH64)
+enum PInvokeTransitionFrameFlags : uint64_t
+{
+    // NOTE: Keep in sync with src\coreclr\nativeaot\Runtime\loongarch64\AsmMacros.h
+
+    // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has
+    //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
+
+    // standard preserved registers
+    PTFF_SAVE_R23       = 0x0000000000000001,
+    PTFF_SAVE_R24       = 0x0000000000000002,
+    PTFF_SAVE_R25       = 0x0000000000000004,
+    PTFF_SAVE_R26       = 0x0000000000000008,
+    PTFF_SAVE_R27       = 0x0000000000000010,
+    PTFF_SAVE_R28       = 0x0000000000000020,
+    PTFF_SAVE_R29       = 0x0000000000000040,
+    PTFF_SAVE_R30       = 0x0000000000000080,
+    PTFF_SAVE_R31       = 0x0000000000000100,
+
+    PTFF_SAVE_SP        = 0x0000000000000200,   // Used for 'coop pinvokes' in runtime helper routines.  Methods with
+                                                // PInvokes are required to have a frame pointers, but methods which
+                                                // call runtime helpers are not.  Therefore, methods that call runtime
+                                                // helpers may need SP to seed the stackwalk.
+
+    // Scratch registers
+    PTFF_SAVE_R0        = 0x0000000000000400,
+    PTFF_SAVE_R2        = 0x0000000000000800,
+    PTFF_SAVE_R4        = 0x0000000000001000,
+    PTFF_SAVE_R5        = 0x0000000000002000,
+    PTFF_SAVE_R6        = 0x0000000000004000,
+    PTFF_SAVE_R7        = 0x0000000000008000,
+    PTFF_SAVE_R8        = 0x0000000000010000,
+    PTFF_SAVE_R9        = 0x0000000000020000,
+    PTFF_SAVE_R10       = 0x0000000000040000,
+    PTFF_SAVE_R11       = 0x0000000000080000,
+    PTFF_SAVE_R12       = 0x0000000000100000,
+    PTFF_SAVE_R13       = 0x0000000000200000,
+    PTFF_SAVE_R14       = 0x0000000000400000,
+    PTFF_SAVE_R15       = 0x0000000000800000,
+    PTFF_SAVE_R16       = 0x0000000001000000,
+    PTFF_SAVE_R17       = 0x0000000002000000,
+    PTFF_SAVE_R18       = 0x0000000004000000,
+    PTFF_SAVE_R19       = 0x0000000008000000,
+    PTFF_SAVE_R20       = 0x0000000010000000,
+    PTFF_SAVE_R21       = 0x0000000020000000,
+
+    PTFF_SAVE_FP        = 0x0000000040000000,   // should never be used, we require FP frames for methods with
+                                                // pinvoke and it is saved into the frame pointer field instead
+
+    PTFF_SAVE_RA        = 0x0000000080000000,   // this is useful for the case of loop hijacking where we need both
+                                                // a return address pointing into the hijacked method and that method's
+                                                // ra register, which may hold a gc pointer
+
+    // used by hijack handler to report return value of hijacked method
+    PTFF_R4_IS_GCREF    = 0x0000000100000000,
+    PTFF_R4_IS_BYREF    = 0x0000000200000000,
+    PTFF_R5_IS_GCREF    = 0x0000000400000000,
+    PTFF_R5_IS_BYREF    = 0x0000000800000000,
+
+    PTFF_THREAD_ABORT   = 0x0000001000000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
+};
 
 #else // TARGET_ARM
 enum PInvokeTransitionFrameFlags
@@ -412,6 +473,8 @@ struct PInvokeTransitionFrame
                                 // can be an invalid pointer in universal transition cases (which never need to call GetThread)
 #ifdef TARGET_ARM64
     uint64_t          m_Flags;  // PInvokeTransitionFrameFlags
+#elif TARGET_LOONGARCH64
+    uint64_t          m_Flags;  // PInvokeTransitionFrameFlags
 #else
     uint32_t          m_Flags;  // PInvokeTransitionFrameFlags
 #endif
@@ -435,6 +498,8 @@ struct PInvokeTransitionFrame
 #ifdef TARGET_AMD64
 #define OFFSETOF__Thread__m_pTransitionFrame 0x40
 #elif defined(TARGET_ARM64)
+#define OFFSETOF__Thread__m_pTransitionFrame 0x40
+#elif defined(TARGET_LOONGARCH64)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x40
 #elif defined(TARGET_X86)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x2c

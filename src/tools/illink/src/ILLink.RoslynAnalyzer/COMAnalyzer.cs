@@ -20,7 +20,7 @@ namespace ILLink.RoslynAnalyzer
 		private const string MarshalAsAttribute = nameof (MarshalAsAttribute);
 
 		static readonly DiagnosticDescriptor s_correctnessOfCOMCannotBeGuaranteed = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed,
-			helpLinkUri: "https://docs.microsoft.com/en-us/dotnet/core/deploying/trim-warnings/il2050");
+			helpLinkUri: "https://learn.microsoft.com/dotnet/core/deploying/trim-warnings/il2050");
 
 		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_correctnessOfCOMCannotBeGuaranteed);
 

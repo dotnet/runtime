@@ -40,6 +40,21 @@ namespace System.IO.Tests
         }
     }
 
+    public class File_AppendAllText_Span : File_ReadWriteAllText
+    {
+        protected override bool IsAppend => true;
+
+        protected override void Write(string path, string content)
+        {
+            File.AppendAllText(path, content.AsSpan());
+        }
+
+        protected override void Write(string path, string content, Encoding encoding)
+        {
+            File.AppendAllText(path, content.AsSpan(), encoding);
+        }
+    }
+
     public class File_AppendAllText_Encoded : File_AppendAllText
     {
         protected override void Write(string path, string content)
@@ -51,6 +66,20 @@ namespace System.IO.Tests
         public void NullEncoding()
         {
             Assert.Throws<ArgumentNullException>(() => File.AppendAllText(GetTestFilePath(), "Text", null));
+        }
+    }
+
+    public class File_AppendAllText_Span_Encoded : File_AppendAllText
+    {
+        protected override void Write(string path, string content)
+        {
+            File.AppendAllText(path, content.AsSpan(), new UTF8Encoding(false));
+        }
+
+        [Fact]
+        public void NullEncoding()
+        {
+            Assert.Throws<ArgumentNullException>(() => File.AppendAllText(GetTestFilePath(), "Text".AsSpan(), null));
         }
     }
 

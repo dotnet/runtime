@@ -113,12 +113,18 @@ namespace System.Reflection.Tests
         public static void MyOtherMethod(object arg)
         {
             int var1 = 2;
+            Keep(ref var1);
+
             string var2 = "I am a string";
+            Keep(ref var2);
 
             if (arg == null)
             {
                 throw new ArgumentNullException("Input arg cannot be null.");
             }
+
+            // Reference local variables to prevent them from being optimized out by Roslyn
+            static void Keep<T>(ref T value) { };
         }
 #pragma warning restore xUnit1013 // Public method should be marked as test
 

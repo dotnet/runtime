@@ -117,7 +117,7 @@ namespace System.Globalization
             }
         }
 
-        // there are chars that are ignored by ICU hashing algorithm but not ignored by invariant hashing
+        // there are chars that are considered equal by HybridGlobalization but do not have equal hashes when binary hashed
         // Control: 1105 (out of 1105)
         // Format: 697 (out of 731)
         // OtherPunctuation: 6919 (out of 7004)

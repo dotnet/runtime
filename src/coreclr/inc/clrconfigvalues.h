@@ -259,12 +259,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("le
 CONFIG_DWORD_INFO(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "")
-#if defined(HOST_WINDOWS) && defined(TARGET_ARM64) 
-// disable new exception handling for Windows ARM64
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_LegacyExceptionHandling, W("LegacyExceptionHandling"), 1, "Enable legacy exception handling.");
-#else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_LegacyExceptionHandling, W("LegacyExceptionHandling"), 0, "Enable legacy exception handling.");
-#endif // defined(WINDOWS) && defined(TARGET_ARM64)
 
 ///
 /// Garbage collector
@@ -695,6 +690,11 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeOutputStreaming, W("EventPipeOutputStreaming"), 1, "Enable/disable streaming for trace file set in DOTNET_EventPipeOutputPath.  Non-zero values enable streaming.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeEnableStackwalk, W("EventPipeEnableStackwalk"), 1, "Set to 0 to disable collecting stacks for EventPipe events.")
 
+//
+// UserEvents
+//
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_EnableUserEvents, W("EnableUserEvents"), 0, "Enable/disable writing events to user_events.  Non-zero values enable tracing.")
+
 #ifdef FEATURE_AUTO_TRACE
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_AutoTrace_N_Tracers, W("AutoTrace_N_Tracers"), 0, "", CLRConfig::LookupOptions::ParseIntegerAsBase10)
 RETAIL_CONFIG_STRING_INFO(INTERNAL_AutoTrace_Command, W("AutoTrace_Command"), "")
@@ -727,7 +727,12 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_LTTng, W("LTTng"), 1, "If DOTNET_LTTng is s
 //
 // Executable code
 //
+// TODO: https://github.com/dotnet/runtime/issues/103465
+#ifdef TARGET_RISCV64
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableWriteXorExecute, W("EnableWriteXorExecute"), 0, "Enable W^X for executable memory.");
+#else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableWriteXorExecute, W("EnableWriteXorExecute"), 1, "Enable W^X for executable memory.");
+#endif // TARGET_RISCV64
 
 #ifdef FEATURE_GDBJIT
 ///

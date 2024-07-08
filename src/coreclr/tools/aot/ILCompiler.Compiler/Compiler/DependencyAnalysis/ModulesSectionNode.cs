@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__Module");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__Module"u8);
         }
         public int Offset => 0;
         public override bool IsShareable => false;

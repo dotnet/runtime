@@ -436,10 +436,17 @@ namespace Internal.JitInterface
             {
                 pLookup.lookupKind.needsRuntimeLookup = true;
 
-                MethodDesc contextMethod = HandleToObject(callerHandle);
-                pLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                pLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DelegateCtor;
-                pLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(delegateInfo);
+                if (pTargetMethod.tokenContext != contextFromMethodBeingCompiled())
+                {
+                    pLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
+                }
+                else
+                {
+                    MethodDesc contextMethod = HandleToObject(callerHandle);
+                    pLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                    pLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DelegateCtor;
+                    pLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(delegateInfo);
+                }
             }
             else
             {
@@ -2158,7 +2165,7 @@ namespace Internal.JitInterface
                     else if (field.IsThreadStatic)
                     {
                         var target = MethodBeingCompiled.Context.Target;
-                        if ((target.IsWindows && target.Architecture is TargetArchitecture.X64) ||
+                        if ((target.IsWindows && target.Architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64) ||
                             ((target.OperatingSystem == TargetOS.Linux) &&
                             (target.Architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)))
                         {

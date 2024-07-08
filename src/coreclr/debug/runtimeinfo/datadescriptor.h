@@ -103,26 +103,94 @@
 CDAC_BASELINE("empty")
 CDAC_TYPES_BEGIN()
 
-CDAC_TYPE_BEGIN(ManagedThread)
-CDAC_TYPE_INDETERMINATE(ManagedThread)
-CDAC_TYPE_FIELD(ManagedThread, GCHandle, GCHandle, cdac_offsets<Thread>::ExposedObject)
-CDAC_TYPE_FIELD(ManagedThread, pointer, LinkNext, cdac_offsets<Thread>::Link)
-CDAC_TYPE_END(ManagedThread)
+CDAC_TYPE_BEGIN(Thread)
+CDAC_TYPE_INDETERMINATE(Thread)
+CDAC_TYPE_FIELD(Thread, /*uint32*/, Id, cdac_offsets<Thread>::Id)
+CDAC_TYPE_FIELD(Thread, /*nuint*/, OSId, cdac_offsets<Thread>::OSId)
+CDAC_TYPE_FIELD(Thread, /*uint32*/, State, cdac_offsets<Thread>::State)
+CDAC_TYPE_FIELD(Thread, /*uint32*/, PreemptiveGCDisabled, cdac_offsets<Thread>::PreemptiveGCDisabled)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, RuntimeThreadLocals, cdac_offsets<Thread>::RuntimeThreadLocals)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, Frame, cdac_offsets<Thread>::Frame)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, ExceptionTracker, cdac_offsets<Thread>::ExceptionTracker)
+CDAC_TYPE_FIELD(Thread, GCHandle, GCHandle, cdac_offsets<Thread>::ExposedObject)
+CDAC_TYPE_FIELD(Thread, GCHandle, LastThrownObject, cdac_offsets<Thread>::LastThrownObject)
+CDAC_TYPE_FIELD(Thread, pointer, LinkNext, cdac_offsets<Thread>::Link)
+#ifndef TARGET_UNIX
+CDAC_TYPE_FIELD(Thread, /*pointer*/, TEB, cdac_offsets<Thread>::TEB)
+#endif
+CDAC_TYPE_END(Thread)
+
+CDAC_TYPE_BEGIN(ThreadStore)
+CDAC_TYPE_INDETERMINATE(ThreadStore)
+CDAC_TYPE_FIELD(ThreadStore, /*SLink*/, FirstThreadLink, cdac_offsets<ThreadStore>::FirstThreadLink)
+CDAC_TYPE_FIELD(ThreadStore, /*int32*/, ThreadCount, cdac_offsets<ThreadStore>::ThreadCount)
+CDAC_TYPE_FIELD(ThreadStore, /*int32*/, UnstartedCount, cdac_offsets<ThreadStore>::UnstartedCount)
+CDAC_TYPE_FIELD(ThreadStore, /*int32*/, BackgroundCount, cdac_offsets<ThreadStore>::BackgroundCount)
+CDAC_TYPE_FIELD(ThreadStore, /*int32*/, PendingCount, cdac_offsets<ThreadStore>::PendingCount)
+CDAC_TYPE_FIELD(ThreadStore, /*int32*/, DeadCount, cdac_offsets<ThreadStore>::DeadCount)
+CDAC_TYPE_END(ThreadStore)
+
+CDAC_TYPE_BEGIN(RuntimeThreadLocals)
+CDAC_TYPE_INDETERMINATE(RuntimeThreadLocals)
+CDAC_TYPE_FIELD(RuntimeThreadLocals, AllocContext, AllocContext, offsetof(RuntimeThreadLocals, alloc_context))
+CDAC_TYPE_END(RuntimeThreadLocals)
+
+CDAC_TYPE_BEGIN(GCAllocContext)
+CDAC_TYPE_INDETERMINATE(GCAllocContext)
+CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Pointer, offsetof(gc_alloc_context, alloc_ptr))
+CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Limit, offsetof(gc_alloc_context, alloc_limit))
+CDAC_TYPE_END(GCAllocContext)
+
+CDAC_TYPE_BEGIN(ExceptionInfo)
+CDAC_TYPE_INDETERMINATE(ExceptionInfo)
+#if FEATURE_EH_FUNCLETS
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExceptionTrackerBase, m_hThrowable))
+CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExceptionTrackerBase, m_pPrevNestedInfo))
+#else
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExInfo, m_hThrowable))
+CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
+#endif
+CDAC_TYPE_END(ExceptionInfo)
 
 CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(GCHandle)
 
+// Metadata
+
+CDAC_TYPE_BEGIN(MethodTable)
+CDAC_TYPE_INDETERMINATE(MethodTable)
+CDAC_TYPE_FIELD(MethodTable, /*uint32*/, MTFlags, cdac_offsets<MethodTable>::MTFlags)
+CDAC_TYPE_FIELD(MethodTable, /*uint32*/, BaseSize, cdac_offsets<MethodTable>::BaseSize)
+CDAC_TYPE_FIELD(MethodTable, /*uint32*/, MTFlags2, cdac_offsets<MethodTable>::MTFlags2)
+CDAC_TYPE_FIELD(MethodTable, /*nuint*/, EEClassOrCanonMT, cdac_offsets<MethodTable>::EEClassOrCanonMT)
+CDAC_TYPE_FIELD(MethodTable, /*pointer*/, Module, cdac_offsets<MethodTable>::Module)
+CDAC_TYPE_FIELD(MethodTable, /*pointer*/, ParentMethodTable, cdac_offsets<MethodTable>::ParentMethodTable)
+CDAC_TYPE_FIELD(MethodTable, /*uint16*/, NumInterfaces, cdac_offsets<MethodTable>::NumInterfaces)
+CDAC_TYPE_FIELD(MethodTable, /*uint16*/, NumVirtuals, cdac_offsets<MethodTable>::NumVirtuals)
+CDAC_TYPE_END(MethodTable)
+
+CDAC_TYPE_BEGIN(EEClass)
+CDAC_TYPE_INDETERMINATE(EEClass)
+CDAC_TYPE_FIELD(EEClass, /*pointer*/, MethodTable, cdac_offsets<EEClass>::MethodTable)
+CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumMethods, cdac_offsets<EEClass>::NumMethods)
+CDAC_TYPE_FIELD(EEClass, /*uint32*/, CorTypeAttr, cdac_offsets<EEClass>::CorTypeAttr)
+CDAC_TYPE_END(EEClass)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
-CDAC_GLOBAL_POINTER(ManagedThreadStore, &ThreadStore::s_pThreadStore)
+CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
+CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
+CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
+CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 #if FEATURE_EH_FUNCLETS
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
 #endif
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
+CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

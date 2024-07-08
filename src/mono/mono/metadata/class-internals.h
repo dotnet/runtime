@@ -96,6 +96,7 @@ struct _MonoMethodWrapper {
 	MonoMethodHeader *header;
 	MonoMemoryManager *mem_manager;
 	void *method_data;
+	unsigned int inflate_wrapper_data : 1; /* method_data[MONO_MB_ILGEN_INFLATE_WRAPPER_INFO_IDX] is an MonoMethodBuilderInflateWrapperData array */
 };
 
 struct _MonoDynamicMethod {
@@ -587,7 +588,9 @@ typedef struct {
 	// have both of them to be non-NULL.
 	const char *name;
 	gconstpointer func;
+	// use CAS to write
 	gconstpointer wrapper;
+	// use CAS to write
 	gconstpointer trampoline;
 	MonoMethodSignature *sig;
 	const char *c_symbol;

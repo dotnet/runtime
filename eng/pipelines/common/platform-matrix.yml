@@ -253,6 +253,28 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+- ${{ if containsValue(parameters.platforms, 'linux_x64_sanitizer') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: x64
+      targetRid: linux-x64
+      platform: linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: linux_x64_sanitizer
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        cxxStandardLibrary: libc++
+        cxxStandardLibraryStatic: true
+        cxxAbiLibrary: libstdc++
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Linux x86
 
 - ${{ if containsValue(parameters.platforms, 'linux_x86') }}:
@@ -549,7 +571,7 @@ jobs:
       targetRid: android-x64
       platform: android_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_bionic
+      container: android
       jobParameters:
         runtimeFlavor: mono
         buildConfig: ${{ parameters.buildConfig }}
@@ -589,7 +611,7 @@ jobs:
       targetRid: android-x86
       platform: android_x86
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_bionic
+      container: android
       jobParameters:
         runtimeFlavor: mono
         buildConfig: ${{ parameters.buildConfig }}
@@ -609,7 +631,7 @@ jobs:
       targetRid: android-arm
       platform: android_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_bionic
+      container: android
       jobParameters:
         runtimeFlavor: mono
         buildConfig: ${{ parameters.buildConfig }}
@@ -629,7 +651,7 @@ jobs:
       targetRid: android-arm64
       platform: android_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_bionic
+      container: android
       jobParameters:
         runtimeFlavor: mono
         buildConfig: ${{ parameters.buildConfig }}

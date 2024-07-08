@@ -4,14 +4,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Numerics.Tensors;
+using Xunit;
 
 namespace System.Numerics.Tensors.Tests
 {
-    internal static class Helpers
+    public static class Helpers
     {
         public static IEnumerable<int> TensorLengthsIncluding0 => Enumerable.Range(0, 257);
 
         public static IEnumerable<int> TensorLengths => Enumerable.Range(1, 256);
+        public static IEnumerable<nint[]> TensorShapes => [[1], [2], [10], [1,1], [1,2], [2,2], [5, 5], [2, 2, 2], [5, 5, 5], [3, 3, 3, 3], [4, 4, 4, 4, 4], [1, 2, 3, 4, 5, 6, 7]];
 
         // Tolerances taken from testing in the scalar math routines:
         // cf. https://github.com/dotnet/runtime/blob/89f7ad3b276fb0b48f20cb4e8408bdce85c2b415/src/libraries/System.Runtime/tests/System.Runtime.Extensions.Tests/System/Math.cs
@@ -87,5 +90,33 @@ namespace System.Numerics.Tensors.Tests
 #endif
             return null;
         }
+
+#if NETCOREAPP
+        public delegate void AssertThrowsAction<T>(TensorSpan<T> span);
+
+        // Cannot use standard Assert.Throws() when testing Span - Span and closures don't get along.
+        public static void AssertThrows<E, T>(TensorSpan<T> span, AssertThrowsAction<T> action) where E : Exception
+        {
+            try
+            {
+                action(span);
+                Assert.Fail($"Expected exception: {typeof(E)}");
+            }
+            catch (Exception ex)
+            {
+                Assert.True(ex is E, $"Wrong exception thrown. Expected: {typeof(E)} Actual: {ex.GetType()}");
+            }
+        }
+
+        public static void AdjustIndices(int curIndex, nint addend, ref nint[] curIndices, ReadOnlySpan<nint> lengths)
+        {
+            if (addend == 0 || curIndex < 0)
+                return;
+            curIndices[curIndex] += addend;
+            AdjustIndices(curIndex - 1, curIndices[curIndex] / lengths[curIndex], ref curIndices, lengths);
+            curIndices[curIndex] = curIndices[curIndex] % lengths[curIndex];
+        }
+
+#endif
     }
 }

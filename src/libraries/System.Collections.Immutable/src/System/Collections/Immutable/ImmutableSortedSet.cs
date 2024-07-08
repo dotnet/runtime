@@ -97,7 +97,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items in the immutable set.</typeparam>
         /// <param name="items">A span that contains the items to prepopulate the set with.</param>
         /// <returns>A new immutable set that contains the specified items.</returns>
-        public static ImmutableSortedSet<T> Create<T>(/*params*/ ReadOnlySpan<T> items)
+        public static ImmutableSortedSet<T> Create<T>(params ReadOnlySpan<T> items)
         {
             return ImmutableSortedSet<T>.Empty.Union(items);
         }
@@ -123,7 +123,7 @@ namespace System.Collections.Immutable
         /// <param name="comparer">The comparer.</param>
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
-        public static ImmutableSortedSet<T> Create<T>(IComparer<T>? comparer, /*params*/ ReadOnlySpan<T> items)
+        public static ImmutableSortedSet<T> Create<T>(IComparer<T>? comparer, params ReadOnlySpan<T> items)
         {
             return ImmutableSortedSet<T>.Empty.WithComparer(comparer).Union(items);
         }

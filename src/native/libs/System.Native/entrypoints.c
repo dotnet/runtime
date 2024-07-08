@@ -166,6 +166,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Accept)
     DllImportEntry(SystemNative_Bind)
     DllImportEntry(SystemNative_Connect)
+    DllImportEntry(SystemNative_Connectx)
     DllImportEntry(SystemNative_GetPeerName)
     DllImportEntry(SystemNative_GetSockName)
     DllImportEntry(SystemNative_Listen)

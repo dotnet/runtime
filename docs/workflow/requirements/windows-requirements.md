@@ -20,7 +20,7 @@ Here are the components you will need to install and setup to work with the repo
 
 ### Enable Long Paths
 
-The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://docs.microsoft.com/windows/win32/fileio/maximum-file-path-limitation#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
+The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://learn.microsoft.com/windows/win32/fileio/maximum-file-path-limitation#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
 
 If using Git for Windows you might need to also configure long paths there. Using an administrator terminal simply type:
 
@@ -42,7 +42,7 @@ Note that Visual Studio and the development tools described below are required, 
 * To build the tests, you will need some additional components:
   * **C++/CLI support for v143 build tools (Latest)**.
 
-A `.vsconfig` file is included in the root of the _dotnet/runtime_ repository that includes all components needed to build the _dotnet/runtime_ repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) to install all necessary components.
+A `.vsconfig` file is included in the root of the _dotnet/runtime_ repository that includes all components needed to build the _dotnet/runtime_ repository. You can [import `.vsconfig` in your Visual Studio installer](https://learn.microsoft.com/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) to install all necessary components.
 
 ### Build Tools
 
@@ -89,7 +89,7 @@ The _dotnet/runtime_ repository requires at least Git 2.22.0.
 
 While not strictly needed to build or test this repository, having the .NET SDK installed lets you browse solution files in this repository with Visual Studio and use the `dotnet.exe` command to run .NET applications in the 'normal' way.
 
-We use this in the [build testing with the installed SDK](/docs/workflow/testing/using-your-build-with-installed-sdk.md), and [build testing with dev shipping packages](/docs/workflow/testing/using-dev-shipping-packages.md) instructions. The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/main/global.json#L3). You can find the installers and binaries for latest development builds of .NET SDK in the [installer repo](https://github.com/dotnet/installer#installers-and-binaries).
+We use this in the [build testing with the installed SDK](/docs/workflow/testing/using-your-build-with-installed-sdk.md), and [build testing with dev shipping packages](/docs/workflow/testing/using-dev-shipping-packages.md) instructions. The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/main/global.json#L3). You can find the installers and binaries for latest development builds of .NET SDK in the [sdk repo](https://github.com/dotnet/sdk#installing-the-sdk).
 
 Alternatively, to avoid modifying your machine state, you can use the repository's locally acquired SDK by passing in the solution to load via the `-vs` switch. For example:
 

@@ -60,8 +60,12 @@
   #define CODE_ALIGN               4       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement
 
+  #define FIRST_INT_CALLEE_SAVED  REG_S1
+  #define LAST_INT_CALLEE_SAVED   REG_S11
   #define RBM_INT_CALLEE_SAVED    (RBM_S1|RBM_S2|RBM_S3|RBM_S4|RBM_S5|RBM_S6|RBM_S7|RBM_S8|RBM_S9|RBM_S10|RBM_S11)
   #define RBM_INT_CALLEE_TRASH    (RBM_A0|RBM_A1|RBM_A2|RBM_A3|RBM_A4|RBM_A5|RBM_A6|RBM_A7|RBM_T0|RBM_T1|RBM_T2|RBM_T3|RBM_T4|RBM_T5|RBM_T6)
+  #define FIRST_FLT_CALLEE_SAVED  REG_F8
+  #define LAST_FLT_CALLEE_SAVED   REG_F27
   #define RBM_FLT_CALLEE_SAVED    (RBM_F8|RBM_F9|RBM_F18|RBM_F19|RBM_F20|RBM_F21|RBM_F22|RBM_F23|RBM_F24|RBM_F25|RBM_F26|RBM_F27)
   #define RBM_FLT_CALLEE_TRASH    (RBM_F10|RBM_F11|RBM_F12|RBM_F13|RBM_F14|RBM_F15|RBM_F16|RBM_F17)
 
@@ -172,14 +176,6 @@
 
   // JMP Indirect call register
   #define REG_INDIRECT_CALL_TARGET_REG    REG_T5
-
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_T0
-  #define RBM_PINVOKE_FRAME        RBM_T0
-  #define REG_PINVOKE_TCB          REG_T1
-  #define RBM_PINVOKE_TCB          RBM_T1
-  #define REG_PINVOKE_SCRATCH      REG_T1
-  #define RBM_PINVOKE_SCRATCH      RBM_T1
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_R0

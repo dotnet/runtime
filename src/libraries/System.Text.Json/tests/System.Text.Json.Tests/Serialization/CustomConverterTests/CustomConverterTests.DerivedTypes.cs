@@ -131,20 +131,20 @@ namespace System.Text.Json.Serialization.Tests
 
     public class DerivedTypesWrapper
     {
-        public ListWrapper ListWrapper { get; set; }
-        public List<int> List { get; set; }
-        public DictionaryWrapper DictionaryWrapper { get; set; }
-        public Dictionary<string, int> Dictionary { get; set; }
+        public ListWrapper? ListWrapper { get; set; }
+        public List<int>? List { get; set; }
+        public DictionaryWrapper? DictionaryWrapper { get; set; }
+        public Dictionary<string, int>? Dictionary { get; set; }
     }
 
     public class UnsupportedDerivedTypesWrapper_Dictionary
     {
-        public UnsupportedDictionaryWrapper DictionaryWrapper { get; set; }
+        public UnsupportedDictionaryWrapper? DictionaryWrapper { get; set; }
     }
 
     public class UnsupportedDerivedTypesWrapper_IEnumerable
     {
-        public StringIEnumerableWrapper IEnumerableWrapper { get; set; }
+        public StringIEnumerableWrapper? IEnumerableWrapper { get; set; }
     }
 
     public class ListWrapperConverter : JsonConverter<ListWrapper>

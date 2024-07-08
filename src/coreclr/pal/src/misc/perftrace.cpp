@@ -1021,7 +1021,7 @@ PERFLogFunctionEntry(unsigned int pal_api_id, ULONGLONG *pal_perf_start_tick )
     pal_perf_thread_info * local_info=NULL;
     pal_perf_api_info * table;
     char * write_buf;
-    __int32  buf_off;
+    int32_t  buf_off;
     short bufused = 0;
 
 

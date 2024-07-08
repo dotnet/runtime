@@ -1862,16 +1862,17 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [pindex]);
-			if (klass == swift_self && sig->pinvoke) {
+			if ((klass == swift_self || klass == swift_indirect_result) && sig->pinvoke) {
 				guint32 align;
 				MonoType *ptype = mini_get_underlying_type (sig->params [pindex]);
 				int size = mini_type_stack_size_full (ptype, &align, cinfo->pinvoke);
 				g_assert (size == 8);
 
 				ainfo->storage = ArgVtypeInIRegs;
-				ainfo->reg = ARMREG_R20;
+				ainfo->reg = (klass == swift_self) ? ARMREG_R20 : ARMREG_R8;
 				ainfo->nregs = 1;
 				ainfo->size = size;
 				continue;
@@ -2081,7 +2082,7 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 			storage = alloca (temp_size);
 		else
 			storage = arg_get_storage (ccontext, ainfo);
-		memset (ccontext, 0, sizeof (CallContext)); // FIXME
+
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
@@ -2877,14 +2878,15 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		}
 		case ArgSwiftError: {
 			ins->flags |= MONO_INST_VOLATILE;
-			size = 8;
-			align = 8;
-			offset += align - 1;
-			offset &= ~(align - 1);
 			ins->opcode = OP_REGOFFSET;
-			ins->inst_basereg = cfg->frame_reg;
-			ins->inst_offset = offset;
-			offset += size;
+			if (ainfo->offset) {
+				g_assert (cfg->arch.args_reg);
+				ins->inst_basereg = cfg->arch.args_reg;
+				ins->inst_offset = ainfo->offset;
+			} else {
+				ins->inst_offset = offset;
+				offset += 8;
+			}
 
 			cfg->arch.swift_error_var = ins;
 
@@ -5955,10 +5957,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				break;
 			case ArgSwiftError:
 				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-					if (ainfo->offset) {
-						code = emit_ldrx (code, ARMREG_IP0, cfg->arch.args_reg, ainfo->offset);
-						code = emit_strx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
-					} else {
+					if (ainfo->offset == 0) {
 						code = emit_strx (code, ainfo->reg, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
 					}
 				} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {

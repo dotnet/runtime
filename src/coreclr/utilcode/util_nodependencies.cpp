@@ -123,14 +123,14 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,
         }
     }
 
-    ret = WszRegOpenKeyEx(hKeyParent, szKey, 0, samDesired, &hkey);
+    ret = RegOpenKeyEx(hKeyParent, szKey, 0, samDesired, &hkey);
 
     // If we opened the key, see if there is a value.
     if (ret == ERROR_SUCCESS)
     {
         iType = REG_DWORD;
         iSize = sizeof(long);
-        ret = WszRegQueryValueEx(hkey, szName, NULL, &iType, reinterpret_cast<BYTE*>(&iValue), &iSize);
+        ret = RegQueryValueEx(hkey, szName, NULL, &iType, reinterpret_cast<BYTE*>(&iValue), &iSize);
 
         if (ret == ERROR_SUCCESS && iType == REG_DWORD && iSize == sizeof(long))
         {   // We successfully read a DWORD value.
@@ -200,7 +200,7 @@ BOOL IsCurrentModuleFileNameInAutoExclusionList()
     HKEYHolder hKeyHolder;
 
     // Look for "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList"
-    DWORD ret = WszRegOpenKeyEx(HKEY_LOCAL_MACHINE, kUnmanagedDebuggerAutoExclusionListKey, 0, KEY_READ, &hKeyHolder);
+    DWORD ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, kUnmanagedDebuggerAutoExclusionListKey, 0, KEY_READ, &hKeyHolder);
 
     if (ret != ERROR_SUCCESS)
     {
@@ -219,7 +219,7 @@ BOOL IsCurrentModuleFileNameInAutoExclusionList()
 
     // Look in AutoExclusionList key for appName get the size of any value stored there.
     DWORD value, valueType, valueSize = sizeof(value);
-    ret = WszRegQueryValueEx(hKeyHolder, wszAppName, 0, &valueType, reinterpret_cast<BYTE*>(&value), &valueSize);
+    ret = RegQueryValueEx(hKeyHolder, wszAppName, 0, &valueType, reinterpret_cast<BYTE*>(&value), &valueSize);
     if ((ret == ERROR_SUCCESS) && (valueType == REG_DWORD) && (value == 1))
     {
         return TRUE;
@@ -331,7 +331,7 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
     HKEYHolder hKeyHolder;
 
     // Look for "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug"
-    DWORD ret = WszRegOpenKeyEx(HKEY_LOCAL_MACHINE, kUnmanagedDebuggerKey, 0, KEY_READ, &hKeyHolder);
+    DWORD ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, kUnmanagedDebuggerKey, 0, KEY_READ, &hKeyHolder);
 
     if (ret != ERROR_SUCCESS)
     {   // Wow, there's not even an AeDebug hive, so no native debugger, no auto.
@@ -340,7 +340,7 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
 
     // Look in AeDebug key for "Debugger"; get the size of any value stored there.
     DWORD valueType, valueSize = 0;
-    ret = WszRegQueryValueEx(hKeyHolder, kUnmanagedDebuggerValue, 0, &valueType, 0, &valueSize);
+    ret = RegQueryValueEx(hKeyHolder, kUnmanagedDebuggerValue, 0, &valueType, 0, &valueSize);
 
     _ASSERTE(pcchDebuggerString != NULL);
     if ((wszDebuggerString == NULL) || (*pcchDebuggerString < valueSize / sizeof(WCHAR)))
@@ -360,7 +360,7 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
     }
 
     _ASSERTE(wszDebuggerString != NULL);
-    ret = WszRegQueryValueEx(hKeyHolder, kUnmanagedDebuggerValue, NULL, NULL, reinterpret_cast< LPBYTE >(wszDebuggerString), &valueSize);
+    ret = RegQueryValueEx(hKeyHolder, kUnmanagedDebuggerValue, NULL, NULL, reinterpret_cast< LPBYTE >(wszDebuggerString), &valueSize);
     if (ret != ERROR_SUCCESS)
     {
         *wszDebuggerString = W('\0');
@@ -394,12 +394,12 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
             else
             {
                 // Look in AeDebug key for "Auto"; get the size of any value stored there.
-                ret = WszRegQueryValueEx(hKeyHolder, kUnmanagedDebuggerAutoValue, 0, &valueType, 0, &valueSize);
+                ret = RegQueryValueEx(hKeyHolder, kUnmanagedDebuggerAutoValue, 0, &valueType, 0, &valueSize);
                 if ((ret == ERROR_SUCCESS) && (valueType == REG_SZ) && (valueSize / sizeof(WCHAR) < MAX_LONGPATH))
                 {
                     WCHAR wzAutoKey[MAX_LONGPATH];
                     valueSize = ARRAY_SIZE(wzAutoKey) * sizeof(WCHAR);
-                    WszRegQueryValueEx(hKeyHolder, kUnmanagedDebuggerAutoValue, NULL, NULL, reinterpret_cast< LPBYTE >(wzAutoKey), &valueSize);
+                    RegQueryValueEx(hKeyHolder, kUnmanagedDebuggerAutoValue, NULL, NULL, reinterpret_cast< LPBYTE >(wzAutoKey), &valueSize);
 
                     // The OS's behavior is to consider Auto to be FALSE unless the first character is set
                     // to 1. They don't take into consideration the following characters. Also if the value

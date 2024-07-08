@@ -937,9 +937,20 @@ void CodeGen::genSpillVar(GenTree* tree)
         // but we will kill the var in the reg (below).
         if (!varDsc->IsAlwaysAliveInMemory())
         {
-            instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
             assert(varDsc->GetRegNum() == tree->GetRegNum());
-            inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
+#if defined(FEATURE_SIMD)
+            if (lclType == TYP_SIMD12)
+            {
+                // Store SIMD12 to stack as 12 bytes
+                GetEmitter()->emitStoreSimd12ToLclOffset(varNum, tree->AsLclVarCommon()->GetLclOffs(),
+                                                         tree->GetRegNum(), nullptr);
+            }
+            else
+#endif
+            {
+                instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
+                inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
+            }
         }
 
         // We should only have both GTF_SPILL (i.e. the flag causing this method to be called) and
@@ -2246,6 +2257,7 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
 //     pass in 'addr' for a relative call or 'base' for a indirect register call
 //     methHnd - optional, only used for pretty printing
 //     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
+//     noSafePoint - force not making this call a safe point in partially interruptible code
 //
 // clang-format off
 void CodeGen::genEmitCall(int                   callType,
@@ -2257,7 +2269,8 @@ void CodeGen::genEmitCall(int                   callType,
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                           const DebugInfo& di,
                           regNumber             base,
-                          bool                  isJump)
+                          bool                  isJump,
+                          bool                  noSafePoint)
 {
 #if !defined(TARGET_X86)
     int argSize = 0;
@@ -2277,7 +2290,7 @@ void CodeGen::genEmitCall(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               di, base, REG_NA, 0, 0, isJump);
+                               di, base, REG_NA, 0, 0, isJump, noSafePoint);
 }
 // clang-format on
 
