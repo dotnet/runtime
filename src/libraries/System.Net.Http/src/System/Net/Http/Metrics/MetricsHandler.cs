@@ -29,7 +29,8 @@ namespace System.Net.Http.Metrics
             _requestsDuration = meter.CreateHistogram<double>(
                 "http.client.request.duration",
                 unit: "s",
-                description: "Duration of HTTP client requests.");
+                description: "Duration of HTTP client requests.",
+                advice: DiagnosticsHelper.ShortHistogramAdvice);
         }
 
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
