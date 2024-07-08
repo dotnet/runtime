@@ -2660,7 +2660,7 @@ namespace System.Text.RegularExpressions.Tests
             // This is a test for the rare over 255 unique minterms case in MintermClassifier
             StringBuilder pattern = new();
             StringBuilder input = new();
-            for (int i = 128; i <= 500; i++)
+            for (int i = 128; i <= 400; i++)
             {
                 char c = (char)i;
                 pattern.Append(c);
@@ -2676,7 +2676,7 @@ namespace System.Text.RegularExpressions.Tests
 
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                Regex r = await RegexHelpers.GetRegexAsync(RegexEngine.NonBacktracking, patternString, RegexOptions.None);
+                Regex r = await RegexHelpers.GetRegexAsync(engine, patternString, RegexOptions.None);
                 MatchCollection ms = r.Matches(inputString);
                 Assert.Equal(1, ms.Count);
                 Assert.Equal(0, ms[0].Index);
