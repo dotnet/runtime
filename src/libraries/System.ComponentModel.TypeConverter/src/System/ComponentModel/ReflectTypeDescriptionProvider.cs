@@ -862,14 +862,11 @@ namespace System.ComponentModel
         {
             List<Type> typeList = new List<Type>();
 
-            lock (TypeDescriptor.s_commonSyncObject)
+            foreach (KeyValuePair<Type, ReflectedTypeData> kvp in _typeData)
             {
-                foreach (KeyValuePair<Type, ReflectedTypeData> kvp in _typeData)
+                if (kvp.Key.Module == module && kvp.Value!.IsPopulated)
                 {
-                    if (kvp.Key.Module == module && kvp.Value!.IsPopulated)
-                    {
-                        typeList.Add(kvp.Key);
-                    }
+                    typeList.Add(kvp.Key);
                 }
             }
 
