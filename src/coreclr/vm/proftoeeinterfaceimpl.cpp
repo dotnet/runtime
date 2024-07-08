@@ -7658,6 +7658,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
     bool ownEESuspension = FALSE;
     if (!ThreadSuspend::SysIsSuspendInProgress() && (ThreadSuspend::GetSuspensionThread() == 0))
     {
+        g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
         ownEESuspension = TRUE;
     }
@@ -7697,6 +7698,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
     if (ownEESuspension)
     {
         ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+        g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
     }
 
     return S_OK;
