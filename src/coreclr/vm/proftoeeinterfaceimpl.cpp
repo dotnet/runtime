@@ -7677,20 +7677,24 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
     // invoke ICorProfilerInfo APIs guarded by AllowObjectInspection by toggling fGCInProgress.
     g_profControlBlock.fGCInProgress = TRUE;
 
+    HRESULT hr = S_OK;
     _ASSERTE(m_pProfilerInfo->pProfInterface.Load() != NULL);
     {
         EvacuationCounterHolder holder(m_pProfilerInfo);
         EEToProfInterfaceImpl *pProfInterface = m_pProfilerInfo->pProfInterface.Load();
-        if (pProfInterface == NULL)
+        if (pProfInterface != NULL)
         {
-            return E_FAIL;
+            // Leveraging a direct callback instead of a ICorProfilerCallback API avoids the performance overhead of
+            // invoking an EEToProfInterfaceImpl callback per GC Heap object. In order to allow profilers to inspect
+            // objects with synchronous ICorProfilerInfo APIs, which are guarded with PROFILER_TO_CLR_ENTRYPOINT_SYNC(_EX),
+            // perform the GC Heap walk within an EEToProfInterfaceImpl helper to properly set callback state flags.
+            pProfInterface->EnumerateGCHeapObjectsCallback(callback, callbackState);
+        }
+        else
+        {
+            hr = E_FAIL;
         }
 
-        // Leveraging a direct callback instead of a ICorProfilerCallback API avoids the performance overhead of
-        // invoking an EEToProfInterfaceImpl callback per GC Heap object. In order to allow profilers to inspect
-        // objects with synchronous ICorProfilerInfo APIs, which are guarded with PROFILER_TO_CLR_ENTRYPOINT_SYNC(_EX),
-        // perform the GC Heap walk within an EEToProfInterfaceImpl helper to properly set callback state flags.
-        pProfInterface->EnumerateGCHeapObjectsCallback(callback, callbackState);
     }
 
     g_profControlBlock.fGCInProgress = FALSE;
@@ -7701,7 +7705,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
         g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
     }
 
-    return S_OK;
+    return hr;
 }
 
 /*
