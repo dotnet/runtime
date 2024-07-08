@@ -159,8 +159,8 @@
        <!--TODOWASI this needs similar AOT logic as EMCC in https://github.com/dotnet/runtime/pull/80507-->
       <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">52428800</WasmInitialHeapSize>
       <WasmClang>$(WasiClang)</WasmClang>
-      <_WasiAfterRuntimeLoadedDeclarations>@(WasiAfterRuntimeLoadedDeclarations</_WasiAfterRuntimeLoadedDeclarations>
-      <_WasiAfterRuntimeLoadedCalls>@(WasiAfterRuntimeLoadedCalls</_WasiAfterRuntimeLoadedCalls>
+      <_WasiAfterRuntimeLoadedDeclarations>@(WasiAfterRuntimeLoadedDeclarations)</_WasiAfterRuntimeLoadedDeclarations>
+      <_WasiAfterRuntimeLoadedCalls>@(WasiAfterRuntimeLoadedCalls)</_WasiAfterRuntimeLoadedCalls>
     </PropertyGroup>
 
     <ItemGroup>
