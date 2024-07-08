@@ -70,6 +70,7 @@
     <Compile Include="System\Attributes.cs" />
     <Compile Include="System\AttributeUsageAttributeTests.cs" />
     <Compile Include="System\BadImageFormatExceptionTests.cs" />
+    <Compile Include="System\Collections\ObjectModel\CollectionTests.netcoreapp.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\ExperimentalAttributeTests.cs" />
     <Compile Include="System\NumberFormatTestHelper.cs" />
     <Compile Include="System\StringTests.GenericMath.cs" />

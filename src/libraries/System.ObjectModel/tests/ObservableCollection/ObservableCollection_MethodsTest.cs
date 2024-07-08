@@ -13,7 +13,7 @@ namespace System.Collections.ObjectModel.Tests
     /// that the CollectionChanged events and eventargs are fired and populated
     /// properly.
     /// </summary>
-    public static class PublicMethodsTest
+    public partial class PublicMethodsTest
     {
         /// <summary>
         /// Tests that is possible to Add an item to the collection.

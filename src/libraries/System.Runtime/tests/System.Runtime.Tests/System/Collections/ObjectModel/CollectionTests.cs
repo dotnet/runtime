@@ -15,7 +15,7 @@ namespace System.Collections.ObjectModel.Tests
     /// we expect are forwarded to the underlying list, and verify that the exceptions we expect
     /// are thrown.
     /// </summary>
-    public class CollectionTests : CollectionTestBase
+    public partial class CollectionTests : CollectionTestBase
     {
         private static readonly Collection<int> s_empty = new Collection<int>();
 
