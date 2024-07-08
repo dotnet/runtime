@@ -301,12 +301,12 @@ namespace JIT.HardwareIntrinsics.Arm
                 ({Op2BaseType}*)(Unsafe.AsPointer(ref op2Ref)),
                 op3
             );
-            var faultResult = Sve.GetFfr();
+            var faultResult = Sve.GetFfr{GetFfrType}();
 
             ref var op3Ref = ref op3;
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(_dataTable.inArray1Ptr, ref op2Ref, _dataTable.inBounded.Span.Length, Unsafe.AsPointer(ref op3Ref), _dataTable.outArrayPtr, faultResult.As<byte, {RetBaseType}>());
+            ValidateFirstFaultingResult(_dataTable.inArray1Ptr, ref op2Ref, _dataTable.inBounded.Span.Length, Unsafe.AsPointer(ref op3Ref), _dataTable.outArrayPtr, faultResult.As<{GetFfrType}, {RetBaseType}>());
         }
 
         public void RunBasicScenario_FalseMask()

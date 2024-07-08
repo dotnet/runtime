@@ -4266,7 +4266,49 @@ namespace System.Runtime.Intrinsics.Arm
         /// svbool_t svrdffr()
         ///   RDFFR Presult.B
         /// </summary>
-        public static unsafe Vector<byte> GetFfr() => GetFfr();
+        public static Vector<byte> GetFfrByte() => GetFfrByte();
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<short> GetFfrInt16() => GetFfrInt16();
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<int> GetFfrInt32() => GetFfrInt32();
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<long> GetFfrInt64() => GetFfrInt64();
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<sbyte> GetFfrSByte() => GetFfrSByte();
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<ushort> GetFfrUInt16() => GetFfrUInt16();
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<uint> GetFfrUInt32() => GetFfrUInt32();
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<ulong> GetFfrUInt64() => GetFfrUInt64();
 
 
         ///  Insert scalar into shifted vector

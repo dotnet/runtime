@@ -4853,7 +4853,14 @@ namespace System.Runtime.Intrinsics.Arm
         public static ulong GetActiveElementCount(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> from) { throw null; }
         public static ulong GetActiveElementCount(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> from) { throw null; }
 
-        public static unsafe System.Numerics.Vector<byte> GetFfr() { throw null; }
+        public static System.Numerics.Vector<byte> GetFfrByte() { throw null; }
+        public static System.Numerics.Vector<short> GetFfrInt16() { throw null; }
+        public static System.Numerics.Vector<int> GetFfrInt32() { throw null; }
+        public static System.Numerics.Vector<long> GetFfrInt64() { throw null; }
+        public static System.Numerics.Vector<sbyte> GetFfrSByte() { throw null; }
+        public static System.Numerics.Vector<ushort> GetFfrUInt16() { throw null; }
+        public static System.Numerics.Vector<uint> GetFfrUInt32() { throw null; }
+        public static System.Numerics.Vector<ulong> GetFfrUInt64() { throw null; }
 
         public static System.Numerics.Vector<byte> LeadingSignCount(System.Numerics.Vector<sbyte> value) { throw null; }
         public static System.Numerics.Vector<ushort> LeadingSignCount(System.Numerics.Vector<short> value) { throw null; }

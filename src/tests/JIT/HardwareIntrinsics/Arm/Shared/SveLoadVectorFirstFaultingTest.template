@@ -202,10 +202,10 @@ namespace JIT.HardwareIntrinsics.Arm
                 loadMask,
                 ({Op2BaseType}*)(Unsafe.AsPointer(ref op2Ref))
             );
-            var faultResult = Sve.GetFfr();
+            var faultResult = Sve.GetFfr{GetFfrType}();
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(ref op2Ref, _dataTable.inBounded.Span.Length, _dataTable.outArrayPtr, faultResult.As<byte, {RetBaseType}>());
+            ValidateFirstFaultingResult(ref op2Ref, _dataTable.inBounded.Span.Length, _dataTable.outArrayPtr, faultResult.As<{GetFfrType}, {RetBaseType}>());
         }
 
         public void RunReflectionScenario_Load()

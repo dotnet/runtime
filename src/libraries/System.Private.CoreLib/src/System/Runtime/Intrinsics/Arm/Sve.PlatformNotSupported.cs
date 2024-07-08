@@ -4207,7 +4207,49 @@ namespace System.Runtime.Intrinsics.Arm
         /// svbool_t svrdffr()
         ///   RDFFR Presult.B
         /// </summary>
-        public static unsafe Vector<byte> GetFfr() { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> GetFfrByte() { throw new PlatformNotSupportedException(); }
+    
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<short> GetFfrInt16() { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<int> GetFfrInt32() { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<long> GetFfrInt64() { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<sbyte> GetFfrSByte() { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<ushort> GetFfrUInt16() { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<uint> GetFfrUInt32() { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svrdffr()
+        ///   RDFFR Presult.B
+        /// </summary>
+        public static Vector<ulong> GetFfrUInt64() { throw new PlatformNotSupportedException(); }
 
 
         ///  Insert scalar into shifted vector
