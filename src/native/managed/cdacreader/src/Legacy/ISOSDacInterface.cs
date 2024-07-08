@@ -93,6 +93,55 @@ internal struct DacpMethodTableData
 }
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
+internal struct DacpReJitData
+{
+    // FIXME[cdac]: the C++ definition enum doesn't have an explicit underlying type or constant values for the flags
+    public enum Flags : uint
+    {
+        kUnknown = 0,
+        kRequested = 1,
+        kActive = 2,
+        kReverted = 3,
+    };
+
+    public ulong /*CLRDATA_ADDRESS*/ rejitID;
+    public Flags flags; /* = Flags::kUnknown*/
+    public ulong /*CLRDATA_ADDRESS*/ NativeCodeAddr;
+};
+
+internal struct DacpMethodDescData
+{
+    public int bHasNativeCode;
+    public int bIsDynamic;
+    public ushort wSlotNumber;
+    public ulong /*CLRDATA_ADDRESS*/ NativeCodeAddr;
+    // Useful for breaking when a method is jitted.
+    public ulong /*CLRDATA_ADDRESS*/ AddressOfNativeCodeSlot;
+
+    public ulong /*CLRDATA_ADDRESS*/ MethodDescPtr;
+    public ulong /*CLRDATA_ADDRESS*/ MethodTablePtr;
+    public ulong /*CLRDATA_ADDRESS*/ ModulePtr;
+
+    public uint /*mdToken*/ MDToken;
+    public ulong /*CLRDATA_ADDRESS*/ GCInfo;
+    public ulong /*CLRDATA_ADDRESS*/ GCStressCodeCopy;
+
+    // This is only valid if bIsDynamic is true
+    public ulong /*CLRDATA_ADDRESS*/ managedDynamicMethodObject;
+
+    public ulong /*CLRDATA_ADDRESS*/ requestedIP;
+
+    // Gives info for the single currently active version of a method
+    public DacpReJitData rejitDataCurrent;
+
+    // Gives info corresponding to requestedIP (for !ip2md)
+    public DacpReJitData rejitDataRequested;
+
+    // Total number of rejit versions that have been jitted
+    public uint /*ULONG*/ cJittedRejitVersions;
+
+}
+
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 internal unsafe partial interface ISOSDacInterface
@@ -146,7 +195,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // MethodDescs
     [PreserveSig]
-    int GetMethodDescData(ulong methodDesc, ulong ip, /*struct DacpMethodDescData*/ void* data, uint cRevertedRejitVersions, /*struct DacpReJitData*/ void* rgRevertedRejitData, uint* pcNeededRevertedRejitData);
+    int GetMethodDescData(ulong methodDesc, ulong ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData);
     [PreserveSig]
     int GetMethodDescPtrFromIP(ulong ip, ulong* ppMD);
     [PreserveSig]

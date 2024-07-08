@@ -79,7 +79,18 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     public unsafe int GetJitHelperFunctionName(ulong ip, uint count, byte* name, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetJitManagerList(uint count, void* managers, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetJumpThunkTarget(void* ctx, ulong* targetIP, ulong* targetMD) => HResults.E_NOTIMPL;
-    public unsafe int GetMethodDescData(ulong methodDesc, ulong ip, void* data, uint cRevertedRejitVersions, void* rgRevertedRejitData, uint* pcNeededRevertedRejitData) => HResults.E_NOTIMPL;
+    public unsafe int GetMethodDescData(ulong methodDesc, ulong ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData)
+    {
+        try
+        {
+            return HResults.E_NOTIMPL;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
     public unsafe int GetMethodDescFromToken(ulong moduleAddr, uint token, ulong* methodDesc) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescName(ulong methodDesc, uint count, char* name, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescPtrFromFrame(ulong frameAddr, ulong* ppMD) => HResults.E_NOTIMPL;
