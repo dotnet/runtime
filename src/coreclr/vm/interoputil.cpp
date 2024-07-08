@@ -3171,7 +3171,7 @@ void IUInvokeDispMethod(
         RCWPROTECT_BEGIN(pRCW, *pTarget);
 
         // Retrieve the IDispatch pointer from the wrapper.
-        pDisp = (IDispatch*)pRCW->GetIDispatch();
+        pDisp = pRCW->GetIDispatch();
         if (!pDisp)
             COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
 
