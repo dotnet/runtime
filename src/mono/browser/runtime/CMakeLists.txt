@@ -28,7 +28,6 @@ target_link_libraries(dotnet.native
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-aot.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-browser.a
-    ${MONO_ARTIFACTS_DIR}/libz.a
     ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a

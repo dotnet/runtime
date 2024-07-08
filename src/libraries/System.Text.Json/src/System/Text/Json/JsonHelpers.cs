@@ -37,43 +37,72 @@ namespace System.Text.Json
             // No read-ahead necessary if we're at the final block of JSON data.
             bool readAhead = requiresReadAhead && !reader.IsFinalBlock;
             return readAhead ? TryAdvanceWithReadAhead(ref reader) : reader.Read();
+        }
 
-            // The read-ahead method is not inlined
-            static bool TryAdvanceWithReadAhead(scoped ref Utf8JsonReader reader)
+        /// <summary>
+        /// Attempts to read ahead to the next root-level JSON value, if it exists.
+        /// </summary>
+        public static bool TryAdvanceToNextRootLevelValueWithOptionalReadAhead(this scoped ref Utf8JsonReader reader, bool requiresReadAhead, out bool isAtEndOfStream)
+        {
+            Debug.Assert(reader.AllowMultipleValues, "only supported by readers that support multiple values.");
+            Debug.Assert(reader.CurrentDepth == 0, "should only invoked for top-level values.");
+
+            Utf8JsonReader checkpoint = reader;
+            if (!reader.Read())
             {
-                // When we're reading ahead we always have to save the state
-                // as we don't know if the next token is a start object or array.
-                Utf8JsonReader restore = reader;
+                // If the reader didn't return any tokens and it's the final block,
+                // then there are no other JSON values to be read.
+                isAtEndOfStream = reader.IsFinalBlock;
+                reader = checkpoint;
+                return false;
+            }
 
-                if (!reader.Read())
+            // We found another JSON value, read ahead accordingly.
+            isAtEndOfStream = false;
+            if (requiresReadAhead && !reader.IsFinalBlock)
+            {
+                // Perform full read-ahead to ensure the full JSON value has been buffered.
+                reader = checkpoint;
+                return TryAdvanceWithReadAhead(ref reader);
+            }
+
+            return true;
+        }
+
+        private static bool TryAdvanceWithReadAhead(scoped ref Utf8JsonReader reader)
+        {
+            // When we're reading ahead we always have to save the state
+            // as we don't know if the next token is a start object or array.
+            Utf8JsonReader restore = reader;
+
+            if (!reader.Read())
+            {
+                return false;
+            }
+
+            // Perform the actual read-ahead.
+            JsonTokenType tokenType = reader.TokenType;
+            if (tokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+            {
+                // Attempt to skip to make sure we have all the data we need.
+                bool complete = reader.TrySkipPartial();
+
+                // We need to restore the state in all cases as we need to be positioned back before
+                // the current token to either attempt to skip again or to actually read the value.
+                reader = restore;
+
+                if (!complete)
                 {
+                    // Couldn't read to the end of the object, exit out to get more data in the buffer.
                     return false;
                 }
 
-                // Perform the actual read-ahead.
-                JsonTokenType tokenType = reader.TokenType;
-                if (tokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
-                {
-                    // Attempt to skip to make sure we have all the data we need.
-                    bool complete = reader.TrySkipPartial();
-
-                    // We need to restore the state in all cases as we need to be positioned back before
-                    // the current token to either attempt to skip again or to actually read the value.
-                    reader = restore;
-
-                    if (!complete)
-                    {
-                        // Couldn't read to the end of the object, exit out to get more data in the buffer.
-                        return false;
-                    }
-
-                    // Success, requeue the reader to the start token.
-                    reader.ReadWithVerify();
-                    Debug.Assert(tokenType == reader.TokenType);
-                }
-
-                return true;
+                // Success, requeue the reader to the start token.
+                reader.ReadWithVerify();
+                Debug.Assert(tokenType == reader.TokenType);
             }
+
+            return true;
         }
 
 #if !NET
