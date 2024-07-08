@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Xunit;
 
@@ -15,6 +16,9 @@ namespace System.IO.Packaging.Tests
         private delegate byte[] FileContentsGenerator(PartConstructionParameters pcp, int totalLength);
         private record class PartConstructionParameters (string FullPath, bool CreateAsAtomic, bool CreateAsValidPieceSequence, bool UppercaseFileName, bool ShufflePieces, int[] PieceLengths, FileContentsGenerator PieceGenerator)
         { }
+
+        private static Type s_ZipPackagePartPieceType = typeof(ZipPackage).Assembly.GetType("System.IO.Packaging.ZipPackagePartPiece");
+        private static MethodInfo s_TryParseZipPackagePartPiece = s_ZipPackagePartPieceType.GetMethod("TryParse", BindingFlags.Static | BindingFlags.NonPublic);
 
         private string m_contentTypesXml = @"<?xml version=""1.0"" encoding=""utf-8""?>
 <Types xmlns=""http://schemas.openxmlformats.org/package/2006/content-types"">
@@ -179,7 +183,9 @@ namespace System.IO.Packaging.Tests
             using var zipArchive = new ZipArchive(ms, ZipArchiveMode.Read);
             var partPieceEntry = zipArchive.GetEntry(partPieceName)!;
 
-            Assert.True(ZipPackagePartPiece.TryParse(partPieceEntry, out var processedPart));
+            Assert.NotNull(s_ZipPackagePartPieceType);
+            Assert.NotNull(s_TryParseZipPackagePartPiece);
+            Assert.True((bool)s_TryParseZipPackagePartPiece.Invoke(null, [partPieceEntry, null]));
         }
 
         // Piece names below might look like a valid part piece at first, but are invalid.
@@ -199,7 +205,9 @@ namespace System.IO.Packaging.Tests
             using var zipArchive = new ZipArchive(ms, ZipArchiveMode.Read);
             var partPieceEntry = zipArchive.GetEntry(partPieceName)!;
 
-            Assert.False(ZipPackagePartPiece.TryParse(partPieceEntry, out var processedPart));
+            Assert.NotNull(s_ZipPackagePartPieceType);
+            Assert.NotNull(s_TryParseZipPackagePartPiece);
+            Assert.False((bool)s_TryParseZipPackagePartPiece.Invoke(null, [ partPieceEntry, null ]));
         }
 
         [Theory]
@@ -264,29 +272,46 @@ namespace System.IO.Packaging.Tests
         // Verify that the IComparable<T> implementation on ZipPackagePartPiece works properly.
         // If it is, we should see the list reordered by piece number
         [Theory]
-        [InlineData("OutOfOrder.bin/[2].piece,OutOfOrder.bin/[0].piece,OutOfOrder.bin/[1].piece,OutOfOrder.bin/[3].last.piece")]
-        [InlineData("child/OutOfOrder.bin/[3].piece,child/OutOfOrder.bin/[2].piece,child/OutOfOrder.bin/[0].piece,child/OutOfOrder.bin/[1].piece,child/OutOfOrder.bin/[4].last.piece")]
-        public void OutOfOrderPartPiecesAreParsable(string partPieceLists)
+        [InlineData("OutOfOrder.bin/[2].piece,OutOfOrder.bin/[0].piece,OutOfOrder.bin/[1].piece,OutOfOrder.bin/[3].last.piece", 4)]
+        [InlineData("child/OutOfOrder.bin/[3].piece,child/OutOfOrder.bin/[2].piece,child/OutOfOrder.bin/[0].piece,child/OutOfOrder.bin/[1].piece,child/OutOfOrder.bin/[4].last.piece", 5)]
+        public void OutOfOrderPartPiecesAreParsable(string partPieceLists, int expectedCount)
         {
+            Assert.NotNull(s_ZipPackagePartPieceType);
+
             using var ms = new MemoryStream(_partPieceSampleZipPackage);
             using var zipArchive = new ZipArchive(ms, ZipArchiveMode.Read);
             string[] archiveNames = partPieceLists.Split(',');
-            var partPieces = new SortedSet<ZipPackagePartPiece>();
+
+            Type genericSortedSetType = typeof(SortedSet<>).MakeGenericType(s_ZipPackagePartPieceType);
+            MethodInfo sortedSetAddMethod = genericSortedSetType.GetMethod("Add");
+            PropertyInfo zipPackagePartPieceNumberProperty = s_ZipPackagePartPieceType.GetProperty("PieceNumber", BindingFlags.NonPublic | BindingFlags.Instance);
+            System.Collections.IEnumerable partPieces = (System.Collections.IEnumerable)Activator.CreateInstance(genericSortedSetType);
+            int idx = 0;
+
+            Assert.NotNull(s_TryParseZipPackagePartPiece);
+            Assert.NotNull(sortedSetAddMethod);
+            Assert.NotNull(zipPackagePartPieceNumberProperty);
 
             foreach (var aN in archiveNames)
             {
                 var zipEntry = zipArchive.GetEntry(aN);
+                object[] tryParseParameters = [zipEntry, null];
 
-                if (ZipPackagePartPiece.TryParse(zipEntry, out var partPiece))
+                if ((bool)s_TryParseZipPackagePartPiece.Invoke(null, tryParseParameters))
                 {
-                    partPieces.Add(partPiece);
+                    sortedSetAddMethod.Invoke(partPieces, [tryParseParameters[1]]);
                 }
             }
 
-            foreach (var partPieceIndexMetadata in partPieces.Index())
+            foreach (var partPiece in partPieces)
             {
-                Assert.Equal(partPieceIndexMetadata.Item.PieceNumber, partPieceIndexMetadata.Index);
+                int pieceNumber = (int)zipPackagePartPieceNumberProperty.GetValue(partPiece);
+
+                Assert.Equal(idx, pieceNumber);
+                idx++;
             }
+
+            Assert.Equal(expectedCount, idx);
         }
 
         [Fact]

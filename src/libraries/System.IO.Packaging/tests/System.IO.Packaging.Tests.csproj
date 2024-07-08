@@ -15,8 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Packaging.TestData" Version="$(SystemIOPackagingTestDataVersion)" />
-    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <ProjectReference Include="..\src\System.IO.Packaging.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\src\System.IO.Packaging.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="WindowsBase" />
