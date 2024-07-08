@@ -9,24 +9,22 @@ set -e
 # ./install-native-dependencies.sh <OS>
 
 os="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
-scriptroot="$(dirname "$0")"
 
 if [ -z "$os" ]; then
-    # shellcheck source-path=SCRIPTDIR
     . "$(dirname "$0")"/common/native/init-os-and-arch.sh
 fi
 
 case "$os" in
     linux)
         if [ -e /etc/os-release ]; then
-            # shellcheck source=/dev/null
             . /etc/os-release
         fi
 
         if [ "$ID" = "debian" ] || [ "$ID_LIKE" = "debian" ]; then
             apt update
 
-            xargs apt-get install -y < "$scriptroot/debian-reqs.txt"
+            apt install -y build-essential gettext locales cmake llvm clang lldb liblldb-dev libunwind8-dev libicu-dev liblttng-ust-dev \
+                libssl-dev libkrb5-dev zlib1g-dev
 
             localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
         elif [ "$ID" = "alpine" ]; then
@@ -44,7 +42,7 @@ case "$os" in
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         # Skip brew update for now, see https://github.com/actions/setup-python/issues/577
         # brew update --preinstall
-        brew bundle --no-upgrade --no-lock --file "$scriptroot/Brewfile"
+        brew bundle --no-upgrade --no-lock --file "$(dirname "$0")/Brewfile"
         ;;
 
     *)
