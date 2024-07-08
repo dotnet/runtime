@@ -26,7 +26,7 @@ case "$os" in
         if [ "$ID" = "debian" ] || [ "$ID_LIKE" = "debian" ]; then
             apt update
 
-            xargs apt-get install -y < "$scriptroot/eng/debian-reqs.txt"
+            xargs apt-get install -y < "$scriptroot/debian-reqs.txt"
 
             localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
         elif [ "$ID" = "alpine" ]; then
