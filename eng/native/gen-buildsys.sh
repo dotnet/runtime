@@ -84,6 +84,11 @@ if [[ "$host_arch" == "armel" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
+if ! cmake_command=$(command -v cmake); then
+    echo "CMake was not found in PATH."
+    exit 1
+fi
+
 if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
 fi
