@@ -9,22 +9,6 @@ namespace System.Net.Http
 {
     internal static class DiagnosticsHelper
     {
-        internal static ActivitySource WaitForConnectionActivitySource { get; } = new ActivitySource(DiagnosticsHandlerLoggingStrings.WaitForConnectionNamespace);
-
-        internal static void AbortConnectionSetupActivity(Activity? activity, Exception exception)
-        {
-            Debug.Assert(exception is not null);
-            if (activity is null) return;
-            activity.SetStatus(ActivityStatusCode.Error);
-            string? errorType;
-            if (!TryGetErrorType(null, exception, out errorType))
-            {
-                errorType = exception.GetType().FullName;
-            }
-            activity.SetTag("error.type", errorType);
-            activity.Stop();
-        }
-
         public static bool TryGetErrorType(HttpResponseMessage? response, Exception? exception, out string? errorType)
         {
             if (response is not null)

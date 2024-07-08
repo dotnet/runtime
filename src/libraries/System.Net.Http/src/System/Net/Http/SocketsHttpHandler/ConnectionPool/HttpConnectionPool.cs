@@ -32,7 +32,6 @@ namespace System.Net.Http
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
-        private static readonly ActivitySource s_connectionActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionNamespace);
 
         private readonly HttpConnectionPoolManager _poolManager;
         private readonly HttpConnectionKind _kind;
@@ -571,10 +570,7 @@ namespace System.Net.Http
             Stream? stream = null;
             IPEndPoint? remoteEndPoint = null;
 
-            // Connection activities should be new roots and not parented under whatever
-            // request happens to be in progress when the connection is started.
-            Activity.Current = null;
-            Activity? activity = s_connectionActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ConnectionSetupActivityName, ActivityKind.Client);
+            Activity? activity = ConnectionSetupDiagnostics.StartConnectionSetupActivity(IsSecure, OriginAuthority);
 
             switch (_kind)
             {
@@ -640,7 +636,11 @@ namespace System.Net.Http
                 stream = sslStream;
             }
 
-            activity?.Stop();
+            if (activity is not null)
+            {
+                ConnectionSetupDiagnostics.StopConnectionSetupActivity(activity, remoteEndPoint);
+            }
+
             return (stream, transportContext, activity, remoteEndPoint);
 
             static IPEndPoint? GetRemoteEndPoint(Stream stream) => (stream as NetworkStream)?.Socket?.RemoteEndPoint as IPEndPoint;
@@ -704,7 +704,7 @@ namespace System.Net.Http
                 ex = ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
                     CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken) :
                     ConnectHelper.CreateWrappedException(ex, host, port, cancellationToken);
-                DiagnosticsHelper.AbortConnectionSetupActivity(activity, ex);
+                ConnectionSetupDiagnostics.AbortActivity(activity, ex);
                 throw ex;
             }
         }
@@ -786,7 +786,7 @@ namespace System.Net.Http
             {
                 tunnelResponse.Dispose();
                 Exception ex = new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode));
-                DiagnosticsHelper.AbortConnectionSetupActivity(activity, ex);
+                ConnectionSetupDiagnostics.AbortActivity(activity, ex);
                 throw ex;
             }
 
@@ -796,7 +796,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                DiagnosticsHelper.AbortConnectionSetupActivity(activity, ex);
+                ConnectionSetupDiagnostics.AbortActivity(activity, ex);
                 tunnelResponse.Dispose();
                 throw;
             }
@@ -818,10 +818,10 @@ namespace System.Net.Http
                 {
                     Debug.Assert(e is not HttpRequestException);
                     e = new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.net_http_proxy_tunnel_error, e);
-                    DiagnosticsHelper.AbortConnectionSetupActivity(activity, e);
+                    ConnectionSetupDiagnostics.AbortActivity(activity, e);
                     throw e;
                 }
-                DiagnosticsHelper.AbortConnectionSetupActivity(activity, e);
+                ConnectionSetupDiagnostics.AbortActivity(activity, e);
                 throw;
             }
 

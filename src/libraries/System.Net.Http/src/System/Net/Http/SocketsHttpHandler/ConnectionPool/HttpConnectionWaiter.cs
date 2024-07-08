@@ -29,25 +29,19 @@ namespace System.Net.Http
             Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
 
             long startingTimestamp = Stopwatch.GetTimestamp();
-            using Activity? waitForConnectionActivity = DiagnosticsHelper.WaitForConnectionActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.WaitForConnectionActivityName);
+            Activity? waitForConnectionActivity = ConnectionSetupDiagnostics.StartWaitForConnectionActivity(pool.OriginAuthority);
             try
             {
                 T connection = await WaitWithCancellationAsync(async, requestCancellationToken).ConfigureAwait(false);
-                if (waitForConnectionActivity is not null && connection?.ConnectionSetupActivity is Activity connectionSetupActivity)
+                if (waitForConnectionActivity is not null)
                 {
-                    waitForConnectionActivity.AddLink(new ActivityLink(connectionSetupActivity.Context));
+                    ConnectionSetupDiagnostics.StopWaitForConnectionActivity(waitForConnectionActivity, connection);
                 }
                 return connection;
             }
             catch (Exception ex) when (waitForConnectionActivity is not null)
             {
-                waitForConnectionActivity.SetStatus(ActivityStatusCode.Error);
-                string? errorType = null;
-                if (!DiagnosticsHelper.TryGetErrorType(null, ex, out errorType))
-                {
-                    errorType = ex.GetType().FullName;
-                }
-                waitForConnectionActivity.SetTag("error.type", errorType);
+                ConnectionSetupDiagnostics.AbortActivity(waitForConnectionActivity, ex);
                 throw;
             }
             finally

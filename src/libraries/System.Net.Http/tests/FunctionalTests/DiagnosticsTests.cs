@@ -462,11 +462,19 @@ namespace System.Net.Http.Functional.Tests
                         {
                             ActivityAssert.FinishedInOrder(sock, conn);
                         }
-                        
-                        // Verify Attributes:
-                        // TODO
 
-                        // Second request should reuse the first connection, no connection_setup and wait_for_connection should not be recorded again.
+                        // Verify display names and attributes:
+                        Assert.Equal($"wait_for_connection localhost:{uri.Port}", wait1.DisplayName);
+                        Assert.Equal($"HTTP connection_setup localhost:{uri.Port}", conn.DisplayName);
+                        ActivityAssert.HasTag(conn, "network.peer.address",
+                            (string a) => a == IPAddress.Loopback.ToString() ||
+                            a == IPAddress.Loopback.MapToIPv6().ToString() ||
+                            a == IPAddress.IPv6Loopback.ToString());
+                        ActivityAssert.HasTag(conn, "server.address", "localhost");
+                        ActivityAssert.HasTag(conn, "server.port", uri.Port);
+                        ActivityAssert.HasTag(conn, "url.scheme", useTls ? "https" : "http");
+
+                        // The second request should reuse the first connection, connection_setup and wait_for_connection should not be recorded again.
                         await client.SendAsync(CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true));
                         requestRecorder.VerifyActivityRecorded(2);
                         Assert.NotSame(req1, requestRecorder.LastFinishedActivity);
