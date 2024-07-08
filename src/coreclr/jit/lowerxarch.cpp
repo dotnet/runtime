@@ -3645,56 +3645,32 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                 {
                     case TernaryLogicUseFlags::A:
                     {
-                        // Mark the other operands as unused and replace them with zero constants
-                        op3->SetUnusedValue();
-                        op3 = comp->gtNewZeroConNode(simdType);
-                        BlockRange().InsertBefore(node, op3);
-                        node->Op(3) = op3;
-
-                        op2->SetUnusedValue();
-                        op2 = comp->gtNewZeroConNode(simdType);
-                        BlockRange().InsertBefore(node, op2);
-                        node->Op(2) = op2;
-
                         // Swap the operands here to make the containment checks in codegen significantly simpler
                         std::swap(node->Op(1), node->Op(3));
 
                         // Make sure we also fixup the control byte
                         control = TernaryLogicInfo::GetTernaryControlByte(info, C, B, A);
                         op4->AsIntCon()->SetIconValue(control);
+
+                        useFlags = TernaryLogicUseFlags::C;
                         break;
                     }
 
                     case TernaryLogicUseFlags::B:
                     {
-                        // Mark the other operands as unused and replace them with zero constants
-                        op3->SetUnusedValue();
-                        op3 = comp->gtNewZeroConNode(simdType);
-                        BlockRange().InsertBefore(node, op3);
-                        node->Op(3) = op3;
-
-                        op1->SetUnusedValue();
-                        op1 = comp->gtNewZeroConNode(simdType);
-                        BlockRange().InsertBefore(node, op1);
-                        node->Op(1) = op1;
-
                         // Swap the operands here to make the containment checks in codegen significantly simpler
                         std::swap(node->Op(2), node->Op(3));
 
                         // Make sure we also fixup the control byte
                         control = TernaryLogicInfo::GetTernaryControlByte(info, A, C, B);
                         op4->AsIntCon()->SetIconValue(control);
+
+                        useFlags = TernaryLogicUseFlags::C;
                         break;
                     }
 
                     case TernaryLogicUseFlags::AB:
                     {
-                        // Mark the other operands as unused and replace them with zero constants
-                        op3->SetUnusedValue();
-                        op3 = comp->gtNewZeroConNode(simdType);
-                        BlockRange().InsertBefore(node, op3);
-                        node->Op(3) = op3;
-
                         // Swap the operands here to make the containment checks in codegen significantly simpler
                         std::swap(node->Op(2), node->Op(3));
                         std::swap(node->Op(1), node->Op(2));
@@ -3702,29 +3678,126 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                         // Make sure we also fixup the control byte
                         control = TernaryLogicInfo::GetTernaryControlByte(info, C, A, B);
                         op4->AsIntCon()->SetIconValue(control);
+
+                        useFlags = TernaryLogicUseFlags::BC;
                         break;
                     }
 
                     case TernaryLogicUseFlags::AC:
                     {
-                        // Mark the other operands as unused and replace them with zero constants
-                        op2->SetUnusedValue();
-                        op2 = comp->gtNewZeroConNode(simdType);
-                        BlockRange().InsertBefore(node, op2);
-                        node->Op(2) = op2;
-
                         // Swap the operands here to make the containment checks in codegen significantly simpler
                         std::swap(node->Op(1), node->Op(2));
 
                         // Make sure we also fixup the control byte
                         control = TernaryLogicInfo::GetTernaryControlByte(info, B, A, C);
                         op4->AsIntCon()->SetIconValue(control);
+
+                        useFlags = TernaryLogicUseFlags::BC;
                         break;
                     }
 
                     default:
                     {
                         break;
+                    }
+                }
+
+                GenTree* replacementNode = nullptr;
+
+                switch (useFlags)
+                {
+                    case TernaryLogicUseFlags::None:
+                    {
+                        // Encountering none should be very rare and so we'll handle 
+                        // it, but we won't try to optimize it by finding an existing
+                        // constant to reuse or similar, as that's more expensive
+
+                        op1->SetUnusedValue();
+                        op2->SetUnusedValue();
+                        op3->SetUnusedValue();
+
+                        if (control == 0x00)
+                        {
+                            replacementNode = comp->gtNewZeroConNode(simdType);
+                        }
+                        else
+                        {
+                            assert(control == 0xFF);
+                            replacementNode = comp->gtNewAllBitsSetConNode(simdType);
+                        }
+
+                        BlockRange().InsertBefore(node, replacementNode);
+                        break;
+                    }
+
+                    case TernaryLogicUseFlags::C:
+                    {
+                        // Encountering `select(c)` instead of `not(c)` should likewise
+                        // be rare, but we'll handle it in case the combined operations
+                        // are just right to cause it to appear
+
+                        if (control == C)
+                        {
+                            op1->SetUnusedValue();
+                            op2->SetUnusedValue();
+
+                            replacementNode = op3;
+                            break;
+                        }
+
+                        // For not, we do want to check if we already have reusable constants as
+                        // this can occur for the normal lowering pattern around `xor(c, AllBitsSet)`
+
+                        if (!op1->IsCnsVec())
+                        {
+                            op1->SetUnusedValue();
+                            op1 = comp->gtNewZeroConNode(simdType);
+
+                            BlockRange().InsertBefore(node, op1);
+                            node->Op(1) = op1;
+                        }
+
+                        if (!op2->IsCnsVec())
+                        {
+                            op2->SetUnusedValue();
+                            op2 = comp->gtNewZeroConNode(simdType);
+
+                            BlockRange().InsertBefore(node, op2);
+                            node->Op(2) = op2;
+                        }
+                        break;
+                    }
+
+                    case TernaryLogicUseFlags::BC:
+                    {
+                        if (!op1->IsCnsVec())
+                        {
+                            op1->SetUnusedValue();
+                            op1 = comp->gtNewZeroConNode(simdType);
+
+                            BlockRange().InsertBefore(node, op1);
+                            node->Op(1) = op1;
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        assert(useFlags == TernaryLogicUseFlags::ABC);
+                        break;
+                    }
+                }
+
+                if (replacementNode != nullptr)
+                {
+                    LIR::Use use;
+                    if (BlockRange().TryGetUse(node, &use))
+                    {
+                        use.ReplaceWith(replacementNode);
+                    }
+                    else
+                    {
+                        replacementNode->SetUnusedValue();
                     }
                 }
                 break;

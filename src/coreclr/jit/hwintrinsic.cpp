@@ -649,19 +649,19 @@ uint8_t TernaryLogicInfo::GetTernaryControlByte(const TernaryLogicInfo& info, ui
 
         case TernaryLogicUseFlags::AB:
         {
-            oper2Result = GetTernaryControlByte(info.oper1, op1, op2);
+            oper2Result = GetTernaryControlByte(info.oper2, op1, op2);
             break;
         }
 
         case TernaryLogicUseFlags::AC:
         {
-            oper2Result = GetTernaryControlByte(info.oper1, op1, op3);
+            oper2Result = GetTernaryControlByte(info.oper2, op1, op3);
             break;
         }
 
         case TernaryLogicUseFlags::BC:
         {
-            oper2Result = GetTernaryControlByte(info.oper1, op2, op3);
+            oper2Result = GetTernaryControlByte(info.oper2, op2, op3);
             break;
         }
 
