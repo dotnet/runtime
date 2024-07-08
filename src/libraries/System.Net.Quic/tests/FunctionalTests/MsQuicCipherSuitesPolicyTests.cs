@@ -49,7 +49,7 @@ namespace System.Net.Quic.Tests
         [Theory]
         [InlineData(new TlsCipherSuite[] { })]
         [InlineData(new[] { TlsCipherSuite.TLS_AES_128_CCM_8_SHA256 })]
-        public async void NoSupportedCiphers_ThrowsArgumentException(TlsCipherSuite[] ciphers)
+        public async Task NoSupportedCiphers_ThrowsArgumentException(TlsCipherSuite[] ciphers)
         {
             CipherSuitesPolicy policy = new CipherSuitesPolicy(ciphers);
             var listenerOptions = new QuicListenerOptions()
@@ -65,10 +65,12 @@ namespace System.Net.Quic.Tests
             };
             await using var listener = await CreateQuicListener(listenerOptions);
 
+            // Creating a connection with incompatible ciphers.
             var clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
             clientOptions.ClientAuthenticationOptions.CipherSuitesPolicy = policy;
             await Assert.ThrowsAsync<ArgumentException>(async () => await CreateQuicConnection(clientOptions));
 
+            // Creating a connection to a server configured with incompatible ciphers.
             await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(listener.LocalEndPoint));
             await Assert.ThrowsAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
         }

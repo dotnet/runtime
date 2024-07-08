@@ -1550,7 +1550,7 @@ namespace System.Net.Quic.Tests
 
                     // Dispose will abort reading from this side.
                     await stream.DisposeAsync();
-                    var readEx = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.ReadsClosed);
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.ReadsClosed);
                 }
             }
         }

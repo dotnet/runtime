@@ -45,14 +45,7 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
             lock (s_unobservedExceptions)
             {
                 string text = e.Exception.ToString();
-                if (!s_unobservedExceptions.ContainsKey(text))
-                {
-                    s_unobservedExceptions[text] = 1;
-                }
-                else
-                {
-                    s_unobservedExceptions[text] += 1;
-                }
+                s_unobservedExceptions[text] = s_unobservedExceptions.GetValueOrDefault(text) + 1;
             }
         };
         TaskScheduler.UnobservedTaskException += eventHandler;

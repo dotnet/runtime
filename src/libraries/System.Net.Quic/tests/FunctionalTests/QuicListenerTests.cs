@@ -73,7 +73,7 @@ namespace System.Net.Quic.Tests
 
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
-            await connectTask;
+            await Assert.ThrowsAnyAsync<AuthenticationException>(async () => await connectTask);
         }
 
         [Fact]
