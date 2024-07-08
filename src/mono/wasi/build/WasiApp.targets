@@ -209,7 +209,7 @@
       <_WasiClangCFlags Condition="'@(_WasiAfterRuntimeLoadedDeclarations)' != ''"
                          Include="-D WASI_AFTER_RUNTIME_LOADED_DECLARATIONS=&quot;$(_WasiAfterRuntimeLoadedDeclarations)&quot;" />
       <_WasiClangCFlags Condition="'@(_WasiAfterRuntimeLoadedCalls)' != ''"
-                         Include="-D WASI_AFTER_RUNTIME_LOADED_CALLS=&quot;$(_WasiAfterRuntimeLoadedCalls, ' ')&quot;" />
+                         Include="-D WASI_AFTER_RUNTIME_LOADED_CALLS=&quot;$(_WasiAfterRuntimeLoadedCalls)&quot;" />
 
       <_WasiClangLDFlags Include="$(WasiClangLinkOptimizationFlag)" />
       <_WasiClangLDFlags Include="@(_WasiClangCommonFlags)" />
