@@ -133,7 +133,7 @@ extends:
           runtimeFlavor: mono
           platforms:
             - linux_x64
-            # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
+            # Tracking issue: https://github.com/dotnet/runtime/issues/90427
             #- linux_arm64
           variables:
             - name: timeoutPerTestInMinutes
