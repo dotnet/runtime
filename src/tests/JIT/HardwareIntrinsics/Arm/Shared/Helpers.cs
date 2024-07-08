@@ -7699,5 +7699,114 @@ namespace JIT.HardwareIntrinsics.Arm
             }
             return result;
         }
+
+        private static T ConditionalSelectResult<T>(T maskResult, T result, T falseResult) where T : INumberBase<T>
+        {
+            return (maskResult != T.Zero) ? result : falseResult;
+        }
+
+        private static bool CheckLoadVectorBehaviorCore<T>(T[] firstOp, T[] result, Func<int, T, T> map) where T : INumberBase<T>
+        {
+            for (var i = 0; i < firstOp.Length; i++)
+            {
+                T loadResult = firstOp[i];
+                loadResult = map(i, loadResult);
+                if (result[i] != loadResult)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool CheckLoadVectorBehavior<T>(T[] firstOp, T[] result) where T : INumberBase<T>
+        {
+            return CheckLoadVectorBehaviorCore(firstOp, result, (_, loadResult) => loadResult);
+        }
+
+        public static bool CheckLoadVectorBehavior<T>(T[] maskOp, T[] firstOp, T[] result, T[] falseOp) where T : INumberBase<T>
+        {
+            return CheckLoadVectorBehaviorCore(firstOp, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
+        }
+
+        private static bool CheckGatherVectorBehaviorCore<T, ExtendedElementT, Index>(T[] firstOp, ExtendedElementT[] secondOp, Index[] thirdOp, T[] result, Func<int, T, T> map) 
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            for (var i = 0; i < firstOp.Length; i++)
+            {
+                T gatherResult = (firstOp[i] == T.Zero) ? T.Zero : T.CreateTruncating(secondOp[int.CreateChecked(thirdOp[i])]);
+                gatherResult = map(i, gatherResult);
+                if (result[i] != gatherResult)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool CheckGatherVectorBehavior<T, ExtendedElementT, Index>(T[] firstOp, ExtendedElementT[] secondOp, Index[] thirdOp, T[] result) 
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return CheckGatherVectorBehaviorCore(firstOp, secondOp, thirdOp, result, (_, gatherResult) => gatherResult);
+        }
+
+        public static bool CheckGatherVectorBehavior<T, ExtendedElementT, Index>(T[] maskOp, T[] firstOp, ExtendedElementT[] secondOp, Index[] thirdOp, T[] falseOp, T[] result) 
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return CheckGatherVectorBehaviorCore(firstOp, secondOp, thirdOp, result, (i, gatherResult) => ConditionalSelectResult(maskOp[i], gatherResult, falseOp[i]));
+        }
+
+        private static bool CheckFirstFaultingBehaviorCore<T>(T[] firstOp, T[] result, Vector<T> faultResult, Func<int, bool> checkIter) where T : INumberBase<T>
+        {
+            bool hitFault = false;
+
+            for (var i = 0; i < firstOp.Length; i++)
+            {
+                if (hitFault)
+                {
+                    if (faultResult[i] != T.Zero)
+                    {
+                        return false;
+                    }
+
+                    if (result[i] != T.Zero)
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (faultResult[i] == T.Zero)
+                    {
+                        // There has to be a valid value for the first element, so check it.
+                        if (i == 0)
+                        {
+                            return false;
+                        }
+                        hitFault = true;
+                    }
+                    else
+                    {
+                        if (!checkIter(i))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        public static bool CheckLoadVectorFirstFaultingBehavior<T>(T[] firstOp, T[] result, Vector<T> faultResult) where T : INumberBase<T>
+        {
+            return CheckFirstFaultingBehaviorCore(firstOp, result, faultResult, i => firstOp[i] == result[i]);
+        }
     }
 }
