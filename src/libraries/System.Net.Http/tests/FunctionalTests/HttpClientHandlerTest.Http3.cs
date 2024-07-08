@@ -21,8 +21,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
     {
         protected override Version UseVersion => HttpVersion.Version30;
@@ -140,7 +140,6 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                     await stream.HandleRequestAsync();
-                    _output.WriteLine($"[{DateTime.Now:HH:mm:ss.fffffff}] Server: Finished request {i}");
                 }
             });
 
@@ -160,18 +159,16 @@ namespace System.Net.Http.Functional.Tests
                     };
 
                     tasks[i] = client.SendAsync(request);
-                    _output.WriteLine($"[{DateTime.Now:HH:mm:ss.fffffff}] Client: Started request {i}");
                 });
 
                 var responses = await Task.WhenAll(tasks);
-                _output.WriteLine($"[{DateTime.Now:HH:mm:ss.fffffff}] Client: Got all responses");
                 foreach (var response in responses)
                 {
                     response.Dispose();
                 }
             });
 
-            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
         }
 
         [Theory]

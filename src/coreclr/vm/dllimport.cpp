@@ -1150,7 +1150,7 @@ public:
             NDIRECTSTUB_FL_FIELDGETTER              |
             NDIRECTSTUB_FL_FIELDSETTER              |
 #endif // FEATURE_COMINTEROP
-            NULL;
+            0;
 
         DWORD dwUnknownFlags = dwStubFlags & ~dwKnownMask;
         if (0 != dwUnknownFlags)

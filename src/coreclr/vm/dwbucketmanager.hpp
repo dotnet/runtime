@@ -553,55 +553,10 @@ void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targe
         LPCUTF8 utf8AssemblyName = pAssembly->GetSimpleName();
         const int assemblyNameLength = MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, NULL, 0);
 
-        // full name and length.  minor assumption that this is not multi-module.
-        WCHAR *fullName = NULL;
+        // Allocate a buffer and convert assembly name - multi-module assemblies are no longer supported.
         int fullNameLength = assemblyNameLength;
-
-        if (pModule->IsManifest())
-        {
-            // Single-module assembly; allocate a buffer and convert assembly name.
-            fullName = reinterpret_cast< WCHAR* >(_alloca(sizeof(WCHAR)*(fullNameLength)));
-            MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, fullName, fullNameLength);
-        }
-        else
-        {   //  This is a non-manifest module, which means it is a multi-module assembly.
-            //  Construct a name like 'assembly+module'.
-
-            // Get the module name, and determine its length, including terminating NULL.
-            LPCUTF8 utf8ModuleName = pModule->GetSimpleName();
-            const int moduleNameLength = MultiByteToWideChar(CP_UTF8, 0, utf8ModuleName, -1, NULL, 0);
-
-            //  Full name length is assembly name length + module name length + 1 char for '+'.
-            //  However, both assemblyNameLength and moduleNameLength include space for terminating NULL,
-            //  but of course only one NULL is needed, so the final length is just the sum of the two lengths.
-            if (!ClrSafeInt<int>::addition(assemblyNameLength, moduleNameLength, fullNameLength))
-            {
-                failed = true;
-            }
-            else
-            {
-                // Allocate a buffer with proper prefast checks.
-                int AllocLen;
-                if (!ClrSafeInt<int>::multiply(sizeof(WCHAR), fullNameLength, AllocLen))
-                {
-                    failed = true;
-                }
-                else
-                {
-                    fullName = reinterpret_cast< WCHAR* >(_alloca(AllocLen));
-
-                    // Convert the assembly name.
-                    MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, fullName, assemblyNameLength);
-
-                    // replace NULL with '+'
-                    _ASSERTE(fullName[assemblyNameLength-1] == 0);
-                    fullName[assemblyNameLength-1] = W('+');
-
-                    // Convert the module name after the '+'
-                    MultiByteToWideChar(CP_UTF8, 0, utf8ModuleName,-1, &fullName[assemblyNameLength], moduleNameLength);
-                }
-            }
-        }
+        WCHAR *fullName = reinterpret_cast< WCHAR* >(_alloca(sizeof(WCHAR)*(fullNameLength)));
+        MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, fullName, fullNameLength);
 
         if (!failed)
         {
@@ -643,15 +598,6 @@ void BaseBucketParamsManager::GetModuleVersion(_Out_writes_(maxLength) WCHAR* ta
         USHORT major = 0, minor = 0, build = 0, revision = 0;
 
         bool gotFileVersion = GetFileVersionInfoForModule(pModule, major, minor, build, revision);
-
-        // if we failed to get a version and this isn't the manifest module then try that
-        if (!gotFileVersion && !pModule->IsManifest())
-        {
-            pModule = pModule->GetAssembly()->GetModule();
-            if (pModule)
-                gotFileVersion = GetFileVersionInfoForModule(pModule, major, minor, build, revision);
-        }
-
         if (!gotFileVersion)
         {
             // if we didn't get a file version then fall back to assembly version (typical for in-memory modules)
@@ -696,16 +642,12 @@ void BaseBucketParamsManager::GetModuleTimeStamp(_Out_writes_(maxLength) WCHAR* 
     {
         EX_TRY
         {
-            // We only store the IL timestamp in the native image for the
-            // manifest module.  We should consider fixing this for Orcas.
-            PTR_PEAssembly pFile = pModule->GetAssembly()->GetModule()->GetPEAssembly();
-
             // for dynamic modules use 0 as the time stamp
             ULONG ulTimeStamp = 0;
 
-            if (!pFile->IsDynamic())
+            if (!pModule->IsReflectionEmit())
             {
-                ulTimeStamp = pFile->GetPEImageTimeDateStamp();
+                ulTimeStamp = pModule->GetPEAssembly()->GetPEImageTimeDateStamp();
                 _ASSERTE(ulTimeStamp != 0);
             }
 

@@ -51,6 +51,7 @@ class RCWCleanupList;
 
 typedef TADDR LOADERHANDLE;
 typedef Object* RUNTIMETYPEHANDLE;
+typedef DPTR(LOADERHANDLE) PTR_LOADERHANDLE;
 
 #ifdef DACCESS_COMPILE
 void OBJECTHANDLE_EnumMemoryRegions(OBJECTHANDLE handle);
@@ -458,20 +459,25 @@ GVAL_DECL(bool, g_metadataUpdatesApplied);
 #endif
 EXTERN bool g_fManagedAttach;
 
+#ifdef HOST_WINDOWS
+typedef BOOLEAN (WINAPI* PRTLDLLSHUTDOWNINPROGRESS)();
+EXTERN PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress;
+#endif
+
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
-inline BOOL    IsAtProcessExit()
+inline bool IsAtProcessExit()
 {
     SUPPORTS_DAC;
+#if defined(DACCESS_COMPILE) || !defined(HOST_WINDOWS)
     return g_fProcessDetach;
+#else
+    // RtlDllShutdownInProgress provides more accurate information about whether the process is shutting down.
+    // Use it if it is available to avoid shutdown deadlocks.
+    // https://learn.microsoft.com/windows/win32/devnotes/rtldllshutdowninprogress
+    return g_pfnRtlDllShutdownInProgress();
+#endif
 }
-
-enum FWStatus
-{
-    FWS_WaitInterrupt = 0x00000001,
-};
-
-EXTERN DWORD g_FinalizerWaiterStatus;
 
 #if defined(TARGET_UNIX) && defined(FEATURE_EVENT_TRACE)
 extern Volatile<BOOL> g_TriggerHeapDump;
@@ -590,34 +596,6 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #ifndef MAXULONGLONG
 #define MAXULONGLONG                     UI64(0xffffffffffffffff)
 #endif
-
-// Every Module is assigned a ModuleIndex, regardless of whether the Module is domain
-// neutral or domain specific. When a domain specific Module is unloaded, its ModuleIndex
-// can be reused.
-
-// ModuleIndexes are not the same as ModuleIDs. The main purpose of a ModuleIndex is
-// to have a compact way to refer to any Module (domain neutral or domain specific).
-// The main purpose of a ModuleID is to facilitate looking up the DomainLocalModule
-// that corresponds to a given Module in a given AppDomain.
-
-struct ModuleIndex
-{
-    SIZE_T m_dwIndex;
-    ModuleIndex ()
-    : m_dwIndex(0)
-    {}
-    explicit ModuleIndex (SIZE_T id)
-    : m_dwIndex(id)
-    { LIMITED_METHOD_DAC_CONTRACT; }
-    BOOL operator==(const ModuleIndex& ad) const
-    {
-        return m_dwIndex == ad.m_dwIndex;
-    }
-    BOOL operator!=(const ModuleIndex& ad) const
-    {
-        return m_dwIndex != ad.m_dwIndex;
-    }
-};
 
 //-----------------------------------------------------------------------------
 // GSCookies (guard-stack cookies) for detecting buffer overruns

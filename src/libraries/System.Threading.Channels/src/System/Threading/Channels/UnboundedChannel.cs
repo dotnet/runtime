@@ -5,20 +5,19 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.Threading.Channels
 {
     /// <summary>Provides a buffered channel of unbounded capacity.</summary>
     [DebuggerDisplay("Items = {ItemsCountForDebugger}, Closed = {ChannelIsClosedForDebugger}")]
-    [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<,>))]
-    internal sealed class UnboundedChannel<T, TQueue> : Channel<T>, IDebugEnumerable<T> where TQueue : struct, IUnboundedChannelQueue<T>
+    [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
+    internal sealed class UnboundedChannel<T> : Channel<T>, IDebugEnumerable<T>
     {
         /// <summary>Task that indicates the channel has completed.</summary>
         private readonly TaskCompletionSource _completion;
         /// <summary>The items in the channel.</summary>
-        private readonly TQueue _items;
+        private readonly ConcurrentQueue<T> _items = new ConcurrentQueue<T>();
         /// <summary>Readers blocked reading from the channel.</summary>
         private readonly Deque<AsyncOperation<T>> _blockedReaders = new Deque<AsyncOperation<T>>();
         /// <summary>Whether to force continuations to be executed asynchronously from producer writes.</summary>
@@ -30,9 +29,8 @@ namespace System.Threading.Channels
         private Exception? _doneWriting;
 
         /// <summary>Initialize the channel.</summary>
-        internal UnboundedChannel(TQueue items, bool runContinuationsAsynchronously)
+        internal UnboundedChannel(bool runContinuationsAsynchronously)
         {
-            _items = items;
             _runContinuationsAsynchronously = runContinuationsAsynchronously;
             _completion = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
             Reader = new UnboundedChannelReader(this);
@@ -40,14 +38,14 @@ namespace System.Threading.Channels
         }
 
         [DebuggerDisplay("Items = {Count}")]
-        [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<,>))]
+        [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
         private sealed class UnboundedChannelReader : ChannelReader<T>, IDebugEnumerable<T>
         {
-            internal readonly UnboundedChannel<T, TQueue> _parent;
+            internal readonly UnboundedChannel<T> _parent;
             private readonly AsyncOperation<T> _readerSingleton;
             private readonly AsyncOperation<bool> _waiterSingleton;
 
-            internal UnboundedChannelReader(UnboundedChannel<T, TQueue> parent)
+            internal UnboundedChannelReader(UnboundedChannel<T> parent)
             {
                 _parent = parent;
                 _readerSingleton = new AsyncOperation<T>(parent._runContinuationsAsynchronously, pooled: true);
@@ -70,8 +68,8 @@ namespace System.Threading.Channels
                 }
 
                 // Dequeue an item if we can.
-                UnboundedChannel<T, TQueue> parent = _parent;
-                if (parent._items.IsThreadSafe && parent._items.TryDequeue(out T? item))
+                UnboundedChannel<T> parent = _parent;
+                if (parent._items.TryDequeue(out T? item))
                 {
                     CompleteIfDone(parent);
                     return new ValueTask<T>(item);
@@ -114,60 +112,24 @@ namespace System.Threading.Channels
 
             public override bool TryRead([MaybeNullWhen(false)] out T item)
             {
-                UnboundedChannel<T, TQueue> parent = _parent;
-                return parent._items.IsThreadSafe ?
-                    LockFree(parent, out item) :
-                    Locked(parent, out item);
+                UnboundedChannel<T> parent = _parent;
 
-                static bool LockFree(UnboundedChannel<T, TQueue> parent, [MaybeNullWhen(false)] out T item)
+                // Dequeue an item if we can
+                if (parent._items.TryDequeue(out item))
                 {
-                    if (parent._items.TryDequeue(out item))
-                    {
-                        CompleteIfDone(parent);
-                        return true;
-                    }
-
-                    item = default;
-                    return false;
+                    CompleteIfDone(parent);
+                    return true;
                 }
 
-                static bool Locked(UnboundedChannel<T, TQueue> parent, [MaybeNullWhen(false)] out T item)
-                {
-                    lock (parent.SyncObj)
-                    {
-                        if (parent._items.TryDequeue(out item))
-                        {
-                            CompleteIfDone(parent);
-                            return true;
-                        }
-                    }
-
-                    item = default;
-                    return false;
-                }
+                item = default;
+                return false;
             }
 
-            public override bool TryPeek([MaybeNullWhen(false)] out T item)
+            public override bool TryPeek([MaybeNullWhen(false)] out T item) =>
+                _parent._items.TryPeek(out item);
+
+            private static void CompleteIfDone(UnboundedChannel<T> parent)
             {
-                UnboundedChannel<T, TQueue> parent = _parent;
-                return parent._items.IsThreadSafe ?
-                    parent._items.TryPeek(out item) :
-                    Locked(parent, out item);
-
-                // Separated out to keep the try/finally from preventing TryPeek from being inlined
-                static bool Locked(UnboundedChannel<T, TQueue> parent, [MaybeNullWhen(false)] out T item)
-                {
-                    lock (parent.SyncObj)
-                    {
-                        return parent._items.TryPeek(out item);
-                    }
-                }
-            }
-
-            private static void CompleteIfDone(UnboundedChannel<T, TQueue> parent)
-            {
-                Debug.Assert(parent._items.IsThreadSafe || Monitor.IsEntered(parent.SyncObj));
-
                 if (parent._doneWriting != null && parent._items.IsEmpty)
                 {
                     // If we've now emptied the items queue and we're not getting any more, complete.
@@ -182,12 +144,12 @@ namespace System.Threading.Channels
                     return new ValueTask<bool>(Task.FromCanceled<bool>(cancellationToken));
                 }
 
-                if (_parent._items.IsThreadSafe && !_parent._items.IsEmpty)
+                if (!_parent._items.IsEmpty)
                 {
                     return new ValueTask<bool>(true);
                 }
 
-                UnboundedChannel<T, TQueue> parent = _parent;
+                UnboundedChannel<T> parent = _parent;
 
                 lock (parent.SyncObj)
                 {
@@ -230,15 +192,15 @@ namespace System.Threading.Channels
         }
 
         [DebuggerDisplay("Items = {ItemsCountForDebugger}")]
-        [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<,>))]
+        [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
         private sealed class UnboundedChannelWriter : ChannelWriter<T>, IDebugEnumerable<T>
         {
-            internal readonly UnboundedChannel<T, TQueue> _parent;
-            internal UnboundedChannelWriter(UnboundedChannel<T, TQueue> parent) => _parent = parent;
+            internal readonly UnboundedChannel<T> _parent;
+            internal UnboundedChannelWriter(UnboundedChannel<T> parent) => _parent = parent;
 
             public override bool TryComplete(Exception? error)
             {
-                UnboundedChannel<T, TQueue> parent = _parent;
+                UnboundedChannel<T> parent = _parent;
                 bool completeTask;
 
                 lock (parent.SyncObj)
@@ -278,7 +240,7 @@ namespace System.Threading.Channels
 
             public override bool TryWrite(T item)
             {
-                UnboundedChannel<T, TQueue> parent = _parent;
+                UnboundedChannel<T> parent = _parent;
                 while (true)
                 {
                     AsyncOperation<T>? blockedReader = null;
@@ -359,7 +321,7 @@ namespace System.Threading.Channels
         }
 
         /// <summary>Gets the object used to synchronize access to all state on this instance.</summary>
-        private object SyncObj => _blockedReaders;
+        private object SyncObj => _items;
 
         [Conditional("DEBUG")]
         private void AssertInvariants()

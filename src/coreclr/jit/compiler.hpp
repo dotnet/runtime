@@ -1872,9 +1872,9 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
     return cast;
 }
 
-inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object)
+inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object, bool onStack)
 {
-    assert(object->TypeIs(TYP_REF));
+    assert(onStack || object->TypeIs(TYP_REF));
     GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT);
     return result;
 }
@@ -3881,13 +3881,15 @@ inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* is
     switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
     {
         case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
+        case CORINFO_HELP_GET_GCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
             result = true;
             gc     = true;
             retVal = SHRV_STATIC_BASE_PTR;
             break;
         case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
             result = true;
             gc     = false;
             retVal = SHRV_STATIC_BASE_PTR;
@@ -3925,30 +3927,17 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         helper == CORINFO_HELP_STRCNS || helper == CORINFO_HELP_BOX ||
 
         // helpers being added to IsSharedStaticHelper
-        helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS || helper == CORINFO_HELP_GETGENERICS_GCSTATIC_BASE ||
-        helper == CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE || helper == CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE ||
-        helper == CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE ||
+        helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS ||
 
-        helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE || helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE ||
-        helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS ||
-        helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS ||
-        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE ||
-        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE ||
-        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED ||
-        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED ||
-        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS ||
-        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS ||
+        (helper >= CORINFO_HELP_GET_GCSTATIC_BASE &&
+         helper <= CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2)
 #ifdef FEATURE_READYTORUN
-        helper == CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE || helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
+        || helper == CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE || helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
         helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE || helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE ||
         helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE ||
+        helper == CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE
 #endif
-        helper == CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS;
+        || helper == CORINFO_HELP_INITCLASS;
 #if 0
     // See above TODO-Cleanup
     bool result2 = s_helperCallProperties.IsPure(helper) && s_helperCallProperties.NonNullReturn(helper);

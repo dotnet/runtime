@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 // This is needed due to NativeAOT which doesn't enable nullable globally yet
 #nullable enable
@@ -65,13 +66,12 @@ namespace ILLink.Shared.DataFlow
 				this.cfg = cfg;
 				this.lattice = lattice;
 
-				var entryOut = cfg.GetFallThroughSuccessor (cfg.Entry);
+				IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch? entryOut = cfg.GetSuccessors (cfg.Entry).SingleOrDefault ();
 				Debug.Assert (entryOut != null);
-				Debug.Assert (cfg.GetConditionalSuccessor (cfg.Entry) == null);
 				if (entryOut == null)
 					return;
 
-				branchInput[entryOut!.Value] = new TState () {
+				branchInput[entryOut.Value] = new TState () {
 					Lattice = lattice,
 					Current = entryValue,
 					Exception = null
@@ -187,35 +187,20 @@ namespace ILLink.Shared.DataFlow
 		)
 		{
 			TConditionValue? conditionValue = transfer.Transfer (block, state);
-
-			if (cfg.GetConditionalSuccessor (block) is IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch conditionalBranch) {
-				// Duplicate the current state so that it's not shared with fall-through state.
-				TValue conditionalCurrentState = lattice.Meet (lattice.Top, state.Current);
-
+			foreach (var successor in cfg.GetSuccessors (block)) {
+				// Duplicate the state so that it's not shared between branches.
+				TValue branchState = lattice.Meet (lattice.Top, state.Current);
 				if (conditionValue != null) {
+					Debug.Assert (successor.ConditionKind is ConditionKind.WhenTrue or ConditionKind.WhenFalse);
 					transfer.ApplyCondition (
-						// ConditionKind 'WhenTrue' means the condition is true in the conditional branch.
-						block.ConditionKind is ConditionKind.WhenTrue
+						// ConditionKind 'WhenTrue' means the condition is true in this branch.
+						successor.ConditionKind is ConditionKind.WhenTrue
 							? conditionValue.Value
 							: conditionValue.Value.Negate (),
-						ref conditionalCurrentState);
+						ref branchState);
 				}
 
-				updateState (conditionalBranch, conditionalCurrentState);
-			}
-
-			if (cfg.GetFallThroughSuccessor (block) is IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch fallThroughBranch) {
-				TValue fallThroughCurrentState = state.Current;
-				if (conditionValue != null) {
-					transfer.ApplyCondition (
-						// ConditionKind 'WhenFalse' means the condition is true in the fall-through branch (false in the conditional branch).
-						block.ConditionKind is ConditionKind.WhenFalse
-							? conditionValue.Value
-							: conditionValue.Value.Negate (),
-						ref fallThroughCurrentState);
-				}
-
-				updateState (fallThroughBranch, fallThroughCurrentState);
+				updateState (successor, branchState);
 			}
 		}
 
@@ -423,11 +408,11 @@ namespace ILLink.Shared.DataFlow
 						changed = true;
 
 					TBlock lastFinallyBlock = cfg.LastBlock (exitedFinally);
-					Debug.Assert (cfg.GetConditionalSuccessor (lastFinallyBlock) == null);
-					IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch? finallyExit = cfg.GetFallThroughSuccessor (lastFinallyBlock);
+					IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch? finallyExit = cfg.GetSuccessors (lastFinallyBlock).SingleOrDefault ();
 					Debug.Assert (finallyExit != null);
 					if (finallyExit == null)
 						continue;
+					Debug.Assert (finallyExit.Value.ConditionKind == ConditionKind.Unconditional);
 					predecessorState = cfgState.Get (finallyExit.Value).Current;
 				}
 			}

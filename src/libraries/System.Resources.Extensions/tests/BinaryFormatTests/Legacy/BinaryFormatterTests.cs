@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 
 namespace BinaryFormatTests.FormatterTests;
 
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
 public partial class BinaryFormatterTests
 {
     [Theory]
@@ -29,6 +30,14 @@ public partial class BinaryFormatterTests
 
     private static void ValidateAndRoundtrip(object obj, TypeSerializableValue[] blobs, bool isEqualityComparer)
     {
+        // EqualityExtensions.CheckEquals enumerates over all properties of given type.
+        // Some of the properties might be lazy evaluated and stored in a field.
+        // BF is storing all the fields. It means that serializing given object instance
+        // before and after passing it to EqualityExtensions.CheckEquals may produce different blobs!
+        // Since this test is comparing these blobs, we call this method up-front to ensure
+        // all properties (and fields) get pre-evaluated before doing the serialize-deserialize roundtrip.
+        EqualityExtensions.CheckEquals(obj, obj);
+
         if (obj is null)
         {
             throw new ArgumentNullException(nameof(obj), "The serializable object must not be null");
@@ -173,7 +182,7 @@ public partial class BinaryFormatterTests
     {
         Type objType = obj.GetType();
         Assert.True(objType.IsGenericType, $"Type `{objType.FullName}` must be generic.");
-        Assert.Equal("System.Collections.Generic.ObjectEqualityComparer`1", objType.GetGenericTypeDefinition().FullName);
+        Assert.True(objType.GetGenericTypeDefinition().FullName is "System.Collections.Generic.ObjectEqualityComparer`1" or "System.Collections.Generic.GenericEqualityComparer`1");
         Assert.Equal(obj.GetType().GetGenericArguments()[0], objType.GetGenericArguments()[0]);
     }
 
@@ -213,12 +222,6 @@ public partial class BinaryFormatterTests
             || name == "System.Net.CookieCollection"
             || name == "System.Net.CookieContainer")
         {
-            return;
-        }
-
-        if (obj is DataSet or DataTable)
-        {
-            // The blobs may not be identical (the output is not deterministic), but still valid.
             return;
         }
 

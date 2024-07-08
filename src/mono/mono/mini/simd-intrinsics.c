@@ -1185,11 +1185,18 @@ static guint16 sri_vector_methods [] = {
 	SN_AsInt16,
 	SN_AsInt32,
 	SN_AsInt64,
+	SN_AsNInt,
+	SN_AsNUInt,
+	SN_AsPlane,
+	SN_AsQuaternion,
 	SN_AsSByte,
 	SN_AsSingle,
 	SN_AsUInt16,
 	SN_AsUInt32,
 	SN_AsUInt64,
+	SN_AsVector,
+	SN_AsVector128,
+	SN_AsVector4,
 	SN_BitwiseAnd,
 	SN_BitwiseOr,
 	SN_Ceiling,
@@ -1618,6 +1625,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_AsInt16:
 	case SN_AsInt32:
 	case SN_AsInt64:
+	case SN_AsNInt:
+	case SN_AsNUInt:
+	case SN_AsPlane:
+	case SN_AsQuaternion:
 	case SN_AsSByte:
 	case SN_AsSingle:
 	case SN_AsUInt16:
@@ -1626,6 +1637,23 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+	}
+	case SN_AsVector:
+	case SN_AsVector128:
+	case SN_AsVector4: {
+		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
+			return NULL;
+
+		MonoClass *ret_class = mono_class_from_mono_type_internal (fsig->ret);
+		int ret_size = mono_class_value_size (ret_class, NULL);
+
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int arg_size = mono_class_value_size (arg_class, NULL);
+
+		if (arg_size == ret_size)
+			return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+
+		return NULL;
 	}
 	case SN_Ceiling:
 	case SN_Floor: {
@@ -3394,6 +3422,18 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_InsertSelectedScalar},
 	{SN_LeadingSignCount, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_CLS},
 	{SN_LeadingZeroCount, OP_ARM64_CLZ},
+	{SN_Load2xVector128, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X2_V128},
+	{SN_Load2xVector128AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD2_V128},
+	{SN_Load2xVector64, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X2_V64},
+	{SN_Load2xVector64AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD2_V64},
+	{SN_Load3xVector128, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X3_V128},
+	{SN_Load3xVector128AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD3_V128},
+	{SN_Load3xVector64, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X3_V64},
+	{SN_Load3xVector64AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD3_V64},
+	{SN_Load4xVector128, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X4_V128},
+	{SN_Load4xVector128AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD4_V128},
+	{SN_Load4xVector64, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X4_V64},
+	{SN_Load4xVector64AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD4_V64},
 	{SN_LoadAndInsertScalar},
 	{SN_LoadAndReplicateToVector128, OP_ARM64_LD1R},
 	{SN_LoadAndReplicateToVector128x2, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD2R_V128},
@@ -3410,19 +3450,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_LoadPairVector64, OP_ARM64_LDP},
 	{SN_LoadPairVector64NonTemporal, OP_ARM64_LDNP},
 	{SN_LoadVector128, OP_ARM64_LD1},
-	{SN_LoadVector128x2, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X2_V128},
-	{SN_LoadVector128x2AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD2_V128},
-	{SN_LoadVector128x3, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X3_V128},
-	{SN_LoadVector128x3AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD3_V128},
-	{SN_LoadVector128x4, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X4_V128},
-	{SN_LoadVector128x4AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD4_V128},
 	{SN_LoadVector64, OP_ARM64_LD1},
-	{SN_LoadVector64x2, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X2_V64},
-	{SN_LoadVector64x2AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD2_V64},
-	{SN_LoadVector64x3, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X3_V64},
-	{SN_LoadVector64x3AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD3_V64},
-	{SN_LoadVector64x4, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X4_V64},
-	{SN_LoadVector64x4AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD4_V64},
 	{SN_Max, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAX},
 	{SN_MaxAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_SMAXV, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_UMAXV, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_FMAXV},
 	{SN_MaxNumber, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXNM},
@@ -3609,24 +3637,13 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_SignExtendWideningUpper, OP_ARM64_SXTL2},
 	{SN_Sqrt, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT},
 	{SN_SqrtScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT},
-	{SN_Store, OP_ARM64_ST1},
+	{SN_Store},
 	{SN_StorePair, OP_ARM64_STP},
 	{SN_StorePairNonTemporal, OP_ARM64_STNP},
 	{SN_StorePairScalar, OP_ARM64_STP_SCALAR},
 	{SN_StorePairScalarNonTemporal, OP_ARM64_STNP_SCALAR},
 	{SN_StoreSelectedScalar},
-	{SN_StoreVector128x2},
-	{SN_StoreVector128x2AndZip},
-	{SN_StoreVector128x3},
-	{SN_StoreVector128x3AndZip},
-	{SN_StoreVector128x4},
-	{SN_StoreVector128x4AndZip},
-	{SN_StoreVector64x2},
-	{SN_StoreVector64x2AndZip},
-	{SN_StoreVector64x3},
-	{SN_StoreVector64x3AndZip},
-	{SN_StoreVector64x4},
-	{SN_StoreVector64x4AndZip},
+	{SN_StoreVectorAndZip},
 	{SN_Subtract, OP_XBINOP, OP_ISUB, None, None, OP_XBINOP, OP_FSUB},
 	{SN_SubtractHighNarrowingLower, OP_ARM64_SUBHN},
 	{SN_SubtractHighNarrowingUpper, OP_ARM64_SUBHN2},
@@ -3866,6 +3883,14 @@ emit_arm64_intrinsics (
 			ret->inst_c1 = etype->type;
 			return ret;
 		}
+		case SN_Store: {
+			MonoClass* klass_param_v = mono_class_from_mono_type_internal (fsig->params [1]);
+			const char *klass_name_param_v = m_class_get_name (klass_param_v);
+			if (strstr (klass_name_param_v, "ValueTuple") != NULL)
+				return emit_simd_ins_for_sig (cfg, klass_param_v, OP_ARM64_STM, 0, arg0_type, fsig, args);
+			else
+				return emit_simd_ins_for_sig (cfg, klass_param_v, OP_ARM64_ST1, 0, arg0_type, fsig, args);
+		}
 		case SN_StoreSelectedScalar: {
 			int store_op;
 			if (is_intrinsics_vector_type (fsig->params [1]))
@@ -3874,6 +3899,10 @@ emit_arm64_intrinsics (
 				store_op = OP_ARM64_STM_SCALAR;
 			MonoClass* klass_tuple_var = mono_class_from_mono_type_internal (fsig->params [1]);
 			return emit_simd_ins_for_sig (cfg, klass_tuple_var, store_op, 0, arg0_type, fsig, args);
+		}
+		case SN_StoreVectorAndZip: {
+			MonoClass* klass_tuple_var = mono_class_from_mono_type_internal (fsig->params [1]);
+			return emit_simd_ins_for_sig (cfg, klass_tuple_var, OP_ARM64_STM_ZIP, 0, arg0_type, fsig, args);
 		}
 		case SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:
 		case SN_MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh:
@@ -4028,38 +4057,6 @@ emit_arm64_intrinsics (
 			ins->inst_p1 = offsets;
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
-		}
-		case SN_StoreVector128x2:
-		case SN_StoreVector128x3:
-		case SN_StoreVector128x4:
-		case SN_StoreVector64x2:
-		case SN_StoreVector64x3:
-		case SN_StoreVector64x4:
-		case SN_StoreVector128x2AndZip:
-		case SN_StoreVector128x3AndZip:
-		case SN_StoreVector128x4AndZip:
-		case SN_StoreVector64x2AndZip:
-		case SN_StoreVector64x3AndZip:
-		case SN_StoreVector64x4AndZip: {
-			int iid = 0;
-			switch (id) {
-			case SN_StoreVector128x2: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V128; break;
-			case SN_StoreVector128x3: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V128; break;
-			case SN_StoreVector128x4: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V128; break;
-			case SN_StoreVector64x2: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V64; break;
-			case SN_StoreVector64x3: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V64; break;
-			case SN_StoreVector64x4: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V64; break;
-			case SN_StoreVector128x2AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V128; break;
-			case SN_StoreVector128x3AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V128; break;
-			case SN_StoreVector128x4AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V128; break;
-			case SN_StoreVector64x2AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V64; break;
-			case SN_StoreVector64x3AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V64; break;
-			case SN_StoreVector64x4AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V64; break;
-			default: g_assert_not_reached ();
-			}
-
-			MonoClass* klass_tuple_var = mono_class_from_mono_type_internal (fsig->params [1]);
-			return emit_simd_ins_for_sig (cfg, klass_tuple_var, OP_ARM64_STM, iid, arg0_type, fsig, args);
 		}
 		default:
 			g_assert_not_reached ();

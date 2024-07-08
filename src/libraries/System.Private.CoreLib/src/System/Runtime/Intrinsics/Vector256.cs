@@ -1046,6 +1046,22 @@ namespace System.Runtime.Intrinsics
             );
         }
 
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance with all 64-bit parts initialized to a specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that the 64-bit parts will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> with the 64-bit parts initialized to <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Create<T>(Vector64<T> value) => Create(Vector128.Create(value, value));
+
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance with the lower and upper 128-bits initialized to a specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that the lower and upper 128-bits will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> with the lower and upper 128-bits initialized to <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Create<T>(Vector128<T> value) => Create(value, value);
+
         /// <summary>Creates a new <see cref="Vector256{T}" /> instance from two <see cref="Vector128{T}" /> instances.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="lower">The value that the lower 128-bits will be initialized to.</param>
@@ -1338,7 +1354,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="start">The value that element 0 will be initialized to.</param>
         /// <param name="step">The value that indicates how far apart each element should be from the previous.</param>
-        /// <returns>A new <see cref="Vector256{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
+        /// <returns>A new <see cref="Vector256{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the value of the previous element plus <paramref name="step" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateSequence<T>(T start, T step) => (Vector256<T>.Indices * step) + Create(start);

@@ -326,7 +326,7 @@ ErrExit:
     return hr;
 }
 
-HRESULT Attribute::ParseArgumentValues(
+HRESULT CustomAttribute::ParseArgumentValues(
     void* pCa,
     INT32 cCa,
     CaValueArrayFactory* pCaValueArrayFactory,
@@ -597,7 +597,7 @@ static BASEARRAYREF ReadArray(Assembly *pCtorAssembly,
             th = th.GetArrayElementTypeHandle();
         for (int i = 0; i < size; i++) {
             element = GetDataFromBlob(pCtorAssembly, arrayType, th, pBlob, endBlob, pModule, &isObject);
-            _ASSERTE(isObject || element == NULL);
+            _ASSERTE(isObject || element == (ARG_SLOT)NULL);
             ((PTRARRAYREF)(array))->SetAt(i, ArgSlotToObj(element));
         }
         break;
@@ -978,7 +978,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
             {
                 if (argToProtect[i] != NULL)
                 {
-                    _ASSERTE(args[i] == NULL);
+                    _ASSERTE(args[i] == (ARG_SLOT)NULL);
                     args[i] = ObjToArgSlot(argToProtect[i]);
                 }
             }

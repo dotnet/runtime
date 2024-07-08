@@ -293,15 +293,11 @@ namespace System.Text.Json
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
 
-            Debug.Assert(parent.PropertyCache != null);
-
             // Soft cut-off length - once message becomes longer than that we won't be adding more elements
             const int CutOffLength = 60;
 
-            foreach (KeyValuePair<string, JsonPropertyInfo> kvp in parent.PropertyCache.List)
+            foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                JsonPropertyInfo property = kvp.Value;
-
                 if (!property.IsRequired || requiredPropertiesSet[property.RequiredPropertyIndex])
                 {
                     continue;
@@ -562,9 +558,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException(scoped ref ReadStack state, in Utf8JsonReader reader, NotSupportedException ex)
+        public static void ThrowNotSupportedException(scoped ref ReadStack state, in Utf8JsonReader reader, Exception innerException)
         {
-            string message = ex.Message;
+            string message = innerException.Message;
 
             // The caller should check to ensure path is not already set.
             Debug.Assert(!message.Contains(" Path: "));
@@ -586,13 +582,13 @@ namespace System.Text.Json
             long bytePositionInLine = reader.CurrentState._bytePositionInLine;
             message += $" Path: {state.JsonPath()} | LineNumber: {lineNumber} | BytePositionInLine: {bytePositionInLine}.";
 
-            throw new NotSupportedException(message, ex);
+            throw new NotSupportedException(message, innerException);
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException(ref WriteStack state, NotSupportedException ex)
+        public static void ThrowNotSupportedException(ref WriteStack state, Exception innerException)
         {
-            string message = ex.Message;
+            string message = innerException.Message;
 
             // The caller should check to ensure path is not already set.
             Debug.Assert(!message.Contains(" Path: "));
@@ -612,7 +608,7 @@ namespace System.Text.Json
 
             message += $" Path: {state.PropertyPath()}.";
 
-            throw new NotSupportedException(message, ex);
+            throw new NotSupportedException(message, innerException);
         }
 
         [DoesNotReturn]
@@ -935,6 +931,18 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(PipeWriter pipeWriter)
         {
             throw new InvalidOperationException(SR.Format(SR.PipeWriter_DoesNotImplementUnflushedBytes, pipeWriter.GetType().Name));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_JsonSchemaExporterDoesNotSupportReferenceHandlerPreserve()
+        {
+            throw new NotSupportedException(SR.JsonSchemaExporter_ReferenceHandlerPreserve_NotSupported);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonSchemaExporterDepthTooLarge()
+        {
+            throw new InvalidOperationException(SR.JsonSchemaExporter_DepthTooLarge);
         }
     }
 }

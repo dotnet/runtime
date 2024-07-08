@@ -680,7 +680,7 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                try
+                await IgnoreExceptions(async () =>
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
@@ -688,11 +688,7 @@ namespace System.Net.Http.Functional.Tests
                         requestReceived.SetResult();
                         await clientCompleted.Task.WaitAsync(TestHelper.PassingTestTimeout);
                     });
-                }
-                catch (Exception ex)
-                {
-                    _output.WriteLine($"Ignored exception: {ex}");
-                }
+                });
             });
         }
 
@@ -843,7 +839,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task RequestDuration_ConnectionClosedWhileReceivingHeaders_Recorded()
         {
             using CancellationTokenSource cancelServerCts = new CancellationTokenSource();
-            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
@@ -862,15 +858,11 @@ namespace System.Net.Http.Functional.Tests
                 VerifyRequestDuration(m, uri, acceptedErrorTypes: [typeof(TaskCanceledException).FullName, "response_ended"]);
             }, async server =>
             {
-                try
+                await IgnoreExceptions(async () =>
                 {
-                    var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(cancelServerCts.Token);
+                    LoopbackServer.Connection connection = await server.EstablishConnectionAsync().WaitAsync(cancelServerCts.Token);
                     connection.Socket.Shutdown(SocketShutdown.Send);
-                }
-                catch (Exception ex)
-                {
-                    _output.WriteLine($"Ignored exception: {ex}");
-                }
+                });
             });
         }
     }
@@ -1025,8 +1017,8 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public class HttpMetricsTest_Http30 : HttpMetricsTest
     {
         protected override Version UseVersion => HttpVersion.Version30;

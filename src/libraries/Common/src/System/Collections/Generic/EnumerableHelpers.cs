@@ -8,6 +8,10 @@ namespace System.Collections.Generic
     /// </summary>
     internal static partial class EnumerableHelpers
     {
+        /// <summary>Calls Reset on an enumerator instance.</summary>
+        /// <remarks>Enables Reset to be called without boxing on a struct enumerator that lacks a public Reset.</remarks>
+        internal static void Reset<T>(ref T enumerator) where T : IEnumerator => enumerator.Reset();
+
         /// <summary>Gets an enumerator singleton for an empty collection.</summary>
         internal static IEnumerator<T> GetEmptyEnumerator<T>() =>
             ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator();
