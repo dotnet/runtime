@@ -3,6 +3,12 @@
 
 #include "gcheapenumerationprofiler.h"
 
+#if WIN32
+#define EXPORT
+#else // WIN32
+#define EXPORT __attribute__ ((visibility ("default")))
+#endif // WIN32
+
 GUID GCHeapEnumerationProfiler::GetClsid()
 {
     // {8753F0E1-6D6D-4329-B8E1-334918869C15}
@@ -175,7 +181,7 @@ HRESULT GCHeapEnumerationProfiler::ValidateEnumerateGCHeapObjects(HRESULT expect
     return E_FAIL;
 }
 
-extern "C" __declspec(dllexport) void STDMETHODCALLTYPE EnumerateGCHeapObjects()
+extern "C" EXPORT void STDMETHODCALLTYPE EnumerateGCHeapObjects()
 {
     printf("EnumerateGCHeapObjects PInvoke\n");
     GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
@@ -187,7 +193,7 @@ extern "C" __declspec(dllexport) void STDMETHODCALLTYPE EnumerateGCHeapObjects()
     instance->ValidateEnumerateGCHeapObjects(0);
 }
 
-extern "C" __declspec(dllexport) void STDMETHODCALLTYPE SuspendRuntime()
+extern "C" EXPORT void STDMETHODCALLTYPE SuspendRuntime()
 {
     printf("SuspendRuntime PInvoke\n");
     GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
@@ -199,7 +205,7 @@ extern "C" __declspec(dllexport) void STDMETHODCALLTYPE SuspendRuntime()
     instance->pCorProfilerInfo->SuspendRuntime();
 }
 
-extern "C" __declspec(dllexport) void STDMETHODCALLTYPE ResumeRuntime()
+extern "C" EXPORT void STDMETHODCALLTYPE ResumeRuntime()
 {
     printf("ResumeRuntime PInvoke\n");
     GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
@@ -211,7 +217,7 @@ extern "C" __declspec(dllexport) void STDMETHODCALLTYPE ResumeRuntime()
     instance->pCorProfilerInfo->ResumeRuntime();
 }
 
-extern "C" __declspec(dllexport) void STDMETHODCALLTYPE EnumerateHeapObjectsInBackgroundThread()
+extern "C" EXPORT void STDMETHODCALLTYPE EnumerateHeapObjectsInBackgroundThread()
 {
     GCHeapEnumerationProfiler* instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
     if (instance == nullptr) {
