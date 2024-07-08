@@ -21,10 +21,10 @@ internal readonly struct Exception_1 : IException
         return exceptionInfo.ThrownObject.Object;
     }
 
-    ExceptionObjectData IException.GetExceptionObjectData(TargetPointer objectAddress)
+    ManagedExceptionData IException.GetManagedExceptionData(TargetPointer managedException)
     {
-        Data.ExceptionObject exceptionObject = _target.ProcessedData.GetOrAdd<Data.ExceptionObject>(objectAddress);
-        return new ExceptionObjectData(
+        Data.Exception exceptionObject = _target.ProcessedData.GetOrAdd<Data.Exception>(managedException);
+        return new ManagedExceptionData(
             exceptionObject.Message,
             exceptionObject.InnerException,
             exceptionObject.StackTrace,

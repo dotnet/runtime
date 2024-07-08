@@ -5,7 +5,7 @@ This contract is for getting information about exceptions in the process.
 ## APIs of contract
 
 ```csharp
-record struct ExceptionObjectData(
+record struct ManagedExceptionData(
     TargetPointer Message,
     TargetPointer InnerException,
     TargetPointer StackTrace,
@@ -18,7 +18,7 @@ record struct ExceptionObjectData(
 
 ``` csharp
 TargetPointer GetExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException);
-ExceptionObjectData GetExceptionObjectData(TargetPointer objectAddress);
+ManagedExceptionData GetManagedExceptionData(TargetPointer managedException)
 ```
 
 ## Version 1
@@ -40,17 +40,17 @@ TargetPointer GetExceptionInfo(TargetPointer exception, out TargetPointer nextNe
         : TargetPointer.Null;
 }
 
-ExceptionObjectData GetExceptionObjectData(TargetPointer objectAddress)
+ManagedExceptionData GetManagedExceptionData(TargetPointer managedException)
 {
-    return new ExceptionObjectData(
-        target.ReadPointer(objectAddress + /* ExceptionObject::Message offset */),
-        target.ReadPointer(objectAddress + /* ExceptionObject::InnerException offset */),
-        target.ReadPointer(objectAddress + /* ExceptionObject::StackTrace offset */),
-        target.ReadPointer(objectAddress + /* ExceptionObject::WatsonBuckets offset */),
-        target.ReadPointer(objectAddress + /* ExceptionObject::StackTraceString offset */),
-        target.ReadPointer(objectAddress + /* ExceptionObject::RemoteStackTraceString offset */),
-        target.Read<int>(objectAddress + /* ExceptionObject::HResult offset */),
-        target.Read<int>(objectAddress + /* ExceptionObject::XCode offset */),
+    return new ManagedExceptionData(
+        target.ReadPointer(objectAddress + /* Exception::Message offset */),
+        target.ReadPointer(objectAddress + /* Exception::InnerException offset */),
+        target.ReadPointer(objectAddress + /* Exception::StackTrace offset */),
+        target.ReadPointer(objectAddress + /* Exception::WatsonBuckets offset */),
+        target.ReadPointer(objectAddress + /* Exception::StackTraceString offset */),
+        target.ReadPointer(objectAddress + /* Exception::RemoteStackTraceString offset */),
+        target.Read<int>(objectAddress + /* Exception::HResult offset */),
+        target.Read<int>(objectAddress + /* Exception::XCode offset */),
     );
 }
 ```

@@ -115,7 +115,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         try
         {
             Contracts.IException contract = _target.Contracts.Exception;
-            Contracts.ExceptionObjectData exceptionData = contract.GetExceptionObjectData(objectAddress);
+            Contracts.ManagedExceptionData exceptionData = contract.GetManagedExceptionData(objectAddress);
             data->Message = exceptionData.Message;
             data->InnerException = exceptionData.InnerException;
             data->StackTrace = exceptionData.StackTrace;

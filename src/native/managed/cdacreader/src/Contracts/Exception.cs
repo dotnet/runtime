@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal record struct ExceptionObjectData(
+internal record struct ManagedExceptionData(
     TargetPointer Message,
     TargetPointer InnerException,
     TargetPointer StackTrace,
@@ -28,7 +28,7 @@ internal interface IException : IContract
     }
 
     public virtual TargetPointer GetExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException) => throw new NotImplementedException();
-    public virtual ExceptionObjectData GetExceptionObjectData(TargetPointer exceptionObject) => throw new NotImplementedException();
+    public virtual ManagedExceptionData GetManagedExceptionData(TargetPointer managedException) => throw new NotImplementedException();
 }
 
 internal readonly struct Exception : IException
