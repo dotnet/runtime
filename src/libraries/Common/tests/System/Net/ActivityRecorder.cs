@@ -72,18 +72,29 @@ namespace System.Net.Test.Common
             Assert.Equal(times, Started);
             Assert.Equal(times, Stopped);
         }
+
+        public Activity VerifyActivityRecordedOnce()
+        {
+            VerifyActivityRecorded(1);
+            return LastFinishedActivity;
+        }
     }
 
     internal static class ActivityAssert
     {
-        public static void HasTag<T>(Activity activity, string name, T expectedValue)
+        public static KeyValuePair<string, object> HasTag(Activity activity, string name)
         {
             KeyValuePair<string, object> tag = activity.TagObjects.SingleOrDefault(t => t.Key == name);
             if (tag.Key is null)
             {
                 Assert.Fail($"The Activity tags should contain {name}.");
             }
+            return tag;
+        }
 
+        public static void HasTag<T>(Activity activity, string name, T expectedValue)
+        {
+            KeyValuePair<string, object> tag = HasTag(activity, name);
             Assert.Equal(expectedValue, (T)tag.Value);
         }
 
@@ -98,6 +109,11 @@ namespace System.Net.Test.Common
         {
             bool contains = activity.TagObjects.Any(t => t.Key == name);
             Assert.False(contains, $"The Activity tags should not contain {name}.");
+        }
+
+        public static void FinishedInOrder(Activity first, Activity second)
+        {
+            Assert.True(first.StartTimeUtc + first.Duration < second.StartTimeUtc + second.Duration, $"{first.OperationName} should stop before {second.OperationName}");
         }
 
         public static string CamelToSnake(string camel)

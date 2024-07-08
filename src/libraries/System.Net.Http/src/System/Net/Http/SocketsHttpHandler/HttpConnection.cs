@@ -74,9 +74,9 @@ namespace System.Net.Http
             HttpConnectionPool pool,
             Stream stream,
             TransportContext? transportContext,
-            Activity? activity,
+            Activity? connectionSetupActivity,
             IPEndPoint? remoteEndPoint)
-            : base(pool, activity, remoteEndPoint)
+            : base(pool, connectionSetupActivity, remoteEndPoint)
         {
             Debug.Assert(stream != null);
 
@@ -112,7 +112,7 @@ namespace System.Net.Http
                 if (disposing)
                 {
                     GC.SuppressFinalize(this);
-                    _activity?.Stop();
+                    ConnectionSetupActivity?.Stop();
                     _stream.Dispose();
                 }
             }
@@ -539,7 +539,6 @@ namespace System.Net.Http
                 "The caller should have called PrepareForReuse or TryOwnScavengingTaskCompletion if the connection was idle on the pool.");
 
             MarkConnectionAsNotIdle();
-            LinkRequestActivity();
 
             TaskCompletionSource<bool>? allowExpect100ToContinue = null;
             Task? sendRequestContentTask = null;

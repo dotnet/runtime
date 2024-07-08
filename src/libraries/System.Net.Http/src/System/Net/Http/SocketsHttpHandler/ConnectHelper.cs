@@ -78,16 +78,18 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 sslStream.Dispose();
-                activity?.Stop();
 
                 if (e is OperationCanceledException)
                 {
+                    DiagnosticsHelper.AbortConnectionSetupActivity(activity, e);
                     throw;
                 }
 
                 if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
                 {
-                    throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
+                    e = CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
+                    DiagnosticsHelper.AbortConnectionSetupActivity(activity, e);
+                    throw e;
                 }
 
                 HttpRequestException ex = new HttpRequestException(HttpRequestError.SecureConnectionError, SR.net_http_ssl_connection_failed, e);
@@ -97,6 +99,7 @@ namespace System.Net.Http
                     // At this point, SSL connection for HTTP / 2 failed, and the exception should indicate the reason for the external client / user.
                     ex.Data["HTTP2_ENABLED"] = false;
                 }
+                DiagnosticsHelper.AbortConnectionSetupActivity(activity, ex);
                 throw ex;
             }
 
@@ -104,7 +107,9 @@ namespace System.Net.Http
             if (cancellationToken.IsCancellationRequested)
             {
                 sslStream.Dispose();
-                throw CancellationHelper.CreateOperationCanceledException(null, cancellationToken);
+                Exception ex = CancellationHelper.CreateOperationCanceledException(null, cancellationToken);
+                DiagnosticsHelper.AbortConnectionSetupActivity(activity, ex);
+                throw ex;
             }
 
             return sslStream;

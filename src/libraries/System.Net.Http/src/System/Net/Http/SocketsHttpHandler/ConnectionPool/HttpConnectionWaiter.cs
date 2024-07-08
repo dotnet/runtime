@@ -19,7 +19,7 @@ namespace System.Net.Http
 
         public ValueTask<T> WaitForConnectionAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
         {
-            return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled
+            return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled || Activity.Current?.OperationName is DiagnosticsHandlerLoggingStrings.RequestActivityName
                 ? WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken)
                 : WaitWithCancellationAsync(async, requestCancellationToken);
         }
@@ -29,9 +29,26 @@ namespace System.Net.Http
             Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
 
             long startingTimestamp = Stopwatch.GetTimestamp();
+            using Activity? waitForConnectionActivity = DiagnosticsHelper.WaitForConnectionActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.WaitForConnectionActivityName);
             try
             {
-                return await WaitWithCancellationAsync(async, requestCancellationToken).ConfigureAwait(false);
+                T connection = await WaitWithCancellationAsync(async, requestCancellationToken).ConfigureAwait(false);
+                if (waitForConnectionActivity is not null && connection?.ConnectionSetupActivity is Activity connectionSetupActivity)
+                {
+                    waitForConnectionActivity.AddLink(new ActivityLink(connectionSetupActivity.Context));
+                }
+                return connection;
+            }
+            catch (Exception ex) when (waitForConnectionActivity is not null)
+            {
+                waitForConnectionActivity.SetStatus(ActivityStatusCode.Error);
+                string? errorType = null;
+                if (!DiagnosticsHelper.TryGetErrorType(null, ex, out errorType))
+                {
+                    errorType = ex.GetType().FullName;
+                }
+                waitForConnectionActivity.SetTag("error.type", errorType);
+                throw;
             }
             finally
             {
