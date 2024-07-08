@@ -55,11 +55,8 @@ namespace System.Net.Http
 
             if (activity.IsAllDataRequested)
             {
-                string? errorType;
-                if (!DiagnosticsHelper.TryGetErrorType(null, exception, out errorType))
-                {
-                    errorType = exception.GetType().FullName;
-                }
+                DiagnosticsHelper.TryGetErrorType(null, exception, out string? errorType);
+                Debug.Assert(errorType is not null, "DiagnosticsHelper.TryGetErrorType() should succeed whenever an exception is provided.");
                 activity.SetTag("error.type", errorType);
             }
             activity.Stop();

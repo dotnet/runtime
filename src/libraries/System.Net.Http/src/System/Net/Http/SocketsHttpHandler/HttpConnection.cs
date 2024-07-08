@@ -112,7 +112,6 @@ namespace System.Net.Http
                 if (disposing)
                 {
                     GC.SuppressFinalize(this);
-                    ConnectionSetupActivity?.Stop();
                     _stream.Dispose();
                 }
             }

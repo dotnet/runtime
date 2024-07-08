@@ -186,6 +186,7 @@ namespace System.Net.Http
             try
             {
                 (Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint) = await ConnectAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
+                Debug.Assert(activity is null or { IsStopped: true }, "ConnectAsync() has stop the connection setup Activity.");
 
                 if (IsSecure)
                 {

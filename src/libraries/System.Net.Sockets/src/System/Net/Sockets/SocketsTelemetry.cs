@@ -109,15 +109,22 @@ namespace System.Net.Sockets
                     string peerAddress = ipEndPoint.Address.ToString();
                     int port = ipEndPoint.Port;
                     activity.DisplayName = $"socket connect {peerAddress}:{port}";
-                    activity.SetTag("network.peer.address", peerAddress);
-                    activity.SetTag("network.peer.port", port);
-                    activity.SetTag("network.type", ipEndPoint.AddressFamily == AddressFamily.InterNetwork ? "ipv4" : "ipv6");
+                    if (activity.IsAllDataRequested)
+                    {
+                        activity.SetTag("network.peer.address", peerAddress);
+                        activity.SetTag("network.peer.port", port);
+                        activity.SetTag("network.type", ipEndPoint.AddressFamily == AddressFamily.InterNetwork ? "ipv4" : "ipv6");
+                    }
                 }
                 else if (endPoint is UnixDomainSocketEndPoint udsEndPoint)
                 {
                     string peerAddress = udsEndPoint.ToString();
                     activity.DisplayName = $"socket connect {peerAddress}";
-                    activity.SetTag("network.peer.address", peerAddress);
+
+                    if (activity.IsAllDataRequested)
+                    {
+                        activity.SetTag("network.peer.address", peerAddress);
+                    }
                 }
             }
 

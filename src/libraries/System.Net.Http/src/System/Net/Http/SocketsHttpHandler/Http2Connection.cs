@@ -1837,8 +1837,6 @@ namespace System.Net.Http
             Debug.Assert(_streamsInUse == 0);
 
             GC.SuppressFinalize(this);
-
-            ConnectionSetupActivity?.Stop();
             _stream.Dispose();
 
             _connectionWindow.Dispose();
