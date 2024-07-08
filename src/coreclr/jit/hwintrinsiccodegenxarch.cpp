@@ -1298,9 +1298,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
             // non-RMW based codegen.
 
 #if defined(DEBUG)
-            NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-            assert((intrinsicId == NI_AVX512F_TernaryLogic) || (intrinsicId == NI_AVX512F_VL_TernaryLogic) ||
-                   (intrinsicId == NI_AVX10v1_TernaryLogic));
+            assert(HWIntrinsicInfo::IsTernaryLogic(node->GetHWIntrinsicId()));
 
             uint8_t                 control  = static_cast<uint8_t>(ival);
             const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
@@ -1310,6 +1308,19 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
 #endif // DEBUG
 
             op2Reg = targetReg;
+        }
+        else
+        {
+#if defined(DEBUG)
+            if (HWIntrinsicInfo::IsTernaryLogic(node->GetHWIntrinsicId()))
+            {
+                uint8_t                 control  = static_cast<uint8_t>(ival);
+                const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+                TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
+
+                assert(useFlags == TernaryLogicUseFlags::BC);
+            }
+#endif // DEBUG
         }
     }
 

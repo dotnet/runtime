@@ -11340,6 +11340,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                         // Swap the operands here to make the containment checks in codegen
                                         // significantly simpler
                                         std::swap(node->Op(1), node->Op(2));
+                                        std::swap(op1, op2);
 
                                         // Make sure we also fixup the control byte
                                         control = TernaryLogicInfo::GetTernaryControlByte(*info, B, A, C);
@@ -11354,6 +11355,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                         // Swap the operands here to make the containment checks in codegen
                                         // significantly simpler
                                         std::swap(node->Op(1), node->Op(3));
+                                        std::swap(op1, op3);
 
                                         // Make sure we also fixup the control byte
                                         control = TernaryLogicInfo::GetTernaryControlByte(*info, C, B, A);
