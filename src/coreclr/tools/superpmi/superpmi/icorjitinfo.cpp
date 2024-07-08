@@ -1258,10 +1258,10 @@ void MyICJI::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWE
     jitInstance->mc->repGetSwiftLowering(structHnd, pLowering);
 }
 
-FpStructInRegistersInfo MyICJI::getFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
+void MyICJI::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    jitInstance->mc->cr->AddCall("getFpStructInRegistersInfo");
-    return jitInstance->mc->repGetFpStructInRegistersInfo(structHnd);
+    jitInstance->mc->cr->AddCall("getFpStructLowering");
+    jitInstance->mc->repGetFpStructLowering(structHnd, pLowering);
 }
 
 // Stuff on ICorDynamicInfo

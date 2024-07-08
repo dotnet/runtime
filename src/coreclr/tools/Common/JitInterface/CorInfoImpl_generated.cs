@@ -1874,17 +1874,16 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static FpStructInRegistersInfo _getFpStructInRegistersInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* structHnd)
+        private static void _getFpStructLowering(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getFpStructInRegistersInfo(structHnd);
+                _this.getFpStructLowering(structHnd, ref *pLowering);
             }
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default;
             }
         }
 
@@ -2737,7 +2736,7 @@ namespace Internal.JitInterface
             callbacks[123] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint>)&_getMethodHash;
             callbacks[124] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*, byte>)&_getSystemVAmd64PassStructInRegisterDescriptor;
             callbacks[125] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_SWIFT_LOWERING*, void>)&_getSwiftLowering;
-            callbacks[126] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, FpStructInRegistersInfo>)&_getFpStructInRegistersInfo;
+            callbacks[126] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_FPSTRUCT_LOWERING*, void>)&_getFpStructLowering;
             callbacks[127] = (delegate* unmanaged<IntPtr, IntPtr*, void**, uint>)&_getThreadTLSIndex;
             callbacks[128] = (delegate* unmanaged<IntPtr, IntPtr*, void**, int*>)&_getAddrOfCaptureThreadGlobal;
             callbacks[129] = (delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, void**, void*>)&_getHelperFtn;

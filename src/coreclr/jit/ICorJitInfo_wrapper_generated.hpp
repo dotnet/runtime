@@ -1238,13 +1238,13 @@ void WrapICorJitInfo::getSwiftLowering(
     API_LEAVE(getSwiftLowering);
 }
 
-FpStructInRegistersInfo WrapICorJitInfo::getFpStructInRegistersInfo(
-          CORINFO_CLASS_HANDLE structHnd)
+void WrapICorJitInfo::getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    API_ENTER(getFpStructInRegistersInfo);
-    FpStructInRegistersInfo temp = wrapHnd->getFpStructInRegistersInfo(structHnd);
-    API_LEAVE(getFpStructInRegistersInfo);
-    return temp;
+    API_ENTER(getFpStructLowering);
+    wrapHnd->getFpStructLowering(structHnd, pLowering);
+    API_LEAVE(getFpStructLowering);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(

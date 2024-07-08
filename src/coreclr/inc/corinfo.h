@@ -2025,6 +2025,18 @@ struct CORINFO_SWIFT_LOWERING
     size_t numLoweredElements;
 };
 
+#define MAX_FPSTRUCT_LOWERED_ELEMENTS 2
+
+// Lowering information on fields of a struct passed by hardware floating-point calling convention
+// on RISC-V and LoongArch
+struct CORINFO_FPSTRUCT_LOWERING
+{
+    bool byIntegerCallConv;
+    CorInfoType loweredElements[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    uint32_t offsets[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    size_t numLoweredElements;
+};
+
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
@@ -3138,9 +3150,9 @@ public:
     // Classifies a swift structure into primitives or an implicit byref for ABI purposes.
     virtual void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering) = 0;
 
-    // Returns passing info for a RISC-V/LoongArch struct passed in registers according to
+    // Returns lowering info for fields of a RISC-V/LoongArch struct passed in registers according to
     // hardware floating-point calling convention.
-    virtual FpStructInRegistersInfo getFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls) = 0;
+    virtual void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering) = 0;
 };
 
 /*****************************************************************************

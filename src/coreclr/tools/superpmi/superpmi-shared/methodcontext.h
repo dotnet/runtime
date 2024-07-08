@@ -783,9 +783,9 @@ public:
     void dmpGetSwiftLowering(DWORDLONG key, const Agnostic_GetSwiftLowering& value);
     void repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
 
-    void recGetFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value);
-    void dmpGetFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value);
-    FpStructInRegistersInfo repGetFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd);
+    void recGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
+    void dmpGetFpStructLowering(DWORDLONG key, const Agnostic_GetFpStructLowering& value);
+    void repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
 
     void recGetRelocTypeHint(void* target, WORD result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
@@ -1182,7 +1182,7 @@ enum mcPackets
     Packet_GetClassThreadStaticDynamicInfo = 219,
     Packet_IsGenericType = 220,
     Packet_GetTypeForBoxOnStack = 221,
-    Packet_GetFpStructInRegistersInfo = 222,
+    Packet_GetFpStructLowering = 222,
 };
 
 void SetDebugDumpVariables();

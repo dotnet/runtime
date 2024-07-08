@@ -3454,22 +3454,34 @@ namespace Internal.JitInterface
             lowering = SwiftPhysicalLowering.LowerTypeForSwiftSignature(HandleToObject(structHnd));
         }
 
-        private FpStructInRegistersInfo getFpStructInRegistersInfo(CORINFO_CLASS_STRUCT_* cls)
+        private void getFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_FPSTRUCT_LOWERING lowering)
         {
-            TypeDesc typeDesc = HandleToObject(cls);
+            TypeDesc typeDesc = HandleToObject(structHnd);
             var target = _compilation.TypeSystemContext.Target;
+            FpStructInRegistersInfo info;
             if (target.Architecture is TargetArchitecture.RiscV64)
             {
-                return RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(typeDesc);
+                info = RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(typeDesc);
             }
             else if (target.Architecture is TargetArchitecture.LoongArch64)
             {
-                return LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(typeDesc);
+                info = LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(typeDesc);
             }
             else
             {
                 Debug.Assert(false, "Unsupported architecture for getFpStructInRegistersInfo");
-                return new FpStructInRegistersInfo{};
+                return;
+            }
+
+            if (info.flags != FpStruct.UseIntCallConv)
+            {
+                lowering.byIntegerCallConv = false;
+                lowering.numLoweredElements = (info.flags & FpStruct.OnlyOne) != 0 ? 1 : 2;
+                // TODO convert types
+            }
+            else
+            {
+                lowering = new CORINFO_FPSTRUCT_LOWERING{ byIntegerCallConv = true };
             }
         }
 

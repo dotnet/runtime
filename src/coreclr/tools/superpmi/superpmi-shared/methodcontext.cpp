@@ -6359,32 +6359,54 @@ void MethodContext::repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_
     }
 }
 
-void MethodContext::recGetFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value)
+void MethodContext::recGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    if (GetFpStructInRegistersInfo == nullptr)
-        GetFpStructInRegistersInfo = new LightWeightMap<DWORDLONG, FpStructInRegistersInfo>();
+    if (GetFpStructLowering == nullptr)
+        GetFpStructLowering = new LightWeightMap<DWORDLONG, Agnostic_GetFpStructLowering>();
 
     DWORDLONG key = CastHandle(structHnd);
 
-    GetFpStructInRegistersInfo->Add(key, value);
-    DEBUG_REC(dmpGetFpStructInRegistersInfo(key, value));
-}
+    Agnostic_GetFpStructLowering value;
+    ZeroMemory(&value, sizeof(value));
+    value.byIntegerCallConv = pLowering->byIntegerCallConv ? 1 : 0;
+    if (!pLowering->byIntegerCallConv)
+    {
+        value.numLoweredElements = static_cast<DWORD>(pLowering->numLoweredElements);
+        for (size_t i = 0; i < pLowering->numLoweredElements; i++)
+        {
+            value.loweredElements[i] = static_cast<DWORD>(pLowering->loweredElements[i]);
+            value.offsets[i] = pLowering->offsets[i];
+        }
+    }
 
-void MethodContext::dmpGetFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value)
+    GetFpStructLowering->Add(key, value);
+    DEBUG_REC(dmpGetFpStructLowering(key, value));
+}
+void MethodContext::dmpGetFpStructLowering(
+    DWORDLONG key, const Agnostic_GetFpStructLowering& value)
 {
-    printf("GetFpStructInRegistersInfo key %016" PRIX64 " value-%#03x-"
-        "{%s, sizes={%u, %u}, offsets={%u, %u}}\n",
-        key, value.flags,
-        value.FlagName(), value.Size1st(), value.Size2nd(), value.offset1st, value.offset2nd);
+    printf("GetFpStructLowering key structHnd-%016" PRIX64 ", value byIntegerCallConv-%u numLoweredElements-%u", key,
+        value.byIntegerCallConv, value.numLoweredElements);
+    for (size_t i = 0; i < value.numLoweredElements; i++)
+    {
+        printf(" [%zu] %u", i, value.loweredElements[i]);
+    }
 }
-
-FpStructInRegistersInfo MethodContext::repGetFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
+void MethodContext::repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
     DWORDLONG key = CastHandle(structHnd);
+    Agnostic_GetFpStructLowering value = LookupByKeyOrMiss(GetFpStructLowering, key, ": key %016" PRIX64 "", key);
 
-    FpStructInRegistersInfo value = LookupByKeyOrMissNoMessage(GetFpStructInRegistersInfo, key);
-    DEBUG_REP(dmpGetFpStructInRegistersInfo(key, value));
-    return value;
+    DEBUG_REP(dmpGetFpStructLowering(key, value));
+
+    pLowering->byIntegerCallConv = value.byIntegerCallConv != 0;
+    pLowering->numLoweredElements = value.numLoweredElements;
+
+    for (size_t i = 0; i < pLowering->numLoweredElements; i++)
+    {
+        pLowering->loweredElements[i] = static_cast<CorInfoType>(value.loweredElements[i]);
+        pLowering->offsets[i] = value.offsets[i];
+    }
 }
 
 void MethodContext::recGetRelocTypeHint(void* target, WORD result)

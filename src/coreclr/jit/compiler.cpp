@@ -8295,29 +8295,29 @@ void Compiler::GetStructTypeOffset(
 //      The passing info
 FpStructInRegistersInfo Compiler::GetPassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHandle)
 {
-    FpStructInRegistersInfo ret = info.compCompHnd->getFpStructInRegistersInfo(structHandle);
+    CORINFO_FPSTRUCT_LOWERING lowering;
+    info.compCompHnd->getFpStructLowering(structHandle, &lowering);
 #ifdef DEBUG
     if (verbose)
     {
         printf("**** getFpStructInRegistersInfo(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
                eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
 #undef getInfoFunc
-        if (ret.flags == FpStruct::UseIntCallConv)
+        if (lowering.byIntegerCallConv)
         {
             printf("        pass by integer calling convention\n");
         }
         else
         {
-            bool hasOne    = ((ret.flags & FpStruct::OnlyOne) != 0);
-            long size2nd   = hasOne ? -1l : ret.Size2nd();
-            long offset2nd = hasOne ? -1l : ret.offset2nd;
-            printf("        may be passed by floating-point calling convention:\n"
-                   "        flags=%#03x; %s, field sizes={%u, %li}, field offsets={%u, %li}\n",
-                   ret.flags, ret.FlagName(), ret.Size1st(), size2nd, ret.offset1st, offset2nd);
+            printf("        may be passed by floating-point calling convention (%zu fields):\n", lowering.numLoweredElements);
+            for (size_t i = 0; i < lowering.numLoweredElements; ++i)
+            {
+                printf("         * field[%zu]: type %i at offset %u\n", i, lowering.loweredElements[i], lowering.offsets[i]);
+            }
         }
     }
 #endif // DEBUG
-    return ret;
+    return {};
 }
 
 #endif // defined(UNIX_AMD64_ABI)

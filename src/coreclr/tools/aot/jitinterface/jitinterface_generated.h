@@ -137,7 +137,7 @@ struct JitInterfaceCallbacks
     unsigned (* getMethodHash)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
     bool (* getSystemVAmd64PassStructInRegisterDescriptor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
     void (* getSwiftLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
-    FpStructInRegistersInfo (* getFpStructInRegistersInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
+    void (* getFpStructLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     void* (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, void** ppIndirection);
@@ -1416,13 +1416,13 @@ public:
     if (pException != nullptr) throw pException;
 }
 
-    virtual FpStructInRegistersInfo getFpStructInRegistersInfo(
-          CORINFO_CLASS_HANDLE structHnd)
+    virtual void getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
     CorInfoExceptionClass* pException = nullptr;
-    FpStructInRegistersInfo temp = _callbacks->getFpStructInRegistersInfo(_thisHandle, &pException, structHnd);
+    _callbacks->getFpStructLowering(_thisHandle, &pException, structHnd, pLowering);
     if (pException != nullptr) throw pException;
-    return temp;
 }
 
     virtual uint32_t getThreadTLSIndex(

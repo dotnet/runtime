@@ -1597,4 +1597,58 @@ namespace Internal.JitInterface
             return stringBuilder.ToString();
         }
     }
+
+    public struct CORINFO_FPSTRUCT_LOWERING
+    {
+        private byte _byIntegerCallConv;
+        public bool byIntegerCallConv { get => _byIntegerCallConv != 0; set => _byIntegerCallConv = value ? (byte)1 : (byte)0; }
+
+        [InlineArray(4)]
+        private struct FpStructLoweredTypes
+        {
+            public CorInfoType type;
+        }
+
+        [InlineArray(4)]
+        private struct LoweredOffsets
+        {
+            public uint offset;
+        }
+
+        private FpStructLoweredTypes _loweredElements;
+
+        [UnscopedRef]
+        public Span<CorInfoType> LoweredElements => _loweredElements;
+
+        private LoweredOffsets _offsets;
+
+        [UnscopedRef]
+        public Span<uint> Offsets => _offsets;
+
+        public nint numLoweredElements;
+
+        // Override for a better unit test experience
+        public override string ToString()
+        {
+            if (byIntegerCallConv)
+            {
+                return "byIntegerCallConv";
+            }
+
+            var stringBuilder = new StringBuilder();
+            stringBuilder.Append('{');
+            for (int i = 0; i < numLoweredElements; i++)
+            {
+                if (i != 0)
+                {
+                    stringBuilder.Append(", ");
+                }
+                stringBuilder.Append(LoweredElements[i]);
+                stringBuilder.Append(": ");
+                stringBuilder.Append(Offsets[i]);
+            }
+            stringBuilder.Append('}');
+            return stringBuilder.ToString();
+        }
+    }
 }
