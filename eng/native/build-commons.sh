@@ -39,6 +39,9 @@ check_prereqs()
             # We try again with the PKG_CONFIG_PATH in place, if pkg-config still can't find OpenSSL, exit with an error, cmake won't find OpenSSL either
             pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
         fi
+    else
+        # Check presence of cmake on the path
+        command -v cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/linux-requirements.md"; exit 1; }
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then
