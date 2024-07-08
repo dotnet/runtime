@@ -2798,6 +2798,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+		MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 		swift_lowering = g_newa (SwiftPhysicalLowering, sig->param_count);
 		arg_is_lowered_struct = g_newa (int, sig->param_count);
 
@@ -2805,7 +2806,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 			MonoType *ptype = sig->params [i];
 			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
 			arg_is_lowered_struct [i] = FALSE;
-			if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error)) 
+			if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) 
 			{
 				SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
 				if (!lowered_swift_struct.by_reference) 
