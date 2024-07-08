@@ -530,6 +530,7 @@ public:
     bool IsSafePoint();
     bool AreSafePointsInterruptible();
     bool IsInterruptibleSafePoint();
+    bool CouldBeInterruptibleSafePoint();
 
     // This is used for gccoverage
     bool IsSafePoint(UINT32 codeOffset);

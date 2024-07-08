@@ -1497,104 +1497,42 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case GT_NOT:
-        {
-            var_types simdType     = node->TypeGet();
-            var_types simdBaseType = node->GetSimdBaseType();
-            unsigned  simdSize     = node->GetSimdSize();
-            GenTree*  op1          = node->Op(1);
-
-            assert(varTypeIsSIMD(simdType));
-
-            bool isV512Supported = false;
-            if ((genTypeSize(simdBaseType) >= 4) && comp->compIsEvexOpportunisticallySupported(isV512Supported))
-            {
-                // We can't use the mask, but we can emit a ternary logic node
-                NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
-
-                if (simdSize != 64)
-                {
-                    ternaryLogicId = !isV512Supported ? NI_AVX10v1_TernaryLogic : NI_AVX512F_VL_TernaryLogic;
-                }
-
-                GenTree* op2 = comp->gtNewZeroConNode(simdType);
-                BlockRange().InsertBefore(node, op2);
-
-                GenTree* op3 = comp->gtNewZeroConNode(simdType);
-                BlockRange().InsertBefore(node, op3);
-
-                GenTree* control = comp->gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
-                BlockRange().InsertBefore(node, control);
-
-                node->ResetHWIntrinsicId(ternaryLogicId, comp, op3, op2, op1, control);
-            }
-            else
-            {
-                NamedIntrinsic xorId;
-
-                if (simdSize == 64)
-                {
-                    assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
-
-                    if (varTypeIsFloating(simdBaseType))
-                    {
-                        xorId = NI_AVX512DQ_Xor;
-                    }
-                    else
-                    {
-                        xorId = NI_AVX512F_Xor;
-                    }
-                }
-                else if (simdSize == 32)
-                {
-                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
-
-                    if (varTypeIsFloating(simdBaseType))
-                    {
-                        xorId = NI_AVX_Xor;
-                    }
-                    else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                    {
-                        xorId = NI_AVX2_Xor;
-                    }
-                    else
-                    {
-                        // Since this is a bitwise operation, we can still support it by lying
-                        // about the type and doing the operation using a supported instruction
-
-                        xorId = NI_AVX_Xor;
-
-                        if (varTypeIsLong(simdBaseType))
-                        {
-                            node->SetSimdBaseJitType(CORINFO_TYPE_DOUBLE);
-                        }
-                        else
-                        {
-                            node->SetSimdBaseJitType(CORINFO_TYPE_FLOAT);
-                        }
-                    }
-                }
-                else if (simdBaseType == TYP_FLOAT)
-                {
-                    xorId = NI_SSE_Xor;
-                }
-                else
-                {
-                    xorId = NI_SSE2_Xor;
-                }
-
-                GenTree* cns = comp->gtNewAllBitsSetConNode(simdType);
-                BlockRange().InsertBefore(node, cns);
-
-                node->ResetHWIntrinsicId(xorId, op1, cns);
-            }
-
-            return LowerNode(node);
-        }
-
         default:
         {
             break;
+        }
+    }
+
+    if ((oper == GT_XOR) && node->Op(2)->IsVectorAllBitsSet())
+    {
+        bool isV512Supported = false;
+        if ((genTypeSize(node->GetSimdBaseType()) >= 4) && comp->compIsEvexOpportunisticallySupported(isV512Supported))
+        {
+            var_types simdType = node->TypeGet();
+            unsigned  simdSize = node->GetSimdSize();
+
+            GenTree* op1 = node->Op(1);
+            BlockRange().Remove(node->Op(2));
+
+            // We can't use the mask, but we can emit a ternary logic node
+            NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
+
+            if (simdSize != 64)
+            {
+                ternaryLogicId = !isV512Supported ? NI_AVX10v1_TernaryLogic : NI_AVX512F_VL_TernaryLogic;
+            }
+
+            GenTree* op2 = comp->gtNewZeroConNode(simdType);
+            BlockRange().InsertBefore(node, op2);
+
+            GenTree* op3 = comp->gtNewZeroConNode(simdType);
+            BlockRange().InsertBefore(node, op3);
+
+            GenTree* control = comp->gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
+            BlockRange().InsertBefore(node, control);
+
+            node->ResetHWIntrinsicId(ternaryLogicId, comp, op3, op2, op1, control);
+            return LowerNode(node);
         }
     }
 
@@ -2371,10 +2309,24 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     GenTree*     op2    = node->Op(2);
     GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE;
 
+    // We may need to change the base type to match the underlying mask size to ensure
+    // the right instruction variant is picked. If the op_Equality was for TYP_INT but
+    // the mask was for TYP_DOUBLE then we'd pick kortestw when we really want kortestb.
+    // Changing the size is fine in some scenarios, such as comparison against Zero or
+    // AllBitsSet, but not in other scenarios such as against an arbitrary mask.
+
+    CorInfoType maskBaseJitType = simdBaseJitType;
+    var_types   maskBaseType    = simdBaseType;
+
     if (op1Msk->OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector))
     {
-        op1Msk = op1Msk->AsHWIntrinsic()->Op(1);
+        GenTreeHWIntrinsic* cvtMaskToVector = op1Msk->AsHWIntrinsic();
+
+        op1Msk = cvtMaskToVector->Op(1);
         assert(varTypeIsMask(op1Msk));
+
+        maskBaseJitType = cvtMaskToVector->GetSimdBaseJitType();
+        maskBaseType    = cvtMaskToVector->GetSimdBaseType();
     }
 
     if (!varTypeIsFloating(simdBaseType) && (simdSize != 64) && op2->IsVectorZero() &&
@@ -2527,7 +2479,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         GenTree* nextNode = node->gtNext;
 
         NamedIntrinsic maskIntrinsicId = NI_EVEX_CompareEqualMask;
-        uint32_t       count           = simdSize / genTypeSize(simdBaseType);
+        uint32_t       count           = simdSize / genTypeSize(maskBaseType);
 
         // KORTEST does a bitwise or on the result and sets ZF if it is zero and CF if it is all
         // bits set. Because of this, when we have at least 8 elements to compare we can use a
@@ -2712,14 +2664,14 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                             GenTree* cnsNode;
 
                             maskNode = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, NI_EVEX_NotMask,
-                                                                      simdBaseJitType, simdSize);
+                                                                      maskBaseJitType, simdSize);
                             BlockRange().InsertBefore(node, maskNode);
 
                             cnsNode = comp->gtNewIconNode(8 - count);
                             BlockRange().InsertAfter(maskNode, cnsNode);
 
                             maskNode = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode,
-                                                                      NI_EVEX_ShiftLeftMask, simdBaseJitType, simdSize);
+                                                                      NI_EVEX_ShiftLeftMask, maskBaseJitType, simdSize);
                             BlockRange().InsertAfter(cnsNode, maskNode);
                             LowerNode(maskNode);
 
@@ -2728,7 +2680,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                             maskNode =
                                 comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode, NI_EVEX_ShiftRightMask,
-                                                               simdBaseJitType, simdSize);
+                                                               maskBaseJitType, simdSize);
                             BlockRange().InsertAfter(cnsNode, maskNode);
 
                             maskIntrinsicId = NI_EVEX_ShiftRightMask;
@@ -2853,6 +2805,11 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         {
             assert(node == maskNode);
 
+            // We're not consuming the underlying mask directly, even if one exists,
+            // so ensure that we track the base type as the one we'll be producing
+            // via the vector comparison introduced here.
+            maskBaseJitType = simdBaseJitType;
+
             // We have `x == y` or `x != y` both of which where we want to find `AllBitsSet` in the mask since
             // we can directly do the relevant comparison. Given the above tables then when we have a full mask
             // we can simply check against `CF == 1` for `op_Equality` and `ZF == 0` for `op_Inequality`.
@@ -2892,7 +2849,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         {
             GenTreeHWIntrinsic* cc;
 
-            cc = comp->gtNewSimdHWIntrinsicNode(simdType, maskNode, NI_EVEX_KORTEST, simdBaseJitType, simdSize);
+            cc = comp->gtNewSimdHWIntrinsicNode(simdType, maskNode, NI_EVEX_KORTEST, maskBaseJitType, simdSize);
             BlockRange().InsertBefore(nextNode, cc);
 
             use.ReplaceWith(cc);
@@ -3096,12 +3053,12 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     GenTree* op3 = node->Op(3);
 
     // If the condition vector comes from a hardware intrinsic that
-    // returns a per-element mask (marked with HW_Flag_ReturnsPerElementMask),
-    // we can optimize the entire conditional select to
-    // a single BlendVariable instruction (if supported by the architecture)
+    // returns a per-element mask, we can optimize the entire
+    // conditional select to a single BlendVariable instruction
+    // (if supported by the architecture)
 
     // First, determine if the condition is a per-element mask
-    if (op1->OperIsHWIntrinsic() && HWIntrinsicInfo::ReturnsPerElementMask(op1->AsHWIntrinsic()->GetHWIntrinsicId()))
+    if (op1->IsVectorPerElementMask(simdBaseType, simdSize))
     {
         // Next, determine if the target architecture supports BlendVariable
         NamedIntrinsic blendVariableId = NI_Illegal;
@@ -3114,8 +3071,19 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 
             if (isOp1CvtMaskToVector)
             {
-                maskNode = op1->AsHWIntrinsic()->Op(1);
+                GenTreeHWIntrinsic* cvtMaskToVector = op1->AsHWIntrinsic();
+
+                maskNode = cvtMaskToVector->Op(1);
                 BlockRange().Remove(op1);
+
+                // We need to change the base type to match the underlying mask size to ensure
+                // the right instruction variant is picked. If the CndSel was for TYP_INT but
+                // the mask was for TYP_DOUBLE then we'd generate vpblendmd when we really want
+                // vpblendmq. Changing the size is fine since CndSel itself is bitwise and the
+                // the mask is just representing entire elements at a given size.
+
+                CorInfoType maskBaseJitType = cvtMaskToVector->GetSimdBaseJitType();
+                node->SetSimdBaseJitType(maskBaseJitType);
             }
             else
             {

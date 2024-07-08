@@ -32,7 +32,6 @@ namespace System.Net.Http
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
-        private static readonly ActivitySource s_connectionActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionNamespace);
 
         private readonly HttpConnectionPoolManager _poolManager;
         private readonly HttpConnectionKind _kind;
@@ -571,10 +570,7 @@ namespace System.Net.Http
             Stream? stream = null;
             IPEndPoint? remoteEndPoint = null;
 
-            // Connection activities should be new roots and not parented under whatever
-            // request happens to be in progress when the connection is started.
-            Activity.Current = null;
-            Activity? activity = s_connectionActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ConnectionActivityName);
+            Activity? activity = ConnectionSetupDiagnostics.StartConnectionSetupActivity(IsSecure, OriginAuthority);
 
             switch (_kind)
             {
@@ -602,7 +598,7 @@ namespace System.Net.Http
 
                 case HttpConnectionKind.ProxyTunnel:
                 case HttpConnectionKind.SslProxyTunnel:
-                    stream = await EstablishProxyTunnelAsync(async, cancellationToken).ConfigureAwait(false);
+                    stream = await EstablishProxyTunnelAsync(async, activity, cancellationToken).ConfigureAwait(false);
 
                     if (stream is HttpContentStream contentStream && contentStream._connection?._stream is Stream innerStream)
                     {
@@ -640,9 +636,14 @@ namespace System.Net.Http
                 stream = sslStream;
             }
 
-            static IPEndPoint? GetRemoteEndPoint(Stream stream) => (stream as NetworkStream)?.Socket?.RemoteEndPoint as IPEndPoint;
+            if (activity is not null)
+            {
+                ConnectionSetupDiagnostics.StopConnectionSetupActivity(activity, remoteEndPoint);
+            }
 
             return (stream, transportContext, activity, remoteEndPoint);
+
+            static IPEndPoint? GetRemoteEndPoint(Stream stream) => (stream as NetworkStream)?.Socket?.RemoteEndPoint as IPEndPoint;
         }
 
         private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, Activity? activity, CancellationToken cancellationToken)
@@ -700,10 +701,11 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                activity?.Stop();
-                throw ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
+                ex = ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
                     CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken) :
                     ConnectHelper.CreateWrappedException(ex, host, port, cancellationToken);
+                ConnectionSetupDiagnostics.AbortActivity(activity, ex);
+                throw ex;
             }
         }
 
@@ -767,7 +769,7 @@ namespace System.Net.Http
             return newStream;
         }
 
-        private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, Activity? activity, CancellationToken cancellationToken)
         {
             // Send a CONNECT request to the proxy server to establish a tunnel.
             HttpRequestMessage tunnelRequest = new HttpRequestMessage(HttpMethod.Connect, _proxyUri);
@@ -783,15 +785,18 @@ namespace System.Net.Http
             if (tunnelResponse.StatusCode != HttpStatusCode.OK)
             {
                 tunnelResponse.Dispose();
-                throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode));
+                Exception ex = new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode));
+                ConnectionSetupDiagnostics.AbortActivity(activity, ex);
+                throw ex;
             }
 
             try
             {
                 return tunnelResponse.Content.ReadAsStream(cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
+                ConnectionSetupDiagnostics.AbortActivity(activity, ex);
                 tunnelResponse.Dispose();
                 throw;
             }
@@ -807,10 +812,17 @@ namespace System.Net.Http
             {
                 await SocksHelper.EstablishSocksTunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, async, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception e) when (!(e is OperationCanceledException))
+            catch (Exception e)
             {
-                Debug.Assert(!(e is HttpRequestException));
-                throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.net_http_proxy_tunnel_error, e);
+                if (e is not OperationCanceledException)
+                {
+                    Debug.Assert(e is not HttpRequestException);
+                    e = new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.net_http_proxy_tunnel_error, e);
+                    ConnectionSetupDiagnostics.AbortActivity(activity, e);
+                    throw e;
+                }
+                ConnectionSetupDiagnostics.AbortActivity(activity, e);
+                throw;
             }
 
             return stream;

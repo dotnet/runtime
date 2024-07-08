@@ -3550,7 +3550,7 @@ void ExecutionManager::CleanupCodeHeaps()
     }
     CONTRACTL_END;
 
-    _ASSERTE (g_fProcessDetach || (GCHeapUtilities::IsGCInProgress()  && ::IsGCThread()));
+    _ASSERTE (IsAtProcessExit() || (GCHeapUtilities::IsGCInProgress()  && ::IsGCThread()));
 
     GetEEJitManager()->CleanupCodeHeaps();
 }
@@ -3564,7 +3564,7 @@ void EEJitManager::CleanupCodeHeaps()
     }
     CONTRACTL_END;
 
-    _ASSERTE (g_fProcessDetach || (GCHeapUtilities::IsGCInProgress() && ::IsGCThread()));
+    _ASSERTE (IsAtProcessExit() || (GCHeapUtilities::IsGCInProgress() && ::IsGCThread()));
 
 	// Quick out, don't even take the lock if we have not cleanup to do.
 	// This is important because ETW takes the CodeHeapLock when it is doing

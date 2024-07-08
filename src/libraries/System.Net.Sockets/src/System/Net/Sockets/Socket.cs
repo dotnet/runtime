@@ -2782,7 +2782,7 @@ namespace System.Net.Sockets
 
                 WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
 
-                e._activity = SocketsTelemetry.Log.ConnectStart(e._socketAddress!, keepActivityCurrent: true);
+                e._activity = SocketsTelemetry.Log.ConnectStart(e._socketAddress!, endPointSnapshot, keepActivityCurrent: true);
 
                 // Prepare for the native call.
                 try
@@ -3191,7 +3191,7 @@ namespace System.Net.Sockets
 
         private void DoConnect(EndPoint endPointSnapshot, SocketAddress socketAddress)
         {
-            Activity? activity = SocketsTelemetry.Log.ConnectStart(socketAddress, keepActivityCurrent: false);
+            Activity? activity = SocketsTelemetry.Log.ConnectStart(socketAddress, endPointSnapshot, keepActivityCurrent: false);
             SocketError errorCode;
             try
             {

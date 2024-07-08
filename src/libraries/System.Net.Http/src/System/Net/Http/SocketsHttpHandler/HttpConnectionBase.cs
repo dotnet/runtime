@@ -24,8 +24,6 @@ namespace System.Net.Http
         // May be null if none of the counters were enabled when the connection was established.
         private ConnectionMetrics? _connectionMetrics;
 
-        protected Activity? _activity;
-
         // Indicates whether we've counted this connection as established, so that we can
         // avoid decrementing the counter once it's closed in case telemetry was enabled in between.
         private bool _httpTelemetryMarkedConnectionAsOpened;
@@ -40,21 +38,24 @@ namespace System.Net.Http
 
         public long Id { get; } = Interlocked.Increment(ref s_connectionCounter);
 
+        public Activity? ConnectionSetupActivity { get; private set; }
+
         public HttpConnectionBase(HttpConnectionPool pool)
         {
             Debug.Assert(this is HttpConnection or Http2Connection or Http3Connection);
             Debug.Assert(pool != null);
             _pool = pool;
         }
-        public HttpConnectionBase(HttpConnectionPool pool, Activity? activity, IPEndPoint? remoteEndPoint)
+
+        public HttpConnectionBase(HttpConnectionPool pool, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
             : this(pool)
         {
-            MarkConnectionAsEstablished(activity, remoteEndPoint);
+            MarkConnectionAsEstablished(connectionSetupActivity, remoteEndPoint);
         }
 
-        protected void MarkConnectionAsEstablished(Activity? activity, IPEndPoint? remoteEndPoint)
+        protected void MarkConnectionAsEstablished(Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
         {
-            _activity = activity;
+            ConnectionSetupActivity = connectionSetupActivity;
             Debug.Assert(_pool.Settings._metrics is not null);
 
             SocketsHttpHandlerMetrics metrics = _pool.Settings._metrics;
@@ -121,20 +122,6 @@ namespace System.Net.Http
             _connectionMetrics?.IdleStateChanged(idle: false);
         }
 
-        public void LinkRequestActivity()
-        {
-            if (_activity is null)
-            {
-                return;
-            }
-
-            Activity? requestActivity = Activity.Current;
-            if (requestActivity?.OperationName is DiagnosticsHandlerLoggingStrings.RequestActivityName)
-            {
-                requestActivity.AddLink(new ActivityLink(_activity.Context));
-            }
-        }
-
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>
         public string GetResponseHeaderValueWithCaching(HeaderDescriptor descriptor, ReadOnlySpan<byte> value, Encoding? valueEncoding)
         {
@@ -197,24 +184,6 @@ namespace System.Net.Http
             }
 
             return 100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0');
-        }
-
-        /// <summary>Awaits a task, ignoring any resulting exceptions.</summary>
-        internal static void IgnoreExceptions(ValueTask<int> task)
-        {
-            // Avoid TaskScheduler.UnobservedTaskException firing for any exceptions.
-            if (task.IsCompleted)
-            {
-                if (task.IsFaulted)
-                {
-                    _ = task.AsTask().Exception;
-                }
-            }
-            else
-            {
-                task.AsTask().ContinueWith(static t => _ = t.Exception,
-                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-            }
         }
 
         /// <summary>Awaits a task, logging any resulting exceptions (which are otherwise ignored).</summary>

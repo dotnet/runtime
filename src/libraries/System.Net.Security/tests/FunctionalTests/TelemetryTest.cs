@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Test.Common;
@@ -47,7 +48,36 @@ namespace System.Net.Security.Tests
                 await test.SslStream_StreamToStream_Authentication_Success();
 
                 recorder.VerifyActivityRecorded(2); // client + server
-                Assert.True(recorder.LastFinishedActivity.Duration > TimeSpan.Zero);
+                Activity clientActivity = recorder.FinishedActivities.Single(a => a.Kind == ActivityKind.Client);
+                Activity serverActivity = recorder.FinishedActivities.Single(a => a.Kind == ActivityKind.Server);
+#pragma warning disable 0618, SYSLIB0039
+                (string protocolName, string protocolVersion) = test.SslProtocol switch
+                {
+                    SslProtocols.Ssl2 => ("ssl", "2"),
+                    SslProtocols.Ssl3 => ("ssl", "3"),
+                    SslProtocols.Tls => ("tls", "1"),
+                    SslProtocols.Tls11 => ("tls", "1.1"),
+                    SslProtocols.Tls12 => ("tls", "1.2"),
+                    SslProtocols.Tls13 => ("tls", "1.3"),
+                    _ => throw new Exception("unknown protocol")
+                };
+#pragma warning restore 0618, SYSLIB0039
+
+                Assert.True(clientActivity.Duration > TimeSpan.Zero);
+                Assert.Equal("System.Net.Security.TlsHandshake", clientActivity.OperationName);
+                Assert.Equal($"TLS client {test.Name}", clientActivity.DisplayName);
+                ActivityAssert.HasTag(clientActivity, "tls.client.server_name", test.Name);
+                ActivityAssert.HasTag(clientActivity, "tls.protocol.name", protocolName);
+                ActivityAssert.HasTag(clientActivity, "tls.protocol.version", protocolVersion);
+                ActivityAssert.HasNoTag(clientActivity, "error.type");
+
+                Assert.True(serverActivity.Duration > TimeSpan.Zero);
+                Assert.Equal("System.Net.Security.TlsHandshake", serverActivity.OperationName);
+                Assert.StartsWith($"TLS server", serverActivity.DisplayName);
+                ActivityAssert.HasTag(serverActivity, "tls.protocol.name", protocolName);
+                ActivityAssert.HasTag(serverActivity, "tls.protocol.version", protocolVersion);
+                ActivityAssert.HasNoTag(serverActivity, "error.type");
+
             }, synchronousApi.ToString()).DisposeAsync();
         }
 
@@ -59,9 +89,23 @@ namespace System.Net.Security.Tests
                 using ActivityRecorder recorder = new ActivityRecorder(ActivitySourceName, ActivityName);
 
                 var test = new SslStreamStreamToStreamTest_Async();
-                await test.SslStream_ServerLocalCertificateSelectionCallbackReturnsNull_Throw();
+                await test.SslStream_StreamToStream_Authentication_IncorrectServerName_Fail();
 
                 recorder.VerifyActivityRecorded(2); // client + server
+
+                Activity clientActivity = recorder.FinishedActivities.Single(a => a.Kind == ActivityKind.Client);
+                Activity serverActivity = recorder.FinishedActivities.Single(a => a.Kind == ActivityKind.Server);
+
+                Assert.Equal(ActivityStatusCode.Error, clientActivity.Status);
+                Assert.True(clientActivity.Duration > TimeSpan.Zero);
+                Assert.Equal("System.Net.Security.TlsHandshake", clientActivity.OperationName);
+                Assert.Equal($"TLS client {test.Name}", clientActivity.DisplayName);
+                ActivityAssert.HasTag(clientActivity, "tls.client.server_name", test.Name);
+                ActivityAssert.HasTag(clientActivity, "error.type", typeof(AuthenticationException).FullName);
+
+                Assert.True(serverActivity.Duration > TimeSpan.Zero);
+                Assert.Equal("System.Net.Security.TlsHandshake", serverActivity.OperationName);
+                Assert.StartsWith($"TLS server", serverActivity.DisplayName);
             }).DisposeAsync();
         }
 
