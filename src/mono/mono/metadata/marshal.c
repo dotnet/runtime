@@ -4103,6 +4103,7 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	int i;
 	EmitMarshalContext m;
 	gboolean marshalling_enabled = FALSE;
+	int *swift_sig_to_csig_mp = NULL;
 	SwiftPhysicalLowering *swift_lowering = NULL;
 
 	g_assert (method != NULL);
@@ -4194,12 +4195,14 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 		MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 		swift_lowering = g_newa (SwiftPhysicalLowering, sig->param_count);
+		swift_sig_to_csig_mp = g_newa (int, sig->param_count);
 		GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), csig->param_count);
-		uint32_t new_param_count = 0;
+		int new_param_count = 0;
 
 
 		for (i = 0; i < csig->param_count; i++) {
 			swift_lowering [i] = (SwiftPhysicalLowering){0};
+			swift_sig_to_csig_mp [i] = new_param_count;
 			MonoType *ptype = csig->params [i];
 			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
 
@@ -4243,6 +4246,7 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	m.image = get_method_image (method);
 	m.runtime_marshalling_enabled = marshalling_enabled;
 	m.swift_lowering = swift_lowering;
+	m.swift_sig_to_csig_mp = swift_sig_to_csig_mp;
 
 	/* The attribute is only available in Net 2.0 */
 	if (delegate_klass && mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {

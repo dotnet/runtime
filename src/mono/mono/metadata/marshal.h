@@ -64,6 +64,7 @@ typedef struct {
 	MonoImage *image; /* The image to use for looking up custom marshallers */
 	gboolean runtime_marshalling_enabled;
 	SwiftPhysicalLowering *swift_lowering;
+	int *swift_sig_to_csig_mp;
 } EmitMarshalContext;
 
 typedef enum {
