@@ -10,10 +10,23 @@ namespace System.Threading
 {
     public sealed partial class Mutex
     {
-        private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
+        private void CreateMutexCore(
+            bool initiallyOwned,
+            string? name,
+            NamedWaitHandleOptionsInternal options,
+            out bool createdNew)
         {
-            if (name != null)
+            if (!string.IsNullOrEmpty(name))
             {
+                if (options.WasSpecified)
+                {
+                    name = options.GetNameWithSessionPrefix(name);
+                    if (options.CurrentUserOnly)
+                    {
+                        name = @"User\" + name;
+                    }
+                }
+
                 SafeWaitHandle? safeWaitHandle = WaitSubsystem.CreateNamedMutex(initiallyOwned, name, out createdNew);
                 if (safeWaitHandle == null)
                 {
@@ -27,9 +40,21 @@ namespace System.Threading
             createdNew = true;
         }
 
-        private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
+        private static OpenExistingResult OpenExistingWorker(
+            string name,
+            NamedWaitHandleOptionsInternal options,
+            out Mutex? result)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
+
+            if (options.WasSpecified)
+            {
+                name = options.GetNameWithSessionPrefix(name);
+                if (options.CurrentUserOnly)
+                {
+                    name = @"User\" + name;
+                }
+            }
 
             OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, out SafeWaitHandle? safeWaitHandle);
             result = status == OpenExistingResult.Success ? new Mutex(safeWaitHandle!) : null;
