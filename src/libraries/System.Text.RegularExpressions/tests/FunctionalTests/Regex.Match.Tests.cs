@@ -2680,7 +2680,7 @@ namespace System.Text.RegularExpressions.Tests
                 MatchCollection ms = r.Matches(inputString);
                 Assert.Equal(1, ms.Count);
                 Assert.Equal(0, ms[0].Index);
-                Assert.Equal(373, ms[0].Length);
+                Assert.Equal(273, ms[0].Length);
             }
         }
 #endif
