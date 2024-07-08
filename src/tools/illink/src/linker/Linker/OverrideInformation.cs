@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics;
 using Mono.Cecil;
 using System.Diagnostics.CodeAnalysis;
@@ -8,7 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Mono.Linker
 {
 	[DebuggerDisplay ("{Override}")]
-	public class OverrideInformation
+	public class OverrideInformation : IEquatable<OverrideInformation>
 	{
 		public MethodDefinition Base { get; }
 
@@ -37,5 +38,26 @@ namespace Mono.Linker
 		[MemberNotNullWhen (true, nameof (InterfaceImplementor), nameof (MatchingInterfaceImplementation))]
 		public bool IsOverrideOfInterfaceMember
 			=> InterfaceImplementor != null;
+
+		public bool Equals (OverrideInformation? other)
+		{
+			if (other is null)
+				return false;
+
+			if (ReferenceEquals (this, other))
+				return true;
+
+			if (Base != other.Base || Override != other.Override)
+				return false;
+
+			if (InterfaceImplementor == null)
+				return other.InterfaceImplementor == null;
+
+			return InterfaceImplementor.Equals (other.InterfaceImplementor);
+		}
+
+		public override bool Equals (object? obj) => obj is OverrideInformation other && Equals (other);
+
+		public override int GetHashCode () => HashCode.Combine (Base, Override, InterfaceImplementor);
 	}
 }

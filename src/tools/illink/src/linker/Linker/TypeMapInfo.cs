@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 //
@@ -43,9 +43,10 @@ namespace Mono.Linker
 	{
 		readonly HashSet<AssemblyDefinition> assemblies = new HashSet<AssemblyDefinition> ();
 		readonly LinkContext context;
-		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> base_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
-		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
-		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> default_interface_implementations = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
+		protected readonly Dictionary<MethodDefinition, HashSet<OverrideInformation>> base_methods = new Dictionary<MethodDefinition, HashSet<OverrideInformation>> ();
+		protected readonly Dictionary<MethodDefinition, HashSet<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, HashSet<OverrideInformation>> ();
+		protected readonly Dictionary<MethodDefinition, HashSet<OverrideInformation>> default_interface_implementations = new Dictionary<MethodDefinition, HashSet<OverrideInformation>> ();
+		readonly Dictionary<TypeDefinition, List<(TypeReference, List<InterfaceImplementation>)>> interfaces = new ();
 
 		public TypeMapInfo (LinkContext context)
 		{
@@ -58,7 +59,7 @@ namespace Mono.Linker
 				return;
 
 			foreach (TypeDefinition type in assembly.MainModule.Types)
-				MapType (type);
+				MapTypes (type);
 		}
 
 		public ICollection<MethodDefinition> MethodsWithOverrideInformation => override_methods.Keys;
@@ -69,8 +70,8 @@ namespace Mono.Linker
 		public List<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			EnsureProcessed (method.Module.Assembly);
-			override_methods.TryGetValue (method, out List<OverrideInformation>? overrides);
-			return overrides;
+			override_methods.TryGetValue (method, out HashSet<OverrideInformation>? overrides);
+			return overrides?.ToList ();
 		}
 
 		/// <summary>
@@ -83,8 +84,8 @@ namespace Mono.Linker
 		public List<OverrideInformation>? GetBaseMethods (MethodDefinition method)
 		{
 			EnsureProcessed (method.Module.Assembly);
-			base_methods.TryGetValue (method, out List<OverrideInformation>? bases);
-			return bases;
+			base_methods.TryGetValue (method, out HashSet<OverrideInformation>? bases);
+			return bases?.ToList ();
 		}
 
 		/// <summary>
@@ -102,32 +103,37 @@ namespace Mono.Linker
 
 		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base, InterfaceImplementor? interfaceImplementor)
 		{
-			base_methods.AddToList (method, new OverrideInformation (@base, method, interfaceImplementor));
+			base_methods.AddToSet (method, new OverrideInformation (@base, method, interfaceImplementor));
 		}
 
 		public void AddOverride (MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
 		{
-			override_methods.AddToList (@base, new OverrideInformation (@base, @override, interfaceImplementor));
+			override_methods.AddToSet (@base, new OverrideInformation (@base, @override, interfaceImplementor));
 		}
 
 		public void AddDefaultInterfaceImplementation (MethodDefinition @base, InterfaceImplementor interfaceImplementor, MethodDefinition defaultImplementationMethod)
 		{
 			Debug.Assert(@base.DeclaringType.IsInterface);
-			default_interface_implementations.AddToList (@base, new OverrideInformation (@base, defaultImplementationMethod, interfaceImplementor));
+			default_interface_implementations.AddToSet (@base, new OverrideInformation (@base, defaultImplementationMethod, interfaceImplementor));
 		}
 
-		Dictionary<TypeDefinition, List<(TypeReference, List<InterfaceImplementation>)>> interfaces = new ();
-		protected virtual void MapType (TypeDefinition type)
+		public void MapType (TypeDefinition type)
 		{
 			MapVirtualMethods (type);
 			MapInterfaceMethodsInTypeHierarchy (type);
-			interfaces[type] = GetRecursiveInterfaceImplementations (type);
+			if (!interfaces.ContainsKey (type))
+				interfaces[type] = GetRecursiveInterfaceImplementations (type);
+		}
+
+		protected virtual void MapTypes (TypeDefinition type)
+		{
+			MapType (type);
 
 			if (!type.HasNestedTypes)
 				return;
 
 			foreach (var nested in type.NestedTypes)
-				MapType (nested);
+				MapTypes (nested);
 		}
 
 		internal List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)>? GetRecursiveInterfaces (TypeDefinition type)
