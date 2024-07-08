@@ -102,7 +102,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT_RuntimeTests
             runtimeVariant: llvmaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) /p:MonoEnableLLVM=true
             timeoutInMinutes: 360
             condition: >-
               or(
@@ -143,7 +143,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeTests
             runtimeVariant: llvmfullaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) /p:MonoEnableLLVM=true
             timeoutInMinutes: 360
             condition: >-
               or(
@@ -190,7 +190,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeIntrinsicsTests
             runtimeVariant: llvmfullaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) /p:MonoEnableLLVM=true
             timeoutInMinutes: 360
             condition: >-
               or(
