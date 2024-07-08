@@ -4103,6 +4103,7 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	int i;
 	EmitMarshalContext m;
 	gboolean marshalling_enabled = FALSE;
+	SwiftPhysicalLowering *swift_lowering = NULL;
 
 	g_assert (method != NULL);
 	error_init (error);
@@ -4192,30 +4193,30 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 		MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
+		swift_lowering = g_newa (SwiftPhysicalLowering, sig->param_count);
 		GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), csig->param_count);
 		uint32_t new_param_count = 0;
 
 
-
-		for (int j =0; j < csig->param_count; j++) {
-			MonoType *ptype = csig->params [j];
+		for (i = 0; i < csig->param_count; i++) {
+			swift_lowering [i] = (SwiftPhysicalLowering){0};
+			MonoType *ptype = csig->params [i];
 			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
 
 			if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) 
 			{
 				SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+				swift_lowering [i] = lowered_swift_struct;
 				if (!lowered_swift_struct.by_reference) 
 				{
-
-					for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
+					for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; idx_lowered++) {
 						g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
 						new_param_count++;
 					}
 				}
 				else
 				{
-					MonoClass* klass2 = mono_class_from_mono_type_internal (ptype);
-					ptype = mono_class_get_byref_type (klass2);
+					ptype = mono_class_get_byref_type (klass);
 					g_array_append_val (new_params, ptype);
 					new_param_count++;
 				}
@@ -4241,11 +4242,7 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	m.csig = csig;
 	m.image = get_method_image (method);
 	m.runtime_marshalling_enabled = marshalling_enabled;
-
-	if (invoke)
-		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
-	else
-		mono_marshal_set_callconv_from_unmanaged_callers_only_attribute(method, csig);
+	m.swift_lowering = swift_lowering;
 
 	/* The attribute is only available in Net 2.0 */
 	if (delegate_klass && mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
