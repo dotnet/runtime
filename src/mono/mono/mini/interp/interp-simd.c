@@ -197,7 +197,7 @@ interp_v128_op_bitwise_inequality (gpointer res, gpointer v1, gpointer v2)
 static void
 interp_v128_instance_equals_r4 (gpointer res, gpointer v1, gpointer v2)
 {
-	v128_r4 v1_cast = *(*(v128_r4**))v1;
+	v128_r4 v1_cast = **(v128_r4**)v1;
 	v128_r4 v2_cast = *(v128_r4*)v2;
 	v128_r4 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
 	memset (&v1_cast, 0xff, SIZEOF_V128);
@@ -235,7 +235,7 @@ interp_v3_instance_equals_r4 (gpointer res, gpointer v1, gpointer v2)
 static void
 interp_v128_instance_equals_r8 (gpointer res, gpointer v1, gpointer v2)
 {
-	v128_r8 v1_cast = *(*(v128_r8**))v1;
+	v128_r8 v1_cast = **(v128_r8**)v1;
 	v128_r8 v2_cast = *(v128_r8*)v2;
 	v128_r8 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
 	memset (&v1_cast, 0xff, SIZEOF_V128);

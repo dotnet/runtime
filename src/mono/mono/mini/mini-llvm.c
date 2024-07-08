@@ -678,7 +678,7 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		MonoTypeEnum type = mini_get_simd_type_info (klass, &nelems);
 		if (nelems == 3) {
 			// Override to 3 elements + zero
-			nelems == 4;
+			nelems = 4;
 		}
 		return LLVMVectorType (primitive_type_to_llvm_type (type), nelems);
 	}
