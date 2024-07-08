@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -81,9 +82,71 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetMethodDescPtrFromFrame(ulong frameAddr, ulong* ppMD) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescPtrFromIP(ulong ip, ulong* ppMD) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescTransparencyData(ulong methodDesc, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetMethodTableData(ulong mt, void* data) => HResults.E_NOTIMPL;
+    public unsafe int GetMethodTableData(ulong mt, DacpMethodTableData* data)
+    {
+        if (mt == 0 || data == null)
+            return HResults.E_INVALIDARG;
+
+        try
+        {
+            Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodTableHandle methodTable = contract.GetMethodTableHandle(mt);
+
+            DacpMethodTableData result = default;
+            result.baseSize = contract.GetBaseSize(methodTable);
+            // [compat] SOS DAC APIs added this base size adjustment for strings
+            // due to: "2008/09/25 Title: New implementation of StringBuilder and improvements in String class"
+            // which changed StringBuilder not to use a String as an internal buffer and in the process
+            // changed the String internals so that StringObject::GetBaseSize() now includes the nul terminator character,
+            // which is apparently not expected by SOS.
+            if (contract.IsString(methodTable))
+                result.baseSize -= sizeof(char);
+
+            result.componentSize = contract.GetComponentSize(methodTable);
+            bool isFreeObjectMT = contract.IsFreeObjectMethodTable(methodTable);
+            result.bIsFree = isFreeObjectMT ? 1 : 0;
+            if (!isFreeObjectMT)
+            {
+                result.module = contract.GetModule(methodTable);
+                // Note: really the canonical method table, not the EEClass, which we don't expose
+                result.klass = contract.GetCanonicalMethodTable(methodTable);
+                result.parentMethodTable = contract.GetParentMethodTable(methodTable);
+                result.wNumInterfaces = contract.GetNumInterfaces(methodTable);
+                result.wNumMethods = contract.GetNumMethods(methodTable);
+                result.wNumVtableSlots = 0; // always return 0 since .NET 9
+                result.wNumVirtuals = 0; // always return 0 since .NET 9
+                result.cl = contract.GetTypeDefToken(methodTable);
+                result.dwAttrClass = contract.GetTypeDefTypeAttributes(methodTable);
+                result.bContainsGCPointers = contract.ContainsGCPointers(methodTable) ? 1 : 0;
+                result.bIsShared = 0;
+                result.bIsDynamic = contract.IsDynamicStatics(methodTable) ? 1 : 0;
+            }
+            *data = result;
+            return HResults.S_OK;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
     public unsafe int GetMethodTableFieldData(ulong mt, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetMethodTableForEEClass(ulong eeClass, ulong* value) => HResults.E_NOTIMPL;
+    public unsafe int GetMethodTableForEEClass(ulong eeClassReallyCanonMT, ulong* value)
+    {
+        if (eeClassReallyCanonMT == 0 || value == null)
+            return HResults.E_INVALIDARG;
+
+        try
+        {
+            Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodTableHandle methodTableHandle = contract.GetMethodTableHandle(eeClassReallyCanonMT);
+            *value = methodTableHandle.Address;
+            return HResults.S_OK;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
     public unsafe int GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetMethodTableSlot(ulong mt, uint slot, ulong* value) => HResults.E_NOTIMPL;
     public unsafe int GetMethodTableTransparencyData(ulong mt, void* data) => HResults.E_NOTIMPL;
