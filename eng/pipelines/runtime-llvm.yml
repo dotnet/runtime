@@ -44,48 +44,6 @@ extends:
     - stage: Build
       jobs:
       #
-      # Build Mono and Installer on LLVMJIT mode
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
-          runtimeFlavor: mono
-          platforms:
-          - osx_x64
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMJIT
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-          runtimeFlavor: mono
-          platforms:
-          - linux_x64
-          - linux_arm64
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMJIT
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
       # Build Mono and Installer on LLVMAOT mode
       #
       - template: /eng/pipelines/common/platform-matrix.yml
