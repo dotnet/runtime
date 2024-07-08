@@ -10,9 +10,6 @@ GUID GCHeapEnumerationProfiler::GetClsid()
 	return clsid;
 }
 
-// Contrary to other profiler tests, this test focuses on the asynchronous API EnumerateGCHeapObjects,
-// which operates without events. So there is no need to override Initialize to call SetEventMask or
-// perform any other setup.
 HRESULT GCHeapEnumerationProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 {
     Profiler::Initialize(pICorProfilerInfoUnk);
