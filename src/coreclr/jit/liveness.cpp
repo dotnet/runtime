@@ -1532,11 +1532,6 @@ bool Compiler::fgIsHiddenBufferAddressDef(LIR::Range& range, GenTree* node)
     }
 
     LclVarDsc* dsc = lvaGetDesc(node->AsLclVarCommon());
-    if (!dsc->IsHiddenBufferStructArg())
-    {
-        return false;
-    }
-
     if (!dsc->lvTracked)
     {
         return false;
