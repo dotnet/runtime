@@ -211,10 +211,9 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
         }
         else
         {
-            unsigned offs = lcl->GetLclOffs();
-            unsigned size = GetSizeOfStructLocal(stmt, lcl);
-
-            size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(reps, offs);
+            unsigned offs  = lcl->GetLclOffs();
+            unsigned size  = GetSizeOfStructLocal(stmt, lcl);
+            size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(reps, offs);
 
             if ((ssize_t)index < 0)
             {
