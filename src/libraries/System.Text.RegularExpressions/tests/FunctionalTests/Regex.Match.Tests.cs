@@ -2670,18 +2670,18 @@ namespace System.Text.RegularExpressions.Tests
                 // input is the pattern itself
                 input.Append(c);
             }
-        
+
             string patternString = pattern.ToString();
             string inputString = input.ToString();
-        
-            // foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
-            // {
-            Regex r = await RegexHelpers.GetRegexAsync(RegexEngine.NonBacktracking, patternString, RegexOptions.None);
-            MatchCollection ms = r.Matches(inputString);
-            Assert.Equal(1, ms.Count);
-            Assert.Equal(0, ms[0].Index);
-            Assert.Equal(373, ms[0].Length);
-            // }
+
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                Regex r = await RegexHelpers.GetRegexAsync(RegexEngine.NonBacktracking, patternString, RegexOptions.None);
+                MatchCollection ms = r.Matches(inputString);
+                Assert.Equal(1, ms.Count);
+                Assert.Equal(0, ms[0].Index);
+                Assert.Equal(373, ms[0].Length);
+            }
         }
 #endif
     }
