@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "gcheapenumerationprofiler.h"
+#include <wchar.h>
 
 #if WIN32
 #define EXPORT
