@@ -224,15 +224,9 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             {
                 // If this is a definition of a retbuf then we process it as
                 // part of the GT_CALL node.
-                LclVarDsc* dsc = lvaGetDesc(tree->AsLclVarCommon());
-                LIR::Use   use;
-                if (varTypeIsStruct(dsc) && LIR::AsRange(compCurBB).TryGetUse(tree, &use))
+                if (fgIsHiddenBufferAddressDef(LIR::AsRange(compCurBB), tree))
                 {
-                    GenTree* user = use.User();
-                    if (user->IsCall() && (gtCallGetDefinedRetBufLclAddr(user->AsCall()) == tree))
-                    {
-                        break;
-                    }
+                    break;
                 }
 
                 fgMarkUseDef(tree->AsLclVarCommon());
@@ -1228,6 +1222,15 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
     }
 }
 
+//---------------------------------------------------------------------
+// fgComputeLifeLIR - fill out liveness flags in the IR nodes of the block
+// provided the live-out set.
+//
+// Arguments
+//    life          - the set of live-out variables from the block
+//    block         - the block
+//    keepAliveVars - variables that are globally live (usually due to being live into an EH successor)
+//
 void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP keepAliveVars)
 {
     noway_assert(VarSetOps::IsSubset(this, keepAliveVars, life));
@@ -1333,16 +1336,13 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 else
                 {
                     // For LCL_ADDRs that are defined by being passed as a
-                    // retbuf we will handle them when we get to the call.
-                    LclVarDsc* dsc = lvaGetDesc(node->AsLclVarCommon());
-                    if (varTypeIsStruct(dsc))
+                    // retbuf we will handle them when we get to the call. We
+                    // cannot consider them to be defined at the point of the
+                    // LCL_ADDR since there may be uses between the LCL_ADDR
+                    // and call.
+                    if (fgIsHiddenBufferAddressDef(blockRange, node))
                     {
-                        LIR::Use addrUse;
-                        if (blockRange.TryGetUse(node, &addrUse) && addrUse.User()->IsCall() &&
-                            (gtCallGetDefinedRetBufLclAddr(addrUse.User()->AsCall()) == node))
-                        {
-                            break;
-                        }
+                        break;
                     }
 
                     isDeadStore = fgComputeLifeLocal(life, keepAliveVars, node);
@@ -1513,6 +1513,50 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 break;
         }
     }
+}
+
+//---------------------------------------------------------------------
+// fgIsHiddenBufferAddressDef - given a LCL_ADDR node, check if it is the
+// return buffer definition of a call.
+//
+// Arguments
+//    range - the block range containing the LCL_ADDR
+//    node  - the LCL_ADDR
+//
+bool Compiler::fgIsHiddenBufferAddressDef(LIR::Range& range, GenTree* node)
+{
+    assert(node->OperIs(GT_LCL_ADDR));
+    if ((node->gtFlags & GTF_VAR_DEF) == 0)
+    {
+        return false;
+    }
+
+    LclVarDsc* dsc = lvaGetDesc(node->AsLclVarCommon());
+    if (!dsc->IsHiddenBufferStructArg())
+    {
+        return false;
+    }
+
+    if (!dsc->lvTracked)
+    {
+        return false;
+    }
+
+    LIR::Use use;
+    do
+    {
+        if (!range.TryGetUse(node, &use))
+        {
+            return false;
+        }
+
+        if (use.User()->IsCall())
+        {
+            return gtCallGetDefinedRetBufLclAddr(use.User()->AsCall()) == node;
+        }
+    } while (use.User()->OperIs(GT_FIELD_LIST) || use.User()->OperIsPutArg());
+
+    return false;
 }
 
 //---------------------------------------------------------------------
