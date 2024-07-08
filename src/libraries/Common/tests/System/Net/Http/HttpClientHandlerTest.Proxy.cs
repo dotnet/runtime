@@ -505,7 +505,7 @@ namespace System.Net.Http.Functional.Tests
             winInetProxyHelperType.GetField("_proxyBypass", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).SetValue(winInetProxyHelper, null);
 
             // Create a HttpWindowsProxy with our custom WinInetProxyHelper.
-            IWebProxy httpWindowsProxy = (IWebProxy)Activator.CreateInstance(Type.GetType("System.Net.Http.HttpWindowsProxy, System.Net.Http", true), Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance, null, new[] { winInetProxyHelper, null }, null);
+            IWebProxy httpWindowsProxy = (IWebProxy)Activator.CreateInstance(Type.GetType("System.Net.Http.HttpWindowsProxy, System.Net.Http", true), Reflection.BindingFlags.Public | Reflection.BindingFlags.NonPublic| Reflection.BindingFlags.Instance, null, new[] { winInetProxyHelper }, null);
 
             Task<bool> nextFailedConnection = null;
 
