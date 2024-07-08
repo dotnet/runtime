@@ -1418,181 +1418,183 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     bool       isScalar = false;
     genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar);
 
-    if (oper == GT_AND)
+    if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
     {
-        // We want to recognize (~op1 & op2) and transform it
-        // into XarchIsa.AndNot(op1, op2) as well as (op1 & ~op2)
-        // transforming it into XarchIsa.AndNot(op2, op1), which
-        // takes into account that the XARCH apis operate more like
-        // NotAnd
+        // These are the control bytes used for TernaryLogic
 
-        bool transform = false;
+        const uint8_t A = 0xF0;
+        const uint8_t B = 0xCC;
+        const uint8_t C = 0xAA;
+
+        var_types   simdType        = node->TypeGet();
+        CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+        var_types   simdBaseType    = node->GetSimdBaseType();
+        unsigned    simdSize        = node->GetSimdSize();
 
         GenTree* op1 = node->Op(1);
         GenTree* op2 = node->Op(2);
+        GenTree* op3 = nullptr;
 
-        if (op1->OperIsHWIntrinsic())
+        // We want to specially recognize this pattern as GT_NOT
+        bool isOperNot       = (oper == GT_XOR) && op2->IsVectorAllBitsSet();
+        bool isV512Supported = false;
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
         {
-            GenTreeHWIntrinsic* opIntrin = op1->AsHWIntrinsic();
+            GenTree* user = use.User();
 
-            bool       op1IsScalar = false;
-            genTreeOps op1Oper     = opIntrin->GetOperForHWIntrinsicId(&op1IsScalar);
-
-            if ((op1Oper == GT_XOR) && opIntrin->Op(2)->IsVectorAllBitsSet())
+            if (user->OperIsHWIntrinsic())
             {
-                assert(!op1IsScalar);
-                transform = true;
-
-                op1 = opIntrin->Op(1);
-                BlockRange().Remove(opIntrin->Op(2));
-                BlockRange().Remove(opIntrin);
-            }
-        }
-
-        if (!transform && op2->OperIsHWIntrinsic())
-        {
-            GenTreeHWIntrinsic* opIntrin = op2->AsHWIntrinsic();
-
-            bool       op2IsScalar = false;
-            genTreeOps op2Oper     = opIntrin->GetOperForHWIntrinsicId(&op2IsScalar);
-
-            if ((op2Oper == GT_XOR) && opIntrin->Op(2)->IsVectorAllBitsSet())
-            {
-                assert(!op2IsScalar);
-                transform = true;
-
-                op2 = opIntrin->Op(1);
-                BlockRange().Remove(opIntrin->Op(2));
-                BlockRange().Remove(opIntrin);
-
-                std::swap(op1, op2);
-            }
-        }
-
-        if (transform)
-        {
-            var_types simdBaseType = node->GetSimdBaseType();
-            unsigned  simdSize     = node->GetSimdSize();
-
-            oper = GT_AND_NOT;
-            intrinsicId =
-                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, oper, op1, op2, simdBaseType, simdSize, false);
-            node->ChangeHWIntrinsicId(intrinsicId, op1, op2);
-        }
-    }
-
-    switch (oper)
-    {
-        case GT_AND:
-        case GT_OR:
-        case GT_XOR:
-        {
-            if (!comp->canUseEvexEncoding())
-            {
-                break;
-            }
-
-            GenTree* op1 = node->Op(1);
-            GenTree* op2 = node->Op(2);
-
-            LIR::Use use;
-            if (BlockRange().TryGetUse(node, &use))
-            {
-                // search for structure like:
-                /*
-                        /- A
-                        +- B
-                    t1 = binary logical op1
-
-                        /- C
-                        +- t1
-                    t2 = binary logical op2
-                */
-                GenTree* user = use.User();
-                if (!user->OperIs(GT_HWINTRINSIC))
-                {
-                    break;
-                }
-
                 GenTreeHWIntrinsic* userIntrin = user->AsHWIntrinsic();
 
                 bool       userIsScalar = false;
                 genTreeOps userOper     = userIntrin->GetOperForHWIntrinsicId(&isScalar);
 
-                if ((userOper != GT_AND) && (userOper != GT_OR) && (userOper != GT_XOR))
+                if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(userOper))
                 {
-                    // TODO: We should support other cases like AND_NOT, CNDSEL, and TernaryLogic
-                    break;
-                }
-                assert(!userIsScalar);
+                    if (isOperNot && (userOper == GT_AND))
+                    {
+                        // We want to specially handle GT_AND_NOT as its available without EVEX
+                        GenTree* nextNode = node->gtNext;
 
-                if ((userOper == GT_AND) && (oper == GT_XOR) && op2->IsVectorAllBitsSet())
-                {
-                    // We have something that will transform to AND_NOT, which we want to
-                    // prefer over TernaryLogic or any other transform.
-                    return node->gtNext;
-                }
+                        BlockRange().Remove(op2);
+                        BlockRange().Remove(node);
 
-                GenTree*    op3             = userIntrin->Op(1) == node ? userIntrin->Op(2) : userIntrin->Op(1);
-                GenTree*    control         = comp->gtNewIconNode(node->GetTernaryControlByte(userIntrin));
-                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-                unsigned    simdSize        = node->GetSimdSize();
-                var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
-                GenTree*    ternaryNode =
-                    comp->gtNewSimdTernaryLogicNode(simdType, op1, op2, op3, control, simdBaseJitType, simdSize);
-                BlockRange().InsertBefore(userIntrin, control, ternaryNode);
-                LIR::Use finalRes;
-                if (BlockRange().TryGetUse(userIntrin, &finalRes))
-                {
-                    finalRes.ReplaceWith(ternaryNode);
+                        // Note that despite its name, the xarch instruction does ~op1 & op2, so
+                        // we need to ensure op1 is the value whose ones complement is computed
+
+                        op2 = userIntrin->Op(2);
+
+                        if (op2 == node)
+                        {
+                            op2 = userIntrin->Op(1);
+                        }
+
+                        NamedIntrinsic intrinsic =
+                            GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, GT_AND_NOT, op1, op2, simdBaseType,
+                                                                         simdSize, false);
+                        userIntrin->ResetHWIntrinsicId(intrinsic, comp, op1, op2);
+
+                        return nextNode;
+                    }
+
+                    if (comp->compIsEvexOpportunisticallySupported(isV512Supported))
+                    {
+                        // For everything else we want to lower it to a standard TernaryLogic node
+                        GenTree* nextNode = node->gtNext;
+
+                        BlockRange().Remove(node);
+                        op3 = userIntrin->Op(2);
+
+                        if (op3 == node)
+                        {
+                            op3 = userIntrin->Op(1);
+                        }
+
+                        uint8_t controlByte = 0x00;
+
+                        if ((userOper == GT_XOR) && op3->IsVectorAllBitsSet())
+                        {
+                            // We're being used by what is actually GT_NOT, so we
+                            // need to shift parameters down so that A is unused
+
+                            std::swap(op2, op3);
+                            std::swap(op1, op2);
+
+                            if (isOperNot)
+                            {
+                                // We have what is actually a double not, so just return op2
+                                // which is the only actual value now that the parameters
+                                // were shifted around
+
+                                assert(op1->IsVectorAllBitsSet());
+                                assert(op3->IsVectorAllBitsSet());
+
+                                LIR::Use superUse;
+                                if (BlockRange().TryGetUse(user, &superUse))
+                                {
+                                    superUse.ReplaceWith(op2);
+                                }
+                                else
+                                {
+                                    op2->SetUnusedValue();
+                                }
+
+                                BlockRange().Remove(op3);
+                                BlockRange().Remove(op1);
+                                BlockRange().Remove(user);
+
+                                return nextNode;
+                            }
+                            else
+                            {
+                                // We're now doing NOT(OP(B, C))
+                                assert(op1->IsVectorAllBitsSet());
+
+                                controlByte = TernaryLogicInfo::GetTernaryControlByte(oper, B, C);
+                                controlByte = static_cast<uint8_t>(~controlByte);
+                            }
+                        }
+                        else if (isOperNot)
+                        {
+                            // A is unused, so we just want OP(NOT(B), C)
+
+                            assert(op2->IsVectorAllBitsSet());
+                            std::swap(op1, op2);
+
+                            controlByte = static_cast<uint8_t>(~B);
+                            controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, controlByte, C);
+                        }
+                        else
+                        {
+                            // We have OP2(OP1(A, B), C)
+                            controlByte = TernaryLogicInfo::GetTernaryControlByte(oper, A, B);
+                            controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, controlByte, C);
+                        }
+
+                        NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
+
+                        if (simdSize != 64)
+                        {
+                            ternaryLogicId = isV512Supported ? NI_AVX512F_VL_TernaryLogic : NI_AVX10v1_TernaryLogic;
+                        }
+
+                        GenTree* op4 = comp->gtNewIconNode(controlByte);
+                        BlockRange().InsertBefore(userIntrin, op4);
+
+                        userIntrin->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, op4);
+                        return nextNode;
+                    }
                 }
-                else
-                {
-                    ternaryNode->SetUnusedValue();
-                }
-                GenTree* next = node->gtNext;
-                BlockRange().Remove(node);
-                BlockRange().Remove(userIntrin);
-                return next;
             }
-            break;
         }
 
-        default:
+        if (isOperNot && comp->compIsEvexOpportunisticallySupported(isV512Supported))
         {
-            break;
-        }
-    }
+            // Lowering this to TernaryLogic(zero, zero, op1, ~C) is smaller
+            // and faster than emitting the pcmpeqd; pxor sequence.
 
-    if ((oper == GT_XOR) && node->Op(2)->IsVectorAllBitsSet())
-    {
-        bool isV512Supported = false;
-        if ((genTypeSize(node->GetSimdBaseType()) >= 4) && comp->compIsEvexOpportunisticallySupported(isV512Supported))
-        {
-            var_types simdType = node->TypeGet();
-            unsigned  simdSize = node->GetSimdSize();
-
-            GenTree* op1 = node->Op(1);
-            BlockRange().Remove(node->Op(2));
-
-            // We can't use the mask, but we can emit a ternary logic node
+            BlockRange().Remove(op2);
             NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
 
             if (simdSize != 64)
             {
-                ternaryLogicId = !isV512Supported ? NI_AVX10v1_TernaryLogic : NI_AVX512F_VL_TernaryLogic;
+                ternaryLogicId = isV512Supported ? NI_AVX512F_VL_TernaryLogic : NI_AVX10v1_TernaryLogic;
             }
 
-            GenTree* op2 = comp->gtNewZeroConNode(simdType);
+            op3 = op1;
+
+            op2 = comp->gtNewZeroConNode(simdType);
             BlockRange().InsertBefore(node, op2);
 
-            GenTree* op3 = comp->gtNewZeroConNode(simdType);
-            BlockRange().InsertBefore(node, op3);
+            op1 = comp->gtNewZeroConNode(simdType);
+            BlockRange().InsertBefore(node, op1);
 
-            GenTree* control = comp->gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
+            GenTree* control = comp->gtNewIconNode(static_cast<uint8_t>(~C));
             BlockRange().InsertBefore(node, control);
 
-            node->ResetHWIntrinsicId(ternaryLogicId, comp, op3, op2, op1, control);
+            node->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, control);
             return LowerNode(node);
         }
     }
@@ -3603,6 +3605,9 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
             }
         }
     }
+
+    // TODO-XARCH-AVX512: We should look for nested TernaryLogic and BitwiseOper
+    // nodes so that we can fully take advantage of the instruction where possible
 
     ContainCheckHWIntrinsic(node);
     return node->gtNext;

@@ -480,6 +480,7 @@ struct TernaryLogicInfo
     TernaryLogicUseFlags oper3Use : 3;
 
     static const TernaryLogicInfo& lookup(uint8_t control);
+    static uint8_t                 GetTernaryControlByte(genTreeOps oper, uint8_t op1, uint8_t op2);
 
     TernaryLogicUseFlags GetAllUseFlags() const
     {

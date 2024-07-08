@@ -352,6 +352,37 @@ const TernaryLogicInfo& TernaryLogicInfo::lookup(uint8_t control)
 
     return ternaryLogicFlags[control];
 }
+
+uint8_t TernaryLogicInfo::GetTernaryControlByte(genTreeOps oper, uint8_t op1, uint8_t op2)
+{
+    switch (oper)
+    {
+        case GT_AND:
+        {
+            return static_cast<uint8_t>(op1 & op2);
+        }
+
+        case GT_AND_NOT:
+        {
+            return static_cast<uint8_t>(~op1 & op2);
+        }
+
+        case GT_OR:
+        {
+            return static_cast<uint8_t>(op1 & op2);
+        }
+
+        case GT_XOR:
+        {
+            return static_cast<uint8_t>(op1 & op2);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
 #endif // TARGET_XARCH
 
 //------------------------------------------------------------------------
