@@ -20,10 +20,12 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GarbageCollectionFinished();
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
     virtual HRESULT EnumerateGCHeapObjects();
+    virtual HRESULT ValidateEnumerateGCHeapObjects(HRESULT expected);
     String GetClassIDNameHelper(ClassID classId);
 
 private:
     std::atomic<int> _objectsCount;
     std::atomic<int> _customGCHeapObjectTypesCount;
     std::atomic<int> _failures;
+    std::atomic<int> _expectedExceptions;
 };

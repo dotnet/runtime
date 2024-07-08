@@ -22,19 +22,29 @@ namespace Profiler.Tests
         [DllImport("Profiler")]
         private static extern void ResumeRuntime();
 
+        [DllImport("Profiler")]
+        private static extern void EnumerateHeapObjectsInBackgroundThread();
+
         public static int EnumerateGCHeapObjectsSingleThreadNoPriorSuspension()
         {
-            var customGCHeapObject = new CustomGCHeapObject();
+            var _ = new CustomGCHeapObject();
             EnumerateGCHeapObjects();
             return 100;
         }
 
         public static int EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension()
         {
-            var customGCHeapObject = new CustomGCHeapObject();
+            var _ = new CustomGCHeapObject();
             SuspendRuntime();
             EnumerateGCHeapObjects();
             ResumeRuntime();
+            return 100;
+        }
+
+        public static int EnumerateGCHeapObjectsInBackgroundThreadWithRuntimeSuspension()
+        {
+            EnumerateHeapObjectsInBackgroundThread();
+            GC.Collect();
             return 100;
         }
 
@@ -52,8 +62,8 @@ namespace Profiler.Tests
             Thread enumerateThread = new Thread(() =>
             {
                 startEvent.WaitOne();
-                Thread.Sleep(5000);
-                var customGCHeapObject = new CustomGCHeapObject();
+                Thread.Sleep(1000);
+                var _ = new CustomGCHeapObject();
                 EnumerateGCHeapObjects();
             });
             enumerateThread.Name = "EnumerateGCHeapObjects";
@@ -75,6 +85,9 @@ namespace Profiler.Tests
                     case nameof(EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension):
                         return EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension();
 
+                    case nameof(EnumerateGCHeapObjectsInBackgroundThreadWithRuntimeSuspension):
+                        return EnumerateGCHeapObjectsInBackgroundThreadWithRuntimeSuspension();
+
                     case nameof(EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension):
                         return EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension();
                 }
@@ -90,9 +103,14 @@ namespace Profiler.Tests
                 return 102;
             }
 
-            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension), "TRUE"))
+            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsInBackgroundThreadWithRuntimeSuspension), "TRUE"))
             {
                 return 103;
+            }
+
+            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension), "FALSE"))
+            {
+                return 104;
             }
 
             return 100;

@@ -61,6 +61,14 @@ HRESULT GCHeapEnumerationProfiler::Shutdown()
 {
     Profiler::Shutdown();
 
+    if (_expectedExceptions == 1)
+    {
+        printf("GCHeapEnumerationProfiler::Shutdown: PASS: Encountered exception as expected.\n");
+        printf("PROFILER TEST PASSES\n");
+        fflush(stdout);
+        return S_OK;
+    }
+
     if (_objectsCount < 500)
     {
         printf("GCHeapEnumerationProfiler::Shutdown: FAIL: Expected at least 500 objects, got %d\n", _objectsCount.load());
@@ -128,20 +136,43 @@ HRESULT GCHeapEnumerationProfiler::EnumerateGCHeapObjects()
     CallbackState state = { &_objectsCount, instance, &_customGCHeapObjectTypesCount };
 
     printf("Enumerating GC Heap Objects\n");
-    HRESULT hr = pCorProfilerInfo->EnumerateGCHeapObjects(heap_walk_fn, &state);
-    if (SUCCEEDED(hr))
+    return pCorProfilerInfo->EnumerateGCHeapObjects(heap_walk_fn, &state);
+}
+
+HRESULT GCHeapEnumerationProfiler::ValidateEnumerateGCHeapObjects(HRESULT expected)
+{
+    HRESULT hr = EnumerateGCHeapObjects();
+
+    if (hr == expected)
     {
+        if (FAILED(expected))
+        {
+            printf("Encountered exception as expected.\n");
+            _expectedExceptions++;
+            return S_OK;
+        }
+
+        printf("EnumerateGCHeapObjects succeeded.\n");
         printf("Number of objects: %d\n", _objectsCount.load());
         printf("Number of custom GCHeapObject types: %d\n", _customGCHeapObjectTypesCount.load());
-    }
-    else
-    {
-        printf("Error: failed to enumerate GC heap objects. hr=0x%x\n", hr);
-        _failures++;
-        return E_FAIL;
+        return S_OK;
     }
 
-    return S_OK;
+    if (FAILED(hr) && FAILED(expected))
+    {
+        printf("EnumerateGCHeapObjects failed with exception hr=0x%x, but expected exception hr=0x%x\n", hr, expected);
+    }
+    else if (FAILED(expected))
+    {
+        printf("EnumerateGCHeapObjects succeeded, but expected exception hr=0x%x\n", expected);
+    }
+    else // FAILED(hr)
+    {
+        printf("Error: failed to enumerate GC heap objects. hr=0x%x\n", hr);
+    }
+
+    _failures++;
+    return E_FAIL;
 }
 
 extern "C" __declspec(dllexport) void STDMETHODCALLTYPE EnumerateGCHeapObjects()
@@ -153,7 +184,7 @@ extern "C" __declspec(dllexport) void STDMETHODCALLTYPE EnumerateGCHeapObjects()
         printf("Error: profiler instance is null.\n");
         return;
     }
-    instance->EnumerateGCHeapObjects();
+    instance->ValidateEnumerateGCHeapObjects(0);
 }
 
 extern "C" __declspec(dllexport) void STDMETHODCALLTYPE SuspendRuntime()
@@ -178,4 +209,19 @@ extern "C" __declspec(dllexport) void STDMETHODCALLTYPE ResumeRuntime()
         return;
     }
     instance->pCorProfilerInfo->ResumeRuntime();
+}
+
+extern "C" __declspec(dllexport) void STDMETHODCALLTYPE EnumerateHeapObjectsInBackgroundThread()
+{
+    GCHeapEnumerationProfiler* instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
+    if (instance == nullptr) {
+        printf("Error: profiler instance is null.\n");
+        return;
+    }
+
+    std::thread([instance]()
+                {
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                    instance->ValidateEnumerateGCHeapObjects(0x80131388);
+                }).detach();
 }
