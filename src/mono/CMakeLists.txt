@@ -510,7 +510,7 @@ endif()
 
 # Decide if we need zlib-ng.
 if(NOT DISABLE_EMBEDDED_PDB OR NOT DISABLE_LOG_PROFILER_GZ)
-  if (CLR_CMAKE_USE_SYSTEM_ZLIB OR CLR_CMAKE_HOST_ARCH_WASM)
+  if (CLR_CMAKE_USE_SYSTEM_ZLIB)
     # if we're not on a platform where we use the in-tree zlib-ng, require system zlib
     include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     set(Z_LIBS)
@@ -669,7 +669,7 @@ if(LLVM_PREFIX)
     list(APPEND llvm_system_libs "-lm")
   endif()
 
-  if ((CLR_CMAKE_USE_SYSTEM_ZLIB OR CLR_CMAKE_HOST_ARCH_WASM) AND (HOST_LINUX OR HOST_OSX))
+  if (CLR_CMAKE_USE_SYSTEM_ZLIB AND (HOST_LINUX OR HOST_OSX))
     list(APPEND llvm_system_libs "-lz")
   endif()
 

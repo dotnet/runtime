@@ -42,7 +42,7 @@ if(ENABLE_PERFTRACING)
         
         set(EPTEST_LINKABLE_LIBS "")
         list(APPEND EPTEST_LINKABLE_LIBS eglib_api monosgen-static ${OS_LIBS} ${LLVM_LIBS} monoapi)
-        if (CLR_CMAKE_USE_SYSTEM_ZLIB OR CLR_CMAKE_HOST_ARCH_WASM)
+        if (CLR_CMAKE_USE_SYSTEM_ZLIB)
             list(APPEND EPTEST_LINKABLE_LIBS ${EPTEST_LINKABLE_LIBS} ${Z_LIBS})
         else()
             list(APPEND EPTEST_LINKABLE_LIBS ${EPTEST_LINKABLE_LIBS} zlib)

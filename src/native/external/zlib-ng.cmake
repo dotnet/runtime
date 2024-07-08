@@ -20,8 +20,7 @@ if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
   set(HAVE_ALIGNED_ALLOC FALSE CACHE BOOL "have aligned_alloc" FORCE)
 endif()
 
-set(BUILD_SHARED_LIBS OFF) # Shared libraries aren't supported in wasm, and even though it consumes system zlib, it will be switched to zlib-ng eventually.
-
+set(BUILD_SHARED_LIBS OFF) # Shared libraries aren't supported in wasm
 set(SKIP_INSTALL_ALL ON)
 FetchContent_MakeAvailable(fetchzlibng)
 set(SKIP_INSTALL_ALL OFF)

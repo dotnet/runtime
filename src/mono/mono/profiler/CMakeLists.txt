@@ -26,7 +26,7 @@ if(NOT DISABLE_LIBS)
     install(TARGETS mono-profiler-log-static LIBRARY)
 
     if(NOT DISABLE_LOG_PROFILER_GZ)
-      if (CLR_CMAKE_USE_SYSTEM_ZLIB OR CLR_CMAKE_HOST_ARCH_WASM)
+      if (CLR_CMAKE_USE_SYSTEM_ZLIB)
         target_link_libraries(mono-profiler-log PRIVATE ${Z_LIBS})
       else()
         target_link_libraries(mono-profiler-log PRIVATE zlib)
