@@ -114,13 +114,13 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             data->LoaderAllocator = contract.GetLoaderAllocator(handle);
             data->ThunkHeap = contract.GetThunkHeap(handle);
 
-            IDictionary<Contracts.ModuleLookupTable, TargetPointer> tables = contract.GetLookupTables(handle);
-            data->FieldDefToDescMap = tables[Contracts.ModuleLookupTable.FieldDefToDesc];
-            data->ManifestModuleReferencesMap = tables[Contracts.ModuleLookupTable.ManifestModuleReferences];
-            data->MemberRefToDescMap = tables[Contracts.ModuleLookupTable.MemberRefToDesc];
-            data->MethodDefToDescMap = tables[Contracts.ModuleLookupTable.MethodDefToDesc];
-            data->TypeDefToMethodTableMap = tables[Contracts.ModuleLookupTable.TypeDefToMethodTable];
-            data->TypeRefToMethodTableMap = tables[Contracts.ModuleLookupTable.TypeRefToMethodTable];
+            Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
+            data->FieldDefToDescMap = tables.FieldDefToDesc;
+            data->ManifestModuleReferencesMap = tables.ManifestModuleReferences;
+            data->MemberRefToDescMap = tables.MemberRefToDesc;
+            data->MethodDefToDescMap = tables.MethodDefToDesc;
+            data->TypeDefToMethodTableMap = tables.TypeDefToMethodTable;
+            data->TypeRefToMethodTableMap = tables.TypeRefToMethodTable;
 
             // Always 0 - .NET no longer has this concept
             data->dwModuleID = 0;

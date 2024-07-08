@@ -23,15 +23,13 @@ internal enum ModuleFlags
     ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
 }
 
-internal enum ModuleLookupTable
-{
-    FieldDefToDesc,
-    ManifestModuleReferences,
-    MemberRefToDesc,
-    MethodDefToDesc,
-    TypeDefToMethodTable,
-    TypeRefToMethodTable,
-}
+internal record struct ModuleLookupTables(
+    TargetPointer FieldDefToDesc,
+    TargetPointer ManifestModuleReferences,
+    TargetPointer MemberRefToDesc,
+    TargetPointer MethodDefToDesc,
+    TargetPointer TypeDefToMethodTable,
+    TargetPointer TypeRefToMethodTable);
 
 internal interface ILoader : IContract
 {
@@ -55,7 +53,7 @@ internal interface ILoader : IContract
     public virtual TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
     public virtual TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size) => throw new NotImplementedException();
 
-    public virtual IDictionary<ModuleLookupTable, TargetPointer> GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
+    public virtual ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
 }
 
 internal readonly struct Loader : ILoader

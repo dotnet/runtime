@@ -19,15 +19,13 @@ enum ModuleFlags
     ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
 }
 
-enum ModuleLookupTable
-{
-    FieldDefToDesc,
-    ManifestModuleReferences,
-    MemberRefToDesc,
-    MethodDefToDesc,
-    TypeDefToMethodTable,
-    TypeRefToMethodTable,
-}
+record struct ModuleLookupTables(
+    TargetPointer FieldDefToDesc,
+    TargetPointer ManifestModuleReferences,
+    TargetPointer MemberRefToDesc,
+    TargetPointer MethodDefToDesc,
+    TargetPointer TypeDefToMethodTable,
+    TargetPointer TypeRefToMethodTable);
 ```
 
 ``` csharp
@@ -38,7 +36,7 @@ TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetThunkHeap(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size);
-IDictionary<ModuleLookupTable, TargetPointer> GetLookupTables(ModuleHandle handle);
+ModuleLookupTables GetLookupTables(ModuleHandle handle);
 ```
 
 ## Version 1
@@ -96,15 +94,14 @@ TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size)
     return baseAddress + rva;
 }
 
-IDictionary<ModuleLookupTable, TargetPointer> GetLookupTables(ModuleHandle handle)
+ModuleLookupTables GetLookupTables(ModuleHandle handle)
 {
-    Dictionary<ModuleLookupTable, TargetPointer> tables = [];
-    tables[ModuleLookupTable.FieldDefToDesc] = target.ReadPointer(handle.Address + /* Module::FieldDefToDescMap */);
-    tables[ModuleLookupTable.ManifestModuleReferences] = target.ReadPointer(handle.Address + /* Module::ManifestModuleReferencesMap */);
-    tables[ModuleLookupTable.MemberRefToDesc] = target.ReadPointer(handle.Address + /* Module::MemberRefToDescMap */);
-    tables[ModuleLookupTable.MethodDefToDesc] = target.ReadPointer(handle.Address + /* Module::MethodDefToDescMap */);
-    tables[ModuleLookupTable.TypeDefToMethodTable] = target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */);
-    tables[ModuleLookupTable.TypeRefToMethodTable] = target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */);
-    return tables;
+    return new ModuleLookupTables(
+        FieldDefToDescMap: target.ReadPointer(handle.Address + /* Module::FieldDefToDescMap */),
+        ManifestModuleReferencesMap: target.ReadPointer(handle.Address + /* Module::ManifestModuleReferencesMap */),
+        MemberRefToDescMap: target.ReadPointer(handle.Address + /* Module::MemberRefToDescMap */),
+        MethodDefToDescMap: target.ReadPointer(handle.Address + /* Module::MethodDefToDescMap */),
+        TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
+        TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */));
 }
 ```

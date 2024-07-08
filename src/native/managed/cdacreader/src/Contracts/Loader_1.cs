@@ -55,16 +55,15 @@ internal readonly struct Loader_1 : ILoader
         return module.GetLoadedMetadata(out size);
     }
 
-    IDictionary<ModuleLookupTable, TargetPointer> ILoader.GetLookupTables(ModuleHandle handle)
+    ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)
     {
-        Dictionary<ModuleLookupTable, TargetPointer> tables = [];
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        tables[ModuleLookupTable.FieldDefToDesc] = module.FieldDefToDescMap;
-        tables[ModuleLookupTable.ManifestModuleReferences] = module.ManifestModuleReferencesMap;
-        tables[ModuleLookupTable.MemberRefToDesc] = module.MemberRefToDescMap;
-        tables[ModuleLookupTable.MethodDefToDesc] = module.MethodDefToDescMap;
-        tables[ModuleLookupTable.TypeDefToMethodTable] = module.TypeDefToMethodTableMap;
-        tables[ModuleLookupTable.TypeRefToMethodTable] = module.TypeRefToMethodTableMap;
-        return tables;
+        return new ModuleLookupTables(
+            module.FieldDefToDescMap,
+            module.ManifestModuleReferencesMap,
+            module.MemberRefToDescMap,
+            module.MethodDefToDescMap,
+            module.TypeDefToMethodTableMap,
+            module.TypeRefToMethodTableMap);
     }
 }
