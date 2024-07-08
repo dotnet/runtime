@@ -348,7 +348,8 @@ namespace Microsoft.Interop
                 new CodeEmitOptions(SkipInit: pinvokeStub.TargetFramework is (TargetFramework.Net, _)));
 
             // For down-level support, if some parameters cannot be marshalled, consider the target framework as not supported
-            if (stubGenerator.HasForwardedTypes && (pinvokeStub.TargetFramework.TargetFramework != TargetFramework.Net || pinvokeStub.TargetFramework.Version.Major < 7))
+            if (stubGenerator.HasForwardedTypes
+                && (pinvokeStub.TargetFramework.TargetFramework != TargetFramework.Net || pinvokeStub.TargetFramework.Version.Major < 7))
             {
                 supportsTargetFramework = false;
             }

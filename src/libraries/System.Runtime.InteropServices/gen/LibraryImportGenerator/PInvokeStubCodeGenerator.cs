@@ -78,9 +78,9 @@ namespace Microsoft.Interop
                         or { Generator: Forwarder };
 
                 // Track if any generators are just forwarders - for types other than void, this indicates
-                // types that can't be marshalled by the source generated
+                // types that can't be marshalled by the source generated.
                 // In .NET 7+ support, we would have emitted a diagnostic error about lack of support
-                // In down-level support, we do not error - tracking this allows us to switch to generating a basic forwarder stub
+                // In down-level support, we do not error - tracking this allows us to switch to generating a basic forwarder (DllImport declaration)
                 HasForwardedTypes |= generator is { Generator: Forwarder, TypeInfo.ManagedType: not SpecialTypeInfo { SpecialType: Microsoft.CodeAnalysis.SpecialType.System_Void } };
             }
 
