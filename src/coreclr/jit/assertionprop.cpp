@@ -1433,6 +1433,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             }
         }
     }
+
     //
     // Are we making an IsType assertion?
     //
@@ -2318,14 +2319,10 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
     }
 
     // Try to find if all phi arguments are known to be non-null.
-    //
     bool isNonNull = true;
     for (GenTreePhi::Use& use : tree->AsLclVar()->Data()->AsPhi()->Uses())
     {
-        GenTreePhiArg* const treePhiArg = use.GetNode()->AsPhiArg();
-        ValueNum             treePhiArgVN =
-            lvaGetDesc(treePhiArg)->GetPerSsaData(treePhiArg->GetSsaNum())->m_vnPair.GetConservative();
-        if (!vnStore->IsKnownNonNull(treePhiArgVN))
+        if (!vnStore->IsKnownNonNull(use.GetNode()->gtVNPair.GetConservative()))
         {
             isNonNull = false;
             break;

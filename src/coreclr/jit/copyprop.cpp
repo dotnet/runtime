@@ -487,12 +487,6 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
     else if (lclNode->HasSsaName())
     {
         unsigned ssaNum = lclNode->GetSsaNum();
-        if ((defNode != nullptr) && defNode->IsPhiDefn())
-        {
-            // TODO-CQ: design better heuristics for propagation and remove this.
-            // ssaNum = SsaConfig::RESERVED_SSA_NUM;
-        }
-
         pushDef(lclNum, ssaNum);
     }
 }
