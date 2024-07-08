@@ -1651,15 +1651,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int arg_size = mono_class_value_size (arg_class, NULL);
-		
-		if (id == SN_AsVector2) {
-			g_assert(ret_size == 8);
-			g_assert((arg_size == 12) || (arg_size == 16));
-		} else if (id == SN_AsVector3) {
-			g_assert(ret_size == 12);
-			g_assert((arg_size == 8) || (arg_size == 16));
-		}
-
 
 		if (arg_size == ret_size) {
 			return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
@@ -1685,6 +1676,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		} else {
 #ifdef TARGET_ARM64
 			if (arg_size == 8) {
+				if (!COMPILE_LLVM (cfg)) {
+					// FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
+					return NULL;
+				}
+
 				int op = isUnsafe ? OP_XWIDEN : OP_XWIDEN_UNSAFE;
 				return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 			}

@@ -41,23 +41,14 @@ interp_v128_bitcast (gpointer res, gpointer v1)
 static void
 interp_v128_to_v2 (gpointer res, gpointer v1)
 {
-	float *res_typed = (float*)res;
-	float *v1_typed = (float*)v1;
-
-	res_typed [0] = v1_typed [0];
-	res_typed [1] = v1_typed [1];
+	memcpy (res, v1, SIZEOF_V2);
 }
 
 // Vector3 AsVector3(Vector128<float> v1)
 static void
 interp_v128_to_v3 (gpointer res, gpointer v1)
 {
-	float *res_typed = (float*)res;
-	float *v1_typed = (float*)v1;
-
-	res_typed [0] = v1_typed [0];
-	res_typed [1] = v1_typed [1];
-	res_typed [2] = v1_typed [2];
+	memcpy (res, v1, SIZEOF_V3);
 }
 
 // Vector128<float> AsVector128(Vector2 v1)
@@ -102,11 +93,7 @@ interp_v3_to_v128 (gpointer res, gpointer v1)
 static void
 interp_v3_to_v2 (gpointer res, gpointer v1)
 {
-	float *res_typed = (float*)res;
-	float *v1_typed = (float*)v1;
-
-	res_typed [0] = v1_typed [0];
-	res_typed [1] = v1_typed [1];
+	memcpy (res, v1, SIZEOF_V2);
 }
 
 // op_Addition
@@ -177,18 +164,13 @@ interp_v128_op_bitwise_or (gpointer res, gpointer v1, gpointer v2)
 static void
 interp_v128_op_bitwise_equality (gpointer res, gpointer v1, gpointer v2)
 {
-	gint64 *v1_typed = (gint64*)v1;
-	gint64 *v2_typed = (gint64*)v2;
+	gint64 *v1_cast = (gint64*)v1;
+	gint64 *v2_cast = (gint64*)v2;
 
-	bool succeeded = true;
-
-	if (v1_typed [0] != v2_typed [0]) {
-		succeeded = false;
-	} else if (v1_typed [1] != v2_typed [1]) {
-		succeeded = false;
-	}
-
-	*(gint32*)res = succeeded ? 1 : 0;
+	if (*v1_cast == *v2_cast && *(v1_cast + 1) == *(v2_cast + 1))
+		*(gint32*)res = 1;
+	else
+		*(gint32*)res = 0;
 }
 
 // op_ExclusiveOr
@@ -202,81 +184,70 @@ interp_v128_op_exclusive_or (gpointer res, gpointer v1, gpointer v2)
 static void
 interp_v128_op_bitwise_inequality (gpointer res, gpointer v1, gpointer v2)
 {
-	gint64 *v1_typed = (gint64*)v1;
-	gint64 *v2_typed = (gint64*)v2;
+	gint64 *v1_cast = (gint64*)v1;
+	gint64 *v2_cast = (gint64*)v2;
 
-	bool succeeded = false;
-
-	if (v1_typed [0] != v2_typed [0]) {
-		succeeded = true;
-	} else if (v1_typed [1] != v2_typed [1]) {
-		succeeded = true;
-	}
-
-	*(gint32*)res = succeeded ? 1 : 0;
+	if (*v1_cast == *v2_cast && *(v1_cast + 1) == *(v2_cast + 1))
+		*(gint32*)res = 0;
+	else
+		*(gint32*)res = 1;
 }
 
-static bool
-r4_float_equality(float v1, float v2)
-{
-	if (v1 == v2) {
-		return true;
-	} else if (mono_isnan (v1) && mono_isnan (v2)) {
-		return true;
-	}
-
-	return false;
-}
-
-// Vector128<float>.EqualsFloatingPoint
+// Vector128<float>.Equals
 static void
-interp_v128_r4_float_equality (gpointer res, gpointer v1, gpointer v2)
+interp_v128_instance_equals_r4 (gpointer res, gpointer v1, gpointer v2)
 {
-	float *v1_typed = (float*)v1;
-	float *v2_typed = (float*)v2;
+	v128_r4 v1_cast = *(*(v128_r4**))v1;
+	v128_r4 v2_cast = *(v128_r4*)v2;
+	v128_r4 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
+	memset (&v1_cast, 0xff, SIZEOF_V128);
 
-	bool succeeded = true;
-
-	if (!r4_float_equality(v1_typed [0], v2_typed [0])) {
-		succeeded = false;
-	} else if (!r4_float_equality(v1_typed [1], v2_typed [1])) {
-		succeeded = false;
-	} else if (!r4_float_equality(v1_typed [2], v2_typed [2])) {
-		succeeded = false;
-	} else if (!r4_float_equality(v1_typed [3], v2_typed [3])) {
-		succeeded = false;
-	}
-
-	*(gint32*)res = succeeded ? 1 : 0;
+	*(gint32*)res = memcmp (&v1_cast, &result, SIZEOF_V128) == 0;
 }
 
-static bool
-r8_float_equality(double v1, double v2)
-{
-	if (v1 == v2) {
-		return true;
-	} else if (mono_isnan (v1) && mono_isnan (v2)) {
-		return true;
-	}
-
-	return false;
-}
-
+// Vector2.Equals
 static void
-interp_v128_r8_float_equality (gpointer res, gpointer v1, gpointer v2)
+interp_v2_instance_equals_r4 (gpointer res, gpointer v1, gpointer v2)
 {
-	double *v1_typed = (double*)v1;
-	double *v2_typed = (double*)v2;
+	v128_r4 v1_cast;
+	interp_v2_to_v128 (&v1_cast, v1);
+	v128_r4 v2_cast = *(v128_r4*)v2;
+	v128_r4 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
+	memset (&v1_cast, 0xff, SIZEOF_V2);
 
-	bool succeeded = true;
+	*(gint32*)res = memcmp (&v1_cast, &result, SIZEOF_V2) == 0;
+}
 
-	if (!r8_float_equality(v1_typed [0], v2_typed [0])) {
-		succeeded = false;
-	} else if (!r8_float_equality(v1_typed [1], v2_typed [1])) {
-		succeeded = false;
-	}
+// Vector3.Equals
+static void
+interp_v3_instance_equals_r4 (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_r4 v1_cast;
+	interp_v3_to_v128 (&v1_cast, v1);
+	v128_r4 v2_cast = *(v128_r4*)v2;
+	v128_r4 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
+	memset (&v1_cast, 0xff, SIZEOF_V3);
 
-	*(gint32*)res = succeeded ? 1 : 0;
+	*(gint32*)res = memcmp (&v1_cast, &result, SIZEOF_V3) == 0;
+}
+
+// Vector128<double>.Equals
+static void
+interp_v128_instance_equals_r8 (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_r8 v1_cast = *(*(v128_r8**))v1;
+	v128_r8 v2_cast = *(v128_r8*)v2;
+	v128_r8 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
+	memset (&v1_cast, 0xff, SIZEOF_V128);
+
+	*(gint32*)res = memcmp (&v1_cast, &result, SIZEOF_V128) == 0;
+}
+
+// Vector128<T>.Equals, for integer T
+static void
+interp_v128_instance_equals_bitwise (gpointer res, gpointer v1, gpointer v2)
+{
+	interp_v128_op_bitwise_equality(res, *(v128_i1**)v1, v2);
 }
 
 // op_Multiply

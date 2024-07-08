@@ -51,7 +51,6 @@ SIMD_METHOD(CreateScalarUnsafe)
 
 SIMD_METHOD(Equals)
 SIMD_METHOD(EqualsAny)
-SIMD_METHOD(EqualsFloatingPoint)
 SIMD_METHOD(ExtractMostSignificantBits)
 SIMD_METHOD(GreaterThan)
 SIMD_METHOD(LessThan)

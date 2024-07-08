@@ -98,7 +98,7 @@ static guint16 sri_vector128_methods [] = {
 };
 
 static guint16 sri_vector128_t_methods [] = {
-	SN_EqualsFloatingPoint,
+	SN_Equals,
 	SN_get_AllBitsSet,
 	SN_get_Count,
 	SN_get_One,
@@ -120,6 +120,7 @@ static guint16 sri_vector128_t_methods [] = {
 };
 
 static guint16 sn_vector_t_methods [] = {
+	SN_Equals,
 	SN_ctor,
 	SN_get_AllBitsSet,
 	SN_get_Count,
@@ -219,13 +220,6 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 				*simd_opcode = MINT_SIMD_INTRINS_P_PP;
 				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_EQUALITY;
 			}
-			break;
-		case SN_EqualsFloatingPoint:
-			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (atype == MONO_TYPE_R4)
-				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_FLOAT_EQUALITY;
-			else if (atype == MONO_TYPE_R8)
-				*simd_intrins = INTERP_SIMD_INTRINSIC_V128_R8_FLOAT_EQUALITY;
 			break;
 		case SN_op_ExclusiveOr:
 			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
@@ -482,35 +476,11 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			MonoClass *ret_class = mono_class_from_mono_type_internal (csignature->ret);
 			int ret_size = mono_class_value_size (ret_class, NULL);
 
-			if (!strcmp (m_class_get_name (ret_class), "Vector2")) {
-				g_assert (ret_size == 8);
-			} else if (!strcmp (m_class_get_name (ret_class), "Vector3")) {
-				g_assert (ret_size == 12);
-			} else {
-				g_assert (ret_size == 16);
-			}
-
 			MonoClass *arg_class = mono_class_from_mono_type_internal (csignature->params [0]);
 			int arg_size = mono_class_value_size (arg_class, NULL);
 
-			if (!strcmp (m_class_get_name (arg_class), "Vector2")) {
-				g_assert (arg_size == 8);
-			} else if (!strcmp (m_class_get_name (arg_class), "Vector3")) {
-				g_assert (arg_size == 12);
-			} else {
-				g_assert (arg_size == 16);
-			}
-
 			vector_klass = ret_class;
 			vector_size = ret_size;
-
-			if (id == SN_AsVector2) {
-				g_assert (ret_size == 8);
-				g_assert ((arg_size == 12) || (arg_size == 16));
-			} else if (id == SN_AsVector3) {
-				g_assert (ret_size == 12);
-				g_assert ((arg_size == 8) || (arg_size == 16));
-			}
 
 			if (arg_size == ret_size) {
 				simd_opcode = MINT_SIMD_INTRINS_P_P;
@@ -532,13 +502,10 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 				if (ret_size == 8) {
 					if (arg_size == 16) {
 						simd_intrins = INTERP_SIMD_INTRINSIC_V128_TO_V2;
-					} else {
-						g_assert (arg_size == 12);
+					} else if (arg_size == 12) {
 						simd_intrins = INTERP_SIMD_INTRINSIC_V3_TO_V2;
 					}
-				} else {
-					g_assert (arg_size == 16);
-					g_assert (ret_size == 12);
+				} else if ((ret_size == 12) && (arg_size == 16)) {
 					simd_intrins = INTERP_SIMD_INTRINSIC_V128_TO_V3;
 				}
 				break;
@@ -548,13 +515,10 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 				if (arg_size == 8) {
 					if (ret_size == 12) {
 						simd_intrins = INTERP_SIMD_INTRINSIC_V2_TO_V3;
-					} else {
-						g_assert (ret_size == 16);
+					} else if (ret_size == 16) {
 						simd_intrins = INTERP_SIMD_INTRINSIC_V2_TO_V128;
 					}
-				} else {
-					g_assert (arg_size == 12);
-					g_assert (ret_size == 16);
+				} else if ((arg_size == 12) && (ret_size == 16)) {
 					simd_intrins = INTERP_SIMD_INTRINSIC_V3_TO_V128;
 				}
 				break;
@@ -700,8 +664,21 @@ emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
 		return FALSE;
 
-	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins))
+	if (id == SN_Equals) {
+		simd_opcode = MINT_SIMD_INTRINS_P_PP;
+
+		if (atype == MONO_TYPE_R4) {
+			simd_intrins = INTERP_SIMD_INTRINSIC_V128_INSTANCE_EQUALS_R4;
+		}
+		else if (atype == MONO_TYPE_R8) {
+			simd_intrins = INTERP_SIMD_INTRINSIC_V128_INSTANCE_EQUALS_R8;
+		}
+		else {
+			simd_intrins = INTERP_SIMD_INTRINSIC_V128_INSTANCE_EQUALS_BITWISE;
+		}
+	} else if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins)) {
 		goto opcode_added;
+	}
 
 	if (simd_opcode == -1 || simd_intrins == -1)
 		return FALSE;
@@ -760,7 +737,7 @@ opcode_added:
 }
 
 static gboolean
-emit_sn_vector4 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
+emit_sn_vector_2_3_4 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
 {
 	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod);
 	if (id == -1)
@@ -773,12 +750,55 @@ emit_sn_vector4 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *cs
 	MonoClass *vector_klass = cmethod->klass;
 
 	MonoTypeEnum atype = MONO_TYPE_R4;
-	int vector_size = SIZEOF_V128;
+	int vector_size = mono_class_value_size (vector_klass, NULL);
 	int arg_size = sizeof (float);
+
+	if ((vector_size != 8) && (vector_size != 12) && (vector_size != 16)) {
+		return FALSE;
+	}
+
 	int scalar_arg = -1;
 	for (int i = 0; i < csignature->param_count; i++) {
 		if (csignature->params [i]->type != MONO_TYPE_GENERICINST)
 			scalar_arg = i;
+	}
+
+	const char *class_name = m_class_get_name (vector_klass);
+	bool isQuaternion = !strcmp (class_name, "Quaternion");
+	bool isPlane = !strcmp (class_name, "Plane");
+
+	if (id == SN_ctor) {
+		if ((vector_size == 8) || (vector_size == 12)) {
+			// FIXME: We should handle creation of Vector2/Vector3
+			return FALSE;
+		} else if (isQuaternion || isPlane) {
+			// FIXME: We should handle creation of Quaternion/Plane
+			return FALSE;
+		}
+	}
+
+	if (isQuaternion) {
+		if ((id == SN_op_Multiply) || (id == SN_op_Division)) {
+			// FIXME: We should handle multiplication and division of Quaternion
+			return FALSE;
+		}
+	}
+
+	if (id == SN_Equals) {
+		simd_opcode = MINT_SIMD_INTRINS_P_PP;
+
+		if (vector_size == 8) {
+			simd_intrins = INTERP_SIMD_INTRINSIC_V2_INSTANCE_EQUALS_R4;
+		} else if (vector_size == 12) {
+			simd_intrins = INTERP_SIMD_INTRINSIC_V3_INSTANCE_EQUALS_R4;
+		} else {
+			simd_intrins = INTERP_SIMD_INTRINSIC_V128_INSTANCE_EQUALS_R4;
+		}
+	}
+	
+	if ((vector_size == 8) || (vector_size == 12)) {
+		// FIXME: We should other APIs for Vector2/Vector3
+		return FALSE;
 	}
 
 	if (emit_common_simd_operations (td, id, atype, vector_size, arg_size, scalar_arg, &simd_opcode, &simd_intrins)) {
@@ -1096,8 +1116,8 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 	} else if (!strcmp (class_ns, "System.Numerics")) {
 		if (!strcmp (class_name, "Vector`1"))
 			return emit_sn_vector_t (td, cmethod, csignature, newobj);
-		else if (!strcmp (class_name, "Vector4"))
-			return emit_sn_vector4 (td, cmethod, csignature, newobj);
+		else if (!strcmp (class_name, "Vector2") || !strcmp (class_name, "Vector3") || !strcmp (class_name, "Vector4") || !strcmp (class_name, "Quaternion") || !strcmp (class_name, "Plane"))
+			return emit_sn_vector_2_3_4 (td, cmethod, csignature, newobj);
 	} else if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
 		if (!strcmp (class_name, "PackedSimd"))
 			return emit_sri_packedsimd (td, cmethod, csignature);
