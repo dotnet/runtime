@@ -27588,7 +27588,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                           NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend, NI_Sve_GatherVectorSByteSignExtend,
                           NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend, NI_Sve_GatherVectorUInt16ZeroExtend,
                           NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend, NI_Sve_GatherVectorUInt32ZeroExtend));
-        assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherVector) &&
+        assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherPrefetch16Bit) &&
                                                             (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtend))));
 #else
         assert(varTypeIsI(addr));

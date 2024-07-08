@@ -7729,6 +7729,14 @@ namespace JIT.HardwareIntrinsics.Arm
             return CheckLoadVectorBehaviorCore(firstOp, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
         }
 
+        private static T GetGatherVectorResultByIndex<T, ExtendedElementT, Index>(int index, T[] firstOp, ExtendedElementT[] secondOp, Index[] thirdOp)
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return (firstOp[index] == T.Zero) ? T.Zero : T.CreateTruncating(secondOp[int.CreateChecked(thirdOp[index])]);
+        }
+
         private static bool CheckGatherVectorBehaviorCore<T, ExtendedElementT, Index>(T[] firstOp, ExtendedElementT[] secondOp, Index[] thirdOp, T[] result, Func<int, T, T> map) 
                 where T : INumberBase<T> 
                 where ExtendedElementT : INumberBase<ExtendedElementT> 
@@ -7736,7 +7744,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             for (var i = 0; i < firstOp.Length; i++)
             {
-                T gatherResult = (firstOp[i] == T.Zero) ? T.Zero : T.CreateTruncating(secondOp[int.CreateChecked(thirdOp[i])]);
+                T gatherResult = GetGatherVectorResultByIndex(i, firstOp, secondOp, thirdOp);
                 gatherResult = map(i, gatherResult);
                 if (result[i] != gatherResult)
                 {
@@ -7762,11 +7770,11 @@ namespace JIT.HardwareIntrinsics.Arm
             return CheckGatherVectorBehaviorCore(firstOp, secondOp, thirdOp, result, (i, gatherResult) => ConditionalSelectResult(maskOp[i], gatherResult, falseOp[i]));
         }
 
-        private static bool CheckFirstFaultingBehaviorCore<T>(T[] firstOp, T[] result, Vector<T> faultResult, Func<int, bool> checkIter) where T : INumberBase<T>
+        private static bool CheckFirstFaultingBehaviorCore<T>(T[] result, Vector<T> faultResult, Func<int, bool> checkIter) where T : INumberBase<T>
         {
             bool hitFault = false;
 
-            for (var i = 0; i < firstOp.Length; i++)
+            for (var i = 0; i < result.Length; i++)
             {
                 if (hitFault)
                 {
@@ -7806,7 +7814,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static bool CheckLoadVectorFirstFaultingBehavior<T>(T[] firstOp, T[] result, Vector<T> faultResult) where T : INumberBase<T>
         {
-            return CheckFirstFaultingBehaviorCore(firstOp, result, faultResult, i => firstOp[i] == result[i]);
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => firstOp[i] == result[i]);
+        }
+
+        public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index>(T[] firstOp, ExtendedElementT[] secondOp, Index[] thirdOp, T[] result, Vector<T> faultResult)
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByIndex(i, firstOp, secondOp, thirdOp) == result[i]);
         }
     }
 }
