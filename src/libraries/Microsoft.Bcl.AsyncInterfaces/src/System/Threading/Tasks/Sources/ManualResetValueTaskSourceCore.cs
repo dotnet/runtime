@@ -61,6 +61,7 @@ namespace System.Threading.Tasks.Sources
             _capturedContext = null;
             _continuation = null;
             _continuationState = null;
+            RunContinuationsAsynchronously = false;
         }
 
         /// <summary>Completes with a successful result.</summary>

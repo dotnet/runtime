@@ -58,6 +58,7 @@ namespace System.Threading.Tasks.Sources
             _error = null;
             _result = default;
             _completed = false;
+            _runContinuationsAsynchronously = false;
         }
 
         /// <summary>Completes with a successful result.</summary>
