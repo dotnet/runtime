@@ -122,7 +122,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             data->TypeDefToMethodTableMap = tables.TypeDefToMethodTable;
             data->TypeRefToMethodTableMap = tables.TypeRefToMethodTable;
 
-            // Always 0 - .NET no longer has this concept
+            // Always 0 - .NET no longer has these concepts
             data->dwModuleID = 0;
             data->dwBaseClassIndex = 0;
             data->dwModuleIndex = 0;
