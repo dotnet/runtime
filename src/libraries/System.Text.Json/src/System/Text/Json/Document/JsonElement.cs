@@ -86,6 +86,13 @@ namespace System.Text.Json
             return _parent.GetArrayLength(_idx);
         }
 
+        internal int GetObjectSize()
+        {
+            CheckValidInstance();
+
+            return _parent.GetObjectSize(_idx);
+        }
+
         /// <summary>
         ///   Gets a <see cref="JsonElement"/> representing the value of a required property identified
         ///   by <paramref name="propertyName"/>.
@@ -1204,7 +1211,6 @@ namespace System.Text.Json
 
         internal bool ValueIsEscaped
         {
-            // TODO make public https://github.com/dotnet/runtime/issues/77666
             get
             {
                 CheckValidInstance();
@@ -1215,7 +1221,6 @@ namespace System.Text.Json
 
         internal ReadOnlySpan<byte> ValueSpan
         {
-            // TODO make public https://github.com/dotnet/runtime/issues/77666
             get
             {
                 CheckValidInstance();
@@ -1224,14 +1229,19 @@ namespace System.Text.Json
             }
         }
 
-        // TODO make public https://github.com/dotnet/runtime/issues/33388
-        internal static bool DeepEquals(JsonElement left, JsonElement right)
+        /// <summary>
+        /// Compares the values of two <see cref="JsonElement"/> values for equality, including the values of all descendant elements.
+        /// </summary>
+        /// <param name="element1">The <see cref="JsonElement"/> to compare.</param>
+        /// <param name="element2">The <see cref="JsonElement"/> to compare.</param>
+        /// <returns><see langword="true"/> if the two values are equal; otherwise <see langword="false"/>.</returns>
+        public static bool DeepEquals(JsonElement element1, JsonElement element2)
         {
-            Debug.Assert(left._parent != null);
-            Debug.Assert(right._parent != null);
+            element1.CheckValidInstance();
+            element2.CheckValidInstance();
 
-            JsonValueKind kind = left.ValueKind;
-            if (kind != right.ValueKind)
+            JsonValueKind kind = element1.ValueKind;
+            if (kind != element2.ValueKind)
             {
                 return false;
             }
@@ -1242,92 +1252,104 @@ namespace System.Text.Json
                     return true;
 
                 case JsonValueKind.Number:
-                    return JsonHelpers.AreEqualJsonNumbers(left.GetRawValue().Span, right.GetRawValue().Span);
+                    return JsonHelpers.AreEqualJsonNumbers(element1.GetRawValue().Span, element2.GetRawValue().Span);
 
                 case JsonValueKind.String:
-                    if (right.ValueIsEscaped)
+                    if (element2.ValueIsEscaped)
                     {
-                        if (left.ValueIsEscaped)
+                        if (element1.ValueIsEscaped)
                         {
                             // Both values are escaped, force an allocation to unescape the RHS.
-                            return left.ValueEquals(right.GetString());
+                            return element1.ValueEquals(element2.GetString());
                         }
 
                         // Swap values so that unescaping is handled by the LHS.
-                        (left, right) = (right, left);
+                        (element1, element2) = (element2, element1);
                     }
 
-                    return left.ValueEquals(right.ValueSpan);
+                    return element1.ValueEquals(element2.ValueSpan);
 
                 case JsonValueKind.Array:
-                    ArrayEnumerator rightArrayEnumerator = right.EnumerateArray();
-                    foreach (JsonElement leftElement in left.EnumerateArray())
+                    if (element1.GetArrayLength() != element2.GetArrayLength())
                     {
-                        if (!rightArrayEnumerator.MoveNext() || !DeepEquals(leftElement, rightArrayEnumerator.Current))
+                        return false;
+                    }
+
+                    ArrayEnumerator arrayEnumerator2 = element2.EnumerateArray();
+                    foreach (JsonElement e1 in element1.EnumerateArray())
+                    {
+                        if (!arrayEnumerator2.MoveNext() || !DeepEquals(e1, arrayEnumerator2.Current))
                         {
                             return false;
                         }
                     }
 
-                    return !rightArrayEnumerator.MoveNext();
+                    return !arrayEnumerator2.MoveNext();
 
                 default:
                     Debug.Assert(kind is JsonValueKind.Object);
-                    ObjectEnumerator leftObjectEnumerator = left.EnumerateObject();
-                    ObjectEnumerator rightObjectEnumerator = right.EnumerateObject();
+
+                    int count = element1.GetObjectSize();
+                    if (count != element2.GetObjectSize())
+                    {
+                        return false;
+                    }
+
+                    ObjectEnumerator objectEnumerator1 = element1.EnumerateObject();
+                    ObjectEnumerator objectEnumerator2 = element2.EnumerateObject();
 
                     // Two JSON objects are considered equal if they define the same set of properties.
                     // Start optimistically with sequential comparison, but fall back to unordered
                     // comparison as soon as a mismatch is encountered.
 
-                    while (leftObjectEnumerator.MoveNext())
+                    while (objectEnumerator1.MoveNext())
                     {
-                        if (!rightObjectEnumerator.MoveNext())
+                        if (!objectEnumerator2.MoveNext())
                         {
                             return false;
                         }
 
-                        JsonProperty leftProp = leftObjectEnumerator.Current;
-                        JsonProperty rightProp = rightObjectEnumerator.Current;
+                        JsonProperty prop1 = objectEnumerator1.Current;
+                        JsonProperty prop2 = objectEnumerator2.Current;
 
-                        if (!NameEquals(leftProp, rightProp))
+                        if (!NameEquals(prop1, prop2))
                         {
                             // We have our first mismatch, fall back to unordered comparison.
-                            return UnorderedObjectDeepEquals(leftObjectEnumerator, rightObjectEnumerator);
+                            return UnorderedObjectDeepEquals(objectEnumerator1, objectEnumerator2, remainingProps: count);
                         }
 
-                        if (!DeepEquals(leftProp.Value, rightProp.Value))
+                        if (!DeepEquals(prop1.Value, prop2.Value))
                         {
                             return false;
                         }
+
+                        count--;
                     }
 
-                    return !rightObjectEnumerator.MoveNext();
+                    Debug.Assert(!objectEnumerator2.MoveNext());
+                    return true;
 
-                    static bool UnorderedObjectDeepEquals(ObjectEnumerator left, ObjectEnumerator right)
+                    static bool UnorderedObjectDeepEquals(ObjectEnumerator objectEnumerator1, ObjectEnumerator objectEnumerator2, int remainingProps)
                     {
-                        Dictionary<string, JsonElement> rightElements = new(StringComparer.Ordinal);
+                        Dictionary<string, JsonElement> properties2 = new(capacity: remainingProps, StringComparer.Ordinal);
                         do
                         {
-                            JsonProperty prop = right.Current;
-                            rightElements.TryAdd(prop.Name, prop.Value);
+                            JsonProperty prop2 = objectEnumerator2.Current;
+                            properties2.TryAdd(prop2.Name, prop2.Value); // first occurrence wins
                         }
-                        while (right.MoveNext());
+                        while (objectEnumerator2.MoveNext());
 
-                        int leftCount = 0;
                         do
                         {
-                            JsonProperty prop = left.Current;
-                            if (!rightElements.TryGetValue(prop.Name, out JsonElement rightElement) || !DeepEquals(prop.Value, rightElement))
+                            JsonProperty prop = objectEnumerator1.Current;
+                            if (!properties2.TryGetValue(prop.Name, out JsonElement rightElement) || !DeepEquals(prop.Value, rightElement))
                             {
                                 return false;
                             }
-
-                            leftCount++;
                         }
-                        while (left.MoveNext());
+                        while (objectEnumerator1.MoveNext());
 
-                        return leftCount == rightElements.Count;
+                        return true;
                     }
 
                     static bool NameEquals(JsonProperty left, JsonProperty right)
