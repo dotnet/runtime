@@ -310,7 +310,7 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
     m_pCachedImporter(NULL),
     m_isCachedHijackFunctionValid(FALSE)
 {
-    _ASSERTE(baseAddress != NULL);
+    _ASSERTE(baseAddress != (CORDB_ADDRESS)NULL);
     m_globalBase = CORDB_ADDRESS_TO_TADDR(baseAddress);
 
     _ASSERTE(pMetaDataLookup != NULL);
@@ -1202,12 +1202,12 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     TADDR pTargetIL; // target address of start of IL blob
 
     // This works for methods in dynamic modules, and methods overridden by a profiler.
-    pTargetIL = pModule->GetDynamicIL(mdMethodToken, TRUE);
+    pTargetIL = pModule->GetDynamicIL(mdMethodToken);
 
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
     // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
     // implemented for DAC.
-    if (pTargetIL == 0 && !pModule->IsReflection())
+    if (pTargetIL == 0 && !pModule->IsReflectionEmit())
     {
         pTargetIL = (TADDR)pModule->GetIL(methodRVA);
     }
@@ -1240,7 +1240,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
         pIL->cbSize = header.GetCodeSize();
 
         // Now we get the signature token
-        if (header.LocalVarSigTok != NULL)
+        if (header.LocalVarSigTok != mdTokenNil)
         {
             mdSig = header.GetLocalVarSigTok();
         }
@@ -1314,14 +1314,14 @@ void DacDbiInterfaceImpl::GetMethodRegionInfo(MethodDesc *             pMethodDe
     }
     CONTRACTL_END;
 
-    IJitManager::MethodRegionInfo methodRegionInfo = {NULL, 0, NULL, 0};
+    IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
     PCODE functionAddress = pMethodDesc->GetNativeCode();
 
     // get the start address of the hot region and initialize the jit manager
     pCodeInfo->m_rgCodeRegions[kHot].pAddress = CORDB_ADDRESS(PCODEToPINSTR(functionAddress));
 
     // if the start address is NULL, the code isn't available yet, so just return
-    if (functionAddress != NULL)
+    if (functionAddress != (PCODE)NULL)
     {
         EECodeInfo codeInfo(functionAddress);
         _ASSERTE(codeInfo.IsValid());
@@ -1372,7 +1372,7 @@ void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAssembly         vmDomai
     if(pMethodDesc != NULL)
     {
         GetMethodRegionInfo(pMethodDesc, pCodeInfo);
-        if (pCodeInfo->m_rgCodeRegions[kHot].pAddress != NULL)
+        if (pCodeInfo->m_rgCodeRegions[kHot].pAddress != (CORDB_ADDRESS)NULL)
         {
             pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
             LookupEnCVersions(pModule,
@@ -1397,14 +1397,14 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
 
     _ASSERTE(pCodeInfo != NULL);
 
-    if (hotCodeStartAddr == NULL)
+    if (hotCodeStartAddr == (CORDB_ADDRESS)NULL)
     {
         // if the start address is NULL, the code isn't available yet, so just return
         _ASSERTE(!pCodeInfo->IsValid());
         return;
     }
 
-    IJitManager::MethodRegionInfo methodRegionInfo = {NULL, 0, NULL, 0};
+    IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
     TADDR codeAddr = CORDB_ADDRESS_TO_TADDR(hotCodeStartAddr);
 
 #ifdef TARGET_ARM
@@ -1487,18 +1487,11 @@ void DacDbiInterfaceImpl::GetTypeHandles(VMPTR_TypeHandle  vmThExact,
      *pThExact = TypeHandle::FromPtr(vmThExact.GetDacPtr());
      *pThApprox = TypeHandle::FromPtr(vmThApprox.GetDacPtr());
 
-    // If we can't find the class, return the proper HR to the right side. Note: if the class is not a value class and
-    // the class is also not restored, then we must pretend that the class is still not loaded. We are gonna let
-    // unrestored value classes slide, though, and special case access to the class's parent below.
-    if ((pThApprox->IsNull()) || ((!pThApprox->IsValueType()) && (!pThApprox->IsRestored())))
+    // If we can't find the class, return the proper HR to the right side.
+    if (pThApprox->IsNull())
     {
         LOG((LF_CORDB, LL_INFO10000, "D::GASCI: class isn't loaded.\n"));
         ThrowHR(CORDBG_E_CLASS_NOT_LOADED);
-    }
-    // If the exact type handle is not restored ignore it.
-    if (!pThExact->IsNull() && !pThExact->IsRestored())
-    {
-        *pThExact = TypeHandle();
     }
  }  // DacDbiInterfaceImpl::GetTypeHandles
 
@@ -1584,16 +1577,8 @@ void DacDbiInterfaceImpl::GetStaticsBases(TypeHandle thExact,
                                          PTR_BYTE *  ppNonGCStaticsBase)
  {
     MethodTable * pMT = thExact.GetMethodTable();
-    Module * pModuleForStatics = pMT->GetModuleForStatics();
-    if (pModuleForStatics != NULL)
-    {
-        PTR_DomainLocalModule pLocalModule = pModuleForStatics->GetDomainLocalModule();
-        if (pLocalModule != NULL)
-        {
-            *ppGCStaticsBase = pLocalModule->GetGCStaticsBasePointer(pMT);
-            *ppNonGCStaticsBase = pLocalModule->GetNonGCStaticsBasePointer(pMT);
-        }
-    }
+    *ppGCStaticsBase = pMT->GetGCStaticsBasePointer();
+    *ppNonGCStaticsBase = pMT->GetNonGCStaticsBasePointer();
 } // DacDbiInterfaceImpl::GetStaticsBases
 
 //-----------------------------------------------------------------------------
@@ -1670,7 +1655,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
 
                     if (pCurrentFieldData->OkToGetOrSetStaticAddress())
                     {
-                        pCurrentFieldData->SetStaticAddress(NULL);
+                        pCurrentFieldData->SetStaticAddress((TADDR)NULL);
                     }
                 }
                 else
@@ -1794,9 +1779,6 @@ void DacDbiInterfaceImpl::GetInstantiationFieldInfo (VMPTR_DomainAssembly       
 {
     DD_ENTER_MAY_THROW;
 
-    DomainAssembly * pDomainAssembly = vmDomainAssembly.GetDacPtr();
-    _ASSERTE(pDomainAssembly != NULL);
-    AppDomain * pAppDomain = pDomainAssembly->GetAppDomain();
     TypeHandle  thExact;
     TypeHandle  thApprox;
 
@@ -1806,7 +1788,7 @@ void DacDbiInterfaceImpl::GetInstantiationFieldInfo (VMPTR_DomainAssembly       
 
     pFieldList->Alloc(GetTotalFieldCount(thApprox));
 
-    CollectFields(thExact, thApprox, pAppDomain, pFieldList);
+    CollectFields(thExact, thApprox, AppDomain::GetCurrentDomain(), pFieldList);
 
 } // DacDbiInterfaceImpl::GetInstantiationFieldInfo
 
@@ -3005,9 +2987,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactClassTypeHandle(DebuggerIPCE_ExpandedTyp
     TypeHandle typeConstructor =
         ClassLoader::LookupTypeDefOrRefInModule(pModule, pTopLevelTypeData->ClassTypeData.metadataToken);
 
-    // If we can't find the class, throw the appropriate HR. Note: if the class is not a value class and
-    // the class is also not restored, then we must pretend that the class is still not loaded. We are gonna let
-    // unrestored value classes slide, though, and special case access to the class's parent below.
+    // If we can't find the class, throw the appropriate HR.
     if (typeConstructor.IsNull())
     {
         LOG((LF_CORDB, LL_INFO10000, "D::ETITTH: class isn't loaded.\n"));
@@ -3212,7 +3192,7 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetThreadStaticAddress(VMPTR_FieldDesc vmFiel
 
     Thread * pRuntimeThread = vmRuntimeThread.GetDacPtr();
     PTR_FieldDesc pFieldDesc = vmField.GetDacPtr();
-    TADDR fieldAddress = NULL;
+    TADDR fieldAddress = (TADDR)NULL;
 
     _ASSERTE(pRuntimeThread != NULL);
 
@@ -3461,7 +3441,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
 
     PTR_Object pInvocationList = OBJECTREFToObject(pDelObj->GetInvocationList());
 
-    if (invocationCount == NULL)
+    if (invocationCount == 0)
     {
         if (pInvocationList == NULL)
         {
@@ -3469,7 +3449,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
             // Special case: This might fail in a VSD delegate (instance open virtual)...
             // TODO: There is the special signatures cases missing.
             TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
-            if (targetMethodPtr == NULL)
+            if (targetMethodPtr == (TADDR)NULL)
             {
                 // Static extension methods, other closed static delegates, and instance delegates fall into this category.
                 *delegateType = kClosedDelegate;
@@ -3521,7 +3501,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateFunctionData(
 
     HRESULT hr = S_OK;
     PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
-    TADDR targetMethodPtr = NULL;
+    TADDR targetMethodPtr = (TADDR)NULL;
     VMPTR_MethodDesc pMD;
 
     switch (delegateType)
@@ -3568,16 +3548,15 @@ HRESULT DacDbiInterfaceImpl::GetDelegateTargetObject(
         {
             PTR_Object pRemoteTargetObj = OBJECTREFToObject(pDelObj->GetTarget());
             ppTargetObj->SetDacTargetPtr(pRemoteTargetObj.GetAddr());
-            ppTargetAppDomain->SetDacTargetPtr(dac_cast<TADDR>(pRemoteTargetObj->GetGCSafeMethodTable()->GetDomain()->AsAppDomain()));
             break;
         }
 
         default:
-            ppTargetObj->SetDacTargetPtr(NULL);
-            ppTargetAppDomain->SetDacTargetPtr(dac_cast<TADDR>(pDelObj->GetGCSafeMethodTable()->GetDomain()->AsAppDomain()));
+            ppTargetObj->SetDacTargetPtr((TADDR)NULL);
             break;
     }
 
+    ppTargetAppDomain->SetDacTargetPtr(dac_cast<TADDR>(AppDomain::GetCurrentDomain()));
     return hr;
 }
 
@@ -3744,17 +3723,11 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
             DebugStackTrace::DebugStackTraceElement const& currentElement = stackFramesData.pElements[index];
             DacExceptionCallStackData& currentFrame = dacStackFrames[index];
 
-            Module* pModule = currentElement.pFunc->GetModule();
-            BaseDomain* pBaseDomain = currentElement.pFunc->GetAssembly()->GetDomain();
-
-            AppDomain* pDomain = NULL;
-            DomainAssembly* pDomainAssembly = NULL;
-
-            pDomain = pBaseDomain->AsAppDomain();
-
+            AppDomain* pDomain = AppDomain::GetCurrentDomain();
             _ASSERTE(pDomain != NULL);
 
-            pDomainAssembly = pModule->GetDomainAssembly();
+            Module* pModule = currentElement.pFunc->GetModule();
+            DomainAssembly* pDomainAssembly = pModule->GetDomainAssembly();
             _ASSERTE(pDomainAssembly != NULL);
 
             currentFrame.vmAppDomain.SetHostPtr(pDomain);
@@ -4139,8 +4112,6 @@ void DacDbiInterfaceImpl::ResolveTypeReference(const TypeRefData * pTypeRefInfo,
         _ASSERTE(pTargetModule != NULL);
         _ASSERTE( TypeFromToken(targetTypeDef) == mdtTypeDef );
 
-        AppDomain * pAppDomain = pDomainAssembly->GetAppDomain();
-
         pTargetRefInfo->vmDomainAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pTargetModule->GetDomainAssembly()));
         pTargetRefInfo->typeToken = targetTypeDef;
     }
@@ -4310,7 +4281,7 @@ void DacDbiInterfaceImpl::GetMetadata(VMPTR_Module vmModule, TargetBuffer * pTar
     _ASSERTE(pModule->IsVisibleToDebugger());
 
     // For dynamic modules, metadata is stored as an eagerly-serialized buffer hanging off the Reflection Module.
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         // Here is the fetch.
         ReflectionModule * pReflectionModule = pModule->GetReflectionModule();
@@ -4390,11 +4361,10 @@ void DacDbiInterfaceImpl::GetDomainAssemblyData(VMPTR_DomainAssembly vmDomainAss
     ZeroMemory(pData, sizeof(*pData));
 
     DomainAssembly * pDomainAssembly  = vmDomainAssembly.GetDacPtr();
-    AppDomain  * pAppDomain   = pDomainAssembly->GetAppDomain();
 
     // @dbgtodo - is this efficient DAC usage (perhaps a dac-cop rule)? Are we round-tripping the pointer?
     pData->vmDomainAssembly.SetHostPtr(pDomainAssembly);
-    pData->vmAppDomain.SetHostPtr(pAppDomain);
+    pData->vmAppDomain.SetHostPtr(AppDomain::GetCurrentDomain());
 }
 
 // Implement IDacDbiInterface::GetModuleData
@@ -4413,12 +4383,12 @@ void DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModule, ModuleInfo * pDat
     pData->vmAssembly.SetHostPtr(pModule->GetAssembly());
 
     // Is it dynamic?
-    BOOL fIsDynamic = pModule->IsReflection();
+    BOOL fIsDynamic = pModule->IsReflectionEmit();
     pData->fIsDynamic = fIsDynamic;
 
     // Get PE BaseAddress and Size
     // For dynamic modules, these are 0. Else,
-    pData->pPEBaseAddress = NULL;
+    pData->pPEBaseAddress = (CORDB_ADDRESS)NULL;
     pData->nPESize = 0;
 
     if (!fIsDynamic)
@@ -4534,7 +4504,6 @@ VMPTR_DomainAssembly DacDbiInterfaceImpl::ResolveAssembly(
 
 
     DomainAssembly * pDomainAssembly  = vmScope.GetDacPtr();
-    AppDomain  * pAppDomain   = pDomainAssembly->GetAppDomain();
     Module     * pModule      = pDomainAssembly->GetModule();
 
     VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
@@ -4744,8 +4713,16 @@ void DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread        vmThread,
 
     Thread * pThread = vmThread.GetDacPtr();
     gc_alloc_context* allocContext = pThread->GetAllocContext();
-    threadAllocInfo->m_allocBytesSOH = allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr);
-    threadAllocInfo->m_allocBytesUOH = allocContext->alloc_bytes_uoh;
+    if (allocContext != nullptr)
+    {
+        threadAllocInfo->m_allocBytesSOH = allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr);
+        threadAllocInfo->m_allocBytesUOH = allocContext->alloc_bytes_uoh;
+    }
+    else
+    {
+            threadAllocInfo->m_allocBytesSOH = 0;
+            threadAllocInfo->m_allocBytesUOH = 0;
+    }
 }
 
 // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
@@ -4796,7 +4773,7 @@ BOOL DacDbiInterfaceImpl::HasUnhandledException(VMPTR_Thread vmThread)
     // most managed exceptions are just a throwable bound to a
     // native exception. In that case this handle will be non-null
     OBJECTHANDLE ohException = pThread->GetThrowableAsHandle();
-    if (ohException != NULL)
+    if (ohException != (OBJECTHANDLE)NULL)
     {
         // during the UEF we set the unhandled bit, if it is set the exception
         // was unhandled
@@ -4885,7 +4862,7 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetCurrentException(VMPTR_Thread vmThrea
     // OBJECTHANDLEs are really just TADDRs.
     OBJECTHANDLE ohException = pThread->GetThrowableAsHandle();        // ohException can be NULL
 
-    if (ohException == NULL)
+    if (ohException == (OBJECTHANDLE)NULL)
     {
         if (pThread->IsLastThrownObjectUnhandled())
         {
@@ -4903,7 +4880,7 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetObjectForCCW(CORDB_ADDRESS ccwPtr)
 {
     DD_ENTER_MAY_THROW;
 
-    OBJECTHANDLE ohCCW = NULL;
+    OBJECTHANDLE ohCCW = (OBJECTHANDLE)NULL;
 
 #ifdef FEATURE_COMWRAPPERS
     if (DACTryGetComWrappersHandleFromCCW(ccwPtr, &ohCCW) != S_OK)
@@ -4953,12 +4930,7 @@ VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain(VMPTR_Thread vmThread)
     DD_ENTER_MAY_THROW;
 
     Thread *    pThread    = vmThread.GetDacPtr();
-    AppDomain * pAppDomain = pThread->GetDomain();
-
-    if (pAppDomain == NULL)
-    {
-        ThrowHR(E_FAIL);
-    }
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
     VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
     vmAppDomain.SetDacTargetPtr(PTR_HOST_TO_TADDR(pAppDomain));
@@ -4994,13 +4966,13 @@ CLR_DEBUGGING_PROCESS_FLAGS DacDbiInterfaceImpl::GetAttachStateFlags()
 //     Non-null Target Address of hijack function.
 TADDR DacDbiInterfaceImpl::GetHijackAddress()
 {
-    TADDR addr = NULL;
+    TADDR addr = (TADDR)NULL;
     if (g_pDebugger != NULL)
     {
         // Get the start address of the redirect function for unhandled exceptions.
         addr = dac_cast<TADDR>(g_pDebugger->m_rgHijackFunction[Debugger::kUnhandledException].StartAddress());
     }
-    if (addr == NULL)
+    if (addr == (TADDR)NULL)
     {
         ThrowHR(CORDBG_E_NOTREADY);
     }
@@ -5240,8 +5212,8 @@ void DacDbiInterfaceImpl::Hijack(
     // space used by the OS exception dispatcher.  We are using the latter approach here.
     //
 
-    CORDB_ADDRESS espOSContext = NULL;
-    CORDB_ADDRESS espOSRecord  = NULL;
+    CORDB_ADDRESS espOSContext = (CORDB_ADDRESS)NULL;
+    CORDB_ADDRESS espOSRecord  = (CORDB_ADDRESS)NULL;
     if (pThread != NULL && pThread->IsExceptionInProgress())
     {
         espOSContext = (CORDB_ADDRESS)PTR_TO_TADDR(pThread->GetExceptionState()->GetContextRecord());
@@ -5391,10 +5363,10 @@ TargetBuffer DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS   VASigCookieAddr,
     DD_ENTER_MAY_THROW;
 
     _ASSERTE(pArgBase != NULL);
-    *pArgBase = NULL;
+    *pArgBase = (CORDB_ADDRESS)NULL;
 
     // First, read the VASigCookie pointer.
-    TADDR taVASigCookie = NULL;
+    TADDR taVASigCookie = (TADDR)NULL;
     SafeReadStructOrThrow(VASigCookieAddr, &taVASigCookie);
 
     // Now create a DAC copy of VASigCookie.
@@ -5650,10 +5622,13 @@ void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
     DebuggerJitInfo * pDJI = NULL;
     EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
     {
-        pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, mdMethod);
-        if (pDMI != NULL)
+        if (g_pDebugger != NULL)
         {
-            pDJI = pDMI->FindJitInfo(pMD, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
+            pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, mdMethod);
+            if (pDMI != NULL)
+            {
+                pDJI = pDMI->FindJitInfo(pMD, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
+            }
         }
     }
     EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
@@ -5693,7 +5668,7 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetDebuggerControlBlockAddress()
     return CORDB_ADDRESS(dac_cast<TADDR>(g_pDebugger->m_pRCThread->GetDCB()));
     }
 
-    return NULL;
+    return (CORDB_ADDRESS)NULL;
 }
 
 // DacDbi API: Get the context for a particular thread of the target process
@@ -5728,7 +5703,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
 
             // Going through thread Frames and looking for first (deepest one) one that
             // that has context available for stackwalking (SP and PC)
-            // For example: RedirectedThreadFrame, InlinedCallFrame, HelperMethodFrame, ComPlusMethodFrame
+            // For example: RedirectedThreadFrame, InlinedCallFrame, HelperMethodFrame, CLRToCOMMethodFrame
             Frame *frame = pThread->GetFrame();
             while (frame != NULL && frame != FRAME_TOP)
             {
@@ -6569,7 +6544,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
             if (ctx == NULL)
                 continue;
 
-            if ((CORDB_ADDRESS)ctx->alloc_ptr != NULL)
+            if ((CORDB_ADDRESS)ctx->alloc_ptr != (CORDB_ADDRESS)NULL)
             {
                 mAllocInfo[j].Ptr = (CORDB_ADDRESS)ctx->alloc_ptr;
                 mAllocInfo[j].Limit = (CORDB_ADDRESS)ctx->alloc_limit;
@@ -6884,7 +6859,7 @@ HRESULT DacDbiInterfaceImpl::WalkHeap(HeapWalkHandle handle,
         {
             objects[i].address = addr;
             objects[i].type.token1 = mt;
-            objects[i].type.token2 = NULL;
+            objects[i].type.token2 = 0;
             objects[i].size = size;
             i++;
         }
@@ -7054,21 +7029,11 @@ bool DacDbiInterfaceImpl::GetAppDomainForObject(CORDB_ADDRESS addr, OUT VMPTR_Ap
 
     PTR_Object obj(TO_TADDR(addr));
     MethodTable *mt = obj->GetMethodTable();
-
     PTR_Module module = mt->GetModule();
-    PTR_Assembly assembly = module->GetAssembly();
-    BaseDomain *baseDomain = assembly->GetDomain();
 
-    if (baseDomain->IsAppDomain())
-    {
-        pAppDomain->SetDacTargetPtr(PTR_HOST_TO_TADDR(baseDomain->AsAppDomain()));
-        pModule->SetDacTargetPtr(PTR_HOST_TO_TADDR(module));
-        pDomainAssembly->SetDacTargetPtr(PTR_HOST_TO_TADDR(module->GetDomainAssembly()));
-    }
-    else
-    {
-        return false;
-    }
+    pAppDomain->SetDacTargetPtr(PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain()));
+    pModule->SetDacTargetPtr(PTR_HOST_TO_TADDR(module));
+    pDomainAssembly->SetDacTargetPtr(PTR_HOST_TO_TADDR(module->GetDomainAssembly()));
 
     return true;
 }
@@ -7488,13 +7453,13 @@ HRESULT DacDbiInterfaceImpl::GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vm
 #ifdef FEATURE_REJIT
     ILCodeVersion ilCode(vmILCodeVersionNode.GetDacPtr());
     pData->m_state = ilCode.GetRejitState();
-    pData->m_pbIL = PTR_TO_CORDB_ADDRESS(dac_cast<ULONG_PTR>(ilCode.GetIL()));
+    pData->m_pbIL = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(ilCode.GetIL()));
     pData->m_dwCodegenFlags = ilCode.GetJitFlags();
     const InstrumentedILOffsetMapping* pMapping = ilCode.GetInstrumentedILMap();
     if (pMapping)
     {
         pData->m_cInstrumentedMapEntries = (ULONG)pMapping->GetCount();
-        pData->m_rgInstrumentedMapEntries = PTR_TO_CORDB_ADDRESS(dac_cast<ULONG_PTR>(pMapping->GetOffsets()));
+        pData->m_rgInstrumentedMapEntries = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(pMapping->GetOffsets()));
     }
     else
     {
@@ -7512,6 +7477,10 @@ HRESULT DacDbiInterfaceImpl::GetDefinesBitField(ULONG32 *pDefines)
     DD_ENTER_MAY_THROW;
     if (pDefines == NULL)
         return E_INVALIDARG;
+
+    if (g_pDebugger == NULL)
+        return CORDBG_E_NOTREADY;
+
     *pDefines = g_pDebugger->m_defines;
     return S_OK;
 }
@@ -7521,6 +7490,10 @@ HRESULT DacDbiInterfaceImpl::GetMDStructuresVersion(ULONG32* pMDStructuresVersio
     DD_ENTER_MAY_THROW;
     if (pMDStructuresVersion == NULL)
         return E_INVALIDARG;
+
+    if (g_pDebugger == NULL)
+        return CORDBG_E_NOTREADY;
+
     *pMDStructuresVersion = g_pDebugger->m_mdDataStructureVersion;
     return S_OK;
 }

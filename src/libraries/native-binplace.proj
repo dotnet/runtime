@@ -13,14 +13,16 @@
   <!-- Ordering matters! Overriding GetBinPlaceItems and Build targets after the Sdk import. -->
   <Target Name="GetBinPlaceItems">
     <ItemGroup>
-      <BinPlaceItem Include="$(NativeBinDir)*.dll" />
-      <BinPlaceItem Include="$(NativeBinDir)*.pdb" />
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(RuntimeFlavor)' != 'Mono'"
+        Include="$(NativeBinDir)System.Globalization.Native.dll;$(NativeBinDir)System.Globalization.Native.pdb;$(NativeBinDir)System.Globalization.Native.so;$(NativeBinDir)System.Globalization.Native.dylib" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dll" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <BinPlaceItem Include="$(NativeBinDir)*.pdb" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
       <BinPlaceItem Include="$(NativeBinDir)*.lib" />
       <BinPlaceItem Include="$(NativeBinDir)*.a" />
       <BinPlaceItem Include="$(NativeBinDir)*.bc" />
-      <BinPlaceItem Include="$(NativeBinDir)*.so" />
+      <BinPlaceItem Include="$(NativeBinDir)*.so" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
       <BinPlaceItem Include="$(NativeBinDir)*.dbg" />
-      <BinPlaceItem Include="$(NativeBinDir)*.dylib" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dylib" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
       <BinPlaceItem Include="$(NativeBinDir)*.dwarf" />
       <BinPlaceItem Include="$(NativeBinDir)*.dex" />
       <BinPlaceItem Include="$(NativeBinDir)*.jar" />

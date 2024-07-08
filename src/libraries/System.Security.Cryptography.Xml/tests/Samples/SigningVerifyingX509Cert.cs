@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 xmlDoc.PreserveWhitespace = true;
                 xmlDoc.LoadXml(ExampleXml);
 
-#if NETCOREAPP
+#if NET
                 using (DSA key = x509cert.GetDSAPrivateKey())
                 {
                     SignXml(xmlDoc, key);

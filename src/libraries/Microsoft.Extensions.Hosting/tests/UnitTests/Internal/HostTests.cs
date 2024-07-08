@@ -1487,6 +1487,39 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
+        /// <summary>
+        /// Tests that when a BackgroundService is cancelled when stopping a host which has not finished starting, it does not log an error
+        /// </summary>
+        [Fact]
+        public async Task HostNoErrorWhenStartingServiceIsCanceledAsPartOfStop()
+        {
+            TestLoggerProvider logger = new TestLoggerProvider();
+
+            using IHost host = CreateBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddProvider(logger);
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHostedService<WorkerTemplateService>();
+                    services.AddHostedService<SlowStartService>();
+                })
+                .Build();
+
+            IHostApplicationLifetime lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            _ = host.StartAsync();
+            lifetime.StopApplication();
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
+            await host.WaitForShutdownAsync();
+
+            foreach (LogEvent logEvent in logger.GetEvents())
+            {
+                Assert.True(logEvent.LogLevel < LogLevel.Error);
+                Assert.NotEqual("BackgroundServiceFaulted", logEvent.EventId.Name);
+            }
+        }
+
         private IHostBuilder CreateBuilder(IConfiguration config = null)
         {
             return new HostBuilder().ConfigureHostConfiguration(builder => builder.AddConfiguration(config ?? new ConfigurationBuilder().Build()));
@@ -1636,6 +1669,16 @@ namespace Microsoft.Extensions.Hosting.Internal
             protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
 
             public override Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        }
+
+        private class SlowStartService : IHostedService
+        {
+            public async Task StartAsync(CancellationToken cancellationToken)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(10), CancellationToken.None);
+            }
+
+            public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         }
     }
 }

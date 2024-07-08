@@ -53,7 +53,8 @@ namespace
     BASE_CALL_CONV(CMOD_CALLCONV_NAME_CDECL, C)             \
     BASE_CALL_CONV(CMOD_CALLCONV_NAME_STDCALL, Stdcall)     \
     BASE_CALL_CONV(CMOD_CALLCONV_NAME_THISCALL, Thiscall)   \
-    BASE_CALL_CONV(CMOD_CALLCONV_NAME_FASTCALL, Fastcall)
+    BASE_CALL_CONV(CMOD_CALLCONV_NAME_FASTCALL, Fastcall)   \
+    BASE_CALL_CONV(CMOD_CALLCONV_NAME_SWIFT, Swift)
 
 #define DECLARE_MOD_CALL_CONVS \
     CALL_CONV_MODIFIER(CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION, CALL_CONV_MOD_SUPPRESSGCTRANSITION) \
@@ -176,6 +177,8 @@ namespace
             return CorInfoCallConvExtension::FastcallMemberFunction;
         case CorInfoCallConvExtension::Thiscall:
             return CorInfoCallConvExtension::Thiscall;
+        case CorInfoCallConvExtension::Swift:
+            return CorInfoCallConvExtension::Swift;
         default:
             _ASSERTE("Calling convention is not an unmanaged base calling convention.");
             return baseCallConv;
@@ -295,15 +298,12 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        TypeHandle type;
-        MethodDesc* pMD;
-        FieldDesc* pFD;
+        ResolvedToken resolved{};
+        pResolver->ResolveToken(token, &resolved);
 
-        pResolver->ResolveToken(token, &type, &pMD, &pFD);
+        _ASSERTE(!resolved.TypeHandle.IsNull());
 
-        _ASSERTE(!type.IsNull());
-
-        *nameOut = type.GetMethodTable()->GetFullyQualifiedNameInfo(namespaceOut);
+        *nameOut = resolved.TypeHandle.GetMethodTable()->GetFullyQualifiedNameInfo(namespaceOut);
 
         return S_OK;
     }
@@ -453,7 +453,7 @@ HRESULT CallConv::TryGetCallingConventionFromUnmanagedCallConv(
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
     DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
-    IfFailThrow(Attribute::ParseAttributeArgumentValues(
+    IfFailThrow(CustomAttribute::ParseArgumentValues(
         pData,
         cData,
         &caValueArrayFactory,
@@ -528,7 +528,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
     DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
-    IfFailThrow(Attribute::ParseAttributeArgumentValues(
+    IfFailThrow(CustomAttribute::ParseArgumentValues(
         pData,
         cData,
         &caValueArrayFactory,

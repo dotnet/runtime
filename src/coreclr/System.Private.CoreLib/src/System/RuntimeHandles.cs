@@ -87,6 +87,11 @@ namespace System
             return m_type == null;
         }
 
+        internal TypeHandle GetNativeTypeHandle()
+        {
+            return m_type.GetNativeTypeHandle();
+        }
+
         internal static bool IsTypeDefinition(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
@@ -265,24 +270,27 @@ namespace System
             RuntimeType rt,
             out delegate*<void*, object> pfnAllocator,
             out void* vAllocatorFirstArg,
-            out delegate*<object, void> pfnCtor,
+            out delegate*<object, void> pfnRefCtor,
+            out delegate*<ref byte, void> pfnValueCtor,
             out bool ctorIsPublic)
         {
             Debug.Assert(rt != null);
 
             delegate*<void*, object> pfnAllocatorTemp = default;
             void* vAllocatorFirstArgTemp = default;
-            delegate*<object, void> pfnCtorTemp = default;
+            delegate*<object, void> pfnRefCtorTemp = default;
+            delegate*<ref byte, void> pfnValueCtorTemp = default;
             Interop.BOOL fCtorIsPublicTemp = default;
 
             GetActivationInfo(
                 ObjectHandleOnStack.Create(ref rt),
                 &pfnAllocatorTemp, &vAllocatorFirstArgTemp,
-                &pfnCtorTemp, &fCtorIsPublicTemp);
+                &pfnRefCtorTemp, &pfnValueCtorTemp, &fCtorIsPublicTemp);
 
             pfnAllocator = pfnAllocatorTemp;
             vAllocatorFirstArg = vAllocatorFirstArgTemp;
-            pfnCtor = pfnCtorTemp;
+            pfnRefCtor = pfnRefCtorTemp;
+            pfnValueCtor = pfnValueCtorTemp;
             ctorIsPublic = fCtorIsPublicTemp != Interop.BOOL.FALSE;
         }
 
@@ -291,7 +299,8 @@ namespace System
             ObjectHandleOnStack pRuntimeType,
             delegate*<void*, object>* ppfnAllocator,
             void** pvAllocatorFirstArg,
-            delegate*<object, void>* ppfnCtor,
+            delegate*<object, void>* ppfnRefCtor,
+            delegate*<ref byte, void>* ppfnValueCtor,
             Interop.BOOL* pfCtorIsPublic);
 
 #if FEATURE_COMINTEROP
@@ -645,14 +654,6 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr _GetMetadataImport(RuntimeType type);
-
-        internal static MetadataImport GetMetadataImport(RuntimeType type)
-        {
-            return new MetadataImport(_GetMetadataImport(type), type);
-        }
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_RegisterCollectibleTypeDependency")]
         private static partial void RegisterCollectibleTypeDependency(QCallTypeHandle type, QCallAssembly assembly);
 
@@ -843,13 +844,6 @@ namespace System
             RuntimeMethodHandleInternal attrCtor,
             QCallTypeHandle sourceTypeHandle,
             QCallModule sourceModule);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IRuntimeMethodInfo? _GetCurrentMethod(ref StackCrawlMark stackMark);
-        internal static IRuntimeMethodInfo? GetCurrentMethod(ref StackCrawlMark stackMark)
-        {
-            return _GetCurrentMethod(ref stackMark);
-        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern MethodAttributes GetAttributes(RuntimeMethodHandleInternal method);
@@ -1087,6 +1081,7 @@ namespace System
         private object? m_d;
         private int m_b;
         private object? m_e;
+        private object? m_f;
         private RuntimeFieldHandleInternal m_fieldHandle;
 #pragma warning restore 414, 169, IDE0044
 
@@ -1094,7 +1089,7 @@ namespace System
     }
 
     [NonVersionable]
-    public unsafe struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
+    public unsafe partial struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal RuntimeFieldHandle GetNativeHandle()
@@ -1190,16 +1185,29 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsFastPathSupported(RtFieldInfo field);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetInstanceFieldOffset(RtFieldInfo field);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr GetStaticFieldAddress(RtFieldInfo field);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetRVAFieldInfo")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetRVAFieldInfo(RuntimeFieldHandleInternal field, out void* address, out uint size);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RtFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? GetValue(RtFieldInfo field, object? instance, RuntimeType fieldType, RuntimeType? declaringType, ref bool domainInitialized);
+        internal static extern object? GetValue(RtFieldInfo field, object? instance, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object? GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType? contextType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, FieldAttributes fieldAttr, RuntimeType? declaringType, ref bool domainInitialized);
+        internal static extern void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, RuntimeType? declaringType, ref bool isClassInitialized);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, object? value, RuntimeType? contextType);
@@ -1239,8 +1247,6 @@ namespace System
         }
         #endregion
 
-        #region Internal FCalls
-
         internal RuntimeModule GetRuntimeModule()
         {
             return m_ptr;
@@ -1270,6 +1276,7 @@ namespace System
 
         public static bool operator !=(ModuleHandle left, ModuleHandle right) => !left.Equals(right);
 
+        #region Internal FCalls
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IRuntimeMethodInfo GetDynamicMethod(Reflection.Emit.DynamicMethod method, RuntimeModule module, string name, byte[] sig, Resolver resolver);
 
@@ -1328,7 +1335,7 @@ namespace System
                 }
                 catch (Exception)
                 {
-                    if (!GetMetadataImport(module).IsValidToken(typeToken))
+                    if (!module.MetadataImport.IsValidToken(typeToken))
                         throw new ArgumentOutOfRangeException(nameof(typeToken),
                             SR.Format(SR.Argument_InvalidToken, typeToken, new ModuleHandle(module)));
                     throw;
@@ -1381,7 +1388,7 @@ namespace System
             }
             catch (Exception)
             {
-                if (!GetMetadataImport(module).IsValidToken(methodToken))
+                if (!module.MetadataImport.IsValidToken(methodToken))
                     throw new ArgumentOutOfRangeException(nameof(methodToken),
                         SR.Format(SR.Argument_InvalidToken, methodToken, new ModuleHandle(module)));
                 throw;
@@ -1434,7 +1441,7 @@ namespace System
                 }
                 catch (Exception)
                 {
-                    if (!GetMetadataImport(module).IsValidToken(fieldToken))
+                    if (!module.MetadataImport.IsValidToken(fieldToken))
                         throw new ArgumentOutOfRangeException(nameof(fieldToken),
                             SR.Format(SR.Argument_InvalidToken, fieldToken, new ModuleHandle(module)));
                     throw;
@@ -1477,14 +1484,6 @@ namespace System
         internal static extern int GetMDStreamVersion(RuntimeModule module);
 
         public int MDStreamVersion => GetMDStreamVersion(GetRuntimeModule());
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr _GetMetadataImport(RuntimeModule module);
-
-        internal static MetadataImport GetMetadataImport(RuntimeModule module)
-        {
-            return new MetadataImport(_GetMetadataImport(module), module);
-        }
         #endregion
     }
 

@@ -949,7 +949,7 @@ namespace Internal.TypeSystem.Interop
                 && metadata.Name.StartsWith(ObjectiveCMsgSend);
         }
 
-        internal static int? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
+        internal static uint? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
         {
             if (!target.IsApplePlatform || pinvokeModule != ObjectiveCLibrary)
                 return null;
@@ -957,11 +957,11 @@ namespace Internal.TypeSystem.Interop
 #pragma warning disable CA1416
             return pinvokeFunction switch
             {
-                "objc_msgSend" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSend,
-                "objc_msgSend_fpret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendFpret,
-                "objc_msgSend_stret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendStret,
-                "objc_msgSendSuper" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendSuper,
-                "objc_msgSendSuper_stret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendSuperStret,
+                "objc_msgSend" => (uint)ObjectiveCMarshal.MessageSendFunction.MsgSend,
+                "objc_msgSend_fpret" => (uint)ObjectiveCMarshal.MessageSendFunction.MsgSendFpret,
+                "objc_msgSend_stret" => (uint)ObjectiveCMarshal.MessageSendFunction.MsgSendStret,
+                "objc_msgSendSuper" => (uint)ObjectiveCMarshal.MessageSendFunction.MsgSendSuper,
+                "objc_msgSendSuper_stret" => (uint)ObjectiveCMarshal.MessageSendFunction.MsgSendSuperStret,
                 _ => null,
             };
 #pragma warning restore CA1416

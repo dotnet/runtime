@@ -243,7 +243,7 @@ namespace System.Net.Security.Tests
             string rawHostname = "räksmörgås.josefsson.org";
             string punycodeHostname = "xn--rksmrgs-5wao1o.josefsson.org";
 
-            var (serverCert, serverChain) = TestHelper.GenerateCertificates(punycodeHostname);
+            var (serverCert, serverChain) = Configuration.Certificates.GenerateCertificates(punycodeHostname);
             try
             {
                 SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()

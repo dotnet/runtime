@@ -229,6 +229,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 return (int)loongarch64Info.FunctionLength;
             }
+            else if (UnwindInfo is RiscV64.UnwindInfo riscv64Info)
+            {
+                return (int)riscv64Info.FunctionLength;
+            }
             else if (Method.GcInfo != null)
             {
                 return Method.GcInfo.CodeLength;
@@ -488,12 +492,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                     int gcInfoOffset = _readyToRunReader.CompositeReader.GetOffset(GcInfoRva);
                     if (_readyToRunReader.Machine == Machine.I386)
                     {
-                        _gcInfo = new x86.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        _gcInfo = new x86.GcInfo(_readyToRunReader.Image, gcInfoOffset);
                     }
                     else
                     {
                         // Arm, Arm64, LoongArch64 and RISCV64 use the same GcInfo format as Amd64
-                        _gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        _gcInfo = new Amd64.GcInfo(
+                            _readyToRunReader.Image,
+                            gcInfoOffset,
+                            _readyToRunReader.Machine,
+                            _readyToRunReader.ReadyToRunHeader.MajorVersion,
+                            _readyToRunReader.ReadyToRunHeader.MinorVersion);
                     }
                 }
             }
@@ -611,6 +620,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 else if (_readyToRunReader.Machine == Machine.LoongArch64)
                 {
                     unwindInfo = new LoongArch64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                }
+                else if (_readyToRunReader.Machine == Machine.RiscV64)
+                {
+                    unwindInfo = new RiscV64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                 }
 
                 if (i == 0 && unwindInfo != null)

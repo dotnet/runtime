@@ -3,11 +3,15 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="LargeFilesTests.cs" />
     <Compile Include="Tests.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <Compile Include="ReflectionTests.cs" />
     <Compile Include="PartPieceTests.cs" />
+    <Compile Include="LargeFilesTests.Net.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Packaging.TestData" Version="$(SystemIOPackagingTestDataVersion)" />

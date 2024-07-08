@@ -3,10 +3,14 @@
 
 import ProductVersion from "consts:productVersion";
 import BuildConfiguration from "consts:configuration";
-import type { RuntimeAPI } from "./types";
+import WasmEnableThreads from "consts:wasmEnableThreads";
+import WasmEnableSIMD from "consts:wasmEnableSIMD";
+import WasmEnableExceptionHandling from "consts:wasmEnableExceptionHandling";
 
-import { Module, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
-import { GlobalObjects } from "./types/internal";
+import { GlobalizationMode, type RuntimeAPI } from "./types";
+
+import { Module, exportedRuntimeAPI, loaderHelpers, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
+import { GlobalObjects, RuntimeHelpers } from "./types/internal";
 import { configureEmscriptenStartup, configureRuntimeStartup, configureWorkerStartup } from "./startup";
 
 import { create_weak_ref } from "./weak-ref";
@@ -18,21 +22,44 @@ import { mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { instantiate_asset, instantiate_symbols_asset, instantiate_segmentation_rules_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { forceDisposeProxies } from "./gc-handles";
+import { mono_wasm_dump_threads } from "./pthreads";
 
-function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
+import { threads_c_functions as tcwraps } from "./cwraps";
+import { stringToUTF16, stringToUTF16Ptr, utf16ToString, utf16ToStringLoop } from "./strings";
+import { localHeapViewU16, setI32, setU16_local } from "./memory";
+
+export let runtimeList: RuntimeList;
+
+function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
     const module = Module;
     const globals = globalObjects;
     const globalThisAny = globalThis as any;
 
     Object.assign(globals.internal, export_internal());
-    Object.assign(runtimeHelpers, {
+    const rh: Partial<RuntimeHelpers> = {
         stringify_as_error_with_stack: mono_wasm_stringify_as_error_with_stack,
         instantiate_symbols_asset,
         instantiate_asset,
         jiterpreter_dump_stats,
         forceDisposeProxies,
         instantiate_segmentation_rules_asset,
-    });
+
+    };
+    if (WasmEnableThreads) {
+        rh.dumpThreads = mono_wasm_dump_threads;
+        rh.mono_wasm_print_thread_dump = () => tcwraps.mono_wasm_print_thread_dump();
+    }
+    if (loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
+        rh.stringToUTF16 = stringToUTF16;
+        rh.stringToUTF16Ptr = stringToUTF16Ptr;
+        rh.utf16ToString = utf16ToString;
+        rh.utf16ToStringLoop = utf16ToStringLoop;
+        rh.localHeapViewU16 = localHeapViewU16;
+        rh.setU16_local = setU16_local;
+        rh.setI32 = setI32;
+    }
+
+    Object.assign(runtimeHelpers, rh);
 
     const API = export_api();
     Object.assign(exportedRuntimeAPI, {
@@ -41,21 +68,21 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         runtimeBuildInfo: {
             productVersion: ProductVersion,
             gitHash: runtimeHelpers.gitHash,
-            buildConfiguration: BuildConfiguration
+            buildConfiguration: BuildConfiguration,
+            wasmEnableThreads: WasmEnableThreads,
+            wasmEnableSIMD: WasmEnableSIMD,
+            wasmEnableExceptionHandling: WasmEnableExceptionHandling,
         },
         ...API,
     });
 
     // this code makes it possible to find dotnet runtime on a page via global namespace, even when there are multiple runtimes at the same time
-    let list: RuntimeList;
     if (!globalThisAny.getDotnetRuntime) {
         globalThisAny.getDotnetRuntime = (runtimeId: string) => globalThisAny.getDotnetRuntime.__list.getRuntime(runtimeId);
-        globalThisAny.getDotnetRuntime.__list = list = new RuntimeList();
+        globalThisAny.getDotnetRuntime.__list = runtimeList = new RuntimeList();
+    } else {
+        runtimeList = globalThisAny.getDotnetRuntime.__list;
     }
-    else {
-        list = globalThisAny.getDotnetRuntime.__list;
-    }
-    list.registerRuntime(exportedRuntimeAPI);
 
     return exportedRuntimeAPI;
 }
@@ -63,13 +90,16 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
 class RuntimeList {
     private list: { [runtimeId: number]: WeakRef<RuntimeAPI> } = {};
 
-    public registerRuntime(api: RuntimeAPI): number {
-        api.runtimeId = Object.keys(this.list).length;
+    public registerRuntime (api: RuntimeAPI): number {
+        if (api.runtimeId === undefined) {
+            api.runtimeId = Object.keys(this.list).length;
+        }
         this.list[api.runtimeId] = create_weak_ref(api);
+        loaderHelpers.config.runtimeId = api.runtimeId;
         return api.runtimeId;
     }
 
-    public getRuntime(runtimeId: number): RuntimeAPI | undefined {
+    public getRuntime (runtimeId: number): RuntimeAPI | undefined {
         const wr = this.list[runtimeId];
         return wr ? wr.deref() : undefined;
     }

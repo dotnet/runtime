@@ -118,7 +118,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(1, set.Count);
             Assert.Same(comparer, set.KeyComparer);
 
-            set = ImmutableHashSet.Create("a", "b");
+            set = ImmutableHashSet.Create(new[] { "a", "b" });
             Assert.Equal(2, set.Count);
             Assert.Same(EqualityComparer<string>.Default, set.KeyComparer);
 
@@ -126,7 +126,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(2, set.Count);
             Assert.Same(EqualityComparer<string>.Default, set.KeyComparer);
 
-            set = ImmutableHashSet.Create(comparer, "a", "b");
+            set = ImmutableHashSet.Create(comparer, new[] { "a", "b" });
             Assert.Equal(2, set.Count);
             Assert.Same(comparer, set.KeyComparer);
 

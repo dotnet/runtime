@@ -66,8 +66,8 @@ namespace Microsoft.Win32
         private const int MaxKeyLength = 255;
         private const int MaxValueLength = 16383;
 
-        private volatile SafeRegistryHandle _hkey;
-        private volatile string _keyName;
+        private SafeRegistryHandle _hkey;
+        private string _keyName;
         private readonly bool _remoteKey;
         private volatile StateFlags _state;
         private volatile RegistryKeyPermissionCheck _checkMode;

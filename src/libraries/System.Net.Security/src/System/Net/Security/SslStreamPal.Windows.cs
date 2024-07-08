@@ -119,6 +119,7 @@ namespace System.Net.Security
             }
 
             ProtocolToken token = default;
+            token.RentBuffer = true;
 
             int errorCode = SSPIWrapper.AcceptSecurityContext(
                 GlobalSSPI.SSPISecureChannel,
@@ -163,6 +164,7 @@ namespace System.Net.Security
             }
 
             ProtocolToken token = default;
+            token.RentBuffer = true;
             int errorCode = SSPIWrapper.InitializeSecurityContext(
                                 GlobalSSPI.SSPISecureChannel,
                                 ref credentialsHandle,
@@ -176,7 +178,9 @@ namespace System.Net.Security
 
             token.Status = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
 
-            if (!sslAuthenticationOptions.AllowTlsResume && newContext && context != null)
+            bool allowTlsResume = sslAuthenticationOptions.AllowTlsResume && !SslStream.DisableTlsResume;
+
+            if (!allowTlsResume && newContext && context != null)
             {
                 var securityBuffer = new SecurityBuffer(s_sessionTokenBuffer, SecurityBufferType.SECBUFFER_TOKEN);
 
@@ -229,8 +233,7 @@ namespace System.Net.Security
                 if (newCredentialsRequested && sslAuthenticationOptions.CertificateContext != null)
                 {
                     SafeFreeCredential_SECURITY handle = (SafeFreeCredential_SECURITY)cred;
-                    // We need to create copy to avoid Disposal issue.
-                    handle.LocalCertificate = new X509Certificate2(sslAuthenticationOptions.CertificateContext.TargetCertificate);
+                    handle.HasLocalCertificate = true;
                 }
 
                 return cred;
@@ -279,6 +282,8 @@ namespace System.Net.Security
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
             Interop.SspiCli.CredentialUse direction;
 
+            bool allowTlsResume = authOptions.AllowTlsResume && !SslStream.DisableTlsResume;
+
             if (!isServer)
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_OUTBOUND;
@@ -302,7 +307,7 @@ namespace System.Net.Security
                 flags =
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
-                if (!authOptions.AllowTlsResume)
+                if (!allowTlsResume)
                 {
                     // Works only on server
                     flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_DISABLE_RECONNECTS;
@@ -327,7 +332,7 @@ namespace System.Net.Security
                 protocolFlags,
                 policy);
 
-            if (!isServer && !authOptions.AllowTlsResume)
+            if (!isServer && !allowTlsResume)
             {
                 secureCredential.dwSessionLifespan = -1;
             }
@@ -351,15 +356,15 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
             Interop.SspiCli.CredentialUse direction;
 
+            bool allowTlsResume = authOptions.AllowTlsResume && !SslStream.DisableTlsResume;
+
             if (isServer)
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
-                flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
-                if (authOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
-                {
-                    flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
-                }
-                if (!authOptions.AllowTlsResume)
+                flags =
+                    Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD |
+                    Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
+                if (!allowTlsResume)
                 {
                     // Works only on server
                     flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_DISABLE_RECONNECTS;
@@ -408,7 +413,7 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS credential = default;
             credential.dwVersion = Interop.SspiCli.SCH_CREDENTIALS.CurrentVersion;
             credential.dwFlags = flags;
-            if (!isServer && !authOptions.AllowTlsResume)
+            if (!isServer && !allowTlsResume)
             {
                 credential.dwSessionLifespan = -1;
             }

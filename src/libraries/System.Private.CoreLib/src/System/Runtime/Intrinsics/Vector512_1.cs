@@ -38,23 +38,40 @@ namespace System.Runtime.Intrinsics
         public static Vector512<T> AllBitsSet
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                Vector256<T> vector = Vector256<T>.AllBitsSet;
-                return Vector512.Create(vector, vector);
-            }
+            get => Vector512.Create(Scalar<T>.AllBitsSet);
         }
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector512{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static int Count
         {
             [Intrinsic]
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return Vector512.Size / sizeof(T);
+            }
+        }
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
+
+        /// <summary>Gets a new <see cref="Vector512{T}" /> with the elements set to their index.</summary>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector512<T> Indices
+        {
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return Vector256<T>.Count * 2;
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
+                Unsafe.SkipInit(out Vector512<T> result);
+
+                for (int i = 0; i < Count; i++)
+                {
+                    result.SetElementUnsafe(i, Scalar<T>.Convert(i));
+                }
+
+                return result;
             }
         }
 
@@ -86,12 +103,7 @@ namespace System.Runtime.Intrinsics
         public static Vector512<T> One
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                Vector256<T> vector = Vector256<T>.One;
-                return Vector512.Create(vector, vector);
-            }
+            get => Vector512.Create(Scalar<T>.One);
         }
 
         /// <summary>Gets a new <see cref="Vector512{T}" /> with all elements initialized to zero.</summary>
@@ -99,7 +111,6 @@ namespace System.Runtime.Intrinsics
         public static Vector512<T> Zero
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
@@ -107,27 +118,14 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        internal string DisplayString
-        {
-            get
-            {
-                return IsSupported ? ToString() : SR.NotSupported_Type;
-            }
-        }
+        internal string DisplayString => IsSupported ? ToString() : SR.NotSupported_Type;
 
         /// <summary>Gets the element at the specified index.</summary>
         /// <param name="index">The index of the element to get.</param>
         /// <returns>The value of the element at <paramref name="index" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
-        public T this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return this.GetElement(index);
-            }
-        }
+        public T this[int index] => this.GetElement(index);
 
         /// <summary>Adds two vectors to compute their sum.</summary>
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
@@ -237,12 +235,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><c>true</c> if any elements in <paramref name="left" /> was not equal to the corresponding element in <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(Vector512<T> left, Vector512<T> right)
-        {
-            return (left._lower != right._lower)
-                || (left._upper != right._upper);
-        }
+        public static bool operator !=(Vector512<T> left, Vector512<T> right) => !(left == right);
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
@@ -294,7 +287,6 @@ namespace System.Runtime.Intrinsics
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> operator *(T left, Vector512<T> right) => right * left;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
@@ -345,21 +337,13 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<T> operator -(Vector512<T> vector)
-        {
-            return Vector512.Create(
-                -vector._lower,
-                -vector._upper
-            );
-        }
+        public static Vector512<T> operator -(Vector512<T> vector) => Zero - vector;
 
         /// <summary>Returns a given vector unchanged.</summary>
         /// <param name="value">The vector.</param>
         /// <returns><paramref name="value" /></returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> operator +(Vector512<T> value)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
@@ -383,7 +367,6 @@ namespace System.Runtime.Intrinsics
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="obj" /> is a <see cref="Vector512{T}" /> and is equal to the current instance; otherwise, <c>false</c>.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector512<T> other) && Equals(other);
 
         /// <summary>Determines whether the specified <see cref="Vector512{T}" /> is equal to the current instance.</summary>
@@ -434,7 +417,6 @@ namespace System.Runtime.Intrinsics
         /// <summary>Converts the current instance to an equivalent string representation.</summary>
         /// <returns>An equivalent string representation of the current instance.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString() => ToString("G", CultureInfo.InvariantCulture);
 
         private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
@@ -472,16 +454,16 @@ namespace System.Runtime.Intrinsics
         static Vector512<T> ISimdVector<Vector512<T>, T>.Abs(Vector512<T> vector) => Vector512.Abs(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Add(TSelf, TSelf)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.Add(Vector512<T> left, Vector512<T> right) => Vector512.Add(left, right);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Add(Vector512<T> left, Vector512<T> right) => left + right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.AndNot(TSelf, TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.AndNot(Vector512<T> left, Vector512<T> right) => Vector512.AndNot(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.BitwiseAnd(TSelf, TSelf)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.BitwiseAnd(Vector512<T> left, Vector512<T> right) => Vector512.BitwiseAnd(left, right);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.BitwiseAnd(Vector512<T> left, Vector512<T> right) => left & right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.BitwiseOr(TSelf, TSelf)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.BitwiseOr(Vector512<T> left, Vector512<T> right) => Vector512.BitwiseOr(left, right);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.BitwiseOr(Vector512<T> left, Vector512<T> right) => left | right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Ceiling(TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Ceiling(Vector512<T> vector) => Vector512.Ceiling(vector);
@@ -517,10 +499,10 @@ namespace System.Runtime.Intrinsics
         static Vector512<T> ISimdVector<Vector512<T>, T>.CreateScalarUnsafe(T value) => Vector512.CreateScalarUnsafe(value);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Divide(TSelf, T)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.Divide(Vector512<T> left, Vector512<T> right) => Vector512.Divide(left, right);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Divide(Vector512<T> left, Vector512<T> right) => left / right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Divide(TSelf, T)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.Divide(Vector512<T> left, T right) => Vector512.Divide(left, right);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Divide(Vector512<T> left, T right) => left / right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Dot(TSelf, TSelf)" />
         static T ISimdVector<Vector512<T>, T>.Dot(Vector512<T> left, Vector512<T> right) => Vector512.Dot(left, right);
@@ -529,7 +511,7 @@ namespace System.Runtime.Intrinsics
         static Vector512<T> ISimdVector<Vector512<T>, T>.Equals(Vector512<T> left, Vector512<T> right) => Vector512.Equals(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.EqualsAll(TSelf, TSelf)" />
-        static bool ISimdVector<Vector512<T>, T>.EqualsAll(Vector512<T> left, Vector512<T> right) => Vector512.EqualsAll(left, right);
+        static bool ISimdVector<Vector512<T>, T>.EqualsAll(Vector512<T> left, Vector512<T> right) => left == right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.EqualsAny(TSelf, TSelf)" />
         static bool ISimdVector<Vector512<T>, T>.EqualsAny(Vector512<T> left, Vector512<T> right) => Vector512.EqualsAny(left, right);
@@ -538,7 +520,7 @@ namespace System.Runtime.Intrinsics
         static Vector512<T> ISimdVector<Vector512<T>, T>.Floor(Vector512<T> vector) => Vector512.Floor(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GetElement(TSelf, int)" />
-        static T ISimdVector<Vector512<T>, T>.GetElement(Vector512<T> vector, int index) => Vector512.GetElement(vector, index);
+        static T ISimdVector<Vector512<T>, T>.GetElement(Vector512<T> vector, int index) => vector.GetElement(index);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThan(TSelf, TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.GreaterThan(Vector512<T> left, Vector512<T> right) => Vector512.GreaterThan(left, right);
@@ -600,67 +582,71 @@ namespace System.Runtime.Intrinsics
         static Vector512<T> ISimdVector<Vector512<T>, T>.Min(Vector512<T> left, Vector512<T> right) => Vector512.Min(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, T)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.Multiply(Vector512<T> left, Vector512<T> right) => Vector512.Multiply(left, right);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Multiply(Vector512<T> left, Vector512<T> right) => left * right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, TSelf)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.Multiply(Vector512<T> left, T right) => Vector512.Multiply(left, right);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Multiply(Vector512<T> left, T right) => left * right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Negate(TSelf)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.Negate(Vector512<T> vector) => Vector512.Negate(vector);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Negate(Vector512<T> vector) => -vector;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.OnesComplement(Vector512<T> vector) => Vector512.OnesComplement(vector);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.OnesComplement(Vector512<T> vector) => ~vector;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftLeft(TSelf, int)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.ShiftLeft(Vector512<T> vector, int shiftCount) => Vector512.ShiftLeft(vector, shiftCount);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.ShiftLeft(Vector512<T> vector, int shiftCount) => vector << shiftCount;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftRightArithmetic(TSelf, int)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.ShiftRightArithmetic(Vector512<T> vector, int shiftCount) => Vector512.ShiftRightArithmetic(vector, shiftCount);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.ShiftRightArithmetic(Vector512<T> vector, int shiftCount) => vector >> shiftCount;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftRightLogical(TSelf, int)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.ShiftRightLogical(Vector512<T> vector, int shiftCount) => Vector512.ShiftRightLogical(vector, shiftCount);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.ShiftRightLogical(Vector512<T> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Sqrt(TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Sqrt(Vector512<T> vector) => Vector512.Sqrt(vector);
 
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
-        static void ISimdVector<Vector512<T>, T>.Store(Vector512<T> source, T* destination) => Vector512.Store(source, destination);
+        static void ISimdVector<Vector512<T>, T>.Store(Vector512<T> source, T* destination) => source.Store(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAligned(TSelf, T*)" />
-        static void ISimdVector<Vector512<T>, T>.StoreAligned(Vector512<T> source, T* destination) => Vector512.StoreAligned(source, destination);
+        static void ISimdVector<Vector512<T>, T>.StoreAligned(Vector512<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
-        static void ISimdVector<Vector512<T>, T>.StoreAlignedNonTemporal(Vector512<T> source, T* destination) => Vector512.StoreAlignedNonTemporal(source, destination);
+        static void ISimdVector<Vector512<T>, T>.StoreAlignedNonTemporal(Vector512<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
 #pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
-        static void ISimdVector<Vector512<T>, T>.StoreUnsafe(Vector512<T> vector, ref T destination) => Vector512.StoreUnsafe(vector, ref destination);
+        static void ISimdVector<Vector512<T>, T>.StoreUnsafe(Vector512<T> vector, ref T destination) => vector.StoreUnsafe(ref destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T, nuint)" />
-        static void ISimdVector<Vector512<T>, T>.StoreUnsafe(Vector512<T> vector, ref T destination, nuint elementOffset) => Vector512.StoreUnsafe(vector, ref destination, elementOffset);
+        static void ISimdVector<Vector512<T>, T>.StoreUnsafe(Vector512<T> vector, ref T destination, nuint elementOffset) => vector.StoreUnsafe(ref destination, elementOffset);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Subtract(TSelf, TSelf)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.Subtract(Vector512<T> left, Vector512<T> right) => Vector512.Subtract(left, right);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Subtract(Vector512<T> left, Vector512<T> right) => left - right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Sum(TSelf)" />
         static T ISimdVector<Vector512<T>, T>.Sum(Vector512<T> vector) => Vector512.Sum(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ToScalar(TSelf)" />
-        static T ISimdVector<Vector512<T>, T>.ToScalar(Vector512<T> vector) => Vector512.ToScalar(vector);
+        static T ISimdVector<Vector512<T>, T>.ToScalar(Vector512<T> vector) => vector.ToScalar();
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.TryCopyTo(TSelf, Span{T})" />
-        static bool ISimdVector<Vector512<T>, T>.TryCopyTo(Vector512<T> vector, Span<T> destination) => Vector512.TryCopyTo(vector, destination);
+        static bool ISimdVector<Vector512<T>, T>.TryCopyTo(Vector512<T> vector, Span<T> destination) => vector.TryCopyTo(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.WithElement(TSelf, int, T)" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.WithElement(Vector512<T> vector, int index, T value) => Vector512.WithElement(vector, index, value);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.WithElement(Vector512<T> vector, int index, T value) => vector.WithElement(index, value);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Xor" />
-        static Vector512<T> ISimdVector<Vector512<T>, T>.Xor(Vector512<T> left, Vector512<T> right) => Vector512.Xor(left, right);
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Xor(Vector512<T> left, Vector512<T> right) => left ^ right;
 
         //
         // New Surface Area
         //
+
+        static bool ISimdVector<Vector512<T>, T>.AnyWhereAllBitsSet(Vector512<T> vector) => Vector512.EqualsAny(vector, AllBitsSet);
+
+        static bool ISimdVector<Vector512<T>, T>.Any(Vector512<T> vector, T value) => Vector512.EqualsAny(vector, Vector512.Create(value));
 
         static int ISimdVector<Vector512<T>, T>.IndexOfLastMatch(Vector512<T> vector)
         {

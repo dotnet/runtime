@@ -824,7 +824,7 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 
     if (typeHnd.GetLoadLevel() < level)
     {
-        if (level > CLASS_LOAD_UNRESTORED)
+        if (level >= CLASS_LOAD_APPROXPARENTS)
         {
             TypeKey typeKey = typeHnd.GetTypeKey();
 
@@ -1328,7 +1328,6 @@ ClassLoader::LoadTypeHandleThrowing(
 #ifndef DACCESS_COMPILE
     // Replace AvailableClasses Module entry with found TypeHandle
     if (!typeHnd.IsNull() &&
-        typeHnd.IsRestored() &&
         foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
         (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
         (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
@@ -1933,7 +1932,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
 #endif
             TRIGGERSGC();
 
-            if (pModule->IsReflection())
+            if (pModule->IsReflectionEmit())
             {
                 // Don't try to load types that are not in available table, when this
                 // is an in-memory module.  Raise the type-resolve event instead.
@@ -2045,7 +2044,6 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
 
         POSTCONDITION(CheckPointer(RETVAL, NameHandle::OKToLoad(typeDefOrRef, tokenNotToLoad) && (fNotFoundAction == ThrowIfNotFound) ? NULL_NOT_OK : NULL_OK));
-        POSTCONDITION(level <= CLASS_LOAD_UNRESTORED || RETVAL.IsNull() || RETVAL.IsRestored());
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -2153,7 +2151,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                         nameHandle.SetTokenNotToLoad(tokenNotToLoad);
                         typeHnd = pFoundModule->GetClassLoader()->
                             LoadTypeHandleThrowIfFailed(&nameHandle, level,
-                                                        pFoundModule->IsFullModule() ? (static_cast<Module*>(pFoundModule)->IsReflection() ? NULL : static_cast<Module*>(pFoundModule)) : NULL);
+                                                        pFoundModule->IsFullModule() ? (static_cast<Module*>(pFoundModule)->IsReflectionEmit() ? NULL : static_cast<Module*>(pFoundModule)) : NULL);
                     }
                 }
 
@@ -2328,7 +2326,7 @@ ClassLoader::ResolveNameToTypeDefThrowing(
             &pFoundModule,
             &foundExportedType,
             NULL,
-            pSourceModule->IsReflection() ? NULL : pSourceModule,
+            pSourceModule->IsReflectionEmit() ? NULL : pSourceModule,
             loadFlag))
         {
             RETURN FALSE;
@@ -2616,8 +2614,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle ty
 
     switch (currentLevel)
     {
-        // Attain at least level CLASS_LOAD_UNRESTORED (if just locating type in ngen image)
-        // or at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
+        // Attain at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
         case CLASS_LOAD_BEGIN :
             {
                 AllocMemTracker amTracker;
@@ -2628,13 +2625,6 @@ TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle ty
                     amTracker.SuppressRelease();
                 typeHnd = published;
             }
-            break;
-
-        case CLASS_LOAD_UNRESTOREDTYPEKEY :
-            break;
-
-        // Attain level CLASS_LOAD_APPROXPARENTS, starting with unrestored class
-        case CLASS_LOAD_UNRESTORED :
             break;
 
         // Attain level CLASS_LOAD_EXACTPARENTS
@@ -2761,7 +2751,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
             // no parameterized type allowed on a reference
             if (paramType.GetInternalCorElementType() == ELEMENT_TYPE_BYREF)
             {
-                ThrowTypeLoadException(pKey, IDS_CLASSLOAD_GENERAL);
+                ThrowTypeLoadException(pKey, (kind == ELEMENT_TYPE_BYREF) ? IDS_CLASSLOAD_BYREF_OF_BYREF : IDS_CLASSLOAD_POINTER_OF_BYREF);
             }
 
             // We do allow parameterized types of ByRefLike types. Languages may restrict them to produce safe or verifiable code,
@@ -3075,7 +3065,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(const TypeKey *pTypeKey,
 //
 class PendingTypeLoadHolder
 {
-    Thread * m_pThread;
+    static thread_local PendingTypeLoadHolder * t_pCurrent;
     PendingTypeLoadTable::Entry * m_pEntry;
     PendingTypeLoadHolder * m_pPrevious;
 
@@ -3084,26 +3074,25 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_pThread = GetThread();
         m_pEntry = pEntry;
 
-        m_pPrevious = m_pThread->GetPendingTypeLoad();
-        m_pThread->SetPendingTypeLoad(this);
+        m_pPrevious = t_pCurrent;
+        t_pCurrent = this;
     }
 
     ~PendingTypeLoadHolder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(m_pThread->GetPendingTypeLoad() == this);
-        m_pThread->SetPendingTypeLoad(m_pPrevious);
+        _ASSERTE(t_pCurrent == this);
+        t_pCurrent = m_pPrevious;
     }
 
     static bool CheckForDeadLockOnCurrentThread(PendingTypeLoadTable::Entry * pEntry)
     {
         LIMITED_METHOD_CONTRACT;
 
-        PendingTypeLoadHolder * pCurrent = GetThread()->GetPendingTypeLoad();
+        PendingTypeLoadHolder * pCurrent = t_pCurrent;
 
         while (pCurrent != NULL)
         {
@@ -3116,6 +3105,8 @@ public:
         return false;
     }
 };
+
+thread_local PendingTypeLoadHolder * PendingTypeLoadHolder::t_pCurrent = NULL;
 
 //---------------------------------------------------------------------------------------
 //

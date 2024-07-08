@@ -11,7 +11,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class TypeReferenceExtensions
+	internal static class TypeReferenceExtensions
 	{
 		public static string GetDisplayName (this TypeReference type)
 		{
@@ -149,6 +149,13 @@ namespace Mono.Linker
 
 			Debug.Assert (false);
 			return null;
+		}
+
+		public static TypeReference? TryInflateFrom (this TypeReference typeToInflate, TypeReference maybeGenericInstanceProvider, ITryResolveMetadata resolver)
+		{
+			if (maybeGenericInstanceProvider is GenericInstanceType genericInstanceProvider)
+				return InflateGenericType (genericInstanceProvider, typeToInflate, resolver);
+			return typeToInflate;
 		}
 
 		public static IEnumerable<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> GetInflatedInterfaces (this TypeReference typeRef, ITryResolveMetadata resolver)

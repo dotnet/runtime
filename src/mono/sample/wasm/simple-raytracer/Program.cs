@@ -190,12 +190,12 @@ public static unsafe class Raytrace {
         float hitZ = -999;
         bool didHitZ = false;
         for (int s = 0; s < scene.Length; s++) {
-            ref var sphere = ref scene[s];
+            var sphere = scene[s];
 
             if (didHitZ && (hitZ > sphere.Center.z))
                 continue;
 
-            if (intersector.Intersect(ref pos, ref dir, Unsafe.AsPointer(ref sphere), ref intersection_normal)) {
+            if (intersector.Intersect(ref pos, ref dir, &sphere, ref intersection_normal)) {
                 sampleEnv(ref intersection_normal, ref color);
 
                 const float ambientScale = 0.2f;

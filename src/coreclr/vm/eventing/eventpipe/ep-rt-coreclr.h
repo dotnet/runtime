@@ -725,7 +725,7 @@ bool
 ep_rt_process_detach (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return (bool)g_fProcessDetach;
+	return (bool)IsAtProcessExit();
 }
 
 static
@@ -1370,7 +1370,11 @@ ep_rt_utf8_string_strtok (
 	ep_char8_t **context)
 {
 	STATIC_CONTRACT_NOTHROW;
+#ifdef HOST_WINDOWS
 	return strtok_s (str, delimiter, context);
+#else
+	return strtok_r (str, delimiter, context);
+#endif
 }
 
 // STATIC_CONTRACT_NOTHROW

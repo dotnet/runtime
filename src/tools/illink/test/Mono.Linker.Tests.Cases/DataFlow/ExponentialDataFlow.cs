@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", Tool.Analyzer, "")]
 			[ExpectedWarning ("IL2090", "'T'")]
 			public static void Test<T> ()
 			{
@@ -94,32 +94,32 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning")]
 			// The way we track arrays causes the analyzer to track exponentially many
 			// ArrayValues in the ValueSet for the pattern in this method, hitting the limit.
 			// When this happens, we replace the ValueSet with an unknown value, producing
 			// this warning.
-			[ExpectedWarning ("IL2055", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL2090", "'T'", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2055", Tool.Analyzer, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
 			public static void Test<T> ()
 			{
 				Type[] types = new Type[20] {

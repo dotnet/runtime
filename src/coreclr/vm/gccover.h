@@ -113,10 +113,10 @@ typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::sav
 #define INTERRUPT_INSTR_PROTECT_RET     0xffffff0d
 
 #elif defined(TARGET_RISCV64)
-// TODO-RISCV64: Confirm the following encodings are undefined
-#define INTERRUPT_INSTR                 0x20000000
-#define INTERRUPT_INSTR_CALL            0x20010000
-#define INTERRUPT_INSTR_PROTECT_RET     0x20020000
+// The following encodings are undefined.
+#define INTERRUPT_INSTR                 0x20000000  // unimp, fld
+#define INTERRUPT_INSTR_CALL            0x20010000  // unimp, jal
+#define INTERRUPT_INSTR_PROTECT_RET     0x20020000  // unimp, fld
 
 #endif // _TARGET_*
 
@@ -181,8 +181,15 @@ inline bool IsGcCoverageInterruptInstructionVal(UINT32 instrVal)
         }
     }
 #elif defined(TARGET_RISCV64)
-    _ASSERTE(!"RISCV64:NYI");
-    return false;
+    switch (instrVal)
+    {
+    case INTERRUPT_INSTR:
+    case INTERRUPT_INSTR_CALL:
+    case INTERRUPT_INSTR_PROTECT_RET:
+        return true;
+    default:
+        return false;
+    }
 
 #else // x64 and x86
 

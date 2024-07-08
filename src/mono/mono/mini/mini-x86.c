@@ -4912,12 +4912,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_get_last_error (code, ins->dreg);
 			break;
 		default:
-			g_warning ("unknown opcode %s\n", mono_inst_name (ins->opcode));
+			g_warning ("unknown opcode " M_PRI_INST "\n", mono_inst_name (ins->opcode));
 			g_assert_not_reached ();
 		}
 
 		if (G_UNLIKELY ((code - cfg->native_code - offset) > GINT_TO_UINT(max_len))) {
-			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
+			g_warning ("wrong maximal instruction length of instruction " M_PRI_INST " (expected %d, got %d)",
 					   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
 		}

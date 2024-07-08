@@ -255,8 +255,8 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
                     jitstd::sort(sortedEntries, sortedEntries + knownHandles,
                                  [](const LikelyClassMethodHistogramEntry& h1,
                                     const LikelyClassMethodHistogramEntry& h2) -> bool {
-                                     return h1.m_count > h2.m_count;
-                                 });
+                        return h1.m_count > h2.m_count;
+                    });
 
                     const UINT32 numberOfClasses = min(knownHandles, maxLikelyClasses);
 
@@ -410,7 +410,9 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyValues(LikelyValueRecord*           
             // sort by m_count (descending)
             jitstd::sort(sortedEntries, sortedEntries + h.countHistogramElements,
                          [](const LikelyClassMethodHistogramEntry& h1,
-                            const LikelyClassMethodHistogramEntry& h2) -> bool { return h1.m_count > h2.m_count; });
+                            const LikelyClassMethodHistogramEntry& h2) -> bool {
+                return h1.m_count > h2.m_count;
+            });
 
             const UINT32 numberOfLikelyConst = min(h.countHistogramElements, maxLikelyValues);
 

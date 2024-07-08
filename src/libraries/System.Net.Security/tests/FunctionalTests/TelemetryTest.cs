@@ -30,9 +30,9 @@ namespace System.Net.Security.Tests
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")] // Match SslStream_StreamToStream_Authentication_Success
-        public static void EventSource_SuccessfulHandshake_LogsStartStop()
+        public static async Task EventSource_SuccessfulHandshake_LogsStartStop()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 try
                 {
@@ -92,14 +92,14 @@ namespace System.Net.Security.Tests
                 {
                     // Don't throw inside RemoteExecutor if SslStream_StreamToStream_Authentication_Success chose to skip the test
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void EventSource_UnsuccessfulHandshake_LogsStartFailureStop()
+        public static async Task EventSource_UnsuccessfulHandshake_LogsStartFailureStop()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 using var listener = new TestEventListener("System.Net.Security", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
@@ -159,7 +159,7 @@ namespace System.Net.Security.Tests
                 Assert.Equal(false, clientFailure.Payload[0]);
 
                 VerifyEventCounters(events, shouldHaveFailures: true);
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         private static SslProtocols ValidateHandshakeStopEventPayload(EventWrittenEventArgs stopEvent, bool failure = false)

@@ -43,7 +43,7 @@ public:
     PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
                              REGDISPLAY *   pRegisterSet);
 
-    uint32_t GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, PTR_UInt8* gcInfo);
+    uint32_t GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, PTR_uint8_t* gcInfo);
 
     bool IsSafePoint(PTR_VOID pvAddress);
 

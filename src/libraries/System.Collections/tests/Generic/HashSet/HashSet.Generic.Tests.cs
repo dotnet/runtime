@@ -212,12 +212,39 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => hashSet.TrimExcess(newCapacity));
         }
 
-        [Fact]
-        public void TrimExcess_Generic_LargeInitialCapacity_TrimReducesSize()
+        [Theory]
+        [InlineData(0, 20, 7)]
+        [InlineData(10, 20, 10)]
+        [InlineData(10, 20, 13)]
+        public void HashHet_Generic_TrimExcess_LargePopulatedHashSet_TrimReducesSize(int initialCount, int initialCapacity, int trimCapacity)
         {
-            var set = new HashSet<T>(20);
-            set.TrimExcess(7);
-            Assert.Equal(7, set.Capacity);
+            HashSet<T> set = CreateHashSetWithCapacity(initialCount, initialCapacity);
+            HashSet<T> clone = new(set, set.Comparer);
+
+            Assert.True(set.Capacity >= initialCapacity);
+            Assert.Equal(initialCount, set.Count);
+
+            set.TrimExcess(trimCapacity);
+
+            Assert.True(trimCapacity <= set.Capacity && set.Capacity < initialCapacity);
+            Assert.Equal(initialCount, set.Count);
+            Assert.Equal(clone, set);
+        }
+
+        [Theory]
+        [InlineData(10, 20, 0)]
+        [InlineData(10, 20, 7)]
+        public void HashHet_Generic_TrimExcess_LargePopulatedHashSet_TrimCapacityIsLessThanCount_ThrowsArgumentOutOfRangeException(int initialCount, int initialCapacity, int trimCapacity)
+        {
+            HashSet<T> set = CreateHashSetWithCapacity(initialCount, initialCapacity);
+
+            Assert.True(set.Capacity >= initialCapacity);
+            Assert.Equal(initialCount, set.Count);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => set.TrimExcess(trimCapacity));
+
+            Assert.True(set.Capacity >= initialCapacity);
+            Assert.Equal(initialCount, set.Count);
         }
 
         [Theory]
@@ -736,24 +763,24 @@ namespace System.Collections.Tests
                 var bf = new BinaryFormatter();
                 var s = new MemoryStream();
 
-                var dict = new HashSet<TCompared>(equalityComparer);
+                var set = new HashSet<TCompared>(equalityComparer);
 
-                Assert.Same(equalityComparer, dict.Comparer);
+                Assert.Same(equalityComparer, set.Comparer);
 
-                bf.Serialize(s, dict);
+                bf.Serialize(s, set);
                 s.Position = 0;
-                dict = (HashSet<TCompared>)bf.Deserialize(s);
+                set = (HashSet<TCompared>)bf.Deserialize(s);
 
                 if (internalTypeName == null)
                 {
-                    Assert.IsType(equalityComparer.GetType(), dict.Comparer);
+                    Assert.IsType(equalityComparer.GetType(), set.Comparer);
                 }
                 else
                 {
-                    Assert.Equal(internalTypeName, dict.Comparer.GetType().ToString());
+                    Assert.Equal(internalTypeName, set.Comparer.GetType().ToString());
                 }
 
-                Assert.True(equalityComparer.Equals(dict.Comparer));
+                Assert.True(equalityComparer.Equals(set.Comparer));
             }
         }
 

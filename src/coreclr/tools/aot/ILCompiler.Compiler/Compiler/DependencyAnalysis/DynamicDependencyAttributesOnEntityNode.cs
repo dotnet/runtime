@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Computes the list of dependencies from DynamicDependencyAttribute.
-    /// https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.codeanalysis.dynamicdependencyattribute
+    /// https://learn.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.dynamicdependencyattribute
     /// </summary>
     public class DynamicDependencyAttributesOnEntityNode : DependencyNodeCore<NodeFactory>
     {
@@ -122,7 +122,7 @@ namespace ILCompiler.DependencyAnalysis
                     // DynamicDependencyAttribute(String, String, String)
                     case 3 when fixedArgs[1].Value is string typeStringFromAttribute
                         && fixedArgs[2].Value is string assemblyStringFromAttribute:
-                        ModuleDesc asm = factory.TypeSystemContext.ResolveAssembly(new System.Reflection.AssemblyName(assemblyStringFromAttribute), throwIfNotFound: false);
+                        ModuleDesc asm = factory.TypeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(assemblyStringFromAttribute), throwIfNotFound: false);
                         if (asm == null)
                         {
                             metadataManager.Logger.LogWarning(
@@ -171,7 +171,7 @@ namespace ILCompiler.DependencyAnalysis
                     && fixedArgs[2].Value is string assemblyStringFromAttribute)
                 {
                     // DynamicDependencyAttribute(DynamicallyAccessedMemberTypes, String, String)
-                    ModuleDesc asm = factory.TypeSystemContext.ResolveAssembly(new System.Reflection.AssemblyName(assemblyStringFromAttribute), throwIfNotFound: false);
+                    ModuleDesc asm = factory.TypeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(assemblyStringFromAttribute), throwIfNotFound: false);
                     if (asm == null)
                     {
                         metadataManager.Logger.LogWarning(

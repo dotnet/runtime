@@ -536,7 +536,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             Keyword = classDec.Keyword.ValueText,
                                             Namespace = nspace,
-                                            Name = classDec.Identifier.ToString() + classDec.TypeParameterList,
+                                            Name = GenerateClassName(classDec),
                                             ParentClass = null,
                                         };
 
@@ -554,7 +554,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             {
                                                 Keyword = parentLoggerClass.Keyword.ValueText,
                                                 Namespace = nspace,
-                                                Name = parentLoggerClass.Identifier.ToString() + parentLoggerClass.TypeParameterList,
+                                                Name = GenerateClassName(parentLoggerClass),
                                                 ParentClass = null,
                                             };
 
@@ -601,17 +601,52 @@ namespace Microsoft.Extensions.Logging.Generators
                 return results;
             }
 
+            private static string GenerateClassName(TypeDeclarationSyntax typeDeclaration)
+            {
+                if (typeDeclaration.TypeParameterList != null &&
+                    typeDeclaration.TypeParameterList.Parameters.Count != 0)
+                {
+                    // The source generator produces a partial class that the compiler merges with the original
+                    // class definition in the user code. If the user applies attributes to the generic types
+                    // of the class, it is necessary to remove these attribute annotations from the generated
+                    // code. Failure to do so may result in a compilation error (CS0579: Duplicate attribute).
+                    for (int i = 0; i < typeDeclaration.TypeParameterList.Parameters.Count; i++)
+                    {
+                        TypeParameterSyntax parameter = typeDeclaration.TypeParameterList.Parameters[i];
+
+                        if (parameter.AttributeLists.Count > 0)
+                        {
+                            typeDeclaration = typeDeclaration.ReplaceNode(parameter, parameter.WithAttributeLists([]));
+                        }
+                    }
+                }
+
+                return typeDeclaration.Identifier.ToString() + typeDeclaration.TypeParameterList;
+            }
+
             private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, TypeDeclarationSyntax classDec, ITypeSymbol loggerSymbol)
             {
                 string? loggerField = null;
 
                 INamedTypeSymbol? classType = sm.GetDeclaredSymbol(classDec, _cancellationToken);
 
+                INamedTypeSymbol? currentClassType = classType;
                 bool onMostDerivedType = true;
 
-                while (classType is { SpecialType: not SpecialType.System_Object })
+                // We keep track of the names of all non-logger fields, since they prevent referring to logger
+                // primary constructor parameters with the same name. Example:
+                // partial class C(ILogger logger)
+                // {
+                //     private readonly object logger = logger;
+                //
+                //     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                //     public partial void M1(); // The ILogger primary constructor parameter cannot be used here.
+                // }
+                HashSet<string> shadowedNames = new(StringComparer.Ordinal);
+
+                while (currentClassType is { SpecialType: not SpecialType.System_Object })
                 {
-                    foreach (IFieldSymbol fs in classType.GetMembers().OfType<IFieldSymbol>())
+                    foreach (IFieldSymbol fs in currentClassType.GetMembers().OfType<IFieldSymbol>())
                     {
                         if (!onMostDerivedType && fs.DeclaredAccessibility == Accessibility.Private)
                         {
@@ -628,10 +663,52 @@ namespace Microsoft.Extensions.Logging.Generators
                                 return (null, true);
                             }
                         }
+                        else
+                        {
+                            shadowedNames.Add(fs.Name);
+                        }
                     }
 
                     onMostDerivedType = false;
-                    classType = classType.BaseType;
+                    currentClassType = currentClassType.BaseType;
+                }
+
+                // We prioritize fields over primary constructor parameters and avoid warnings if both exist.
+                if (loggerField is not null)
+                {
+                    return (loggerField, false);
+                }
+
+                IEnumerable<IMethodSymbol> primaryConstructors = classType.InstanceConstructors
+                    .Where(ic => ic.DeclaringSyntaxReferences
+                        .Any(ds => ds.GetSyntax() is ClassDeclarationSyntax));
+
+                foreach (IMethodSymbol primaryConstructor in primaryConstructors)
+                {
+                    foreach (IParameterSymbol parameter in primaryConstructor.Parameters)
+                    {
+                        if (IsBaseOrIdentity(parameter.Type, loggerSymbol))
+                        {
+                            if (shadowedNames.Contains(parameter.Name))
+                            {
+                                // Accessible fields always shadow primary constructor parameters,
+                                // so we can't use the primary constructor parameter,
+                                // even if the field is not a valid logger.
+                                Diag(DiagnosticDescriptors.PrimaryConstructorParameterLoggerHidden, parameter.Locations[0], classDec.Identifier.Text);
+
+                                continue;
+                            }
+
+                            if (loggerField == null)
+                            {
+                                loggerField = parameter.Name;
+                            }
+                            else
+                            {
+                                return (null, true);
+                            }
+                        }
+                    }
                 }
 
                 return (loggerField, false);

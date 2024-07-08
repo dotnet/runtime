@@ -168,7 +168,6 @@ public:
     static FCDECL0(int,     GetMaxGeneration);
     static FCDECL1(void,    KeepAlive, Object *obj);
     static FCDECL1(void,    SuppressFinalize, Object *obj);
-    static FCDECL1(void,    ReRegisterForFinalize, Object *obj);
     static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
 
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
@@ -199,6 +198,8 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
 extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode);
 
+extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
+
 extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers();
 #ifdef FEATURE_BASICFREEZE
 extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void *pSection, SIZE_T sizeSection);
@@ -218,6 +219,8 @@ extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
 
 extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);
 
+extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj);
+
 extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
 
 extern "C" int  QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
@@ -229,12 +232,8 @@ extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation);
 class COMInterlocked
 {
 public:
-        static FCDECL2(FC_UINT8_RET, Exchange8, UINT8 *location, UINT8 value);
-        static FCDECL2(FC_INT16_RET, Exchange16, INT16 *location, INT16 value);
         static FCDECL2(INT32, Exchange32, INT32 *location, INT32 value);
         static FCDECL2_IV(INT64, Exchange64, INT64 *location, INT64 value);
-        static FCDECL3(FC_UINT8_RET, CompareExchange8, UINT8* location, UINT8 value, UINT8 comparand);
-        static FCDECL3(FC_INT16_RET, CompareExchange16, INT16* location, INT16 value, INT16 comparand);
         static FCDECL3(INT32, CompareExchange32, INT32* location, INT32 value, INT32 comparand);
         static FCDECL3_IVV(INT64, CompareExchange64, INT64* location, INT64 value, INT64 comparand);
         static FCDECL2(LPVOID, ExchangeObject, LPVOID* location, LPVOID value);
@@ -245,18 +244,16 @@ public:
 
 extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 
-class ValueTypeHelper {
-public:
-    static FCDECL1(FC_BOOL_RET, CanCompareBits, Object* obj);
-    static FCDECL1(INT32, GetHashCode, Object* objRef);
-};
-
 class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
+    static FCDECL1(CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
+extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
+extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMT);
 
 class StreamNative {
 public:

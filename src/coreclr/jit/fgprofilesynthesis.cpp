@@ -11,12 +11,9 @@
 
 // TODO
 //
-// * faster way of doing fgGetPredForBlock
 // * vet against some real data
 // * IR based heuristics (perhaps)
 // * During Cp, avoid repeatedly propagating through nested loops
-// * Fake BB0 or always force scratch BB
-// * Reconcile with our other loop finding stuff
 // * Stop the upweight/downweight of loops in rest of jit
 // * Durable edge properties (exit, back)
 // * Tweak RunRarely to be at or near zero
@@ -33,8 +30,9 @@
 //
 void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
-    m_dfsTree = m_comp->fgComputeDfs();
-    m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+    m_dfsTree             = m_comp->fgComputeDfs();
+    m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
+    m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
 
     // Retain or compute edge likelihood information
     //
@@ -85,6 +83,50 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     //
     ComputeBlockWeights();
 
+    // If the initial pass results were approximate, iterate until we get
+    // something that is self-consistent (or, accept the fact that
+    // the results can never be self-consistent -- infinite loops, eg).
+    //
+    // Each iteration will blend in increasing amounts of synthetic profile,
+    // and also modulate the synthetic probabilities towards 50/50. The net result
+    // is that the profile moves towards something "blander" with less dramatic loop
+    // iteration counts. This blending helps facilitate convergence, which is also
+    // impacted by extremely high loop iteration counts.
+    //
+    // Put another way, we take an initially approximate profile as a sign that the
+    // profile data itself may be a bit suspect, and so we adjust based on a "prior"
+    // belief that the profile should be somewhat flatter.
+    //
+    unsigned retries = 0;
+    while (m_approximate && (retries < maxRepairRetries))
+    {
+        JITDUMP("\n\n[%d] Retrying reconstruction with blend factor " FMT_WT ", because %s\n", retries, m_blendFactor,
+                m_cappedCyclicProbabilities ? "capped cyclic probabilities" : "solver failed to converge");
+
+        // Reset
+        //
+        m_approximate               = false;
+        m_overflow                  = false;
+        m_cappedCyclicProbabilities = 0;
+
+        // Regularize the edge likelihoods...
+        //
+        BlendLikelihoods();
+        ComputeCyclicProbabilities();
+        AssignInputWeights(option);
+        ComputeBlockWeights();
+
+        // Increase blend factor and decrease synthetic loop likelihoods
+        // to try and force convergence
+        //
+        m_blendFactor = min(1.0, blendFactorGrowthRate * m_blendFactor);
+        m_loopExitLikelihood *= 0.9;
+        m_loopBackLikelihood *= 0.9;
+        m_returnLikelihood *= 1.05;
+
+        retries++;
+    }
+
     // Update pgo info
     //
     const bool             hadPgoWeights = m_comp->fgPgoHaveWeights;
@@ -101,18 +143,44 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
 
     m_comp->fgPgoHaveWeights = true;
     m_comp->fgPgoSource      = newSource;
+    m_comp->fgPgoSynthesized = true;
+    m_comp->fgPgoConsistent  = !m_approximate;
+
+    m_comp->Metrics.ProfileSynthesizedBlendedOrRepaired++;
+
+    if (m_approximate)
+    {
+        JITDUMP("Profile is inconsistent. Bypassing post-phase consistency checks.\n");
+        m_comp->Metrics.ProfileInconsistentInitially++;
+    }
 
 #ifdef DEBUG
-    if (JitConfig.JitCheckSynthesizedCounts() > 0)
+    // We want to assert that the profile is consistent.
+    // However, we need to defer asserting since invalid IL can
+    // match the one-pass convergence criteria (where we assume
+    // convergence) but not actually converge because of
+    // nonsensical flow.
+    //
+    // This generally only happens under pure synthesis, because
+    // methods with invalid IL won't have real PGO data.
+    //
+    // Assume all is well.
+    //
+    m_comp->fgPgoDeferredInconsistency = false;
+
+    if (m_comp->fgPgoConsistent)
     {
-        // Verify consistency, provided we didn't see any improper headers
-        // or cap any Cp values.
+        const bool isConsistent =
+            m_comp->fgDebugCheckProfileWeights(ProfileChecks::CHECK_LIKELY | ProfileChecks::CHECK_ALL_BLOCKS);
+
+        // We thought profile data was consistent, but it wasn't.
+        // Leave a note so we can bypass the post-phase check, and
+        // instead assert at the end of fgImport, if we make it that far.
         //
-        if ((m_improperLoopHeaders == 0) && (m_cappedCyclicProbabilities == 0))
+        if (!isConsistent)
         {
-            // verify likely weights, assert on failure, check all blocks
-            m_comp->fgDebugCheckProfileWeights(ProfileChecks::CHECK_LIKELY | ProfileChecks::RAISE_ASSERT |
-                                               ProfileChecks::CHECK_ALL_BLOCKS);
+            m_comp->fgPgoDeferredInconsistency = true;
+            JITDUMP("Will defer asserting until after importation\n");
         }
     }
 #endif
@@ -143,14 +211,6 @@ void ProfileSynthesis::AssignLikelihoods()
                 break;
 
             case BBJ_CALLFINALLY:
-                // Single successor next cases
-                //
-                // Note we handle flow to the finally
-                // specially; this represents return
-                // from the finally.
-                AssignLikelihoodNext(block);
-                break;
-
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLYRET:
             case BBJ_LEAVE:
@@ -177,28 +237,15 @@ void ProfileSynthesis::AssignLikelihoods()
 }
 
 //------------------------------------------------------------------------
-// AssignLikelihoodNext: update edge likelihood for block that always
-//   transfers control to bbNext
-//
-// Arguments;
-//   block -- block in question
-//
-void ProfileSynthesis::AssignLikelihoodNext(BasicBlock* block)
-{
-    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->Next(), block);
-    edge->setLikelihood(1.0);
-}
-
-//------------------------------------------------------------------------
 // AssignLikelihoodJump: update edge likelihood for a block that always
-//   transfers control to bbTarget
+//   transfers control to its target block
 //
 // Arguments;
 //   block -- block in question
 //
 void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 {
-    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->GetTarget(), block);
+    FlowEdge* const edge = block->GetTargetEdge();
     edge->setLikelihood(1.0);
 }
 
@@ -211,36 +258,37 @@ void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 //
 void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 {
-    BasicBlock* const jump = block->GetTrueTarget();
-    BasicBlock* const next = block->GetFalseTarget();
+    FlowEdge* const trueEdge  = block->GetTrueEdge();
+    FlowEdge* const falseEdge = block->GetFalseEdge();
 
     // Watch for degenerate case
     //
-    if (jump == next)
+    if (trueEdge == falseEdge)
     {
-        AssignLikelihoodNext(block);
+        assert(trueEdge->getDupCount() == 2);
+        trueEdge->setLikelihood(1.0);
         return;
     }
 
-    FlowEdge* const jumpEdge = m_comp->fgGetPredForBlock(jump, block);
-    FlowEdge* const nextEdge = m_comp->fgGetPredForBlock(next, block);
+    BasicBlock* const trueTarget  = trueEdge->getDestinationBlock();
+    BasicBlock* const falseTarget = falseEdge->getDestinationBlock();
 
     // THROW heuristic
     //
-    bool const isJumpThrow = jump->KindIs(BBJ_THROW);
-    bool const isNextThrow = next->KindIs(BBJ_THROW);
+    bool const isTrueThrow  = trueTarget->KindIs(BBJ_THROW);
+    bool const isFalseThrow = falseTarget->KindIs(BBJ_THROW);
 
-    if (isJumpThrow != isNextThrow)
+    if (isTrueThrow != isFalseThrow)
     {
-        if (isJumpThrow)
+        if (isTrueThrow)
         {
-            jumpEdge->setLikelihood(0.0);
-            nextEdge->setLikelihood(1.0);
+            trueEdge->setLikelihood(throwLikelihood);
+            falseEdge->setLikelihood(1.0 - throwLikelihood);
         }
         else
         {
-            jumpEdge->setLikelihood(1.0);
-            nextEdge->setLikelihood(0.0);
+            trueEdge->setLikelihood(1.0 - throwLikelihood);
+            falseEdge->setLikelihood(throwLikelihood);
         }
 
         return;
@@ -248,22 +296,22 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 
     // LOOP BACK EDGE heuristic
     //
-    bool const isJumpEdgeBackEdge = m_loops->IsLoopBackEdge(jumpEdge);
-    bool const isNextEdgeBackEdge = m_loops->IsLoopBackEdge(nextEdge);
+    bool const isTrueEdgeBackEdge  = m_loops->IsLoopBackEdge(trueEdge);
+    bool const isFalseEdgeBackEdge = m_loops->IsLoopBackEdge(falseEdge);
 
-    if (isJumpEdgeBackEdge != isNextEdgeBackEdge)
+    if (isTrueEdgeBackEdge != isFalseEdgeBackEdge)
     {
-        if (isJumpEdgeBackEdge)
+        if (isTrueEdgeBackEdge)
         {
-            JITDUMP(FMT_BB "->" FMT_BB " is loop back edge\n", block->bbNum, jump->bbNum);
-            jumpEdge->setLikelihood(loopBackLikelihood);
-            nextEdge->setLikelihood(1.0 - loopBackLikelihood);
+            JITDUMP(FMT_BB "->" FMT_BB " is loop back edge\n", block->bbNum, trueTarget->bbNum);
+            trueEdge->setLikelihood(m_loopBackLikelihood);
+            falseEdge->setLikelihood(1.0 - m_loopBackLikelihood);
         }
         else
         {
-            JITDUMP(FMT_BB "->" FMT_BB " is loop back edge\n", block->bbNum, next->bbNum);
-            jumpEdge->setLikelihood(1.0 - loopBackLikelihood);
-            nextEdge->setLikelihood(loopBackLikelihood);
+            JITDUMP(FMT_BB "->" FMT_BB " is loop back edge\n", block->bbNum, falseTarget->bbNum);
+            trueEdge->setLikelihood(1.0 - m_loopBackLikelihood);
+            falseEdge->setLikelihood(m_loopBackLikelihood);
         }
 
         return;
@@ -274,22 +322,22 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
     // Consider: adjust probability if loop has multiple exit edges, so that
     // overall exit probability is around 0.1.
     //
-    bool const isJumpEdgeExitEdge = m_loops->IsLoopExitEdge(jumpEdge);
-    bool const isNextEdgeExitEdge = m_loops->IsLoopExitEdge(nextEdge);
+    bool const isTrueEdgeExitEdge  = m_loops->IsLoopExitEdge(trueEdge);
+    bool const isFalseEdgeExitEdge = m_loops->IsLoopExitEdge(falseEdge);
 
-    if (isJumpEdgeExitEdge != isNextEdgeExitEdge)
+    if (isTrueEdgeExitEdge != isFalseEdgeExitEdge)
     {
-        if (isJumpEdgeExitEdge)
+        if (isTrueEdgeExitEdge)
         {
-            JITDUMP(FMT_BB "->" FMT_BB " is loop exit edge\n", block->bbNum, jump->bbNum);
-            jumpEdge->setLikelihood(1.0 - loopExitLikelihood);
-            nextEdge->setLikelihood(loopExitLikelihood);
+            JITDUMP(FMT_BB "->" FMT_BB " is loop exit edge\n", block->bbNum, trueTarget->bbNum);
+            trueEdge->setLikelihood(1.0 - m_loopExitLikelihood);
+            falseEdge->setLikelihood(m_loopExitLikelihood);
         }
         else
         {
-            JITDUMP(FMT_BB "->" FMT_BB " is loop exit edge\n", block->bbNum, next->bbNum);
-            jumpEdge->setLikelihood(loopExitLikelihood);
-            nextEdge->setLikelihood(1.0 - loopExitLikelihood);
+            JITDUMP(FMT_BB "->" FMT_BB " is loop exit edge\n", block->bbNum, falseTarget->bbNum);
+            trueEdge->setLikelihood(m_loopExitLikelihood);
+            falseEdge->setLikelihood(1.0 - m_loopExitLikelihood);
         }
 
         return;
@@ -297,20 +345,20 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 
     // RETURN heuristic
     //
-    bool const isJumpReturn = jump->KindIs(BBJ_RETURN);
-    bool const isNextReturn = next->KindIs(BBJ_RETURN);
+    bool const isJumpReturn = trueTarget->KindIs(BBJ_RETURN);
+    bool const isNextReturn = falseTarget->KindIs(BBJ_RETURN);
 
     if (isJumpReturn != isNextReturn)
     {
         if (isJumpReturn)
         {
-            jumpEdge->setLikelihood(returnLikelihood);
-            nextEdge->setLikelihood(1.0 - returnLikelihood);
+            trueEdge->setLikelihood(m_returnLikelihood);
+            falseEdge->setLikelihood(1.0 - m_returnLikelihood);
         }
         else
         {
-            jumpEdge->setLikelihood(1.0 - returnLikelihood);
-            nextEdge->setLikelihood(returnLikelihood);
+            trueEdge->setLikelihood(1.0 - m_returnLikelihood);
+            falseEdge->setLikelihood(m_returnLikelihood);
         }
 
         return;
@@ -320,8 +368,8 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
     //
     // Give slight preference to bbNext
     //
-    jumpEdge->setLikelihood(1.0 - ilNextLikelihood);
-    nextEdge->setLikelihood(ilNextLikelihood);
+    trueEdge->setLikelihood(1.0 - ilNextLikelihood);
+    falseEdge->setLikelihood(ilNextLikelihood);
 }
 
 //------------------------------------------------------------------------
@@ -337,14 +385,15 @@ void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
     //
     const unsigned n = block->NumSucc();
     assert(n != 0);
-    const weight_t p = 1 / (weight_t)n;
+
+    // Check for divide by zero to avoid compiler warnings for Release builds (above assert is removed)
+    const weight_t p = (n != 0) ? (1 / (weight_t)n) : 0;
 
     // Each unique edge gets some multiple of that basic probability
     //
-    for (BasicBlock* const succ : block->Succs(m_comp))
+    for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
     {
-        FlowEdge* const edge = m_comp->fgGetPredForBlock(succ, block);
-        edge->setLikelihood(p * edge->getDupCount());
+        succEdge->setLikelihood(p * succEdge->getDupCount());
     }
 }
 
@@ -367,10 +416,9 @@ weight_t ProfileSynthesis::SumOutgoingLikelihoods(BasicBlock* block, WeightVecto
         likelihoods->clear();
     }
 
-    for (BasicBlock* const succ : block->Succs(m_comp))
+    for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
     {
-        FlowEdge* const edge       = m_comp->fgGetPredForBlock(succ, block);
-        weight_t        likelihood = edge->getLikelihood();
+        weight_t likelihood = succEdge->getLikelihood();
         if (likelihoods != nullptr)
         {
             likelihoods->push_back(likelihood);
@@ -405,11 +453,6 @@ void ProfileSynthesis::RepairLikelihoods()
                 break;
 
             case BBJ_CALLFINALLY:
-                // Single successor next cases.
-                // Just assign 1.0
-                AssignLikelihoodNext(block);
-                break;
-
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLYRET:
             case BBJ_LEAVE:
@@ -497,11 +540,6 @@ void ProfileSynthesis::BlendLikelihoods()
                 break;
 
             case BBJ_CALLFINALLY:
-                // Single successor next cases.
-                // Just assign 1.0
-                AssignLikelihoodNext(block);
-                break;
-
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLYRET:
             case BBJ_LEAVE:
@@ -557,17 +595,17 @@ void ProfileSynthesis::BlendLikelihoods()
                 // Blend
                 //
                 JITDUMP("Blending likelihoods in " FMT_BB " with blend factor " FMT_WT " \n", block->bbNum,
-                        blendFactor);
+                        m_blendFactor);
                 iter = likelihoods.begin();
-                for (BasicBlock* const succ : block->Succs(m_comp))
+                for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
                 {
-                    FlowEdge* const edge          = m_comp->fgGetPredForBlock(succ, block);
-                    weight_t        newLikelihood = edge->getLikelihood();
-                    weight_t        oldLikelihood = *iter;
+                    weight_t newLikelihood = succEdge->getLikelihood();
+                    weight_t oldLikelihood = *iter;
 
-                    edge->setLikelihood((blendFactor * oldLikelihood) + ((1.0 - blendFactor) * newLikelihood));
-                    JITDUMP(FMT_BB " -> " FMT_BB " was " FMT_WT " now " FMT_WT "\n", block->bbNum, succ->bbNum,
-                            oldLikelihood, edge->getLikelihood());
+                    succEdge->setLikelihood(((1.0 - m_blendFactor) * oldLikelihood) + (m_blendFactor * newLikelihood));
+                    BasicBlock* const succBlock = succEdge->getDestinationBlock();
+                    JITDUMP(FMT_BB " -> " FMT_BB " was " FMT_WT " now " FMT_WT "\n", block->bbNum, succBlock->bbNum,
+                            oldLikelihood, succEdge->getLikelihood());
 
                     iter++;
                 }
@@ -587,10 +625,9 @@ void ProfileSynthesis::ClearLikelihoods()
 {
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        for (BasicBlock* const succ : block->Succs(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
         {
-            FlowEdge* const edge = m_comp->fgGetPredForBlock(succ, block);
-            edge->clearLikelihood();
+            succEdge->clearLikelihood();
         }
     }
 }
@@ -647,12 +684,6 @@ void ProfileSynthesis::RandomizeLikelihoods()
     for (BasicBlock* const block : m_comp->Blocks())
     {
         unsigned const N = block->NumSucc(m_comp);
-
-        if (N < 2)
-        {
-            continue;
-        }
-
         likelihoods.clear();
         likelihoods.reserve(N);
 
@@ -669,10 +700,9 @@ void ProfileSynthesis::RandomizeLikelihoods()
         }
 
         i = 0;
-        for (BasicBlock* const succ : block->Succs(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
         {
-            FlowEdge* const edge = m_comp->fgGetPredForBlock(succ, block);
-            edge->setLikelihood(likelihoods[i++] / sum);
+            succEdge->setLikelihood(likelihoods[i++] / sum);
         }
     }
 #endif // DEBUG
@@ -704,6 +734,35 @@ void ProfileSynthesis::ComputeCyclicProbabilities()
 //
 void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 {
+    // If a loop has no back edge, then bypass the below and
+    // cap the probability.
+    //
+    // If all loop exit edges are zero likelihood, this loop
+    // is effectively infinite, so do likewise.
+    //
+    // We may not be able to produce consistent counts for
+    // this flow graph, so make a note.
+    //
+    bool hasExit       = false;
+    bool hasLikelyExit = false;
+
+    for (FlowEdge* const exitEdge : loop->ExitEdges())
+    {
+        hasExit = true;
+        if (exitEdge->getLikelihood() > 0)
+        {
+            hasLikelyExit = true;
+            break;
+        }
+    }
+
+    if (!hasLikelyExit)
+    {
+        JITDUMP("Loop headed by " FMT_BB " has %s exit edges (is infinite)\n", loop->GetHeader()->bbNum,
+                hasExit ? "no likely" : "no");
+        m_hasInfiniteLoop = true;
+    }
+
     // Initialize
     //
     loop->VisitLoopBlocks([](BasicBlock* loopBlock) {
@@ -719,7 +778,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
         //
         if (block == loop->GetHeader())
         {
-            JITDUMP("ccp: " FMT_BB " :: 1.0\n", block->bbNum);
+            JITDUMP("ccp: " FMT_BB " :: 1.0 (header)\n", block->bbNum);
             block->bbWeight = 1.0;
         }
         else
@@ -747,7 +806,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                 newWeight *= m_cyclicProbabilities[nestedLoop->GetIndex()];
                 block->bbWeight = newWeight;
 
-                JITDUMP("ccp (nested header): " FMT_BB " :: " FMT_WT "\n", block->bbNum, newWeight);
+                JITDUMP("ccp: " FMT_BB " :: " FMT_WT " (nested header)\n", block->bbNum, newWeight);
             }
             else
             {
@@ -755,7 +814,12 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 
                 for (FlowEdge* const edge : block->PredEdges())
                 {
-                    if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
+                    BasicBlock* const sourceBlock = edge->getSourceBlock();
+
+                    // Ignore flow across EH, or from preds not in the loop.
+                    // Latter can happen if there are unreachable blocks that flow into the loop.
+                    //
+                    if (BasicBlock::sameHndRegion(block, sourceBlock) && loop->ContainsBlock(sourceBlock))
                     {
                         newWeight += edge->getLikelyWeight();
                     }
@@ -801,8 +865,9 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
     //
     weight_t const cyclicProbability = 1.0 / (1.0 - cyclicWeight);
 
-    JITDUMP("For loop at " FMT_BB " cyclic weight is " FMT_WT " cyclic probability is " FMT_WT "%s\n",
-            loop->GetHeader()->bbNum, cyclicWeight, cyclicProbability, capped ? " [capped]" : "");
+    JITDUMP("For loop at " FMT_BB " cyclic weight is " FMT_WT " cyclic probability is " FMT_WT "%s%s\n",
+            loop->GetHeader()->bbNum, cyclicWeight, cyclicProbability, capped ? " [capped]" : "",
+            loop->ContainsImproperHeader() ? " [likely underestimated, (loop contains improper loop)]" : "");
 
     m_cyclicProbabilities[loop->GetIndex()] = cyclicProbability;
 
@@ -864,28 +929,26 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                             " to reflect capping; current likelihood is " FMT_WT "\n",
                             exitBlock->bbNum, exitEdge->getLikelihood());
 
-                    BasicBlock* const jump               = exitBlock->GetTrueTarget();
-                    BasicBlock* const next               = exitBlock->GetFalseTarget();
-                    FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
-                    FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);
-                    weight_t const    exitLikelihood     = (missingExitWeight + currentExitWeight) / exitBlockWeight;
-                    weight_t const    continueLikelihood = 1.0 - exitLikelihood;
+                    FlowEdge* const trueEdge           = exitBlock->GetTrueEdge();
+                    FlowEdge* const falseEdge          = exitBlock->GetFalseEdge();
+                    weight_t const  exitLikelihood     = (missingExitWeight + currentExitWeight) / exitBlockWeight;
+                    weight_t const  continueLikelihood = 1.0 - exitLikelihood;
 
                     // We are making it more likely that the loop exits, so the new exit likelihood
                     // should be greater than the old.
                     //
                     assert(exitLikelihood > exitEdge->getLikelihood());
 
-                    if (jumpEdge == exitEdge)
+                    if (trueEdge == exitEdge)
                     {
-                        jumpEdge->setLikelihood(exitLikelihood);
-                        nextEdge->setLikelihood(continueLikelihood);
+                        trueEdge->setLikelihood(exitLikelihood);
+                        falseEdge->setLikelihood(continueLikelihood);
                     }
                     else
                     {
-                        assert(nextEdge == exitEdge);
-                        jumpEdge->setLikelihood(continueLikelihood);
-                        nextEdge->setLikelihood(exitLikelihood);
+                        assert(falseEdge == exitEdge);
+                        trueEdge->setLikelihood(continueLikelihood);
+                        falseEdge->setLikelihood(exitLikelihood);
                     }
                     adjustedExit = true;
 
@@ -925,9 +988,9 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 //
 void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
 {
-    // Determine input weight for entire method.
+    // Determine input weight for method entry
     //
-    BasicBlock* const entryBlock  = m_comp->fgFirstBB;
+    BasicBlock* const entryBlock  = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
     weight_t          entryWeight = BB_UNITY_WEIGHT;
 
     switch (option)
@@ -935,7 +998,7 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
         case ProfileSynthesisOption::BlendLikelihoods:
         case ProfileSynthesisOption::RepairLikelihoods:
         {
-            // Try and retain fgEntryBB's weight.
+            // Try and retain entryBlock's weight.
             // Easiest to do when the block has no preds.
             //
             if (entryBlock->hasProfileWeight())
@@ -970,27 +1033,63 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
             break;
     }
 
-    // Determine input weight for EH regions.
+    // Reset existing weights
     //
-    const weight_t ehWeight = entryWeight * exceptionScale;
-
     for (BasicBlock* block : m_comp->Blocks())
     {
         block->setBBProfileWeight(0.0);
     }
 
+    // Set entry weight
+    //
+    JITDUMP("Synthesis: entry " FMT_BB " has input weight " FMT_WT "\n", entryBlock->bbNum, entryWeight);
     entryBlock->setBBProfileWeight(entryWeight);
 
-    if (!m_comp->compIsForInlining())
-    {
-        for (EHblkDsc* const HBtab : EHClauses(m_comp))
-        {
-            if (HBtab->HasFilter())
-            {
-                HBtab->ebdFilter->setBBProfileWeight(ehWeight);
-            }
+    // Determine input weight for EH regions, if any.
+    //
+    weight_t ehWeight = exceptionWeight;
 
-            HBtab->ebdHndBeg->setBBProfileWeight(ehWeight);
+#ifdef DEBUG
+    if (JitConfig.JitSynthesisExceptionWeight() != nullptr)
+    {
+        ConfigDoubleArray JitSynthesisExceptionWeightArray;
+        JitSynthesisExceptionWeightArray.EnsureInit(JitConfig.JitSynthesisExceptionWeight());
+        weight_t newFactor = JitSynthesisExceptionWeightArray.GetData()[0];
+
+        if ((newFactor >= 0) && (newFactor <= 1.0))
+        {
+            ehWeight = newFactor;
+        }
+    }
+#endif
+
+    JITDUMP("Synthesis: exception weight " FMT_WT "\n", ehWeight);
+
+    if (ehWeight != 0)
+    {
+        // We can't inline methods with EH. Inlinees share the parent
+        // EH tab, so we can't rely on the EH table being empty.
+        //
+        if (!m_comp->compIsForInlining())
+        {
+            for (EHblkDsc* const HBtab : EHClauses(m_comp))
+            {
+                // Only set weights on the filter/handler entries
+                // if the associated try is reachable.
+                //
+                BasicBlock* const tryBlock = HBtab->ebdTryBeg;
+                if (!m_dfsTree->Contains(tryBlock))
+                {
+                    continue;
+                }
+
+                if (HBtab->HasFilter())
+                {
+                    HBtab->ebdFilter->setBBProfileWeight(ehWeight);
+                }
+
+                HBtab->ebdHndBeg->setBBProfileWeight(ehWeight);
+            }
         }
     }
 }
@@ -1003,11 +1102,25 @@ void ProfileSynthesis::ComputeBlockWeights()
 {
     JITDUMP("Computing block weights\n");
 
+    bool useSolver = true;
+
+#ifdef DEBUG
+    useSolver = JitConfig.JitSynthesisUseSolver() > 0;
+#endif
+
+    if (useSolver)
+    {
+        GaussSeidelSolver();
+        return;
+    }
+
     for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
     {
         BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
         ComputeBlockWeight(block);
     }
+
+    m_approximate = (m_cappedCyclicProbabilities) || (m_improperLoopHeaders > 0);
 }
 
 //------------------------------------------------------------------------
@@ -1041,7 +1154,7 @@ void ProfileSynthesis::ComputeBlockWeight(BasicBlock* block)
     }
     else
     {
-        // Sum all incoming edges that aren't EH flow
+        // Sum all incoming edges that aren't EH flow.
         //
         for (FlowEdge* const edge : block->PredEdges())
         {
@@ -1070,4 +1183,326 @@ void ProfileSynthesis::ComputeBlockWeight(BasicBlock* block)
             JITDUMP("cbw%s: " FMT_BB " :: " FMT_WT "\n", kind, finallyEntry->bbNum, finallyEntry->bbWeight);
         }
     }
+}
+
+//------------------------------------------------------------------------
+// GaussSeidelSolver: solve for block weights iteratively
+//
+void ProfileSynthesis::GaussSeidelSolver()
+{
+    // The computed block weights.
+    //
+    jitstd::vector<weight_t> countVector(m_comp->fgBBNumMax + 1, 0, m_comp->getAllocator(CMK_Pgo));
+
+    // The algorithm.
+    //
+    bool                          converged            = false;
+    weight_t                      previousResidual     = 0;
+    weight_t                      residual             = 0;
+    weight_t                      relResidual          = 0;
+    weight_t                      oldRelResidual       = 0;
+    weight_t                      eigenvalue           = 0;
+    weight_t const                stopRelResidual      = 0.002;
+    BasicBlock*                   residualBlock        = nullptr;
+    BasicBlock*                   relResidualBlock     = nullptr;
+    const FlowGraphDfsTree* const dfs                  = m_loops->GetDfsTree();
+    unsigned const                blockCount           = dfs->GetPostOrderCount();
+    bool                          checkEntryExitWeight = true;
+    bool                          showDetails          = false;
+
+    // Remember the entry block
+    //
+    BasicBlock* const entryBlock = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
+    JITDUMP("Synthesis solver: flow graph has %u improper loop headers\n", m_improperLoopHeaders);
+
+    // This is an iterative solver, and it may require a lot of iterations
+    // to converge. We don't have time for that, so we will give up
+    // fairly quickly.
+    //
+    // This can be mitigated somewhat by using blend mode for repairs, as that tends
+    // to shift likelihoods off of the extremes (say 0.999) can lead to high
+    // iteration counts.
+    //
+    // If we have existing inconsistent data, we might consider starting from
+    // that data, rather than from mostly 0.
+    //
+    // It is possible that a more sophisticated solver (say GMRES or BiCGStab)
+    // might be more effective and run in acceptable time.
+    //
+    unsigned const iterationLimit = (m_improperLoopHeaders > 0) ? maxSolverIterations : 1;
+
+    // Push weights forward in flow, iterate until convergence.
+    //
+    unsigned i = 0;
+    for (; i < iterationLimit; i++)
+    {
+        residualBlock    = nullptr;
+        relResidualBlock = nullptr;
+        residual         = 0;
+        relResidual      = 0;
+
+        weight_t entryWeight = 0;
+        weight_t exitWeight  = 0;
+
+        // Compute new counts based on Gauss-Seidel iteration
+        //
+        // Todo: after 1st iteration we can start at the postorder
+        // num of the first improper SCC block, as anything "above"
+        // this will no longer change.
+        //
+        // Likewise we can stop at the postorder num of the last block that is
+        // part of any improper SCC, if we knew what that was,
+        // and ony run through the tail blocks on the last iteration.
+        //
+        // (or more generally we can go SCC by SCC...)
+        //
+        for (unsigned j = m_dfsTree->GetPostOrderCount(); j != 0; j--)
+        {
+            BasicBlock* const block     = dfs->GetPostOrder(j - 1);
+            weight_t          newWeight = 0;
+
+            // If there's a block in a try, we can't expect to see
+            // entry and exit weights agree.
+            //
+            checkEntryExitWeight &= !block->hasTryIndex();
+
+            // Some blocks have additional profile weights that don't come from flow edges.
+            //
+            if (block == entryBlock)
+            {
+                newWeight   = block->bbWeight;
+                entryWeight = newWeight;
+            }
+            else
+            {
+                EHblkDsc* const ehDsc = m_comp->ehGetBlockHndDsc(block);
+
+                if (ehDsc != nullptr)
+                {
+                    if (ehDsc->HasFilter() && (block == ehDsc->ebdFilter))
+                    {
+                        newWeight = block->bbWeight;
+                    }
+                    else if (block == ehDsc->ebdHndBeg)
+                    {
+                        newWeight = block->bbWeight;
+
+                        // Finallies also add in the weight of their try.
+                        //
+                        if (ehDsc->HasFinallyHandler())
+                        {
+                            newWeight += countVector[ehDsc->ebdTryBeg->bbNum];
+                        }
+                    }
+                }
+            }
+
+            // Blocks with no preds are simple to handle
+            //
+            if (block->bbPreds != nullptr)
+            {
+                // Leverage Cp for existing loop headers, provided that
+                // all contained loops are proper.
+                //
+                // This is an optimization to speed convergence.
+                //
+                FlowGraphNaturalLoop* const loop = m_loops->GetLoopByHeader(block);
+
+                if ((loop != nullptr) && !loop->ContainsImproperHeader())
+                {
+                    // Sum all entry edges that aren't EH flow
+                    //
+                    for (FlowEdge* const edge : loop->EntryEdges())
+                    {
+                        BasicBlock* const predBlock = edge->getSourceBlock();
+
+                        if (BasicBlock::sameHndRegion(block, predBlock))
+                        {
+                            newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
+                        }
+                    }
+
+                    // Scale by cyclic probability
+                    //
+                    newWeight *= m_cyclicProbabilities[loop->GetIndex()];
+                }
+                else
+                {
+                    if ((loop != nullptr) && showDetails)
+                    {
+                        JITDUMP(" .. not using Cp for " FMT_BB "; loop contains improper header\n", block->bbNum);
+                    }
+
+                    // A self-edge that's part of a bigger SCC may
+                    // not be detected as simple loop.
+                    //
+                    FlowEdge* selfEdge = nullptr;
+
+                    for (FlowEdge* const edge : block->PredEdges())
+                    {
+                        BasicBlock* const predBlock = edge->getSourceBlock();
+
+                        if (predBlock == block)
+                        {
+                            // We might see a degenerate self BBJ_COND. Hopefully not.
+                            //
+                            assert(selfEdge == nullptr);
+                            selfEdge = edge;
+                            continue;
+                        }
+
+                        if (BasicBlock::sameHndRegion(block, predBlock))
+                        {
+                            newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
+                        }
+                    }
+
+                    if (selfEdge != nullptr)
+                    {
+                        weight_t selfLikelihood = selfEdge->getLikelihood();
+                        if (selfLikelihood > cappedLikelihood)
+                        {
+                            m_cappedCyclicProbabilities++;
+                            selfLikelihood = cappedLikelihood;
+                        }
+                        newWeight = newWeight / (1.0 - selfLikelihood);
+                    }
+                }
+            }
+
+            // Note we can't use SOR to accelerate convergence, as our coefficient matrix is an M-matrix
+            // and so it is risky to use \omega > 1 -- our dominant eigenvalue may be very close to 1.
+            // Also even if safe, SOR may over-correct and give negative results.
+            //
+            weight_t const oldWeight = countVector[block->bbNum];
+            weight_t const change    = newWeight - oldWeight;
+
+            // Hence counts will not decrease.
+            //
+            assert(change >= 0);
+
+            bool isExit = false;
+            if (checkEntryExitWeight)
+            {
+                if (block->KindIs(BBJ_RETURN))
+                {
+                    exitWeight += newWeight;
+                    isExit = true;
+                }
+                else if (block->KindIs(BBJ_THROW))
+                {
+                    if (!block->hasTryIndex())
+                    {
+                        exitWeight += newWeight;
+                        isExit = true;
+                    }
+                }
+            }
+
+            if (showDetails)
+            {
+                JITDUMP("iteration %u: " FMT_BB " :: old " FMT_WT " new " FMT_WT " change " FMT_WT "%s\n", i,
+                        block->bbNum, oldWeight, newWeight, change, isExit ? " [exit]" : "");
+            }
+
+            countVector[block->bbNum] = newWeight;
+
+            // Remember max absolute and relative change
+            // (note rel residual will be infinite at times, that's ok)
+            //
+            // Note we are using a "point" bound here ("infinity norm") rather than say
+            // computing the L2-norm of the entire residual vector.
+            //
+            weight_t const blockRelResidual = change / oldWeight;
+
+            if ((relResidualBlock == nullptr) || (blockRelResidual > relResidual))
+            {
+                relResidual      = blockRelResidual;
+                relResidualBlock = block;
+            }
+
+            if ((residualBlock == nullptr) || (change > residual))
+            {
+                residual      = change;
+                residualBlock = block;
+            }
+
+            if (newWeight >= maxCount)
+            {
+                JITDUMP("count overflow in " FMT_BB ": " FMT_WT "\n", block->bbNum, newWeight);
+                m_overflow = true;
+            }
+        }
+
+        // If there were no improper headers, we will have converged in one pass.
+        // (profile may still be inconsistent, if there were capped cyclic probabilities).
+        //
+        if (m_improperLoopHeaders == 0)
+        {
+            converged = true;
+            break;
+        }
+
+        // Compute the relative entry/exit "residual", if we have reason to believe it
+        // should balance.
+        //
+        if (checkEntryExitWeight)
+        {
+            // we can see slight overflow here in the exit residual, so use abs
+            //
+            weight_t const entryExitResidual = fabs(entryWeight - exitWeight);
+            JITDUMP("Entry weight " FMT_WT " exit weight " FMT_WT " residual " FMT_WT "\n", entryWeight, exitWeight,
+                    entryExitResidual);
+            weight_t const entryExitRelResidual = entryExitResidual / entryWeight;
+            assert(entryExitRelResidual >= 0);
+
+            if (entryExitRelResidual > relResidual)
+            {
+                relResidual      = entryExitRelResidual;
+                relResidualBlock = entryBlock;
+            }
+        }
+
+        JITDUMP("iteration %u: max residual is at " FMT_BB " : " FMT_WT "\n", i, residualBlock->bbNum, residual);
+        JITDUMP("iteration %u: max rel residual is at " FMT_BB " : " FMT_WT "\n", i, relResidualBlock->bbNum,
+                relResidual);
+
+        // If max relative residual is sufficiently small, then stop.
+        //
+        if (relResidual < stopRelResidual)
+        {
+            converged = true;
+            break;
+        }
+
+        if (m_overflow)
+        {
+            break;
+        }
+
+        // If we have been iterating for a bit, estimate the dominant GS
+        // eigenvalue. (we might want to start with Jacobi iterations
+        // to get the Jacobi eigenvalue instead).
+        //
+        if ((i > 3) && (oldRelResidual > 0))
+        {
+            eigenvalue = relResidual / oldRelResidual;
+            JITDUMP(" eigenvalue " FMT_WT, eigenvalue);
+        }
+        JITDUMP("\n");
+        oldRelResidual = relResidual;
+    }
+
+    JITDUMP("%s at iteration %u rel residual " FMT_WT " eigenvalue " FMT_WT "\n",
+            converged ? "converged" : "failed to converge", i, relResidual, eigenvalue);
+
+    // Propagate the computed weights to the blocks.
+    //
+    for (unsigned j = m_dfsTree->GetPostOrderCount(); j != 0; j--)
+    {
+        BasicBlock* const block = dfs->GetPostOrder(j - 1);
+        block->setBBProfileWeight(max(0.0, countVector[block->bbNum]));
+    }
+
+    m_approximate = !converged || (m_cappedCyclicProbabilities > 0);
 }

@@ -50,7 +50,7 @@ PALTEST(c_runtime__putenv_test3_paltest_putenv_test3, "c_runtime/_putenv/test3/p
        differing only by case, returns it's own value.
     */
 
-    result = getenv(FirstVarName);
+    result = PAL_getenv(FirstVarName);
     if(result == NULL)
     {
         Fail("ERROR: The result of getenv on a valid Environment Variable "
@@ -77,7 +77,7 @@ PALTEST(c_runtime__putenv_test3_paltest_putenv_test3, "c_runtime/_putenv/test3/p
     /* Verify that the environment variables
     */
 
-    result = getenv(FirstVarName);
+    result = PAL_getenv(FirstVarName);
     if(result == NULL)
     {
         Fail("ERROR: The result of getenv on a valid Environment Variable "

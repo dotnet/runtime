@@ -125,20 +125,6 @@ EXTERN_C void __faststorefence();
 #pragma intrinsic(__faststorefence)
 #define PalMemoryBarrier() __faststorefence()
 
-#elif defined(HOST_ARM)
-
-EXTERN_C void __yield(void);
-#pragma intrinsic(__yield)
-EXTERN_C void __dmb(unsigned int _Type);
-#pragma intrinsic(__dmb)
-FORCEINLINE void PalYieldProcessor()
-{
-    __dmb(_ARM_BARRIER_ISHST);
-    __yield();
-}
-
-#define PalMemoryBarrier() __dmb(_ARM_BARRIER_ISH)
-
 #elif defined(HOST_ARM64)
 
 EXTERN_C void __yield(void);

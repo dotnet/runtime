@@ -127,7 +127,7 @@ static const char * const single_xmmregs [] = {
 const char*
 mono_arch_fregname (int reg)
 {
-	if (reg < AMD64_XMM_NREG)
+	if (reg >= 0 && reg < AMD64_XMM_NREG)
 		return single_xmmregs [reg];
 	else
 		return "unknown";
@@ -136,7 +136,7 @@ mono_arch_fregname (int reg)
 const char *
 mono_arch_xregname (int reg)
 {
-	if (reg < AMD64_XMM_NREG)
+	if (reg >= 0 && reg < AMD64_XMM_NREG)
 		return packed_xmmregs [reg];
 	else
 		return "unknown";
@@ -875,6 +875,8 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 	cinfo->nargs = n;
 	cinfo->gsharedvt = mini_is_gsharedvt_variable_signature (sig);
+	cinfo->swift_error_index = -1;
+	cinfo->swift_indirect_result_index = -1;
 
 	gr = 0;
 	fr = 0;
@@ -1008,6 +1010,42 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		}
 
 		ptype = mini_get_underlying_type (sig->params [i]);
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
+			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
+			if (klass == swift_indirect_result)
+				cinfo->swift_indirect_result_index = i;
+
+			if ((klass == swift_self || klass == swift_indirect_result) && sig->pinvoke) {
+				guint32 size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
+				g_assert (size == 8);
+
+				ainfo->storage = ArgValuetypeInReg;
+				ainfo->pair_storage [0] = ArgInIReg;
+				ainfo->pair_storage [1] = ArgNone;
+				ainfo->nregs = 1;
+				// The indirect result is passed in RAX on AMD64. However, since we don't prevent reg allocator to use RAX in m2n wrappers, the RAX is used to pass the function pointer.
+				// We use the R10 register instead and before the native call, the value is moved from R10 to RAX.
+				ainfo->pair_regs [0] = (klass == swift_self) ? GINT32_TO_UINT8 (AMD64_R13) : GINT32_TO_UINT8 (AMD64_R10);
+				ainfo->pair_size [0] = size;
+				continue;
+			} else if (klass == swift_error || klass == swift_error_ptr) {
+				if (sig->pinvoke)
+					ainfo->reg = GINT32_TO_UINT8 (AMD64_R12);
+				else
+					add_general (&gr, &stack_size, ainfo);
+				ainfo->storage = ArgSwiftError;
+				cinfo->swift_error_index = i;
+				continue;
+			}
+		}
+#endif
+
 		switch (ptype->type) {
 		case MONO_TYPE_I1:
 			ainfo->is_signed = 1;
@@ -1133,6 +1171,8 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 		case ArgValuetypeAddrInIReg:
 			g_assert (ainfo->pair_storage [0] == ArgInIReg && ainfo->pair_storage [1] == ArgNone);
 			return &ccontext->gregs [ainfo->pair_regs [0]];
+		case ArgSwiftError:
+			return &ccontext->gregs [AMD64_R12];
 		default:
 			g_error ("Arg storage type not yet supported");
 	}
@@ -1249,6 +1289,11 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		else
 			storage = arg_get_storage (ccontext, ainfo);
 
+		if (ainfo->storage == ArgSwiftError) {
+			*(gpointer*)storage = 0;
+			continue;
+		}
+
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, i, storage);
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
@@ -1286,7 +1331,7 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 			storage = alloca (temp_size);
 		else
 			storage = arg_get_storage (ccontext, ainfo);
-		memset (ccontext, 0, sizeof (CallContext)); // FIXME
+
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
@@ -1359,6 +1404,30 @@ mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, -1, storage);
 	}
 }
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+/**
+ * Gets error context from `ccontext` registers by indirectly storing the value onto the stack.
+ *
+ * The function searches for an argument with SwiftError type.
+ * If found, it retrieves the value from `ccontext`.
+ */
+gpointer
+mono_arch_get_swift_error (CallContext *ccontext, MonoMethodSignature *sig, int *arg_index)
+{
+	MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+	MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+	for (guint i = 0; i < sig->param_count + sig->hasthis; i++) {
+		MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
+		if (klass && (klass == swift_error || klass == swift_error_ptr)) {
+			*arg_index = i;
+			return &ccontext->gregs [AMD64_R12];
+		}
+	}
+
+	return NULL;
+}
+#endif
 
 /*
  * mono_arch_get_argument_info:
@@ -1623,7 +1692,8 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 
 	/* We use the callee saved registers for global allocation */
 	regs = g_list_prepend (regs, (gpointer)AMD64_RBX);
-	regs = g_list_prepend (regs, (gpointer)AMD64_R12);
+	if (!mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL))
+		regs = g_list_prepend (regs, (gpointer)AMD64_R12);
 	regs = g_list_prepend (regs, (gpointer)AMD64_R13);
 	regs = g_list_prepend (regs, (gpointer)AMD64_R14);
 	regs = g_list_prepend (regs, (gpointer)AMD64_R15);
@@ -1925,6 +1995,26 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 				break;
 			}
+			case ArgSwiftError: {
+				inreg = FALSE;
+				if (ainfo->offset)
+				{
+					ins->opcode = OP_REGOFFSET;
+					ins->inst_basereg = cfg->frame_reg;
+					ins->inst_offset = ainfo->offset + ARGS_OFFSET;
+					inreg = TRUE;
+				}
+
+				cfg->arch.swift_error_var = ins;
+
+				/* In the n2m case, the error register functions as an extra return register
+				* and is thus is not treated as callee-saved.
+				*/
+				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+					cfg->used_int_regs |= (size_t)(1 << AMD64_R12);
+
+				break;
+			}
 			default:
 				NOT_IMPLEMENTED;
 			}
@@ -1997,6 +2087,9 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->method->save_lmf) {
 		cfg->lmf_ir = TRUE;
 	}
+
+	if (cinfo->swift_error_index >= 0)
+		cfg->args [cinfo->swift_error_index]->flags |= MONO_INST_VOLATILE;
 }
 
 static void
@@ -2362,6 +2455,10 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 				MONO_ADD_INS (cfg->cbb, arg);
 			}
+			break;
+		}
+		case ArgSwiftError: {
+			MONO_EMIT_NEW_I8CONST (cfg, ainfo->reg, 0);
 			break;
 		}
 		default:
@@ -3035,7 +3132,8 @@ emit_call (MonoCompile *cfg, MonoCallInst *call, guint8 *code, MonoJitICallId ji
 
 				MonoMethod* const method = call->method;
 
-				if (m_class_get_image (method->klass)->aot_module)
+				MonoAotModule *amodule = m_class_get_image (method->klass)->aot_module;
+				if (amodule && (amodule != AOT_MODULE_NOT_FOUND))
 					/* The callee might be an AOT method */
 					near_call = FALSE;
 				if (method->dynamic)
@@ -3829,7 +3927,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = temp->dreg;
 			}
 			break;
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 		case OP_EXPAND_I1: {
 			int temp_reg1 = mono_alloc_ireg (cfg);
 			int temp_reg2 = mono_alloc_ireg (cfg);
@@ -3982,8 +4079,26 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			case CMP_NE: ins->inst_c0 = 4; break;
 			case CMP_LT: ins->inst_c0 = 1; break;
 			case CMP_LE: ins->inst_c0 = 2; break;
-			case CMP_GT: ins->inst_c0 = 6; break;
-			case CMP_GE: ins->inst_c0 = 5; break;
+			case CMP_GT: {
+				// CMPNLT (5) is not the same as CMPGT due to NaN
+				// as such, we want to emit CMPLT (1) with swapped
+				// operands instead, ensuring we get correct handling
+				int tmp = ins->sreg1;
+				ins->sreg1 = ins->sreg2;
+				ins->sreg2 = tmp;
+				ins->inst_c0 = 1;
+				break;
+			}
+			case CMP_GE: {
+				// CMPNLE (6) is not the same as CMPGE due to NaN
+				// as such, we want to emit CMPLE (2) with swapped
+				// operands instead, ensuring we get correct handling
+				int tmp = ins->sreg1;
+				ins->sreg1 = ins->sreg2;
+				ins->sreg2 = tmp;
+				ins->inst_c0 = 2;
+				break;
+			}
 			default:
 				g_assert_not_reached();
 				break;
@@ -4056,7 +4171,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached();
 			break;
 		}
-#endif
 		default:
 			break;
 		}
@@ -4199,6 +4313,16 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 {
 	CallInfo *cinfo;
 	guint32 quad;
+
+	if (cfg->arch.swift_error_var) {
+		if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			amd64_mov_reg_membase (code, AMD64_R11, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, sizeof (target_mgreg_t));
+			amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_R12, sizeof (target_mgreg_t));
+		}
+		else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+			amd64_mov_reg_membase (code, AMD64_R12, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, sizeof (target_mgreg_t));
+		}
+	}
 
 	/* Move return value to the target register */
 	/* FIXME: do this in the local reg allocator */
@@ -4516,6 +4640,25 @@ amd64_handle_varargs_call (MonoCompile *cfg, guint8 *code, MonoCallInst *call, g
 	return amd64_handle_varargs_nregs (code, nregs);
 #endif
 }
+
+static guint8*
+amd64_handle_swift_indirect_result (MonoCompile *cfg, guint8 *code, MonoCallInst *call)
+{
+	// Ideally, this should be in mono_arch_emit_prolog, but RAX may be used for the call, and it is required to free RAX.
+	if (mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL) && 
+		cfg->arch.cinfo->swift_indirect_result_index > -1) {
+
+		MonoInst *ins = (MonoInst*)call;
+		if (ins->sreg1 == AMD64_RAX) {
+			amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
+			ins->sreg1 = AMD64_R11;
+		}
+		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_R10, 8);
+	}
+
+	return code;
+}
+
 
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
@@ -5502,6 +5645,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			// FIXME Just like NT the direct cases are are not ideal.
 			amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RAX, 8);
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			code = amd64_handle_swift_indirect_result (cfg, code, call);
+#endif
 			amd64_jump_membase (code, AMD64_RSP, -8);
 #endif
 			ins->flags |= MONO_INST_GC_CALLSITE;
@@ -5527,6 +5673,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			code = amd64_handle_swift_indirect_result (cfg, code, call);
+#endif
 			code = emit_call (cfg, call, code, MONO_JIT_ICALL_ZeroIsReserved);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = GPTRDIFF_TO_INT (code - cfg->native_code);
@@ -5547,6 +5696,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			code = amd64_handle_varargs_call (cfg, code, call, TRUE);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			code = amd64_handle_swift_indirect_result (cfg, code, call);
+#endif
 			amd64_call_reg (code, ins->sreg1);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = GPTRDIFF_TO_INT (code - cfg->native_code);
@@ -6756,7 +6908,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_patch (br, code);
 			break;
 		}
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 		/* TODO: Some of these IR opcodes are marked as no clobber when they indeed do. */
 		case OP_XBINOP: {
 			switch (ins->inst_c0) {
@@ -7633,7 +7784,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_sse_roundps_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
 		}
-#endif
 
 		case OP_LZCNT32:
 			amd64_sse_lzcnt_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
@@ -7688,12 +7838,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					amd64_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, gregs) + i * sizeof (target_mgreg_t), i, sizeof (target_mgreg_t));
 			break;
 		default:
-			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
+			g_warning ("unknown opcode " M_PRI_INST " in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
 		}
 
 		g_assertf ((code - cfg->native_code - offset) <= max_len,
-			   "wrong maximal instruction length of instruction %s (expected %d, got %d)",
+			   "wrong maximal instruction length of instruction " M_PRI_INST " (expected %d, got %d)",
 			   mono_inst_name (ins->opcode), max_len, (int)(code - cfg->native_code - offset));
 	}
 
@@ -8091,6 +8241,14 @@ MONO_RESTORE_WARNING
 			amd64_mov_membase_reg (code, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, cinfo->ret.reg, 8);
 	}
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && 
+	    cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && 
+	    cfg->arch.cinfo->swift_indirect_result_index > -1) {
+		amd64_mov_reg_reg (code, AMD64_R10, AMD64_RAX, 8);
+	}
+#endif
+
 	/* Keep this in sync with emit_load_volatile_arguments */
 	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
@@ -8164,6 +8322,17 @@ MONO_RESTORE_WARNING
 				break;
 			case ArgGSharedVtInReg:
 				amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, ainfo->reg, 8);
+				break;
+			case ArgSwiftError:
+				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+					if (ainfo->offset == 0) {
+						amd64_mov_membase_reg (code, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, ainfo->reg, sizeof (target_mgreg_t));
+					}
+				} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+					/* Relies on arguments being passed on the stack */
+					amd64_lea_membase (code, AMD64_R11, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset);
+					amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, AMD64_R11, 8);
+				}
 				break;
 			default:
 				break;

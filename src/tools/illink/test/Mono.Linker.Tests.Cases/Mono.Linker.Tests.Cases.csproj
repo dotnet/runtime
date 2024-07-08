@@ -8,6 +8,7 @@
     <Compile Remove="LinkXml\Dependencies\UsedNonRequiredExportedTypeIsKept_fwd.cs" />
     <Compile Remove="LinkXml\Dependencies\UsedNonRequiredExportedTypeIsKeptWhenRooted_fwd.cs" />
     <Compile Remove="References\Dependencies\CustomMarkHandlerSaveAssembly.cs" />
+    <Compile Remove="Substitutions\Dependencies\TestFeatures.cs" />
     <Compile Remove="TypeForwarding\Dependencies\AnotherLibraryForwarder.cs" />
     <Compile Remove="TypeForwarding\Dependencies\AssemblyReferenceIsRemovedWhenUnused_Library.cs" />
     <Compile Remove="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
@@ -21,8 +22,11 @@
     <Compile Remove="TypeForwarding\Dependencies\TypeForwardersRewriteForwarders.cs" />
     <Compile Remove="CommandLine\Dependencies\CustomStepDummy.cs" />
     <Compile Remove="CommandLine\Dependencies\CustomStepUser.cs" />
+    <Compile Remove="CommandLine\Dependencies\CustomApplyPreserveStep.cs" />
     <Compile Remove="Logging\Dependencies\LogStep.cs" />
     <Compile Remove="Extensibility\Dependencies\*.cs" />
+    <Compile Include="Extensibility\Dependencies\InterfaceType.cs" />
+    <Compile Include="Extensibility\Dependencies\InterfaceImplementation.cs" />
     <Compile Remove="DynamicDependencies\Dependencies\FacadeAssembly.cs" />
     <Compile Remove="Warnings\Dependencies\CustomStep.cs" />
   </ItemGroup>

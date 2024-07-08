@@ -57,37 +57,6 @@
     </type>
   </assembly>
 
-  <!--
-    The following attributes are necessary when NullabilityInfoContext is supported.
-    Note these attributes are allowed to be in any assembly.
-     -->
-  <assembly fullname="*" feature="System.Reflection.NullabilityInfoContext.IsSupported" featurevalue="false">
-    <type fullname="System.Diagnostics.CodeAnalysis.AllowNullAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.NotNullAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Runtime.CompilerServices.NullableAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Runtime.CompilerServices.NullableContextAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Runtime.CompilerServices.NullablePublicOnlyAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-  </assembly>
-
   <!-- The following attributes are only necessary when COM is supported -->
   <assembly fullname="System.Private.CoreLib" feature="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" featurevalue="false">
     <type fullname="System.Runtime.InteropServices.ClassInterfaceAttribute">
@@ -248,6 +217,12 @@
   <assembly fullname="*" feature="System.AggressiveAttributeTrimming" featurevalue="true">
     <!-- Attributes that tooling allows to be in any assembly to support earlier TFMs -->
     <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.FeatureGuardAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute">

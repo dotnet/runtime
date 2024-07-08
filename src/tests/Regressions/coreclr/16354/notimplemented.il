@@ -31,7 +31,7 @@
        extends [System.Runtime]System.Object
        implements IBar, class IFoo`1<class [System.Runtime]System.ValueType>
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void .ctor() cil managed
   {
     ldarg.0
@@ -40,36 +40,40 @@
   }
 }
 
-.method private hidebysig static void LoadFooer() cil managed noinlining
+.method public hidebysig static void LoadFooer() cil managed noinlining
 {
   newobj instance void Fooer::.ctor()
   pop
   ret
 }
 
-.method public hidebysig static int32 Main() cil managed
+.class public auto ansi abstract sealed beforefieldinit notimplemented
+    extends [System.Runtime]System.Object
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
-  .entrypoint
-
-  .try
+  .method public hidebysig static int32 Main() cil managed
   {
-    call void LoadFooer()
-    leave DidNotThrow
-  }
-  catch [System.Runtime]System.TypeLoadException
-  {
-    pop
-    leave Okay
-  }
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .entrypoint
 
-Okay:
-  ldc.i4 100
-  ret
+    .try
+    {
+      call void LoadFooer()
+      leave DidNotThrow
+    }
+    catch [System.Runtime]System.TypeLoadException
+    {
+      pop
+      leave Okay
+    }
 
-DidNotThrow:
-  ldc.i4.m1
-  ret
+  Okay:
+    ldc.i4 100
+    ret
+
+  DidNotThrow:
+    ldc.i4.m1
+    ret
+  }
 }

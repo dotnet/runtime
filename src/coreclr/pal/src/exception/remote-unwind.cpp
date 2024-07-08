@@ -60,17 +60,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define MACOS_ARM64_POINTER_AUTH_MASK 0x7fffffffffffull
 #endif
 
-// Sub-headers included from the libunwind.h contain an empty struct
-// and clang issues a warning. Until the libunwind is fixed, disable
-// the warning.
-#ifdef __llvm__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wextern-c-compat"
-#endif
 #include <libunwind.h>
-#ifdef __llvm__
-#pragma clang diagnostic pop
-#endif
 
 SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 
@@ -2219,8 +2209,7 @@ resume(unw_addr_space_t as, unw_cursor_t *cp, void *arg)
 static int
 get_proc_name(unw_addr_space_t as, unw_word_t addr, char *bufp, size_t buf_len, unw_word_t *offp, void *arg)
 {
-    ASSERT("Not supposed to be ever called\n");
-    return -UNW_EINVAL;
+    return -UNW_ENOINFO;
 }
 
 static int

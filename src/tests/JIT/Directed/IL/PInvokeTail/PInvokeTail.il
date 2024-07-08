@@ -49,46 +49,50 @@
     ret
 } // end of global method 'callputs2'
 
-.method public static int32 main() il managed
+.class public auto ansi abstract sealed beforefieldinit PInvokeTail
+    extends [mscorlib]System.Object
 {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
-    .entrypoint
-    .maxstack 4
-    .locals init (char& pinned)
+  .method public static int32 main() il managed
+  {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
+      .entrypoint
+      .maxstack 4
+      .locals init (char& pinned)
 
-    ldstr bytearray(48 65 6C 6C 6F 20 57 6F 72 6C 64 21 00 00 00 00) // "Hello World!"
-    call instance char& modreq([mscorlib]System.Runtime.InteropServices.InAttribute) [mscorlib]System.String::GetPinnableReference()
-    stloc.0
+      ldstr bytearray(48 65 6C 6C 6F 20 57 6F 72 6C 64 21 00 00 00 00) // "Hello World!"
+      call instance char& modreq([mscorlib]System.Runtime.InteropServices.InAttribute) [mscorlib]System.String::GetPinnableReference()
+      stloc.0
 
-    ldloc.0
-    call        int32 callputs1(char&)
-    ldc.i4      0x0
-    bge         PASS_1
+      ldloc.0
+      call        int32 callputs1(char&)
+      ldc.i4      0x0
+      bge         PASS_1
 
-    call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
-    ldstr       "puts() failed"
-    callvirt    instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
-    ldc.i4      0x1
-    ret
+      call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
+      ldstr       "puts() failed"
+      callvirt    instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
+      ldc.i4      0x1
+      ret
 
-    PASS_1:
-    ldloc.0
-    call        int32 callputs2(char&)
-    ldc.i4      0x0
-    bge         PASS_2
+      PASS_1:
+      ldloc.0
+      call        int32 callputs2(char&)
+      ldc.i4      0x0
+      bge         PASS_2
 
-    call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
-    ldstr       "puts() failed"
-    callvirt    instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
-    ldc.i4      0x1
-    ret
+      call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
+      ldstr       "puts() failed"
+      callvirt    instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
+      ldc.i4      0x1
+      ret
 
-    PASS_2:
-    call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
-    ldstr       "Passed"
-    callvirt    instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
-    ldc.i4      0x64
-    ret
-} // end of global method 'main'
+      PASS_2:
+      call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
+      ldstr       "Passed"
+      callvirt    instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
+      ldc.i4      0x64
+      ret
+  } // end of global method 'main'
+}

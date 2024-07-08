@@ -71,12 +71,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string element = nameof(element);
                 public const string enumValue = nameof(enumValue);
                 public const string exception = nameof(exception);
-                public const string getPath = nameof(getPath);
                 public const string key = nameof(key);
                 public const string name = nameof(name);
                 public const string instance = nameof(instance);
                 public const string optionsBuilder = nameof(optionsBuilder);
                 public const string originalCount = nameof(originalCount);
+                public const string path = nameof(path);
                 public const string section = nameof(section);
                 public const string sectionKey = nameof(sectionKey);
                 public const string services = nameof(services);
@@ -261,7 +261,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private string GetIncrementalIdentifier(string prefix) => $"{prefix}{_valueSuffixIndex++}";
 
-            private static string GetInitalizeMethodDisplayString(ObjectSpec type) =>
+            private static string GetInitializeMethodDisplayString(ObjectSpec type) =>
                 $"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.IdentifierCompatibleSubstring}";
         }
     }

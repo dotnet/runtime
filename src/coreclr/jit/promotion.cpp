@@ -80,7 +80,9 @@ struct Access
 #endif
 
     Access(unsigned offset, var_types accessType, ClassLayout* layout)
-        : Layout(layout), Offset(offset), AccessType(accessType)
+        : Layout(layout)
+        , Offset(offset)
+        , AccessType(accessType)
     {
     }
 
@@ -220,7 +222,8 @@ bool AggregateInfo::OverlappingReplacements(unsigned      offset,
 //   numLocals - Number of locals to support in the map
 //
 AggregateInfoMap::AggregateInfoMap(CompAllocator allocator, unsigned numLocals)
-    : m_aggregates(allocator), m_numLocals(numLocals)
+    : m_aggregates(allocator)
+    , m_numLocals(numLocals)
 {
     m_lclNumToAggregateIndex = new (allocator) unsigned[numLocals];
     for (unsigned i = 0; i < numLocals; i++)
@@ -277,7 +280,9 @@ struct PrimitiveAccess
     unsigned  Offset;
     var_types AccessType;
 
-    PrimitiveAccess(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
+    PrimitiveAccess(unsigned offset, var_types accessType)
+        : Offset(offset)
+        , AccessType(accessType)
     {
     }
 };
@@ -290,7 +295,8 @@ class LocalUses
 
 public:
     LocalUses(Compiler* comp)
-        : m_accesses(comp->getAllocator(CMK_Promotion)), m_inducedAccesses(comp->getAllocator(CMK_Promotion))
+        : m_accesses(comp->getAllocator(CMK_Promotion))
+        , m_inducedAccesses(comp->getAllocator(CMK_Promotion))
     {
     }
 
@@ -973,7 +979,7 @@ public:
         , m_prom(prom)
         , m_candidateStores(prom->m_compiler->getAllocator(CMK_Promotion))
     {
-        m_uses = new (prom->m_compiler, CMK_Promotion) LocalUses*[prom->m_compiler->lvaCount]{};
+        m_uses = new (prom->m_compiler, CMK_Promotion) LocalUses* [prom->m_compiler->lvaCount] {};
     }
 
     //------------------------------------------------------------------------
@@ -1205,6 +1211,8 @@ public:
             }
         }
 
+        m_compiler->Metrics.PhysicallyPromotedFields += totalNumPromotions;
+
         if (totalNumPromotions <= 0)
         {
             return false;
@@ -1219,13 +1227,8 @@ public:
             for (Replacement& rep : reps)
             {
 #ifdef DEBUG
-                char buf[32];
-                sprintf_s(buf, sizeof(buf), "V%02u.[%03u..%03u)", agg->LclNum, rep.Offset,
-                          rep.Offset + genTypeSize(rep.AccessType));
-                size_t len  = strlen(buf) + 1;
-                char*  bufp = new (m_compiler, CMK_DebugOnly) char[len];
-                strcpy_s(bufp, len, buf);
-                rep.Description = bufp;
+                rep.Description = m_compiler->printfAlloc("V%02u.[%03u..%03u)", agg->LclNum, rep.Offset,
+                                                          rep.Offset + genTypeSize(rep.AccessType));
 #endif
 
                 rep.LclNum     = m_compiler->lvaGrabTemp(false DEBUGARG(rep.Description));
@@ -1242,7 +1245,7 @@ public:
             }
 #endif
 
-            agg->Unpromoted = m_prom->SignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
+            agg->Unpromoted = m_compiler->GetSignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
             for (Replacement& rep : reps)
             {
                 agg->Unpromoted.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
@@ -1443,9 +1446,8 @@ private:
             flags |= AccessKindFlags::IsStoreSource;
         }
 
-        if (user->OperIs(GT_RETURN))
+        if (user->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
         {
-            assert(user->gtGetOp1()->gtEffectiveVal() == lcl);
             flags |= AccessKindFlags::IsReturned;
         }
 #endif
@@ -1480,365 +1482,6 @@ bool Replacement::Overlaps(unsigned otherStart, unsigned otherSize) const
     }
 
     return true;
-}
-
-//------------------------------------------------------------------------
-// IntersectsOrAdjacent:
-//   Check if this segment intersects or is adjacent to another segment.
-//
-// Parameters:
-//   other - The other segment.
-//
-// Returns:
-//    True if so.
-//
-bool StructSegments::Segment::IntersectsOrAdjacent(const Segment& other) const
-{
-    if (End < other.Start)
-    {
-        return false;
-    }
-
-    if (other.End < Start)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------
-// Intersects:
-//   Check if this segment intersects another segment.
-//
-// Parameters:
-//   other - The other segment.
-//
-// Returns:
-//    True if so.
-//
-bool StructSegments::Segment::Intersects(const Segment& other) const
-{
-    if (End <= other.Start)
-    {
-        return false;
-    }
-
-    if (other.End <= Start)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------
-// Contains:
-//   Check if this segment contains another segment.
-//
-// Parameters:
-//   other - The other segment.
-//
-// Returns:
-//    True if so.
-//
-bool StructSegments::Segment::Contains(const Segment& other) const
-{
-    return (other.Start >= Start) && (other.End <= End);
-}
-
-//------------------------------------------------------------------------
-// Merge:
-//   Update this segment to also contain another segment.
-//
-// Parameters:
-//   other - The other segment.
-//
-void StructSegments::Segment::Merge(const Segment& other)
-{
-    Start = min(Start, other.Start);
-    End   = max(End, other.End);
-}
-
-//------------------------------------------------------------------------
-// Add:
-//   Add a segment to the data structure.
-//
-// Parameters:
-//   segment - The segment to add.
-//
-void StructSegments::Add(const Segment& segment)
-{
-    size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
-
-    if ((ssize_t)index < 0)
-    {
-        index = ~index;
-    }
-
-    m_segments.insert(m_segments.begin() + index, segment);
-    size_t endIndex;
-    for (endIndex = index + 1; endIndex < m_segments.size(); endIndex++)
-    {
-        if (!m_segments[index].IntersectsOrAdjacent(m_segments[endIndex]))
-        {
-            break;
-        }
-
-        m_segments[index].Merge(m_segments[endIndex]);
-    }
-
-    m_segments.erase(m_segments.begin() + index + 1, m_segments.begin() + endIndex);
-}
-
-//------------------------------------------------------------------------
-// Subtract:
-//   Subtract a segment from the data structure.
-//
-// Parameters:
-//   segment - The segment to subtract.
-//
-void StructSegments::Subtract(const Segment& segment)
-{
-    size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
-    if ((ssize_t)index < 0)
-    {
-        index = ~index;
-    }
-    else
-    {
-        // Start == segment[index].End, which makes it non-interesting.
-        index++;
-    }
-
-    if (index >= m_segments.size())
-    {
-        return;
-    }
-
-    // Here we know Start < segment[index].End. Do they not intersect at all?
-    if (m_segments[index].Start >= segment.End)
-    {
-        // Does not intersect any segment.
-        return;
-    }
-
-    assert(m_segments[index].Intersects(segment));
-
-    if (m_segments[index].Contains(segment))
-    {
-        if (segment.Start > m_segments[index].Start)
-        {
-            // New segment (existing.Start, segment.Start)
-            if (segment.End < m_segments[index].End)
-            {
-                m_segments.insert(m_segments.begin() + index, Segment(m_segments[index].Start, segment.Start));
-
-                // And new segment (segment.End, existing.End)
-                m_segments[index + 1].Start = segment.End;
-                return;
-            }
-
-            m_segments[index].End = segment.Start;
-            return;
-        }
-        if (segment.End < m_segments[index].End)
-        {
-            // New segment (segment.End, existing.End)
-            m_segments[index].Start = segment.End;
-            return;
-        }
-
-        // Full segment is being removed
-        m_segments.erase(m_segments.begin() + index);
-        return;
-    }
-
-    if (segment.Start > m_segments[index].Start)
-    {
-        m_segments[index].End = segment.Start;
-        index++;
-    }
-
-    size_t endIndex = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.End);
-    if ((ssize_t)endIndex >= 0)
-    {
-        m_segments.erase(m_segments.begin() + index, m_segments.begin() + endIndex + 1);
-        return;
-    }
-
-    endIndex = ~endIndex;
-    if (endIndex == m_segments.size())
-    {
-        m_segments.erase(m_segments.begin() + index, m_segments.end());
-        return;
-    }
-
-    if (segment.End > m_segments[endIndex].Start)
-    {
-        m_segments[endIndex].Start = segment.End;
-    }
-
-    m_segments.erase(m_segments.begin() + index, m_segments.begin() + endIndex);
-}
-
-//------------------------------------------------------------------------
-// IsEmpty:
-//   Check if the segment tree is empty.
-//
-// Returns:
-//   True if so.
-//
-bool StructSegments::IsEmpty()
-{
-    return m_segments.size() == 0;
-}
-
-//------------------------------------------------------------------------
-// CoveringSegment:
-//   Compute a segment that covers all contained segments in this segment tree.
-//
-// Parameters:
-//   result - [out] The single segment. Only valid if the method returns true.
-//
-// Returns:
-//   True if this segment tree was non-empty; otherwise false.
-//
-bool StructSegments::CoveringSegment(Segment* result)
-{
-    if (m_segments.size() == 0)
-    {
-        return false;
-    }
-
-    result->Start = m_segments[0].Start;
-    result->End   = m_segments[m_segments.size() - 1].End;
-    return true;
-}
-
-//------------------------------------------------------------------------
-// Intersects:
-//   Check if a segment intersects with any segment in this segment tree.
-//
-// Parameters:
-//   segment - The segment.
-//
-// Returns:
-//   True if the input segment intersects with any segment in the tree;
-//   otherwise false.
-//
-bool StructSegments::Intersects(const Segment& segment)
-{
-    size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
-    if ((ssize_t)index < 0)
-    {
-        index = ~index;
-    }
-    else
-    {
-        // Start == segment[index].End, which makes it non-interesting.
-        index++;
-    }
-
-    if (index >= m_segments.size())
-    {
-        return false;
-    }
-
-    // Here we know Start < segment[index].End. Do they not intersect at all?
-    if (m_segments[index].Start >= segment.End)
-    {
-        // Does not intersect any segment.
-        return false;
-    }
-
-    assert(m_segments[index].Intersects(segment));
-    return true;
-}
-
-#ifdef DEBUG
-//------------------------------------------------------------------------
-// Dump:
-//   Dump a string representation of the segment tree to stdout.
-//
-void StructSegments::Dump()
-{
-    if (m_segments.size() == 0)
-    {
-        printf("<empty>");
-    }
-    else
-    {
-        const char* sep = "";
-        for (const Segment& segment : m_segments)
-        {
-            printf("%s[%03u..%03u)", sep, segment.Start, segment.End);
-            sep = " ";
-        }
-    }
-}
-#endif
-
-//------------------------------------------------------------------------
-// SignificantSegments:
-//   Compute a segment tree containing all significant (non-padding) segments
-//   for the specified class layout.
-//
-// Parameters:
-//   layout      - The layout
-//
-// Returns:
-//   Segment tree containing all significant parts of the layout.
-//
-StructSegments Promotion::SignificantSegments(ClassLayout* layout)
-{
-    StructSegments* cached;
-    if ((m_significantSegmentsCache != nullptr) && m_significantSegmentsCache->Lookup(layout, &cached))
-    {
-        return StructSegments(*cached);
-    }
-
-    COMP_HANDLE compHnd = m_compiler->info.compCompHnd;
-
-    StructSegments segments(m_compiler->getAllocator(CMK_Promotion));
-
-    if (layout->IsBlockLayout())
-    {
-        segments.Add(StructSegments::Segment(0, layout->GetSize()));
-    }
-    else
-    {
-        CORINFO_TYPE_LAYOUT_NODE nodes[256];
-        size_t                   numNodes = ArrLen(nodes);
-        GetTypeLayoutResult      result   = compHnd->getTypeLayout(layout->GetClassHandle(), nodes, &numNodes);
-
-        if (result != GetTypeLayoutResult::Success)
-        {
-            segments.Add(StructSegments::Segment(0, layout->GetSize()));
-        }
-        else
-        {
-            for (size_t i = 0; i < numNodes; i++)
-            {
-                const CORINFO_TYPE_LAYOUT_NODE& node = nodes[i];
-                if ((node.type != CORINFO_TYPE_VALUECLASS) || (node.simdTypeHnd != NO_CLASS_HANDLE) ||
-                    node.hasSignificantPadding)
-                {
-                    segments.Add(StructSegments::Segment(node.offset, node.offset + node.size));
-                }
-            }
-        }
-    }
-
-    if (m_significantSegmentsCache == nullptr)
-    {
-        m_significantSegmentsCache =
-            new (m_compiler, CMK_Promotion) ClassLayoutStructSegmentsMap(m_compiler->getAllocator(CMK_Promotion));
-    }
-
-    m_significantSegmentsCache->Set(layout, new (m_compiler, CMK_Promotion) StructSegments(segments));
-
-    return segments;
 }
 
 //------------------------------------------------------------------------
@@ -1924,8 +1567,8 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
 #endif
 
     // OSR locals and parameters may need an initial read back, which we mark
-    // when we start the scratch BB.
-    if (!m_compiler->fgBBisScratch(block))
+    // when we start the initial BB.
+    if (block != m_compiler->fgFirstBB)
     {
         return;
     }
@@ -1938,7 +1581,7 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
             continue;
         }
 
-        JITDUMP("Marking fields of %s V%02u as needing read-back in scratch " FMT_BB "\n",
+        JITDUMP("Marking fields of %s V%02u as needing read-back in entry BB " FMT_BB "\n",
                 dsc->lvIsParam ? "parameter" : "OSR-local", agg->LclNum, block->bbNum);
 
         for (size_t i = 0; i < agg->Replacements.size(); i++)
@@ -1952,7 +1595,7 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
             }
             else
             {
-                JITDUMP("  V%02u (%s) not marked (not live-in to scratch BB)\n", rep.LclNum, rep.Description);
+                JITDUMP("  V%02u (%s) not marked (not live-in to entry BB)\n", rep.LclNum, rep.Description);
             }
         }
     }
@@ -2272,7 +1915,9 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
             DoPreOrder = true,
         };
 
-        Visitor(Compiler* comp, ReplaceVisitor* replacer) : GenTreeVisitor(comp), m_replacer(replacer)
+        Visitor(Compiler* comp, ReplaceVisitor* replacer)
+            : GenTreeVisitor(comp)
+            , m_replacer(replacer)
         {
         }
 
@@ -2541,7 +2186,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         JITDUMP("Processing struct use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
                 offs + lcl->GetLayout(m_compiler)->GetSize());
 
-        assert(effectiveUser->OperIs(GT_CALL, GT_RETURN));
+        assert(effectiveUser->OperIs(GT_CALL, GT_RETURN, GT_SWIFT_ERROR_RET));
         unsigned size = lcl->GetLayout(m_compiler)->GetSize();
         WriteBackBeforeUse(use, lclNum, lcl->GetLclOffs(), size);
 
@@ -2719,8 +2364,8 @@ void ReplaceVisitor::WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned of
 
         GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
                                                      Promotion::CreateWriteBack(m_compiler, lcl, rep), *use);
-        *use = comma;
-        use  = &comma->gtOp2;
+        *use             = comma;
+        use              = &comma->gtOp2;
 
         ClearNeedsWriteBack(rep);
         m_madeChanges = true;
@@ -2836,21 +2481,9 @@ PhaseStatus Promotion::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Check for parameters and OSR locals that need to be read back on entry
-    // to the function.
-    for (AggregateInfo* agg : aggregates)
-    {
-        LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
-        if (dsc->lvIsParam || dsc->lvIsOSRLocal)
-        {
-            // We will need an initial readback. We create the scratch BB ahead
-            // of time so that we get correct liveness and mark the
-            // parameters/OSR-locals as requiring read-back as part of
-            // ReplaceVisitor::StartBlock when we get to the scratch block.
-            m_compiler->fgEnsureFirstBBisScratch();
-            break;
-        }
-    }
+    // We should have a proper entry BB where we can put IR that will only be
+    // run once into. This is a precondition of the phase.
+    assert(m_compiler->fgFirstBB->bbPreds == nullptr);
 
     // Compute liveness for the fields and remainders.
     PromotionLiveness liveness(m_compiler, aggregates);
@@ -3006,8 +2639,8 @@ void Promotion::ExplicitlyZeroInitReplacementLocals(unsigned                    
 
 //------------------------------------------------------------------------
 // Promotion::InsertInitStatement:
-//   Insert a new statement after the specified statement in the scratch block,
-//   or at the beginning of the scratch block if no other statements were
+//   Insert a new statement after the specified statement in the entry block,
+//   or at the beginning of the entry block if no other statements were
 //   inserted yet.
 //
 // Parameters:
@@ -3016,7 +2649,6 @@ void Promotion::ExplicitlyZeroInitReplacementLocals(unsigned                    
 //
 void Promotion::InsertInitStatement(Statement** prevStmt, GenTree* tree)
 {
-    m_compiler->fgEnsureFirstBBisScratch();
     Statement* stmt = m_compiler->fgNewStmtFromTree(tree);
     if (*prevStmt != nullptr)
     {

@@ -176,6 +176,9 @@ namespace System.Net
         };
     }
 
+    // NOTE: While this class is not explicitly marked as obsolete,
+    // it effectively is by virtue of WebRequest.Create being obsolete.
+
     /// <summary>
     /// The FtpWebRequest class implements a basic FTP client interface.
     /// </summary>
@@ -495,17 +498,17 @@ namespace System.Net
             NetworkCredential? networkCredential = null;
             _uri = uri;
             _methodInfo = FtpMethodInfo.GetMethodInfo(WebRequestMethods.Ftp.DownloadFile);
-            if (!string.IsNullOrEmpty(_uri.UserInfo))
+
+            if (_uri.UserInfo is { Length: > 0 } userInfo)
             {
-                string userInfo = _uri.UserInfo;
                 string username = userInfo;
                 string password = "";
                 int index = userInfo.IndexOf(':');
                 if (index != -1)
                 {
-                    username = Uri.UnescapeDataString(userInfo.Substring(0, index));
+                    username = Uri.UnescapeDataString(userInfo.AsSpan(0, index));
                     index++; // skip ':'
-                    password = Uri.UnescapeDataString(userInfo.Substring(index));
+                    password = Uri.UnescapeDataString(userInfo.AsSpan(index));
                 }
                 networkCredential = new NetworkCredential(username, password);
             }

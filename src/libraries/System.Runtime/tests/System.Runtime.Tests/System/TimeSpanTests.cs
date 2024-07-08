@@ -347,6 +347,412 @@ namespace System.Tests
             Assert.Equal(expected, timeSpan1.Equals(obj));
         }
 
+#region FromX_int_overloads
+        [Fact]
+        public static void FromDays_Int_Positive()
+        {
+            var expectedaaa = new TimeSpan(1, 2, 3, 4, 5, 6);
+            var actual = TimeSpan.FromDays(1, 2, 3, 4, 5, 6);
+            Assert.Equal(expectedaaa, actual);
+        }
+        [Fact]
+        public static void FromDays_Int_Negative()
+        {
+            var expectedaaa = new TimeSpan(-1, -2, -3, -4, -5, -6);
+            var actual = TimeSpan.FromDays(-1, -2, -3, -4, -5, -6);
+            Assert.Equal(expectedaaa, actual);
+        }
+        [Fact]
+        public static void FromDays_Int_Zero()
+        {
+            var expectedaaa = new TimeSpan(0, 0, 0, 0, 0, 0);
+            var actual = TimeSpan.FromDays(0, 0, 0, 0, 0, 0);
+            Assert.Equal(expectedaaa, actual);
+        }
+
+        [Fact]
+        public static void FromSeconds_Int_ShouldGiveResultWithPrecision()
+        {
+            // Given example of problem with double in: https://github.com/dotnet/runtime/issues/93890#issue-1957706751
+            Assert.Equal(new TimeSpan(0, 0, 0, 101, 832), TimeSpan.FromSeconds(101, 832));
+        }
+
+        [Fact]
+        public static void FromDays_Int_ShouldOverflow_WhenIntermediateCalculationCouldOverflowBackIntoValidRange()
+        {
+            // Given example of problematic day count in comment in abandoned pr https://github.com/dotnet/runtime/pull/95779/files#r1439772903
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(1067519900));
+        }
+
+        [Fact]
+        public static void FromDays_Int_ShouldConstructMaxValueAproximation()
+        {
+            var expected = TimeSpan.MaxValue;
+            var actual = TimeSpan.FromDays(expected.Days, expected.Hours, expected.Minutes, expected.Seconds, expected.Milliseconds, expected.Microseconds);
+            // Should be within TicksPerMicrosecond (10) ticks of expected
+            var diffTicks = (expected - actual).Ticks;
+            Assert.True(Math.Abs(diffTicks) < 10, $"Diff ticks was {diffTicks}");
+        }
+        [Fact]
+        public static void FromDays_Int_ShouldConstructMinValueAproximation()
+        {
+            var expected = TimeSpan.MinValue;
+            var actual = TimeSpan.FromDays(expected.Days, expected.Hours, expected.Minutes, expected.Seconds, expected.Milliseconds, expected.Microseconds);
+            // Should be within TicksPerMicrosecond (10) ticks of expected
+            var diffTicks = (actual - expected).Ticks;
+            Assert.True(Math.Abs(diffTicks) < 10, $"Diff ticks was {diffTicks}");
+        }
+
+        // Consts copied from internal const in TimeSpan
+        // Max and Min are symmetrical
+        private const long maxMicroseconds = 922_337_203_685_477_580;
+        private const long maxMilliseconds = 922_337_203_685_477;
+        private const long maxSeconds = 922_337_203_685;
+        private const long maxMinutes = 15_372_286_728;
+        private const int maxHours = 256_204_778;
+        private const int maxDays = 10_675_199;
+        public static IEnumerable<object[]> FromDays_Int_ShouldOverflowOrUnderflow_Data()
+        {
+            long[] individualMaxValues = [ maxDays, maxHours, maxMinutes, maxSeconds, maxMilliseconds, maxMicroseconds ];
+            // Each possibility for individual property to overflow or underflow
+            for (var i = 0; i < individualMaxValues.Length; i++)
+            {
+                var iVal = individualMaxValues[i] + 1;
+               object[] resultPos = [ 0, 0, 0, 0, 0, 0 ];
+               resultPos[i] = iVal;
+               yield return resultPos;
+               object[] resultNeg = [ 0, 0, 0, 0, 0, 0 ];
+               resultNeg[i] = -iVal;
+               yield return resultNeg;
+            }
+            // Each possibility for 2 properties to overflow or underflow
+            // while neither of them individually overflow or underflow
+            for (var i = 0; i < individualMaxValues.Length; i++)
+            {
+                for (var j = i + 1; j < individualMaxValues.Length; j++)
+                {
+                    var iVal = individualMaxValues[i];
+                    var jVal = individualMaxValues[j];
+                    object[] resultPos = [ 0, 0, 0, 0, 0, 0 ];
+                    resultPos[i] = iVal;
+                    resultPos[j] = jVal;
+                    yield return resultPos;
+                    object[] resultNeg = [ 0, 0, 0, 0, 0, 0 ];
+                    resultNeg[i] = -iVal;
+                    resultNeg[j] = -jVal;
+                    yield return resultNeg;
+                }
+            }
+        }
+        [Theory]
+        [MemberData(nameof(FromDays_Int_ShouldOverflowOrUnderflow_Data))]
+        public static void FromDays_Int_ShouldOverflowOrUnderflow(int days, int hours, long minutes, long seconds, long milliseconds, long microseconds)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(days, hours, minutes, seconds, milliseconds, microseconds));
+        }
+
+        public static IEnumerable<object[]> FromDays_Int_ShouldNotOverflow_WhenOverflowingParamIsCounteredByOppositeSignParam_Data()
+        {
+            long[] individualMaxValues = [ maxDays, maxHours, maxMinutes, maxSeconds, maxMilliseconds, maxMicroseconds ];
+            for (var i = 0; i < individualMaxValues.Length; i++)
+            {
+                for (var j = 0; j < individualMaxValues.Length; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+                    var iVal = individualMaxValues[i] + 1;
+                    var jVal = individualMaxValues[j] + 1;
+                    object[] result = [ 0, 0, 0, 0, 0, 0 ];
+                    result[i] = iVal;
+                    result[j] = -jVal;
+                    yield return result;
+                }
+            }
+        }
+        [Theory]
+        [MemberData(nameof(FromDays_Int_ShouldNotOverflow_WhenOverflowingParamIsCounteredByOppositeSignParam_Data))]
+        public static void FromDays_Int_ShouldNotOverflow_WhenOverflowingParamIsCounteredByOppositeSignParam(int days, int hours, long minutes, long seconds, long milliseconds, long microseconds)
+        {
+            var actual = TimeSpan.FromDays(days, hours, minutes, seconds, milliseconds, microseconds);
+            // 2 individually overflowing or underflowing params with opposite sign should end up close to TimeSpan.FromDays(0)
+            // This is an implementation detail of the chosen test data, but a nice sanity check of expected result
+            Assert.True(actual > TimeSpan.FromDays(-1));
+            Assert.True(actual < TimeSpan.FromDays(1));
+        }
+        [Theory]
+        [InlineData(maxDays, maxHours, maxMinutes, maxSeconds, maxMilliseconds, maxMicroseconds)]
+        [InlineData(-maxDays, -maxHours, -maxMinutes, -maxSeconds, -maxMilliseconds, -maxMicroseconds)]
+        [InlineData(int.MaxValue, int.MaxValue, long.MaxValue, long.MaxValue, long.MaxValue, long.MaxValue)]
+        [InlineData(int.MinValue, int.MinValue, long.MinValue, long.MinValue, long.MinValue, long.MinValue)]
+        [InlineData(int.MaxValue, 0, 0, 0, 0, 0)]
+        [InlineData(int.MinValue, 0, 0, 0, 0, 0)]
+        [InlineData(0, int.MaxValue, 0, 0, 0, 0)]
+        [InlineData(0, int.MinValue, 0, 0, 0, 0)]
+        [InlineData(0, 0, long.MaxValue, 0, 0, 0)]
+        [InlineData(0, 0, long.MinValue, 0, 0, 0)]
+        [InlineData(0, 0, 0, long.MaxValue, 0, 0)]
+        [InlineData(0, 0, 0, long.MinValue, 0, 0)]
+        [InlineData(0, 0, 0, 0, long.MaxValue, 0)]
+        [InlineData(0, 0, 0, 0, long.MinValue, 0)]
+        [InlineData(0, 0, 0, 0, 0, long.MaxValue)]
+        [InlineData(0, 0, 0, 0, 0, long.MinValue)]
+        public static void FromDays_Int_ShouldOverflow(int days, int hours, long minutes, long seconds, long milliseconds, long microseconds)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(days, hours, minutes, seconds, milliseconds, microseconds));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        [InlineData(maxDays)]
+        [InlineData(-maxDays)]
+        public static void FromDays_Int_Single_ShouldCreate(int days)
+        {
+            Assert.Equal(new TimeSpan(days, 0, 0, 0), TimeSpan.FromDays(days));
+        }
+        [Theory]
+        [InlineData(maxDays + 1)]
+        [InlineData(-(maxDays + 1))]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        public static void FromDays_Int_Single_ShouldOverflow(int days)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(days));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        [InlineData(maxHours)]
+        [InlineData(-maxHours)]
+        public static void FromHours_Int_Single_ShouldCreate(int hours)
+        {
+            Assert.Equal(new TimeSpan(0, hours, 0, 0), TimeSpan.FromHours(hours));
+        }
+        [Theory]
+        [InlineData(maxHours + 1)]
+        [InlineData(-(maxHours + 1))]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        public static void FromHours_Int_Single_ShouldOverflow(int hours)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromHours(hours));
+        }
+
+        [Theory]
+        [InlineData(0, 0, 0, 0, 0)]
+        [InlineData(1, 1, 1, 1, 1)]
+        [InlineData(-1, -1, -1, -1, -1)]
+        [InlineData(maxHours, 0, 0, 0, 0)]
+        [InlineData(-maxHours, 0, 0, 0, 0)]
+        [InlineData(0, maxMinutes, 0, 0, 0)]
+        [InlineData(0, -maxMinutes, 0, 0, 0)]
+        [InlineData(0, 0, maxSeconds, 0, 0)]
+        [InlineData(0, 0, -maxSeconds, 0, 0)]
+        [InlineData(0, 0, 0, maxMilliseconds, 0)]
+        [InlineData(0, 0, 0, -maxMilliseconds, 0)]
+        [InlineData(0, 0, 0, 0, maxMicroseconds)]
+        [InlineData(0, 0, 0, 0, -maxMicroseconds)]
+        public static void FromHours_Int_ShouldCreate(int hours, long minutes, long seconds, long milliseconds, long microseconds)
+        {
+            var ticksFromHours = hours * TimeSpan.TicksPerHour;
+            var ticksFromMinutes = minutes * TimeSpan.TicksPerMinute;
+            var ticksFromSeconds = seconds * TimeSpan.TicksPerSecond;
+            var ticksFromMilliseconds = milliseconds * TimeSpan.TicksPerMillisecond;
+            var ticksFromMicroseconds = microseconds * TimeSpan.TicksPerMicrosecond;
+            var expected = TimeSpan.FromTicks(ticksFromHours + ticksFromMinutes + ticksFromSeconds + ticksFromMilliseconds + ticksFromMicroseconds);
+            Assert.Equal(expected, TimeSpan.FromHours(hours, minutes, seconds, milliseconds, microseconds));
+        }
+        [Theory]
+        [InlineData(maxHours + 1, 0, 0, 0, 0)]
+        [InlineData(-(maxHours + 1), 0, 0, 0, 0)]
+        [InlineData(0, maxMinutes + 1, 0, 0, 0)]
+        [InlineData(0, -(maxMinutes + 1), 0, 0, 0)]
+        [InlineData(0, 0, maxSeconds + 1, 0, 0)]
+        [InlineData(0, 0, -(maxSeconds + 1), 0, 0)]
+        [InlineData(0, 0, 0, maxMilliseconds + 1, 0)]
+        [InlineData(0, 0, 0, -(maxMilliseconds + 1), 0)]
+        [InlineData(0, 0, 0, 0, maxMicroseconds + 1)]
+        [InlineData(0, 0, 0, 0, -(maxMicroseconds + 1))]
+        public static void FromHours_Int_ShouldOverflow(int hours, long minutes, long seconds, long milliseconds, long microseconds)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromHours(hours, minutes, seconds, milliseconds, microseconds));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        [InlineData(maxMinutes)]
+        [InlineData(-maxMinutes)]
+        public static void FromMinutes_Int_Single_ShouldCreate(long minutes)
+        {
+            Assert.Equal(TimeSpan.FromDays(0, minutes: minutes), TimeSpan.FromMinutes(minutes));
+        }
+        [Theory]
+        [InlineData(maxMinutes + 1)]
+        [InlineData(-(maxMinutes + 1))]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        public static void FromMinutes_Int_Single_ShouldOverflow(long minutes)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromMinutes(minutes));
+        }
+
+        [Theory]
+        [InlineData(0, 0, 0, 0)]
+        [InlineData(1, 1, 1, 1)]
+        [InlineData(-1, -1, -1, -1)]
+        [InlineData(maxMinutes, 0, 0, 0)]
+        [InlineData(-maxMinutes, 0, 0, 0)]
+        [InlineData(0, maxSeconds, 0, 0)]
+        [InlineData(0, -maxSeconds, 0, 0)]
+        [InlineData(0, 0, maxMilliseconds, 0)]
+        [InlineData(0, 0, -maxMilliseconds, 0)]
+        [InlineData(0, 0, 0, maxMicroseconds)]
+        [InlineData(0, 0, 0, -maxMicroseconds)]
+        public static void FromMinutes_Int_ShouldCreate(long minutes, long seconds, long milliseconds, long microseconds)
+        {
+            var ticksFromMinutes = minutes * TimeSpan.TicksPerMinute;
+            var ticksFromSeconds = seconds * TimeSpan.TicksPerSecond;
+            var ticksFromMilliseconds = milliseconds * TimeSpan.TicksPerMillisecond;
+            var ticksFromMicroseconds = microseconds * TimeSpan.TicksPerMicrosecond;
+            var expected = TimeSpan.FromTicks(ticksFromMinutes + ticksFromSeconds + ticksFromMilliseconds + ticksFromMicroseconds);
+            Assert.Equal(expected, TimeSpan.FromMinutes(minutes, seconds, milliseconds, microseconds));
+        }
+        [Theory]
+        [InlineData(maxMinutes + 1, 0, 0, 0)]
+        [InlineData(-(maxMinutes + 1), 0, 0, 0)]
+        [InlineData(0, maxSeconds + 1, 0, 0)]
+        [InlineData(0, -(maxSeconds + 1), 0, 0)]
+        [InlineData(0, 0, maxMilliseconds + 1, 0)]
+        [InlineData(0, 0, -(maxMilliseconds + 1), 0)]
+        [InlineData(0, 0, 0, maxMicroseconds + 1)]        
+        [InlineData(0, 0, 0, -(maxMicroseconds + 1))]
+        public static void FromMinutes_Int_ShouldOverflow(long minutes, long seconds, long milliseconds, long microseconds)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromMinutes(minutes, seconds, milliseconds, microseconds));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        [InlineData(maxSeconds)]
+        [InlineData(-maxSeconds)]
+        public static void FromSeconds_Int_Single_ShouldCreate(long seconds)
+        {
+            Assert.Equal(TimeSpan.FromDays(0, seconds: seconds), TimeSpan.FromSeconds(seconds));
+        }
+        [Theory]
+        [InlineData(maxSeconds + 1)]
+        [InlineData(-(maxSeconds + 1))]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        public static void FromSeconds_Int_Single_ShouldOverflow(long seconds)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromSeconds(seconds));
+        }
+
+        [Theory]
+        [InlineData(0, 0, 0)]
+        [InlineData(1, 1, 1)]
+        [InlineData(-1, -1, -1)]
+        [InlineData(maxSeconds, 0, 0)]
+        [InlineData(-maxSeconds, 0, 0)]
+        [InlineData(0, maxMilliseconds, 0)]
+        [InlineData(0, -maxMilliseconds, 0)]
+        [InlineData(0, 0, maxMicroseconds)]
+        [InlineData(0, 0, -maxMicroseconds)]
+        public static void FromSeconds_Int_ShouldCreate(long seconds, long milliseconds, long microseconds)
+        {
+            var ticksFromSeconds = seconds * TimeSpan.TicksPerSecond;
+            var ticksFromMilliseconds = milliseconds * TimeSpan.TicksPerMillisecond;
+            var ticksFromMicroseconds = microseconds * TimeSpan.TicksPerMicrosecond;
+            var expected = TimeSpan.FromTicks(ticksFromSeconds + ticksFromMilliseconds + ticksFromMicroseconds);
+            Assert.Equal(expected, TimeSpan.FromSeconds(seconds, milliseconds, microseconds));
+        }
+        [Theory]
+        [InlineData(maxSeconds + 1, 0, 0)]
+        [InlineData(-(maxSeconds + 1), 0, 0)]
+        [InlineData(0, maxMilliseconds + 1, 0)]
+        [InlineData(0, -(maxMilliseconds + 1), 0)]
+        [InlineData(0, 0, maxMicroseconds + 1)]
+        [InlineData(0, 0, -(maxMicroseconds + 1))]
+        [InlineData(long.MaxValue, 0, 0)]
+        [InlineData(long.MinValue, 0, 0)]
+        [InlineData(0, long.MaxValue, 0)]
+        [InlineData(0, long.MinValue, 0)]
+        [InlineData(0, 0, long.MaxValue)]
+        [InlineData(0, 0, long.MinValue)]
+        [InlineData(maxSeconds, maxMilliseconds, 0)]
+        [InlineData(0, maxMilliseconds, maxMicroseconds)]
+        [InlineData(maxSeconds, 0, maxMicroseconds)]
+        public static void FromSeconds_Int_ShouldOverflow(long seconds, long milliseconds, long microseconds)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromSeconds(seconds, milliseconds, microseconds));
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(1, 0)]
+        [InlineData(0, 1)]
+        [InlineData(-1, 0)]
+        [InlineData(0, -1)]
+        [InlineData(maxMilliseconds, 0)]
+        [InlineData(-maxMilliseconds, 0)]
+        [InlineData(0, maxMicroseconds)]
+        [InlineData(0, -maxMicroseconds)]
+        public static void FromMilliseconds_Int_ShouldCreate(long milliseconds, long microseconds)
+        {
+            long ticksFromMilliseconds = milliseconds * TimeSpan.TicksPerMillisecond;
+            long ticksFromMicroseconds = microseconds * TimeSpan.TicksPerMicrosecond;
+            var expected = TimeSpan.FromTicks(ticksFromMilliseconds + ticksFromMicroseconds);
+            Assert.Equal(expected, TimeSpan.FromMilliseconds(milliseconds, microseconds));
+        }
+        [Theory]
+        [InlineData(maxMilliseconds + 1, 0)]
+        [InlineData(-(maxMilliseconds + 1), 0)]
+        [InlineData(long.MaxValue, 0)]
+        [InlineData(long.MinValue, 0)]
+        [InlineData(0, maxMicroseconds + 1)]
+        [InlineData(0, -(maxMicroseconds + 1))]
+        [InlineData(0, long.MaxValue)]
+        [InlineData(0, long.MinValue)]
+        [InlineData(maxMilliseconds, 1000)]
+        [InlineData(-maxMilliseconds, -1000)]
+        [InlineData(1, maxMicroseconds)]
+        [InlineData(-1, -maxMicroseconds)]
+        public static void FromMilliseconds_Int_ShouldOverflow(long milliseconds, long microseconds)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromMilliseconds(milliseconds, microseconds));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        [InlineData(maxMicroseconds)]
+        [InlineData(-maxMicroseconds)]
+        public static void FromMicroseconds_Int_Single_ShouldCreate(long microseconds)
+        {
+            Assert.Equal(TimeSpan.FromDays(0, microseconds: microseconds), TimeSpan.FromMicroseconds(microseconds));
+        }
+        [Theory]
+        [InlineData(maxMicroseconds + 1)]
+        [InlineData(-(maxMicroseconds + 1))]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        public static void FromMicroseconds_Int_Single_ShouldOverflow(long microseconds)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromMicroseconds(microseconds));
+        }
+#endregion
+
         public static IEnumerable<object[]> FromDays_TestData()
         {
             yield return new object[] { 100.5, new TimeSpan(100, 12, 0, 0) };

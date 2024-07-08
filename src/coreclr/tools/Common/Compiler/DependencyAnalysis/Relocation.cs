@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_BASED_THUMB_BRANCH24       = 0x13,   // Thumb2: based B, BL
         IMAGE_REL_BASED_THUMB_MOV32_PCREL    = 0x14,   // Thumb2: based MOVW/MOVT
         IMAGE_REL_BASED_ARM64_BRANCH26       = 0x15,   // Arm64: B, BL
-        IMAGE_REL_BASED_LOONGARCH64_PC       = 0x16,   // LoongArch64: pcaddu12i+imm12
+        IMAGE_REL_BASED_LOONGARCH64_PC       = 0x16,   // LoongArch64: pcalau12i+imm12
         IMAGE_REL_BASED_LOONGARCH64_JIR      = 0x17,   // LoongArch64: pcaddu18i+jirl
         IMAGE_REL_BASED_RISCV64_PC           = 0x18,   // RiscV64: auipc
         IMAGE_REL_BASED_RELPTR32             = 0x7C,   // 32-bit relative address from byte starting reloc
@@ -52,6 +52,14 @@ namespace ILCompiler.DependencyAnalysis
         //    LE model
         IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12    = 0x10B,
         IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC = 0x10C,
+
+        // Linux arm32
+        IMAGE_REL_ARM_PREL31                 = 0x10D,
+        IMAGE_REL_ARM_JUMP24                 = 0x10E,
+
+        // Windows arm64 TLS access
+        IMAGE_REL_ARM64_TLS_SECREL_HIGH12A = 0x10F,  // ADD high 12-bit offset for tls
+        IMAGE_REL_ARM64_TLS_SECREL_LOW12L  = 0x110,  // ADD low 12-bit offset for tls
 
         //
         // Relocations for R2R image production
@@ -160,7 +168,7 @@ namespace ILCompiler.DependencyAnalysis
         //*****************************************************************************
         // Returns whether the offset fits into bl instruction
         //*****************************************************************************
-        private static bool FitsInThumb2BlRel24(int imm24)
+        public static bool FitsInThumb2BlRel24(int imm24)
         {
             return ((imm24 << 7) >> 7) == imm24;
         }
@@ -284,6 +292,28 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GetArm64Rel12(pCode) == imm12);
         }
 
+        //*****************************************************************************
+        //  Deposit the PC-Relative offset 'imm12' into an add instruction
+        //  Same as PutArm64Rel12(), except the assert here checks if "LSL #3" is encoded
+        //  in the instruction.
+        //*****************************************************************************
+        private static unsafe void PutArm64TlsRel12(uint* pCode, int imm12)
+        {
+            // Verify that we got a valid offset
+            Debug.Assert(FitsInRel12(imm12));
+
+            uint addInstr = *pCode;
+            // Check add opcode 1001 0001 00...
+            Debug.Assert((addInstr & 0xFFC00000) == 0x91400000);
+
+            addInstr &= 0xFFC003FF;          // keep bits 31-22, 9-0
+            addInstr |= (uint)(imm12 << 10); // Occupy 21-10.
+
+            *pCode = addInstr;               // write the assembled instruction
+
+            Debug.Assert(GetArm64Rel12(pCode) == imm12);
+        }
+
         private static unsafe int GetArm64Rel28(uint* pCode)
         {
             uint branchInstr = *pCode;
@@ -330,43 +360,39 @@ namespace ILCompiler.DependencyAnalysis
 
             // then get the low 12 bits,
             pcInstr = *(pCode + 1);
-            imm += ((int)(((pcInstr >> 10) & 0xFFF) << 20)) >> 20;
+            imm |= (int)((pcInstr >> 10) & 0xFFF);
 
             return imm;
         }
 
         //  case:EA_HANDLE_CNS_RELOC
-        //   pcaddu12i  reg, off-hi-20bits
+        //   pcalau12i  reg, off-hi-20bits
         //   addi_d  reg, reg, off-lo-12bits
         //  case:EA_PTR_DSP_RELOC
-        //   pcaddu12i  reg, off-hi-20bits
+        //   pcalau12i  reg, off-hi-20bits
         //   ld_d  reg, reg, off-lo-12bits
-        private static unsafe void PutLoongArch64PC12(uint* pCode, long imm32)
+        private static unsafe void PutLoongArch64PC12(uint* pCode, long imm)
         {
             // Verify that we got a valid offset
-            Debug.Assert((int)imm32 == imm32);
+            Debug.Assert((int)imm == imm);
 
             uint pcInstr = *pCode;
 
-            Debug.Assert((pcInstr & 0xFE000000) == 0x1c000000);  // Must be pcaddu12i
+            Debug.Assert((pcInstr & 0xFE000000) == 0x1a000000);  // Must be pcalau12i
 
-            int relOff = (int)imm32 & 0x800;
-            int imm = (int)imm32 + relOff;
-            relOff = ((imm & 0x7ff) - relOff) & 0xfff;
-
-            // Assemble the pc-relative high 20 bits of 'imm32' into the pcaddu12i instruction
-            pcInstr |= (uint)(((imm >> 12) & 0xFFFFF) << 5);
+            // Assemble the pc-relative high 20 bits of 'imm' into the pcalau12i instruction
+            pcInstr |= (uint)((imm >> 7) & 0x1FFFFE0);
 
             *pCode = pcInstr;          // write the assembled instruction
 
             pcInstr = *(pCode + 1);
 
-            // Assemble the pc-relative low 12 bits of 'imm32' into the addid or ld instruction
-            pcInstr |= (uint)(relOff << 10);
+            // Assemble the pc-relative low 12 bits of 'imm' into the addid or ld instruction
+            pcInstr |= (uint)((imm & 0xFFF) << 10);
 
             *(pCode + 1) = pcInstr;          // write the assembled instruction
 
-            Debug.Assert(GetLoongArch64PC12(pCode) == imm32);
+            Debug.Assert(GetLoongArch64PC12(pCode) == imm);
         }
 
         private static unsafe long GetLoongArch64JIR(uint* pCode)
@@ -398,14 +424,14 @@ namespace ILCompiler.DependencyAnalysis
             long imm = imm38 + relOff;
             relOff = (((imm & 0x1ffff) - relOff) >> 2) & 0xffff;
 
-            // Assemble the pc-relative high 20 bits of 'imm38' into the pcaddu12i instruction
+            // Assemble the pc-relative high 20 bits of 'imm38' into the pcaddu18i instruction
             pcInstr |= (uint)(((imm >> 18) & 0xFFFFF) << 5);
 
             *pCode = pcInstr;          // write the assembled instruction
 
             pcInstr = *(pCode + 1);
 
-            // Assemble the pc-relative low 18 bits of 'imm38' into the addid or ld instruction
+            // Assemble the pc-relative low 18 bits of 'imm38' into the jirl instruction
             pcInstr |= (uint)(relOff << 10);
 
             *(pCode + 1) = pcInstr;          // write the assembled instruction
@@ -420,9 +446,11 @@ namespace ILCompiler.DependencyAnalysis
             // first get the high 20 bits,
             int imm = (int)((auipcInstr & 0xfffff000));
             // then get the low 12 bits,
-            uint addiInstr = *(pCode + 1);
-            Debug.Assert((addiInstr & 0x707f) == 0x00000013);
-            imm += ((int)(addiInstr)) >> 20;
+            uint nextInstr = *(pCode + 1);
+            Debug.Assert((nextInstr & 0x707f) == 0x00000013 ||
+                         (nextInstr & 0x707f) == 0x00000067 ||
+                         (nextInstr & 0x707f) == 0x00003003);
+            imm += ((int)(nextInstr)) >> 20;
 
             return imm;
         }
@@ -434,6 +462,10 @@ namespace ILCompiler.DependencyAnalysis
         //  case:EA_PTR_DSP_RELOC
         //   auipc  reg, off-hi-20bits
         //   ld     reg, reg, off-lo-12bits
+        //  case:
+        // INS_OPTS_C
+        //   auipc  reg, off-hi-20bits
+        //   jalr   reg, reg, off-lo-12bits
         private static unsafe void PutRiscV64PC(uint* pCode, long imm32)
         {
             // Verify that we got a valid offset
@@ -446,10 +478,12 @@ namespace ILCompiler.DependencyAnalysis
             auipcInstr |= (uint)((imm32 + 0x800) & 0xfffff000);
             *pCode = auipcInstr;
 
-            uint addiInstr = *(pCode + 1);
-            Debug.Assert((addiInstr & 0x707f) == 0x00000013);
-            addiInstr |= (uint)((doff & 0xfff) << 20);
-            *(pCode + 1) = addiInstr;
+            uint nextInstr = *(pCode + 1);
+            Debug.Assert((nextInstr & 0x707f) == 0x00000013 ||
+                         (nextInstr & 0x707f) == 0x00000067 ||
+                         (nextInstr & 0x707f) == 0x00003003);
+            nextInstr |= (uint)((doff & 0xfff) << 20);
+            *(pCode + 1) = nextInstr;
 
             Debug.Assert(GetRiscV64PC(pCode) == imm32);
         }
@@ -475,7 +509,10 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_TPOFF:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                 case RelocType.IMAGE_REL_FILE_ABSOLUTE:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL:
                     *(int*)location = (int)value;
+                    break;
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
                     *(long*)location = value;
@@ -491,9 +528,15 @@ namespace ILCompiler.DependencyAnalysis
                     PutArm64Rel28((uint*)location, value);
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
                     PutArm64Rel21((uint*)location, (int)value);
                     break;
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A:
+                    PutArm64TlsRel12((uint*)location, (int)value);
+                    break;
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12L:
                     PutArm64Rel12((uint*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
@@ -549,6 +592,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                     return GetArm64Rel21((uint*)location);
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A:
+                case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12L:
                     return GetArm64Rel12((uint*)location);
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:

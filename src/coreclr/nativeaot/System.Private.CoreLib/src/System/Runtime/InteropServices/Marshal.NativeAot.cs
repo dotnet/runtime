@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerHelpers;
 
@@ -29,7 +30,7 @@ namespace System.Runtime.InteropServices
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr OffsetOf(Type t, string fieldName)
+        public static unsafe IntPtr OffsetOf(Type t, string fieldName)
         {
             ArgumentNullException.ThrowIfNull(t);
 
@@ -43,7 +44,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
             }
 
-            if (t.TypeHandle.IsGenericTypeDefinition())
+            if (t.TypeHandle.ToMethodTable()->IsGenericTypeDefinition)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
             return new IntPtr(RuntimeInteropData.GetStructFieldOffset(t.TypeHandle, fieldName));
@@ -61,24 +62,13 @@ namespace System.Runtime.InteropServices
 
         internal static unsafe void PtrToStructureImpl(IntPtr ptr, object structure)
         {
-            RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
+            MethodTable* structureMT = structure.GetMethodTable();
+            RuntimeTypeHandle structureTypeHandle = new RuntimeTypeHandle(structureMT);
 
-            IntPtr unmarshalStub;
-            if (structureTypeHandle.IsBlittable())
-            {
-                if (!RuntimeInteropData.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub))
-                {
-                    unmarshalStub = IntPtr.Zero;
-                }
-            }
-            else
-            {
-                unmarshalStub = RuntimeInteropData.GetStructUnmarshalStub(structureTypeHandle);
-            }
-
+            IntPtr unmarshalStub = RuntimeInteropData.GetStructUnmarshalStub(structureTypeHandle);
             if (unmarshalStub != IntPtr.Zero)
             {
-                if (structureTypeHandle.IsValueType())
+                if (structureMT->IsValueType)
                 {
                     ((delegate*<ref byte, ref byte, void>)unmarshalStub)(ref *(byte*)ptr, ref structure.GetRawData());
                 }
@@ -91,7 +81,7 @@ namespace System.Runtime.InteropServices
             {
                 nuint size = (nuint)RuntimeInteropData.GetStructUnsafeStructSize(structureTypeHandle);
 
-                Buffer.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
+                SpanHelpers.Memmove(ref structure.GetRawData(), ref *(byte*)ptr, size);
             }
         }
 
@@ -104,25 +94,17 @@ namespace System.Runtime.InteropServices
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
-            if (structureTypeHandle.IsGenericType())
+            if (structureTypeHandle.ToMethodTable()->IsGeneric)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
 
-            if (structureTypeHandle.IsEnum() ||
-                structureTypeHandle.IsInterface() ||
-                InteropExtensions.AreTypesAssignable(typeof(Delegate).TypeHandle, structureTypeHandle))
+            if (structureTypeHandle.ToMethodTable()->IsEnum ||
+                structureTypeHandle.ToMethodTable()->IsInterface ||
+                RuntimeImports.AreTypesAssignable(MethodTable.Of<Delegate>(), structureTypeHandle.ToMethodTable()))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
             }
 
-            if (structureTypeHandle.IsBlittable())
-            {
-                // ok to call with blittable structure, but no work to do in this case.
-                return;
-            }
-
-            IntPtr destroyStructureStub = RuntimeInteropData.GetDestroyStructureStub(structureTypeHandle, out bool hasInvalidLayout);
-            if (hasInvalidLayout)
-                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
+            IntPtr destroyStructureStub = RuntimeInteropData.GetDestroyStructureStub(structureTypeHandle);
             // DestroyStructureStub == IntPtr.Zero means its fields don't need to be destroyed
             if (destroyStructureStub != IntPtr.Zero)
             {
@@ -137,24 +119,12 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(structure);
             ArgumentNullException.ThrowIfNull(ptr);
 
-            RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
+            MethodTable* structureMT = structure.GetMethodTable();
+            RuntimeTypeHandle structureTypeHandle = new RuntimeTypeHandle(structureMT);
 
-            if (structureTypeHandle.IsGenericType())
+            if (structureMT->IsGeneric)
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
-            }
-
-            IntPtr marshalStub;
-            if (structureTypeHandle.IsBlittable())
-            {
-                if (!RuntimeInteropData.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
-                {
-                    marshalStub = IntPtr.Zero;
-                }
-            }
-            else
-            {
-                marshalStub = RuntimeInteropData.GetStructMarshalStub(structureTypeHandle);
             }
 
             if (fDeleteOld)
@@ -162,9 +132,10 @@ namespace System.Runtime.InteropServices
                 DestroyStructure(ptr, structure.GetType());
             }
 
+            IntPtr marshalStub = RuntimeInteropData.GetStructMarshalStub(structureTypeHandle);
             if (marshalStub != IntPtr.Zero)
             {
-                if (structureTypeHandle.IsValueType())
+                if (structureMT->IsValueType)
                 {
                     ((delegate*<ref byte, ref byte, void>)marshalStub)(ref structure.GetRawData(), ref *(byte*)ptr);
                 }
@@ -177,7 +148,7 @@ namespace System.Runtime.InteropServices
             {
                 nuint size = (nuint)RuntimeInteropData.GetStructUnsafeStructSize(structureTypeHandle);
 
-                Buffer.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
+                SpanHelpers.Memmove(ref *(byte*)ptr, ref structure.GetRawData(), size);
             }
         }
 

@@ -3,6 +3,7 @@
 
 using System.Net.Security;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -181,7 +182,7 @@ namespace System.Net.Tests
         [Fact]
         public static void UseNagleAlgorithm_Roundtrips()
         {
-            Assert.True(ServicePointManager.UseNagleAlgorithm);
+            Assert.False(ServicePointManager.UseNagleAlgorithm);
             try
             {
                 ServicePointManager.UseNagleAlgorithm = false;
@@ -195,9 +196,9 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void InvalidArguments_Throw()
+        public static async Task InvalidArguments_Throw()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 const int ssl2Client = 0x00000008;
                 const int ssl2Server = 0x00000004;
@@ -213,7 +214,6 @@ namespace System.Net.Tests
                 AssertExtensions.Throws<ArgumentNullException>("address", () => ServicePointManager.FindServicePoint(null));
                 AssertExtensions.Throws<ArgumentNullException>("uriString", () => ServicePointManager.FindServicePoint((string)null, null));
                 AssertExtensions.Throws<ArgumentNullException>("address", () => ServicePointManager.FindServicePoint((Uri)null, null));
-                Assert.Throws<NotSupportedException>(() => ServicePointManager.FindServicePoint("http://anything", new FixedWebProxy("https://anything")));
 
                 ServicePoint sp = ServicePointManager.FindServicePoint($"http://{Guid.NewGuid():N}", null);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.ConnectionLeaseTimeout = -2);
@@ -222,7 +222,7 @@ namespace System.Net.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.ReceiveBufferSize = -2);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveTime", () => sp.SetTcpKeepAlive(true, -1, 1));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveInterval", () => sp.SetTcpKeepAlive(true, 1, -1));
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [Fact]
@@ -247,9 +247,9 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void FindServicePoint_ReturnsCachedServicePoint()
+        public static async Task FindServicePoint_ReturnsCachedServicePoint()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 const string Localhost = "http://localhost";
                 string address1 = "http://" + Guid.NewGuid().ToString("N");
@@ -279,15 +279,15 @@ namespace System.Net.Tests
                 Assert.NotSame(
                     ServicePointManager.FindServicePoint(address1, new FixedWebProxy(address1)),
                     ServicePointManager.FindServicePoint(address1, new FixedWebProxy(address2)));
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36217", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/64674", typeof(PlatformDetection), nameof(PlatformDetection.IsArmv6Process))]
-        public static void FindServicePoint_Collectible()
+        public static async Task FindServicePoint_Collectible()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 string address = "http://" + Guid.NewGuid().ToString("N");
 
@@ -299,13 +299,13 @@ namespace System.Net.Tests
                 GC.Collect();
 
                 Assert.Equal(initial, GetExpect100Continue(address));
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void FindServicePoint_ReturnedServicePointMatchesExpectedValues()
+        public static async Task FindServicePoint_ReturnedServicePointMatchesExpectedValues()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 string address = "http://" + Guid.NewGuid().ToString("N");
 
@@ -325,14 +325,14 @@ namespace System.Net.Tests
                 Assert.Equal(new Version(1, 1), sp.ProtocolVersion);
                 Assert.Equal(-1, sp.ReceiveBufferSize);
                 Assert.True(sp.SupportsPipelining, "SupportsPipelining");
-                Assert.True(sp.UseNagleAlgorithm, "UseNagleAlgorithm");
-            }).Dispose();
+                Assert.False(sp.UseNagleAlgorithm, "UseNagleAlgorithm");
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void FindServicePoint_PropertiesRoundtrip()
+        public static async Task FindServicePoint_PropertiesRoundtrip()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 string address = "http://" + Guid.NewGuid().ToString("N");
 
@@ -361,13 +361,13 @@ namespace System.Net.Tests
                 Assert.Equal(expectedMaxIdleTime, sp2.MaxIdleTime);
                 Assert.Equal(expectedReceiveBufferSize, sp2.ReceiveBufferSize);
                 Assert.Equal(expectedUseNagleAlgorithm, sp2.UseNagleAlgorithm);
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void FindServicePoint_NewServicePointsInheritCurrentValues()
+        public static async Task FindServicePoint_NewServicePointsInheritCurrentValues()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 string address1 = "http://" + Guid.NewGuid().ToString("N");
                 string address2 = "http://" + Guid.NewGuid().ToString("N");
@@ -391,7 +391,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.Expect100Continue = orig100Continue;
                 ServicePointManager.UseNagleAlgorithm = origNagle;
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         // Separated out to avoid the JIT in debug builds interfering with object lifetimes

@@ -9,9 +9,20 @@ namespace DebuggerTests;
 
 internal static class EnvironmentVariables
 {
-    public static readonly string? DebuggerTestPath = Environment.GetEnvironmentVariable("DEBUGGER_TEST_PATH");
-    public static readonly string? TestLogPath      = Environment.GetEnvironmentVariable("TEST_LOG_PATH");
-    public static readonly bool    SkipCleanup      = Environment.GetEnvironmentVariable("SKIP_CLEANUP") == "1" ||
-                                                       Environment.GetEnvironmentVariable("SKIP_CLEANUP") == "true";
-    public static readonly string? WasmTestsUsingVariant = Environment.GetEnvironmentVariable("WASM_TESTS_USING_VARIANT");
+    public static readonly string? DebuggerTestPath  = Environment.GetEnvironmentVariable("DEBUGGER_TEST_PATH");
+    public static readonly string? TestLogPath       = Environment.GetEnvironmentVariable("TEST_LOG_PATH");
+    public static readonly bool    SkipCleanup       = GetEnvironmentVariableValue("SKIP_CLEANUP");
+    public static readonly bool    WasmEnableThreads = GetEnvironmentVariableValue("WasmEnableThreads");
+
+    private static bool GetEnvironmentVariableValue(string envVariable)
+    {
+        string? str = Environment.GetEnvironmentVariable(envVariable);
+        if (str is null)
+            return false;
+        
+        if (str == "1" || str.ToLower() == "true")
+            return true;
+
+        return false;
+    }
 }

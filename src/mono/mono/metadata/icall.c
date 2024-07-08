@@ -957,6 +957,9 @@ ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *so
 void
 ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *destination, guint8 *source, size_t len, MonoType *type)
 {
+	if (len == 0 || destination == source)
+		return;
+
 	if (MONO_TYPE_IS_REFERENCE (type))
 		mono_gc_wbarrier_arrayref_copy_internal (destination, source, (guint)len);
 	else
@@ -1211,6 +1214,27 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_PrepareMethod (MonoMeth
 }
 
 MonoObjectHandle
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallTypeHandle type_handle, char* data, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	g_assert (m_class_is_valuetype (klass));
+
+	mono_class_init_checked (klass, error);
+	return_val_if_nok (error, NULL_HANDLE);
+
+	return mono_value_box_handle (klass, data, error);
+}
+
+gint32
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SizeOf (MonoQCallTypeHandle type, MonoError* error)
+{
+	int align;
+	return mono_type_size (type.type, &align);
+}
+
+MonoObjectHandle
 ves_icall_System_Object_MemberwiseClone (MonoObjectHandle this_obj, MonoError *error)
 {
 	return mono_object_clone_handle (this_obj, error);
@@ -1227,6 +1251,11 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObjectHandle this_obj, MonoA
 	gpointer iter;
 
 	klass = mono_handle_class (this_obj);
+
+	if (m_class_is_inlinearray (klass)) {
+		mono_error_set_not_supported (error, "Calling built-in GetHashCode() on type marked as InlineArray is invalid.");
+		return FALSE;
+	}
 
 	if (mono_class_num_fields (klass) == 0)
 		return result;
@@ -1302,6 +1331,11 @@ ves_icall_System_ValueType_Equals (MonoObjectHandle this_obj, MonoObjectHandle t
 		return FALSE;
 
 	klass = mono_handle_class (this_obj);
+
+	if (m_class_is_inlinearray (klass)) {
+		mono_error_set_not_supported (error, "Calling built-in Equals() on type marked as InlineArray is invalid.");
+		return FALSE;
+	}
 
 	if (m_class_is_enumtype (klass) && mono_class_enum_basetype_internal (klass) && mono_class_enum_basetype_internal (klass)->type == MONO_TYPE_I4)
 		return *(gint32*)mono_handle_get_data_unsafe (this_obj) == *(gint32*)mono_handle_get_data_unsafe (that);
@@ -2158,6 +2192,7 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 		case MONO_TYPE_R8:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 			isref = FALSE;
 			if (!MONO_HANDLE_IS_NULL (value)) {
 				if (m_class_is_valuetype (mono_handle_class (value)))
@@ -2812,7 +2847,7 @@ ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal (MonoQCall
 	MonoType *type = type_handle.type;
 	g_assert (type->type == MONO_TYPE_FNPTR);
 	// FIXME: Once we address: https://github.com/dotnet/runtime/issues/90308 this should not be needed anymore
-	return GUINT_TO_INT8 (type->data.method->suppress_gc_transition ? MONO_CALL_UNMANAGED_MD : type->data.method->call_convention);
+	return GUINT_TO_INT8 (mono_method_signature_has_ext_callconv (type->data.method, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION) ? MONO_CALL_UNMANAGED_MD : type->data.method->call_convention);
 }
 
 MonoBoolean
@@ -2931,17 +2966,6 @@ ves_icall_RuntimeType_GetFunctionPointerTypeModifiers (MonoQCallTypeHandle type_
 	}
 }
 
-MonoBoolean
-ves_icall_RuntimeTypeHandle_IsComObject (MonoQCallTypeHandle type_handle, MonoError *error)
-{
-	MonoType *type = type_handle.type;
-	MonoClass *klass = mono_class_from_mono_type_internal (type);
-	mono_class_init_checked (klass, error);
-	return_val_if_nok (error, FALSE);
-
-	return mono_class_is_com_object (klass);
-}
-
 void
 ves_icall_InvokeClassConstructor (MonoQCallTypeHandle type_handle, MonoError *error)
 {
@@ -3038,7 +3062,7 @@ ves_icall_RuntimeType_GetNamespace (MonoQCallTypeHandle type_handle, MonoObjectH
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	MonoClass *elem;
-	while (!m_class_is_enumtype (klass) && 
+	while (!m_class_is_enumtype (klass) &&
 		!mono_class_is_nullable (klass) &&
 		(klass != (elem = m_class_get_element_class (klass))))
 		klass = elem;
@@ -3701,28 +3725,6 @@ write_enum_value (void *mem, int type, guint64 value)
 		g_assert_not_reached ();
 	}
 	return;
-}
-
-void
-ves_icall_System_Enum_InternalBoxEnum (MonoQCallTypeHandle enum_handle, MonoObjectHandleOnStack res, guint64 value, MonoError *error)
-{
-	MonoClass *enumc;
-	MonoObjectHandle resultHandle;
-	MonoType *etype;
-
-	enumc = mono_class_from_mono_type_internal (enum_handle.type);
-
-	mono_class_init_checked (enumc, error);
-	return_if_nok (error);
-
-	etype = mono_class_enum_basetype_internal (enumc);
-
-	resultHandle = mono_object_new_handle (enumc, error);
-	return_if_nok (error);
-
-	write_enum_value (mono_handle_unbox_unsafe (resultHandle), etype->type, value);
-
-	HANDLE_ON_STACK_SET (res, MONO_HANDLE_RAW (resultHandle));
 }
 
 void
@@ -4574,6 +4576,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetInfo (MonoQCallAssemblyHandle ass
 		else
 			absolute = g_build_filename (assembly->basedir, filename, (const char*)NULL);
 
+		g_assert (absolute);
 		mono_icall_make_platform_path (absolute);
 
 		const gchar *prepend = mono_icall_get_file_path_prefix (absolute);
@@ -6168,16 +6171,16 @@ void
 ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHandle exception, MonoStringHandle errorSource, MonoError *error)
 {
 	if (MONO_HANDLE_IS_NULL (errorSource)) {
-		g_warning ("Process terminated.");
+		g_warning_dont_trim ("Process terminated.");
 	} else {
 		char *errorSourceMsg = mono_string_handle_to_utf8 (errorSource, error);
-		g_warning ("Process terminated. %s", errorSourceMsg);
+		g_warning_dont_trim ("Process terminated. %s", errorSourceMsg);
 		g_free (errorSourceMsg);
 	}
 
 	if (!MONO_HANDLE_IS_NULL (message)) {
 		char *msg = mono_string_handle_to_utf8 (message, error);
-		g_warning (msg);
+		g_warning_dont_trim (msg);
 		g_free (msg);
 	}
 
@@ -6261,29 +6264,6 @@ ves_icall_System_RuntimeType_CreateInstanceInternal (MonoQCallTypeHandle type_ha
 		return NULL_HANDLE;
 
 	return mono_object_new_handle (klass, error);
-}
-
-/* Only used for value types */
-void
-ves_icall_System_RuntimeType_AllocateValueType (MonoQCallTypeHandle type_handle, MonoObjectHandle value_h, MonoObjectHandleOnStack res, MonoError *error)
-{
-	MonoType *type = type_handle.type;
-	MonoClass *klass = mono_class_from_mono_type_internal (type);
-
-	mono_class_init_checked (klass, error);
-	goto_if_nok (error, error_ret);
-
-	MonoObject *obj_res = mono_object_new_checked (klass, error);
-	goto_if_nok (error, error_ret);
-
-	MonoObject *value = MONO_HANDLE_RAW (value_h);
-	if (value)
-		mono_value_copy_internal (mono_object_unbox_internal (obj_res), mono_object_unbox_internal (value), klass);
-
-	HANDLE_ON_STACK_SET (res, obj_res);
-	return;
-error_ret:
-	HANDLE_ON_STACK_SET (res, NULL);
 }
 
 MonoReflectionMethodHandle
@@ -6693,72 +6673,6 @@ ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal (MonoObjectHandle obj,
 {
 	return mono_reflection_get_custom_attrs_data_checked (obj, error);
 }
-
-#ifndef DISABLE_COM
-
-int
-ves_icall_System_Runtime_InteropServices_Marshal_GetHRForException_WinRT(MonoExceptionHandle ex, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.Marshal.GetHRForException_WinRT internal call is not implemented.");
-	return 0;
-}
-
-MonoObjectHandle
-ves_icall_System_Runtime_InteropServices_Marshal_GetNativeActivationFactory(MonoObjectHandle type, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.Marshal.GetNativeActivationFactory internal call is not implemented.");
-	return NULL_HANDLE;
-}
-
-void*
-ves_icall_System_Runtime_InteropServices_Marshal_GetRawIUnknownForComObjectNoAddRef(MonoObjectHandle obj, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.Marshal.GetRawIUnknownForComObjectNoAddRef internal call is not implemented.");
-	return NULL;
-}
-
-MonoObjectHandle
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_GetRestrictedErrorInfo(MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.GetRestrictedErrorInfo internal call is not implemented.");
-	return NULL_HANDLE;
-}
-
-MonoBoolean
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_RoOriginateLanguageException (int ierr, MonoStringHandle message, void* languageException, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.RoOriginateLanguageException internal call is not implemented.");
-	return FALSE;
-}
-
-void
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_RoReportUnhandledError (MonoObjectHandle oerr, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.RoReportUnhandledError internal call is not implemented.");
-}
-
-int
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_WindowsCreateString(MonoStringHandle sourceString, int length, void** hstring, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsCreateString internal call is not implemented.");
-	return 0;
-}
-
-int
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_WindowsDeleteString(void* hstring, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsDeleteString internal call is not implemented.");
-	return 0;
-}
-
-mono_unichar2*
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_WindowsGetStringRawBuffer(void* hstring, unsigned* length, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsGetStringRawBuffer internal call is not implemented.");
-	return NULL;
-}
-
-#endif
 
 static const MonoIcallTableCallbacks *icall_table;
 static mono_mutex_t icall_mutex;
@@ -7291,6 +7205,8 @@ mono_create_icall_signatures (void)
 	}
 }
 
+/* LOCKING: does not take locks. does not use an atomic write to info->wrapper
+ */
 void
 mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean avoid_wrapper, const char *c_symbol)
 {
@@ -7304,6 +7220,7 @@ mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const 
 	// Fill in wrapper ahead of time, to just be func, to avoid
 	// later initializing it to anything else. So therefore, no wrapper.
 	if (avoid_wrapper) {
+		// not using CAS, because its idempotent
 		info->wrapper = func;
 	} else {
 		// Leave it alone in case of a race.

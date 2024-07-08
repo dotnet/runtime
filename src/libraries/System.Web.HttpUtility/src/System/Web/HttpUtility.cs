@@ -67,7 +67,7 @@ namespace System.Web
                         {
                             if (!string.IsNullOrEmpty(key))
                             {
-                                sb.Append(key).Append('=');
+                                sb.Append(UrlEncode(key)).Append('=');
                             }
                             sb.Append(UrlEncode(value)).Append('&');
                         }
@@ -117,7 +117,7 @@ namespace System.Web
                 }
                 else
                 {
-                    name = UrlDecode(query.Substring(namePos, valuePos - namePos - 1), encoding);
+                    name = UrlDecode(query.AsSpan(namePos, valuePos - namePos - 1), encoding);
                 }
 
                 if (valueEnd < 0)
@@ -126,7 +126,7 @@ namespace System.Web
                 }
 
                 namePos = valueEnd + 1;
-                string value = UrlDecode(query.Substring(valuePos, valueEnd - valuePos), encoding);
+                string value = UrlDecode(query.AsSpan(valuePos, valueEnd - valuePos), encoding);
                 result.Add(name, value);
             }
 
@@ -193,25 +193,33 @@ namespace System.Web
         public static byte[]? UrlDecodeToBytes(string? str) => UrlDecodeToBytes(str, Encoding.UTF8);
 
         [return: NotNullIfNotNull(nameof(str))]
-        public static byte[]? UrlDecodeToBytes(string? str, Encoding e) => str == null ? null : UrlDecodeToBytes(e.GetBytes(str));
-
-        [return: NotNullIfNotNull(nameof(bytes))]
-        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : UrlDecodeToBytes(bytes, 0, bytes.Length);
-
-        [return: NotNullIfNotNull(nameof(str))]
-        public static byte[]? UrlEncodeToBytes(string? str, Encoding e)
+        public static byte[]? UrlDecodeToBytes(string? str, Encoding e)
         {
+            const int StackallocThreshold = 512;
             if (str == null)
             {
                 return null;
             }
 
-            byte[] bytes = e.GetBytes(str);
-            return HttpEncoder.UrlEncode(bytes, 0, bytes.Length, alwaysCreateNewReturnValue: false);
+            if (e.GetMaxByteCount(str.Length) <= StackallocThreshold)
+            {
+                Span<byte> bytes = stackalloc byte[StackallocThreshold];
+                int encodedBytes = e.GetBytes(str, bytes);
+
+                return HttpEncoder.UrlDecode(bytes.Slice(0, encodedBytes));
+            }
+
+            return UrlDecodeToBytes(e.GetBytes(str));
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
-        public static byte[]? UrlEncodeToBytes(byte[]? bytes, int offset, int count) => HttpEncoder.UrlEncode(bytes, offset, count, alwaysCreateNewReturnValue: true);
+        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : HttpEncoder.UrlDecode(bytes);
+
+        [return: NotNullIfNotNull(nameof(str))]
+        public static byte[]? UrlEncodeToBytes(string? str, Encoding e) => str == null ? null : HttpEncoder.UrlEncode(str, e);
+
+        [return: NotNullIfNotNull(nameof(bytes))]
+        public static byte[]? UrlEncodeToBytes(byte[]? bytes, int offset, int count) => HttpEncoder.UrlEncode(bytes, offset, count);
 
         [Obsolete("This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncode(String).")]
         [return: NotNullIfNotNull(nameof(str))]
@@ -220,6 +228,8 @@ namespace System.Web
         [return: NotNullIfNotNull(nameof(str))]
         public static string? UrlDecode(string? str, Encoding e) => HttpEncoder.UrlDecode(str, e);
 
+        private static string UrlDecode(ReadOnlySpan<char> str, Encoding e) => HttpEncoder.UrlDecode(str, e);
+
         [return: NotNullIfNotNull(nameof(bytes))]
         public static string? UrlDecode(byte[]? bytes, int offset, int count, Encoding e) =>
             HttpEncoder.UrlDecode(bytes, offset, count, e);
@@ -227,12 +237,8 @@ namespace System.Web
         [return: NotNullIfNotNull(nameof(bytes))]
         public static byte[]? UrlDecodeToBytes(byte[]? bytes, int offset, int count) => HttpEncoder.UrlDecode(bytes, offset, count);
 
-        public static string JavaScriptStringEncode(string? value) => HttpEncoder.JavaScriptStringEncode(value);
+        public static string JavaScriptStringEncode(string? value) => HttpEncoder.JavaScriptStringEncode(value, false);
 
-        public static string JavaScriptStringEncode(string? value, bool addDoubleQuotes)
-        {
-            string encoded = HttpEncoder.JavaScriptStringEncode(value);
-            return addDoubleQuotes ? "\"" + encoded + "\"" : encoded;
-        }
+        public static string JavaScriptStringEncode(string? value, bool addDoubleQuotes) => HttpEncoder.JavaScriptStringEncode(value, addDoubleQuotes);
     }
 }

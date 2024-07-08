@@ -14,7 +14,9 @@ public:
         UseExecutionOrder = true,
     };
 
-    LocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_prevNode(nullptr)
+    LocalSequencer(Compiler* comp)
+        : GenTreeVisitor(comp)
+        , m_prevNode(nullptr)
     {
     }
 
@@ -173,6 +175,279 @@ void Compiler::fgSequenceLocals(Statement* stmt)
     seq.Sequence(stmt);
 }
 
+struct LocalEqualsLocalAddrAssertion
+{
+    // Local num on the LHS
+    unsigned DestLclNum;
+    // Local num on the RHS (having its adress taken)
+    unsigned AddressLclNum;
+    // Offset into RHS local
+    unsigned AddressOffset;
+
+    LocalEqualsLocalAddrAssertion(unsigned destLclNum, unsigned addressLclNum, unsigned addressOffset)
+        : DestLclNum(destLclNum)
+        , AddressLclNum(addressLclNum)
+        , AddressOffset(addressOffset)
+    {
+    }
+
+#ifdef DEBUG
+    void Print() const
+    {
+        printf("V%02u = &V%02u[+%03u]", DestLclNum, AddressLclNum, AddressOffset);
+    }
+#endif
+};
+
+struct AssertionKeyFuncs
+{
+    static bool Equals(const LocalEqualsLocalAddrAssertion& lhs, const LocalEqualsLocalAddrAssertion rhs)
+    {
+        return (lhs.DestLclNum == rhs.DestLclNum) && (lhs.AddressLclNum == rhs.AddressLclNum) &&
+               (lhs.AddressOffset == rhs.AddressOffset);
+    }
+
+    static unsigned GetHashCode(const LocalEqualsLocalAddrAssertion& val)
+    {
+        unsigned hash = val.DestLclNum;
+        hash ^= val.AddressLclNum + 0x9e3779b9 + (hash << 19) + (hash >> 13);
+        hash ^= val.AddressOffset + 0x9e3779b9 + (hash << 19) + (hash >> 13);
+        return hash;
+    }
+};
+
+typedef JitHashTable<LocalEqualsLocalAddrAssertion, AssertionKeyFuncs, unsigned> AssertionToIndexMap;
+
+class LocalEqualsLocalAddrAssertions
+{
+    Compiler*                                 m_comp;
+    ArrayStack<LocalEqualsLocalAddrAssertion> m_assertions;
+    AssertionToIndexMap                       m_map;
+    uint64_t*                                 m_lclAssertions;
+    uint64_t*                                 m_outgoingAssertions;
+    BitVec                                    m_localsToExpose;
+
+public:
+    uint64_t CurrentAssertions = 0;
+
+    LocalEqualsLocalAddrAssertions(Compiler* comp)
+        : m_comp(comp)
+        , m_assertions(comp->getAllocator(CMK_LocalAddressVisitor))
+        , m_map(comp->getAllocator(CMK_LocalAddressVisitor))
+    {
+        m_lclAssertions =
+            comp->lvaCount == 0 ? nullptr : new (comp, CMK_LocalAddressVisitor) uint64_t[comp->lvaCount]{};
+        m_outgoingAssertions = new (comp, CMK_LocalAddressVisitor) uint64_t[comp->m_dfsTree->GetPostOrderCount()]{};
+
+        BitVecTraits localsTraits(comp->lvaCount, comp);
+        m_localsToExpose = BitVecOps::MakeEmpty(&localsTraits);
+    }
+
+    //------------------------------------------------------------------------
+    // GetLocalsToExpose: Get the bit vector of locals that were marked to be
+    // exposed.
+    //
+    BitVec_ValRet_T GetLocalsToExpose()
+    {
+        return m_localsToExpose;
+    }
+
+    //------------------------------------------------------------------------
+    // IsMarkedForExposure: Check if a specific local is marked to be exposed.
+    //
+    // Return Value:
+    //   True if so.
+    //
+    bool IsMarkedForExposure(unsigned lclNum)
+    {
+        BitVecTraits traits(m_comp->lvaCount, m_comp);
+        if (BitVecOps::IsMember(&traits, m_localsToExpose, lclNum))
+        {
+            return true;
+        }
+
+        LclVarDsc* dsc = m_comp->lvaGetDesc(lclNum);
+        if (dsc->lvIsStructField && BitVecOps::IsMember(&traits, m_localsToExpose, dsc->lvParentLcl))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    //-------------------------------------------------------------------
+    // StartBlock: Start a new block by computing incoming assertions for the
+    // block.
+    //
+    // Arguments:
+    //   block - The block
+    //
+    void StartBlock(BasicBlock* block)
+    {
+        if ((m_assertions.Height() == 0) || (block->bbPreds == nullptr) || m_comp->bbIsHandlerBeg(block))
+        {
+            CurrentAssertions = 0;
+            return;
+        }
+
+        CurrentAssertions = UINT64_MAX;
+        for (BasicBlock* pred : block->PredBlocks())
+        {
+            assert(m_comp->m_dfsTree->Contains(pred));
+            if (pred->bbPostorderNum <= block->bbPostorderNum)
+            {
+                CurrentAssertions = 0;
+                break;
+            }
+
+            CurrentAssertions &= m_outgoingAssertions[pred->bbPostorderNum];
+        }
+
+#ifdef DEBUG
+        if (CurrentAssertions != 0)
+        {
+            JITDUMP(FMT_BB " incoming assertions:\n", block->bbNum);
+            uint64_t assertions = CurrentAssertions;
+            do
+            {
+                uint32_t index = BitOperations::BitScanForward(assertions);
+                JITDUMP("  A%02u: ", index);
+                DBEXEC(VERBOSE, m_assertions.BottomRef((int)index).Print());
+                JITDUMP("\n");
+
+                assertions ^= uint64_t(1) << index;
+            } while (assertions != 0);
+        }
+#endif
+    }
+
+    //-------------------------------------------------------------------
+    // EndBlock: End a block by recording its final outgoing assertions.
+    //
+    // Arguments:
+    //     block - The block
+    //
+    void EndBlock(BasicBlock* block)
+    {
+        m_outgoingAssertions[block->bbPostorderNum] = CurrentAssertions;
+    }
+
+    //-------------------------------------------------------------------
+    // OnExposed: Mark that a local is having its address taken.
+    //
+    // Arguments:
+    //   lclNum - The local
+    //
+    void OnExposed(unsigned lclNum)
+    {
+        JITDUMP("On exposed: V%02u\n", lclNum);
+        BitVecTraits localsTraits(m_comp->lvaCount, m_comp);
+        BitVecOps::AddElemD(&localsTraits, m_localsToExpose, lclNum);
+    }
+
+    //-------------------------------------------------------------------
+    // Record: Record an assertion about the specified local.
+    //
+    // Arguments:
+    //   dstLclNum - Destination local
+    //   srcLclNum - Local having its address taken
+    //   srcOffs   - Offset into the source local of the address being taken
+    //
+    void Record(unsigned dstLclNum, unsigned srcLclNum, unsigned srcOffs)
+    {
+        LocalEqualsLocalAddrAssertion assertion(dstLclNum, srcLclNum, srcOffs);
+
+        unsigned index;
+        if (m_assertions.Height() >= 64)
+        {
+            if (!m_map.Lookup(assertion, &index))
+            {
+                JITDUMP("Out of assertion space; dropping assertion ");
+                DBEXEC(VERBOSE, assertion.Print());
+                JITDUMP("\n");
+                return;
+            }
+        }
+        else
+        {
+            unsigned* pIndex = m_map.LookupPointerOrAdd(assertion, UINT_MAX);
+            if (*pIndex == UINT_MAX)
+            {
+                index   = (unsigned)m_assertions.Height();
+                *pIndex = index;
+                m_assertions.Push(assertion);
+                m_lclAssertions[dstLclNum] |= uint64_t(1) << index;
+
+                JITDUMP("Adding new assertion A%02u ", index);
+                DBEXEC(VERBOSE, assertion.Print());
+                JITDUMP("\n");
+            }
+            else
+            {
+                index = *pIndex;
+                JITDUMP("Adding existing assertion A%02u ", index);
+                DBEXEC(VERBOSE, assertion.Print());
+                JITDUMP("\n");
+            }
+        }
+
+        CurrentAssertions |= uint64_t(1) << index;
+    }
+
+    //-------------------------------------------------------------------
+    // Clear: Clear active assertions about the specified local.
+    //
+    // Arguments:
+    //   dstLclNum - Destination local
+    //
+    void Clear(unsigned dstLclNum)
+    {
+        CurrentAssertions &= ~m_lclAssertions[dstLclNum];
+    }
+
+    //-----------------------------------------------------------------------------------
+    // GetCurrentAssertion:
+    //   Get the current assertion about a local's value.
+    //
+    // Arguments:
+    //    lclNum - The local
+    //
+    // Return Value:
+    //    Assertion, or nullptr if there is no current assertion.
+    //
+    const LocalEqualsLocalAddrAssertion* GetCurrentAssertion(unsigned lclNum)
+    {
+        uint64_t curAssertion = CurrentAssertions & m_lclAssertions[lclNum];
+        assert(genMaxOneBit(curAssertion));
+        if (curAssertion == 0)
+        {
+            return nullptr;
+        }
+
+        return &m_assertions.BottomRef(BitOperations::BitScanForward(curAssertion));
+    }
+
+    //-----------------------------------------------------------------------------------
+    // GetLocalsWithAssertions:
+    //   Get a bit vector of all locals that have assertions about their value.
+    //
+    // Return Value:
+    //   Bit vector of locals.
+    //
+    BitVec_ValRet_T GetLocalsWithAssertions()
+    {
+        BitVecTraits localsTraits(m_comp->lvaCount, m_comp);
+        BitVec       result(BitVecOps::MakeEmpty(&localsTraits));
+
+        for (int i = 0; i < m_assertions.Height(); i++)
+        {
+            BitVecOps::AddElemD(&localsTraits, result, m_assertions.BottomRef(i).DestLclNum);
+        }
+
+        return result;
+    }
+};
+
 class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 {
     // During tree traversal every GenTree node produces a "value" that represents:
@@ -241,6 +516,13 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
             return m_offset;
         }
 
+        bool IsSameAddress(const Value& other) const
+        {
+            assert(IsAddress() && other.IsAddress());
+
+            return ((LclNum() == other.LclNum()) && (Offset() == other.Offset()));
+        }
+
         //------------------------------------------------------------------------
         // Address: Produce an address value from a LCL_ADDR node.
         //
@@ -255,6 +537,13 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
             assert(IsUnknown() && lclAddr->OperIs(GT_LCL_ADDR));
             m_lclNum = lclAddr->GetLclNum();
             m_offset = lclAddr->GetLclOffs();
+        }
+
+        void Address(unsigned lclNum, unsigned lclOffs)
+        {
+            assert(IsUnknown());
+            m_lclNum = lclNum;
+            m_offset = lclOffs;
         }
 
         //------------------------------------------------------------------------
@@ -324,10 +613,12 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         LclFld
     };
 
-    ArrayStack<Value> m_valueStack;
-    bool              m_stmtModified;
-    bool              m_madeChanges;
-    LocalSequencer*   m_sequencer;
+    ArrayStack<Value>               m_valueStack;
+    bool                            m_stmtModified    = false;
+    bool                            m_madeChanges     = false;
+    bool                            m_propagatedAddrs = false;
+    LocalSequencer*                 m_sequencer;
+    LocalEqualsLocalAddrAssertions* m_lclAddrAssertions;
 
 public:
     enum
@@ -337,18 +628,22 @@ public:
         UseExecutionOrder = true,
     };
 
-    LocalAddressVisitor(Compiler* comp, LocalSequencer* sequencer)
+    LocalAddressVisitor(Compiler* comp, LocalSequencer* sequencer, LocalEqualsLocalAddrAssertions* assertions)
         : GenTreeVisitor<LocalAddressVisitor>(comp)
         , m_valueStack(comp->getAllocator(CMK_LocalAddressVisitor))
-        , m_stmtModified(false)
-        , m_madeChanges(false)
         , m_sequencer(sequencer)
+        , m_lclAddrAssertions(assertions)
     {
     }
 
     bool MadeChanges() const
     {
         return m_madeChanges;
+    }
+
+    bool PropagatedAnyAddresses() const
+    {
+        return m_propagatedAddrs;
     }
 
     void VisitStmt(Statement* stmt)
@@ -403,6 +698,46 @@ public:
             printf("\n");
         }
 #endif // DEBUG
+    }
+
+    void VisitBlock(BasicBlock* block)
+    {
+        // Make the current basic block address available globally
+        m_compiler->compCurBB = block;
+
+        if (m_lclAddrAssertions != nullptr)
+        {
+            m_lclAddrAssertions->StartBlock(block);
+        }
+
+        for (Statement* const stmt : block->Statements())
+        {
+#ifdef FEATURE_SIMD
+            if (m_compiler->opts.OptimizationEnabled() && stmt->GetRootNode()->TypeIs(TYP_FLOAT) &&
+                stmt->GetRootNode()->OperIsStore())
+            {
+                m_madeChanges |= m_compiler->fgMorphCombineSIMDFieldStores(block, stmt);
+            }
+#endif
+
+            VisitStmt(stmt);
+        }
+
+        // We could check for GT_JMP inside the visitor, but this node is very
+        // rare so keeping it here avoids pessimizing the hot code.
+        if (block->endsWithJmpMethod(m_compiler))
+        {
+            // GT_JMP has implicit uses of all arguments.
+            for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+            {
+                UpdateEarlyRefCount(lclNum, nullptr, nullptr);
+            }
+        }
+
+        if (m_lclAddrAssertions != nullptr)
+        {
+            m_lclAddrAssertions->EndBlock(block);
+        }
     }
 
     // Morph promoted struct fields and count local occurrences.
@@ -471,12 +806,14 @@ public:
             }
             break;
 
+            case GT_QMARK:
+                return HandleQMarkSubTree(use);
+
             default:
                 break;
         }
 
         PushValue(use);
-
         return Compiler::WALK_CONTINUE;
     }
 
@@ -497,12 +834,29 @@ public:
                 FALLTHROUGH;
 
             case GT_STORE_LCL_VAR:
+            {
                 assert(TopValue(0).Node() == node->AsLclVarCommon()->Data());
+                if (m_lclAddrAssertions != nullptr)
+                {
+                    HandleLocalStoreAssertions(node->AsLclVarCommon(), TopValue(0));
+                }
+
                 EscapeValue(TopValue(0), node);
                 PopValue();
-                FALLTHROUGH;
+
+                SequenceLocal(node->AsLclVarCommon());
+                break;
+            }
 
             case GT_LCL_VAR:
+                if (m_lclAddrAssertions != nullptr)
+                {
+                    HandleLocalAssertions(node->AsLclVarCommon(), TopValue(0));
+                }
+
+                SequenceLocal(node->AsLclVarCommon());
+                break;
+
             case GT_LCL_FLD:
                 SequenceLocal(node->AsLclVarCommon());
                 break;
@@ -587,10 +941,34 @@ public:
 
             case GT_STOREIND:
             case GT_STORE_BLK:
+            {
+                assert(TopValue(2).Node() == node);
+                assert(TopValue(1).Node() == node->AsIndir()->Addr());
                 assert(TopValue(0).Node() == node->AsIndir()->Data());
+
+                // Data value always escapes.
                 EscapeValue(TopValue(0), node);
+
+                if (node->AsIndir()->IsVolatile() || !TopValue(1).IsAddress())
+                {
+                    // Volatile indirections must not be removed so the address, if any, must be escaped.
+                    EscapeValue(TopValue(1), node);
+                }
+                else
+                {
+                    // This consumes the address.
+                    ProcessIndirection(use, TopValue(1), user);
+
+                    if ((m_lclAddrAssertions != nullptr) && (*use)->OperIsLocalStore())
+                    {
+                        HandleLocalStoreAssertions((*use)->AsLclVarCommon(), TopValue(0));
+                    }
+                }
+
                 PopValue();
-                FALLTHROUGH;
+                PopValue();
+                break;
+            }
 
             case GT_BLK:
             case GT_IND:
@@ -605,6 +983,11 @@ public:
                 else
                 {
                     ProcessIndirection(use, TopValue(0), user);
+
+                    if ((m_lclAddrAssertions != nullptr) && (*use)->OperIs(GT_LCL_VAR))
+                    {
+                        HandleLocalAssertions((*use)->AsLclVarCommon(), TopValue(1));
+                    }
                 }
 
                 PopValue();
@@ -652,6 +1035,77 @@ public:
                 SequenceCall(node->AsCall());
                 break;
 
+            case GT_EQ:
+            case GT_NE:
+            {
+                // If we see &lcl EQ/NE null, rewrite to 0/1 comparison
+                // to reduce overall address exposure.
+                //
+                assert(TopValue(2).Node() == node);
+                assert(TopValue(1).Node() == node->AsOp()->gtOp1);
+                assert(TopValue(0).Node() == node->AsOp()->gtOp2);
+
+                Value& lhs = TopValue(1);
+                Value& rhs = TopValue(0);
+
+                if ((lhs.IsAddress() && rhs.Node()->IsIntegralConst(0)) ||
+                    (rhs.IsAddress() && lhs.Node()->IsIntegralConst(0)))
+                {
+                    JITDUMP("Rewriting known address vs null comparison [%06u]\n", m_compiler->dspTreeID(node));
+                    *lhs.Use()     = m_compiler->gtNewIconNode(0);
+                    *rhs.Use()     = m_compiler->gtNewIconNode(1);
+                    m_stmtModified = true;
+
+                    INDEBUG(TopValue(0).Consume());
+                    INDEBUG(TopValue(1).Consume());
+                    PopValue();
+                    PopValue();
+                }
+                else if (lhs.IsAddress() && rhs.IsAddress())
+                {
+                    JITDUMP("Rewriting known address vs address comparison [%06u]\n", m_compiler->dspTreeID(node));
+                    bool isSameAddress = lhs.IsSameAddress(rhs);
+                    *lhs.Use()         = m_compiler->gtNewIconNode(0);
+                    *rhs.Use()         = m_compiler->gtNewIconNode(isSameAddress ? 0 : 1);
+                    m_stmtModified     = true;
+
+                    INDEBUG(TopValue(0).Consume());
+                    INDEBUG(TopValue(1).Consume());
+                    PopValue();
+                    PopValue();
+                }
+                else
+                {
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
+                }
+
+                break;
+            }
+
+            case GT_NULLCHECK:
+            {
+                assert(TopValue(1).Node() == node);
+                assert(TopValue(0).Node() == node->AsOp()->gtOp1);
+                Value& op = TopValue(0);
+                if (op.IsAddress())
+                {
+                    JITDUMP("Bashing nullcheck of local [%06u] to NOP\n", m_compiler->dspTreeID(node));
+                    node->gtBashToNOP();
+                    INDEBUG(TopValue(0).Consume());
+                    PopValue();
+                    m_stmtModified = true;
+                }
+                else
+                {
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
+                }
+                break;
+            }
+
             default:
                 while (TopValue(0).Node() != node)
                 {
@@ -666,6 +1120,81 @@ public:
     }
 
 private:
+    //------------------------------------------------------------------------
+    // HandleQMarkSubTree: Process a sub-tree rooted at a GT_QMARK.
+    //
+    // Arguments:
+    //   use - the use of the qmark
+    //
+    // Returns:
+    //   The walk result.
+    //
+    // Remarks:
+    //   GT_QMARK needs special handling due to the conditional nature of it.
+    //   Particularly when we are optimizing and propagating LCL_ADDRs we need
+    //   to take care that assertions created inside the conditionally executed
+    //   parts are handled appropriately. This function inlines the pre and
+    //   post-order visit logic here to make that handling work.
+    //
+    fgWalkResult HandleQMarkSubTree(GenTree** use)
+    {
+        assert((*use)->OperIs(GT_QMARK));
+        GenTreeQmark* qmark = (*use)->AsQmark();
+
+        // We have to inline the pre/postorder visit here to handle
+        // assertions properly.
+        assert(!qmark->IsReverseOp());
+        if (WalkTree(&qmark->gtOp1, qmark) == Compiler::WALK_ABORT)
+        {
+            return Compiler::WALK_ABORT;
+        }
+
+        if (m_lclAddrAssertions != nullptr)
+        {
+            uint64_t origAssertions = m_lclAddrAssertions->CurrentAssertions;
+
+            if (WalkTree(&qmark->gtOp2->AsOp()->gtOp1, qmark->gtOp2) == Compiler::WALK_ABORT)
+            {
+                return Compiler::WALK_ABORT;
+            }
+
+            uint64_t op1Assertions                 = m_lclAddrAssertions->CurrentAssertions;
+            m_lclAddrAssertions->CurrentAssertions = origAssertions;
+
+            if (WalkTree(&qmark->gtOp2->AsOp()->gtOp2, qmark->gtOp2) == Compiler::WALK_ABORT)
+            {
+                return Compiler::WALK_ABORT;
+            }
+
+            uint64_t op2Assertions                 = m_lclAddrAssertions->CurrentAssertions;
+            m_lclAddrAssertions->CurrentAssertions = op1Assertions & op2Assertions;
+        }
+        else
+        {
+            if ((WalkTree(&qmark->gtOp2->AsOp()->gtOp1, qmark->gtOp2) == Compiler::WALK_ABORT) ||
+                (WalkTree(&qmark->gtOp2->AsOp()->gtOp2, qmark->gtOp2) == Compiler::WALK_ABORT))
+            {
+                return Compiler::WALK_ABORT;
+            }
+        }
+
+        assert(TopValue(0).Node() == qmark->gtGetOp2()->gtGetOp2());
+        assert(TopValue(1).Node() == qmark->gtGetOp2()->gtGetOp1());
+        assert(TopValue(2).Node() == qmark->gtGetOp1());
+
+        EscapeValue(TopValue(0), qmark->gtGetOp2());
+        PopValue();
+
+        EscapeValue(TopValue(0), qmark->gtGetOp2());
+        PopValue();
+
+        EscapeValue(TopValue(0), qmark);
+        PopValue();
+
+        PushValue(use);
+        return Compiler::WALK_SKIP_SUBTREES;
+    }
+
     void PushValue(GenTree** use)
     {
         m_valueStack.Push(use);
@@ -719,7 +1248,7 @@ private:
         GenTreeCall* callUser           = user->IsCall() ? user->AsCall() : nullptr;
         bool         hasHiddenStructArg = false;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
-            IsValidLclAddr(lclNum, val.Offset()))
+            m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
             // We will only attempt this optimization for locals that are:
             // a) Not susceptible to liveness bugs (see "lvaSetHiddenBufferStructArg").
@@ -752,8 +1281,16 @@ private:
 
         if (!hasHiddenStructArg)
         {
-            m_compiler->lvaSetVarAddrExposed(
-                varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+            unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+
+            if (m_lclAddrAssertions != nullptr)
+            {
+                m_lclAddrAssertions->OnExposed(exposedLclNum);
+            }
+            else
+            {
+                m_compiler->lvaSetVarAddrExposed(exposedLclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+            }
         }
 
 #ifdef TARGET_64BIT
@@ -805,6 +1342,7 @@ private:
         unsigned   indirSize = node->AsIndir()->Size();
         bool       isWide;
 
+        // TODO-Cleanup: delete "indirSize == 0", use "Compiler::IsValidLclAddr".
         if ((indirSize == 0) || ((offset + indirSize) > UINT16_MAX))
         {
             // If we can't figure out the indirection size then treat it as a wide indirection.
@@ -823,22 +1361,20 @@ private:
             else
             {
                 isWide = endOffset.Value() > m_compiler->lvaLclExactSize(lclNum);
-
-                if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->IsBlockLayout())
-                {
-                    // TODO-CQ: TYP_BLK used to always be exposed here. This is in principle not necessary, but
-                    // not doing so would require VN changes. For now, exposing gets better CQ as otherwise the
-                    // variable ends up untracked and VN treats untracked-not-exposed locals more conservatively
-                    // than exposed ones.
-                    m_compiler->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
-                }
             }
         }
 
         if (isWide)
         {
-            m_compiler->lvaSetVarAddrExposed(
-                varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum DEBUGARG(AddressExposedReason::WIDE_INDIR));
+            unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+            if (m_lclAddrAssertions != nullptr)
+            {
+                m_lclAddrAssertions->OnExposed(exposedLclNum);
+            }
+            else
+            {
+                m_compiler->lvaSetVarAddrExposed(exposedLclNum DEBUGARG(AddressExposedReason::WIDE_INDIR));
+            }
 
             MorphLocalAddress(node->AsIndir()->Addr(), lclNum, offset);
             node->gtFlags |= GTF_GLOB_REF; // GLOB_REF may not be set already in the "large offset" case.
@@ -863,9 +1399,11 @@ private:
     void MorphLocalAddress(GenTree* addr, unsigned lclNum, unsigned offset)
     {
         assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
-        assert(m_compiler->lvaVarAddrExposed(lclNum) || m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
+        assert(m_compiler->lvaVarAddrExposed(lclNum) ||
+               ((m_lclAddrAssertions != nullptr) && m_lclAddrAssertions->IsMarkedForExposure(lclNum)) ||
+               m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
 
-        if (IsValidLclAddr(lclNum, offset))
+        if (m_compiler->IsValidLclAddr(lclNum, offset))
         {
             addr->ChangeOper(GT_LCL_ADDR);
             addr->AsLclFld()->SetLclNum(lclNum);
@@ -926,9 +1464,10 @@ private:
                 break;
 
 #ifdef FEATURE_HW_INTRINSICS
-            // We have two cases we want to handle:
-            // 1. Vector2/3/4 and Quaternion where we have 4x float fields
-            // 2. Plane where we have 1x Vector3 and 1x float field
+                // We have three cases we want to handle:
+                // 1. Vector2/3/4 and Quaternion where we have 2-4x float fields
+                // 2. Plane where we have 1x Vector3 and 1x float field
+                // 3. Accesses of halves of larger SIMD types
 
             case IndirTransform::GetElement:
             {
@@ -940,24 +1479,29 @@ private:
                 {
                     case TYP_FLOAT:
                     {
+                        // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
                         hwiNode            = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
-                                                                      CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
                         break;
                     }
+
                     case TYP_SIMD12:
                     {
+                        // Handle the Vector3 field of case 2
                         assert(genTypeSize(varDsc) == 16);
                         hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
                                                                        CORINFO_TYPE_FLOAT, 16);
                         break;
                     }
+
                     case TYP_SIMD8:
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
                     case TYP_SIMD16:
                     case TYP_SIMD32:
 #endif
                     {
+                        // Handle case 3
                         assert(genTypeSize(elementType) * 2 == genTypeSize(varDsc));
                         if (offset == 0)
                         {
@@ -993,29 +1537,44 @@ private:
                 {
                     case TYP_FLOAT:
                     {
+                        // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
                         hwiNode =
                             m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
                                                                  CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
                         break;
                     }
+
                     case TYP_SIMD12:
                     {
+                        // Handle the Vector3 field of case 2
                         assert(varDsc->TypeGet() == TYP_SIMD16);
 
-                        // We inverse the operands here and take elementNode as the main value and simdLclNode[3] as the
-                        // new value. This gives us a new TYP_SIMD16 with all elements in the right spots
-                        GenTree* indexNode = m_compiler->gtNewIconNode(3, TYP_INT);
-                        hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
+                        // We effectively inverse the operands here and take elementNode as the main value and
+                        // simdLclNode[3] as the new value. This gives us a new TYP_SIMD16 with all elements in the
+                        // right spots
+
+                        elementNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, elementNode,
+                                                                           NI_Vector128_AsVector128Unsafe,
+                                                                           CORINFO_TYPE_FLOAT, 12);
+
+                        GenTree* indexNode1 = m_compiler->gtNewIconNode(3, TYP_INT);
+                        simdLclNode         = m_compiler->gtNewSimdGetElementNode(TYP_FLOAT, simdLclNode, indexNode1,
+                                                                                  CORINFO_TYPE_FLOAT, 16);
+
+                        GenTree* indexNode2 = m_compiler->gtNewIconNode(3, TYP_INT);
+                        hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode2, simdLclNode,
                                                                        CORINFO_TYPE_FLOAT, 16);
                         break;
                     }
+
                     case TYP_SIMD8:
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
                     case TYP_SIMD16:
                     case TYP_SIMD32:
 #endif
                     {
+                        // Handle case 3
                         assert(genTypeSize(elementType) * 2 == genTypeSize(varDsc));
                         if (offset == 0)
                         {
@@ -1031,6 +1590,7 @@ private:
 
                         break;
                     }
+
                     default:
                         unreached();
                 }
@@ -1053,9 +1613,9 @@ private:
                 }
                 if (isDef)
                 {
-                    GenTree* data = indir->Data();
+                    GenTree* value = indir->Data();
                     indir->ChangeOper(GT_STORE_LCL_VAR);
-                    indir->AsLclVar()->Data() = data;
+                    indir->AsLclVar()->Data() = value;
                 }
                 else
                 {
@@ -1068,9 +1628,9 @@ private:
             case IndirTransform::LclFld:
                 if (isDef)
                 {
-                    GenTree* data = indir->Data();
+                    GenTree* value = indir->Data();
                     indir->ChangeOper(GT_STORE_LCL_FLD);
-                    indir->AsLclFld()->Data() = data;
+                    indir->AsLclFld()->Data() = value;
                 }
                 else
                 {
@@ -1160,7 +1720,7 @@ private:
             if (varTypeIsSIMD(varDsc))
             {
                 // We have three cases we want to handle:
-                // 1. Vector2/3/4 and Quaternion where we have 4x float fields
+                // 1. Vector2/3/4 and Quaternion where we have 2-4x float fields
                 // 2. Plane where we have 1x Vector3 and 1x float field
                 // 3. Accesses of halves of larger SIMD types
 
@@ -1265,9 +1825,9 @@ private:
         {
             if (node->OperIs(GT_STOREIND, GT_STORE_BLK))
             {
-                GenTree* data = node->Data();
+                GenTree* value = node->Data();
                 node->ChangeOper(GT_STORE_LCL_VAR);
-                node->AsLclVar()->Data() = data;
+                node->AsLclVar()->Data() = value;
                 node->gtFlags |= GTF_VAR_DEF;
             }
             else
@@ -1414,6 +1974,59 @@ private:
         }
     }
 
+    //-----------------------------------------------------------------------------------
+    // HandleLocalStoreAssertions:
+    //   Handle clearing and generating assertions for a local store with the
+    //   specified data value.
+    //
+    // Argument:
+    //    store - The local store
+    //    data  - Value representing data
+    //
+    void HandleLocalStoreAssertions(GenTreeLclVarCommon* store, Value& data)
+    {
+        m_lclAddrAssertions->Clear(store->GetLclNum());
+
+        if (data.IsAddress() && store->OperIs(GT_STORE_LCL_VAR))
+        {
+            LclVarDsc* dsc = m_compiler->lvaGetDesc(store);
+            // TODO-CQ: We currently don't handle promoted fields, but that has
+            // no impact since practically all promoted structs end up with
+            // lvHasLdAddrOp set.
+            if (!dsc->lvPromoted && !dsc->lvIsStructField && !dsc->lvHasLdAddrOp)
+            {
+                m_lclAddrAssertions->Record(store->GetLclNum(), data.LclNum(), data.Offset());
+            }
+        }
+    }
+
+    //-----------------------------------------------------------------------------------
+    // HandleLocalAssertions:
+    //   Try to refine the specified "addr" value based on assertions about a specified local.
+    //
+    // Argument:
+    //    lcl   - The local node
+    //    value - Value of local; will be modified to be an address if an assertion could be found
+    //
+    void HandleLocalAssertions(GenTreeLclVarCommon* lcl, Value& value)
+    {
+        assert(lcl->OperIs(GT_LCL_VAR));
+        if (!lcl->TypeIs(TYP_I_IMPL, TYP_BYREF))
+        {
+            return;
+        }
+
+        const LocalEqualsLocalAddrAssertion* assertion = m_lclAddrAssertions->GetCurrentAssertion(lcl->GetLclNum());
+        if (assertion != nullptr)
+        {
+            JITDUMP("Using assertion ");
+            DBEXEC(VERBOSE, assertion->Print());
+            JITDUMP("\n");
+            value.Address(assertion->AddressLclNum, assertion->AddressOffset);
+            m_propagatedAddrs = true;
+        }
+    }
+
 public:
     //------------------------------------------------------------------------
     // UpdateEarlyRefCount: updates the ref count for locals
@@ -1458,24 +2071,6 @@ public:
     }
 
 private:
-    //------------------------------------------------------------------------
-    // IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
-    //
-    // Local address nodes cannot point beyond the local and can only store
-    // 16 bits worth of offset.
-    //
-    // Arguments:
-    //    lclNum - The local's number
-    //    offset - The address' offset
-    //
-    // Return Value:
-    //    Whether "LCL_FLD_ADDR<lclNum> [+offset]" would be valid IR.
-    //
-    bool IsValidLclAddr(unsigned lclNum, unsigned offset) const
-    {
-        return (offset < UINT16_MAX) && (offset < m_compiler->lvaLclExactSize(lclNum));
-    }
-
     //------------------------------------------------------------------------
     // IsUnused: is the given node unused?
     //
@@ -1523,41 +2118,43 @@ private:
 //
 PhaseStatus Compiler::fgMarkAddressExposedLocals()
 {
-    bool                madeChanges = false;
-    LocalSequencer      sequencer(this);
-    LocalAddressVisitor visitor(this, opts.OptimizationEnabled() ? &sequencer : nullptr);
+    bool madeChanges = false;
 
-    for (BasicBlock* const block : Blocks())
+    if (opts.OptimizationDisabled())
     {
-        // Make the current basic block address available globally
-        compCurBB = block;
-
-        for (Statement* const stmt : block->Statements())
+        LocalAddressVisitor visitor(this, nullptr, nullptr);
+        for (BasicBlock* const block : Blocks())
         {
-#ifdef FEATURE_SIMD
-            if (opts.OptimizationEnabled() && stmt->GetRootNode()->TypeIs(TYP_FLOAT) &&
-                stmt->GetRootNode()->OperIsStore())
-            {
-                madeChanges |= fgMorphCombineSIMDFieldStores(block, stmt);
-            }
+            visitor.VisitBlock(block);
+        }
+
+        madeChanges = visitor.MadeChanges();
+    }
+    else
+    {
+        LocalEqualsLocalAddrAssertions  assertions(this);
+        LocalEqualsLocalAddrAssertions* pAssertions = &assertions;
+
+#ifdef DEBUG
+        static ConfigMethodRange s_range;
+        s_range.EnsureInit(JitConfig.JitEnableLocalAddrPropagationRange());
+        if (!s_range.Contains(info.compMethodHash()))
+        {
+            pAssertions = nullptr;
+        }
 #endif
 
-            visitor.VisitStmt(stmt);
-        }
-
-        // We could check for GT_JMP inside the visitor, but this node is very
-        // rare so keeping it here avoids pessimizing the hot code.
-        if (block->endsWithJmpMethod(this))
+        LocalSequencer      sequencer(this);
+        LocalAddressVisitor visitor(this, &sequencer, pAssertions);
+        for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
         {
-            // GT_JMP has implicit uses of all arguments.
-            for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
-            {
-                visitor.UpdateEarlyRefCount(lclNum, nullptr, nullptr);
-            }
+            visitor.VisitBlock(m_dfsTree->GetPostOrder(i - 1));
         }
-    }
 
-    madeChanges |= visitor.MadeChanges();
+        madeChanges = visitor.MadeChanges();
+
+        madeChanges |= fgExposeUnpropagatedLocals(visitor.PropagatedAnyAddresses(), &assertions);
+    }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -1669,3 +2266,167 @@ bool Compiler::fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt)
     return true;
 }
 #endif // FEATURE_SIMD
+
+//-----------------------------------------------------------------------------------
+// fgExposeUnpropagatedLocals:
+//   Expose the final set of locals that were computed to have their address
+//   taken. Deletes LCL_ADDR nodes used as the data source of a store if the
+//   destination can be proven to not be read, and avoid exposing these if
+//   possible.
+//
+// Argument:
+//    propagatedAny - Whether any LCL_ADDR values were propagated
+//    assertions    - Data structure tracking LCL_ADDR assertions
+//
+// Return Value:
+//    True if any changes were made to the IR; otherwise false.
+//
+bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAddrAssertions* assertions)
+{
+    if (!propagatedAny)
+    {
+        fgExposeLocalsInBitVec(assertions->GetLocalsToExpose());
+        return false;
+    }
+
+    BitVecTraits localsTraits(lvaCount, this);
+    BitVec       unreadLocals = assertions->GetLocalsWithAssertions();
+
+    struct Store
+    {
+        struct Statement*    Statement;
+        GenTreeLclVarCommon* Tree;
+    };
+
+    ArrayStack<Store> stores(getAllocator(CMK_LocalAddressVisitor));
+
+    for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
+    {
+        BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
+
+        for (Statement* stmt : block->Statements())
+        {
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            {
+                if (!BitVecOps::IsMember(&localsTraits, unreadLocals, lcl->GetLclNum()))
+                {
+                    continue;
+                }
+
+                if (lcl->OperIs(GT_STORE_LCL_VAR, GT_STORE_LCL_FLD))
+                {
+                    if (lcl->TypeIs(TYP_I_IMPL, TYP_BYREF) && ((lcl->Data()->gtFlags & GTF_SIDE_EFFECT) == 0))
+                    {
+                        stores.Push({stmt, lcl});
+                    }
+                }
+                else
+                {
+                    BitVecOps::RemoveElemD(&localsTraits, unreadLocals, lcl->GetLclNum());
+                }
+            }
+        }
+    }
+
+    if (BitVecOps::IsEmpty(&localsTraits, unreadLocals))
+    {
+        JITDUMP("No destinations of propagated LCL_ADDR nodes are unread\n");
+        fgExposeLocalsInBitVec(assertions->GetLocalsToExpose());
+        return false;
+    }
+
+    bool changed = false;
+    for (int i = 0; i < stores.Height(); i++)
+    {
+        const Store& store = stores.BottomRef(i);
+        assert(store.Tree->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+        if (BitVecOps::IsMember(&localsTraits, unreadLocals, store.Tree->GetLclNum()))
+        {
+            JITDUMP("V%02u is unread; removing store data of [%06u]\n", store.Tree->GetLclNum(), dspTreeID(store.Tree));
+            DISPTREE(store.Tree);
+
+            store.Tree->Data()->BashToConst(0, store.Tree->Data()->TypeGet());
+            fgSequenceLocals(store.Statement);
+
+            JITDUMP("\nResult:\n");
+            DISPTREE(store.Tree);
+            JITDUMP("\n");
+            changed = true;
+        }
+    }
+
+    if (changed)
+    {
+        // Finally compute new set of exposed locals.
+        BitVec exposedLocals(BitVecOps::MakeEmpty(&localsTraits));
+
+        for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
+
+            for (Statement* stmt : block->Statements())
+            {
+                for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                {
+                    if (!lcl->OperIs(GT_LCL_ADDR))
+                    {
+                        continue;
+                    }
+
+                    LclVarDsc* lclDsc        = lvaGetDesc(lcl);
+                    unsigned   exposedLclNum = lclDsc->lvIsStructField ? lclDsc->lvParentLcl : lcl->GetLclNum();
+                    BitVecOps::AddElemD(&localsTraits, exposedLocals, exposedLclNum);
+                }
+            }
+        }
+
+        auto dumpVars = [=, &localsTraits](BitVec_ValArg_T vec, BitVec_ValArg_T other) {
+            const char* sep = "";
+            for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+            {
+                if (BitVecOps::IsMember(&localsTraits, vec, lclNum))
+                {
+                    JITDUMP("%sV%02u", sep, lclNum);
+                    sep = " ";
+                }
+                else if (BitVecOps::IsMember(&localsTraits, other, lclNum))
+                {
+                    JITDUMP("%s   ", sep);
+                    sep = " ";
+                }
+            }
+        };
+
+        // TODO-CQ: Instead of intersecting here, we should teach the above
+        // logic about retbuf LCL_ADDRs not leading to exposure. This should
+        // allow us to assert that exposedLocals is a subset of
+        // assertions->GetLocalsToExpose().
+        BitVecOps::IntersectionD(&localsTraits, exposedLocals, assertions->GetLocalsToExpose());
+
+        JITDUMP("Old exposed set: ");
+        dumpVars(assertions->GetLocalsToExpose(), exposedLocals);
+        JITDUMP("\nNew exposed set: ");
+        dumpVars(exposedLocals, assertions->GetLocalsToExpose());
+        JITDUMP("\n");
+
+        fgExposeLocalsInBitVec(exposedLocals);
+    }
+
+    return changed;
+}
+
+//-----------------------------------------------------------------------------------
+// fgExposeLocalsInBitVec:
+//   Mark all locals in the bit vector as address exposed.
+//
+void Compiler::fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec)
+{
+    BitVecTraits    localsTraits(lvaCount, this);
+    BitVecOps::Iter iter(&localsTraits, bitVec);
+    unsigned        lclNum;
+    while (iter.NextElem(&lclNum))
+    {
+        lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+    }
+}

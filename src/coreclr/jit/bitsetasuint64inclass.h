@@ -256,7 +256,8 @@ class BitSetUint64ValueRetType
     BitSetUint64<Env, BitSetTraits> m_bs;
 
 public:
-    BitSetUint64ValueRetType(const BitSetUint64<Env, BitSetTraits>& bs) : m_bs(bs)
+    BitSetUint64ValueRetType(const BitSetUint64<Env, BitSetTraits>& bs)
+        : m_bs(bs)
     {
     }
 };
@@ -451,7 +452,9 @@ public:
         unsigned m_bitNum;
 
     public:
-        Iter(Env env, const BitSetUint64<Env, BitSetTraits>& bs) : m_bits(bs.m_bits), m_bitNum(0)
+        Iter(Env env, const BitSetUint64<Env, BitSetTraits>& bs)
+            : m_bits(bs.m_bits)
+            , m_bitNum(0)
         {
         }
 

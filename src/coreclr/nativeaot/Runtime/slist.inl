@@ -8,6 +8,27 @@ MSVC_DISABLE_WARNING(4127)  // conditional expression is constant --
 //-------------------------------------------------------------------------------------------------
 namespace rh { namespace std
 {
+    template<class _InIt, class _Ty>
+    inline
+    uintptr_t count(_InIt _First, _InIt _Last, const _Ty& _Val)
+    {
+        uintptr_t _Ret = 0;
+        for (; _First != _Last; _First++)
+            if (*_First == _Val)
+                ++_Ret;
+        return _Ret;
+    }
+
+    template<class _InIt, class _Ty>
+    inline
+    _InIt find(_InIt _First, _InIt _Last, const _Ty& _Val)
+    {   // find first matching _Val
+        for (; _First != _Last; ++_First)
+            if (*_First == _Val)
+                break;
+        return (_First);
+    }
+
     // Specialize rh::std::find for SList iterators so that it will use _Traits::Equals.
     template<class _Tx, class _Traits, class _Ty>
     inline
@@ -81,7 +102,6 @@ inline
 void SList<T, Traits>::PushHead(
     PTR_T pItem)
 {
-    NO_DAC();
     Begin().Insert(pItem);
 }
 
@@ -91,7 +111,6 @@ inline
 void SList<T, Traits>::PushHeadInterlocked(
     PTR_T pItem)
 {
-    NO_DAC();
     ASSERT(pItem != NULL);
     ASSERT(IS_ALIGNED(&m_pHead, sizeof(void*)));
 
@@ -113,7 +132,6 @@ template <typename T, typename Traits>
 inline
 typename SList<T, Traits>::PTR_T SList<T, Traits>::PopHead()
 {
-    NO_DAC();
     PTR_T pRet = *Begin();
     Begin().Remove();
     return pRet;
@@ -240,7 +258,6 @@ inline
 typename SList<T, Traits>::Iterator SList<T, Traits>::Iterator::Insert(
     PTR_T pItem)
 {
-    NO_DAC();
     _Validate(e_CanInsert);
     *Traits::GetNextPtr(pItem) = *m_ppCur;
     *m_ppCur = pItem;
@@ -254,7 +271,6 @@ template <typename T, typename Traits>
 inline
 typename SList<T, Traits>::Iterator SList<T, Traits>::Iterator::Remove()
 {
-    NO_DAC();
     _Validate(e_HasValue);
     *m_ppCur = *Traits::GetNextPtr(*m_ppCur);
     PTR_PTR_T ppRet = m_ppCur;
@@ -327,7 +343,6 @@ template <typename T, typename Traits>
 inline
 bool SList<T, Traits>::RemoveFirst(PTR_T pItem)
 {
-    NO_DAC();
     Iterator it = FindFirst(pItem);
     if (it != End())
     {

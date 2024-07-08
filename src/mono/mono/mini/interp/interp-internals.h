@@ -145,6 +145,7 @@ struct InterpMethod {
 	MonoFtnDesc *ftndesc_unbox;
 	MonoDelegateTrampInfo *del_info;
 
+	/* locals_size is equal to the offset of the param_area */
 	guint32 locals_size;
 	guint32 alloca_size;
 	int num_clauses; // clauses
@@ -153,6 +154,9 @@ struct InterpMethod {
 	unsigned int hasthis; // boolean
 	MonoProfilerCallInstrumentationFlags prof_flags;
 	InterpMethodCodeType code_type;
+	int ref_slot_offset; // GC visible pointer slot
+	int swift_error_offset; // swift error struct
+	MonoBitSet *ref_slots;
 #ifdef ENABLE_EXPERIMENT_TIERED
 	MiniTieredCounter tiered_counter;
 #endif
@@ -181,8 +185,6 @@ struct InterpMethod {
 	unsigned int is_verbose : 1;
 #if HOST_BROWSER
 	unsigned int contains_traces : 1;
-	guint16 *backward_branch_offsets;
-	unsigned int backward_branch_offsets_count;
 	MonoBitSet *address_taken_bits;
 #endif
 #if PROFILE_INTERP
@@ -270,11 +272,20 @@ typedef struct {
 	guchar *stack_pointer;
 	/* Used for allocation of localloc regions */
 	FrameDataAllocator data_stack;
+	/* If bit n is set, it means that the n-th stack slot (pointer sized) from stack_start doesn't contain any refs */
+	guint8 *no_ref_slots;
 } ThreadContext;
 
 typedef struct {
 	gint64 transform_time;
 	gint64 methods_transformed;
+	gint64 optimize_time;
+	gint64 ssa_compute_time;
+	gint64 ssa_compute_dominance_time;
+	gint64 ssa_compute_global_vars_time;
+	gint64 ssa_compute_pruned_liveness_time;
+	gint64 ssa_rename_vars_time;
+	gint64 optimize_bblocks_time;
 	gint64 cprop_time;
 	gint64 super_instructions_time;
 	gint32 emitted_instructions;

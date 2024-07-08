@@ -3,9 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
@@ -25,7 +23,7 @@ namespace System.Buffers
         /// </summary>
         /// <param name="values">The set of values.</param>
         /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
-        public static SearchValues<byte> Create(ReadOnlySpan<byte> values)
+        public static SearchValues<byte> Create(params ReadOnlySpan<byte> values)
         {
             if (values.IsEmpty)
             {
@@ -34,7 +32,7 @@ namespace System.Buffers
 
             if (values.Length == 1)
             {
-                return new SingleByteSearchValues(values);
+                return new Any1SearchValues<byte, byte>(values);
             }
 
             // RangeByteSearchValues is slower than SingleByteSearchValues, but faster than Any2ByteSearchValues
@@ -48,8 +46,8 @@ namespace System.Buffers
                 Debug.Assert(values.Length is 2 or 3 or 4 or 5);
                 return values.Length switch
                 {
-                    2 => new Any2ByteSearchValues(values),
-                    3 => new Any3ByteSearchValues(values),
+                    2 => new Any2SearchValues<byte, byte>(values),
+                    3 => new Any3SearchValues<byte, byte>(values),
                     4 => new Any4SearchValues<byte, byte>(values),
                     _ => new Any5SearchValues<byte, byte>(values),
                 };
@@ -68,19 +66,23 @@ namespace System.Buffers
         /// </summary>
         /// <param name="values">The set of values.</param>
         /// /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
-        public static SearchValues<char> Create(ReadOnlySpan<char> values)
+        public static SearchValues<char> Create(params ReadOnlySpan<char> values)
         {
             if (values.IsEmpty)
             {
                 return new EmptySearchValues<char>();
             }
 
+            // Vector128<char> isn't valid. Treat the values as shorts instead.
+            ReadOnlySpan<short> shortValues = MemoryMarshal.Cast<char, short>(values);
+
             if (values.Length == 1)
             {
                 char value = values[0];
+
                 return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value)
-                    ? new SingleCharSearchValues<TrueConst>(value)
-                    : new SingleCharSearchValues<FalseConst>(value);
+                    ? new Any1CharPackedSearchValues(value)
+                    : new Any1SearchValues<char, short>(shortValues);
             }
 
             // RangeCharSearchValues is slower than SingleCharSearchValues, but faster than Any2CharSearchValues
@@ -95,9 +97,18 @@ namespace System.Buffers
             {
                 char value0 = values[0];
                 char value1 = values[1];
-                return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1)
-                    ? new Any2CharSearchValues<TrueConst>(value0, value1)
-                    : new Any2CharSearchValues<FalseConst>(value0, value1);
+
+                if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1))
+                {
+                    // If the two values are the same ASCII letter with both cases, we can use an approach that
+                    // reduces the number of comparisons by masking off the bit that differs between lower and upper case (0x20).
+                    // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[{" => "{").
+                    return (value0 ^ value1) == 0x20
+                        ? new Any1CharPackedIgnoreCaseSearchValues((char)Math.Max(value0, value1))
+                        : new Any2CharPackedSearchValues(value0, value1);
+                }
+
+                return new Any2SearchValues<char, short>(shortValues);
             }
 
             if (values.Length == 3)
@@ -105,23 +116,36 @@ namespace System.Buffers
                 char value0 = values[0];
                 char value1 = values[1];
                 char value2 = values[2];
+
                 return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2)
-                    ? new Any3CharSearchValues<TrueConst>(value0, value1, value2)
-                    : new Any3CharSearchValues<FalseConst>(value0, value1, value2);
+                    ? new Any3CharPackedSearchValues(value0, value1, value2)
+                    : new Any3SearchValues<char, short>(shortValues);
             }
 
             // IndexOfAnyAsciiSearcher for chars is slower than Any3CharSearchValues, but faster than Any4SearchValues
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
+                // If the values are sets of 2 ASCII letters with both cases, we can use an approach that
+                // reduces the number of comparisons by masking off the bit that differs between lower and upper case (0x20).
+                // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[]{}" => "{}").
+                if (PackedSpanHelpers.PackedIndexOfIsSupported && values.Length == 4 && minInclusive > 0)
+                {
+                    Span<char> copy = stackalloc char[4];
+                    values.CopyTo(copy);
+                    copy.Sort();
+
+                    if ((copy[0] ^ copy[2]) == 0x20 &&
+                        (copy[1] ^ copy[3]) == 0x20)
+                    {
+                        // We pick the higher two values (with the 0x20 bit set). "AaBb" => 'a', 'b'
+                        return new Any2CharPackedIgnoreCaseSearchValues(copy[2], copy[3]);
+                    }
+                }
+
                 return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
                     ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values)
                     : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values);
             }
-
-            // Vector128<char> isn't valid. Treat the values as shorts instead.
-            ReadOnlySpan<short> shortValues = MemoryMarshal.CreateReadOnlySpan(
-                ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(values)),
-                values.Length);
 
             if (values.Length == 4)
             {
@@ -133,36 +157,52 @@ namespace System.Buffers
                 return new Any5SearchValues<char, short>(shortValues);
             }
 
-            scoped ReadOnlySpan<char> probabilisticValues = values;
-
-            if (Vector128.IsHardwareAccelerated && values.Length < 8)
-            {
-                // ProbabilisticMap does a Span.Contains check to confirm potential matches.
-                // If we have fewer than 8 values, pad them with existing ones to make the verification faster.
-                Span<char> newValues = stackalloc char[8];
-                newValues.Fill(values[0]);
-                values.CopyTo(newValues);
-                probabilisticValues = newValues;
-            }
-
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && minInclusive < 128)
             {
                 // If we have both ASCII and non-ASCII characters, use an implementation that
                 // does an optimistic ASCII fast-path and then falls back to the ProbabilisticMap.
 
-                return (Ssse3.IsSupported || PackedSimd.IsSupported) && probabilisticValues.Contains('\0')
-                    ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(probabilisticValues)
-                    : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(probabilisticValues);
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && values.Contains('\0')
+                    ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values, maxInclusive)
+                    : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values, maxInclusive);
             }
 
-            // We prefer using the ProbabilisticMap over Latin1CharSearchValues if the former is vectorized.
-            if (!(Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && maxInclusive < 256)
+            if (ShouldUseProbabilisticMap(values.Length, maxInclusive))
             {
-                // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported.
-                return new Latin1CharSearchValues(values);
+                return new ProbabilisticCharSearchValues(values, maxInclusive);
             }
 
-            return new ProbabilisticCharSearchValues(probabilisticValues);
+            // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported.
+            return new BitmapCharSearchValues(values, maxInclusive);
+
+            static bool ShouldUseProbabilisticMap(int valuesLength, int maxInclusive)
+            {
+                // *Rough estimates*. The current implementation uses 256 bits for the bloom filter.
+                // If the implementation is vectorized we can get away with a decent false positive rate.
+                const int MaxValuesForProbabilisticMap = 256;
+
+                if (valuesLength > MaxValuesForProbabilisticMap)
+                {
+                    // If the number of values is too high, we won't see any benefits from the 'probabilistic' part.
+                    return false;
+                }
+
+                if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported)
+                {
+                    // If the probabilistic map is vectorized, we prefer it.
+                    return true;
+                }
+
+                // The probabilistic map is more memory efficient for spare sets, while the bitmap is more efficient for dense sets.
+                int bitmapFootprintBytesEstimate = 64 + (maxInclusive / 8);
+                int probabilisticFootprintBytesEstimate = 128 + (valuesLength * 4);
+
+                // The bitmap is a bit faster than the perfect hash checks employed by the probabilistic map.
+                // Sacrifice some memory usage for faster lookups.
+                const int AcceptableSizeMultiplier = 2;
+
+                return AcceptableSizeMultiplier * probabilisticFootprintBytesEstimate < bitmapFootprintBytesEstimate;
+            }
         }
 
         /// <summary>

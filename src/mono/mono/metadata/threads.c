@@ -781,6 +781,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach)
 	MonoInternalThread *internal;
 	MonoDomain *domain = mono_get_root_domain ();
 	MonoGCHandle gchandle;
+	MonoNativeThreadId tid;
 
 	g_assert (thread);
 
@@ -799,7 +800,8 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach)
 
 	internal->handle = mono_threads_open_thread_handle (info->handle);
 	internal->native_handle = MONO_NATIVE_THREAD_HANDLE_TO_GPOINTER (mono_threads_open_native_thread_handle (info->native_handle));
-	internal->tid = MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ());
+	tid = mono_native_thread_id_get ();
+	internal->tid = MONO_NATIVE_THREAD_ID_TO_UINT (tid);
 	internal->thread_info = info;
 	internal->small_id = info->small_id;
 
@@ -808,6 +810,10 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach)
 	SET_CURRENT_OBJECT (internal);
 
 	mono_domain_set_fast (domain);
+
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_attached (tid, internal->name.chars, (internal->state & ThreadState_Background) != 0, internal->threadpool_thread, internal->external_eventloop, internal->debugger_thread != 0);
+#endif
 
 	mono_threads_lock ();
 
@@ -1236,8 +1242,7 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 
 	if (G_UNLIKELY (external_eventloop)) {
 		/* if the thread wants to stay alive in an external eventloop, don't clean up after it */
-		if (mono_thread_platform_external_eventloop_keepalive_check ())
-			return 0; // MONO_ENTER_GC_SAFE_UNBALANCED is done in start_wrapper
+		return 0; // MONO_ENTER_GC_SAFE_UNBALANCED is done in start_wrapper
 	}
 
 	/* Do any cleanup needed for apartment state. This
@@ -1272,11 +1277,9 @@ start_wrapper (gpointer data)
 
 	if (G_UNLIKELY (external_eventloop)) {
 		/* if the thread wants to stay alive, don't clean up after it */
-		if (mono_thread_platform_external_eventloop_keepalive_check ()) {
-			/* while we wait in the external eventloop, we're GC safe */
-			MONO_ENTER_GC_SAFE_UNBALANCED;
-			return 0;
-		}
+		/* while we wait in the external eventloop, we're GC safe */
+		MONO_ENTER_GC_SAFE_UNBALANCED;
+		return 0;
 	}
 
 	mono_thread_info_exit (res);
@@ -2140,22 +2143,6 @@ gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 	return mono_atomic_dec_i64 (location);
 }
 
-guint8 ves_icall_System_Threading_Interlocked_Exchange_Byte (guint8 *location, guint8 value)
-{
-	if (G_UNLIKELY (!location))
-		return (guint8)set_pending_null_reference_exception ();
-
-	return mono_atomic_xchg_u8(location, value);
-}
-
-gint16 ves_icall_System_Threading_Interlocked_Exchange_Short (gint16 *location, gint16 value)
-{
-	if (G_UNLIKELY (!location))
-		return (gint16)set_pending_null_reference_exception ();
-
-	return mono_atomic_xchg_i16(location, value);
-}
-
 gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location, gint32 value)
 {
 	if (G_UNLIKELY (!location))
@@ -2202,22 +2189,6 @@ ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location, gint64 v
 	}
 #endif
 	return mono_atomic_xchg_i64 (location, value);
-}
-
-guint8 ves_icall_System_Threading_Interlocked_CompareExchange_Byte(guint8 *location, guint8 value, guint8 comparand)
-{
-	if (G_UNLIKELY (!location))
-		return (guint8)set_pending_null_reference_exception ();
-
-	return mono_atomic_cas_u8(location, value, comparand);
-}
-
-gint16 ves_icall_System_Threading_Interlocked_CompareExchange_Short(gint16 *location, gint16 value, gint16 comparand)
-{
-	if (G_UNLIKELY (!location))
-		return (gint16)set_pending_null_reference_exception ();
-
-	return mono_atomic_cas_i16(location, value, comparand);
 }
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand)
@@ -4934,115 +4905,20 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void)
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr)
 {
-	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
-	switch (sem->kind) {
-	case LIFO_SEMAPHORE_NORMAL:
-		mono_lifo_semaphore_delete ((LifoSemaphore*)sem);
-		break;
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	case LIFO_SEMAPHORE_ASYNCWAIT:
-		mono_lifo_semaphore_asyncwait_delete ((LifoSemaphoreAsyncWait*)sem);
-		break;
-#endif
-	default:
-		g_assert_not_reached();
-	}
+	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
+	mono_lifo_semaphore_delete (sem);
 }
 
 gint32
 ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms)
 {
 	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	g_assert (sem->base.kind == LIFO_SEMAPHORE_NORMAL);
 	return mono_lifo_semaphore_timed_wait (sem, timeout_ms);
 }
 
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
 {
-	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
-	switch (sem->kind) {
-	case LIFO_SEMAPHORE_NORMAL:
-		mono_lifo_semaphore_release ((LifoSemaphore*)sem, count);
-		break;
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	case LIFO_SEMAPHORE_ASYNCWAIT:
-		mono_lifo_semaphore_asyncwait_release ((LifoSemaphoreAsyncWait*)sem, count);
-		break;
-#endif
-	default:
-		g_assert_not_reached();
-	}
+	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
+	mono_lifo_semaphore_release (sem, count);
 }
-
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-gpointer
-ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal (void)
-{
-	return (gpointer)mono_lifo_semaphore_asyncwait_init ();
-}
-
-void
-ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
-{
-	LifoSemaphoreAsyncWait *sem = (LifoSemaphoreAsyncWait *)sem_ptr;
-	g_assert (sem->base.kind == LIFO_SEMAPHORE_ASYNCWAIT);
-	mono_lifo_semaphore_asyncwait_prepare_wait (sem, timeout_ms, (LifoSemaphoreAsyncWaitCallbackFn)success_cb, (LifoSemaphoreAsyncWaitCallbackFn)timedout_cb, user_data);
-}
-
-void
-ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
-{
-	emscripten_runtime_keepalive_push();
-}
-
-void
-ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
-{
-	emscripten_runtime_keepalive_pop();
-}
-
-extern int mono_wasm_eventloop_has_unsettled_interop_promises(void);
-
-MonoBoolean
-ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
-{
-	return !!mono_wasm_eventloop_has_unsettled_interop_promises();
-}
-
-#endif /* HOST_BROWSER && !DISABLE_THREADS */
-
-/* for the AOT cross compiler with --print-icall-table these don't need to be callable, they just
- * need to be defined */
-#if defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP)
-gpointer
-ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal (void)
-{
-	g_assert_not_reached ();
-}
-
-void
-ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
-{
-	g_assert_not_reached ();
-}
-
-void
-ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
-{
-	g_assert_not_reached();
-}
-
-void
-ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
-{
-	g_assert_not_reached();
-}
-
-MonoBoolean
-ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
-{
-	g_assert_not_reached();
-}
-#endif /* defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP) */
-

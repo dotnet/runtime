@@ -16,7 +16,6 @@ namespace System.Threading
     /// that holds a lock may enter the lock repeatedly without exiting it, such as recursively, in which case the thread should
     /// eventually exit the lock the same number of times to fully exit the lock and allow other threads to enter the lock.
     /// </remarks>
-    [Runtime.Versioning.RequiresPreviewFeatures]
     public sealed partial class Lock
     {
         private const short DefaultMaxSpinCount = 22;
@@ -37,11 +36,16 @@ namespace System.Threading
 
         private uint _state; // see State for layout
         private uint _recursionCount;
+
+        // This field serves a few purposes currently:
+        // - When positive, it indicates the number of spin-wait iterations that most threads would do upon contention
+        // - When zero, it indicates that spin-waiting is to be attempted by a thread to test if it is successful
+        // - When negative, it serves as a rough counter for contentions that would increment it towards zero
+        //
+        // See references to this field and "AdaptiveSpin" in TryEnterSlow for more information.
         private short _spinCount;
 
-        // The lowest bit is a flag, when set it indicates that the lock should use trivial waits
-        private ushort _waiterStartTimeMsAndFlags;
-
+        private ushort _waiterStartTimeMs;
         private AutoResetEvent? _waitEvent;
 
 #if NATIVEAOT // The method needs to be public in NativeAOT so that other private libraries can access it
@@ -51,10 +55,7 @@ namespace System.Threading
 #endif
             : this()
         {
-            if (useTrivialWaits)
-            {
-                _waiterStartTimeMsAndFlags = 1;
-            }
+            State.InitializeUseTrivialWaits(this, useTrivialWaits);
         }
 
         /// <summary>
@@ -136,7 +137,7 @@ namespace System.Threading
             public void Dispose()
             {
                 Lock? lockObj = _lockObj;
-                if (lockObj != null)
+                if (lockObj is not null)
                 {
                     _lockObj = null;
                     lockObj.Exit(_currentThreadId);
@@ -303,7 +304,7 @@ namespace System.Threading
             }
         }
 
-        private static bool IsAdaptiveSpinEnabled(short minSpinCount) => minSpinCount <= 0;
+        private static bool IsAdaptiveSpinEnabled(short minSpinCountForAdaptiveSpin) => minSpinCountForAdaptiveSpin <= 0;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private ThreadId TryEnterSlow(int timeoutMs, ThreadId currentThreadId)
@@ -340,25 +341,35 @@ namespace System.Threading
                 return new ThreadId(0);
             }
 
+            //
+            // At this point, a full lock attempt has been made, and it's time to retry or wait for the lock.
+            //
+
+            // Notify the debugger that this thread is about to wait for a lock that is likely held by another thread. The
+            // debugger may choose to enable other threads to run to help resolve the dependency, or it may choose to abort the
+            // FuncEval here. The lock state is consistent here for an abort, whereas letting a FuncEval continue to run could
+            // lead to the FuncEval timing out and potentially aborting at an arbitrary place where the lock state may not be
+            // consistent.
+            Debugger.NotifyOfCrossThreadDependency();
+
             if (LazyInitializeOrEnter() == TryLockResult.Locked)
             {
                 goto Locked;
             }
 
-            bool isSingleProcessor = IsSingleProcessor;
             short maxSpinCount = s_maxSpinCount;
             if (maxSpinCount == 0)
             {
                 goto Wait;
             }
 
-            short minSpinCount = s_minSpinCount;
+            short minSpinCountForAdaptiveSpin = s_minSpinCountForAdaptiveSpin;
             short spinCount = _spinCount;
             if (spinCount < 0)
             {
                 // When negative, the spin count serves as a counter for contentions such that a spin-wait can be attempted
                 // periodically to see if it would be beneficial. Increment the spin count and skip spin-waiting.
-                Debug.Assert(IsAdaptiveSpinEnabled(minSpinCount));
+                Debug.Assert(IsAdaptiveSpinEnabled(minSpinCountForAdaptiveSpin));
                 _spinCount = (short)(spinCount + 1);
                 goto Wait;
             }
@@ -383,7 +394,7 @@ namespace System.Threading
 
             for (short spinIndex = 0; ;)
             {
-                LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor);
+                LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor: false);
 
                 if (++spinIndex >= spinCount)
                 {
@@ -400,7 +411,7 @@ namespace System.Threading
 
                 if (tryLockResult == TryLockResult.Locked)
                 {
-                    if (isFirstSpinner && IsAdaptiveSpinEnabled(minSpinCount))
+                    if (isFirstSpinner && IsAdaptiveSpinEnabled(minSpinCountForAdaptiveSpin))
                     {
                         // Since the first spinner does a full-length spin-wait, and to keep upward and downward changes to the
                         // spin count more balanced, only the first spinner adjusts the spin count
@@ -421,7 +432,7 @@ namespace System.Threading
 
             // Unregister the spinner and try to acquire the lock
             tryLockResult = State.TryLockAfterSpinLoop(this);
-            if (isFirstSpinner && IsAdaptiveSpinEnabled(minSpinCount))
+            if (isFirstSpinner && IsAdaptiveSpinEnabled(minSpinCountForAdaptiveSpin))
             {
                 // Since the first spinner does a full-length spin-wait, and to keep upward and downward changes to the
                 // spin count more balanced, only the first spinner adjusts the spin count
@@ -439,7 +450,7 @@ namespace System.Threading
                     // number of contentions, the first spinner will attempt a spin-wait again to see if it is effective.
                     Debug.Assert(tryLockResult == TryLockResult.Wait);
                     spinCount = _spinCount;
-                    _spinCount = spinCount > 0 ? (short)(spinCount - 1) : minSpinCount;
+                    _spinCount = spinCount > 0 ? (short)(spinCount - 1) : minSpinCountForAdaptiveSpin;
                 }
             }
 
@@ -483,12 +494,14 @@ namespace System.Threading
                     waitStartTimeTicks = Stopwatch.GetTimestamp();
                 }
 
+                using ThreadBlockingInfo.Scope threadBlockingScope = new(this, timeoutMs);
+
                 bool acquiredLock = false;
                 int waitStartTimeMs = timeoutMs < 0 ? 0 : Environment.TickCount;
                 int remainingTimeoutMs = timeoutMs;
                 while (true)
                 {
-                    if (!waitEvent.WaitOneNoCheck(remainingTimeoutMs, UseTrivialWaits))
+                    if (!waitEvent.WaitOneNoCheck(remainingTimeoutMs, new State(this).UseTrivialWaits))
                     {
                         break;
                     }
@@ -510,7 +523,7 @@ namespace System.Threading
                             break;
                         }
 
-                        LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor);
+                        LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor: false);
                     }
 
                     if (acquiredLock)
@@ -567,19 +580,7 @@ namespace System.Threading
             return new ThreadId(0);
         }
 
-        // Trivial waits are:
-        // - Not interruptible by Thread.Interrupt
-        // - Don't allow reentrance through APCs or message pumping
-        // - Not forwarded to SynchronizationContext wait overrides
-        private bool UseTrivialWaits => (_waiterStartTimeMsAndFlags & 1) != 0;
-
-        private ushort WaiterStartTimeMs
-        {
-            get => (ushort)(_waiterStartTimeMsAndFlags >> 1);
-            set => _waiterStartTimeMsAndFlags = (ushort)((value << 1) | (_waiterStartTimeMsAndFlags & 1));
-        }
-
-        private void ResetWaiterStartTime() => WaiterStartTimeMs = 0;
+        private void ResetWaiterStartTime() => _waiterStartTimeMs = 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RecordWaiterStartTime()
@@ -590,7 +591,7 @@ namespace System.Threading
                 // Don't record zero, that value is reserved for indicating that a time is not recorded
                 currentTimeMs--;
             }
-            WaiterStartTimeMs = currentTimeMs;
+            _waiterStartTimeMs = currentTimeMs;
         }
 
         private bool ShouldStopPreemptingWaiters
@@ -599,10 +600,10 @@ namespace System.Threading
             get
             {
                 // If the recorded time is zero, a time has not been recorded yet
-                ushort waiterStartTimeMs = WaiterStartTimeMs;
+                ushort waiterStartTimeMs = _waiterStartTimeMs;
                 return
                     waiterStartTimeMs != 0 &&
-                    (ushort)Environment.TickCount - waiterStartTimeMs >= MaxDurationMsForPreemptingWaiters;
+                    (ushort)(Environment.TickCount - waiterStartTimeMs) >= MaxDurationMsForPreemptingWaiters;
             }
         }
 
@@ -664,25 +665,27 @@ namespace System.Threading
             }
         }
 
-        internal unsafe nint ObjectIdForEvents
-        {
-            get
-            {
-                Lock lockObj = this;
-                return *(nint*)Unsafe.AsPointer(ref lockObj);
-            }
-        }
-
         internal ulong OwningThreadId => _owningThreadId;
 
-        private static short DetermineMaxSpinCount() =>
-            AppContextConfigHelper.GetInt16Config(
-                "System.Threading.Lock.SpinCount",
-                "DOTNET_Lock_SpinCount",
-                DefaultMaxSpinCount,
-                allowNegative: false);
+        private static short DetermineMaxSpinCount()
+        {
+            if (IsSingleProcessor)
+            {
+                return 0;
+            }
 
-        private static short DetermineMinSpinCount()
+            return
+                AppContextConfigHelper.GetInt16Config(
+                    "System.Threading.Lock.SpinCount",
+                    "DOTNET_Lock_SpinCount",
+                    DefaultMaxSpinCount,
+                    allowNegative: false);
+        }
+
+        // When the returned value is zero or negative, indicates the lowest value that the _spinCount field will have when
+        // adaptive spin chooses to pause spin-waiting, see the comment on the _spinCount field for more information. When the
+        // returned value is positive, adaptive spin is disabled.
+        private static short DetermineMinSpinCountForAdaptiveSpin()
         {
             // The config var can be set to -1 to disable adaptive spin
             short adaptiveSpinPeriod =
@@ -707,8 +710,8 @@ namespace System.Threading
             private const uint SpinnerCountIncrement = (uint)1 << 2; // bits 2-4
             private const uint SpinnerCountMask = (uint)0x7 << 2;
             private const uint IsWaiterSignaledToWakeMask = (uint)1 << 5; // bit 5
-            private const byte WaiterCountShift = 6;
-            private const uint WaiterCountIncrement = (uint)1 << WaiterCountShift; // bits 6-31
+            private const uint UseTrivialWaitsMask = (uint)1 << 6; // bit 6
+            private const uint WaiterCountIncrement = (uint)1 << 7; // bits 7-31
 
             private uint _state;
 
@@ -785,6 +788,22 @@ namespace System.Threading
             {
                 Debug.Assert(IsWaiterSignaledToWake);
                 _state -= IsWaiterSignaledToWakeMask;
+            }
+
+            // Trivial waits are:
+            // - Not interruptible by Thread.Interrupt
+            // - Don't allow reentrance through APCs or message pumping
+            // - Not forwarded to SynchronizationContext wait overrides
+            public bool UseTrivialWaits => (_state & UseTrivialWaitsMask) != 0;
+
+            public static void InitializeUseTrivialWaits(Lock lockObj, bool useTrivialWaits)
+            {
+                Debug.Assert(lockObj._state == 0);
+
+                if (useTrivialWaits)
+                {
+                    lockObj._state = UseTrivialWaitsMask;
+                }
             }
 
             public bool HasAnyWaiters => _state >= WaiterCountIncrement;

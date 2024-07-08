@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunRuntimeFunctionsTable");
+            sb.Append("__ReadyToRunRuntimeFunctionsTable"u8);
         }
 
         public int GetIndex(MethodWithGCInfo method)

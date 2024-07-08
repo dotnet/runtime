@@ -41,6 +41,11 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.AllowOutOfOrderMetadataProperties"/> when set.
+        /// </summary>
+        public bool AllowOutOfOrderMetadataProperties { get; set; }
+
+        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.AllowTrailingCommas"/> when set.
         /// </summary>
         public bool AllowTrailingCommas { get; set; }
@@ -111,6 +116,16 @@ namespace System.Text.Json.Serialization
         public JsonCommentHandling ReadCommentHandling { get; set; }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.RespectNullableAnnotations"/> when set.
+        /// </summary>
+        public bool RespectNullableAnnotations { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.RespectRequiredConstructorParameters"/> when set.
+        /// </summary>
+        public bool RespectRequiredConstructorParameters { get; set; }
+
+        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.UnknownTypeHandling"/> when set.
         /// </summary>
         public JsonUnknownTypeHandling UnknownTypeHandling { get; set; }
@@ -145,5 +160,10 @@ namespace System.Text.Json.Serialization
         /// instead of numeric serialization for all enum types encountered in its type graph.
         /// </summary>
         public bool UseStringEnumConverter { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.NewLine"/> when set.
+        /// </summary>
+        public string? NewLine { get; set; }
     }
 }

@@ -10,6 +10,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/92467")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))] // https://github.com/dotnet/runtime/issues/71962
     public class GeneratorTests
     {
         [Fact]
@@ -572,6 +574,40 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public static void NoErrorsWhenUsingTypesWithMultipleEqualsOperators()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/103515
+            string source = """
+                using System.Text.Json.Serialization;
+                
+                namespace Test
+                {
+                    public class Foo
+                    {
+                        public override bool Equals(object obj) => false;
+                
+                        public static bool operator ==(Foo left, Foo right) => false;
+                        public static bool operator !=(Foo left, Foo right) => false;
+                    
+                        public static bool operator ==(Foo left, string right) => false;
+                        public static bool operator !=(Foo left, string right) => false;
+                    
+                        public override int GetHashCode() => 1;
+                    }
+
+                    [JsonSourceGenerationOptions(WriteIndented = true)]
+                    [JsonSerializable(typeof(Foo))]
+                    internal partial class JsonSourceGenerationContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+
+        [Fact]
         public static void NoErrorsWhenUsingIgnoredReservedCSharpKeywords()
         {
             string source = """
@@ -709,7 +745,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [InlineData("public ref partial struct MyGenericRefStruct<T>")]
         [InlineData("public readonly partial struct MyReadOnlyStruct")]
         [InlineData("public readonly ref partial struct MyReadOnlyRefStruct")]
-#if ROSLYN4_0_OR_GREATER && NETCOREAPP
+#if ROSLYN4_0_OR_GREATER && NET
         [InlineData("public partial record MyRecord(int x)", LanguageVersion.CSharp10)]
         [InlineData("public partial record struct MyRecordStruct(int x)", LanguageVersion.CSharp10)]
 #endif
@@ -762,6 +798,60 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     internal partial class JsonContext : JsonSerializerContext
                     {
                     }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+
+#if ROSLYN4_4_OR_GREATER && NET
+        [Fact]
+        public void ShadowedMemberInitializers()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                public record Base
+                {
+                    public string Value { get; init; }
+                }
+                public record Derived : Base
+                {
+                    public new string Value { get; init; }
+                }
+
+                [JsonSerializable(typeof(Derived))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(LanguageVersion.CSharp11));
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+#endif
+
+        [Fact]
+        public void FastPathWithReservedKeywordPropertyNames_CompilesSuccessfully()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/98050
+
+            string source = """
+                using System.Text.Json.Serialization;
+
+                public class Model
+                {
+                    public string type { get; set; }
+                    public string alias { get; set; }
+                    public string @class { get; set; }
+                    public string @struct { get; set; }
+                }
+
+                [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+                [JsonSerializable(typeof(Model))]
+                internal partial class ModelContext : JsonSerializerContext
+                {
                 }
                 """;
 

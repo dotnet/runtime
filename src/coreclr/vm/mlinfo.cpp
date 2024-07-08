@@ -1144,18 +1144,26 @@ namespace
                 return MarshalInfo::MARSHAL_TYPE_GENERIC_8;
     #ifdef TARGET_64BIT
             case ELEMENT_TYPE_U:
-            case ELEMENT_TYPE_PTR:
             case ELEMENT_TYPE_FNPTR:
             case ELEMENT_TYPE_I:
                 return MarshalInfo::MARSHAL_TYPE_GENERIC_8;
     #else
             case ELEMENT_TYPE_U:
                 return MarshalInfo::MARSHAL_TYPE_GENERIC_U4;
-            case ELEMENT_TYPE_PTR:
             case ELEMENT_TYPE_FNPTR:
             case ELEMENT_TYPE_I:
                 return MarshalInfo::MARSHAL_TYPE_GENERIC_4;
     #endif
+            case ELEMENT_TYPE_PTR:
+            {
+                BYTE ptrByte;
+                sig.SkipCustomModifiers();
+                sig.GetByte(&ptrByte);
+                _ASSERTE(ptrByte == ELEMENT_TYPE_PTR);
+                TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
+                *pMTOut = sigTH.GetMethodTable();
+                return MarshalInfo::MARSHAL_TYPE_POINTER;
+            }
             case ELEMENT_TYPE_R4:
                 return MarshalInfo::MARSHAL_TYPE_FLOAT;
             case ELEMENT_TYPE_R8:
@@ -1166,7 +1174,7 @@ namespace
                 TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
                 MethodTable* pMT = sigTH.GetMethodTable();
 
-                if (!pMT->IsValueType() || pMT->ContainsPointers())
+                if (!pMT->IsValueType() || pMT->ContainsGCPointers())
                 {
                     *errorResIDOut = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
                     return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
@@ -1693,17 +1701,23 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_PTR:
+        {
             if (nativeType != NATIVE_TYPE_DEFAULT)
             {
                 m_resID = IDS_EE_BADMARSHAL_PTR;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef TARGET_64BIT
-            m_type = MARSHAL_TYPE_GENERIC_8;
-#else
-            m_type = MARSHAL_TYPE_GENERIC_4;
-#endif
+
+            SigPointer sigtmp = sig;
+            BYTE ptrByte;
+            sigtmp.SkipCustomModifiers();
+            sigtmp.GetByte(&ptrByte);
+            _ASSERTE(ptrByte == ELEMENT_TYPE_PTR);
+            TypeHandle sigTH = sigtmp.GetTypeHandleThrowing(pModule, pTypeContext);
+            m_args.m_pMT = sigTH.GetMethodTable();
+            m_type = MARSHAL_TYPE_POINTER;
             break;
+        }
 
         case ELEMENT_TYPE_FNPTR:
             if (!(nativeType == NATIVE_TYPE_FUNC || nativeType == NATIVE_TYPE_DEFAULT))
@@ -2369,6 +2383,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     {
                         if (fNeedsCopyCtor && !IsFieldScenario()) // We don't support automatically discovering copy constructors for fields.
                         {
+#if defined(FEATURE_IJW)
                             MethodDesc *pCopyCtor;
                             MethodDesc *pDtor;
                             FindCopyCtor(pModule, m_pMT, &pCopyCtor);
@@ -2378,6 +2393,10 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             m_args.mm.m_pCopyCtor = pCopyCtor;
                             m_args.mm.m_pDtor = pDtor;
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR;
+#else // !defined(FEATURE_IJW)
+                            m_resID = IDS_EE_BADMARSHAL_BADMANAGED;
+                            IfFailGoto(E_FAIL, lFail);
+#endif // defined(FEATURE_IJW)
                         }
                         else
                         {
@@ -3107,7 +3126,9 @@ bool MarshalInfo::IsValueClass(MarshalType mtype)
     {
     case MARSHAL_TYPE_BLITTABLEVALUECLASS:
     case MARSHAL_TYPE_VALUECLASS:
+#if defined(FEATURE_IJW)
     case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
+#endif // defined(FEATURE_IJW)
         return true;
 
     default:
@@ -3591,7 +3612,9 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
         case MARSHAL_TYPE_BLITTABLEVALUECLASS:
         case MARSHAL_TYPE_BLITTABLEPTR:
         case MARSHAL_TYPE_LAYOUTCLASSPTR:
+#if defined(FEATURE_IJW)
         case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
+#endif // defined(FEATURE_IJW)
             pDispParamMarshaler = new DispParamRecordMarshaler(m_pMT);
             break;
 

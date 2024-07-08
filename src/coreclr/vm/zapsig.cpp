@@ -140,7 +140,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
         PRECONDITION(CheckPointer(handle));
         PRECONDITION(CheckPointer(this->context.pInfoModule));
-        PRECONDITION(!handle.HasUnrestoredTypeKey());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -303,7 +302,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         PRECONDITION(CheckPointer(pZapSigContext->pInfoModule));
         PRECONDITION(CheckPointer(handle));
         PRECONDITION(CheckPointer(pSig));
-        PRECONDITION(!handle.HasUnrestoredTypeKey());
     }
     CONTRACT_END
 
@@ -1026,45 +1024,31 @@ FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
         IfFailThrow(sig.SkipExactlyOne());
     }
 
-    if (fieldFlags & ENCODE_FIELD_SIG_IndexInsteadOfToken)
+    RID rid;
+    IfFailThrow(sig.GetData(&rid));
+
+    if (fieldFlags & ENCODE_FIELD_SIG_MemberRefToken)
     {
-        // get the field desc using index
-        uint32_t fieldIndex;
-        IfFailThrow(sig.GetData(&fieldIndex));
-
-        _ASSERTE(pOwnerMT != NULL);
-
-        pField = pOwnerMT->GetFieldDescByIndex(fieldIndex);
-        _ASSERTE(pOwnerMT == pField->GetApproxEnclosingMethodTable());
-    }
-    else
-    {
-        RID rid;
-        IfFailThrow(sig.GetData(&rid));
-
-        if (fieldFlags & ENCODE_FIELD_SIG_MemberRefToken)
+        if (pOwnerMT == NULL)
         {
-            if (pOwnerMT == NULL)
-            {
-                TypeHandle th;
-                MethodDesc * pMD = NULL;
-                FieldDesc * pFD = NULL;
+            TypeHandle th;
+            MethodDesc * pMD = NULL;
+            FieldDesc * pFD = NULL;
 
-                MemberLoader::GetDescFromMemberRef(pInfoModule, TokenFromRid(rid, mdtMemberRef), &pMD, &pFD, NULL, FALSE, &th);
-                _ASSERTE(pFD != NULL);
+            MemberLoader::GetDescFromMemberRef(pInfoModule, TokenFromRid(rid, mdtMemberRef), &pMD, &pFD, NULL, FALSE, &th);
+            _ASSERTE(pFD != NULL);
 
-                pField = pFD;
-            }
-            else
-            {
-                pField = MemberLoader::GetFieldDescFromMemberRefAndType(pInfoModule, TokenFromRid(rid, mdtMemberRef), pOwnerMT);
-            }
+            pField = pFD;
         }
         else
         {
-            _ASSERTE(pInfoModule->IsFullModule());
-            pField = MemberLoader::GetFieldDescFromFieldDef(static_cast<Module*>(pInfoModule), TokenFromRid(rid, mdtFieldDef), FALSE);
+            pField = MemberLoader::GetFieldDescFromMemberRefAndType(pInfoModule, TokenFromRid(rid, mdtMemberRef), pOwnerMT);
         }
+    }
+    else
+    {
+        _ASSERTE(pInfoModule->IsFullModule());
+        pField = MemberLoader::GetFieldDescFromFieldDef(static_cast<Module*>(pInfoModule), TokenFromRid(rid, mdtFieldDef), FALSE);
     }
 
     if (ppTH != NULL)
@@ -1343,6 +1327,9 @@ BOOL ZapSig::EncodeMethod(
         else
         {
             Instantiation inst = pMethod->GetMethodInstantiation();
+
+            pSigBuilder->AppendData(inst.GetNumArgs());
+
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
                 TypeHandle t = inst[i];

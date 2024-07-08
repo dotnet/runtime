@@ -52,6 +52,7 @@ namespace System.MemoryTests
                 {
                     unsafe
                     {
+                        // Unsafe.AsPointer is safe here since it's pinned
                         void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(sp));
                         Assert.Equal((IntPtr)newMemoryHandle.Pointer, (IntPtr)pSpan);
                     }
@@ -77,6 +78,7 @@ namespace System.MemoryTests
                 {
                     unsafe
                     {
+                        // Unsafe.AsPointer is safe here since it's pinned
                         void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(sp.Slice(elementIndex)));
                         Assert.Equal((IntPtr)pSpan, ((IntPtr)newMemoryHandle.Pointer));
                     }
@@ -112,6 +114,7 @@ namespace System.MemoryTests
             {
                 unsafe
                 {
+                    // Unsafe.AsPointer is safe here since it's pinned
                     void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(sp.Slice(elementIndex)));
                     Assert.Equal((IntPtr)pSpan, ((IntPtr)newMemoryHandle.Pointer));
                 }
@@ -219,11 +222,7 @@ namespace System.MemoryTests
                 unsafe
                 {
                     Assert.True(MemoryMarshal.TryGetArray(memory, out arraySegment));
-                    fixed (int* pArray = arraySegment.Array)
-                    {
-                        void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(memory.Span));
-                        Assert.Equal((IntPtr)pSpan, (IntPtr)pArray);
-                    }
+                    Assert.Equal(0, Unsafe.ByteOffset(ref MemoryMarshal.GetArrayDataReference(arraySegment.Array), ref MemoryMarshal.GetReference(memory.Span)));
                 }
             }
         }

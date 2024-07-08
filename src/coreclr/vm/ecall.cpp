@@ -96,7 +96,7 @@ void ECall::PopulateManagedStringConstructors()
     INDEBUG(fInitialized = true);
 }
 
-void ECall::PopulateManagedCastHelpers()
+void ECall::PopulateManagedHelpers()
 {
 
     STANDARD_VM_CONTRACT;
@@ -144,6 +144,56 @@ void ECall::PopulateManagedCastHelpers()
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMSET));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_MEMSET, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMZERO));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_MEMZERO, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMCOPY));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_MEMCPY, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__BUFFER__MEMCOPYGC));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_BULK_WRITEBARRIER, pDest);
+
+#ifndef TARGET_64BIT
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__MULTIPLY_CHECKED_INT64));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_LMUL_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__MULTIPLY_CHECKED_UINT64));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ULMUL_OVF, pDest);
+#endif
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_INT32_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2INT_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_UINT32_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2UINT_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_INT64_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2LNG_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_UINT64_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2ULNG_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ROUND));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBLROUND, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__ROUND));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_FLTROUND, pDest);
 }
 
 static CrstStatic gFCallLock;
@@ -446,7 +496,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
             *pfSharedOrDynamicFCallImpl = TRUE;
 
         pImplementation = g_FCDynamicallyAssignedImplementations[iDynamicID];
-        _ASSERTE(pImplementation != NULL);
+        _ASSERTE(pImplementation != (PCODE)NULL);
         return pImplementation;
     }
 
@@ -497,7 +547,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     if (pfSharedOrDynamicFCallImpl)
         *pfSharedOrDynamicFCallImpl = FALSE;
 
-    _ASSERTE(pImplementation != NULL);
+    _ASSERTE(pImplementation != (PCODE)NULL);
     return pImplementation;
 }
 
@@ -596,7 +646,6 @@ MethodDesc* ECall::MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoi
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

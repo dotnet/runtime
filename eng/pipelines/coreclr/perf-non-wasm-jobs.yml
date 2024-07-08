@@ -5,7 +5,7 @@ jobs:
   # build coreclr and libraries
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
-      jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
       platforms:
       - linux_x64
@@ -13,7 +13,19 @@ jobs:
       - windows_x86
       - linux_musl_x64
       jobParameters:
-        testGroup: perf
+        nameSuffix: coreclr
+        buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
+        isOfficialBuild: false
+        postBuildSteps:
+        - template: /eng/pipelines/common/upload-artifact-step.yml
+          parameters:
+            rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+            includeRootFolder: false
+            archiveType: $(archiveType)
+            archiveExtension: $(archiveExtension)
+            tarCompression: $(tarCompression)
+            artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+            displayName: Build Assets
 
   # build mono for AOT
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -64,11 +76,25 @@ jobs:
   # build mono
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
-      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-      runtimeFlavor: mono
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
+      runtimeFlavor: mono
       platforms:
       - linux_x64
+      jobParameters:
+        nameSuffix: mono
+        buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig)
+        isOfficialBuild: false
+        postBuildSteps:
+        - template: /eng/pipelines/common/upload-artifact-step.yml
+          parameters:
+            rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+            includeRootFolder: false
+            archiveType: $(archiveType)
+            archiveExtension: $(archiveExtension)
+            tarCompression: $(tarCompression)
+            artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_mono
+            displayName: Build Assets
 
   # Build and run iOS Mono and NativeAOT scenarios
   - template: /eng/pipelines/coreclr/templates/build-and-run-perf-ios-scenarios.yml
@@ -229,23 +255,6 @@ jobs:
         logicalmachine: 'perftiger'
         r2rRunType: --nor2r
 
-  # run coreclr perftiger microbenchmarks memory randomization jobs
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - windows_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        experimentName: 'memoryRandomization'
-
   # run coreclr perfowl microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -263,7 +272,24 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
 
-  # run coreclr perfowl microbenchmarks perf gdv3 jobs
+  # run coreclr perfviper microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - linux_x64
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfviper'
+
+  # run coreclr perfowl microbenchmarks perf rlcse jobs
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -279,7 +305,25 @@ jobs:
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
-        experimentName: 'gdv3'
+        experimentName: 'rlcse'
+
+  # run coreclr perfviper microbenchmarks perf jitoptrepeat jobs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - linux_x64
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfviper'
+        experimentName: 'jitoptrepeat'
 
   # run coreclr crossgen perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -315,31 +359,31 @@ jobs:
           - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
             parameters:
               name: MonoRuntimePacks
+              isOfficialBuild: false
 
-  # Disabled due to: https://github.com/dotnet/performance/issues/3655
-  # # build PerfBDN app
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-  #     buildConfig: release
-  #     runtimeFlavor: mono
-  #     platforms:
-  #     - ios_arm64
-  #     jobParameters:
-  #       dependsOn:
-  #        - Build_android_arm64_release_Mono_Packs
-  #       buildArgs: -s mono -c $(_BuildConfig)
-  #       nameSuffix: PerfBDNApp
-  #       isOfficialBuild: false
-  #       pool:
-  #         vmImage: 'macos-12'
-  #       postBuildSteps:
-  #         - template: /eng/pipelines/coreclr/templates/build-perf-bdn-app.yml
-  #           parameters:
-  #             rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-  #             includeRootFolder: true
-  #             displayName: Android BDN App Artifacts
-  #             artifactName: PerfBDNAppArm
-  #             archiveExtension: '.tar.gz'
-  #             archiveType: tar
-  #             tarCompression: gz
+  # build PerfBDN app
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - ios_arm64
+      jobParameters:
+        dependsOn:
+         - Build_android_arm64_release_Mono_Packs
+        buildArgs: -s mono -c $(_BuildConfig)
+        nameSuffix: PerfBDNApp
+        isOfficialBuild: false
+        pool:
+          vmImage: 'macos-12'
+        postBuildSteps:
+          - template: /eng/pipelines/coreclr/templates/build-perf-bdn-app.yml
+            parameters:
+              rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+              includeRootFolder: true
+              displayName: Android BDN App Artifacts
+              artifactName: PerfBDNAppArm
+              archiveExtension: '.tar.gz'
+              archiveType: tar
+              tarCompression: gz

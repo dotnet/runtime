@@ -82,11 +82,11 @@ FORCEINLINE void ConnectionCookieRelease(ConnectionCookie* p)
 }
 
 // Connection cookie holder used to ensure the cookies are deleted when required.
-class ConnectionCookieHolder : public Wrapper<ConnectionCookie*, ConnectionCookieDoNothing, ConnectionCookieRelease, NULL>
+class ConnectionCookieHolder : public Wrapper<ConnectionCookie*, ConnectionCookieDoNothing, ConnectionCookieRelease, 0>
 {
 public:
     ConnectionCookieHolder(ConnectionCookie* p = NULL)
-        : Wrapper<ConnectionCookie*, ConnectionCookieDoNothing, ConnectionCookieRelease, NULL>(p)
+        : Wrapper<ConnectionCookie*, ConnectionCookieDoNothing, ConnectionCookieRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -94,7 +94,7 @@ public:
     FORCEINLINE void operator=(ConnectionCookie* p)
     {
         WRAPPER_NO_CONTRACT;
-        Wrapper<ConnectionCookie*, ConnectionCookieDoNothing, ConnectionCookieRelease, NULL>::operator=(p);
+        Wrapper<ConnectionCookie*, ConnectionCookieDoNothing, ConnectionCookieRelease, 0>::operator=(p);
     }
 };
 

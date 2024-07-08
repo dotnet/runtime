@@ -23,14 +23,9 @@
 #include "dllimportcallback.h"
 #include "peimagelayout.inl"
 
-#ifdef FEATURE_PERFMAP
-#include "perfmap.h"
-#endif // FEATURE_PERFMAP
-
 #ifndef DACCESS_COMPILE
-DomainAssembly::DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator) :
+DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator) :
     m_pAssembly(NULL),
-    m_pDomain(pDomain),
     m_pPEAssembly(pPEAssembly),
     m_pModule(NULL),
     m_fCollectible(pLoaderAllocator->IsCollectible()),
@@ -38,8 +33,8 @@ DomainAssembly::DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, Load
     m_pLoaderAllocator(pLoaderAllocator),
     m_level(FILE_LOAD_CREATE),
     m_loading(TRUE),
-    m_hExposedModuleObject(NULL),
-    m_hExposedAssemblyObject(NULL),
+    m_hExposedModuleObject{},
+    m_hExposedAssemblyObject{},
     m_pError(NULL),
     m_bDisableActivationCheck(FALSE),
     m_fHostAssemblyPublished(FALSE),
@@ -107,7 +102,7 @@ void DomainAssembly::EnsureLoadLevel(FileLoadLevel targetLevel)
     TRIGGERSGC ();
     if (IsLoading())
     {
-        this->GetAppDomain()->LoadDomainAssembly(this, targetLevel);
+        AppDomain::GetCurrentDomain()->LoadDomainAssembly(this, targetLevel);
 
         // Enforce the loading requirement.  Note that we may have a deadlock in which case we
         // may be off by one which is OK.  (At this point if we are short of targetLevel we know
@@ -139,7 +134,7 @@ CHECK DomainAssembly::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockO
         // living with it for a while, I'll leave it as is.
         //@TODO: CHECK statements are *NOT* debug-only!!!
         CONTRACT_VIOLATION(ThrowsViolation|GCViolation|TakesLockViolation);
-        CHECK(this->GetAppDomain()->CheckLoading(this, requiredLevel));
+        CHECK(AppDomain::GetCurrentDomain()->CheckLoading(this, requiredLevel));
     }
     else
     {
@@ -333,26 +328,26 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
 
     LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
 
-    if (m_hExposedModuleObject == NULL)
+    if (m_hExposedModuleObject == (LOADERHANDLE)NULL)
     {
         // Atomically create a handle
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(0));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedModuleObject) == NULL)
     {
         REFLECTMODULEBASEREF refClass = NULL;
 
-        // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should
+        // Will be true only if LoaderAllocator managed object was already collected and therefore we should
         // return NULL
-        BOOL fIsLoaderAllocatorCollected = FALSE;
+        bool fIsLoaderAllocatorCollected = false;
 
         GCPROTECT_BEGIN(refClass);
 
         refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
-        refClass->SetModule(m_pModule);
+        refClass->SetModule(GetModule());
 
         // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
         // alive as long as a reference to the module is kept alive.
@@ -361,7 +356,7 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
             OBJECTREF refAssembly = GetModule()->GetAssembly()->GetExposedObject();
             if ((refAssembly == NULL) && GetModule()->GetAssembly()->IsCollectible())
             {
-                fIsLoaderAllocatorCollected = TRUE;
+                fIsLoaderAllocatorCollected = true;
             }
             refClass->SetAssembly(refAssembly);
         }
@@ -450,7 +445,7 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
 
         if (pModule != NULL) // Should not triggle assert when module is NULL
         {
-            this->GetAppDomain()->GetMulticoreJitManager().RecordModuleLoad(pModule, level);
+            AppDomain::GetCurrentDomain()->GetMulticoreJitManager().RecordModuleLoad(pModule, level);
         }
     }
 #endif
@@ -555,15 +550,6 @@ void DomainAssembly::FinishLoad()
 
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);
-
-    // Set a bit to indicate that the module has been loaded in some domain, and therefore
-    // typeloads can involve types from this module. (Used for candidate instantiations.)
-    GetModule()->SetIsReadyForTypeLoad();
-
-#ifdef FEATURE_PERFMAP
-    // Notify the perfmap of the IL image load.
-    PerfMap::LogImageLoad(m_pPEAssembly);
-#endif
 }
 
 void DomainAssembly::Activate()
@@ -649,13 +635,13 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
         return NULL;
     }
 
-    if (m_hExposedAssemblyObject == NULL)
+    if (m_hExposedAssemblyObject == (LOADERHANDLE)NULL)
     {
         // Atomically create a handle
 
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        InterlockedCompareExchangeT(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(0));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject) == NULL)
@@ -711,8 +697,8 @@ void DomainAssembly::Begin()
     STANDARD_VM_CONTRACT;
 
     {
-        AppDomain::LoadLockHolder lock(m_pDomain);
-        m_pDomain->AddAssembly(this);
+        AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
+        AppDomain::GetCurrentDomain()->AddAssembly(this);
     }
     // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
     RegisterWithHostAssembly();
@@ -772,7 +758,7 @@ void DomainAssembly::Allocate()
         //! the Assembly holder must destruct before the AllocMemTracker declared above.
         NewHolder<Assembly> assemblyHolder(NULL);
 
-        assemblyHolder = pAssembly = Assembly::Create(m_pDomain, GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
+        assemblyHolder = pAssembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
         assemblyHolder->SetIsTenured();
 
         pamTracker->SuppressRelease();
@@ -794,7 +780,7 @@ void DomainAssembly::DeliverAsyncEvents()
     CONTRACTL_END;
 
     OVERRIDE_LOAD_LEVEL_LIMIT(FILE_ACTIVE);
-    m_pDomain->RaiseLoadingAssemblyEvent(this);
+    AppDomain::GetCurrentDomain()->RaiseLoadingAssemblyEvent(this);
 }
 
 void DomainAssembly::DeliverSyncEvents()
@@ -861,7 +847,7 @@ BOOL DomainAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
                                    dwLocation,
                                    fSkipRaiseResolveEvent,
                                    this,
-                                   this->m_pDomain );
+                                   AppDomain::GetCurrentDomain() );
 }
 
 
@@ -1023,12 +1009,12 @@ BOOL DomainAssembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     if(this->ShouldNotifyDebugger())
     {
         result = result ||
-            this->GetModule()->NotifyDebuggerLoad(this->GetAppDomain(), this, flags, attaching);
+            this->GetModule()->NotifyDebuggerLoad(AppDomain::GetCurrentDomain(), this, flags, attaching);
     }
 
     if( ShouldNotifyDebugger())
     {
-           result|=m_pModule->NotifyDebuggerLoad(m_pDomain, this, ATTACH_MODULE_LOAD, attaching);
+           result|=m_pModule->NotifyDebuggerLoad(AppDomain::GetCurrentDomain(), this, ATTACH_MODULE_LOAD, attaching);
            SetDebuggerNotified();
     }
 
@@ -1042,14 +1028,14 @@ void DomainAssembly::NotifyDebuggerUnload()
     if (!IsVisibleToDebugger())
         return;
 
-    if (!this->GetAppDomain()->IsDebuggerAttached())
+    if (!AppDomain::GetCurrentDomain()->IsDebuggerAttached())
         return;
 
     m_fDebuggerUnloadStarted = TRUE;
 
     // Dispatch module unload for the module. Debugger is resilient in case we haven't dispatched
     // a previous load event (such as if debugger attached after the modules was loaded).
-    this->GetModule()->NotifyDebuggerUnload(this->GetAppDomain());
+    this->GetModule()->NotifyDebuggerUnload(AppDomain::GetCurrentDomain());
 
     g_pDebugInterface->UnloadAssembly(this);
 }
@@ -1079,11 +1065,6 @@ void DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
     else if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
-        if (m_pDomain.IsValid())
-        {
-            m_pDomain->EnumMemoryRegions(flags, true);
-        }
-
         if (m_pAssembly.IsValid())
         {
             m_pAssembly->EnumMemoryRegions(flags);

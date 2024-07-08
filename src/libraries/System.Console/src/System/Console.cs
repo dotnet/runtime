@@ -865,6 +865,17 @@ namespace System
                 Out.WriteLine(format, arg);
         }
 
+        /// <summary>
+        /// Writes the text representation of the specified span of objects, followed by the current line terminator, to the standard output stream using the specified format information.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">A span of objects to write using format.</param>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
+        {
+            Out.WriteLine(format, arg);
+        }
+
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
@@ -890,6 +901,17 @@ namespace System
                 Out.Write(format, null, null); // faster than Out.Write(format, (Object)arg);
             else
                 Out.Write(format, arg);
+        }
+
+        /// <summary>
+        /// Writes the text representation of the specified span of objects to the standard output stream using the specified format information.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">A span of objects to write using format.</param>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
+        {
+            Out.Write(format, arg);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]

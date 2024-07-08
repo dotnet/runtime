@@ -1256,7 +1256,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     EnumMemberTypes MemberType;
 
     Thread* pThread = GetThread();
-    AppDomain* pAppDomain = pThread->GetDomain();
+    AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
 
     SafeArrayPtrHolder pSA = NULL;
     VARIANT safeArrayVar;
@@ -2578,10 +2578,9 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
         // Check to see if the new method is a property accessor.
         mdToken tkMember = mdTokenNil;
-        MethodTable *pDeclaringMT = pMDForProperty->GetMethodTable();
-        if (pMDForProperty->GetModule()->GetPropertyInfoForMethodDef(pMDForProperty->GetMemberDef(), &tkMember, NULL, NULL) == S_OK)
+        if (pMDForProperty->GetMDImport()->GetPropertyInfoForMethodDef(pMDForProperty->GetMemberDef(), &tkMember, NULL, NULL) == S_OK)
         {
-            if (IsMemberVisibleFromCom(pDeclaringMT, tkMember, pMDForProperty->GetMemberDef()))
+            if (IsMemberVisibleFromCom(pMDForProperty->GetMethodTable(), tkMember, pMDForProperty->GetMemberDef()))
                 return true;
         }
     }

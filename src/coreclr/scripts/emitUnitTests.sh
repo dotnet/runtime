@@ -109,6 +109,7 @@ cut -f 3- -d ' ' $output_dir/capstone_output.txt \
 
 if [ -n "$verbose" ]; then
     egrep "$verbose" $output_dir/clr_instrs.txt
+    egrep "$verbose" $output_dir/capstone_output.txt
 else
     (head -n 5; tail -n 5) < $output_dir/clr_instrs.txt
 fi

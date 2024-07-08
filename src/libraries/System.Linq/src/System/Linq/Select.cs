@@ -13,12 +13,12 @@ namespace System.Linq
         public static IEnumerable<TResult> Select<TSource, TResult>(
             this IEnumerable<TSource> source, Func<TSource, TResult> selector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -37,43 +37,28 @@ namespace System.Linq
                         return [];
                     }
 
-                    return new SelectArrayIterator<TSource, TResult>(array, selector);
+                    return new ArraySelectIterator<TSource, TResult>(array, selector);
                 }
 
                 if (source is List<TSource> list)
                 {
-                    return new SelectListIterator<TSource, TResult>(list, selector);
+                    return new ListSelectIterator<TSource, TResult>(list, selector);
                 }
 
-                return new SelectIListIterator<TSource, TResult>(ilist, selector);
+                return new IListSelectIterator<TSource, TResult>(ilist, selector);
             }
 
-            if (source is IPartition<TSource> partition)
-            {
-                IEnumerable<TResult>? result = null;
-                CreateSelectIPartitionIterator(selector, partition, ref result);
-                if (result != null)
-                {
-                    return result;
-                }
-            }
-
-            return new SelectEnumerableIterator<TSource, TResult>(source, selector);
+            return new IEnumerableSelectIterator<TSource, TResult>(source, selector);
         }
-
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6177
-        static partial void CreateSelectIPartitionIterator<TResult, TSource>(
-            Func<TSource, TResult> selector, IPartition<TSource> partition, [NotNull] ref IEnumerable<TResult>? result);
-#pragma warning restore IDE0060
 
         public static IEnumerable<TResult> Select<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, int, TResult> selector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -105,26 +90,26 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
-        private sealed partial class SelectEnumerableIterator<TSource, TResult> : Iterator<TResult>
+        private sealed partial class IEnumerableSelectIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
             private IEnumerator<TSource>? _enumerator;
 
-            public SelectEnumerableIterator(IEnumerable<TSource> source, Func<TSource, TResult> selector)
+            public IEnumerableSelectIterator(IEnumerable<TSource> source, Func<TSource, TResult> selector)
             {
-                Debug.Assert(source != null);
-                Debug.Assert(selector != null);
+                Debug.Assert(source is not null);
+                Debug.Assert(selector is not null);
                 _source = source;
                 _selector = selector;
             }
 
-            public override Iterator<TResult> Clone() =>
-                new SelectEnumerableIterator<TSource, TResult>(_source, _selector);
+            private protected override Iterator<TResult> Clone() =>
+                new IEnumerableSelectIterator<TSource, TResult>(_source, _selector);
 
             public override void Dispose()
             {
-                if (_enumerator != null)
+                if (_enumerator is not null)
                 {
                     _enumerator.Dispose();
                     _enumerator = null;
@@ -142,7 +127,7 @@ namespace System.Linq
                         _state = 2;
                         goto case 2;
                     case 2:
-                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_enumerator is not null);
                         if (_enumerator.MoveNext())
                         {
                             _current = _selector(_enumerator.Current);
@@ -157,7 +142,7 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new SelectEnumerableIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
+                new IEnumerableSelectIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
         }
 
         /// <summary>
@@ -166,15 +151,15 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the source array.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         [DebuggerDisplay("Count = {CountForDebugger}")]
-        private sealed partial class SelectArrayIterator<TSource, TResult> : Iterator<TResult>
+        private sealed partial class ArraySelectIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, TResult> _selector;
 
-            public SelectArrayIterator(TSource[] source, Func<TSource, TResult> selector)
+            public ArraySelectIterator(TSource[] source, Func<TSource, TResult> selector)
             {
-                Debug.Assert(source != null);
-                Debug.Assert(selector != null);
+                Debug.Assert(source is not null);
+                Debug.Assert(selector is not null);
                 Debug.Assert(source.Length > 0); // Caller should check this beforehand and return a cached result
                 _source = source;
                 _selector = selector;
@@ -182,7 +167,7 @@ namespace System.Linq
 
             private int CountForDebugger => _source.Length;
 
-            public override Iterator<TResult> Clone() => new SelectArrayIterator<TSource, TResult>(_source, _selector);
+            private protected override Iterator<TResult> Clone() => new ArraySelectIterator<TSource, TResult>(_source, _selector);
 
             public override bool MoveNext()
             {
@@ -200,7 +185,7 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new SelectArrayIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
+                new ArraySelectIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
         }
 
         /// <summary>
@@ -209,23 +194,23 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the source list.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         [DebuggerDisplay("Count = {CountForDebugger}")]
-        private sealed partial class SelectListIterator<TSource, TResult> : Iterator<TResult>
+        private sealed partial class ListSelectIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly List<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
             private List<TSource>.Enumerator _enumerator;
 
-            public SelectListIterator(List<TSource> source, Func<TSource, TResult> selector)
+            public ListSelectIterator(List<TSource> source, Func<TSource, TResult> selector)
             {
-                Debug.Assert(source != null);
-                Debug.Assert(selector != null);
+                Debug.Assert(source is not null);
+                Debug.Assert(selector is not null);
                 _source = source;
                 _selector = selector;
             }
 
             private int CountForDebugger => _source.Count;
 
-            public override Iterator<TResult> Clone() => new SelectListIterator<TSource, TResult>(_source, _selector);
+            private protected override Iterator<TResult> Clone() => new ListSelectIterator<TSource, TResult>(_source, _selector);
 
             public override bool MoveNext()
             {
@@ -250,7 +235,7 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new SelectListIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
+                new ListSelectIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
         }
 
         /// <summary>
@@ -259,23 +244,23 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the source list.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
         [DebuggerDisplay("Count = {CountForDebugger}")]
-        private sealed partial class SelectIListIterator<TSource, TResult> : Iterator<TResult>
+        private sealed partial class IListSelectIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly IList<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
             private IEnumerator<TSource>? _enumerator;
 
-            public SelectIListIterator(IList<TSource> source, Func<TSource, TResult> selector)
+            public IListSelectIterator(IList<TSource> source, Func<TSource, TResult> selector)
             {
-                Debug.Assert(source != null);
-                Debug.Assert(selector != null);
+                Debug.Assert(source is not null);
+                Debug.Assert(selector is not null);
                 _source = source;
                 _selector = selector;
             }
 
             private int CountForDebugger => _source.Count;
 
-            public override Iterator<TResult> Clone() => new SelectIListIterator<TSource, TResult>(_source, _selector);
+            private protected override Iterator<TResult> Clone() => new IListSelectIterator<TSource, TResult>(_source, _selector);
 
             public override bool MoveNext()
             {
@@ -286,7 +271,7 @@ namespace System.Linq
                         _state = 2;
                         goto case 2;
                     case 2:
-                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_enumerator is not null);
                         if (_enumerator.MoveNext())
                         {
                             _current = _selector(_enumerator.Current);
@@ -302,7 +287,7 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator != null)
+                if (_enumerator is not null)
                 {
                     _enumerator.Dispose();
                     _enumerator = null;
@@ -312,7 +297,7 @@ namespace System.Linq
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new SelectIListIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
+                new IListSelectIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
         }
     }
 }

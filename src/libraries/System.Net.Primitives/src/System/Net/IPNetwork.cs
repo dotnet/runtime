@@ -84,7 +84,7 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
 
-            if (address.AddressFamily != BaseAddress.AddressFamily)
+            if (address.AddressFamily != BaseAddress.AddressFamily && (BaseAddress.AddressFamily != AddressFamily.InterNetwork || !address.IsIPv4MappedToIPv6))
             {
                 return false;
             }
@@ -95,7 +95,7 @@ namespace System.Net
                 return true;
             }
 
-            if (address.AddressFamily == AddressFamily.InterNetwork)
+            if (address.AddressFamily == AddressFamily.InterNetwork || address.IsIPv4MappedToIPv6)
             {
                 uint mask = uint.MaxValue << (32 - PrefixLength);
                 if (BitConverter.IsLittleEndian)
@@ -103,7 +103,7 @@ namespace System.Net
                     mask = BinaryPrimitives.ReverseEndianness(mask);
                 }
 
-                return BaseAddress.PrivateAddress == (address.PrivateAddress & mask);
+                return BaseAddress.PrivateIPv4Address == (address.PrivateIPv4Address & mask);
             }
             else
             {

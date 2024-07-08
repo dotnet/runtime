@@ -306,7 +306,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             XmlSchemaInfo info = new XmlSchemaInfo();
 
             XmlSchemaValidator val = CreateValidator(CreateSchemaSetFromXml(xmlSrc));
-            XmlReader r = XmlReader.Create(new StringReader(xmlSrc));
+            using XmlReader r = XmlReader.Create(new StringReader(xmlSrc));
 
             val.LineInfoProvider = (r as IXmlLineInfo);
 

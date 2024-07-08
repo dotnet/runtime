@@ -30,10 +30,6 @@
 
 #ifndef DACCESS_COMPILE
 
-EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
-EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhHandleSet(void* handle, void* pObject);
-EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhHandleFree(void* handle);
-
 static int (*g_RuntimeInitializationCallback)();
 static Thread* g_RuntimeInitializingThread;
 
@@ -332,14 +328,6 @@ bool Thread::IsGCSpecial()
     return IsStateSet(TSF_IsGcSpecialThread);
 }
 
-bool Thread::CatchAtSafePoint()
-{
-    // This is only called by the GC on a background GC worker thread that's explicitly interested in letting
-    // a foreground GC proceed at that point. So it's always safe to return true.
-    ASSERT(IsGCSpecial());
-    return true;
-}
-
 uint64_t Thread::GetPalThreadIdForLogging()
 {
     return m_threadId;
@@ -518,16 +506,13 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 
             STRESS_LOG1(LF_GCROOTS, LL_INFO1000, "Scanning method %pK\n", (void*)frameIterator.GetRegisterSet()->IP);
 
-            if (!frameIterator.ShouldSkipRegularGcReporting())
-            {
-                EnumGcRefs(frameIterator.GetCodeManager(),
-                                               frameIterator.GetMethodInfo(),
-                                               frameIterator.GetEffectiveSafePointAddress(),
-                                               frameIterator.GetRegisterSet(),
-                                               pfnEnumCallback,
-                                               pvCallbackData,
-                                               frameIterator.IsActiveStackFrame());
-            }
+            EnumGcRefs(frameIterator.GetCodeManager(),
+                                            frameIterator.GetMethodInfo(),
+                                            frameIterator.GetEffectiveSafePointAddress(),
+                                            frameIterator.GetRegisterSet(),
+                                            pfnEnumCallback,
+                                            pvCallbackData,
+                                            frameIterator.IsActiveStackFrame());
 
             // Each enumerated frame (including the first one) may have an associated stack range we need to
             // report conservatively (every pointer aligned value that looks like it might be a GC reference is
@@ -585,14 +570,15 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 
 #ifndef DACCESS_COMPILE
 
-EXTERN_C void FASTCALL RhpSuspendRedirected();
-EXTERN_C void FASTCALL RhpGcProbeHijack();
-EXTERN_C void FASTCALL RhpGcStressHijack();
+#ifdef FEATURE_HIJACK
+
+EXTERN_C void RhpGcProbeHijack();
+EXTERN_C void RhpGcStressHijack();
 
 // static
 bool Thread::IsHijackTarget(void* address)
 {
-    if (&RhpGcProbeHijack == address)
+    if (PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address)
         return true;
 #ifdef FEATURE_GC_STRESS
     if (&RhpGcStressHijack == address)
@@ -711,7 +697,9 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
 #endif //FEATURE_SUSPEND_REDIRECTION
     }
 
-    pThread->HijackReturnAddress(pThreadContext, &RhpGcProbeHijack);
+    pThread->HijackReturnAddress(
+        pThreadContext,
+        PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
 }
 
 #ifdef FEATURE_GC_STRESS
@@ -822,6 +810,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
     }
 }
+#endif // FEATURE_HIJACK
 
 NATIVE_CONTEXT* Thread::GetInterruptedContext()
 {
@@ -839,6 +828,16 @@ NATIVE_CONTEXT* Thread::EnsureRedirectionContext()
     }
 
     return m_interruptedContext;
+}
+
+EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
+
+    // restore execution at interrupted location
+    PalRestoreContext(pThread->GetInterruptedContext());
+    UNREACHABLE();
 }
 
 bool Thread::Redirect()
@@ -868,6 +867,7 @@ bool Thread::Redirect()
 }
 #endif //FEATURE_SUSPEND_REDIRECTION
 
+#ifdef FEATURE_HIJACK
 bool Thread::InlineSuspend(NATIVE_CONTEXT* interruptedContext)
 {
     ASSERT(!IsDoNotTriggerGcSet());
@@ -955,6 +955,7 @@ void* Thread::GetHijackedReturnAddress()
     ASSERT(ThreadStore::GetCurrentThread() == this);
     return m_pvHijackedReturnAddress;
 }
+#endif // FEATURE_HIJACK
 
 void Thread::SetState(ThreadStateFlags flags)
 {
@@ -1028,20 +1029,6 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
     RhpWaitForGC2(pFrame);
 }
 
-#ifdef FEATURE_SUSPEND_REDIRECTION
-
-EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
-{
-    Thread* pThread = ThreadStore::GetCurrentThread();
-    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
-
-    // restore execution at interrupted location
-    PalRestoreContext(pThread->GetInterruptedContext());
-    UNREACHABLE();
-}
-
-#endif //FEATURE_SUSPEND_REDIRECTION
-
 void Thread::PushExInfo(ExInfo * pExInfo)
 {
     ValidateExInfoStack();
@@ -1068,10 +1055,11 @@ void Thread::ValidateExInfoPop(ExInfo * pExInfo, void * limitSP)
 #endif // _DEBUG
 }
 
-COOP_PINVOKE_HELPER(void, RhpValidateExInfoPop, (Thread * pThread, ExInfo * pExInfo, void * limitSP))
+FCIMPL3(void, RhpValidateExInfoPop, Thread * pThread, ExInfo * pExInfo, void * limitSP)
 {
     pThread->ValidateExInfoPop(pExInfo, limitSP);
 }
+FCIMPLEND
 
 void Thread::SetDoNotTriggerGc()
 {
@@ -1113,6 +1101,44 @@ void Thread::SetActivationPending(bool isPending)
     }
 }
 
+#ifdef TARGET_X86
+
+void Thread::SetPendingRedirect(PCODE eip)
+{
+    m_LastRedirectIP = eip;
+    m_SpinCount = 0;
+}
+
+bool Thread::CheckPendingRedirect(PCODE eip)
+{
+    if (eip == m_LastRedirectIP)
+    {
+        // We need to test for an infinite loop in assembly, as this will break the heuristic we
+        // are using.
+        const BYTE short_jmp = 0xeb;    // Machine code for a short jump.
+        const BYTE self = 0xfe;         // -2.  Short jumps are calculated as [ip]+2+[second_byte].
+
+        // If we find that we are in an infinite loop, we'll set the last redirected IP to 0 so that we will
+        // redirect the next time we attempt it.  Delaying one interation allows us to narrow the window of
+        // the race we are working around in this corner case.
+        BYTE *ip = (BYTE *)m_LastRedirectIP;
+        if (ip[0] == short_jmp && ip[1] == self)
+            m_LastRedirectIP = 0;
+
+        // We set a hard limit of 5 times we will spin on this to avoid any tricky race which we have not
+        // accounted for.
+        m_SpinCount++;
+        if (m_SpinCount >= 5)
+            m_LastRedirectIP = 0;
+
+        return true;
+    }
+
+    return false;
+}
+
+#endif // TARGET_X86
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()
@@ -1135,7 +1161,7 @@ void Thread::ValidateExInfoStack()
 #ifndef DACCESS_COMPILE
 
 #ifndef TARGET_UNIX
-EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
+EXTERN_C uint32_t QCALLTYPE RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
 {
     return PalCompatibleWaitAny(alertable, timeout, count, pHandles, /*allowReentrantWait:*/ TRUE);
 }
@@ -1209,22 +1235,24 @@ void Thread::SetThreadAbortException(Object *exception)
     m_threadAbortException = exception;
 }
 
-COOP_PINVOKE_HELPER(Object *, RhpGetThreadAbortException, ())
+FCIMPL0(Object *, RhpGetThreadAbortException)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     return pCurThread->GetThreadAbortException();
 }
+FCIMPLEND
 
 Object** Thread::GetThreadStaticStorage()
 {
     return &m_pThreadLocalStatics;
 }
 
-COOP_PINVOKE_HELPER(Object**, RhGetThreadStaticStorage, ())
+FCIMPL0(Object**, RhGetThreadStaticStorage)
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     return pCurrentThread->GetThreadStaticStorage();
 }
+FCIMPLEND
 
 InlinedThreadStaticRoot* Thread::GetInlinedThreadStaticList()
 {
@@ -1240,14 +1268,15 @@ void Thread::RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot, T
     newRoot->m_typeManager = typeManager;
 }
 
-COOP_PINVOKE_HELPER(void, RhRegisterInlinedThreadStaticRoot, (Object** root, TypeManager* typeManager))
+FCIMPL2(void, RhRegisterInlinedThreadStaticRoot, Object** root, TypeManager* typeManager)
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     pCurrentThread->RegisterInlinedThreadStaticRoot((InlinedThreadStaticRoot*)root, typeManager);
 }
+FCIMPLEND
 
 // This is function is used to quickly query a value that can uniquely identify a thread
-COOP_PINVOKE_HELPER(uint8_t*, RhCurrentNativeThreadId, ())
+FCIMPL0(uint8_t*, RhCurrentNativeThreadId)
 {
 #ifndef TARGET_UNIX
     return PalNtCurrentTeb();
@@ -1255,12 +1284,14 @@ COOP_PINVOKE_HELPER(uint8_t*, RhCurrentNativeThreadId, ())
     return (uint8_t*)ThreadStore::RawGetCurrentThread();
 #endif // TARGET_UNIX
 }
+FCIMPLEND
 
 // This function is used to get the OS thread identifier for the current thread.
-COOP_PINVOKE_HELPER(uint64_t, RhCurrentOSThreadId, ())
+FCIMPL0(uint64_t, RhCurrentOSThreadId)
 {
     return PalGetCurrentOSThreadId();
 }
+FCIMPLEND
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)
@@ -1273,7 +1304,7 @@ EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInv
 // PInvoke
 //
 
-COOP_PINVOKE_HELPER(void, RhpReversePInvoke, (ReversePInvokeFrame * pFrame))
+FCIMPL1(void, RhpReversePInvoke, ReversePInvokeFrame * pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pFrame->m_savedThread = pCurThread;
@@ -1282,25 +1313,29 @@ COOP_PINVOKE_HELPER(void, RhpReversePInvoke, (ReversePInvokeFrame * pFrame))
 
     RhpReversePInvokeAttachOrTrapThread2(pFrame);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn, (ReversePInvokeFrame * pFrame))
+FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 {
     pFrame->m_savedThread->InlineReversePInvokeReturn(pFrame);
 }
+FCIMPLEND
 
 #ifdef USE_PORTABLE_HELPERS
 
-COOP_PINVOKE_HELPER(void, RhpPInvoke2, (PInvokeTransitionFrame* pFrame))
+FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pCurThread->InlinePInvoke(pFrame);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpPInvokeReturn2, (PInvokeTransitionFrame* pFrame))
+FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
 {
     //reenter cooperative mode
     pFrame->m_pThread->InlinePInvokeReturn(pFrame);
 }
+FCIMPLEND
 
 #endif //USE_PORTABLE_HELPERS
 

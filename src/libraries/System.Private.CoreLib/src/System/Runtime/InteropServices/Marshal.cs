@@ -165,6 +165,7 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(arr);
 
+            // Unsafe.AsPointer is safe since array must be pinned
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
         }
@@ -173,6 +174,7 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(arr);
 
+            // Unsafe.AsPointer is safe since array must be pinned
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
 #pragma warning disable 8500 // sizeof of managed types
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)sizeof(T));
@@ -548,7 +550,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Creates a new instance of "structuretype" and marshals data from a
+        /// Creates a new instance of <paramref name="structureType"/> and marshals data from a
         /// native memory block to it.
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
@@ -816,7 +818,6 @@ namespace System.Runtime.InteropServices
                         };
                     }
                 case HResults.FUSION_E_INVALID_NAME:
-                case HResults.FUSION_E_PRIVATE_ASM_DISALLOWED:
                 case HResults.FUSION_E_REF_DEF_MISMATCH:
                 case HResults.ERROR_TOO_MANY_OPEN_FILES:
                 case HResults.ERROR_SHARING_VIOLATION:

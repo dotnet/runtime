@@ -40,10 +40,10 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (jsonTypeInfo.CreateObject == null)
                     {
-                        ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
+                        ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                     }
 
-                    obj = jsonTypeInfo.CreateObject()!;
+                    obj = jsonTypeInfo.CreateObject();
                 }
 
                 PopulatePropertiesFastPath(obj, jsonTypeInfo, options, ref reader, ref state);
@@ -116,10 +116,10 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         if (jsonTypeInfo.CreateObject == null)
                         {
-                            ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
+                            ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                         }
 
-                        obj = jsonTypeInfo.CreateObject()!;
+                        obj = jsonTypeInfo.CreateObject();
                     }
 
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
@@ -171,12 +171,21 @@ namespace System.Text.Json.Serialization.Converters
                         // Read method would have thrown if otherwise.
                         Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
-                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options, out bool isAlreadyReadMetadataProperty);
+                        if (isAlreadyReadMetadataProperty)
+                        {
+                            Debug.Assert(options.AllowOutOfOrderMetadataProperties);
+                            reader.SkipWithVerify();
+                            state.Current.EndProperty();
+                            continue;
+                        }
+
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj,
                             unescapedPropertyName,
                             ref state,
                             options,
+                            out byte[] _,
                             out bool useExtensionProperty);
 
                         state.Current.UseExtensionProperty = useExtensionProperty;
@@ -258,9 +267,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         // This method is using aggressive inlining to avoid extra stack frame for deep object graphs.
-#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal static void PopulatePropertiesFastPath(object obj, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             jsonTypeInfo.OnDeserializing?.Invoke(obj);
@@ -282,12 +289,15 @@ namespace System.Text.Json.Serialization.Converters
                 // Read method would have thrown if otherwise.
                 Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
-                ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
+                ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options, out bool isAlreadyReadMetadataProperty);
+                Debug.Assert(!isAlreadyReadMetadataProperty, "Only possible for types that can read metadata, which do not call into the fast-path method.");
+
                 JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                     obj,
                     unescapedPropertyName,
                     ref state,
                     options,
+                    out byte[] _,
                     out bool useExtensionProperty);
 
                 ReadPropertyValue(obj, ref state, ref reader, jsonPropertyInfo, useExtensionProperty);
@@ -325,10 +335,8 @@ namespace System.Text.Json.Serialization.Converters
 
                 jsonTypeInfo.OnSerializing?.Invoke(obj);
 
-                List<KeyValuePair<string, JsonPropertyInfo>> properties = jsonTypeInfo.PropertyCache!.List;
-                for (int i = 0; i < properties.Count; i++)
+                foreach (JsonPropertyInfo jsonPropertyInfo in jsonTypeInfo.PropertyCache)
                 {
-                    JsonPropertyInfo jsonPropertyInfo = properties[i].Value;
                     if (jsonPropertyInfo.CanSerialize)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
@@ -375,10 +383,10 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.ProcessedStartToken = true;
                 }
 
-                List<KeyValuePair<string, JsonPropertyInfo>> propertyList = jsonTypeInfo.PropertyCache!.List;
-                while (state.Current.EnumeratorIndex < propertyList.Count)
+                ReadOnlySpan<JsonPropertyInfo> propertyCache = jsonTypeInfo.PropertyCache;
+                while (state.Current.EnumeratorIndex < propertyCache.Length)
                 {
-                    JsonPropertyInfo jsonPropertyInfo = propertyList[state.Current.EnumeratorIndex].Value;
+                    JsonPropertyInfo jsonPropertyInfo = propertyCache[state.Current.EnumeratorIndex];
                     if (jsonPropertyInfo.CanSerialize)
                     {
                         state.Current.JsonPropertyInfo = jsonPropertyInfo;
@@ -393,7 +401,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.EndProperty();
                         state.Current.EnumeratorIndex++;
 
-                        if (ShouldFlush(writer, ref state))
+                        if (ShouldFlush(ref state, writer))
                         {
                             return false;
                         }
@@ -405,7 +413,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Write extension data after the normal properties.
-                if (state.Current.EnumeratorIndex == propertyList.Count)
+                if (state.Current.EnumeratorIndex == propertyCache.Length)
                 {
                     JsonPropertyInfo? extensionDataProperty = jsonTypeInfo.ExtensionDataProperty;
                     if (extensionDataProperty?.CanSerialize == true)
@@ -422,7 +430,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.EndProperty();
                         state.Current.EnumeratorIndex++;
 
-                        if (ShouldFlush(writer, ref state))
+                        if (ShouldFlush(ref state, writer))
                         {
                             return false;
                         }

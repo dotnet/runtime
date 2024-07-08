@@ -26,6 +26,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                { "dotnet.js.map", false },
                { "dotnet.native.js", true },
                { "dotnet.native.js.symbols", false },
+               { "dotnet.globalization.js", true },
                { "dotnet.native.wasm", false },
                { "dotnet.native.worker.js", true },
                { "dotnet.runtime.js", true },
@@ -44,6 +45,10 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (assertOptions.RuntimeType is RuntimeVariant.MultiThreaded)
         {
             res.Add("dotnet.native.worker.js");
+        }
+        if (assertOptions.GlobalizationMode is GlobalizationMode.Hybrid)
+        {
+            res.Add("dotnet.globalization.js");
         }
 
         if (!assertOptions.IsPublish)
@@ -105,12 +110,21 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             _ => throw new ArgumentOutOfRangeException(nameof(assertOptions.ExpectedFileType))
         };
         string buildType = assertOptions.IsPublish ? "publish" : "build";
-        foreach (string nativeFilename in new[] { "dotnet.native.wasm", "dotnet.native.js" })
+        var nativeFilesToCheck = new List<string>() { "dotnet.native.wasm", "dotnet.native.js" };
+        if (assertOptions.RuntimeType == RuntimeVariant.MultiThreaded)
+        {
+            nativeFilesToCheck.Add("dotnet.native.worker.js");
+        }
+        if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
+        {
+            nativeFilesToCheck.Add("dotnet.globalization.js");
+        }
+
+        foreach (string nativeFilename in nativeFilesToCheck)
         {
             if (!actualDotnetFiles.TryGetValue(nativeFilename, out DotNetFileName? dotnetFile))
             {
                 throw new XunitException($"Could not find {nativeFilename}. Actual files on disk: {string.Join($"{Environment.NewLine}  ", actualDotnetFiles.Values.Select(a => a.ActualPath).Order())}");
-
             }
             // For any *type*, check against the expected path
             TestUtils.AssertSameFile(Path.Combine(srcDirForNativeFileToCompareAgainst, nativeFilename),
@@ -119,6 +133,11 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
             if (assertOptions.ExpectedFileType != NativeFilesType.FromRuntimePack)
             {
+                if (nativeFilename == "dotnet.native.worker.js")
+                {
+                    Console.WriteLine($"Skipping the verification whether {nativeFilename} is from the runtime pack. The check wouldn't be meaningful as the runtime pack file has the same size as the relinked file");
+                    continue;
+                }
                 // Confirm that it doesn't match the file from the runtime pack
                 TestUtils.AssertNotSameFile(Path.Combine(runtimeNativeDir, nativeFilename),
                                    actualDotnetFiles[nativeFilename].ActualPath,

@@ -120,7 +120,7 @@ mono_interp_record_interp_entry (void *fn_ptr);
 extern gpointer
 mono_interp_jit_wasm_entry_trampoline (
 	void *imethod, MonoMethod *method, int argument_count, MonoType *param_types,
-	int unbox, int has_this, int has_return, const char *name, void *default_implementation
+	int unbox, int has_this, int has_return, void *default_implementation
 );
 
 // Fast-path implemented in C
@@ -238,5 +238,8 @@ mono_jiterp_tlqueue_purge_all (gpointer item);
 #endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
 
 #endif // HOST_BROWSER
+
+int
+mono_jiterp_is_enabled (void);
 
 #endif // __MONO_MINI_JITERPRETER_H__

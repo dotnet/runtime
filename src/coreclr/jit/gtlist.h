@@ -60,11 +60,7 @@ GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,0,GTK_BINOP|GTK_EXOP)
 GTNODE(KEEPALIVE        , GenTree            ,0,0,GTK_UNOP|GTK_NOVALUE)   // keep operand alive, generate no code, produce no result
 
 GTNODE(CAST             , GenTreeCast        ,0,0,GTK_UNOP|GTK_EXOP)      // conversion to another type
-#if defined(TARGET_ARM)
-GTNODE(BITCAST          , GenTreeMultiRegOp  ,0,1,GTK_UNOP)               // reinterpretation of bits as another type
-#else
 GTNODE(BITCAST          , GenTreeOp          ,0,1,GTK_UNOP)               // reinterpretation of bits as another type
-#endif
 GTNODE(CKFINITE         , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // Check for NaN
 GTNODE(LCLHEAP          , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // alloca()
 
@@ -76,13 +72,12 @@ GTNODE(XAND             , GenTreeOp          ,0,1,GTK_BINOP)
 GTNODE(XORR             , GenTreeOp          ,0,1,GTK_BINOP)
 GTNODE(XADD             , GenTreeOp          ,0,1,GTK_BINOP)
 GTNODE(XCHG             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,1,GTK_SPECIAL)
+GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,1,GTK_SPECIAL)            // atomic CAS, small types need the comparand to be zero extended
 
 GTNODE(IND              , GenTreeIndir       ,0,1,GTK_UNOP)                                 // Load indirection
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Store indirection
 GTNODE(BLK              , GenTreeBlk         ,0,1,GTK_UNOP|GTK_EXOP)                        // Struct load
 GTNODE(STORE_BLK        , GenTreeBlk         ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Struct store
-GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,1,GTK_SPECIAL|GTK_NOVALUE)                  // Dynamically sized block store, with native uint size
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,1,GTK_UNOP|GTK_NOVALUE)                     // Null checks the source
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length
@@ -150,7 +145,6 @@ GTNODE(QMARK            , GenTreeQmark       ,0,1,GTK_BINOP|GTK_EXOP|DBK_NOTLIR)
 GTNODE(COLON            , GenTreeColon       ,0,1,GTK_BINOP|DBK_NOTLIR)
 
 GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,0,GTK_BINOP|GTK_EXOP)   // Address of SZ-array-element.
-GTNODE(MKREFANY         , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(LEA              , GenTreeAddrMode    ,0,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR)
 
 #if !defined(TARGET_64BIT)
@@ -284,9 +278,17 @@ GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(PROF_HOOK        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Profiler Enter/Leave/TailCall hook.
 
 GTNODE(RETFILT          , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // End filter with TYP_I_IMPL return value.
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
 GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End locally-invoked finally.
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
+
+//-----------------------------------------------------------------------------
+//  Swift interop-specific nodes:
+//-----------------------------------------------------------------------------
+
+GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)              // Error register value post-Swift call
+GTNODE(SWIFT_ERROR_RET  , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE) // Returns normal return value, and SwiftError pseudolocal's value in REG_SWIFT_ERROR.
+																		 // op1 is the error value, and op2 is the return value (or null if the method returns void).
 
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes
@@ -304,11 +306,7 @@ GTNODE(EMITNOP          , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(PINVOKE_PROLOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // pinvoke prolog seq
 GTNODE(PINVOKE_EPILOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // pinvoke epilog seq
 GTNODE(RETURNTRAP       , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // a conditional call to wait on gc
-#if defined(TARGET_ARM)
-GTNODE(PUTARG_REG       , GenTreeMultiRegOp  ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in register
-#else
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in register
-#endif
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // operator that places outgoing arg in stack
 #if FEATURE_ARG_SPLIT
 GTNODE(PUTARG_SPLIT     , GenTreePutArgSplit ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in registers with stack (split struct in ARM32)

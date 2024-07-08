@@ -17,10 +17,12 @@
 // Keep these in sync with
 //  src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
-#define READYTORUN_MAJOR_VERSION 0x0009
-#define READYTORUN_MINOR_VERSION 0x0001
+// If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
+// and handle pending work.
+#define READYTORUN_MAJOR_VERSION 10
+#define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 0x009
+#define MINIMUM_READYTORUN_MAJOR_VERSION 10
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -31,6 +33,10 @@
 // R2R Version 8.0 Changes the alignment of the Int128 type
 // R2R Version 9.0 adds support for the Vector512 type
 // R2R Version 9.1 adds new helpers to allocate objects on frozen segments
+// R2R Version 9.2 adds MemZero and NativeMemSet helpers
+// R2R Version 9.3 adds BulkWriteBarrier helper
+//                 uses GCInfo v3, which makes safe points in partially interruptible code interruptible.
+// R2R Version 10.0 adds support for the statics being allocated on a per type basis instead of on a per module basis
 
 struct READYTORUN_CORE_HEADER
 {
@@ -180,7 +186,6 @@ enum ReadyToRunMethodSigFlags
 
 enum ReadyToRunFieldSigFlags
 {
-    READYTORUN_FIELD_SIG_IndexInsteadOfToken    = 0x08,
     READYTORUN_FIELD_SIG_MemberRefToken         = 0x10,
     READYTORUN_FIELD_SIG_OwnerType              = 0x40,
 };
@@ -318,12 +323,15 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_WriteBarrier              = 0x30,
     READYTORUN_HELPER_CheckedWriteBarrier       = 0x31,
     READYTORUN_HELPER_ByRefWriteBarrier         = 0x32,
+    READYTORUN_HELPER_BulkWriteBarrier          = 0x33,
 
     // Array helpers
     READYTORUN_HELPER_Stelem_Ref                = 0x38,
     READYTORUN_HELPER_Ldelema_Ref               = 0x39,
 
-    READYTORUN_HELPER_MemSet                    = 0x40,
+    READYTORUN_HELPER_MemZero                   = 0x3E,
+    READYTORUN_HELPER_MemSet                    = 0x3F,
+    READYTORUN_HELPER_NativeMemSet              = 0x40,
     READYTORUN_HELPER_MemCpy                    = 0x41,
 
     // PInvoke helpers
@@ -397,6 +405,10 @@ enum ReadyToRunHelper
     // Floating point ops
     READYTORUN_HELPER_DblRem                    = 0xE0,
     READYTORUN_HELPER_FltRem                    = 0xE1,
+
+    // These two helpers can be removed once MINIMUM_READYTORUN_MAJOR_VERSION is 10+
+    // alongside the CORINFO_HELP_FLTROUND/CORINFO_HELP_DBLROUND
+    // counterparts and all related code.
     READYTORUN_HELPER_DblRound                  = 0xE2,
     READYTORUN_HELPER_FltRound                  = 0xE3,
 
@@ -435,10 +447,6 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
-
-    // Array helpers for use with native ints
-    READYTORUN_HELPER_Stelem_Ref_I                = 0x113,
-    READYTORUN_HELPER_Ldelema_Ref_I               = 0x114,
 };
 
 #include "readytoruninstructionset.h"

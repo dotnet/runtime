@@ -370,5 +370,43 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await VerifyCS.VerifyCodeFixAsync(source, fixedSource);
         }
+
+        [Fact]
+        public async Task UnsupportedInterfaceTypes_DoesNotReportDiagnostic()
+        {
+            // This also tests the case where InterfaceType is missing (defaulting to ComInterfaceType.InterfaceIsDual).
+            string source = """
+                 using System.Runtime.InteropServices;
+
+                 [ComImport]
+                 [Guid("73EB4AF8-BE9C-4b49-B3A4-24F4FF657B26")]
+                 public interface IInterfaceIsDualMissingAttribute
+                 {
+                 }
+
+                 [ComImport]
+                 [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+                 [InterfaceType(ComInterfaceType.InterfaceIsDual)]
+                 public interface IInterfaceIsDual
+                 {
+                 }
+
+                 [ComImport]
+                 [Guid("F59AB2FE-523D-4B28-911C-21363808C51E")]
+                 [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+                 public interface IInterfaceIsIDispatch
+                 {
+                 }
+
+                 [ComImport]
+                 [Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7")]
+                 [InterfaceType(ComInterfaceType.InterfaceIsIInspectable)]
+                 public interface IInterfaceIsIInspectable
+                 {
+                 }
+                 """;
+
+            await VerifyCS.VerifyCodeFixAsync(source, source);
+        }
     }
 }

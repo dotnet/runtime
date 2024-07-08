@@ -21,47 +21,49 @@
 
 /src/mono @marek-safar
 
-/src/mono/llvm @vargaz @SamMonoRT
+/src/mono/llvm @lambdageek @steveisok
 
-/src/mono/mono/arch @vargaz
-/src/mono/mono/eglib @vargaz @lambdageek
+/src/mono/mono/arch @lambdageek @steveisok
+/src/mono/mono/eglib @lambdageek @steveisok
 
-/src/mono/mono/metadata @vargaz @lambdageek @thaystg
+/src/mono/mono/metadata @lambdageek @thaystg
 /src/mono/mono/metadata/*-win* @lateralusX @lambdageek
-/src/mono/mono/metadata/handle* @lambdageek @vargaz
-/src/mono/mono/metadata/monitor* @brzvlad @vargaz
-/src/mono/mono/metadata/sgen* @brzvlad @vargaz @lambdageek
+/src/mono/mono/metadata/handle* @lambdageek @steveisok
+/src/mono/mono/metadata/monitor* @brzvlad @steveisok
+/src/mono/mono/metadata/sgen* @brzvlad @lambdageek
 /src/mono/mono/metadata/thread* @lateralusX @lambdageek
 /src/mono/mono/metadata/w32* @lateralusX @lambdageek
 
 /src/mono/mono/eventpipe @lateralusX @lambdageek
 
-/src/mono/mono/mini @vargaz @lambdageek @SamMonoRT
-/src/mono/mono/mini/*cfgdump* @vargaz
-/src/mono/mono/mini/*exceptions* @vargaz @BrzVlad
-/src/mono/mono/mini/*llvm* @vargaz @fanyang-mono
-/src/mono/mono/mini/*ppc* @vargaz
+/src/mono/mono/mini @lambdageek @steveisok
+/src/mono/mono/mini/*cfgdump* @lambdageek
+/src/mono/mono/mini/*exceptions* @BrzVlad
+/src/mono/mono/mini/*llvm* @fanyang-mono @steveisok
+/src/mono/mono/mini/*ppc* @lambdageek
 /src/mono/mono/mini/*profiler* @BrzVlad @lambdageek
-/src/mono/mono/mini/*riscv* @vargaz @lambdageek
-/src/mono/mono/mini/*type-check* @lambdageek
-/src/mono/mono/mini/debugger-agent.c @vargaz @thaystg @lambdageek
-/src/mono/mono/mini/interp/* @BrzVlad @vargaz @kotlarmilos
+/src/mono/mono/mini/*riscv* @lambdageek @steveisok
+/src/mono/mono/mini/*type-check* @lambdageek @steveisok
+/src/mono/mono/mini/debugger-agent.c @thaystg @lambdageek
+/src/mono/mono/mini/interp/* @BrzVlad @kotlarmilos
 /src/mono/mono/mini/interp/*jiterp* @kg
 /src/mono/mono/mini/*simd* @fanyang-mono
 
 /src/mono/mono/profiler @BrzVlad @lambdageek
-/src/mono/mono/sgen @BrzVlad @lambdageek @SamMonoRT
+/src/mono/mono/sgen @BrzVlad @lambdageek
 
-/src/mono/mono/utils @vargaz @lambdageek
+/src/mono/mono/utils @lambdageek @steveisok
 /src/mono/mono/utils/*-win* @lateralusX @lambdageek
-/src/mono/mono/utils/atomic* @vargaz
-/src/mono/mono/utils/mono-hwcap* @vargaz
-/src/mono/mono/utils/mono-mem* @vargaz
-/src/mono/mono/utils/mono-threads* @lambdageek @vargaz
+/src/mono/mono/utils/atomic* @lambdageek @steveisok
+/src/mono/mono/utils/mono-hwcap* @lambdageek
+/src/mono/mono/utils/mono-mem* @lambdageek @steveisok
+/src/mono/mono/utils/mono-threads* @lambdageek
 
 /src/mono/dlls @thaystg @lambdageek
 
 /src/native/public/mono @marek-safar @lambdageek
+/src/native/external/libunwind @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
+/src/native/external/libunwind_extras @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
 
 /src/libraries/sendtohelix-browser.targets @akoeplinger
 /src/libraries/sendtohelix-wasm.targets @akoeplinger
@@ -110,4 +112,4 @@
 # Area ownership and repo automation
 /docs/area-owners.*                                 @jeffhandley
 /docs/issue*.md                                     @jeffhandley
-/.github/fabricbot.json                             @jeffhandley
+/.github/policies/                                  @jeffhandley @mkArtakMSFT

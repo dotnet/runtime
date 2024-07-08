@@ -44,7 +44,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     m_eventType = type;
 
-    HMODULE hModule = WszGetModuleHandle(NULL);
+    HMODULE hModule = GetModuleHandle(NULL);
     PathString appPath;
     DWORD ret = WszGetModuleFileName(hModule, appPath);
 
@@ -287,7 +287,7 @@ void EventReporter::AddStackTrace(SString& s)
         COUNT_T curSize = m_Description.GetCount();
 
         // Truncate the buffer if we have exceeded the limit based upon the OS we are on
-        DWORD dwMaxSizeLimit = MAX_SIZE_EVENTLOG_ENTRY_STRING_WINVISTA;
+        DWORD dwMaxSizeLimit = MAX_SIZE_EVENTLOG_ENTRY_STRING;
         if (curSize >= dwMaxSizeLimit)
         {
             // Load the truncation message

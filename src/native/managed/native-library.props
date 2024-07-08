@@ -1,0 +1,42 @@
+<Project>
+  <PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <!-- Don't strip symbols NativeAOT's default way. We will strip and save the symbols ourselves,
+         the same way as eng/native/functions.cmake strip_symbols
+    -->
+    <StripSymbols>false</StripSymbols>
+    <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
+    <ControlFlowGuard>Guard</ControlFlowGuard>
+  </PropertyGroup>
+
+  <!-- set the shared library name.  this helps the native linker correctly reference this shared
+       library in dependents -->
+  <PropertyGroup>
+    <!-- in net9.0 we can do this, but only on mobile apple platforms, not OSX -->
+    <SharedLibraryInstallName>@rpath/$(MSBuildProjectName).dylib</SharedLibraryInstallName>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+      <LinkerArg Include="-Wl,-install_name,@rpath/$(MSBuildProjectName).dylib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and ! ('$(TargetsAppleMobile)' == 'true' or '$(TargetsOSX)' == 'true')">
+      <!-- If there is no soname, ld on Linux and some other Unixes will embed the full (build-time!)
+           path to this shared library into any binary that links against it. We don't want that. -->
+      <LinkerArg Include="-Wl,-soname=$(MSBuildProjectName).so" />
+  </ItemGroup>
+
+  <PropertyGroup>
+      <!-- if IsRuntimeComponent is true, we will put the native library into the specified locations under `artifacts/bin/$(RuntimeFlavor)/os.arch.config/` -->
+      <IsRuntimeComponent Condition="'$(IsRuntimeComponent)' == ''">true</IsRuntimeComponent>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- passed by compile-native.proj to set - -gcc-toolchain=$(ROOTFS_DIR)/usr -->
+    <CustomLinkerArg Condition="'$(CustomLinkerArgToolchainArg)' != ''" Include="$(CustomLinkerArgToolchainArg)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
+    <PackageReference Include="runtime.$(ToolsRID).Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
+  </ItemGroup>
+</Project>

@@ -55,8 +55,11 @@
 #ifndef FEATURE_EH_FUNCLETS
 #include "excep.h"
 #endif
-
 #include "exinfo.h"
+#include "arraynative.inl"
+
+using std::isfinite;
+using std::isnan;
 
 //========================================================================
 //
@@ -106,20 +109,6 @@
 //
 #define Is32BitSigned(a)    (Hi32Bits(a) == Hi32Bits((INT64)(INT32)(a)))
 
-//
-// helper function to shift the result by 32-bits
-//
-inline UINT64 ShiftToHi32Bits(UINT32 x)
-{
-    // The shift compiles into slow multiplication by 2^32! VSWhidbey 360736
-    // return ((UINT64)x) << 32;
-
-    ULARGE_INTEGER ret;
-    ret.u.HighPart = x;
-    ret.u.LowPart = 0;
-    return ret.QuadPart;
-}
-
 #if !defined(TARGET_X86) || defined(TARGET_UNIX)
 /*********************************************************************/
 HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
@@ -138,117 +127,6 @@ HCIMPLEND
 #endif // !TARGET_X86 || TARGET_UNIX
 
 /*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMulOvf, INT64 val1, INT64 val2)
-{
-    FCALL_CONTRACT;
-
-    // This short-cut does not actually help since the multiplication
-    // of two 32-bit signed ints compiles into the call to a slow helper
-    // if (Is32BitSigned(val1) && Is32BitSigned(val2))
-    //     return (INT64)(INT32)val1 * (INT64)(INT32)val2;
-
-    INDEBUG(INT64 expected = val1 * val2;)
-    INT64 ret;
-
-        // Remember the sign of the result
-    INT32 sign = Hi32Bits(val1) ^ Hi32Bits(val2);
-
-        // Convert to unsigned multiplication
-    if (val1 < 0) val1 = -val1;
-    if (val2 < 0) val2 = -val2;
-
-        // Get the upper 32 bits of the numbers
-    UINT32 val1High = Hi32Bits(val1);
-    UINT32 val2High = Hi32Bits(val2);
-
-    UINT64 valMid;
-
-    if (val1High == 0) {
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val2High, val1);
-    }
-    else {
-        if (val2High != 0)
-            goto ThrowExcep;
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val1High, val2);
-    }
-
-        // See if any bits after bit 32 are set
-    if (Hi32Bits(valMid) != 0)
-        goto ThrowExcep;
-
-    ret = Mul32x32To64(val1, val2) + ShiftToHi32Bits((UINT32)(valMid));
-
-    // check for overflow
-    if (Hi32Bits(ret) < (UINT32)valMid)
-        goto ThrowExcep;
-
-    if (sign >= 0) {
-        // have we spilled into the sign bit?
-        if (ret < 0)
-            goto ThrowExcep;
-    }
-    else {
-        ret = -ret;
-        // have we spilled into the sign bit?
-        if (ret > 0)
-            goto ThrowExcep;
-    }
-    _ASSERTE(ret == expected);
-    return ret;
-
-ThrowExcep:
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULMulOvf, UINT64 val1, UINT64 val2)
-{
-    FCALL_CONTRACT;
-
-    INDEBUG(UINT64 expected = val1 * val2;)
-    UINT64 ret;
-
-        // Get the upper 32 bits of the numbers
-    UINT32 val1High = Hi32Bits(val1);
-    UINT32 val2High = Hi32Bits(val2);
-
-    UINT64 valMid;
-
-    if (val1High == 0) {
-        if (val2High == 0)
-            return Mul32x32To64(val1, val2);
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val2High, val1);
-    }
-    else {
-        if (val2High != 0)
-            goto ThrowExcep;
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val1High, val2);
-    }
-
-        // See if any bits after bit 32 are set
-    if (Hi32Bits(valMid) != 0)
-        goto ThrowExcep;
-
-    ret = Mul32x32To64(val1, val2) + ShiftToHi32Bits((UINT32)(valMid));
-
-    // check for overflow
-    if (Hi32Bits(ret) < (UINT32)valMid)
-        goto ThrowExcep;
-
-    _ASSERTE(ret == expected);
-    return ret;
-
-ThrowExcep:
-        FCThrow(kOverflowException);
-    }
-HCIMPLEND
-
-/*********************************************************************/
 HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
 {
     FCALL_CONTRACT;
@@ -264,7 +142,7 @@ HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;
@@ -296,7 +174,7 @@ HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;
@@ -488,255 +366,98 @@ HCIMPLEND
 #include <optsmallperfcritical.h>
 
 /*********************************************************************/
-//
-HCIMPL1_V(double, JIT_ULng2Dbl, UINT64 val)
+HCIMPL1_V(double, JIT_ULng2Dbl, uint64_t val)
 {
     FCALL_CONTRACT;
-
-    double conv = (double) ((INT64) val);
-    if (conv < 0)
-        conv += (4294967296.0 * 4294967296.0);  // add 2^64
-    _ASSERTE(conv >= 0);
-    return(conv);
+    return (double)val;
 }
 HCIMPLEND
 
 /*********************************************************************/
-// needed for ARM and RyuJIT-x86
-HCIMPL1_V(double, JIT_Lng2Dbl, INT64 val)
+HCIMPL1_V(double, JIT_Lng2Dbl, int64_t val)
 {
     FCALL_CONTRACT;
-    return double(val);
-}
-HCIMPLEND
-
-//--------------------------------------------------------------------------
-template <class ftype>
-ftype modftype(ftype value, ftype *iptr);
-template <> float modftype(float value, float *iptr) { return modff(value, iptr); }
-template <> double modftype(double value, double *iptr) { return modf(value, iptr); }
-
-// round to nearest, round to even if tied
-template <class ftype>
-ftype BankersRound(ftype value)
-{
-    if (value < 0.0) return -BankersRound <ftype> (-value);
-
-    ftype integerPart;
-    modftype( value, &integerPart );
-
-    // if decimal part is exactly .5
-    if ((value -(integerPart +0.5)) == 0.0)
-    {
-        // round to even
-        if (fmod(ftype(integerPart), ftype(2.0)) == 0.0)
-            return integerPart;
-
-        // Else return the nearest even integer
-        return (ftype)_copysign(ceil(fabs(value+0.5)),
-                         value);
-    }
-
-    // Otherwise round to closest
-    return (ftype)_copysign(floor(fabs(value)+0.5),
-                     value);
-}
-
-
-/*********************************************************************/
-// round double to nearest int (as double)
-HCIMPL1_V(double, JIT_DoubleRound, double val)
-{
-    FCALL_CONTRACT;
-    return BankersRound(val);
+    return (double)val;
 }
 HCIMPLEND
 
 /*********************************************************************/
-// round float to nearest int (as float)
-HCIMPL1_V(float, JIT_FloatRound, float val)
+HCIMPL1_V(int64_t, JIT_Dbl2Lng, double val)
 {
     FCALL_CONTRACT;
-    return BankersRound(val);
-}
-HCIMPLEND
 
-/*********************************************************************/
-// Call fast Dbl2Lng conversion - used by functions below
-FORCEINLINE INT64 FastDbl2Lng(double val)
-{
-#ifdef TARGET_X86
-    FCALL_CONTRACT;
-    return HCCALL1_V(JIT_Dbl2Lng, val);
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM)
+    const double int64_min = -2147483648.0 * 4294967296.0;
+    const double int64_max = 2147483648.0 * 4294967296.0;
+    return (val != val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (int64_t)val;
 #else
-    FCALL_CONTRACT;
-    return((__int64) val);
+    return (int64_t)val;
 #endif
 }
-
-/*********************************************************************/
-HCIMPL1_V(UINT32, JIT_Dbl2UIntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-        // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < 4294967296.0)
-        return((UINT32)FastDbl2Lng(val));
-
-    FCThrow(kOverflowException);
-}
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
+HCIMPL1_V(uint32_t, JIT_Dbl2UInt, double val)
 {
     FCALL_CONTRACT;
 
-    const double two63  = 2147483648.0 * 4294967296.0;
-    UINT64 ret;
-    if (val < two63) {
-        ret = FastDbl2Lng(val);
-    }
-    else {
-        // subtract 0x8000000000000000, do the convert then add it back again
-        ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
-    }
-    return ret;
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two64  = 4294967296.0 * 4294967296.0;
-        // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < two64) {
-        const double two63  = 2147483648.0 * 4294967296.0;
-        UINT64 ret;
-        if (val < two63) {
-            ret = FastDbl2Lng(val);
-        }
-        else {
-            // subtract 0x8000000000000000, do the convert then add it back again
-            ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
-        }
-#ifdef _DEBUG
-        // since no overflow can occur, the value always has to be within 1
-        double roundTripVal = HCCALL1_V(JIT_ULng2Dbl, ret);
-        _ASSERTE(val - 1.0 <= roundTripVal && roundTripVal <= val + 1.0);
-#endif // _DEBUG
-        return ret;
-    }
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
-
-HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
-{
-    FCALL_CONTRACT;
-
-    return((INT64)val);
-}
-HCIMPLEND
-
-HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two31 = 2147483648.0;
-
-        // Note that this expression also works properly for val = NaN case
-    if (val > -two31 - 1 && val < two31)
-        return((INT32)val);
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two63  = 2147483648.0 * 4294967296.0;
-
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const double uint_max = 4294967295.0;
     // Note that this expression also works properly for val = NaN case
-    // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
-    if (val > -two63 - 0x402 && val < two63)
-        return((INT64)val);
-
-    FCThrow(kOverflowException);
+    return (val >= 0) ? ((val >= uint_max) ? UINT32_MAX : (uint32_t)val) : 0;
+#else
+    return (uint32_t)val;
+#endif
 }
 HCIMPLEND
 
+/*********************************************************************/
+HCIMPL1_V(int32_t, JIT_Dbl2Int, double val)
+{
+    FCALL_CONTRACT;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const double int32_min = -2147483648.0;
+    const double int32_max_plus_1 = 2147483648.0;
+    return (val != val) ? 0 : (val <= int32_min) ? INT32_MIN : (val >= int32_max_plus_1) ? INT32_MAX : (int32_t)val;
+#else
+    return (int32_t)val;
+#endif
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL1_V(uint64_t, JIT_Dbl2ULng, double val)
+{
+    FCALL_CONTRACT;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
+    // Note that this expression also works properly for val = NaN case
+    return (val >= 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val) : 0;
+#else
+    return (uint64_t)val;
+#endif
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
 {
     FCALL_CONTRACT;
 
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-
-    if (divisor==0 || !_finite(dividend))
-    {
-        UINT32 NaN = CLR_NAN_32;
-        return *(float *)(&NaN);
-    }
-    else if (!_finite(divisor) && !_isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-#if 0
-    // COMPILER BUG WITH FMODF() + /Oi, USE FMOD() INSTEAD
-    return fmodf(dividend,divisor);
-#else
-    return (float)fmod((double)dividend,(double)divisor);
-#endif
+    return fmodf(dividend, divisor);
 }
 HCIMPLEND
 
+/*********************************************************************/
 HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
 {
     FCALL_CONTRACT;
 
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-    if (divisor==0 || !_finite(dividend))
-    {
-        UINT64 NaN = CLR_NAN_64;
-        return *(double *)(&NaN);
-    }
-    else if (!_finite(divisor) && !_isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return(fmod(dividend,divisor));
+    return fmod(dividend, divisor);
 }
 HCIMPLEND
-
-#endif // !TARGET_X86 || TARGET_UNIX
 
 #include <optdefault.h>
 
@@ -1280,7 +1001,7 @@ NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
     // already have initialized the Global Class <Module>
     CONSISTENCY_CHECK(!pMT->IsGlobalClass());
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
     pMT->CheckRunClassInitThrowing();
 
     HELPER_METHOD_FRAME_END();
@@ -1296,9 +1017,8 @@ HCIMPL1(void, JIT_InitClass, CORINFO_CLASS_HANDLE typeHnd_)
 
     TypeHandle typeHnd(typeHnd_);
     MethodTable *pMT = typeHnd.AsMethodTable();
-    _ASSERTE(!pMT->IsClassPreInited());
 
-    if (pMT->GetDomainLocalModule()->IsClassInitialized(pMT))
+    if (pMT->IsClassInited())
         return;
 
     // Tailcall to the slow helper
@@ -1333,7 +1053,7 @@ HCIMPL2(void, JIT_InitInstantiatedClass, CORINFO_CLASS_HANDLE typeHnd_, CORINFO_
         pMT = pTemplateMT;
     }
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
     pMT->EnsureInstanceActive();
     pMT->CheckRunClassInitThrowing();
     HELPER_METHOD_FRAME_END();
@@ -1349,57 +1069,107 @@ HCIMPLEND
 
 #include <optsmallperfcritical.h>
 
-HCIMPL2(void*, JIT_GetSharedNonGCStaticBase_Portable, DomainLocalModule *pLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetNonGCStaticBase_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
-    // If type doesn't have a class constructor, the contents of this if statement may
-    // still get executed.  JIT_GetSharedNonGCStaticBaseNoCtor should be used in this case.
-    if (pLocalModule->IsPrecomputedClassInitialized(dwClassDomainID))
+    PTR_BYTE pBase;
+    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndNonGCStaticsPointerIfInited(&pBase))
     {
-        return (void*)pLocalModule->GetPrecomputedNonGCStaticsBasePointer();
+        return pBase;
     }
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
-    return HCCALL2(JIT_GetSharedNonGCStaticBase_Helper, pLocalModule, dwClassDomainID);
+    return HCCALL1(JIT_GetNonGCStaticBase_Helper, pMT);
+}
+HCIMPLEND
+
+
+HCIMPL1(void*, JIT_GetDynamicNonGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo)
+{
+    FCALL_CONTRACT;
+
+    PTR_BYTE pBase;
+    if (pStaticsInfo->GetIsInitedAndNonGCStaticsPointerIfInited(&pBase))
+    {
+        return pBase;
+    }
+
+    // Tailcall to the slow helper
+    ENDFORBIDGC();
+    return HCCALL1(JIT_GetNonGCStaticBase_Helper, pStaticsInfo->GetMethodTable());
+}
+HCIMPLEND
+// No constructor version of JIT_GetSharedNonGCStaticBase.  Does not check if class has
+// been initialized.
+HCIMPL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable* pMT)
+{
+    FCALL_CONTRACT;
+
+    return pMT->GetDynamicStaticsInfo()->GetNonGCStaticsPointerAssumeIsInited();
 }
 HCIMPLEND
 
 // No constructor version of JIT_GetSharedNonGCStaticBase.  Does not check if class has
 // been initialized.
-HCIMPL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule)
+HCIMPL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pDynamicStaticsInfo)
 {
     FCALL_CONTRACT;
 
-    return (void*)pLocalModule->GetPrecomputedNonGCStaticsBasePointer();
+    return pDynamicStaticsInfo->GetNonGCStaticsPointerAssumeIsInited();
 }
 HCIMPLEND
 
-HCIMPL2(void*, JIT_GetSharedGCStaticBase_Portable, DomainLocalModule *pLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetGCStaticBase_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
-    // If type doesn't have a class constructor, the contents of this if statement may
-    // still get executed.  JIT_GetSharedGCStaticBaseNoCtor should be used in this case.
-    if (pLocalModule->IsPrecomputedClassInitialized(dwClassDomainID))
+    PTR_OBJECTREF pBase;
+    if (pMT->GetDynamicStaticsInfo()->GetIsInitedAndGCStaticsPointerIfInited(&pBase))
     {
-        return (void*)pLocalModule->GetPrecomputedGCStaticsBasePointer();
+        return pBase;
     }
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
-    return HCCALL2(JIT_GetSharedGCStaticBase_Helper, pLocalModule, dwClassDomainID);
+    return HCCALL1(JIT_GetGCStaticBase_Helper, pMT);
+}
+HCIMPLEND
+
+HCIMPL1(void*, JIT_GetDynamicGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo)
+{
+    FCALL_CONTRACT;
+
+    PTR_OBJECTREF pBase;
+    if (pStaticsInfo->GetIsInitedAndGCStaticsPointerIfInited(&pBase))
+    {
+        return pBase;
+    }
+
+    // Tailcall to the slow helper
+    ENDFORBIDGC();
+    return HCCALL1(JIT_GetGCStaticBase_Helper, pStaticsInfo->GetMethodTable());
 }
 HCIMPLEND
 
 // No constructor version of JIT_GetSharedGCStaticBase.  Does not check if class has been
 // initialized.
-HCIMPL1(void*, JIT_GetSharedGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule)
+HCIMPL1(void*, JIT_GetGCStaticBaseNoCtor_Portable, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
-    return (void*)pLocalModule->GetPrecomputedGCStaticsBasePointer();
+    return pMT->GetDynamicStaticsInfo()->GetGCStaticsPointerAssumeIsInited();
+}
+HCIMPLEND
+
+// No constructor version of JIT_GetSharedGCStaticBase.  Does not check if class has been
+// initialized.
+HCIMPL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pDynamicStaticsInfo)
+{
+    FCALL_CONTRACT;
+
+    return pDynamicStaticsInfo->GetGCStaticsPointerAssumeIsInited();
 }
 HCIMPLEND
 
@@ -1408,302 +1178,33 @@ HCIMPLEND
 
 // The following two functions can be tail called from platform dependent versions of
 // JIT_GetSharedGCStaticBase and JIT_GetShareNonGCStaticBase
-HCIMPL2(void*, JIT_GetSharedNonGCStaticBase_Helper, DomainLocalModule *pLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetNonGCStaticBase_Helper, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    // Obtain Method table
-    MethodTable * pMT = pLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
 
     PREFIX_ASSUME(pMT != NULL);
     pMT->CheckRunClassInitThrowing();
     HELPER_METHOD_FRAME_END();
 
-    return (void*)pLocalModule->GetPrecomputedNonGCStaticsBasePointer();
+    return (void*)pMT->GetDynamicStaticsInfo()->GetNonGCStaticsPointer();
 }
 HCIMPLEND
 
-HCIMPL2(void*, JIT_GetSharedGCStaticBase_Helper, DomainLocalModule *pLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetGCStaticBase_Helper, MethodTable* pMT)
 {
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    // Obtain Method table
-    MethodTable * pMT = pLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
 
     PREFIX_ASSUME(pMT != NULL);
     pMT->CheckRunClassInitThrowing();
     HELPER_METHOD_FRAME_END();
 
-    return (void*)pLocalModule->GetPrecomputedGCStaticsBasePointer();
+    return (void*)pMT->GetDynamicStaticsInfo()->GetGCStaticsPointer();
 }
 HCIMPLEND
-
-/*********************************************************************/
-// Slow helper to tail call from the fast one
-HCIMPL2(void*, JIT_GetSharedNonGCStaticBaseDynamicClass_Helper, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    void* result = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
-    _ASSERTE(pMT);
-
-    pMT->CheckRunClassInitThrowing();
-
-    result = (void*)pLocalModule->GetDynamicEntryNonGCStaticsBasePointer(dwDynamicClassDomainID, pMT->GetLoaderAllocator());
-    HELPER_METHOD_FRAME_END();
-
-    return result;
-}
-HCIMPLEND
-
-/*************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedNonGCStaticBaseDynamicClass, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-    if (pLocalInfo != NULL)
-    {
-        PTR_BYTE retval;
-        GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
-                                               pLocalInfo,
-                                               &retval);
-
-        return retval;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL2(JIT_GetSharedNonGCStaticBaseDynamicClass_Helper, pLocalModule, dwDynamicClassDomainID);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*************************************************************/
-// Slow helper to tail call from the fast one
-HCIMPL2(void, JIT_ClassInitDynamicClass_Helper, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
-    _ASSERTE(pMT);
-
-    pMT->CheckRunClassInitThrowing();
-
-    HELPER_METHOD_FRAME_END();
-
-    return;
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL2(void, JIT_ClassInitDynamicClass, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-    if (pLocalInfo != NULL)
-    {
-        return;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL2(JIT_ClassInitDynamicClass_Helper, pLocalModule, dwDynamicClassDomainID);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*************************************************************/
-// Slow helper to tail call from the fast one
-HCIMPL2(void*, JIT_GetSharedGCStaticBaseDynamicClass_Helper, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    void* result = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    MethodTable *pMT = pLocalModule->GetDomainAssembly()->GetModule()->GetDynamicClassMT(dwDynamicClassDomainID);
-    _ASSERTE(pMT);
-
-    pMT->CheckRunClassInitThrowing();
-
-    result = (void*)pLocalModule->GetDynamicEntryGCStaticsBasePointer(dwDynamicClassDomainID, pMT->GetLoaderAllocator());
-    HELPER_METHOD_FRAME_END();
-
-    return result;
-}
-HCIMPLEND
-
-/*************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedGCStaticBaseDynamicClass, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-    if (pLocalInfo != NULL)
-    {
-        PTR_BYTE retval;
-        GET_DYNAMICENTRY_GCSTATICS_BASEPOINTER(pLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
-                                               pLocalInfo,
-                                               &retval);
-
-        return retval;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL2(JIT_GetSharedGCStaticBaseDynamicClass_Helper, pLocalModule, dwDynamicClassDomainID);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-// Slow helper to tail call from the fast one
-NOINLINE HCIMPL1(void*, JIT_GetGenericsGCStaticBase_Framed, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    void* base = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    pMT->CheckRestore();
-
-    pMT->CheckRunClassInitThrowing();
-
-    base = (void*) pMT->GetGCStaticsBasePointer();
-    CONSISTENCY_CHECK(base != NULL);
-
-    HELPER_METHOD_FRAME_END();
-
-    return base;
-}
-HCIMPLEND
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL1(void*, JIT_GetGenericsGCStaticBase, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    DWORD dwDynamicClassDomainID;
-    PTR_Module pModuleForStatics = pMT->GetGenericsStaticsModuleAndID(&dwDynamicClassDomainID);
-
-    DomainLocalModule *pLocalModule = pModuleForStatics->GetDomainLocalModule();
-    _ASSERTE(pLocalModule);
-
-    DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-    if (pLocalInfo != NULL)
-    {
-        PTR_BYTE retval;
-        GET_DYNAMICENTRY_GCSTATICS_BASEPOINTER(pMT->GetLoaderAllocator(),
-                                               pLocalInfo,
-                                               &retval);
-
-        return retval;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGenericsGCStaticBase_Framed, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-// Slow helper to tail call from the fast one
-NOINLINE HCIMPL1(void*, JIT_GetGenericsNonGCStaticBase_Framed, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    void* base = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    pMT->CheckRestore();
-
-    // If pMT refers to a method table that requires some initialization work,
-    // then pMT cannot to a method table that is shared by generic instantiations,
-    // because method tables that are shared by generic instantiations do not have
-    // a base for statics to live in.
-    _ASSERTE(pMT->IsClassPreInited() || !pMT->IsSharedByGenericInstantiations());
-
-    pMT->CheckRunClassInitThrowing();
-
-    // We could just return null here instead of returning base when this helper is called just to trigger the cctor
-    base = (void*) pMT->GetNonGCStaticsBasePointer();
-
-    HELPER_METHOD_FRAME_END();
-
-    return base;
-}
-HCIMPLEND
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL1(void*, JIT_GetGenericsNonGCStaticBase, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    // This fast path will typically always be taken once the slow framed path below
-    // has executed once.  Sometimes the slow path will be executed more than once,
-    // e.g. if static fields are accessed during the call to CheckRunClassInitThrowing()
-    // in the slow path.
-
-    DWORD dwDynamicClassDomainID;
-    PTR_Module pModuleForStatics = pMT->GetGenericsStaticsModuleAndID(&dwDynamicClassDomainID);
-
-    DomainLocalModule *pLocalModule = pModuleForStatics->GetDomainLocalModule();
-    _ASSERTE(pLocalModule);
-
-    DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-    if (pLocalInfo != NULL)
-    {
-        PTR_BYTE retval;
-        GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pMT->GetLoaderAllocator(),
-                                               pLocalInfo,
-                                               &retval);
-
-        return retval;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGenericsNonGCStaticBase_Framed, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
 
 //========================================================================
 //
@@ -1711,6 +1212,52 @@ HCIMPLEND
 //
 //========================================================================
 
+// Define the t_ThreadStatics variable here, so that these helpers can use
+// the most optimal TLS access pattern for the platform when inlining the
+// GetThreadLocalStaticBaseIfExistsAndInitialized function
+#ifdef _MSC_VER
+__declspec(selectany) __declspec(thread)  ThreadLocalData t_ThreadStatics;
+#else
+__thread ThreadLocalData t_ThreadStatics;
+#endif // _MSC_VER
+
+// This is the routine used by the JIT helpers for the fast path. It is not used by the JIT for the slow path, or by the EE for any path.
+// This is inlined in the header to improve code gen quality
+FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
+{
+    LIMITED_METHOD_CONTRACT;
+    TADDR pTLSBaseAddress = (TADDR)NULL;
+
+    if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
+    {
+        PTRARRAYREF tlsArray = (PTRARRAYREF)UNCHECKED_OBJECTREF_TO_OBJECTREF(t_ThreadStatics.pNonCollectibleTlsArrayData);
+        if (t_ThreadStatics.cNonCollectibleTlsData <= index.GetIndexOffset())
+        {
+            return NULL;
+        }
+        pTLSBaseAddress = (TADDR)OBJECTREFToObject(tlsArray->GetAt(index.GetIndexOffset() - NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY));
+    }
+    else if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
+    {
+        return ((BYTE*)&t_ThreadStatics) + index.GetIndexOffset();
+    }
+    else
+    {
+        int32_t cCollectibleTlsData = t_ThreadStatics.cCollectibleTlsData;
+        if (cCollectibleTlsData <= index.GetIndexOffset())
+        {
+            return NULL;
+        }
+
+        OBJECTHANDLE* pCollectibleTlsArrayData = t_ThreadStatics.pCollectibleTlsArrayData;
+        pCollectibleTlsArrayData += index.GetIndexOffset();
+        OBJECTHANDLE objHandle = *pCollectibleTlsArrayData;
+        if (IsHandleNullUnchecked(objHandle))
+            return NULL;
+        pTLSBaseAddress = dac_cast<TADDR>(OBJECTREFToObject(ObjectFromHandle(objHandle)));
+    }
+    return reinterpret_cast<void*>(pTLSBaseAddress);
+}
 
 // *** These framed helpers get called if allocation needs to occur or
 //     if the class constructor needs to run
@@ -1726,16 +1273,8 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBase_Helper, MethodTable * pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // For generics, we need to call CheckRestore() for some reason
-    if (pMT->HasGenericsStaticsInfo())
-        pMT->CheckRestore();
-
-    // Get the TLM
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
-    _ASSERTE(pThreadLocalModule != NULL);
-
     // Check if the class constructor needs to be run
-    pThreadLocalModule->CheckRunClassInitThrowing(pMT);
+    pMT->CheckRunClassInitThrowing();
 
     // Lookup the non-GC statics base pointer
     base = (void*) pMT->GetNonGCThreadStaticsBasePointer();
@@ -1758,16 +1297,8 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // For generics, we need to call CheckRestore() for some reason
-    if (pMT->HasGenericsStaticsInfo())
-        pMT->CheckRestore();
-
-    // Get the TLM
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
-    _ASSERTE(pThreadLocalModule != NULL);
-
     // Check if the class constructor needs to be run
-    pThreadLocalModule->CheckRunClassInitThrowing(pMT);
+    pMT->CheckRunClassInitThrowing();
 
     // Lookup the GC statics base pointer
     base = (void*) pMT->GetGCThreadStaticsBasePointer();
@@ -1779,14 +1310,6 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 }
 HCIMPLEND
 
-#ifdef _MSC_VER
-__declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
-__declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
-#else
-__thread uint32_t t_NonGCThreadStaticBlocksSize;
-__thread uint32_t t_GCThreadStaticBlocksSize;
-#endif // !_MSC_VER
-
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE and
 //     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR. Even though we always check
 //     if the class constructor has been run, we have a separate helper ID for the "no ctor"
@@ -1794,30 +1317,33 @@ __thread uint32_t t_GCThreadStaticBlocksSize;
 //     possible.
 
 #include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetNonGCThreadStaticBase, MethodTable *pMT)
 {
     FCALL_CONTRACT;
 
-    // Get the ModuleIndex
-    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the non-GC statics base and return
-    if (pThreadLocalModule != NULL && pThreadLocalModule->IsPrecomputedClassInitialized(dwClassDomainID))
-        return (void*)pThreadLocalModule->GetPrecomputedNonGCStaticsBasePointer();
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Obtain the MethodTable
-    MethodTable * pMT = pDomainLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
-    _ASSERTE(!pMT->HasGenericsStaticsInfo());
+    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pMT->GetThreadStaticsInfo()->NonGCTlsIndex);
+    if (pThreadStaticBase != NULL)
+    {
+        return pThreadStaticBase;
+    }
 
     ENDFORBIDGC();
     return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
+}
+HCIMPLEND
+
+HCIMPL1(void*, JIT_GetDynamicNonGCThreadStaticBase, ThreadStaticsInfo *pThreadStaticsInfo)
+{
+    FCALL_CONTRACT;
+
+    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pThreadStaticsInfo->NonGCTlsIndex);
+    if (pThreadStaticBase != NULL)
+    {
+        return pThreadStaticBase;
+    }
+
+    ENDFORBIDGC();
+    return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pThreadStaticsInfo->m_genericStatics.m_DynamicStatics.GetMethodTable());
 }
 HCIMPLEND
 
@@ -1825,56 +1351,32 @@ HCIMPLEND
 //      Even though we always check if the class constructor has been run, we have a separate
 //      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
 //      otherwise wouldn't be possible.
-HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
+HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
 {
     void* staticBlock = nullptr;
 
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupNonGCThreadStaticBlockType(staticBlockIndex);
-    _ASSERTE(!pMT->HasGenericsStaticsInfo());
-
-    // Get the TLM
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
-    _ASSERTE(pThreadLocalModule != NULL);
-
+    TLSIndex tlsIndex(staticBlockIndex);
     // Check if the class constructor needs to be run
-    pThreadLocalModule->CheckRunClassInitThrowing(pMT);
+    MethodTable *pMT = LookupMethodTableForThreadStaticKnownToBeAllocated(tlsIndex);
+    pMT->CheckRunClassInitThrowing();
 
     // Lookup the non-GC statics base pointer
     staticBlock = (void*) pMT->GetNonGCThreadStaticsBasePointer();
-    CONSISTENCY_CHECK(staticBlock != NULL);
-
-    if (t_NonGCThreadStaticBlocksSize <= staticBlockIndex)
-    {
-        UINT32 newThreadStaticBlocksSize = max(2 * t_NonGCThreadStaticBlocksSize, staticBlockIndex + 1);
-        void** newThreadStaticBlocks = (void**) new PTR_BYTE[newThreadStaticBlocksSize * sizeof(PTR_BYTE)];
-        memset(newThreadStaticBlocks + t_NonGCThreadStaticBlocksSize, 0, (newThreadStaticBlocksSize - t_NonGCThreadStaticBlocksSize) * sizeof(PTR_BYTE));
-
-        if (t_NonGCThreadStaticBlocksSize > 0)
-        {
-            memcpy(newThreadStaticBlocks, t_ThreadStatics.NonGCThreadStaticBlocks, t_NonGCThreadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
-        }
-
-        t_NonGCThreadStaticBlocksSize = newThreadStaticBlocksSize;
-        t_ThreadStatics.NonGCThreadStaticBlocks = newThreadStaticBlocks;
-    }
-
-    void* currentEntry = t_ThreadStatics.NonGCThreadStaticBlocks[staticBlockIndex];
-    // We could be coming here 2nd time after running the ctor when we try to get the static block.
-    // In such case, just avoid adding the same entry.
-    if (currentEntry != staticBlock)
-    {
-        _ASSERTE(currentEntry == nullptr);
-        t_ThreadStatics.NonGCThreadStaticBlocks[staticBlockIndex] = staticBlock;
-        t_ThreadStatics.NonGCMaxThreadStaticBlocks = max(t_ThreadStatics.NonGCMaxThreadStaticBlocks, staticBlockIndex);
-    }
     HELPER_METHOD_FRAME_END();
 
     return staticBlock;
+}
+HCIMPLEND
+
+// *** This helper corresponds CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2.
+HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
+{
+    FCALL_CONTRACT;
+
+    return ((BYTE*)&t_ThreadStatics) + staticBlockIndex;
 }
 HCIMPLEND
 
@@ -1887,39 +1389,43 @@ HCIMPLEND
 //     possible.
 
 #include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID)
+HCIMPL1(void*, JIT_GetGCThreadStaticBase, MethodTable *pMT)
 {
     FCALL_CONTRACT;
 
-    // Get the ModuleIndex
-    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the GC statics base and return
-    if (pThreadLocalModule != NULL && pThreadLocalModule->IsPrecomputedClassInitialized(dwClassDomainID))
-        return (void*)pThreadLocalModule->GetPrecomputedGCStaticsBasePointer();
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Obtain the MethodTable
-    MethodTable * pMT = pDomainLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
-    _ASSERTE(!pMT->HasGenericsStaticsInfo());
+    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pMT->GetThreadStaticsInfo()->GCTlsIndex);
+    if (pThreadStaticBase != NULL)
+    {
+        return pThreadStaticBase;
+    }
 
     ENDFORBIDGC();
     return HCCALL1(JIT_GetGCThreadStaticBase_Helper, pMT);
 }
 HCIMPLEND
+
+HCIMPL1(void*, JIT_GetDynamicGCThreadStaticBase, ThreadStaticsInfo *pThreadStaticsInfo)
+{
+    FCALL_CONTRACT;
+
+    void* pThreadStaticBase = GetThreadLocalStaticBaseIfExistsAndInitialized(pThreadStaticsInfo->GCTlsIndex);
+    if (pThreadStaticBase != NULL)
+    {
+        return pThreadStaticBase;
+    }
+
+    ENDFORBIDGC();
+    return HCCALL1(JIT_GetGCThreadStaticBase_Helper, pThreadStaticsInfo->m_genericStatics.m_DynamicStatics.GetMethodTable());
+}
+HCIMPLEND
+
 #include <optdefault.h>
 
 // *** This helper corresponds CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED.
 //      Even though we always check if the class constructor has been run, we have a separate
 //      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
 //      otherwise wouldn't be possible.
-HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
+HCIMPL1(void*, JIT_GetGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
 {
     void* staticBlock = nullptr;
 
@@ -1927,253 +1433,18 @@ HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
 
-    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupGCThreadStaticBlockType(staticBlockIndex);
-    _ASSERTE(!pMT->HasGenericsStaticsInfo());
-
-    // Get the TLM
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
-    _ASSERTE(pThreadLocalModule != NULL);
-
+    TLSIndex tlsIndex(staticBlockIndex);
     // Check if the class constructor needs to be run
-    pThreadLocalModule->CheckRunClassInitThrowing(pMT);
+    MethodTable *pMT = LookupMethodTableForThreadStaticKnownToBeAllocated(tlsIndex);
+    pMT->CheckRunClassInitThrowing();
 
-    // Lookup the GC statics base handle and cache it
-    staticBlock = (void*) pMT->GetGCThreadStaticsBaseHandle();
-    CONSISTENCY_CHECK(staticBlock != NULL);
-
-    if (t_GCThreadStaticBlocksSize <= staticBlockIndex)
-    {
-        UINT32 newThreadStaticBlocksSize = max(2 * t_GCThreadStaticBlocksSize, staticBlockIndex + 1);
-        void** newThreadStaticBlocks = (void**) new PTR_BYTE[newThreadStaticBlocksSize * sizeof(PTR_BYTE)];
-        memset(newThreadStaticBlocks + t_GCThreadStaticBlocksSize, 0, (newThreadStaticBlocksSize - t_GCThreadStaticBlocksSize) * sizeof(PTR_BYTE));
-
-        if (t_GCThreadStaticBlocksSize > 0)
-        {
-            memcpy(newThreadStaticBlocks, t_ThreadStatics.GCThreadStaticBlocks, t_GCThreadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete[] t_ThreadStatics.GCThreadStaticBlocks;
-        }
-
-        t_GCThreadStaticBlocksSize = newThreadStaticBlocksSize;
-        t_ThreadStatics.GCThreadStaticBlocks = newThreadStaticBlocks;
-    }
-
-    void* currentEntry = t_ThreadStatics.GCThreadStaticBlocks[staticBlockIndex];
-    // We could be coming here 2nd time after running the ctor when we try to get the static block.
-    // In such case, just avoid adding the same entry.
-    if (currentEntry != staticBlock)
-    {
-        _ASSERTE(currentEntry == nullptr);
-        t_ThreadStatics.GCThreadStaticBlocks[staticBlockIndex] = staticBlock;
-        t_ThreadStatics.GCMaxThreadStaticBlocks = max(t_ThreadStatics.GCMaxThreadStaticBlocks, staticBlockIndex);
-    }
-
-    // Get the data pointer of static block
+    // Lookup the non-GC statics base pointer
     staticBlock = (void*) pMT->GetGCThreadStaticsBasePointer();
-
     HELPER_METHOD_FRAME_END();
 
     return staticBlock;
 }
 HCIMPLEND
-
-// *** This helper corresponds to CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS
-
-#include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBaseDynamicClass, DomainLocalModule *pDomainLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    // Get the ModuleIndex
-    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the non-GC statics base and return
-    if (pThreadLocalModule != NULL)
-    {
-        ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-        if (pLocalInfo != NULL)
-        {
-            PTR_BYTE retval;
-            GET_DYNAMICENTRY_NONGCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
-                                                            pLocalInfo,
-                                                            &retval);
-            return retval;
-        }
-    }
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Obtain the Module
-    Module * pModule = pDomainLocalModule->GetDomainAssembly()->GetModule();
-
-    // Obtain the MethodTable
-    MethodTable * pMT = pModule->GetDynamicClassMT(dwDynamicClassDomainID);
-    _ASSERTE(pMT != NULL);
-    _ASSERTE(!pMT->IsSharedByGenericInstantiations());
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-
-    return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
-
-}
-HCIMPLEND
-#include <optdefault.h>
-
-// *** This helper corresponds to CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS
-
-#include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedGCThreadStaticBaseDynamicClass, DomainLocalModule *pDomainLocalModule, DWORD dwDynamicClassDomainID)
-{
-    FCALL_CONTRACT;
-
-    // Get the ModuleIndex
-    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the GC statics base and return
-    if (pThreadLocalModule != NULL)
-    {
-        ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-        if (pLocalInfo != NULL)
-        {
-            PTR_BYTE retval;
-            GET_DYNAMICENTRY_GCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainAssembly()->GetModule()->GetLoaderAllocator(),
-                                                         pLocalInfo,
-                                                         &retval);
-
-            return retval;
-        }
-    }
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Obtain the Module
-    Module * pModule = pDomainLocalModule->GetDomainAssembly()->GetModule();
-
-    // Obtain the MethodTable
-    MethodTable * pMT = pModule->GetDynamicClassMT(dwDynamicClassDomainID);
-    _ASSERTE(pMT != NULL);
-    _ASSERTE(!pMT->IsSharedByGenericInstantiations());
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGCThreadStaticBase_Helper, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-// *** This helper corresponds to CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE
-
-#include <optsmallperfcritical.h>
-HCIMPL1(void*, JIT_GetGenericsNonGCThreadStaticBase, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    // This fast path will typically always be taken once the slow framed path below
-    // has executed once.  Sometimes the slow path will be executed more than once,
-    // e.g. if static fields are accessed during the call to CheckRunClassInitThrowing()
-    // in the slow path.
-
-    // Get the Module and dynamic class ID
-    DWORD dwDynamicClassDomainID;
-    PTR_Module pModule = pMT->GetGenericsStaticsModuleAndID(&dwDynamicClassDomainID);
-
-    // Get ModuleIndex
-    ModuleIndex index = pModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the non-GC statics base and return
-    if (pThreadLocalModule != NULL)
-    {
-        ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-        if (pLocalInfo != NULL)
-        {
-            PTR_BYTE retval;
-            GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pMT->GetLoaderAllocator(),
-                                                      pLocalInfo,
-                                                      &retval);
-
-            return retval;
-        }
-    }
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-// *** This helper corresponds to CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE
-
-#include <optsmallperfcritical.h>
-HCIMPL1(void*, JIT_GetGenericsGCThreadStaticBase, MethodTable *pMT)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasGenericsStaticsInfo());
-    } CONTRACTL_END;
-
-    // This fast path will typically always be taken once the slow framed path below
-    // has executed once.  Sometimes the slow path will be executed more than once,
-    // e.g. if static fields are accessed during the call to CheckRunClassInitThrowing()
-    // in the slow path.
-
-    // Get the Module and dynamic class ID
-    DWORD dwDynamicClassDomainID;
-    PTR_Module pModule = pMT->GetGenericsStaticsModuleAndID(&dwDynamicClassDomainID);
-
-    // Get ModuleIndex
-    ModuleIndex index = pModule->GetModuleIndex();
-
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the GC statics base and return
-    if (pThreadLocalModule != NULL)
-    {
-        ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
-        if (pLocalInfo != NULL)
-        {
-            PTR_BYTE retval;
-            GET_DYNAMICENTRY_GCTHREADSTATICS_BASEPOINTER(pMT->GetLoaderAllocator(),
-                                                         pLocalInfo,
-                                                         &retval);
-
-            return retval;
-        }
-    }
-
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetGCThreadStaticBase_Helper, pMT);
-}
-HCIMPLEND
-#include <optdefault.h>
 
 //========================================================================
 //
@@ -2186,7 +1457,7 @@ HCIMPL1_RAW(TADDR, JIT_StaticFieldAddress_Dynamic, StaticFieldAddressArgs * pArg
 {
     FCALL_CONTRACT;
 
-    TADDR base = HCCALL2(pArgs->staticBaseHelper, pArgs->arg0, pArgs->arg1);
+    TADDR base = HCCALL1(pArgs->staticBaseHelper, pArgs->arg0);
     return base + pArgs->offset;
 }
 HCIMPLEND_RAW
@@ -2197,7 +1468,7 @@ HCIMPL1_RAW(TADDR, JIT_StaticFieldAddressUnbox_Dynamic, StaticFieldAddressArgs *
 {
     FCALL_CONTRACT;
 
-    TADDR base = HCCALL2(pArgs->staticBaseHelper, pArgs->arg0, pArgs->arg1);
+    TADDR base = HCCALL1(pArgs->staticBaseHelper, pArgs->arg0);
     return *(TADDR *)(base + pArgs->offset) + Object::GetOffsetOfFirstField();
 }
 HCIMPLEND_RAW
@@ -2388,48 +1659,42 @@ HCIMPLEND
 //*************************************************************
 // Allocation fast path for typical objects
 //
-HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
+HCIMPL1_RAW(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
 {
-    FCALL_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        DISABLED(GC_TRIGGERS);
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
 
-    do
+    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+
+    TypeHandle typeHandle(typeHnd_);
+    _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
+    MethodTable *methodTable = typeHandle.AsMethodTable();
+
+    SIZE_T size = methodTable->GetBaseSize();
+    _ASSERTE(size % DATA_ALIGNMENT == 0);
+
+    BYTE *allocPtr = allocContext->alloc_ptr;
+    _ASSERTE(allocPtr <= allocContext->alloc_limit);
+    if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
     {
-        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+        // Tail call to the slow helper
+        return HCCALL1(JIT_New, typeHnd_);
+    }
 
-        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
-        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
-        // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
+    allocContext->alloc_ptr = allocPtr + size;
 
-        TypeHandle typeHandle(typeHnd_);
-        _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
-        MethodTable *methodTable = typeHandle.AsMethodTable();
+    _ASSERTE(allocPtr != nullptr);
+    Object *object = reinterpret_cast<Object *>(allocPtr);
+    _ASSERTE(object->HasEmptySyncBlockInfo());
+    object->SetMethodTable(methodTable);
 
-        SIZE_T size = methodTable->GetBaseSize();
-        _ASSERTE(size % DATA_ALIGNMENT == 0);
-
-        gc_alloc_context *allocContext = thread->GetAllocContext();
-        BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= allocContext->alloc_limit);
-        if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
-        {
-            break;
-        }
-        allocContext->alloc_ptr = allocPtr + size;
-
-        _ASSERTE(allocPtr != nullptr);
-        Object *object = reinterpret_cast<Object *>(allocPtr);
-        _ASSERTE(object->HasEmptySyncBlockInfo());
-        object->SetMethodTable(methodTable);
-
-        return object;
-    } while (false);
-
-    // Tail call to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_New, typeHnd_);
+    return object;
 }
-HCIMPLEND
+HCIMPLEND_RAW
 
 #include <optdefault.h>
 
@@ -2445,7 +1710,6 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable *pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -2472,7 +1736,6 @@ HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable* pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -2504,83 +1767,56 @@ HCIMPLEND
 //*************************************************************
 // Allocation fast path for typical objects
 //
-HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
+HCIMPL1_RAW(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
 {
-    FCALL_CONTRACT;
-
-    do
-    {
-        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-
-        // Instead of doing elaborate overflow checks, we just limit the number of elements. This will avoid all overflow
-        // problems, as well as making sure big string objects are correctly allocated in the big object heap.
-        if (stringLength >= (LARGE_OBJECT_SIZE - 256) / sizeof(WCHAR))
-        {
-            break;
-        }
-
-        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
-        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
-        // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
-
-        SIZE_T totalSize = StringObject::GetSize(stringLength);
-
-        // The method table's base size includes space for a terminating null character
-        _ASSERTE(totalSize >= g_pStringClass->GetBaseSize());
-        _ASSERTE((totalSize - g_pStringClass->GetBaseSize()) / sizeof(WCHAR) == stringLength);
-
-        SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
-        _ASSERTE(alignedTotalSize >= totalSize);
-        totalSize = alignedTotalSize;
-
-        gc_alloc_context *allocContext = thread->GetAllocContext();
-        BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= allocContext->alloc_limit);
-        if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
-        {
-            break;
-        }
-        allocContext->alloc_ptr = allocPtr + totalSize;
-
-        _ASSERTE(allocPtr != nullptr);
-        StringObject *stringObject = reinterpret_cast<StringObject *>(allocPtr);
-        stringObject->SetMethodTable(g_pStringClass);
-        stringObject->SetStringLength(stringLength);
-        _ASSERTE(stringObject->GetBuffer()[stringLength] == W('\0'));
-
-        return stringObject;
-    } while (false);
-
-    // Tail call to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(FramedAllocateString, stringLength);
-}
-HCIMPLEND
-
-#include <optdefault.h>
-
-/*********************************************************************/
-/* We don't use HCIMPL macros because this is not a real helper call */
-/* This function just needs mangled arguments like a helper call     */
-
-HCIMPL1_RAW(StringObject*, UnframedAllocateString, DWORD stringLength)
-{
-    // This isn't _really_ an FCALL and therefore shouldn't have the
-    // SO_TOLERANT part of the FCALL_CONTRACT b/c it is not entered
-    // from managed code.
     CONTRACTL {
         THROWS;
-        GC_TRIGGERS;
+        DISABLED(GC_TRIGGERS);
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    STRINGREF result;
-    result = AllocateString(stringLength);
+    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
 
-    return((StringObject*) OBJECTREFToObject(result));
+    // Instead of doing elaborate overflow checks, we just limit the number of elements. This will avoid all overflow
+    // problems, as well as making sure big string objects are correctly allocated in the big object heap.
+    if (stringLength >= (LARGE_OBJECT_SIZE - 256) / sizeof(WCHAR))
+    {
+        // Tail call to the slow helper
+        return HCCALL1(FramedAllocateString, stringLength);
+    }
+
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+
+    SIZE_T totalSize = StringObject::GetSize(stringLength);
+
+    // The method table's base size includes space for a terminating null character
+    _ASSERTE(totalSize >= g_pStringClass->GetBaseSize());
+    _ASSERTE((totalSize - g_pStringClass->GetBaseSize()) / sizeof(WCHAR) == stringLength);
+
+    SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
+    _ASSERTE(alignedTotalSize >= totalSize);
+    totalSize = alignedTotalSize;
+
+    BYTE *allocPtr = allocContext->alloc_ptr;
+    _ASSERTE(allocPtr <= allocContext->alloc_limit);
+    if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    {
+        // Tail call to the slow helper
+        return HCCALL1(FramedAllocateString, stringLength);
+    }
+    allocContext->alloc_ptr = allocPtr + totalSize;
+
+    _ASSERTE(allocPtr != nullptr);
+    StringObject *stringObject = reinterpret_cast<StringObject *>(allocPtr);
+    stringObject->SetMethodTable(g_pStringClass);
+    stringObject->SetStringLength(stringLength);
+    _ASSERTE(stringObject->GetBuffer()[stringLength] == W('\0'));
+
+    return stringObject;
 }
 HCIMPLEND_RAW
+
+#include <optdefault.h>
 
 HCIMPL1(StringObject*, FramedAllocateString, DWORD stringLength)
 {
@@ -2641,129 +1877,118 @@ HCIMPLEND
 //*************************************************************
 // Array allocation fast path for arrays of value type elements
 //
-HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
+HCIMPL2_RAW(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 {
-    FCALL_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        DISABLED(GC_TRIGGERS);
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
 
-    do
+    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+
+    // Do a conservative check here.  This is to avoid overflow while doing the calculations.  We don't
+    // have to worry about "large" objects, since the allocation quantum is never big enough for
+    // LARGE_OBJECT_SIZE.
+    //
+    // For Value Classes, this needs to be 2^16 - slack (2^32 / max component size),
+    // The slack includes the size for the array header and round-up ; for alignment.  Use 256 for the
+    // slack value out of laziness.
+    SIZE_T componentCount = static_cast<SIZE_T>(size);
+    if (componentCount >= static_cast<SIZE_T>(65535 - 256))
     {
-        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+        // Tail call to the slow helper
+        return HCCALL2(JIT_NewArr1, arrayMT, size);
+    }
 
-        // Do a conservative check here.  This is to avoid overflow while doing the calculations.  We don't
-        // have to worry about "large" objects, since the allocation quantum is never big enough for
-        // LARGE_OBJECT_SIZE.
-        //
-        // For Value Classes, this needs to be 2^16 - slack (2^32 / max component size),
-        // The slack includes the size for the array header and round-up ; for alignment.  Use 256 for the
-        // slack value out of laziness.
-        SIZE_T componentCount = static_cast<SIZE_T>(size);
-        if (componentCount >= static_cast<SIZE_T>(65535 - 256))
-        {
-            break;
-        }
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
 
-        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
-        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
-        // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
+    MethodTable *pArrayMT = (MethodTable *)arrayMT;
 
-        MethodTable *pArrayMT = (MethodTable *)arrayMT;
+    _ASSERTE(pArrayMT->HasComponentSize());
+    SIZE_T componentSize = pArrayMT->RawGetComponentSize();
+    SIZE_T totalSize = componentCount * componentSize;
+    _ASSERTE(totalSize / componentSize == componentCount);
 
-        _ASSERTE(pArrayMT->HasComponentSize());
-        SIZE_T componentSize = pArrayMT->RawGetComponentSize();
-        SIZE_T totalSize = componentCount * componentSize;
-        _ASSERTE(totalSize / componentSize == componentCount);
+    SIZE_T baseSize = pArrayMT->GetBaseSize();
+    totalSize += baseSize;
+    _ASSERTE(totalSize >= baseSize);
 
-        SIZE_T baseSize = pArrayMT->GetBaseSize();
-        totalSize += baseSize;
-        _ASSERTE(totalSize >= baseSize);
+    SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
+    _ASSERTE(alignedTotalSize >= totalSize);
+    totalSize = alignedTotalSize;
 
-        SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
-        _ASSERTE(alignedTotalSize >= totalSize);
-        totalSize = alignedTotalSize;
+    BYTE *allocPtr = allocContext->alloc_ptr;
+    _ASSERTE(allocPtr <= allocContext->alloc_limit);
+    if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    {
+        // Tail call to the slow helper
+        return HCCALL2(JIT_NewArr1, arrayMT, size);
+    }
+    allocContext->alloc_ptr = allocPtr + totalSize;
 
-        gc_alloc_context *allocContext = thread->GetAllocContext();
-        BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= allocContext->alloc_limit);
-        if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
-        {
-            break;
-        }
-        allocContext->alloc_ptr = allocPtr + totalSize;
+    _ASSERTE(allocPtr != nullptr);
+    ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
+    array->SetMethodTable(pArrayMT);
+    _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
+    array->m_NumComponents = static_cast<DWORD>(componentCount);
 
-        _ASSERTE(allocPtr != nullptr);
-        ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
-        array->SetMethodTable(pArrayMT);
-        _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
-        array->m_NumComponents = static_cast<DWORD>(componentCount);
-
-        return array;
-    } while (false);
-
-    // Tail call to the slow helper
-    ENDFORBIDGC();
-    return HCCALL2(JIT_NewArr1, arrayMT, size);
+    return array;
 }
-HCIMPLEND
+HCIMPLEND_RAW
 
 //*************************************************************
 // Array allocation fast path for arrays of object elements
 //
-HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
+HCIMPL2_RAW(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 {
-    FCALL_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        DISABLED(GC_TRIGGERS);
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
 
-    do
+    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+
+    // Make sure that the total size cannot reach LARGE_OBJECT_SIZE, which also allows us to avoid overflow checks. The
+    // "256" slack is to cover the array header size and round-up, using a constant value here out of laziness.
+    SIZE_T componentCount = static_cast<SIZE_T>(size);
+    if (componentCount >= static_cast<SIZE_T>((LARGE_OBJECT_SIZE - 256) / sizeof(void *)))
     {
-        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+        // Tail call to the slow helper
+        return HCCALL2(JIT_NewArr1, arrayMT, size);
+    }
 
-        // Make sure that the total size cannot reach LARGE_OBJECT_SIZE, which also allows us to avoid overflow checks. The
-        // "256" slack is to cover the array header size and round-up, using a constant value here out of laziness.
-        SIZE_T componentCount = static_cast<SIZE_T>(size);
-        if (componentCount >= static_cast<SIZE_T>((LARGE_OBJECT_SIZE - 256) / sizeof(void *)))
-        {
-            break;
-        }
+    SIZE_T totalSize = componentCount * sizeof(void *);
+    _ASSERTE(totalSize / sizeof(void *) == componentCount);
 
-        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
-        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
-        // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
+    MethodTable *pArrayMT = (MethodTable *)arrayMT;
 
-        SIZE_T totalSize = componentCount * sizeof(void *);
-        _ASSERTE(totalSize / sizeof(void *) == componentCount);
+    SIZE_T baseSize = pArrayMT->GetBaseSize();
+    totalSize += baseSize;
+    _ASSERTE(totalSize >= baseSize);
 
-        MethodTable *pArrayMT = (MethodTable *)arrayMT;
+    _ASSERTE(ALIGN_UP(totalSize, DATA_ALIGNMENT) == totalSize);
 
-        SIZE_T baseSize = pArrayMT->GetBaseSize();
-        totalSize += baseSize;
-        _ASSERTE(totalSize >= baseSize);
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+    BYTE *allocPtr = allocContext->alloc_ptr;
+    _ASSERTE(allocPtr <= allocContext->alloc_limit);
+    if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    {
+        // Tail call to the slow helper
+        return HCCALL2(JIT_NewArr1, arrayMT, size);
+    }
+    allocContext->alloc_ptr = allocPtr + totalSize;
 
-        _ASSERTE(ALIGN_UP(totalSize, DATA_ALIGNMENT) == totalSize);
+    _ASSERTE(allocPtr != nullptr);
+    ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
+    array->SetMethodTable(pArrayMT);
+    _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
+    array->m_NumComponents = static_cast<DWORD>(componentCount);
 
-        gc_alloc_context *allocContext = thread->GetAllocContext();
-        BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= allocContext->alloc_limit);
-        if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
-        {
-            break;
-        }
-        allocContext->alloc_ptr = allocPtr + totalSize;
-
-        _ASSERTE(allocPtr != nullptr);
-        ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
-        array->SetMethodTable(pArrayMT);
-        _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
-        array->m_NumComponents = static_cast<DWORD>(componentCount);
-
-        return array;
-    } while (false);
-
-    // Tail call to the slow helper
-    ENDFORBIDGC();
-    return HCCALL2(JIT_NewArr1, arrayMT, size);
+    return array;
 }
-HCIMPLEND
+HCIMPLEND_RAW
 
 #include <optdefault.h>
 
@@ -2862,7 +2087,7 @@ HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs
     HELPER_METHOD_FRAME_BEGIN_RET_1(ret);    // Set up a frame
 
     TypeHandle typeHnd(classHnd);
-    typeHnd.CheckRestore();
+    _ASSERTE(typeHnd.IsFullyLoaded());
     _ASSERTE(typeHnd.GetMethodTable()->IsArray());
 
     ret = AllocateArrayEx(typeHnd, pArgList, dwNumArgs);
@@ -2874,42 +2099,72 @@ HCIMPLEND
 
 #include <optdefault.h>
 
-//===========================================================================
-// This routine is called if the Array store needs a frame constructed
-// in order to do the array check.  It should only be called from
-// the array store check helpers.
-
-HCIMPL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_2(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, *pElement, *pArray);
-
-    GCStress<cfg_any, EeconfigFastGcSPolicy>::MaybeTrigger();
-
-    // call "Core" version directly since all the callers do the "NoGC" call first and that checks the cache
-    if (!ObjIsInstanceOfCore(*pElement, (*pArray)->GetArrayElementTypeHandle()))
-        COMPlusThrow(kArrayTypeMismatchException);
-
-    HELPER_METHOD_FRAME_END();
-
-    return (LPVOID)0; // Used to aid epilog walker
-}
-HCIMPLEND
-
 //========================================================================
 //
 //      VALUETYPE/BYREF HELPERS
 //
 //========================================================================
+/*************************************************************/
+HCIMPL2_RAW(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* unboxedData)
+{
+    CONTRACTL {
+        THROWS;
+        DISABLED(GC_TRIGGERS);
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    if (unboxedData == nullptr)
+    {
+        // Tail call to the slow helper
+        return HCCALL2(JIT_Box, type, unboxedData);
+    }
+
+    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+
+    TypeHandle typeHandle(type);
+    _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
+    MethodTable *methodTable = typeHandle.AsMethodTable();
+    // The fast helper should never be called for nullable types.
+    _ASSERTE(!methodTable->IsNullable());
+
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (methodTable->RequiresAlign8())
+    {
+        return HCCALL2(JIT_Box, type, unboxedData);
+    }
+#endif
+
+    SIZE_T size = methodTable->GetBaseSize();
+    _ASSERTE(size % DATA_ALIGNMENT == 0);
+
+    BYTE *allocPtr = allocContext->alloc_ptr;
+    _ASSERTE(allocPtr <= allocContext->alloc_limit);
+    if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    {
+        // Tail call to the slow helper
+        return HCCALL2(JIT_Box, type, unboxedData);
+    }
+
+    allocContext->alloc_ptr = allocPtr + size;
+
+    _ASSERTE(allocPtr != nullptr);
+    Object *object = reinterpret_cast<Object *>(allocPtr);
+    _ASSERTE(object->HasEmptySyncBlockInfo());
+    object->SetMethodTable(methodTable);
+
+    // Copy the data into the object
+    CopyValueClass(object->UnBox(), unboxedData, methodTable);
+
+    return object;
+}
+HCIMPLEND_RAW
 
 /*************************************************************/
 HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 {
     FCALL_CONTRACT;
 
-    // <TODO>TODO: if we care, we could do a fast trial allocation
-    // and avoid the building the frame most times</TODO>
     OBJECTREF newobj = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();    // Set up a frame
     GCPROTECT_BEGININTERIOR(unboxedData);
@@ -2925,7 +2180,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     MethodTable *pMT = clsHnd.AsMethodTable();
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     _ASSERTE (pMT->IsValueType() && !pMT->IsByRefLike());
 
@@ -3039,7 +2294,7 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
     if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
             (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
-            g_TrapReturningThreads.LoadWithoutBarrier() == 0)
+            g_TrapReturningThreads == 0)
     {
         return obj->GetData();
     }
@@ -3047,6 +2302,65 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
     // Fall back to a framed helper that can also handle GC suspension and type equivalence.
     ENDFORBIDGC();
     return HCCALL2(Unbox_Helper_Framed, pMT1, obj);
+}
+HCIMPLEND
+
+/* framed Unbox type test helper that handles enums and full-blown type equivalence */
+NOINLINE HCIMPL2(void, JIT_Unbox_TypeTest_Framed, MethodTable* pMT1, MethodTable* pMT2)
+{
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_0();
+    HELPER_METHOD_POLL();
+
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
+    {
+        // type test test passes
+    }
+    else if (pMT1->IsEquivalentTo(pMT2))
+    {
+        // the structures are equivalent
+    }
+    else
+    {
+        COMPlusThrowInvalidCastException(TypeHandle(pMT2), TypeHandle(pMT1));
+    }
+    HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+/*************************************************************/
+/* Unbox type test that handles enums */
+HCIMPL2(void, JIT_Unbox_TypeTest, CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE boxType)
+{
+    FCALL_CONTRACT;
+
+    TypeHandle typeHnd(type);
+    // boxable types have method tables
+    _ASSERTE(!typeHnd.IsTypeDesc());
+
+    MethodTable* pMT1 = typeHnd.AsMethodTable();
+    // must be a value type
+    _ASSERTE(pMT1->IsValueType());
+
+    TypeHandle boxTypeHnd(boxType);
+    MethodTable* pMT2 = boxTypeHnd.AsMethodTable();
+
+    // we allow enums and their primitive type to be interchangeable.
+    // if suspension is requested, defer to the framed helper.
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
+            g_TrapReturningThreads == 0)
+    {
+        return;
+    }
+
+    // Fall back to a framed helper that can also handle GC suspension and type equivalence.
+    ENDFORBIDGC();
+    HCCALL2(JIT_Unbox_TypeTest_Framed, pMT1, pMT2);
 }
 HCIMPLEND
 
@@ -3126,48 +2440,32 @@ HCIMPLEND
 
 struct JitGenericHandleCacheKey
 {
-    JitGenericHandleCacheKey(CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, void *signature, BaseDomain* pDomain=NULL)
+    JitGenericHandleCacheKey(CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, void *signature)
     {
         LIMITED_METHOD_CONTRACT;
         m_Data1 = (size_t)classHnd;
         m_Data2 = (size_t)methodHnd;
         m_Data3 = (size_t)signature;
-        m_pDomainAndType = 0 | (size_t)pDomain;
+        m_type = 0;
     }
 
-    JitGenericHandleCacheKey(MethodTable* pMT, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, BaseDomain* pDomain=NULL)
+    JitGenericHandleCacheKey(MethodTable* pMT, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd)
     {
         LIMITED_METHOD_CONTRACT;
         m_Data1 = (size_t)pMT;
         m_Data2 = (size_t)classHnd;
         m_Data3 = (size_t)methodHnd;
-        m_pDomainAndType = 1 | (size_t)pDomain;
-    }
-
-    size_t GetType() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_pDomainAndType & 1);
-    }
-
-    BaseDomain* GetDomain() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (BaseDomain*)(m_pDomainAndType & ~1);
+        m_type = 1;
     }
 
     size_t  m_Data1;
     size_t  m_Data2;
     size_t  m_Data3;
 
-    size_t  m_pDomainAndType; // Which domain the entry belongs to. Not actually part of the key.
-                        // Used only so we can scrape the table on AppDomain termination.
-                        // NULL appdomain means that the entry should be scratched
-                        // on any appdomain unload.
-                        //
-                        // The lowest bit is used to indicate the type of the entry:
-                        //  0 - JIT_GenericHandle entry
-                        //  1 - JIT_VirtualFunctionPointer entry
+    // The type of the entry:
+    //  0 - JIT_GenericHandle entry
+    //  1 - JIT_VirtualFunctionPointer entry
+    unsigned char m_type;
 };
 
 class JitGenericHandleCacheTraits
@@ -3194,9 +2492,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         const JitGenericHandleCacheKey *e1 = (const JitGenericHandleCacheKey*)&pEntry->Key;
         return (e1->m_Data1 == e2->m_Data1) && (e1->m_Data2 == e2->m_Data2) && (e1->m_Data3 == e2->m_Data3) &&
-            (e1->GetType() == e2->GetType()) &&
-            // Any domain will work if the lookup key does not specify it
-            ((e2->GetDomain() == NULL) || (e1->GetDomain() == e2->GetDomain()));
+            (e1->m_type == e2->m_type);
     }
 
     static DWORD Hash(const JitGenericHandleCacheKey *k)
@@ -3244,7 +2540,7 @@ void AddToGenericHandleCache(JitGenericHandleCacheKey* pKey, HashDatum datum)
 }
 
 /* static */
-void ClearJitGenericHandleCache(AppDomain *pDomain)
+void ClearJitGenericHandleCache()
 {
     CONTRACTL {
         NOTHROW;
@@ -3252,8 +2548,8 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
     } CONTRACTL_END;
 
 
-    // We call this on every AppDomain unload, because entries in the cache might include
-    // pointers into the AppDomain being unloaded.  We would prefer to
+    // We call this on every ALC unload, because entries in the cache might include
+    // pointers into the ALC being unloaded.  We would prefer to
     // only flush entries that have that are no longer valid, but the entries don't yet contain
     // enough information to do that.  However everything in the cache can be found again by calling
     // loader functions, and the total number of entries in the cache is typically very small (indeed
@@ -3270,17 +2566,9 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
         while(keepGoing)
         {
             const JitGenericHandleCacheKey *key = g_pJitGenericHandleCache->IterateGetKey(&iter);
-            BaseDomain* pKeyDomain = key->GetDomain();
-            if (pKeyDomain == pDomain || pKeyDomain == NULL)
-            {
-                // Advance the iterator before we delete!!  See notes in EEHash.h
-                keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
-                g_pJitGenericHandleCache->DeleteValue(key);
-            }
-            else
-            {
-                keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
-            }
+            // Advance the iterator before we delete!!  See notes in EEHash.h
+            keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
+            g_pJitGenericHandleCache->DeleteValue(key);
         }
     }
 }
@@ -3356,20 +2644,9 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
     if (pSlot == NULL)
     {
         // If we've overflowed the dictionary write the result to the cache.
-        BaseDomain *pDictDomain = NULL;
-
-        if (pMT != NULL)
-        {
-            pDictDomain = pDeclaringMT->GetDomain();
-        }
-        else
-        {
-            pDictDomain = pMD->GetDomain();
-        }
-
         // Add the normalized key (pDeclaringMT) here so that future lookups of any
         // inherited types are faster next time rather than just just for this specific pMT.
-        JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature, pDictDomain);
+        JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature);
         AddToGenericHandleCache(&key, (HashDatum)result);
     }
 
@@ -3494,7 +2771,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClass, CORINFO_CLASS_HANDLE cla
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3514,7 +2790,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO
     CONTRACTL{
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
@@ -3536,7 +2811,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3612,6 +2886,14 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
 }
 HCIMPLEND
 
+HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
+{
+    _ASSERTE(pDest != nullptr);
+    FCALL_CONTRACT;
+    memset(pDest, value, length);
+}
+HCIMPLEND
+
 HCIMPL1(Object*, JIT_GetRuntimeFieldStub, CORINFO_FIELD_HANDLE field)
 {
     FCALL_CONTRACT;
@@ -3654,7 +2936,7 @@ NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
     TypeHandle typeHandle(type);
 
     // Array/other type handle case.
-    OBJECTREF refType = typeHandle.GetManagedClassObjectFast();
+    OBJECTREF refType = typeHandle.GetManagedClassObjectIfExists();
     if (refType == NULL)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
@@ -3787,7 +3069,7 @@ NOINLINE static void JIT_MonEnter_Helper(Object* obj, BYTE* pbLockTaken, LPVOID 
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-    if (GET_THREAD()->CatchAtSafePointOpportunistic())
+    if (GET_THREAD()->CatchAtSafePoint())
     {
         GET_THREAD()->PulseGCMode();
     }
@@ -3866,7 +3148,7 @@ NOINLINE static void JIT_MonTryEnter_Helper(Object* obj, INT32 timeOut, BYTE* pb
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-    if (GET_THREAD()->CatchAtSafePointOpportunistic())
+    if (GET_THREAD()->CatchAtSafePoint())
     {
         GET_THREAD()->PulseGCMode();
     }
@@ -3900,7 +3182,7 @@ HCIMPL3(void, JIT_MonTryEnter_Portable, Object* obj, INT32 timeOut, BYTE* pbLock
 
     pCurThread = GetThread();
 
-    if (pCurThread->CatchAtSafePointOpportunistic())
+    if (pCurThread->CatchAtSafePoint())
     {
         goto FramedLockHelper;
     }
@@ -4072,7 +3354,7 @@ HCIMPL_MONHELPER(JIT_MonEnterStatic_Portable, AwareLock *lock)
     MONHELPER_STATE(_ASSERTE(pbLockTaken != NULL && *pbLockTaken == 0));
 
     Thread *pCurThread = GetThread();
-    if (pCurThread->CatchAtSafePointOpportunistic())
+    if (pCurThread->CatchAtSafePoint())
     {
         goto FramedLockHelper;
     }
@@ -4305,7 +3587,10 @@ void RethrowNew()
 
     ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pActiveExInfo->m_ptrs.ContextRecord, ExKind::None);
+    CONTEXT exceptionContext;
+    RtlCaptureContext(&exceptionContext);
+
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, &exceptionContext, ExKind::None);
 
     GCPROTECT_BEGIN(exInfo.m_exception);
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
@@ -4913,21 +4198,6 @@ HCIMPLEND
 //========================================================================
 
 /*************************************************************/
-HCIMPL3(VOID, JIT_StructWriteBarrier, void *dest, void* src, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(typeHnd_);
-    MethodTable *pMT = typeHnd.AsMethodTable();
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-    CopyValueClass(dest, src, pMT);
-    HELPER_METHOD_FRAME_END_POLL();
-
-}
-HCIMPLEND
-
-/*************************************************************/
 // Slow helper to tailcall from the fast one
 NOINLINE HCIMPL0(void, JIT_PollGC_Framed)
 {
@@ -4959,11 +4229,11 @@ HCIMPL0(VOID, JIT_PollGC)
     FCALL_CONTRACT;
 
     // As long as we can have GCPOLL_CALL polls, it would not hurt to check the trap flag.
-    if (!g_TrapReturningThreads.LoadWithoutBarrier())
+    if (!g_TrapReturningThreads)
         return;
 
     // Does someone want this thread stopped?
-    if (!GetThread()->CatchAtSafePointOpportunistic())
+    if (!GetThread()->CatchAtSafePoint())
         return;
 
     // Tailcall to the slow helper
@@ -5171,7 +4441,7 @@ HCIMPLEND
 static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
 {
     STANDARD_VM_CONTRACT;
-    PCODE osrVariant = NULL;
+    PCODE osrVariant = (PCODE)NULL;
 
     // Fetch the patchpoint info for the current method
     EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
@@ -5183,7 +4453,7 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOf
     {
         // Unexpected, but not fatal
         STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "JitPatchpointWorker: failed to restore patchpoint info for Method=0x%pM\n", pMD);
-        return NULL;
+        return (PCODE)NULL;
     }
 
     // Set up a new native code version for the OSR variant of this method.
@@ -5198,7 +4468,7 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOf
         {
             // Unexpected, but not fatal
             STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "JitPatchpointWorker: failed to add native code version for Method=0x%pM\n", pMD);
-            return NULL;
+            return (PCODE)NULL;
         }
     }
 
@@ -5216,7 +4486,7 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOf
 // Helper method wrapper to set up a frame so we can invoke methods that might GC
 HCIMPL3(PCODE, JIT_Patchpoint_Framed, MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
 {
-    PCODE result = NULL;
+    PCODE result = (PCODE)NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
@@ -5258,7 +4528,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     LoaderAllocator* allocator = pMD->GetLoaderAllocator();
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
     PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
-    PCODE osrMethodCode = NULL;
+    PCODE osrMethodCode = (PCODE)NULL;
     bool isNewMethod = false;
 
     // In the current prototype, counter is shared by all patchpoints
@@ -5277,7 +4547,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     const int counterBump = g_pConfig->OSR_CounterBump();
     *counter = counterBump;
 
-#if _DEBUG
+#ifdef _DEBUG
     const int ppId = ppInfo->m_patchpointId;
 #endif
 
@@ -5293,7 +4563,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     // See if we have an OSR method for this patchpoint.
     osrMethodCode = ppInfo->m_osrMethodCode;
 
-    if (osrMethodCode == NULL)
+    if (osrMethodCode == (PCODE)NULL)
     {
         // No OSR method yet, let's see if we should create one.
         //
@@ -5395,7 +4665,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         osrMethodCode = HCCALL3(JIT_Patchpoint_Framed, pMD, codeInfo, ilOffset);
 
         // If that failed, mark the patchpoint as invalid.
-        if (osrMethodCode == NULL)
+        if (osrMethodCode == (PCODE)NULL)
         {
             // Unexpected, but not fatal
             STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
@@ -5406,13 +4676,13 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         }
 
         // We've successfully created the osr method; make it available.
-        _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+        _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
         ppInfo->m_osrMethodCode = osrMethodCode;
         isNewMethod = true;
     }
 
     // If we get here, we have code to transition to...
-    _ASSERTE(osrMethodCode != NULL);
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
 
     {
         Thread *pThread = GetThread();
@@ -5430,7 +4700,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         DWORD contextSize = 0;
         ULONG64 xStateCompactionMask = 0;
         DWORD contextFlags = CONTEXT_FULL;
-        if (Thread::AreCetShadowStacksEnabled())
+        if (Thread::AreShadowStacksEnabled())
         {
             xStateCompactionMask = XSTATE_MASK_CET_U;
             contextFlags |= CONTEXT_XSTATE;
@@ -5458,7 +4728,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         RtlCaptureContext(pFrameContext);
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-        if (Thread::AreCetShadowStacksEnabled())
+        if (Thread::AreShadowStacksEnabled())
         {
             pFrameContext->ContextFlags |= CONTEXT_XSTATE;
             SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
@@ -5522,6 +4792,12 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         // Install new entry point as IP
         SetIP(pFrameContext, osrMethodCode);
 
+#ifdef _DEBUG
+        // Keep this context around to aid in debugging OSR transition problems
+        static CONTEXT s_lastOSRTransitionContext;
+        s_lastOSRTransitionContext = *pFrameContext;
+#endif
+
         // Restore last error (since call below does not return)
         // END_PRESERVE_LAST_ERROR;
         ::SetLastError(dwLastError);
@@ -5558,7 +4834,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     // Patchpoint identity is the helper return address
     PCODE ip = (PCODE)_ReturnAddress();
 
-#if _DEBUG
+#ifdef _DEBUG
     // Friendly ID number
     int ppId = 0;
 #endif
@@ -5572,7 +4848,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
     ppInfo = manager->GetPerPatchpointInfo(ip);
 
-#if _DEBUG
+#ifdef _DEBUG
     ppId = ppInfo->m_patchpointId;
 #endif
 
@@ -5583,7 +4859,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     {
         GCX_PREEMP();
 
-        while (ppInfo->m_osrMethodCode == NULL)
+        while (ppInfo->m_osrMethodCode == (PCODE)NULL)
         {
             // Invalid patchpoints are fatal, for partial compilation patchpoints
             //
@@ -5629,7 +4905,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
             // If that failed, mark the patchpoint as invalid.
             // This is fatal, for partial compilation patchpoints
             //
-            if (newMethodCode == NULL)
+            if (newMethodCode == (PCODE)NULL)
             {
                 STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) OSR method creation failed,"
                     " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
@@ -5639,7 +4915,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
             }
 
             // We've successfully created the osr method; make it available.
-            _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+            _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
             ppInfo->m_osrMethodCode = newMethodCode;
             isNewMethod = true;
         }
@@ -5647,7 +4923,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 
     // If we get here, we have code to transition to...
     PCODE osrMethodCode = ppInfo->m_osrMethodCode;
-    _ASSERTE(osrMethodCode != NULL);
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
 
     Thread *pThread = GetThread();
 
@@ -5938,7 +5214,7 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
     //
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     DELEGATEREF del = (DELEGATEREF)objRef;
-    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == (PCODE)NULL))
     {
         MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
         if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
@@ -5985,7 +5261,7 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
     //
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     DELEGATEREF del = (DELEGATEREF)objRef;
-    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == (PCODE)NULL))
     {
         MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
         if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
@@ -6182,7 +5458,7 @@ HCIMPLEND
 /* Fills out portions of an InlinedCallFrame for JIT64    */
 /* The idea here is to allocate and initialize the frame to only once, */
 /* regardless of how many PInvokes there are in the method            */
-Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg)
+Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 {
     CONTRACTL
     {
@@ -6196,7 +5472,6 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
     _ASSERTE(pFrame != pThread->GetFrame());
 
     pFrame->Init();
-    pFrame->m_StubSecretArg = StubSecretArg;
     pFrame->m_Next = pThread->GetFrame();
 
     return pThread;
@@ -6298,7 +5573,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
-        if (g_TrapReturningThreads.LoadWithoutBarrier() != 0)
+        if (g_TrapReturningThreads != 0)
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
@@ -6335,7 +5610,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
-        if (g_TrapReturningThreads.LoadWithoutBarrier() != 0)
+        if (g_TrapReturningThreads != 0)
         {
             JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress());
         }

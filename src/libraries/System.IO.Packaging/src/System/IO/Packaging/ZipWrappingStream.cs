@@ -67,7 +67,7 @@ namespace System.IO.Packaging
             return _baseStream.Read(buffer, offset, count);
         }
 
-#if NETCOREAPP
+#if NET
         public override void Write(
             ReadOnlySpan<byte> buffer
         )

@@ -726,7 +726,7 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef 
 }
 
 /*
- * mono_llvm_register_intrinsic:
+ * mono_llvm_register_overloaded_intrinsic:
  *
  *   Register an overloaded LLVM intrinsic identified by ID using the supplied types.
  */

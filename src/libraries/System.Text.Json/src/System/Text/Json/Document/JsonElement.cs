@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
@@ -1163,6 +1165,13 @@ namespace System.Text.Json
             return _parent.GetNameOfPropertyValue(_idx);
         }
 
+        internal ReadOnlySpan<byte> GetPropertyNameRaw()
+        {
+            CheckValidInstance();
+
+            return _parent.GetPropertyNameRaw(_idx);
+        }
+
         /// <summary>
         ///   Gets the original input data backing this value, returning it as a <see cref="string"/>.
         /// </summary>
@@ -1191,6 +1200,153 @@ namespace System.Text.Json
             CheckValidInstance();
 
             return _parent.GetPropertyRawValueAsString(_idx);
+        }
+
+        internal bool ValueIsEscaped
+        {
+            // TODO make public https://github.com/dotnet/runtime/issues/77666
+            get
+            {
+                CheckValidInstance();
+
+                return _parent.ValueIsEscaped(_idx, isPropertyName: false);
+            }
+        }
+
+        internal ReadOnlySpan<byte> ValueSpan
+        {
+            // TODO make public https://github.com/dotnet/runtime/issues/77666
+            get
+            {
+                CheckValidInstance();
+
+                return _parent.GetRawValue(_idx, includeQuotes: false).Span;
+            }
+        }
+
+        // TODO make public https://github.com/dotnet/runtime/issues/33388
+        internal static bool DeepEquals(JsonElement left, JsonElement right)
+        {
+            Debug.Assert(left._parent != null);
+            Debug.Assert(right._parent != null);
+
+            JsonValueKind kind = left.ValueKind;
+            if (kind != right.ValueKind)
+            {
+                return false;
+            }
+
+            switch (kind)
+            {
+                case JsonValueKind.Null or JsonValueKind.False or JsonValueKind.True:
+                    return true;
+
+                case JsonValueKind.Number:
+                    return JsonHelpers.AreEqualJsonNumbers(left.GetRawValue().Span, right.GetRawValue().Span);
+
+                case JsonValueKind.String:
+                    if (right.ValueIsEscaped)
+                    {
+                        if (left.ValueIsEscaped)
+                        {
+                            // Both values are escaped, force an allocation to unescape the RHS.
+                            return left.ValueEquals(right.GetString());
+                        }
+
+                        // Swap values so that unescaping is handled by the LHS.
+                        (left, right) = (right, left);
+                    }
+
+                    return left.ValueEquals(right.ValueSpan);
+
+                case JsonValueKind.Array:
+                    ArrayEnumerator rightArrayEnumerator = right.EnumerateArray();
+                    foreach (JsonElement leftElement in left.EnumerateArray())
+                    {
+                        if (!rightArrayEnumerator.MoveNext() || !DeepEquals(leftElement, rightArrayEnumerator.Current))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return !rightArrayEnumerator.MoveNext();
+
+                default:
+                    Debug.Assert(kind is JsonValueKind.Object);
+                    ObjectEnumerator leftObjectEnumerator = left.EnumerateObject();
+                    ObjectEnumerator rightObjectEnumerator = right.EnumerateObject();
+
+                    // Two JSON objects are considered equal if they define the same set of properties.
+                    // Start optimistically with sequential comparison, but fall back to unordered
+                    // comparison as soon as a mismatch is encountered.
+
+                    while (leftObjectEnumerator.MoveNext())
+                    {
+                        if (!rightObjectEnumerator.MoveNext())
+                        {
+                            return false;
+                        }
+
+                        JsonProperty leftProp = leftObjectEnumerator.Current;
+                        JsonProperty rightProp = rightObjectEnumerator.Current;
+
+                        if (!NameEquals(leftProp, rightProp))
+                        {
+                            // We have our first mismatch, fall back to unordered comparison.
+                            return UnorderedObjectDeepEquals(leftObjectEnumerator, rightObjectEnumerator);
+                        }
+
+                        if (!DeepEquals(leftProp.Value, rightProp.Value))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return !rightObjectEnumerator.MoveNext();
+
+                    static bool UnorderedObjectDeepEquals(ObjectEnumerator left, ObjectEnumerator right)
+                    {
+                        Dictionary<string, JsonElement> rightElements = new(StringComparer.Ordinal);
+                        do
+                        {
+                            JsonProperty prop = right.Current;
+                            rightElements.TryAdd(prop.Name, prop.Value);
+                        }
+                        while (right.MoveNext());
+
+                        int leftCount = 0;
+                        do
+                        {
+                            JsonProperty prop = left.Current;
+                            if (!rightElements.TryGetValue(prop.Name, out JsonElement rightElement) || !DeepEquals(prop.Value, rightElement))
+                            {
+                                return false;
+                            }
+
+                            leftCount++;
+                        }
+                        while (left.MoveNext());
+
+                        return leftCount == rightElements.Count;
+                    }
+
+                    static bool NameEquals(JsonProperty left, JsonProperty right)
+                    {
+                        if (right.NameIsEscaped)
+                        {
+                            if (left.NameIsEscaped)
+                            {
+                                // Both values are escaped, force an allocation to unescape the RHS.
+                                return left.NameEquals(right.Name);
+                            }
+
+                            // Swap values so that unescaping is handled by the LHS
+                            (left, right) = (right, left);
+                        }
+
+                        return left.NameEquals(right.NameSpan);
+                    }
+            }
         }
 
         /// <summary>
@@ -1243,7 +1399,7 @@ namespace System.Text.Json
             if (TokenType == JsonTokenType.Null)
             {
                 // This is different than Length == 0, in that it tests true for null, but false for ""
-                return utf8Text == default;
+                return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(utf8Text));
             }
 
             return TextEqualsHelper(utf8Text, isPropertyName: false, shouldUnescape: true);
@@ -1271,7 +1427,7 @@ namespace System.Text.Json
             if (TokenType == JsonTokenType.Null)
             {
                 // This is different than Length == 0, in that it tests true for null, but false for ""
-                return text == default;
+                return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(text));
             }
 
             return TextEqualsHelper(text, isPropertyName: false);
@@ -1289,6 +1445,13 @@ namespace System.Text.Json
             CheckValidInstance();
 
             return _parent.TextEquals(_idx, text, isPropertyName);
+        }
+
+        internal bool ValueIsEscapedHelper(bool isPropertyName)
+        {
+            CheckValidInstance();
+
+            return _parent.ValueIsEscaped(_idx, isPropertyName);
         }
 
         /// <summary>

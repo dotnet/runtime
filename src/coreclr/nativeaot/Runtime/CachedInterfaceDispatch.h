@@ -18,7 +18,7 @@ void ReclaimUnusedInterfaceDispatchCaches();
 struct InterfaceDispatchCacheEntry
 {
     MethodTable *    m_pInstanceType;    // Potential type of the object instance being dispatched on
-    void *      m_pTargetCode;      // Method to dispatch to if the actual instance type matches the above
+    PCODE            m_pTargetCode;      // Method to dispatch to if the actual instance type matches the above
 };
 
 // The interface dispatch cache itself. As well as the entries we include the cache size (since logic such as

@@ -85,33 +85,6 @@ public static unsafe class UnsafeAccessorsTests
         public string GetFieldValue() => _f;
     }
 
-    class UserDataGenericClass<T>
-    {
-        public const string StaticGenericFieldName = nameof(_GF);
-        public const string GenericFieldName = nameof(_gf);
-        public const string StaticGenericMethodName = nameof(_GM);
-        public const string GenericMethodName = nameof(_gm);
-
-        public const string StaticFieldName = nameof(_F);
-        public const string FieldName = nameof(_f);
-        public const string StaticMethodName = nameof(_M);
-        public const string MethodName = nameof(_m);
-
-        private static T _GF;
-        private T _gf;
-
-        private static string _F = PrivateStatic;
-        private string _f;
-
-        public UserDataGenericClass() { _f = Private; }
-
-        private static string _GM(T s, ref T sr, in T si) => typeof(T).ToString();
-        private string _gm(T s, ref T sr, in T si) => typeof(T).ToString();
-
-        private static string _M(string s, ref string sr, in string si) => s;
-        private string _m(string s, ref string sr, in string si) => s;
-    }
-
     [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
     extern static UserDataClass CallPrivateConstructorClass();
 
@@ -216,23 +189,6 @@ public static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/92633")]
-    public static void Verify_AccessStaticFieldGenericClass()
-    {
-        Console.WriteLine($"Running {nameof(Verify_AccessStaticFieldGenericClass)}");
-
-        Assert.Equal(PrivateStatic, GetPrivateStaticFieldInt((UserDataGenericClass<int>)null));
-
-        Assert.Equal(PrivateStatic, GetPrivateStaticFieldString((UserDataGenericClass<string>)null));
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=UserDataGenericClass<int>.StaticFieldName)]
-        extern static ref string GetPrivateStaticFieldInt(UserDataGenericClass<int> d);
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=UserDataGenericClass<string>.StaticFieldName)]
-        extern static ref string GetPrivateStaticFieldString(UserDataGenericClass<string> d);
-    }
-
-    [Fact]
     public static void Verify_AccessStaticFieldValue()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessStaticFieldValue)}");
@@ -259,21 +215,117 @@ public static unsafe class UnsafeAccessorsTests
         extern static ref string GetPrivateField(ref UserDataValue d);
     }
 
-    [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/92633")]
-    public static void Verify_AccessFieldGenericClass()
+    unsafe struct AllFields
     {
-        Console.WriteLine($"Running {nameof(Verify_AccessFieldGenericClass)}");
+        private bool _bool;
+        private char _char;
+        private byte _byte;
+        private sbyte _sbyte;
+        private short _short;
+        private ushort _ushort;
+        private int _int;
+        private uint _uint;
+        private long _long;
+        private ulong _ulong;
+        private string _string;
+        private AttributeTargets _enum;
+        private void* _ptr;
+        private Guid _guid;
+        private object _object;
+        private int[] _array;
+        private int[,] _mdarray;
+        private IntPtr _intptr;
+        private UIntPtr _uintptr;
+        private delegate*<void> _fptr;
+    }
 
-        Assert.Equal(Private, GetPrivateFieldInt(new UserDataGenericClass<int>()));
+    [Fact]
+    public static void Verify_AccessAllFields_CorElementType()
+    {
+        Console.WriteLine($"Running {nameof(Verify_AccessAllFields_CorElementType)}");
 
-        Assert.Equal(Private, GetPrivateFieldString(new UserDataGenericClass<string>()));
+        AllFields allFields = default;
 
-        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataGenericClass<int>.FieldName)]
-        extern static ref string GetPrivateFieldInt(UserDataGenericClass<int> d);
+        GetBool(ref allFields) = default;
+        GetChar(ref allFields) = default;
+        GetByte(ref allFields) = default;
+        GetSByte(ref allFields) = default;
+        GetShort(ref allFields) = default;
+        GetUShort(ref allFields) = default;
+        GetInt(ref allFields) = default;
+        GetUInt(ref allFields) = default;
+        GetLong(ref allFields) = default;
+        GetULong(ref allFields) = default;
+        GetString(ref allFields) = default;
+        GetEnum(ref allFields) = default;
+        GetPtr(ref allFields) = default;
+        GetGuid(ref allFields) = default;
+        GetObject(ref allFields) = default;
+        GetArray(ref allFields) = default;
+        GetMDArray(ref allFields) = default;
+        GetIntPtr(ref allFields) = default;
+        GetUIntPtr(ref allFields) = default;
+        GetFPtr(ref allFields) = default;
 
-        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataGenericClass<string>.FieldName)]
-        extern static ref string GetPrivateFieldString(UserDataGenericClass<string> d);
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_bool")]
+        extern static ref bool GetBool(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_char")]
+        extern static ref char GetChar(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_byte")]
+        extern static ref byte GetByte(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_sbyte")]
+        extern static ref sbyte GetSByte(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_short")]
+        extern static ref short GetShort(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_ushort")]
+        extern static ref ushort GetUShort(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_int")]
+        extern static ref int GetInt(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_uint")]
+        extern static ref uint GetUInt(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_long")]
+        extern static ref long GetLong(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_ulong")]
+        extern static ref ulong GetULong(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_string")]
+        extern static ref string GetString(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_enum")]
+        extern static ref AttributeTargets GetEnum(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_ptr")]
+        extern static ref void* GetPtr(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_guid")]
+        extern static ref Guid GetGuid(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_object")]
+        extern static ref object GetObject(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_array")]
+        extern static ref int[] GetArray(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_mdarray")]
+        extern static ref int[,] GetMDArray(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_intptr")]
+        extern static ref IntPtr GetIntPtr(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_uintptr")]
+        extern static ref UIntPtr GetUIntPtr(ref AllFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_fptr")]
+        extern static ref delegate*<void> GetFPtr(ref AllFields f);
     }
 
     [Fact]
@@ -587,15 +639,6 @@ public static unsafe class UnsafeAccessorsTests
     {
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
         public extern string NonStatic(string a);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
-        public static extern string CallToString<U>(U a);
-    }
-
-    class Invalid<T>
-    {
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
-        public static extern string CallToString(T a);
     }
 
     [Fact]
@@ -620,8 +663,6 @@ public static unsafe class UnsafeAccessorsTests
         Assert.Throws<BadImageFormatException>(() => LookUpFailsOnPointers(null));
         Assert.Throws<BadImageFormatException>(() => LookUpFailsOnFunctionPointers(null));
         Assert.Throws<BadImageFormatException>(() => new Invalid().NonStatic(string.Empty));
-        Assert.Throws<BadImageFormatException>(() => Invalid.CallToString<string>(string.Empty));
-        Assert.Throws<BadImageFormatException>(() => Invalid<string>.CallToString(string.Empty));
         Assert.Throws<BadImageFormatException>(() =>
         {
             string str = string.Empty;

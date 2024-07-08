@@ -61,7 +61,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(String_TestData))]
         public void String(IEnumerable<string> first, IEnumerable<string> second, IEqualityComparer<string> comparer, string[] expected)
         {
-            if (comparer == null)
+            if (comparer is null)
             {
                 Assert.Equal(expected, first.Intersect(second));
             }
@@ -116,7 +116,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Intersect(Enumerable.Range(0, 3));
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]

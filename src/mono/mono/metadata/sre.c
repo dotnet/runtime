@@ -976,6 +976,7 @@ create_method_token (MonoDynamicImage *assembly, MonoMethod *method, MonoArrayHa
 	sig->hasthis = old->hasthis;
 	sig->explicit_this = old->explicit_this;
 	sig->call_convention = old->call_convention;
+	sig->ext_callconv = old->ext_callconv;
 	sig->generic_param_count = old->generic_param_count;
 	sig->param_count = old->param_count + GINT_TO_UINT16 (nargs);
 	sig->sentinelpos = old->param_count;
@@ -2554,6 +2555,7 @@ reflection_setup_internal_class_internal (MonoReflectionTypeBuilderHandle ref_tb
 	klass->inited = 1; /* we lie to the runtime */
 	klass->name = mono_string_to_utf8_image (klass->image, ref_name, error);
 	goto_if_nok (error, leave);
+	klass->name_hash = mono_metadata_str_hash (klass->name);
 	klass->name_space = mono_string_to_utf8_image (klass->image, ref_nspace, error);
 	goto_if_nok (error, leave);
 	klass->type_token = MONO_TOKEN_TYPE_DEF | table_idx;

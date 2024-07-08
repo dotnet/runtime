@@ -156,6 +156,15 @@ inline CHECK CheckAligned(UINT64 value, UINT alignment)
     CHECK_OK;
 }
 
+#ifdef __APPLE__
+inline CHECK CheckAligned(SIZE_T value, UINT alignment)
+{
+    STATIC_CONTRACT_WRAPPER;
+    CHECK(AlignmentTrim(value, alignment) == 0);
+    CHECK_OK;
+}
+#endif
+
 inline CHECK CheckAligned(const void *address, UINT alignment)
 {
     STATIC_CONTRACT_WRAPPER;
@@ -182,6 +191,14 @@ inline CHECK CheckOverflow(UINT64 value1, UINT64 value2)
     CHECK(value1 + value2 >= value1);
     CHECK_OK;
 }
+
+#ifdef __APPLE__
+inline CHECK CheckOverflow(SIZE_T value1, SIZE_T value2)
+{
+    CHECK(value1 + value2 >= value1);
+    CHECK_OK;
+}
+#endif
 
 inline CHECK CheckOverflow(PTR_CVOID address, UINT offset)
 {
@@ -254,6 +271,15 @@ inline CHECK CheckUnderflow(UINT64 value1, UINT64 value2)
     CHECK_OK;
 }
 
+#ifdef __APPLE__
+inline CHECK CheckUnderflow(SIZE_T value1, SIZE_T value2)
+{
+    CHECK(value1 - value2 <= value1);
+
+    CHECK_OK;
+}
+#endif
+
 inline CHECK CheckUnderflow(const void *address, UINT offset)
 {
 #if POINTER_BITS == 32
@@ -289,6 +315,20 @@ inline CHECK CheckUnderflow(const void *address, UINT64 offset)
 
     CHECK_OK;
 }
+
+#ifdef __APPLE__
+inline CHECK CheckUnderflow(const void *address, SIZE_T offset)
+{
+#if POINTER_BITS == 32
+    CHECK(offset >> 32 == 0);
+    CHECK((UINT) (SIZE_T) address - (UINT) offset <= (UINT) (SIZE_T) address);
+#else
+    CHECK((UINT64) address - offset <= (UINT64) address);
+#endif
+
+    CHECK_OK;
+}
+#endif
 
 inline CHECK CheckUnderflow(const void *address, void *address2)
 {

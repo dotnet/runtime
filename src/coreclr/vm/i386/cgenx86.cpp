@@ -45,8 +45,6 @@
 // if someone changes the frame size.  You are expected to keep this hard coded constant
 // up to date so that changes in the frame size trigger errors at compile time if the code is not altered
 
-void generate_noref_copy (unsigned nbytes, StubLinkerCPU* sl);
-
 #ifdef FEATURE_EH_FUNCLETS
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * regs)
 {
@@ -139,14 +137,13 @@ void EHContext::UpdateFrame(PREGDISPLAY regs)
 }
 #endif // FEATURE_EH_FUNCLETS
 
-void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -170,7 +167,6 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -211,14 +207,13 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
     RETURN;
 }
 
-void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         PRECONDITION(m_MachState.isValid());               // InsureInit has been called
         SUPPORTS_DAC;
     }
@@ -391,14 +386,13 @@ EXTERN_C MachState* STDCALL HelperMethodFrameConfirmState(HelperMethodFrame* fra
 }
 #endif
 
-void ExternalMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void ExternalMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -411,14 +405,13 @@ void ExternalMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 
-void StubDispatchFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void StubDispatchFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -468,14 +461,13 @@ PCODE StubDispatchFrame::GetReturnAddress()
     return retAddress;
 }
 
-void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -521,7 +513,7 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     RETURN;
 }
 
-void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -533,7 +525,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
-        HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -615,14 +606,13 @@ TADDR ResumableFrame::GetReturnAddressPtr()
     return dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Eip);
 }
 
-void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -696,12 +686,11 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
 //  -> HijackFrame::UpdateRegDisplay should restore all the registers pushed by OnHijackTripThread
-void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -753,20 +742,19 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 #endif  // FEATURE_HIJACK
 
-void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
 
     VASigCookie *pVASigCookie = GetVASigCookie();
-    UpdateRegDisplayHelper(pRD, pVASigCookie->sizeOfArgs+sizeof(int));
+    UpdateRegDisplayHelper(pRD, pVASigCookie->sizeOfArgs);
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    PInvokeCalliFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
@@ -774,14 +762,13 @@ void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 #ifndef UNIX_X86_ABI
-void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -822,7 +809,7 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 #endif // !UNIX_X86_ABI
 
 #ifdef FEATURE_READYTORUN
-void DynamicHelperFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void DynamicHelperFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     WRAPPER_NO_CONTRACT;
     UpdateRegDisplayHelper(pRD, 0);
@@ -922,18 +909,6 @@ Stub *GenerateInitPInvokeFrameHelper()
     RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
 }
 
-
-extern "C" VOID STDCALL StubRareEnableWorker(Thread *pThread)
-{
-    WRAPPER_NO_CONTRACT;
-
-    //printf("RareEnable\n");
-    pThread->RareEnablePreemptiveGC();
-}
-
-
-
-
 // Disable when calling into managed code from a place that fails via Exceptions
 extern "C" VOID STDCALL StubRareDisableTHROWWorker(Thread *pThread)
 {
@@ -1019,84 +994,6 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 #pragma warning (default : 4731)
 #endif // !FEATURE_METADATA_UPDATER
 
-
-#ifndef TARGET_UNIX
-#pragma warning(push)
-#pragma warning(disable: 4035)
-extern "C" DWORD xmmYmmStateSupport()
-{
-    // No CONTRACT
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    __asm
-    {
-        mov     ecx, 0                  ; Specify xcr0
-        xgetbv                          ; result in EDX:EAX
-        and eax, 06H
-        cmp eax, 06H                    ; check OS has enabled both XMM and YMM state support
-        jne     not_supported
-        mov     eax, 1
-        jmp     done
-    not_supported:
-        mov     eax, 0
-    done:
-    }
-}
-#pragma warning(pop)
-
-#pragma warning(push)
-#pragma warning(disable: 4035)
-extern "C" DWORD avx512StateSupport()
-{
-    // No CONTRACT
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    __asm
-    {
-        mov     ecx, 0                  ; Specify xcr0
-        xgetbv                          ; result in EDX:EAX
-        and eax, 0E6H
-        cmp eax, 0E6H                  ; check OS has enabled XMM, YMM and ZMM state support
-        jne     not_supported
-        mov     eax, 1
-        jmp     done
-    not_supported:
-        mov     eax, 0
-    done:
-    }
-}
-#pragma warning(pop)
-
-
-#else // !TARGET_UNIX
-
-extern "C" DWORD xmmYmmStateSupport()
-{
-    DWORD eax;
-    __asm("  xgetbv\n" \
-        : "=a"(eax) /*output in eax*/\
-        : "c"(0) /*inputs - 0 in ecx*/\
-        : "edx" /* registers that are clobbered*/
-        );
-    // check OS has enabled both XMM and YMM state support
-    return ((eax & 0x06) == 0x06) ? 1 : 0;
-}
-
-extern "C" DWORD avx512StateSupport()
-{
-    DWORD eax;
-    __asm("  xgetbv\n" \
-        : "=a"(eax) /*output in eax*/\
-        : "c"(0) /*inputs - 0 in ecx*/\
-        : "edx" /* registers that are clobbered*/
-        );
-    // check OS has enabled XMM, YMM and ZMM state support
-    return ((eax & 0x0E6) == 0x0E6) ? 1 : 0;
-}
-
-#endif // !TARGET_UNIX
 
 void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
 {

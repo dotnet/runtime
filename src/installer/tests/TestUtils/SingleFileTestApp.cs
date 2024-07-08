@@ -29,6 +29,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
             PopulateBuiltAppDirectory();
         }
 
+        private SingleFileTestApp(SingleFileTestApp source)
+            : base(source)
+        {
+            AppName = source.AppName;
+            selfContained = source.selfContained;
+            builtApp = new TestApp(Path.Combine(Location, "builtApp"), AppName);
+        }
+
         /// <summary>
         /// Create a framework-dependent single-file test app from pre-built output of <paramref name="appName"/>.
         /// </summary>
@@ -73,6 +81,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return fileSpecs;
         }
 
+        public SingleFileTestApp Copy() => new SingleFileTestApp(this);
+
         public string Bundle(BundleOptions options = BundleOptions.None, Version? bundleVersion = null)
         {
             return Bundle(options, out _, bundleVersion);
@@ -80,7 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public string Bundle(BundleOptions options, out Manifest manifest, Version? bundleVersion = null)
         {
-            string bundleDirectory = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(Location, "bundle"));
+            string bundleDirectory = GetUniqueSubdirectory("bundle");
             var bundler = new Bundler(
                 Binaries.GetExeFileNameForCurrentPlatform(AppName),
                 bundleDirectory,
@@ -124,12 +134,24 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public string GetNewExtractionRootPath()
         {
-            return SharedFramework.CalculateUniqueTestDirectory(Path.Combine(Location, "extract"));
+            return GetUniqueSubdirectory("extract");
         }
 
         public DirectoryInfo GetExtractionDir(string root, Manifest manifest)
         {
             return new DirectoryInfo(Path.Combine(root, Name, manifest.BundleID));
+        }
+
+        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false)
+        {
+            if (selfContained)
+            {
+                builtApp.CreateSingleFileHost(isWindowsGui, copyResources, disableCetCompat);
+            }
+            else
+            {
+                builtApp.CreateAppHost(isWindowsGui, copyResources, disableCetCompat);
+            }
         }
 
         private void PopulateBuiltAppDirectory()
@@ -144,7 +166,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             File.Delete(builtApp.DepsJson);
 
             var shortVersion = TestContext.Tfm[3..]; // trim "net" from beginning
-            var builder = NetCoreAppBuilder.ForNETCoreApp(AppName, TestContext.TargetRID, shortVersion);
+            var builder = NetCoreAppBuilder.ForNETCoreApp(AppName, TestContext.BuildRID, shortVersion);
 
             // Update the .runtimeconfig.json
             builder.WithRuntimeConfig(c =>
@@ -164,7 +186,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     .WithAsset(Path.GetFileName(builtApp.AppDll), f => f.NotOnDisk())));
             if (selfContained)
             {
-                builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.TargetRID}", TestContext.MicrosoftNETCoreAppVersion, l => l
+                builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.BuildRID}", TestContext.MicrosoftNETCoreAppVersion, l => l
                     .WithAssemblyGroup(string.Empty, g =>
                     {
                         foreach (var file in Binaries.GetRuntimeFiles().Assemblies)
@@ -182,14 +204,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             builder.Build(builtApp);
 
             // Create the apphost for the app
-            if (selfContained)
-            {
-                builtApp.CreateSingleFileHost();
-            }
-            else
-            {
-                builtApp.CreateAppHost();
-            }
+            CreateAppHost();
         }
     }
 }

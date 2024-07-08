@@ -1,19 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Net.Cache;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,6 +26,8 @@ namespace System.Net
 {
     public delegate void HttpContinueDelegate(int StatusCode, WebHeaderCollection httpHeaders);
 
+    // NOTE: While this class is not explicitly marked as obsolete,
+    // it effectively is by virtue of WebRequest.Create being obsolete.
     public class HttpWebRequest : WebRequest, ISerializable
     {
         private const int DefaultContinueTimeout = 350; // Current default value from .NET Desktop.
@@ -39,8 +46,10 @@ namespace System.Net
         private IWebProxy? _proxy = WebRequest.DefaultWebProxy;
 
         private Task<HttpResponseMessage>? _sendRequestTask;
+        private HttpRequestMessage? _sendRequestMessage;
 
         private static int _defaultMaxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
+        private static int _defaultMaximumErrorResponseLength = -1;
 
         private int _beginGetRequestStreamCalled;
         private int _beginGetResponseCalled;
@@ -60,7 +69,7 @@ namespace System.Net
         private bool _hostHasPort;
         private Uri? _hostUri;
 
-        private RequestStream? _requestStream;
+        private Stream? _requestStream;
         private TaskCompletionSource<Stream>? _requestStreamOperation;
         private TaskCompletionSource<WebResponse>? _responseOperation;
         private AsyncCallback? _requestStreamCallback;
@@ -76,6 +85,8 @@ namespace System.Net
         private static readonly object s_syncRoot = new object();
         private static volatile HttpClient? s_cachedHttpClient;
         private static HttpClientParameters? s_cachedHttpClientParameters;
+        private bool _disposeRequired;
+        private HttpClient? _httpClient;
 
         //these should be safe.
         [Flags]
@@ -115,6 +126,7 @@ namespace System.Net
             public readonly CookieContainer? CookieContainer;
             public readonly ServicePoint? ServicePoint;
             public readonly TimeSpan ContinueTimeout;
+            public readonly TokenImpersonationLevel ImpersonationLevel;
 
             public HttpClientParameters(HttpWebRequest webRequest, bool async)
             {
@@ -137,6 +149,7 @@ namespace System.Net
                 CookieContainer = webRequest._cookieContainer;
                 ServicePoint = webRequest._servicePoint;
                 ContinueTimeout = TimeSpan.FromMilliseconds(webRequest.ContinueTimeout);
+                ImpersonationLevel = webRequest.ImpersonationLevel;
             }
 
             public bool Matches(HttpClientParameters requestParameters)
@@ -157,7 +170,8 @@ namespace System.Net
                     && ReferenceEquals(ServerCertificateValidationCallback, requestParameters.ServerCertificateValidationCallback)
                     && ReferenceEquals(ClientCertificates, requestParameters.ClientCertificates)
                     && ReferenceEquals(CookieContainer, requestParameters.CookieContainer)
-                    && ReferenceEquals(ServicePoint, requestParameters.ServicePoint);
+                    && ReferenceEquals(ServicePoint, requestParameters.ServicePoint)
+                    && ImpersonationLevel == requestParameters.ImpersonationLevel;
             }
 
             public bool AreParametersAcceptableForCaching()
@@ -420,11 +434,7 @@ namespace System.Net
         /// <devdoc>
         ///    <para>Sets the media type header</para>
         /// </devdoc>
-        public string? MediaType
-        {
-            get;
-            set;
-        }
+        public string? MediaType { get; set; }
 
         /// <devdoc>
         ///    <para>
@@ -677,14 +687,22 @@ namespace System.Net
             }
             set
             {
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, 0);
                 _defaultMaxResponseHeadersLength = value;
             }
         }
 
-        // NOP
         public static int DefaultMaximumErrorResponseLength
         {
-            get; set;
+            get
+            {
+                return _defaultMaximumErrorResponseLength;
+            }
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
+                _defaultMaximumErrorResponseLength = value;
+            }
         }
 
         private static RequestCachePolicy? _defaultCachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
@@ -806,10 +824,12 @@ namespace System.Net
                 if (value.Equals(HttpVersion.Version11))
                 {
                     IsVersionHttp10 = false;
+                    ServicePoint.ProtocolVersion = HttpVersion.Version11;
                 }
                 else if (value.Equals(HttpVersion.Version10))
                 {
                     IsVersionHttp10 = true;
+                    ServicePoint.ProtocolVersion = HttpVersion.Version10;
                 }
                 else
                 {
@@ -995,17 +1015,17 @@ namespace System.Net
                 {
                     _responseCallback(_responseOperation.Task);
                 }
-
-                // Cancel the underlying send operation.
-                Debug.Assert(_sendRequestCts != null);
-                _sendRequestCts.Cancel();
             }
-            else if (_requestStreamOperation != null)
+            if (_requestStreamOperation != null)
             {
                 if (_requestStreamOperation.TrySetCanceled() && _requestStreamCallback != null)
                 {
                     _requestStreamCallback(_requestStreamOperation.Task);
                 }
+
+                // Cancel the underlying send operation.
+                Debug.Assert(_sendRequestCts != null);
+                _sendRequestCts.Cancel();
             }
         }
 
@@ -1033,8 +1053,7 @@ namespace System.Net
         {
             try
             {
-                _sendRequestCts = new CancellationTokenSource();
-                return SendRequest(async: false).GetAwaiter().GetResult();
+                return HandleResponse(async: false).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -1044,10 +1063,11 @@ namespace System.Net
 
         public override Stream GetRequestStream()
         {
+            CheckRequestStream();
             return InternalGetRequestStream().Result;
         }
 
-        private Task<Stream> InternalGetRequestStream()
+        private void CheckRequestStream()
         {
             CheckAbort();
 
@@ -1065,10 +1085,28 @@ namespace System.Net
             {
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
+        }
 
-            _requestStream = new RequestStream();
+        private async Task<Stream> InternalGetRequestStream()
+        {
+            // If we aren't buffering we need to open the connection right away.
+            // Because we need to send the data as soon as possible when it's available from the RequestStream.
+            // Making this allows us to keep the sync send request path for buffering cases.
+            if (AllowWriteStreamBuffering is false)
+            {
+                // We're calling SendRequest with async, because we need to open the connection and send the request
+                // Otherwise, sync path will block the current thread until the request is sent.
+                TaskCompletionSource<Stream> getStreamTcs = new();
+                TaskCompletionSource completeTcs = new();
+                _sendRequestTask = SendRequest(async: true, new RequestStreamContent(getStreamTcs, completeTcs));
+                _requestStream = new RequestStream(await getStreamTcs.Task.ConfigureAwait(false), completeTcs);
+            }
+            else
+            {
+                _requestStream = new RequestBufferingStream();
+            }
 
-            return Task.FromResult((Stream)_requestStream);
+            return _requestStream;
         }
 
         public Stream EndGetRequestStream(IAsyncResult asyncResult, out TransportContext? context)
@@ -1091,6 +1129,8 @@ namespace System.Net
             {
                 throw new InvalidOperationException(SR.net_repcall);
             }
+
+            CheckRequestStream();
 
             _requestStreamCallback = callback;
             _requestStreamOperation = InternalGetRequestStream().ToApm(callback, state);
@@ -1125,78 +1165,95 @@ namespace System.Net
             return stream;
         }
 
-        private async Task<WebResponse> SendRequest(bool async)
+        private Task<HttpResponseMessage> SendRequest(bool async, HttpContent? content = null)
         {
             if (RequestSubmitted)
             {
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
 
-            var request = new HttpRequestMessage(HttpMethod.Parse(_originVerb), _requestUri);
+            _sendRequestMessage = new HttpRequestMessage(HttpMethod.Parse(_originVerb), _requestUri);
+            _sendRequestCts = new CancellationTokenSource();
+            _httpClient = GetCachedOrCreateHttpClient(async, out _disposeRequired);
 
-            bool disposeRequired = false;
-            HttpClient? client = null;
-            try
+            if (content is not null)
             {
-                client = GetCachedOrCreateHttpClient(async, out disposeRequired);
-                if (_requestStream != null)
+                _sendRequestMessage.Content = content;
+            }
+
+            if (_hostUri is not null)
+            {
+                _sendRequestMessage.Headers.Host = Host;
+            }
+
+            AddCacheControlHeaders(_sendRequestMessage);
+
+            // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
+            // HttpRequestMessage.Content.Headers.
+            foreach (string headerName in _webHeaderCollection)
+            {
+                // The System.Net.Http APIs require HttpRequestMessage headers to be properly divided between the request headers
+                // collection and the request content headers collection for all well-known header names.  And custom headers
+                // are only allowed in the request headers collection and not in the request content headers collection.
+                if (IsWellKnownContentHeader(headerName))
                 {
-                    ArraySegment<byte> bytes = _requestStream.GetBuffer();
-                    request.Content = new ByteArrayContent(bytes.Array!, bytes.Offset, bytes.Count);
-                }
-
-                if (_hostUri != null)
-                {
-                    request.Headers.Host = Host;
-                }
-
-                AddCacheControlHeaders(request);
-
-                // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
-                // HttpRequestMessage.Content.Headers.
-                foreach (string headerName in _webHeaderCollection)
-                {
-                    // The System.Net.Http APIs require HttpRequestMessage headers to be properly divided between the request headers
-                    // collection and the request content headers collection for all well-known header names.  And custom headers
-                    // are only allowed in the request headers collection and not in the request content headers collection.
-                    if (IsWellKnownContentHeader(headerName))
-                    {
-                        // Create empty content so that we can send the entity-body header.
-                        request.Content ??= new ByteArrayContent(Array.Empty<byte>());
-
-                        request.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
-                    }
-                    else
-                    {
-                        request.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
-                    }
-                }
-
-                request.Headers.TransferEncodingChunked = SendChunked;
-
-                if (KeepAlive)
-                {
-                    request.Headers.Connection.Add(HttpKnownHeaderNames.KeepAlive);
+                    _sendRequestMessage.Content ??= new ByteArrayContent(Array.Empty<byte>());
+                    _sendRequestMessage.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                 }
                 else
                 {
-                    request.Headers.ConnectionClose = true;
+                    _sendRequestMessage.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                 }
+            }
 
-                if (_servicePoint?.Expect100Continue == true)
-                {
-                    request.Headers.ExpectContinue = true;
-                }
+            if (_servicePoint?.Expect100Continue == true)
+            {
+                _sendRequestMessage.Headers.ExpectContinue = true;
+            }
 
-                request.Version = ProtocolVersion;
+            _sendRequestMessage.Headers.TransferEncodingChunked = SendChunked;
 
-                _sendRequestTask = async ?
-                    client.SendAsync(request, _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead, _sendRequestCts!.Token) :
-                    Task.FromResult(client.Send(request, _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead, _sendRequestCts!.Token));
+            if (KeepAlive)
+            {
+                _sendRequestMessage.Headers.Connection.Add(HttpKnownHeaderNames.KeepAlive);
+            }
+            else
+            {
+                _sendRequestMessage.Headers.ConnectionClose = true;
+            }
 
+            _sendRequestMessage.Version = ProtocolVersion;
+            HttpCompletionOption completionOption = _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead;
+            // If we're not buffering, there is no way to open the connection and not send the request without async.
+            // So we should use Async, if we're not buffering.
+            _sendRequestTask = async || !AllowWriteStreamBuffering ?
+                _httpClient.SendAsync(_sendRequestMessage, completionOption, _sendRequestCts.Token) :
+                Task.FromResult(_httpClient.Send(_sendRequestMessage, completionOption, _sendRequestCts.Token));
+
+            return _sendRequestTask!;
+        }
+
+        private async Task<WebResponse> HandleResponse(bool async)
+        {
+            // If user code used requestStream and didn't dispose it
+            // We're completing it here.
+            if (_requestStream is RequestStream requestStream)
+            {
+                requestStream.Complete();
+            }
+
+            if (_sendRequestTask is null && _requestStream is RequestBufferingStream requestBufferingStream)
+            {
+                ArraySegment<byte> buffer = requestBufferingStream.GetBuffer();
+                _sendRequestTask = SendRequest(async, new ByteArrayContent(buffer.Array!, buffer.Offset, buffer.Count));
+            }
+
+            _sendRequestTask ??= SendRequest(async);
+
+            try
+            {
                 HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
-
-                HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);
+                HttpWebResponse response = new(responseMessage, _requestUri, _cookieContainer);
 
                 int maxSuccessStatusCode = AllowAutoRedirect ? 299 : 399;
                 if ((int)response.StatusCode > maxSuccessStatusCode || (int)response.StatusCode < 200)
@@ -1212,9 +1269,15 @@ namespace System.Net
             }
             finally
             {
-                if (disposeRequired)
+                _sendRequestMessage?.Dispose();
+                if (_requestStream is RequestBufferingStream bufferStream)
                 {
-                    client?.Dispose();
+                    bufferStream.GetMemoryStream().Dispose();
+                }
+
+                if (_disposeRequired)
+                {
+                    _httpClient?.Dispose();
                 }
             }
         }
@@ -1340,9 +1403,8 @@ namespace System.Net
                 throw new InvalidOperationException(SR.net_repcall);
             }
 
-            _sendRequestCts = new CancellationTokenSource();
             _responseCallback = callback;
-            _responseOperation = SendRequest(async: true).ToApm(callback, state);
+            _responseOperation = HandleResponse(async: true).ToApm(callback, state);
 
             return _responseOperation.Task;
         }
@@ -1611,6 +1673,17 @@ namespace System.Net
                 handler.Expect100ContinueTimeout = parameters.ContinueTimeout;
                 client.Timeout = parameters.Timeout;
 
+                if (request != null && request.ImpersonationLevel != TokenImpersonationLevel.None)
+                {
+                    // This is legacy feature and we don't have public API at the moment.
+                    // So we want to process it only if explicitly set.
+                    var settings = typeof(SocketsHttpHandler).GetField("_settings", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(handler);
+                    Debug.Assert(settings != null);
+                    FieldInfo? fi = Type.GetType("System.Net.Http.HttpConnectionSettings, System.Net.Http")?.GetField("_impersonationLevel", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Debug.Assert(fi != null);
+                    fi.SetValue(settings, request.ImpersonationLevel);
+                }
+
                 if (parameters.CookieContainer != null)
                 {
                     handler.CookieContainer = parameters.CookieContainer;
@@ -1619,6 +1692,13 @@ namespace System.Net
                 else
                 {
                     handler.UseCookies = false;
+                }
+
+                if (parameters.ServicePoint is { } servicePoint)
+                {
+                    handler.MaxConnectionsPerServer = servicePoint.ConnectionLimit;
+                    handler.PooledConnectionIdleTimeout = TimeSpan.FromMilliseconds(servicePoint.MaxIdleTime);
+                    handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(servicePoint.ConnectionLeaseTimeout);
                 }
 
                 Debug.Assert(handler.UseProxy); // Default of handler.UseProxy is true.
@@ -1638,7 +1718,7 @@ namespace System.Net
                 {
                     handler.UseProxy = false;
                 }
-                else if (!object.ReferenceEquals(parameters.Proxy, WebRequest.GetSystemWebProxy()))
+                else if (!ReferenceEquals(parameters.Proxy, GetSystemWebProxy()))
                 {
                     handler.Proxy = parameters.Proxy;
                 }
@@ -1659,10 +1739,20 @@ namespace System.Net
                 handler.SslOptions.EnabledSslProtocols = (SslProtocols)parameters.SslProtocols;
                 handler.SslOptions.CertificateRevocationCheckMode = parameters.CheckCertificateRevocationList ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
                 RemoteCertificateValidationCallback? rcvc = parameters.ServerCertificateValidationCallback;
-                if (rcvc != null)
+                handler.SslOptions.RemoteCertificateValidationCallback = (message, cert, chain, errors) =>
                 {
-                    handler.SslOptions.RemoteCertificateValidationCallback = (message, cert, chain, errors) => rcvc(request!, cert, chain, errors);
-                }
+                    if (parameters.ServicePoint is { } servicePoint)
+                    {
+                        servicePoint.Certificate = cert;
+                    }
+
+                    if (rcvc is not null)
+                    {
+                        return rcvc(request!, cert, chain, errors);
+                    }
+
+                    return errors == SslPolicyErrors.None;
+                };
 
                 // Set up a ConnectCallback so that we can control Socket-specific settings, like ReadWriteTimeout => socket.Send/ReceiveTimeout.
                 handler.ConnectCallback = async (context, cancellationToken) =>
@@ -1671,6 +1761,10 @@ namespace System.Net
 
                     try
                     {
+                        IPAddress[] addresses = parameters.Async ?
+                            await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken).ConfigureAwait(false) :
+                            Dns.GetHostAddresses(context.DnsEndPoint.Host);
+
                         if (parameters.ServicePoint is { } servicePoint)
                         {
                             if (servicePoint.ReceiveBufferSize != -1)
@@ -1684,19 +1778,58 @@ namespace System.Net
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, keepAlive.Time);
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, keepAlive.Interval);
                             }
+
+                            BindHelper(servicePoint, ref addresses, socket, context.DnsEndPoint.Port);
+                            static void BindHelper(ServicePoint servicePoint, ref IPAddress[] addresses, Socket socket, int port)
+                            {
+                                if (servicePoint.BindIPEndPointDelegate is null)
+                                {
+                                    return;
+                                }
+
+                                const int MaxRetries = 100;
+                                foreach (IPAddress address in addresses)
+                                {
+                                    int retryCount = 0;
+                                    for (; retryCount < MaxRetries; retryCount++)
+                                    {
+                                        IPEndPoint? endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, port), retryCount);
+                                        if (endPoint is null) // Get other address to try
+                                        {
+                                            break;
+                                        }
+
+                                        try
+                                        {
+                                            socket.Bind(endPoint);
+                                            addresses = [address];
+                                            return; // Bind successful, exit loops.
+                                        }
+                                        catch
+                                        {
+                                            continue;
+                                        }
+                                    }
+
+                                    if (retryCount >= MaxRetries)
+                                    {
+                                        throw new OverflowException(SR.net_maximumbindretries);
+                                    }
+                                }
+                            }
                         }
 
-                        socket.NoDelay = true;
+                        socket.NoDelay = !(parameters.ServicePoint?.UseNagleAlgorithm) ?? true;
 
                         if (parameters.Async)
                         {
-                            await socket.ConnectAsync(context.DnsEndPoint, cancellationToken).ConfigureAwait(false);
+                            await socket.ConnectAsync(addresses, context.DnsEndPoint.Port, cancellationToken).ConfigureAwait(false);
                         }
                         else
                         {
                             using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
                             {
-                                socket.Connect(context.DnsEndPoint);
+                                socket.Connect(addresses, context.DnsEndPoint.Port);
                             }
 
                             // Throw in case cancellation caused the socket to be disposed after the Connect completed

@@ -1053,7 +1053,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (err == 0)
                 {
                     UnsafeNativeMethods.WKSTA_INFO_100 wkstaInfo =
-                        (UnsafeNativeMethods.WKSTA_INFO_100)Marshal.PtrToStructure(buffer, typeof(UnsafeNativeMethods.WKSTA_INFO_100));
+                        Marshal.PtrToStructure<UnsafeNativeMethods.WKSTA_INFO_100>(buffer);
 
                     _machineFlatName = wkstaInfo.wki100_computername;
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "LoadComputerInfo: machineFlatName={0}", _machineFlatName);

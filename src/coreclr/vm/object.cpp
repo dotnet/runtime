@@ -21,6 +21,18 @@
 
 SVAL_IMPL(INT32, ArrayBase, s_arrayBoundsZero);
 
+static DWORD GetGlobalNewHashCode()
+{
+    LIMITED_METHOD_CONTRACT;
+    // Used for generating hash codes for exceptions to determine whether the
+    // Catch_Handler_Found_Event should be reported. See Thread::GetNewHashCode.
+    // Using linear congruential generator from Knuth Vol. 2, p. 102, line 24
+    static DWORD dwHashCodeSeed = 123456789U * 1566083941U + 1;
+    const DWORD multiplier = 1*4 + 5; //same as the GetNewHashCode method
+    dwHashCodeSeed = dwHashCodeSeed*multiplier + 1;
+    return dwHashCodeSeed;
+}
+
 // follow the necessary rules to get a new valid hashcode for an object
 DWORD Object::ComputeHashCode()
 {
@@ -29,10 +41,18 @@ DWORD Object::ComputeHashCode()
     // note that this algorithm now uses at most HASHCODE_BITS so that it will
     // fit into the objheader if the hashcode has to be moved back into the objheader
     // such as for an object that is being frozen
+    Thread *pThread = GetThreadNULLOk();
     do
     {
-        // we use the high order bits in this case because they're more random
-        hashCode = GetThread()->GetNewHashCode() >> (32-HASHCODE_BITS);
+        if (pThread == NULL)
+        {
+            hashCode = (GetGlobalNewHashCode() >> (32-HASHCODE_BITS));
+        }
+        else
+        {
+            // we use the high order bits in this case because they're more random
+            hashCode = pThread->GetNewHashCode() >> (32-HASHCODE_BITS);
+        }
     }
     while (hashCode == 0);   // need to enforce hashCode != 0
 
@@ -40,6 +60,18 @@ DWORD Object::ComputeHashCode()
      _ASSERTE((hashCode & ((1<<HASHCODE_BITS)-1)) == hashCode);
 
     return hashCode;
+}
+
+DWORD Object::GetGlobalNewHashCode()
+{
+    LIMITED_METHOD_CONTRACT;
+    // Used for generating hash codes for exceptions to determine whether the
+    // Catch_Handler_Found_Event should be reported. See Thread::GetNewHashCode.
+    // Using linear congruential generator from Knuth Vol. 2, p. 102, line 24
+    static DWORD dwHashCodeSeed = 123456789U * 1566083941U + 1;
+    const DWORD multiplier = 1*4 + 5; //same as the GetNewHashCode method
+    dwHashCodeSeed = dwHashCodeSeed*multiplier + 1;
+    return dwHashCodeSeed;
 }
 
 #ifndef DACCESS_COMPILE
@@ -211,7 +243,6 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pInterfaceMT));
-        PRECONDITION(pObj->GetMethodTable()->IsRestored());
         PRECONDITION(pInterfaceMT->IsInterface());
     }
     CONTRACTL_END
@@ -333,7 +364,7 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 
     _ASSERTE(!pMT->IsArray());  // bunch of assumptions about arrays wrong.
 
-    if (pMT->ContainsPointers())
+    if (pMT->ContainsGCPointers())
     {
         memmoveGCRefs(dest, src, pMT->GetNumInstanceFieldBytes());
     }
@@ -776,7 +807,7 @@ STRINGREF StringObject::NewString(LPCUTF8 psz)
     }
     CQuickBytes qb;
     WCHAR* pwsz = (WCHAR*) qb.AllocThrows((length) * sizeof(WCHAR));
-    length = WszMultiByteToWideChar(CP_UTF8, 0, psz, length, pwsz, length);
+    length = MultiByteToWideChar(CP_UTF8, 0, psz, length, pwsz, length);
     if (length == 0) {
         COMPlusThrow(kArgumentException, W("Arg_InvalidUTF8String"));
     }
@@ -805,7 +836,7 @@ STRINGREF StringObject::NewString(LPCUTF8 psz, int cBytes)
         COMPlusThrowOM();
     CQuickBytes qb;
     WCHAR* pwsz = (WCHAR*) qb.AllocThrows(cWszBytes);
-    int length = WszMultiByteToWideChar(CP_UTF8, 0, psz, cBytes, pwsz, cBytes);
+    int length = MultiByteToWideChar(CP_UTF8, 0, psz, cBytes, pwsz, cBytes);
     if (length == 0) {
         COMPlusThrow(kArgumentException, W("Arg_InvalidUTF8String"));
     }
@@ -1592,6 +1623,15 @@ BOOL Nullable::IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable*
 }
 
 //===============================================================================
+int32_t Nullable::GetValueAddrOffset(MethodTable* nullableMT)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(IsNullableType(nullableMT));
+    _ASSERTE(strcmp(nullableMT->GetApproxFieldDescListRaw()[1].GetDebugName(), "value") == 0);
+    return nullableMT->GetApproxFieldDescListRaw()[1].GetOffset();
+}
+
 CLR_BOOL* Nullable::HasValueAddr(MethodTable* nullableMT) {
 
     LIMITED_METHOD_CONTRACT;
@@ -1637,7 +1677,12 @@ OBJECTREF Nullable::Box(void* srcPtr, MethodTable* nullableMT)
     OBJECTREF obj = 0;
     GCPROTECT_BEGININTERIOR (src);
     MethodTable* argMT = nullableMT->GetInstantiation()[0].AsMethodTable();
-    obj = argMT->Allocate();
+
+    // MethodTable::Allocate() triggers cctors, so to avoid that we
+    // allocate directly without triggering cctors - boxing should not trigger cctors.
+    argMT->EnsureInstanceActive();
+    obj = AllocateObject(argMT);
+
     CopyValueClass(obj->UnBox(), src->ValueAddr(nullableMT), argMT);
     GCPROTECT_END ();
 
@@ -1907,3 +1952,61 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
 #endif // !defined(DACCESS_COMPILE)
 
 }
+
+#ifndef DACCESS_COMPILE
+void LoaderAllocatorObject::SetSlotsUsed(INT32 newSlotsUsed)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pLoaderAllocatorScout->m_nativeLoaderAllocator->HasHandleTableLock());
+    }
+    CONTRACTL_END;
+
+    m_slotsUsed = newSlotsUsed;
+}
+
+PTRARRAYREF LoaderAllocatorObject::GetHandleTable()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pLoaderAllocatorScout->m_nativeLoaderAllocator->HasHandleTableLock());
+    }
+    CONTRACTL_END;
+
+    return (PTRARRAYREF)m_pSlots;
+}
+
+void LoaderAllocatorObject::SetHandleTable(PTRARRAYREF handleTable)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pLoaderAllocatorScout->m_nativeLoaderAllocator->HasHandleTableLock());
+    }
+    CONTRACTL_END;
+
+    SetObjectReference(&m_pSlots, (OBJECTREF)handleTable);
+}
+
+INT32 LoaderAllocatorObject::GetSlotsUsed()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pLoaderAllocatorScout->m_nativeLoaderAllocator->HasHandleTableLock());
+    }
+    CONTRACTL_END;
+
+    return m_slotsUsed;
+}
+#endif // DACCESS_COMPILE

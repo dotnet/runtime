@@ -22,8 +22,10 @@ parameters:
   runtimeFlavor: 'coreclr'
   shouldContinueOnError: false
   dependsOn: []
-  dependOnEvaluatePaths: false
   SuperPmiCollect: false
+  unifiedArtifactsName: ''
+  unifiedBuildNameSuffix: ''
+  unifiedBuildConfigOverride: ''
 
 ### Test run job
 
@@ -31,7 +33,7 @@ parameters:
 ### buildConfig and archType.
 
 jobs:
-- template: /eng/pipelines/${{ parameters.runtimeFlavor }}/templates/xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -44,8 +46,8 @@ jobs:
     helixType: 'build/tests/'
     runtimeVariant: ${{ parameters.runtimeVariant }}
     pool: ${{ parameters.pool }}
-    condition: ${{ parameters.condition }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    condition: and(succeeded(), ${{ parameters.condition }})
+    logsName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_$(LogNamePrefix)_Attempt$(System.JobAttempt)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -60,22 +62,8 @@ jobs:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-      - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'), eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))  }}:
-        # This is needed for creating a CORE_ROOT in the current design.
-        - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')) }} :
-        # minijit and mono interpreter runtimevariants do not require any special build of the runtime
-        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - ${{ if not(or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')))  }}:
-        - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
-          - ${{ format('{0}_llvmaot_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ if ne(parameters.runtimeVariant, 'llvmfullaot') }}:
-          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
-      # SuperPMI collection needs to run mcs.exe on the AzDO machine. Assume that's an x64 machine, and download an x64 product build if needed.
-      - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
-          - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', '', parameters.osGroup, parameters.osSubgroup, 'x64', parameters.buildConfig) }}
+      - ${{ if ne(parameters.unifiedArtifactsName, '')}}:
+        - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
 
     # Compute job name from template parameters
     ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
@@ -86,6 +74,13 @@ jobs:
       displayName: '${{ parameters.runtimeFlavor }} ${{ parameters.runtimeVariant }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
     variables:
+
+    - name: osGroup
+      value: ${{ parameters.osGroup }}
+    - name: osSubgroup
+      value: ${{ parameters.osSubgroup }}
+    - name: archType
+      value: ${{ parameters.archType }}
 
     - name: monoAotBuildshCommand
       value: ''
@@ -132,6 +127,12 @@ jobs:
       - name: testTreeFilterArg
         value: 'tree GC/Scenarios/GCSimulator'
 
+    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+      parameters:
+        runtimeFlavor: coreclr
+        testGroup: ${{ parameters.testGroup }}
+        liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+
     # Variables used for SuperPMI collection
     - ${{ if eq(parameters.SuperPmiCollect, true) }}:
       - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
@@ -139,11 +140,10 @@ jobs:
         value: 'run'
       - name: CollectionName
         value: 'coreclr_tests'
+      - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+        parameters:
+          osGroup: ${{ parameters.osGroup }}
       - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - name: PythonScript
-          value: 'py -3'
-        - name: PipScript
-          value: 'py -3 -m pip'
         - name: MchFilesLocation
           value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
         - name: MergedMchFileLocation
@@ -151,10 +151,6 @@ jobs:
         - name: SpmiLogsLocation
           value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
       - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - name: PythonScript
-          value: 'python3'
-        - name: PipScript
-          value: 'pip3'
         - name: MchFilesLocation
           value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
         - name: MergedMchFileLocation
@@ -199,43 +195,12 @@ jobs:
 
     steps:
 
-    # Optionally download live-built libraries
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(librariesDownloadDir)
-          cleanUnpackFolder: false
-          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
-          artifactName: '$(librariesBuildArtifactName)'
-          displayName: 'live-built libraries'
-
-
-    # Download and unzip managed test artifacts
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: '$(managedTestArtifactRootFolderPath)'
-        artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
-        artifactName: '$(managedGenericTestArtifactName)'
-        displayName: 'generic managed test artifacts'
-
-
-    # Download product binaries directory
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
-        displayName: 'product build'
-
-
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      # We need to explicitly download CoreCLR for Mono
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(coreClrProductRootFolderPath)
-          artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
-          artifactName: '$(coreClrProductArtifactName)'
-          displayName: 'CoreCLR product download for Mono'
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+        artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
+        artifactName: '${{ parameters.unifiedArtifactsName }}'
+        displayName: 'unified artifacts'
 
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
@@ -246,6 +211,13 @@ jobs:
         artifactName: '$(microsoftNetSdkIlArtifactName)'
         displayName: 'Microsoft.NET.Sdk.IL package'
 
+    # Download and unzip managed test artifacts
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: '$(managedTestArtifactRootFolderPath)'
+        artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+        artifactName: '$(managedGenericTestArtifactName)'
+        displayName: 'generic managed test artifacts'
 
     # Download and unzip native test artifacts
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -254,17 +226,6 @@ jobs:
         artifactFileName: '$(nativeTestArtifactName)$(archiveExtension)'
         artifactName: '$(nativeTestArtifactName)'
         displayName: 'native test artifacts'
-
-
-    # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe)
-    - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)'
-          artifactFileName: 'CoreCLRProduct__$(osGroup)$(osSubgroup)_x64_$(buildConfig)$(archiveExtension)'
-          artifactName: 'CoreCLRProduct__$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
-          displayName: 'CoreCLR product build (x64)'
-
 
     # Publish native test components to test output folder. Sadly we cannot do this
     # during product build (so that we could zip up the files in their final test location
@@ -389,7 +350,7 @@ jobs:
           - jitstress1_tiered
           - jitstress2
           - jitstress2_tiered
-          - zapdisable
+          - disabler2r
           - tailcallstress
         ${{ if in(parameters.testGroup, 'jitstress-random') }}:
           scenarios:
@@ -507,9 +468,9 @@ jobs:
         ${{ if in(parameters.testGroup, 'gcstress-extra') }}:
           scenarios:
           - heapverify1
-          - gcstress0xc_zapdisable
-          - gcstress0xc_zapdisable_jitstress2
-          - gcstress0xc_zapdisable_heapverify1
+          - gcstress0xc_disabler2r
+          - gcstress0xc_disabler2r_jitstress2
+          - gcstress0xc_disabler2r_heapverify1
           - gcstress0xc_jitstress1
           - gcstress0xc_jitstress2
           - gcstress0xc_tailcallstress
@@ -575,6 +536,8 @@ jobs:
             scenarios:
             - jitosr_stress
             - jitpartialcompilation_pgo
+            - jitoptrepeat
+            - jitoldlayout
           ${{ else }}:
             scenarios:
             - jitosr_stress
@@ -585,7 +548,9 @@ jobs:
             - jitobjectstackallocation
             - jitphysicalpromotion_only
             - jitphysicalpromotion_full
-            - jitcrossblocklocalassertionprop
+            - jitrlcse
+            - jitoptrepeat
+            - jitoldlayout
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:
           - jitcfg
@@ -598,15 +563,6 @@ jobs:
         ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
           scenarios:
           - clrinterpreter
-
-    # Publish Logs
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_$(LogNamePrefix)_Attempt$(System.JobAttempt)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
-      continueOnError: true
-      condition: always()
 
     ########################################################################################################
     #
@@ -632,6 +588,9 @@ jobs:
           displayName: Create SuperPMI directories
           condition: always()
 
+      - script: $(PythonSetupScript)
+        displayName: Enable python venv
+
       - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
         displayName: 'Merge $(CollectionName)-$(CollectionType) SuperPMI collections'
         condition: always()
@@ -656,15 +615,19 @@ jobs:
         condition: always()
 
       # Ensure the Python azure-storage-blob package is installed before doing the upload.
-      - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
-        displayName: Upgrade Pip to latest and install azure-storage-blob Python package
+      - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+        displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
         condition: always()
 
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+      - task: AzureCLI@2
         displayName: 'Upload SuperPMI $(CollectionName)-$(CollectionType) collection to Azure Storage'
+        inputs:
+          azureSubscription: 'superpmi-collect-rw'
+          scriptType: 'pscore'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
         condition: always()
-        env:
-          CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
 
       - task: CopyFiles@2
         displayName: Copying superpmi.log of all partitions

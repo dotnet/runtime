@@ -3,6 +3,7 @@
 
 using System;
 using System.Reflection;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 #pragma warning disable 0219  // field is never used
@@ -55,6 +56,9 @@ namespace System.Reflection.Tests
         {
             MethodBase mbase = typeof(MethodBaseTests).GetMethod("MyOtherMethod", BindingFlags.Static | BindingFlags.Public);
             MethodBody mb = mbase.GetMethodBody();
+            var il = mb.GetILAsByteArray();
+            if (il?.Length == 1 && il[0] == 0x2a) // ILStrip replaces method bodies with the 'ret' IL opcode i.e. 0x2a
+                throw new SkipTestException("The method body was processed using ILStrip.");
             var codeSize = mb.GetILAsByteArray().Length;
             Assert.True(mb.InitLocals);  // local variables are initialized
 
@@ -109,12 +113,18 @@ namespace System.Reflection.Tests
         public static void MyOtherMethod(object arg)
         {
             int var1 = 2;
+            Keep(ref var1);
+
             string var2 = "I am a string";
+            Keep(ref var2);
 
             if (arg == null)
             {
                 throw new ArgumentNullException("Input arg cannot be null.");
             }
+
+            // Reference local variables to prevent them from being optimized out by Roslyn
+            static void Keep<T>(ref T value) { };
         }
 #pragma warning restore xUnit1013 // Public method should be marked as test
 

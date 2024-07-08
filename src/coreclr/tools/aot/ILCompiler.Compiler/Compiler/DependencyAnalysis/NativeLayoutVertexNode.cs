@@ -752,7 +752,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(NeedsEntrypoint(_method));
             unboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
-            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, unboxingStub);
+            // TODO-SIZE: this is only address taken if it's a target of a delegate
+            IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(_method, unboxingStub);
             // Note: We don't set the IsUnboxingStub flag on template methods (all template lookups performed at runtime are performed with this flag not set,
             // since it can't always be conveniently computed for a concrete method before looking up its template)
             unboxingStub = false;
@@ -909,6 +910,15 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            foreach (GenericParameterDesc genericParam in _method.GetTypicalMethodDefinition().Instantiation)
+            {
+                foreach (TypeDesc typeConstraint in genericParam.TypeConstraints)
+                {
+                    if (typeConstraint.IsInterface)
+                        yield return new DependencyListEntry(context.InterfaceUse(typeConstraint.GetTypeDefinition()), "Used as constraint");
+                }
+            }
+
             yield return new DependencyListEntry(context.GenericDictionaryLayout(_method), "Dictionary layout");
         }
 
@@ -1024,6 +1034,15 @@ namespace ILCompiler.DependencyAnalysis
             if (context.PreinitializationManager.HasLazyStaticConstructor(_type.ConvertToCanonForm(CanonicalFormKind.Specific)))
             {
                 yield return new DependencyListEntry(context.MethodEntrypoint(_type.GetStaticConstructor().GetCanonMethodTarget(CanonicalFormKind.Specific)), "cctor for template");
+            }
+
+            foreach (GenericParameterDesc genericParam in _type.GetTypeDefinition().Instantiation)
+            {
+                foreach (TypeDesc typeConstraint in genericParam.TypeConstraints)
+                {
+                    if (typeConstraint.IsInterface)
+                        yield return new DependencyListEntry(context.InterfaceUse(typeConstraint.GetTypeDefinition()), "Used as constraint");
+                }
             }
 
             if (!_isUniversalCanon)
@@ -1387,7 +1406,7 @@ namespace ILCompiler.DependencyAnalysis
                         break;
 
                     case VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables:
-                        if (factory.VTable(declType).HasFixedSlots)
+                        if (factory.VTable(declType).HasKnownVirtualMethodUse)
                         {
                             vtableEntriesToProcess = factory.VTable(declType).Slots;
                         }
@@ -1398,7 +1417,7 @@ namespace ILCompiler.DependencyAnalysis
                         break;
 
                     case VTableEntriesToProcess.AllOnTypesThatProducePartialVTables:
-                        if (factory.VTable(declType).HasFixedSlots)
+                        if (factory.VTable(declType).HasKnownVirtualMethodUse)
                         {
                             vtableEntriesToProcess = Array.Empty<MethodDesc>();
                         }
@@ -1433,7 +1452,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 MethodDesc implMethod = closestDefType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
-                if (implMethod.CanMethodBeInSealedVTable() && !implType.IsArrayTypeWithoutGenericInterfaces())
+                if (implMethod.CanMethodBeInSealedVTable(factory) && !implType.IsArrayTypeWithoutGenericInterfaces())
                 {
                     // Sealed vtable entries on other types in the hierarchy should not be reported (types read entries
                     // from their own sealed vtables, and not from the sealed vtables of base types).
@@ -1621,7 +1640,7 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsRuntimeDeterminedExactMethod)
                 method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (!factory.VTable(method.OwningType).HasFixedSlots)
+            if (!factory.VTable(method.OwningType).HasKnownVirtualMethodUse)
             {
                 yield return new DependencyListEntry(factory.VirtualMethodUse(method), "Slot number");
             }

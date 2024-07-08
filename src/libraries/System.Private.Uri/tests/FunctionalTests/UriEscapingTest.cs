@@ -24,193 +24,304 @@ namespace System.PrivateUri.Tests
             "\u6570\u636E eq '\uD840\uDC00\uD840\uDC01\uD840\uDC02\uD840\uDC03\uD869\uDED1\uD869\uDED2\uD869\uDED3"
             + "\uD869\uDED4\uD869\uDED5\uD869\uDED6'";
 
-        #region EscapeDataString
+        #region EscapeUnescapeDataString
 
         [Fact]
-        public void UriEscapingDataString_JustAlphaNumeric_NothingEscaped()
+        public void EscapeUnescapeDataString_NullArgument()
         {
-            string output = Uri.EscapeDataString(AlphaNumeric);
-            Assert.Equal(AlphaNumeric, output);
+            AssertExtensions.Throws<ArgumentNullException>("stringToEscape", () => Uri.EscapeDataString(null));
+            AssertExtensions.Throws<ArgumentNullException>("stringToUnescape", () => Uri.UnescapeDataString(null));
         }
 
-        [Fact]
-        public void UriEscapingDataString_RFC2396Reserved_Escaped()
+        private static IEnumerable<(string Unescaped, string Escaped)> CombinationsWithDifferentSections(string unescaped, string escaped)
         {
-            string input = RFC2396Reserved;
-            string output = Uri.EscapeDataString(input);
-            Assert.Equal(Escape(RFC2396Reserved), output);
+            yield return (unescaped, escaped);
+            yield return (unescaped + unescaped, escaped + escaped);
+
+            foreach ((string padding, string escapedPadding) in new[]
+            {
+                (" ", "%20"), ("abc", "abc"), ("a b%", "a%20b%25"), ("\u00FC", "%C3%BC"), ("\uD83C\uDF49", "%F0%9F%8D%89")
+            })
+            {
+                yield return ($"{padding}{unescaped}", $"{escapedPadding}{escaped}");
+                yield return ($"{unescaped}{padding}", $"{escaped}{escapedPadding}");
+                yield return ($"{padding}{unescaped}{padding}", $"{escapedPadding}{escaped}{escapedPadding}");
+                yield return ($"{unescaped}{padding}{unescaped}", $"{escaped}{escapedPadding}{escaped}");
+                yield return ($"{padding}{unescaped}{padding}{unescaped}{padding}", $"{escapedPadding}{escaped}{escapedPadding}{escaped}{escapedPadding}");
+            }
         }
 
-        [Fact]
-        public void UriEscapingDataString_RFC3986Unreserved_NothingEscaped()
+        private static IEnumerable<(string Unescaped, string Escaped)> UriEscapeUnescapeDataStringTestInputs()
         {
-            string input = RFC3986Unreserved;
-            string output = Uri.EscapeDataString(input);
-            Assert.Equal(input, output);
+            yield return ("", "");
+            yield return ("He\\l/lo", "He%5Cl%2Flo");
+
+            yield return (AlphaNumeric, AlphaNumeric);
+            yield return (RFC3986Unreserved, RFC3986Unreserved);
+
+            yield return (RFC2396Reserved, EscapeAscii(RFC2396Reserved));
+            yield return (RFC3986Reserved, EscapeAscii(RFC3986Reserved));
+
+            // Note that \ and % are not officially reserved, but we treat it as reserved.
+            yield return (RFC3986Reserved + "\\%", EscapeAscii(RFC3986Reserved + "\\%"));
+
+            yield return ("\u30AF", "%E3%82%AF");
+            yield return (GB18030CertificationString1, "%E6%95%B0%E6%8D%AE%20eq%20%27%F0%A0%80%80%F0%A0%80%81%F0%A0%80%82%F0%A0%80%83%F0%AA%9B%91%F0%AA%9B%92%F0%AA%9B%93%F0%AA%9B%94%F0%AA%9B%95%F0%AA%9B%96%27");
+
+            // Test all ASCII that should be escaped
+            for (int i = 0; i < 128; i++)
+            {
+                if (!RFC3986Unreserved.Contains((char)i))
+                {
+                    string s = new string((char)i, 42);
+                    yield return (s, EscapeAscii(s));
+                }
+            }
+
+            // Valid surrogate pairs
+            yield return ("\uD800\uDC00", "%F0%90%80%80");
+            yield return ("\uD83C\uDF49", "%F0%9F%8D%89");
         }
 
-        [Fact]
-        public void UriEscapingDataString_RFC3986Reserved_Escaped()
+        public static IEnumerable<object[]> UriEscapeDataString_MemberData()
         {
-            string input = RFC3986Reserved;
-            string output = Uri.EscapeDataString(input);
-            Assert.Equal(Escape(RFC3986Reserved), output);
+            (string Unescaped, string Escaped)[] pairs =
+            [
+                .. UriEscapeUnescapeDataStringTestInputs(),
+
+                // Invalid surrogate pairs
+                ("\uD800", "%EF%BF%BD"),
+                ("abc\uD800", "abc%EF%BF%BD"),
+                ("abc\uD800\uD800abc", "abc%EF%BF%BD%EF%BF%BDabc"),
+                ("\xD800\xD800\xDFFF", "%EF%BF%BD%F0%90%8F%BF"),
+            ];
+
+            return pairs
+                .SelectMany(p => CombinationsWithDifferentSections(p.Unescaped, p.Escaped))
+                .Select(p => new[] { p.Unescaped, p.Escaped });
         }
 
-        [Fact]
-        public void UriEscapingDataString_RFC3986ReservedWithIRI_Escaped()
+        public static IEnumerable<object[]> UriUnescapeDataString_MemberData()
         {
-            // Note that \ and % are not officialy reserved, but we treat it as reserved.
-            string input = RFC3986Reserved;
-            string output = Uri.EscapeDataString(input);
-            Assert.Equal(Escape(RFC3986Reserved), output);
+            const string OneByteUtf8 = "%41";           // A
+            const string TwoByteUtf8 = "%C3%BC";        // \u00FC
+            const string ThreeByteUtf8 = "%E8%AF%B6";   // \u8BF6
+            const string FourByteUtf8 = "%F0%9F%98%80"; // \uD83D\uDE00
+
+            const string InvalidOneByteUtf8 = "%FF";
+            const string OverlongTwoByteUtf8 = "%C1%81";        // A
+            const string OverlongThreeByteUtf8 = "%E0%83%BC";   // \u00FC
+            const string OverlongFourByteUtf8 = "%F0%88%AF%B6"; // \u8BF6;
+
+            (string Unescaped, string Escaped)[] pairs =
+            [
+                .. UriEscapeUnescapeDataStringTestInputs(),
+
+                // Many combinations that include non-ASCII to test the PercentEncodingHelper
+                ("A", OneByteUtf8),
+                ("\u00FC", TwoByteUtf8),
+                ("\u8BF6", ThreeByteUtf8),
+                ("\uD83D\uDE00", FourByteUtf8),
+
+                ("AA", OneByteUtf8 + OneByteUtf8),
+                ("\u00FC\u00FC", TwoByteUtf8 + TwoByteUtf8),
+                ("\u8BF6\u8BF6", ThreeByteUtf8 + ThreeByteUtf8),
+                ("\uD83D\uDE00\uD83D\uDE00", FourByteUtf8 + FourByteUtf8),
+
+                ("A\u00FCA", OneByteUtf8 + TwoByteUtf8 + OneByteUtf8),
+                ("\u00FC\u8BF6\u00FC", TwoByteUtf8 + ThreeByteUtf8 + TwoByteUtf8),
+
+                (InvalidOneByteUtf8 + "A", InvalidOneByteUtf8 + OneByteUtf8),
+                (OverlongTwoByteUtf8 + "\u00FC", OverlongTwoByteUtf8 + TwoByteUtf8),
+                (OverlongThreeByteUtf8 + "\u8BF6", OverlongThreeByteUtf8 + ThreeByteUtf8),
+                (OverlongFourByteUtf8 + "\uD83D\uDE00", OverlongFourByteUtf8 + FourByteUtf8),
+
+                (InvalidOneByteUtf8, InvalidOneByteUtf8),
+                (InvalidOneByteUtf8 + InvalidOneByteUtf8, InvalidOneByteUtf8 + InvalidOneByteUtf8),
+                (InvalidOneByteUtf8 + InvalidOneByteUtf8 + InvalidOneByteUtf8, InvalidOneByteUtf8 + InvalidOneByteUtf8 + InvalidOneByteUtf8),
+
+                // 11001010 11100100 10001000 10110010 - 2-byte marker followed by 3-byte sequence
+                ("%CA" + '\u4232', "%CA" + "%E4%88%B2"),
+
+                // 4 valid UTF8 bytes followed by 5 invalid UTF8 bytes
+                ("\U0010003A" + "%FD%80%80%BA%CD", "%F4%80%80%BA" + "%FD%80%80%BA%CD"),
+
+                // BIDI char
+                ("\u200E", "%E2%80%8E"),
+
+                // Char Block: 3400..4DBF-CJK Unified Ideographs Extension A
+                ("\u4232", "%E4%88%B2"),
+
+                // BIDI char followed by a valid 3-byte UTF8 sequence (\u30AF)
+                ("\u200E" + "\u30AF", "%E2%80%8E" + "%E3%82%AF"),
+
+                // BIDI char followed by invalid UTF8 bytes
+                ("\u200E" + "%F0%90%90", "%E2%80%8E" + "%F0%90%90"),
+
+                // Input string:                %98%C8%D4%F3 %D4%A8 %7A %CF%DE %41 %16
+                // Valid Unicode sequences:                  %D4%A8 %7A        %41 %16
+                ("%98%C8%D4%F3" + '\u0528' + 'z' + "%CF%DE" + 'A' + '\x16', "%98%C8%D4%F3" + "%D4%A8" + "%7A" + "%CF%DE" + "%41" + "%16"),
+
+                // 2-byte marker, valid 4-byte sequence, continuation byte
+                ("%C6" + "\U000FC878" + "%B5", "%C6" + "%F3%BC%A1%B8" + "%B5"),
+            ];
+
+            return pairs
+                .SelectMany(p => CombinationsWithDifferentSections(p.Unescaped, p.Escaped))
+                .Select(p => new[] { p.Unescaped, p.Escaped });
         }
 
-        [Fact]
-        public void UriEscapingDataString_Unicode_Escaped()
+        [Theory]
+        [MemberData(nameof(UriEscapeDataString_MemberData))]
+        public void UriEscapeDataString(string unescaped, string escaped)
         {
-            string input = "\u30AF";
-            string output = Uri.EscapeDataString(input);
-            Assert.Equal("%E3%82%AF", output);
-        }
-
-        [Fact]
-        public void UriEscapingDataString_UnicodeWithIRI_Escaped()
-        {
-            string input = "\u30AF";
-
-            string output = Uri.EscapeDataString(input);
-            Assert.Equal("%E3%82%AF", output);
+            ValidateEscape(unescaped, escaped);
 
             using (new ThreadCultureChange("zh-cn"))
             {
-                Assert.Equal(output, Uri.EscapeDataString(input)); //, "Same normalized result expected in different locales."
+                // Same result expected in different locales.
+                ValidateEscape(unescaped, escaped);
+            }
+
+            static void ValidateEscape(string input, string expectedOutput)
+            {
+                Assert.True(input.Length <= expectedOutput.Length);
+
+                // String overload
+                string output = Uri.EscapeDataString(input);
+                Assert.Equal(expectedOutput, output);
+
+                if (input == expectedOutput)
+                {
+                    Assert.Same(input, output);
+                }
+
+                // Span overload
+                output = Uri.EscapeDataString(input.AsSpan());
+                Assert.Equal(expectedOutput, output);
+
+                char[] destination = new char[expectedOutput.Length + 2];
+
+                // Exact destination size
+                Assert.True(Uri.TryEscapeDataString(input, destination.AsSpan(0, expectedOutput.Length), out int charsWritten));
+                Assert.Equal(expectedOutput.Length, charsWritten);
+                Assert.Equal(expectedOutput, destination.AsSpan(0, charsWritten));
+
+                // Larger destination
+                Assert.True(Uri.TryEscapeDataString(input, destination.AsSpan(1), out charsWritten));
+                Assert.Equal(expectedOutput.Length, charsWritten);
+                Assert.Equal(expectedOutput, destination.AsSpan(1, charsWritten));
+
+                // Destination too small
+                if (expectedOutput.Length > 0)
+                {
+                    Assert.False(Uri.TryEscapeDataString(input, destination.AsSpan(0, expectedOutput.Length - 1), out charsWritten));
+                    Assert.Equal(0, charsWritten);
+                }
+
+                // Overlapped source/destination
+                input.CopyTo(destination);
+                Assert.True(Uri.TryEscapeDataString(destination.AsSpan(0, input.Length), destination, out charsWritten));
+                Assert.Equal(expectedOutput.Length, charsWritten);
+                Assert.Equal(expectedOutput, destination.AsSpan(0, charsWritten));
+
+                // Overlapped source/destination with different starts
+                input.CopyTo(destination.AsSpan(1));
+                Assert.True(Uri.TryEscapeDataString(destination.AsSpan(1, input.Length), destination, out charsWritten));
+                Assert.Equal(expectedOutput.Length, charsWritten);
+                Assert.Equal(expectedOutput, destination.AsSpan(0, charsWritten));
+
+                input.CopyTo(destination);
+                Assert.True(Uri.TryEscapeDataString(destination.AsSpan(0, input.Length), destination.AsSpan(1), out charsWritten));
+                Assert.Equal(expectedOutput.Length, charsWritten);
+                Assert.Equal(expectedOutput, destination.AsSpan(1, charsWritten));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(UriUnescapeDataString_MemberData))]
+        public void UriUnescapeDataString(string unescaped, string escaped)
+        {
+            ValidateUnescape(escaped, unescaped);
+
+            using (new ThreadCultureChange("zh-cn"))
+            {
+                // Same result expected in different locales.
+                ValidateUnescape(escaped, unescaped);
+            }
+
+            static void ValidateUnescape(string input, string expectedOutput)
+            {
+                Assert.True(input.Length >= expectedOutput.Length);
+
+                // String overload
+                string output = Uri.UnescapeDataString(input);
+                Assert.Equal(expectedOutput, output);
+
+                // Span overload
+                output = Uri.UnescapeDataString(input.AsSpan());
+                Assert.Equal(expectedOutput, output);
+
+                char[] destination = new char[input.Length + 2];
+
+                // Exact destination size
+                Assert.True(Uri.TryUnescapeDataString(input, destination.AsSpan(0, expectedOutput.Length), out int charsWritten));
+                Assert.Equal(expectedOutput.Length, charsWritten);
+                Assert.Equal(expectedOutput, destination.AsSpan(0, charsWritten));
+
+                // Larger destination
+                Assert.True(Uri.TryUnescapeDataString(input, destination.AsSpan(1), out charsWritten));
+                Assert.Equal(expectedOutput.Length, charsWritten);
+                Assert.Equal(expectedOutput, destination.AsSpan(1, charsWritten));
+
+                // Destination too small
+                if (expectedOutput.Length > 0)
+                {
+                    Assert.False(Uri.TryUnescapeDataString(input, destination.AsSpan(0, expectedOutput.Length - 1), out charsWritten));
+                    Assert.Equal(0, charsWritten);
+                }
+
+                // Overlapped source/destination
+                input.CopyTo(destination);
+                Assert.True(Uri.TryUnescapeDataString(destination.AsSpan(0, input.Length), destination, out charsWritten));
+                Assert.Equal(expectedOutput.Length, charsWritten);
+                Assert.Equal(expectedOutput, destination.AsSpan(0, charsWritten));
+
+                // Overlapped source/destination with different starts
+                input.CopyTo(destination.AsSpan(1));
+                Assert.True(Uri.TryUnescapeDataString(destination.AsSpan(1, input.Length), destination, out charsWritten));
+                Assert.Equal(expectedOutput.Length, charsWritten);
+                Assert.Equal(expectedOutput, destination.AsSpan(0, charsWritten));
+
+                input.CopyTo(destination);
+                Assert.True(Uri.TryUnescapeDataString(destination.AsSpan(0, input.Length), destination.AsSpan(1), out charsWritten));
+                Assert.Equal(expectedOutput.Length, charsWritten);
+                Assert.Equal(expectedOutput, destination.AsSpan(1, charsWritten));
             }
         }
 
         [Fact]
-        public void UriEscapingDataString_Unicode_SurrogatePair()
-        {
-            string output = Uri.EscapeDataString(GB18030CertificationString1);
-            Assert.Equal(
-                 @"%E6%95%B0%E6%8D%AE%20eq" +
-                "%20%27%F0%A0%80%80%F0%A0%80%81%F0%A0%80%82%F0%A0%80%83%F0%AA%9B%91" +
-                "%F0%AA%9B%92%F0%AA%9B%93%F0%AA%9B%94%F0%AA%9B%95%F0%AA%9B%96%27",
-                output);
-
-            using (new ThreadCultureChange("zh-cn"))
-            {
-                Assert.Equal(output, Uri.EscapeDataString(GB18030CertificationString1)); //"Same normalized result expected in different locales."
-            }
-        }
-
-        public static IEnumerable<object[]> UriEscapeUnescapeDataString_Roundtrip_MemberData()
+        public void UriEscapeUnescapeDataString_LongInputs()
         {
             // Test the no-longer-existing "c_MaxUriBufferSize" limit of 0xFFF0,
             // as well as lengths longer than the max Uri length of ushort.MaxValue.
             foreach (int length in new[] { 1, 0xFFF0, 0xFFF1, ushort.MaxValue + 10 })
             {
-                yield return new object[] { new string('s', length), string.Concat(Enumerable.Repeat("s", length)) };
-                yield return new object[] { new string('/', length), string.Concat(Enumerable.Repeat("%2F", length)) };
+                string unescaped = new string('s', length);
+                string escaped = unescaped;
+
+                Assert.Equal(Uri.EscapeDataString(unescaped), escaped);
+                Assert.Equal(Uri.UnescapeDataString(escaped), unescaped);
+
+                unescaped = new string('/', length);
+                escaped = EscapeAscii(unescaped);
+
+                Assert.Equal(Uri.EscapeDataString(unescaped), escaped);
+                Assert.Equal(Uri.UnescapeDataString(escaped), unescaped);
             }
         }
 
-        [Theory]
-        [MemberData(nameof(UriEscapeUnescapeDataString_Roundtrip_MemberData))]
-        public void UriEscapeUnescapeDataString_Roundtrip(string input, string expectedEscaped)
-        {
-            string output = Uri.EscapeDataString(input);
-            Assert.Equal(expectedEscaped, output);
-            Assert.Equal(input, Uri.UnescapeDataString(output));
-        }
-
-        #endregion EscapeDataString
-
-        #region UnescapeDataString
-
-        [Fact]
-        public void UriUnescapingDataString_JustAlphaNumeric_Unescaped()
-        {
-            string output = Uri.UnescapeDataString(Escape(AlphaNumeric));
-            Assert.Equal(AlphaNumeric, output);
-        }
-
-        [Fact]
-        public void UriUnescapingDataString_RFC2396Unreserved_Unescaped()
-        {
-            string input = RFC2396Unreserved;
-            string output = Uri.UnescapeDataString(Escape(input));
-            Assert.Equal(input, output);
-        }
-
-        [Fact]
-        public void UriUnescapingDataString_RFC2396Reserved_Unescaped()
-        {
-            string input = RFC2396Reserved;
-            string output = Uri.UnescapeDataString(Escape(input));
-            Assert.Equal(input, output);
-        }
-
-        [Fact]
-        public void UriUnescapingDataString_RFC3986Unreserved_Unescaped()
-        {
-            string input = RFC3986Unreserved;
-            string output = Uri.UnescapeDataString(Escape(input));
-            Assert.Equal(input, output);
-        }
-
-        [Fact]
-        public void UriUnescapingDataString_RFC3986Reserved_Unescaped()
-        {
-            string input = RFC3986Reserved;
-            string output = Uri.UnescapeDataString(Escape(input));
-            Assert.Equal(input, output);
-        }
-
-        [Fact]
-        public void UriUnescapingDataString_RFC3986ReservedWithIRI_Unescaped()
-        {
-            // Note that \ and % are not officialy reserved, but we treat it as reserved.
-            string input = RFC3986Reserved;
-            string output = Uri.UnescapeDataString(Escape(input));
-            Assert.Equal(input, output);
-        }
-
-        [Fact]
-        public void UriUnescapingDataString_Unicode_Unescaped()
-        {
-            string input = @"\u30AF";
-            string output = Uri.UnescapeDataString(Escape(input));
-            Assert.Equal(input, output);
-        }
-
-        [Fact]
-        public void UriUnescapingDataString_UnicodeWithIRI_Unescaped()
-        {
-            string input = @"\u30AF";
-            string output = Uri.UnescapeDataString(Escape(input));
-            Assert.Equal(input, output);
-
-            using (new ThreadCultureChange("zh-cn"))
-            {
-                Assert.Equal(output, Uri.UnescapeDataString(Escape(input))); // Same normalized result expected in different locales.
-            }
-        }
-
-        [Fact]
-        public void UriUnescapingDataString_Unicode_SurrogatePair()
-        {
-            string escapedInput = Uri.EscapeDataString(GB18030CertificationString1);
-            string output = Uri.UnescapeDataString(escapedInput);
-            Assert.Equal(GB18030CertificationString1, output);
-
-            using (new ThreadCultureChange("zh-cn"))
-            {
-                Assert.Equal(output, Uri.UnescapeDataString(escapedInput)); // Same normalized result expected in different locales.
-            }
-        }
-
-        #endregion UnescapeDataString
+        #endregion EscapeUnescapeDataString
 
         #region EscapeUriString
 
@@ -332,7 +443,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriAbsoluteUnEscaping_AlphaNumericEscapedIriOn_UnEscaping()
         {
-            string escapedAlphaNum = Escape(AlphaNumeric);
+            string escapedAlphaNum = EscapeAscii(AlphaNumeric);
             string input = "http://" + AlphaNumeric.ToLowerInvariant() + "/" + escapedAlphaNum
                 + "?" + escapedAlphaNum + "#" + escapedAlphaNum;
             string expectedOutput = "http://" + AlphaNumeric.ToLowerInvariant() + "/" + AlphaNumeric
@@ -353,7 +464,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriAbsoluteUnEscaping_RFC3986UnreservedEscaped_AllUnescaped()
         {
-            string escaped = Escape(RFC3986Unreserved);
+            string escaped = EscapeAscii(RFC3986Unreserved);
             string input = "http://" + AlphaNumeric.ToLowerInvariant() + "/" + escaped
                 + "?" + escaped + "#" + escaped;
             string expectedOutput = "http://" + AlphaNumeric.ToLowerInvariant() + "/" + RFC3986Unreserved
@@ -375,7 +486,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriAbsoluteUnEscaping_RFC2396ReservedEscaped_NoUnEscaping()
         {
-            string escaped = Escape(RFC2396Reserved);
+            string escaped = EscapeAscii(RFC2396Reserved);
             string input = "http://host/" + escaped + "?" + escaped + "#" + escaped;
 
             Uri testUri = new Uri(input);
@@ -404,7 +515,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriAbsoluteUnEscaping_RFC3986ReservedEscaped_NothingUnescaped()
         {
-            string escaped = Escape(RFC3986Reserved);
+            string escaped = EscapeAscii(RFC3986Reserved);
             string input = "http://host/" + escaped + "?" + escaped + "#" + escaped;
 
             Uri testUri = new Uri(input);
@@ -724,28 +835,12 @@ namespace System.PrivateUri.Tests
 
         #region Helpers
 
-        private static readonly char[] s_hexUpperChars = {
-                                   '0', '1', '2', '3', '4', '5', '6', '7',
-                                   '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
-                                   };
-
         // Percent encode every character
-        private static string Escape(string input)
+        private static string EscapeAscii(string input)
         {
-            byte[] bytes = new byte[4];
-            StringBuilder output = new StringBuilder();
-            for (int index = 0; index < input.Length; index++)
-            {
-                // Non-Ascii is escaped as UTF-8
-                int byteCount = Encoding.UTF8.GetBytes(input, index, 1, bytes, 0);
-                for (int byteIndex = 0; byteIndex < byteCount; byteIndex++)
-                {
-                    output.Append("%");
-                    output.Append(s_hexUpperChars[(bytes[byteIndex] & 0xf0) >> 4]);
-                    output.Append(s_hexUpperChars[bytes[byteIndex] & 0xf]);
-                }
-            }
-            return output.ToString();
+            Assert.True(Ascii.IsValid(input));
+
+            return string.Concat(input.Select(c => $"%{(int)c:X2}"));
         }
 
         #endregion Helpers

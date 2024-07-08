@@ -338,6 +338,67 @@ enum PInvokeTransitionFrameFlags : uint64_t
     PTFF_THREAD_ABORT   = 0x0000001000000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
 
+#elif defined(TARGET_LOONGARCH64)
+enum PInvokeTransitionFrameFlags : uint64_t
+{
+    // NOTE: Keep in sync with src\coreclr\nativeaot\Runtime\loongarch64\AsmMacros.h
+
+    // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has
+    //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
+
+    // standard preserved registers
+    PTFF_SAVE_R23       = 0x0000000000000001,
+    PTFF_SAVE_R24       = 0x0000000000000002,
+    PTFF_SAVE_R25       = 0x0000000000000004,
+    PTFF_SAVE_R26       = 0x0000000000000008,
+    PTFF_SAVE_R27       = 0x0000000000000010,
+    PTFF_SAVE_R28       = 0x0000000000000020,
+    PTFF_SAVE_R29       = 0x0000000000000040,
+    PTFF_SAVE_R30       = 0x0000000000000080,
+    PTFF_SAVE_R31       = 0x0000000000000100,
+
+    PTFF_SAVE_SP        = 0x0000000000000200,   // Used for 'coop pinvokes' in runtime helper routines.  Methods with
+                                                // PInvokes are required to have a frame pointers, but methods which
+                                                // call runtime helpers are not.  Therefore, methods that call runtime
+                                                // helpers may need SP to seed the stackwalk.
+
+    // Scratch registers
+    PTFF_SAVE_R0        = 0x0000000000000400,
+    PTFF_SAVE_R2        = 0x0000000000000800,
+    PTFF_SAVE_R4        = 0x0000000000001000,
+    PTFF_SAVE_R5        = 0x0000000000002000,
+    PTFF_SAVE_R6        = 0x0000000000004000,
+    PTFF_SAVE_R7        = 0x0000000000008000,
+    PTFF_SAVE_R8        = 0x0000000000010000,
+    PTFF_SAVE_R9        = 0x0000000000020000,
+    PTFF_SAVE_R10       = 0x0000000000040000,
+    PTFF_SAVE_R11       = 0x0000000000080000,
+    PTFF_SAVE_R12       = 0x0000000000100000,
+    PTFF_SAVE_R13       = 0x0000000000200000,
+    PTFF_SAVE_R14       = 0x0000000000400000,
+    PTFF_SAVE_R15       = 0x0000000000800000,
+    PTFF_SAVE_R16       = 0x0000000001000000,
+    PTFF_SAVE_R17       = 0x0000000002000000,
+    PTFF_SAVE_R18       = 0x0000000004000000,
+    PTFF_SAVE_R19       = 0x0000000008000000,
+    PTFF_SAVE_R20       = 0x0000000010000000,
+    PTFF_SAVE_R21       = 0x0000000020000000,
+
+    PTFF_SAVE_FP        = 0x0000000040000000,   // should never be used, we require FP frames for methods with
+                                                // pinvoke and it is saved into the frame pointer field instead
+
+    PTFF_SAVE_RA        = 0x0000000080000000,   // this is useful for the case of loop hijacking where we need both
+                                                // a return address pointing into the hijacked method and that method's
+                                                // ra register, which may hold a gc pointer
+
+    // used by hijack handler to report return value of hijacked method
+    PTFF_R4_IS_GCREF    = 0x0000000100000000,
+    PTFF_R4_IS_BYREF    = 0x0000000200000000,
+    PTFF_R5_IS_GCREF    = 0x0000000400000000,
+    PTFF_R5_IS_BYREF    = 0x0000000800000000,
+
+    PTFF_THREAD_ABORT   = 0x0000001000000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
+};
 
 #else // TARGET_ARM
 enum PInvokeTransitionFrameFlags
@@ -400,11 +461,8 @@ struct PInvokeTransitionFrame
 #else // USE_PORTABLE_HELPERS
 struct PInvokeTransitionFrame
 {
-#ifdef TARGET_ARM
-    TgtPTR_Void     m_ChainPointer; // R11, used by OS to walk stack quickly
-#endif
-#ifdef TARGET_ARM64
-    // On arm64, the FP and LR registers are pushed in that order when setting up frames
+#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+    // On arm32/arm64, the FP and LR registers are pushed in that order when setting up frames
     TgtPTR_Void     m_FramePointer;
     TgtPTR_Void     m_RIP;
 #else
@@ -414,6 +472,8 @@ struct PInvokeTransitionFrame
     TgtPTR_Thread   m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
                                 // can be an invalid pointer in universal transition cases (which never need to call GetThread)
 #ifdef TARGET_ARM64
+    uint64_t          m_Flags;  // PInvokeTransitionFrameFlags
+#elif TARGET_LOONGARCH64
     uint64_t          m_Flags;  // PInvokeTransitionFrameFlags
 #else
     uint32_t          m_Flags;  // PInvokeTransitionFrameFlags
@@ -439,6 +499,8 @@ struct PInvokeTransitionFrame
 #define OFFSETOF__Thread__m_pTransitionFrame 0x40
 #elif defined(TARGET_ARM64)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x40
+#elif defined(TARGET_LOONGARCH64)
+#define OFFSETOF__Thread__m_pTransitionFrame 0x40
 #elif defined(TARGET_X86)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x2c
 #elif defined(TARGET_ARM)
@@ -447,27 +509,6 @@ struct PInvokeTransitionFrame
 
 typedef DPTR(MethodTable) PTR_EEType;
 typedef DPTR(PTR_EEType) PTR_PTR_EEType;
-
-struct EETypeRef
-{
-    union
-    {
-        MethodTable *    pEEType;
-        MethodTable **   ppEEType;
-        uint8_t *     rawPtr;
-        UIntTarget  rawTargetPtr; // x86_amd64: keeps union big enough for target-platform pointer
-    };
-
-    static const size_t DOUBLE_INDIR_FLAG = 1;
-
-    PTR_EEType GetValue()
-    {
-        if (dac_cast<TADDR>(rawTargetPtr) & DOUBLE_INDIR_FLAG)
-            return *dac_cast<PTR_PTR_EEType>(rawTargetPtr - DOUBLE_INDIR_FLAG);
-        else
-            return dac_cast<PTR_EEType>(rawTargetPtr);
-    }
-};
 
 // Blobs are opaque data passed from the compiler, through the binder and into the native image. At runtime we
 // provide a simple API to retrieve these blobs (they're keyed by a simple integer ID). Blobs are passed to
@@ -481,15 +522,6 @@ struct BlobHeader
     uint32_t m_size;   // Size of the individual blob excluding this header (DWORD aligned)
 };
 
-#ifdef FEATURE_CUSTOM_IMPORTS
-struct CustomImportDescriptor
-{
-    uint32_t  RvaEATAddr;  // RVA of the indirection cell of the address of the EAT for that module
-    uint32_t  RvaIAT;      // RVA of IAT array for that module
-    uint32_t  CountIAT;    // Count of entries in the above array
-};
-#endif // FEATURE_CUSTOM_IMPORTS
-
 enum RhEHClauseKind
 {
     RH_EH_CLAUSE_TYPED              = 0,
@@ -499,35 +531,4 @@ enum RhEHClauseKind
 };
 
 #define RH_EH_CLAUSE_TYPED_INDIRECT RH_EH_CLAUSE_UNUSED
-
-// mapping of cold code blocks to the corresponding hot entry point RVA
-// format is a as follows:
-// -------------------
-// | subSectionCount |     # of subsections, where each subsection has a run of hot bodies
-// -------------------     followed by a run of cold bodies
-// | hotMethodCount  |     # of hot bodies in subsection
-// | coldMethodCount |     # of cold bodies in subsection
-// -------------------
-// ... possibly repeated on ARM
-// -------------------
-// | hotRVA #1       |     RVA of the hot entry point corresponding to the 1st cold body
-// | hotRVA #2       |     RVA of the hot entry point corresponding to the 2nd cold body
-// ... one entry for each cold body containing the corresponding hot entry point
-
-// number of hot and cold bodies in a subsection of code
-// in x86 and x64 there's only one subsection, on ARM there may be several
-// for large modules with > 16 MB of code
-struct SubSectionDesc
-{
-    uint32_t          hotMethodCount;
-    uint32_t          coldMethodCount;
-};
-
-// this is the structure describing the cold to hot mapping info
-struct ColdToHotMapping
-{
-    uint32_t          subSectionCount;
-    SubSectionDesc  subSection[/*subSectionCount*/1];
-    //  UINT32   hotRVAofColdMethod[/*coldMethodCount*/];
-};
 

@@ -24,7 +24,7 @@ class Program
         Console.WriteLine("hello from static constructor");
     }
 
-    [UnmanagedCallersOnly(EntryPoint = "IncrementExitCode", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(EntryPoint = "IncrementExitCode")]
     static void IncrementExitCode(int amount)
     {
         s_exitCode += amount;

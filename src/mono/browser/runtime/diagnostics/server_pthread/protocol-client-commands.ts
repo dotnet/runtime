@@ -51,32 +51,32 @@ export type RemoveCommandSetAndId<T extends ProtocolClientCommandBase> = Omit<T,
 
 export type ProtocolClientCommand = ProcessCommand | EventPipeCommand;
 
-export function isDiagnosticCommandBase(x: object): x is ProtocolClientCommandBase {
+export function isDiagnosticCommandBase (x: object): x is ProtocolClientCommandBase {
     return typeof x === "object" && "command_set" in x && "command" in x;
 }
 
-export function isProcessCommand(x: object): x is ProcessClientCommandBase {
+export function isProcessCommand (x: object): x is ProcessClientCommandBase {
     return isDiagnosticCommandBase(x) && x.command_set === "Process";
 }
 
-export function isEventPipeCommand(x: object): x is EventPipeClientCommandBase {
+export function isEventPipeCommand (x: object): x is EventPipeClientCommandBase {
     return isDiagnosticCommandBase(x) && x.command_set === "EventPipe";
 }
 
-export function isProcessCommandResumeRuntime(x: ProcessClientCommandBase): x is ProcessCommandResumeRuntime {
+export function isProcessCommandResumeRuntime (x: ProcessClientCommandBase): x is ProcessCommandResumeRuntime {
     return isProcessCommand(x) && x.command === "ResumeRuntime";
 }
 
-export function isEventPipeCollectTracingCommandProvider(x: object): x is EventPipeCollectTracingCommandProvider {
+export function isEventPipeCollectTracingCommandProvider (x: object): x is EventPipeCollectTracingCommandProvider {
     return typeof x === "object" && "keywords" in x && "logLevel" in x && "provider_name" in x && "filter_data" in x;
 }
 
-export function isEventPipeCommandCollectTracing2(x: object): x is EventPipeCommandCollectTracing2 {
+export function isEventPipeCommandCollectTracing2 (x: object): x is EventPipeCommandCollectTracing2 {
     return isEventPipeCommand(x) && x.command === "CollectTracing2" && "circularBufferMB" in x &&
         "format" in x && "requestRundown" in x && "providers" in x &&
         Array.isArray((<any>x).providers) && (<any>x).providers.every(isEventPipeCollectTracingCommandProvider);
 }
 
-export function isEventPipeCommandStopTracing(x: object): x is EventPipeCommandStopTracing {
+export function isEventPipeCommandStopTracing (x: object): x is EventPipeCommandStopTracing {
     return isEventPipeCommand(x) && x.command === "StopTracing" && "sessionID" in x;
 }

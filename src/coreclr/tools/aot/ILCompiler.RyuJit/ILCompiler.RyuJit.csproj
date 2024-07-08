@@ -73,9 +73,6 @@
     <Compile Include="..\..\Common\JitInterface\CorInfoImpl.cs">
       <Link>JitInterface\CorInfoImpl.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\MemoryHelper.cs">
-      <Link>JitInterface\MemoryHelper.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\JitInterface\UnboxingMethodDesc.cs">
       <Link>JitInterface\UnboxingMethodDesc.cs</Link>
     </Compile>
@@ -91,13 +88,15 @@
     <Compile Include="..\..\Common\JitInterface\RISCV64PassStructInRegister.cs">
       <Link>JitInterface\RISCV64PassStructInRegister.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs">
+      <Link>JitInterface\SwiftPhysicalLowering.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs">
       <Link>Pgo\TypeSystemEntityOrUnknown.cs</Link>
     </Compile>
 
     <Compile Include="..\ILCompiler.ReadyToRun\IBC\IBCDataModel.cs" Link="Pgo\IBCDataModel.cs" />
     <Compile Include="..\ILCompiler.ReadyToRun\IBC\IBCProfileData.cs" Link="Pgo\IBCProfileData.cs" />
-    <Compile Include="..\ILCompiler.ReadyToRun\IBC\ReaderExtensions.cs" Link="Pgo\ReaderExtensions.cs" />
     <Compile Include="..\ILCompiler.ReadyToRun\IBC\MIbcProfileParser.cs" Link="Pgo\MIbcProfileParser.cs" />
 
     <Compile Include="..\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="Pgo\ProfileData.cs" />

@@ -438,16 +438,6 @@ mono_class_set_declsec_flags (MonoClass *klass, guint32 value)
 }
 
 void
-mono_class_set_is_com_object (MonoClass *klass)
-{
-#ifndef DISABLE_COM
-	mono_loader_lock ();
-	klass->is_com_object = 1;
-	mono_loader_unlock ();
-#endif
-}
-
-void
 mono_class_set_is_simd_type (MonoClass *klass, gboolean is_simd)
 {
 	klass->simd_type = is_simd;

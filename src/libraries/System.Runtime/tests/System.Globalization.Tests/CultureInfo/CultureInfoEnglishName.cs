@@ -9,13 +9,14 @@ namespace System.Globalization.Tests
     public class CultureInfoEnglishName
     {
         // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-        public static bool SupportFullGlobalizationData => PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid;
+        // Browser uses JS to get the NativeName that is missing in ICU
+        public static bool SupportFullGlobalizationData => !PlatformDetection.IsWasi || PlatformDetection.IsHybridGlobalizationOnApplePlatform;
 
         public static IEnumerable<object[]> EnglishName_TestData()
         {
             yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.EnglishName };
 
-            if (SupportFullGlobalizationData || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
+            if (SupportFullGlobalizationData)
             {
                 yield return new object[] { "en-US", "English (United States)" };
                 yield return new object[] { "fr-FR", "French (France)" };
@@ -23,7 +24,6 @@ namespace System.Globalization.Tests
             }
             else
             {
-                // Mobile / Browser ICU doesn't contain CultureInfo.EnglishName
                 yield return new object[] { "en-US", "en (US)" };
                 yield return new object[] { "fr-FR", "fr (FR)" };
             }
@@ -41,12 +41,12 @@ namespace System.Globalization.Tests
         public void ChineseNeutralEnglishName()
         {
             CultureInfo ci = new CultureInfo("zh-Hans");
-            Assert.True(ci.EnglishName == "Chinese (Simplified)" || ci.EnglishName == "Chinese, Simplified",
-                        $"'{ci.EnglishName}' not equal to `Chinese (Simplified)` nor `Chinese, Simplified`");
+            Assert.True(ci.EnglishName == "Chinese (Simplified)" || ci.EnglishName == "Chinese, Simplified" || ci.EnglishName == "Simplified Chinese",
+                        $"'{ci.EnglishName}' not equal to `Chinese (Simplified)` nor `Chinese, Simplified` nor `Simplified Chinese`");
 
             ci = new CultureInfo("zh-HanT");
-            Assert.True(ci.EnglishName == "Chinese (Traditional)" || ci.EnglishName == "Chinese, Traditional",
-                        $"'{ci.EnglishName}' not equal to `Chinese (Traditional)` nor `Chinese, Traditional`");
+            Assert.True(ci.EnglishName == "Chinese (Traditional)" || ci.EnglishName == "Chinese, Traditional" || ci.EnglishName == "Traditional Chinese",
+                        $"'{ci.EnglishName}' not equal to `Chinese (Traditional)` nor `Chinese, Traditional` nor `Traditional Chinese`");
         }
     }
 }

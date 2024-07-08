@@ -7,6 +7,9 @@
 
     <WasmXHarnessMonoArgs>--working-dir=/test-dir</WasmXHarnessMonoArgs>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" TargetDir="test-dir" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="DisabledFileLockingSwitchTests.cs" />
     <Compile Include="..\FSAssert.cs" />
@@ -31,6 +34,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
+    <!-- Apple mobile trimming descriptor for Mono runtime -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.IO.DisableFileLocking" Value="true" />

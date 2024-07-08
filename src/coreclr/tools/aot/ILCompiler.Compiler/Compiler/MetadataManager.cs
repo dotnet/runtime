@@ -77,6 +77,7 @@ namespace ILCompiler
         private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MetadataType> _typesWithGenericStaticBaseInfo = new SortedSet<MetadataType>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _genericMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
+        private readonly HashSet<TypeDesc> _usedInterfaces = new HashSet<TypeDesc>();
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -328,6 +329,11 @@ namespace ILCompiler
             {
                 _genericMethodHashtableEntries.Add(genericMethodsHashtableEntryNode.Method);
             }
+
+            if (obj is InterfaceUseNode interfaceUse)
+            {
+                _usedInterfaces.Add(interfaceUse.Type);
+            }
         }
 
         protected virtual bool AllMethodsCanBeReflectable => false;
@@ -457,6 +463,13 @@ namespace ILCompiler
                     ReflectionInvokeSupportDependencyAlgorithm.GetDependenciesFromParamsArray(ref dependencies, factory, method);
                 }
 
+                if (!method.IsCanonicalMethod(CanonicalFormKind.Any) && method.IsStaticConstructor)
+                {
+                    // Information about the static constructor prefixes the non-GC static base
+                    dependencies ??= new DependencyList();
+                    dependencies.Add(factory.TypeNonGCStaticsSymbol((MetadataType)method.OwningType), "Static constructor is reflection-callable");
+                }
+
                 GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
                 GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, method.OwningType);
             }
@@ -554,6 +567,15 @@ namespace ILCompiler
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of a
             // RuntimeFieldHandle data structure.
+        }
+
+        public void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
+        {
+            if (target.IsVirtual)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.DelegateTargetVirtualMethod(target), "Delegate to a virtual method created");
+            }
         }
 
         /// <summary>
@@ -691,6 +713,11 @@ namespace ILCompiler
                 if (transformed.GetTransformedMethodDefinition(typicalMethod) != null &&
                     ShouldMethodBeInInvokeMap(method) &&
                     (GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) != 0)
+                    continue;
+
+                // If the method will be folded, no need to emit stack trace info for this one
+                ISymbolNode internedBody = factory.ObjectInterner.GetDeduplicatedSymbol(factory, methodBody);
+                if (internedBody != methodBody)
                     continue;
 
                 MethodStackTraceVisibilityFlags stackVisibility = _stackTraceEmissionPolicy.GetMethodVisibility(method);
@@ -985,6 +1012,12 @@ namespace ILCompiler
             return _genericMethodHashtableEntries;
         }
 
+        public bool IsInterfaceUsed(TypeDesc type)
+        {
+            Debug.Assert(type.IsTypeDefinition);
+            return _usedInterfaces.Contains(type);
+        }
+
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()
         {
             return _methodBodiesGenerated;
@@ -1018,7 +1051,12 @@ namespace ILCompiler
                 case TypeFlags.Array:
                 case TypeFlags.Pointer:
                 case TypeFlags.ByRef:
-                    return IsReflectionBlocked(((ParameterizedType)type).ParameterType);
+                    TypeDesc parameterType = ((ParameterizedType)type).ParameterType;
+
+                    if (parameterType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                        return false;
+
+                    return IsReflectionBlocked(parameterType);
 
                 case TypeFlags.FunctionPointer:
                     MethodSignature pointerSignature = ((FunctionPointerType)type).Signature;

@@ -56,4 +56,9 @@
     <HelixPostCommand Include="$HELIX_PYTHONPATH $spmi_superpmi_py collect -log_level DEBUG -core_root $spmi_core_root --skip_cleanup --clean --ci --skip_collection_step --skip_toc_step -temp_dir $spmi_collect_dir -output_mch_path $spmi_finalmch -log_file $spmi_log_file" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Include the SuperPMI tools as a separate correlation payload -->
+    <HelixCorrelationPayload Include="$(TestArchiveRoot)coreclr.zip" Destination="coreclr" AsArchive="true" />
+  </ItemGroup>
+
 </Project>

@@ -574,7 +574,6 @@ private:
 public:
     BOOL LoadResource(CCompRC::ResourceCategory eCategory, int resourceID);
     HRESULT LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, int resourceID);
-    HRESULT LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID);
     BOOL FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId,
                        const SString &arg1 = Empty(), const SString &arg2 = Empty(),
                        const SString &arg3 = Empty(), const SString &arg4 = Empty(),

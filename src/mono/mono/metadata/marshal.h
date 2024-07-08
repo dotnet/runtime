@@ -40,7 +40,7 @@ GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(stringbuilder)
 
 /*
  * This structure holds the state kept by the emit_ marshalling functions.
- * This is exported so it can be used by cominterop.c.
+ * This is exported so it can be used by marshal-ilgen.c.
  */
 typedef struct {
 	MonoMethodBuilder *mb;
@@ -342,7 +342,7 @@ typedef struct {
 	void (*emit_synchronized_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx, MonoGenericContainer *container, MonoMethod *enter_method, MonoMethod *exit_method, MonoMethod *gettypefromhandle_method);
 	void (*emit_unbox_wrapper) (MonoMethodBuilder *mb, MonoMethod *method);
 	void (*emit_array_accessor_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *sig, MonoGenericContext *ctx);
-	void (*emit_unsafe_accessor_wrapper) (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name);
+	void (*emit_unsafe_accessor_wrapper) (MonoMethodBuilder *mb, gboolean inflate_generic_data, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name);
 	void (*emit_generic_array_helper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig);
 	void (*emit_thunk_invoke_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig);
 	void (*emit_create_string_hack) (MonoMethodBuilder *mb, MonoMethodSignature *csig, MonoMethod *res);
@@ -351,6 +351,7 @@ typedef struct {
 	void (*emit_return) (MonoMethodBuilder *mb);
 	void (*emit_vtfixup_ftnptr) (MonoMethodBuilder *mb, MonoMethod *method, int param_count, guint16 type);
 	void (*mb_skip_visibility) (MonoMethodBuilder *mb);
+	void (*mb_inflate_wrapper_data) (MonoMethodBuilder *mb);
 	void (*mb_emit_exception) (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg);
 	void (*mb_emit_exception_for_error) (MonoMethodBuilder *mb, const MonoError *emitted_error);
 	void (*mb_emit_byte) (MonoMethodBuilder *mb, guint8 op);
@@ -623,11 +624,11 @@ ICALL_EXPORT
 void
 mono_marshal_free_array (gpointer *ptr, int size);
 
-gboolean
-mono_marshal_free_ccw (MonoObject* obj);
-
 MONO_API void *
 mono_marshal_string_to_utf16 (MonoString *s);
+
+MONO_API void
+mono_free_bstr (gpointer bstr);
 
 ICALL_EXPORT
 void
@@ -708,17 +709,8 @@ ICALL_EXPORT
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (mono_bstr_const ptr);
 
-ICALL_EXPORT
-int
-ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (MonoIUnknown *pUnk);
-
-ICALL_EXPORT
-int
-ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUnknown *pUnk, gconstpointer riid, gpointer* ppv);
-
-ICALL_EXPORT
-int
-ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (MonoIUnknown *pUnk);
+MONO_API MONO_RT_EXTERNAL_ONLY MonoString *
+mono_string_from_bstr (/*mono_bstr*/gpointer bstr);
 
 void
 mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, guint8 *bitmask);
@@ -726,24 +718,6 @@ mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, gu
 MonoMethodSignature*
 mono_signature_no_pinvoke (MonoMethod *method);
 
-/* Called from cominterop.c/remoting.c */
-
-void
-mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags);
-
-void
-mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error);
-
-GHashTable*
-mono_marshal_get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func);
-
-MonoMethod*
-mono_marshal_find_in_cache (GHashTable *cache, gpointer key);
-
-MonoMethod*
-mono_mb_create_and_cache (GHashTable *cache, gpointer key,
-						  MonoMethodBuilder *mb, MonoMethodSignature *sig,
-						  int max_stack);
 void
 mono_marshal_emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb);
 
@@ -763,12 +737,21 @@ MonoMethod*
 mono_mb_create (MonoMethodBuilder *mb, MonoMethodSignature *sig,
 				int max_stack, WrapperInfo *info);
 
-MonoMethod*
-mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
-							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
-							   int max_stack, WrapperInfo *info, gboolean *out_found);
-
 IlgenCallbacksToMono*
 mono_marshal_get_mono_callbacks_for_ilgen (void);
+
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_self)
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_error)
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_indirect_result)
+
+typedef struct {
+	gboolean by_reference;
+	uint32_t num_lowered_elements;
+	MonoType *lowered_elements[4];
+	uint32_t offsets[4];
+} SwiftPhysicalLowering;
+
+SwiftPhysicalLowering
+mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout);
 
 #endif /* __MONO_MARSHAL_H__ */

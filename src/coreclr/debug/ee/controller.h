@@ -183,7 +183,7 @@ public:
     //      caller wants information about a specific frame.
     // CONTEXT* pContext:  A pointer to a CONTEXT structure.  Can be null,
     //      we use our temp context.
-    // bool suppressUMChainFromComPlusMethodFrameGeneric - A ridiculous flag that is trying to narrowly
+    // bool suppressUMChainFromCLRToCOMMethodFrameGeneric - A ridiculous flag that is trying to narrowly
     //      target a fix for issue 650903.
     // StackTraceTicket - ticket ensuring that we have permission to call this.
     void GetStackInfo(
@@ -191,7 +191,7 @@ public:
         Thread *thread,
         FramePointer targetFP,
         CONTEXT *pContext,
-        bool suppressUMChainFromComPlusMethodFrameGeneric = false
+        bool suppressUMChainFromCLRToCOMMethodFrameGeneric = false
         );
 
     //bool ControllerStackInfo::HasReturnFrame()  Returns
@@ -217,7 +217,7 @@ private:
     // A ridiculous flag that is targeting a very narrow fix at issue 650903
     // (4.5.1/Blue).  This is set for the duration of a stackwalk designed to
     // help us "Step Out" to a managed frame (i.e., managed-only debugging).
-    bool                    m_suppressUMChainFromComPlusMethodFrameGeneric;
+    bool                    m_suppressUMChainFromCLRToCOMMethodFrameGeneric;
 
     // Track if this stackwalk actually happened.
     // This is used by the StackTraceTicket(ControllerStackInfo * info) ticket.
@@ -827,7 +827,7 @@ public:
     DebuggerControllerPatch * GetPatch(PTR_CORDB_ADDRESS_TYPE address)
     {
         SUPPORTS_DAC;
-        ARM_ONLY(_ASSERTE(dac_cast<DWORD>(address) & THUMB_CODE));
+        ARM_ONLY(_ASSERTE(dac_cast<TADDR>(address) & THUMB_CODE));
 
         DebuggerControllerPatch * pPatch =
             dac_cast<PTR_DebuggerControllerPatch>(Find(HashAddress(address), (SIZE_T)(dac_cast<TADDR>(address))));
@@ -1453,8 +1453,7 @@ class DebuggerPatchSkip : public DebuggerController
     friend class DebuggerController;
 
     DebuggerPatchSkip(Thread *thread,
-                      DebuggerControllerPatch *patch,
-                      AppDomain *pAppDomain);
+                      DebuggerControllerPatch *patch);
 
     ~DebuggerPatchSkip();
 

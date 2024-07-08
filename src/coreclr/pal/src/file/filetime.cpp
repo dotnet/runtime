@@ -95,11 +95,11 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE);
    This result is also confirmed in the MSDN documentation on how
    to convert a time_t value to a win32 FILETIME.
 */
-static const __int64 SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
-static const __int64 SECS_TO_100NS = 10000000; /* 10^7 */
+static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
+static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */
 
 #ifdef __APPLE__
-static const __int64 SECS_BETWEEN_1601_AND_2001_EPOCHS = 12622780800LL;
+static const int64_t SECS_BETWEEN_1601_AND_2001_EPOCHS = 12622780800LL;
 #endif // __APPLE__
 
 /*++
@@ -114,8 +114,8 @@ CompareFileTime(
         IN CONST FILETIME *lpFileTime1,
         IN CONST FILETIME *lpFileTime2)
 {
-    __int64 First;
-    __int64 Second;
+    int64_t First;
+    int64_t Second;
 
     long Ret;
 
@@ -123,9 +123,9 @@ CompareFileTime(
     ENTRY("CompareFileTime(lpFileTime1=%p lpFileTime2=%p)\n",
           lpFileTime1, lpFileTime2);
 
-    First = ((__int64)lpFileTime1->dwHighDateTime << 32) +
+    First = ((int64_t)lpFileTime1->dwHighDateTime << 32) +
         lpFileTime1->dwLowDateTime;
-    Second = ((__int64)lpFileTime2->dwHighDateTime << 32) +
+    Second = ((int64_t)lpFileTime2->dwHighDateTime << 32) +
         lpFileTime2->dwLowDateTime;
 
     if ( First < Second )
@@ -200,10 +200,10 @@ MSDN documentation. time_t is the number of seconds elapsed since
 --*/
 FILETIME FILEUnixTimeToFileTime( time_t sec, long nsec )
 {
-    __int64 Result;
+    int64_t Result;
     FILETIME Ret;
 
-    Result = ((__int64)sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS +
+    Result = ((int64_t)sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS +
         (nsec / 100);
 
     Ret.dwLowDateTime = (DWORD)Result;

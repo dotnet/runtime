@@ -9,16 +9,16 @@ namespace System.Security.Cryptography
 {
     public sealed partial class AesCcm
     {
-        private byte[]? _key;
+        private FixedMemoryKeyBox _keyBox;
 
         public static bool IsSupported => true;
 
-        [MemberNotNull(nameof(_key))]
+        [MemberNotNull(nameof(_keyBox))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
-            // Pin the array on the POH so that the GC doesn't move it around to allow zeroing to be more effective.
-            _key = GC.AllocateArray<byte>(key.Length, pinned: true);
-            key.CopyTo(_key);
+            // We should only be calling this in the constructor, so there shouldn't be a previous key.
+            Debug.Assert(_keyBox is null);
+            _keyBox = new FixedMemoryKeyBox(key);
         }
 
         private void EncryptCore(
@@ -28,80 +28,93 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData = default)
         {
-            CheckDisposed();
+            bool acquired = false;
 
-            // Convert key length to bits.
-            using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(_key.Length * 8)))
+            try
             {
-                if (ctx.IsInvalid)
+                _keyBox.DangerousAddRef(ref acquired);
+                ReadOnlySpan<byte> key = _keyBox.DangerousKeySpan;
+
+                // Convert key length to bits.
+                using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(key.Length * 8)))
                 {
-                    throw new CryptographicException();
-                }
-
-                if (!Interop.Crypto.CipherSetTagLength(ctx, tag.Length))
-                {
-                    throw new CryptographicException();
-                }
-
-                Interop.Crypto.CipherSetNonceLength(ctx, nonce.Length);
-                Interop.Crypto.EvpCipherSetKeyAndIV(ctx, _key, nonce, Interop.Crypto.EvpCipherDirection.Encrypt);
-
-                if (associatedData.Length != 0)
-                {
-                    Interop.Crypto.CipherUpdateAAD(ctx, associatedData);
-                }
-
-                byte[]? rented = null;
-                try
-                {
-                    scoped Span<byte> ciphertextAndTag;
-
-                    // Arbitrary limit.
-                    const int StackAllocMax = 128;
-                    if (checked(ciphertext.Length + tag.Length) <= StackAllocMax)
-                    {
-                        ciphertextAndTag = stackalloc byte[ciphertext.Length + tag.Length];
-                    }
-                    else
-                    {
-                        rented = CryptoPool.Rent(ciphertext.Length + tag.Length);
-                        ciphertextAndTag = new Span<byte>(rented, 0, ciphertext.Length + tag.Length);
-                    }
-
-                    if (!Interop.Crypto.EvpCipherUpdate(ctx, ciphertextAndTag, out int ciphertextBytesWritten, plaintext))
+                    if (ctx.IsInvalid)
                     {
                         throw new CryptographicException();
                     }
 
-                    if (!Interop.Crypto.EvpAeadCipherFinalEx(
-                        ctx,
-                        ciphertextAndTag.Slice(ciphertextBytesWritten),
-                        out int bytesWritten,
-                        out bool authTagMismatch))
+                    if (!Interop.Crypto.CipherSetTagLength(ctx, tag.Length))
                     {
-                        Debug.Assert(!authTagMismatch);
                         throw new CryptographicException();
                     }
 
-                    ciphertextBytesWritten += bytesWritten;
+                    Interop.Crypto.CipherSetNonceLength(ctx, nonce.Length);
+                    Interop.Crypto.EvpCipherSetKeyAndIV(ctx, key, nonce, Interop.Crypto.EvpCipherDirection.Encrypt);
 
-                    // NOTE: Android appends tag to the end of the ciphertext in case of CCM/GCM and "encryption" mode
-
-                    if (ciphertextBytesWritten != ciphertextAndTag.Length)
+                    if (associatedData.Length != 0)
                     {
-                        Debug.Fail($"CCM encrypt wrote {ciphertextBytesWritten} of {ciphertextAndTag.Length} bytes.");
-                        throw new CryptographicException();
+                        Interop.Crypto.CipherUpdateAAD(ctx, associatedData);
                     }
 
-                    ciphertextAndTag[..ciphertext.Length].CopyTo(ciphertext);
-                    ciphertextAndTag[ciphertext.Length..].CopyTo(tag);
+                    byte[]? rented = null;
+                    try
+                    {
+                        scoped Span<byte> ciphertextAndTag;
+
+                        // Arbitrary limit.
+                        const int StackAllocMax = 128;
+                        if (checked(ciphertext.Length + tag.Length) <= StackAllocMax)
+                        {
+                            ciphertextAndTag = stackalloc byte[ciphertext.Length + tag.Length];
+                        }
+                        else
+                        {
+                            rented = CryptoPool.Rent(ciphertext.Length + tag.Length);
+                            ciphertextAndTag = new Span<byte>(rented, 0, ciphertext.Length + tag.Length);
+                        }
+
+                        if (!Interop.Crypto.EvpCipherUpdate(ctx, ciphertextAndTag, out int ciphertextBytesWritten, plaintext))
+                        {
+                            throw new CryptographicException();
+                        }
+
+                        if (!Interop.Crypto.EvpAeadCipherFinalEx(
+                            ctx,
+                            ciphertextAndTag.Slice(ciphertextBytesWritten),
+                            out int bytesWritten,
+                            out bool authTagMismatch))
+                        {
+                            Debug.Assert(!authTagMismatch);
+                            throw new CryptographicException();
+                        }
+
+                        ciphertextBytesWritten += bytesWritten;
+
+                        // NOTE: Android appends tag to the end of the ciphertext in case of CCM/GCM and "encryption" mode
+
+                        if (ciphertextBytesWritten != ciphertextAndTag.Length)
+                        {
+                            Debug.Fail($"CCM encrypt wrote {ciphertextBytesWritten} of {ciphertextAndTag.Length} bytes.");
+                            throw new CryptographicException();
+                        }
+
+                        ciphertextAndTag[..ciphertext.Length].CopyTo(ciphertext);
+                        ciphertextAndTag[ciphertext.Length..].CopyTo(tag);
+                    }
+                    finally
+                    {
+                        if (rented != null)
+                        {
+                            CryptoPool.Return(rented, ciphertext.Length + tag.Length);
+                        }
+                    }
                 }
-                finally
+            }
+            finally
+            {
+                if (acquired)
                 {
-                    if (rented != null)
-                    {
-                        CryptoPool.Return(rented, ciphertext.Length + tag.Length);
-                    }
+                    _keyBox.DangerousRelease();
                 }
             }
         }
@@ -113,64 +126,77 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData)
         {
-            CheckDisposed();
+            bool acquired = false;
 
-            using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(_key.Length * 8)))
+            try
             {
-                if (ctx.IsInvalid)
+                _keyBox.DangerousAddRef(ref acquired);
+                ReadOnlySpan<byte> key = _keyBox.DangerousKeySpan;
+
+                using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(key.Length * 8)))
                 {
-                    throw new CryptographicException();
-                }
-                Interop.Crypto.CipherSetNonceLength(ctx, nonce.Length);
-
-                if (!Interop.Crypto.CipherSetTagLength(ctx, tag.Length))
-                {
-                    throw new CryptographicException();
-                }
-
-                Interop.Crypto.EvpCipherSetKeyAndIV(ctx, _key, nonce, Interop.Crypto.EvpCipherDirection.Decrypt);
-
-                if (associatedData.Length != 0)
-                {
-                    Interop.Crypto.CipherUpdateAAD(ctx, associatedData);
-                }
-
-                if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext, out int plaintextBytesWritten, ciphertext))
-                {
-                    CryptographicOperations.ZeroMemory(plaintext);
-                    throw new CryptographicException();
-                }
-
-                if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext.Slice(plaintextBytesWritten), out int bytesWritten, tag))
-                {
-                    CryptographicOperations.ZeroMemory(plaintext);
-                    throw new CryptographicException();
-                }
-
-                plaintextBytesWritten += bytesWritten;
-
-                if (!Interop.Crypto.EvpAeadCipherFinalEx(
-                    ctx,
-                    plaintext.Slice(plaintextBytesWritten),
-                    out bytesWritten,
-                    out bool authTagMismatch))
-                {
-                    CryptographicOperations.ZeroMemory(plaintext);
-
-                    if (authTagMismatch)
+                    if (ctx.IsInvalid)
                     {
-                        throw new AuthenticationTagMismatchException();
+                        throw new CryptographicException();
+                    }
+                    Interop.Crypto.CipherSetNonceLength(ctx, nonce.Length);
+
+                    if (!Interop.Crypto.CipherSetTagLength(ctx, tag.Length))
+                    {
+                        throw new CryptographicException();
                     }
 
-                    throw new CryptographicException(SR.Arg_CryptographyException);
+                    Interop.Crypto.EvpCipherSetKeyAndIV(ctx, key, nonce, Interop.Crypto.EvpCipherDirection.Decrypt);
+
+                    if (associatedData.Length != 0)
+                    {
+                        Interop.Crypto.CipherUpdateAAD(ctx, associatedData);
+                    }
+
+                    if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext, out int plaintextBytesWritten, ciphertext))
+                    {
+                        CryptographicOperations.ZeroMemory(plaintext);
+                        throw new CryptographicException();
+                    }
+
+                    if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext.Slice(plaintextBytesWritten), out int bytesWritten, tag))
+                    {
+                        CryptographicOperations.ZeroMemory(plaintext);
+                        throw new CryptographicException();
+                    }
+
+                    plaintextBytesWritten += bytesWritten;
+
+                    if (!Interop.Crypto.EvpAeadCipherFinalEx(
+                        ctx,
+                        plaintext.Slice(plaintextBytesWritten),
+                        out bytesWritten,
+                        out bool authTagMismatch))
+                    {
+                        CryptographicOperations.ZeroMemory(plaintext);
+
+                        if (authTagMismatch)
+                        {
+                            throw new AuthenticationTagMismatchException();
+                        }
+
+                        throw new CryptographicException(SR.Arg_CryptographyException);
+                    }
+
+                    plaintextBytesWritten += bytesWritten;
+
+                    if (plaintextBytesWritten != plaintext.Length)
+                    {
+                        Debug.Fail($"CCM decrypt wrote {plaintextBytesWritten} of {plaintext.Length} bytes.");
+                        throw new CryptographicException();
+                    }
                 }
-
-                plaintextBytesWritten += bytesWritten;
-
-                if (plaintextBytesWritten != plaintext.Length)
+            }
+            finally
+            {
+                if (acquired)
                 {
-                    Debug.Fail($"CCM decrypt wrote {plaintextBytesWritten} of {plaintext.Length} bytes.");
-                    throw new CryptographicException();
+                    _keyBox.DangerousRelease();
                 }
             }
         }
@@ -186,16 +212,6 @@ namespace System.Security.Cryptography
             };
         }
 
-        [MemberNotNull(nameof(_key))]
-        private void CheckDisposed()
-        {
-            ObjectDisposedException.ThrowIf(_key is null, this);
-        }
-
-        public void Dispose()
-        {
-            CryptographicOperations.ZeroMemory(_key);
-            _key = null;
-        }
+        public void Dispose() => _keyBox.Dispose();
     }
 }

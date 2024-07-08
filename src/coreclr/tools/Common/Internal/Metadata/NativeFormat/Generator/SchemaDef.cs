@@ -315,6 +315,13 @@ internal sealed class SchemaDef
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", typeName: "string")
                     }
+                ),
+                new RecordDef(
+                    name: "ConstantEnumValue",
+                    members: new MemberDef[] {
+                        new MemberDef("Value", EnumConstantValue, MemberDefFlags.RecordRef | MemberDefFlags.Child),
+                        new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef)
+                    }
                 )
             }
         )
@@ -628,13 +635,6 @@ internal sealed class SchemaDef
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
                 new MemberDef("Value", TypeDefOrRefOrSpecOrConstant, MemberDefFlags.RecordRef),
-            }
-        ),
-        new RecordDef(
-            name: "ConstantBoxedEnumValue",
-            members: new MemberDef[] {
-                new MemberDef("Value", EnumConstantValue, MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef)
             }
         ),
         new RecordDef(

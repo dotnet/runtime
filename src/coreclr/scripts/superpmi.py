@@ -22,6 +22,7 @@ import csv
 import datetime
 import locale
 import logging
+import math
 import os
 import multiprocessing
 import platform
@@ -226,6 +227,10 @@ compile_help = """\
 Compile only specified method contexts, e.g., `-compile 20,25`. This is passed directly to the superpmi.exe `-compile` argument. See `superpmi.exe -?` for full documentation about allowed formats.
 """
 
+produce_repro_help = """\
+If passed, produce the *.mc repro files.
+"""
+
 # Start of parser object creation.
 
 parser = argparse.ArgumentParser(description=description)
@@ -296,7 +301,7 @@ collect_parser.add_argument("-pmi_path", metavar="PMIPATH_DIR", nargs='*', help=
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file. Default is a constructed file name in the current directory.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
-collect_parser.add_argument("--use_zapdisable", action="store_true", help="Sets DOTNET_ZapDisable=1 and DOTNET_ReadyToRun=0 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
+collect_parser.add_argument("--disable_r2r", action="store_true", help="Sets DOTNET_ReadyToRun=0 when doing collection to cause ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
 collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
 collect_parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
 collect_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
@@ -322,6 +327,7 @@ replay_common_parser.add_argument("--force_download", action="store_true", help=
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 replay_common_parser.add_argument("-private_store", action="append", help=private_store_help)
 replay_common_parser.add_argument("-compile", "-c", help=compile_help)
+replay_common_parser.add_argument("--produce_repro", action="store_true", help=produce_repro_help)
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -358,7 +364,6 @@ add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
 
 upload_parser.add_argument("-mch_files", metavar="MCH_FILE", required=True, nargs='+', help=upload_mch_files_help)
-upload_parser.add_argument("-az_storage_key", help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
 upload_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
@@ -505,9 +510,10 @@ def create_artifacts_base_name(coreclr_args, mch_file):
     return artifacts_base_name
 
 def read_csv(path):
-    with open(path) as csv_file:
+    with open(path, encoding="utf-8") as csv_file:
         reader = csv.DictReader(csv_file)
-        return list(reader)
+        for row in reader:
+            yield row
 
 def decode_clrjit_build_string(clrjit_path):
     """ Obtain information about the compiler that was used to compile the clrjit at the specified path.
@@ -520,7 +526,7 @@ def decode_clrjit_build_string(clrjit_path):
     with open(clrjit_path, "rb") as fh:
         contents = fh.read()
 
-    match = re.search(b'RyuJIT built by ([^\0]+?) targeting ([^\0]+?)-([^\0]+?)(| \(with native PGO\)| \(without native PGO\)|)\0', contents)
+    match = re.search(b'RyuJIT built by ([^\0]+?) targeting ([^\0]+?)-([^\0]+?)(| \\(with native PGO\\)| \\(without native PGO\\)|)\0', contents)
     if match is None:
         return None
 
@@ -613,7 +619,7 @@ class AsyncSubprocessHelper:
                 loop = asyncio.new_event_loop()
 
             asyncio.set_event_loop(loop)
-            
+
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         os.environ.clear()
         os.environ.update(reset_env)
@@ -841,8 +847,7 @@ class SuperPMICollect:
             else:
                 dotnet_env["TieredCompilation"] = "0"
 
-            if self.coreclr_args.use_zapdisable:
-                dotnet_env["ZapDisable"] = "1"
+            if self.coreclr_args.disable_r2r:
                 dotnet_env["ReadyToRun"] = "0"
 
             logging.debug("Starting collection.")
@@ -1499,6 +1504,7 @@ def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_
     """ For commands that use the superpmi "-r" option to create "repro" .mc files, copy these to a
         location where they are saved (and not in a "temp" directory) for easy use by the user.
     """
+
     # If there are any .mc files, drop them into artifacts/repro/<host_os>.<arch>.<build_type>/*.mc
     mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
     if len(mc_files) > 0:
@@ -1523,7 +1529,7 @@ def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_
 
 
 def parse_replay_asserts(mch_file, replay_output):
-    """ Parse output from failed replay, looking for asserts and correlating them to provide the best
+    r""" Parse output from failed replay, looking for asserts and correlating them to provide the best
         repro scenarios.
 
         Look for lines like:
@@ -1642,9 +1648,13 @@ class SuperPMIReplay:
             repro_flags = []
 
             common_flags = [
-                "-v", "ewi",  # display errors, warnings, missing, jit info
-                "-r", os.path.join(temp_location, "repro") # Repro name prefix, create .mc repro files
+                "-v", "ewi"  # display errors, warnings, missing, jit info
             ]
+
+            if self.coreclr_args.produce_repro:
+                common_flags += [
+                    "-r", os.path.join(temp_location, "repro") # Repro name prefix, create .mc repro files
+                ]
 
             if self.coreclr_args.altjit:
                 repro_flags += [
@@ -1709,8 +1719,8 @@ class SuperPMIReplay:
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
                 (return_code, replay_output) = run_and_log_return_output(command)
 
-                details = read_csv(details_info_file)
-                print_superpmi_result(return_code, self.coreclr_args, self.aggregate_replay_metrics(details), None)
+                replay_metrics = self.aggregate_replay_metrics(details_info_file)
+                print_superpmi_result(return_code, self.coreclr_args, replay_metrics, None)
 
                 if return_code != 0:
                     # Don't report as replay failure missing data (return code 3).
@@ -1751,8 +1761,8 @@ class SuperPMIReplay:
 
         return result
 
-    def aggregate_replay_metrics(self, details):
-        """ Given the CSV details file output by SPMI for a replay aggregate the
+    def aggregate_replay_metrics(self, details_file):
+        """ Given a path to a CSV details file output by SPMI for a replay aggregate the
         successes, misses and failures
 
         Returns:
@@ -1762,7 +1772,7 @@ class SuperPMIReplay:
         num_successes = 0
         num_misses = 0
         num_failures = 0
-        for row in details:
+        for row in read_csv(details_file):
             result = row["Result"]
             if result == "Success":
                 num_successes += 1
@@ -1781,7 +1791,7 @@ class SuperPMIReplay:
 def html_color(color, text):
     return "<span style=\"color:{}\">{}</span>".format(color, text)
 
-def calculate_improvements_regressions(base_diff_sizes):
+def calculate_size_improvements_regressions(base_diff_sizes):
     num_improvements = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size < base_size)
     num_regressions = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size > base_size)
     num_same = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size == base_size)
@@ -1790,6 +1800,36 @@ def calculate_improvements_regressions(base_diff_sizes):
     byte_regressions = sum(max(0, diff_size - base_size) for (base_size, diff_size) in base_diff_sizes)
 
     return (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions)
+
+def calculate_perfscore_improvements_regressions(base_diff_perfscores):
+    num_ps_improvements = 0
+    num_ps_regressions = 0
+    num_ps_same = 0
+    sum_log_ps_improvements = 0
+    sum_log_ps_regressions = 0
+    for (base_ps, diff_ps) in base_diff_perfscores:
+        base_ps = max(base_ps, 1.0)
+        diff_ps = max(diff_ps, 1.0)
+        log_relative_perfscore = math.log(diff_ps / base_ps)
+
+        if abs(diff_ps - base_ps) < 0.01:
+            num_ps_same += 1
+        elif diff_ps < base_ps:
+            num_ps_improvements += 1
+            sum_log_ps_improvements += log_relative_perfscore
+        elif base_ps < diff_ps:
+            num_ps_regressions += 1
+            sum_log_ps_regressions += log_relative_perfscore
+
+    ps_improvements = 0.0
+    if num_ps_improvements > 0:
+        ps_improvements = math.exp(sum_log_ps_improvements / num_ps_improvements) - 1
+
+    ps_regressions = 0.0
+    if num_ps_regressions > 0:
+        ps_regressions = math.exp(sum_log_ps_regressions / num_ps_regressions) - 1
+
+    return (num_ps_improvements, num_ps_regressions, num_ps_same, ps_improvements, ps_regressions)
 
 def format_delta(base, diff):
     plus_if_positive = "+" if diff >= base else ""
@@ -1807,10 +1847,10 @@ def compute_pct(base, diff):
     else:
         return 0.0
 
-def format_pct(pct):
+def format_pct(pct, num_decimals = 2):
     plus_if_positive = "+" if pct > 0 else ""
 
-    text = "{}{:.2f}%".format(plus_if_positive, pct)
+    text = "{}{:.{prec}f}%".format(plus_if_positive, pct, prec=num_decimals)
     if pct != 0:
         color = "red" if pct > 0 else "green"
         return html_color(color, text)
@@ -1826,11 +1866,11 @@ def write_jit_options(coreclr_args, write_fh):
     Args:
         coreclr_args: args class instance
         write_fh: file to output to
-    
+
     """
     base_options = []
     diff_options = []
-    
+
     if coreclr_args.jitoption:
         base_options += coreclr_args.jitoption
         diff_options += coreclr_args.jitoption
@@ -1860,19 +1900,26 @@ class DetailsSection:
     def __exit__(self, *args):
         self.write_fh.write("\n\n</div></details>\n")
 
-def aggregate_diff_metrics(details):
-    """ Given the CSV details file output by SPMI for a diff aggregate the metrics.
+def aggregate_diff_metrics(details_file):
+    """ Given the path to a CSV details file output by SPMI for a diff aggregate the metrics.
     """
 
     base_minopts = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0,
-                    "Contexts with diffs": 0, "Diffed code bytes": 0, "Diff executed instructions": 0,
-                    "Diffed contexts": 0}
+                    "Contexts with diffs": 0, "Diffed code bytes": 0,
+                    "Diffed PerfScore" : 0.0, "Relative PerfScore Geomean": 0.0,
+                    "Diff executed instructions": 0, "Diffed contexts": 0}
     base_fullopts = base_minopts.copy()
 
     diff_minopts = base_minopts.copy()
     diff_fullopts = base_minopts.copy()
 
-    for row in details:
+    # Project out these fields for the saved diffs, to use for further
+    # processing. Saving everything into memory is costly on memory when there
+    # are a large number of diffs.
+    diffs_fields = ["Context", "Context size", "Base size", "Diff size", "Base PerfScore", "Diff PerfScore"]
+    diffs = []
+
+    for row in read_csv(details_file):
         base_result = row["Base result"]
 
         if row["MinOpts"] == "True":
@@ -1910,12 +1957,22 @@ def aggregate_diff_metrics(details):
             base_dict["Diff executed instructions"] += base_insts
             diff_dict["Diff executed instructions"] += diff_insts
 
+            base_perfscore = float(row["Base PerfScore"])
+            diff_perfscore = float(row["Diff PerfScore"])
+            base_dict["Diffed PerfScore"] += base_perfscore
+            diff_dict["Diffed PerfScore"] += diff_perfscore
+
+            log_relative_perfscore = math.log(max(diff_perfscore, 1.0) / max(base_perfscore, 1.0))
+            base_dict["Relative PerfScore Geomean"] += log_relative_perfscore
+            diff_dict["Relative PerfScore Geomean"] += log_relative_perfscore
+
             base_dict["Diffed contexts"] += 1
             diff_dict["Diffed contexts"] += 1
 
             if row["Has diff"] == "True":
                 base_dict["Contexts with diffs"] += 1
                 diff_dict["Contexts with diffs"] += 1
+                diffs.append({key: row[key] for key in diffs_fields})
 
     base_overall = base_minopts.copy()
     for k in base_overall.keys():
@@ -1925,8 +1982,21 @@ def aggregate_diff_metrics(details):
     for k in diff_overall.keys():
         diff_overall[k] += diff_fullopts[k]
 
+    for d in [base_overall, base_minopts, base_fullopts, diff_overall, diff_minopts, diff_fullopts]:
+        sum_of_logs = d["Relative PerfScore Geomean"]
+        if d["Diffed contexts"] > 0:
+            d["Relative PerfScore Geomean"] = math.exp(sum_of_logs / d["Diffed contexts"])
+        else:
+            d["Relative PerfScore Geomean"] = 1
+
+        if d["Contexts with diffs"] > 0:
+            d["Relative PerfScore Geomean (Diffs)"] = math.exp(sum_of_logs / d["Contexts with diffs"])
+        else:
+            d["Relative PerfScore Geomean (Diffs)"] = 1
+
     return ({"Overall": base_overall, "MinOpts": base_minopts, "FullOpts": base_fullopts},
-            {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts})
+            {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts},
+            diffs)
 
 
 class SuperPMIReplayAsmDiffs:
@@ -2090,8 +2160,12 @@ class SuperPMIReplayAsmDiffs:
                     "-v", "ewi",  # display errors, warnings, missing, jit info
                     "-f", fail_mcl_file,  # Failing mc List
                     "-details", detailed_info_file,  # Detailed information about each context
-                    "-r", os.path.join(temp_location, "repro"),  # Repro name prefix, create .mc repro files
                 ]
+                if self.coreclr_args.produce_repro:
+                    flags += [
+                        "-r", os.path.join(temp_location, "repro") # Repro name prefix, create .mc repro files
+                    ]
+
                 flags += altjit_asm_diffs_flags
                 flags += base_option_flags
                 flags += diff_option_flags
@@ -2128,8 +2202,7 @@ class SuperPMIReplayAsmDiffs:
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
 
-                details = read_csv(detailed_info_file)
-                (base_metrics, diff_metrics) = aggregate_diff_metrics(details)
+                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(detailed_info_file)
 
                 print_superpmi_result(return_code, self.coreclr_args, base_metrics, diff_metrics)
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
@@ -2149,7 +2222,6 @@ class SuperPMIReplayAsmDiffs:
                             repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
                             save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
-                diffs = [r for r in details if r["Has diff"] == "True"]
                 if any(diffs):
                     files_with_asm_diffs.append(mch_file)
 
@@ -2266,6 +2338,22 @@ class SuperPMIReplayAsmDiffs:
                         logging.info("Total bytes of diff: {}".format(diff_bytes))
                         delta_bytes = diff_bytes - base_bytes
                         logging.info("Total bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
+                        logging.info("")
+
+                        base_perfscore = base_metrics["Overall"]["Diffed PerfScore"]
+                        diff_perfscore = diff_metrics["Overall"]["Diffed PerfScore"]
+                        logging.info("Total PerfScore of base: {}".format(base_perfscore))
+                        logging.info("Total PerfScore of diff: {}".format(diff_perfscore))
+                        if base_perfscore != 0:
+                            delta_perfscore = diff_perfscore - base_perfscore
+                            logging.info("Total PerfScore of delta: {} ({:.2%} of base)".format(delta_perfscore, delta_perfscore / base_perfscore))
+                        logging.info("")
+
+                        relative_perfscore_geomean = diff_metrics["Overall"]["Relative PerfScore Geomean"]
+                        logging.info("Relative PerfScore Geomean: {:.4%}".format(relative_perfscore_geomean - 1))
+                        relative_perfscore_geomean_diffs = diff_metrics["Overall"]["Relative PerfScore Geomean (Diffs)"]
+                        logging.info("Relative PerfScore Geomean (Diffs): {:.4%}".format(relative_perfscore_geomean_diffs - 1))
+                        logging.info("")
 
                     try:
                         current_text_diff = text_differences.get_nowait()
@@ -2290,6 +2378,10 @@ class SuperPMIReplayAsmDiffs:
                                 if self.coreclr_args.metrics:
                                     for metric in self.coreclr_args.metrics:
                                         command += [ "--metrics", metric ]
+
+                                    if self.coreclr_args.metrics == ["PerfScore"]:
+                                        command += [ "--override-total-base-metric", str(base_perfscore), "--override-total-diff-metric", str(diff_perfscore) ]
+
                                 elif base_bytes is not None and diff_bytes is not None:
                                     command += [ "--override-total-base-metric", str(base_bytes), "--override-total-diff-metric", str(diff_bytes) ]
 
@@ -2331,16 +2423,25 @@ class SuperPMIReplayAsmDiffs:
                     # If we are not specifying custom metrics then print a summary here, otherwise leave the summarization up to jit-analyze.
                     if self.coreclr_args.metrics is None:
                         base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
+                        (num_size_improvements, num_size_regressions, num_size_same, byte_improvements, byte_regressions) = calculate_size_improvements_regressions(base_diff_sizes)
 
-                        (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
-
-                        logging.info("{:,d} contexts with diffs ({:,d} improvements, {:,d} regressions, {:,d} same size)".format(
-                            len(diffs),
-                            num_improvements,
-                            num_regressions,
-                            num_same,
+                        num_diffs_str = "{:,d} contexts with diffs".format(len(diffs))
+                        logging.info("{} ({:,d} size improvements, {:,d} size regressions, {:,d} same size)".format(
+                            num_diffs_str,
+                            num_size_improvements,
+                            num_size_regressions,
+                            num_size_same,
                             byte_improvements,
                             byte_regressions))
+
+                        base_diff_perfscores = [(float(r["Base PerfScore"]), float(r["Diff PerfScore"])) for r in diffs]
+                        (num_ps_improvements, num_ps_regressions, num_ps_same, ps_improvements, ps_regressions) = calculate_perfscore_improvements_regressions(base_diff_perfscores)
+
+                        logging.info("{} ({:,d} PerfScore improvements, {:,d} PerfScore regressions, {:,d} same PerfScore)".format(
+                            ' ' * len(num_diffs_str),
+                            num_ps_improvements,
+                            num_ps_regressions,
+                            num_ps_same))
 
                         if byte_improvements > 0 and byte_regressions > 0:
                             logging.info("  -{:,d}/+{:,d} bytes".format(byte_improvements, byte_regressions))
@@ -2348,6 +2449,13 @@ class SuperPMIReplayAsmDiffs:
                             logging.info("  -{:,d} bytes".format(byte_improvements))
                         elif byte_regressions > 0:
                             logging.info("  +{:,d} bytes".format(byte_regressions))
+
+                        if num_ps_improvements > 0 and num_ps_regressions > 0:
+                            logging.info("  {:.2f}%/+{:.2f}% PerfScore".format(ps_improvements * 100, ps_regressions * 100))
+                        elif num_ps_improvements > 0:
+                            logging.info("  {:.2f}% PerfScore".format(ps_improvements * 100))
+                        elif num_ps_regressions > 0:
+                            logging.info("  +{:.2f}% PerfScore".format(ps_regressions * 100))
 
                         logging.info("")
                         logging.info("")
@@ -2493,19 +2601,20 @@ class SuperPMIReplayAsmDiffs:
                 sum_diff = sum(diff_metrics[row]["Diffed code bytes"] for (_, _, diff_metrics, _, _, _) in asm_diffs)
 
                 with DetailsSection(write_fh, "{} ({} bytes)".format(row, format_delta(sum_base, sum_diff))):
-                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|\n")
-                    write_fh.write("|---|--:|--:|\n")
+                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|PerfScore in Diffs\n")
+                    write_fh.write("|---|--:|--:|--:|\n")
                     for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs:
                         # Exclude this particular row?
                         if not has_diffs(diff_metrics[row]):
                             continue
 
-                        write_fh.write("|{}|{:,d}|{}|\n".format(
+                        write_fh.write("|{}|{:,d}|{}|{}|\n".format(
                             mch_file,
                             base_metrics[row]["Diffed code bytes"],
                             format_delta(
                                 base_metrics[row]["Diffed code bytes"],
-                                diff_metrics[row]["Diffed code bytes"])))
+                                diff_metrics[row]["Diffed code bytes"]),
+                            format_pct(diff_metrics[row]["Relative PerfScore Geomean (Diffs)"] * 100 - 100)))
 
             write_top_context_section()
             write_pivot_section("Overall")
@@ -2523,13 +2632,13 @@ class SuperPMIReplayAsmDiffs:
             # Next write a detailed section
             with DetailsSection(write_fh, "Details"):
                 if any_diffs:
-                    write_fh.write("#### Improvements/regressions per collection\n\n")
+                    write_fh.write("#### Size improvements/regressions per collection\n\n")
                     write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
                     write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
 
                     def write_row(name, diffs):
                         base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
-                        (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
+                        (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_size_improvements_regressions(base_diff_sizes)
                         write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
                             name,
                             len(diffs),
@@ -2539,11 +2648,32 @@ class SuperPMIReplayAsmDiffs:
                             html_color("green", "-{:,d}".format(byte_improvements)),
                             html_color("red", "+{:,d}".format(byte_regressions))))
 
-                    for (mch_file, _, _, diffs, _, _) in asm_diffs:
+                    for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
                         write_row(mch_file, diffs)
 
                     if len(asm_diffs) > 1:
                         write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs])
+
+                    write_fh.write("\n---\n\n")
+                    write_fh.write("#### PerfScore improvements/regressions per collection\n\n")
+                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same PerfScore|Improvements (PerfScore)|Regressions (PerfScore)|PerfScore Overall in FullOpts|\n")
+                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|--:|\n")
+
+                    def write_ps_row(name, diffs, perfscore_geomean):
+                        base_diff_perfscores = [(float(r["Base PerfScore"]), float(r["Diff PerfScore"])) for r in diffs]
+                        (num_improvements, num_regressions, num_same, ps_improvements, ps_regressions) = calculate_perfscore_improvements_regressions(base_diff_perfscores)
+                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|{}|\n".format(
+                            name,
+                            len(diffs),
+                            html_color("green", "{:,d}".format(num_improvements)),
+                            html_color("red", "{:,d}".format(num_regressions)),
+                            html_color("blue", "{:,d}".format(num_same)),
+                            format_pct(ps_improvements * 100),
+                            format_pct(ps_regressions * 100),
+                            format_pct(perfscore_geomean * 100, 4)))
+
+                    for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
+                        write_ps_row(mch_file, diffs, diff_metrics["FullOpts"]["Relative PerfScore Geomean"] - 1)
 
                     write_fh.write("\n---\n\n")
 
@@ -2668,7 +2798,7 @@ class SuperPMIReplayAsmDiffs:
 
         # If there are non-default metrics then we need to disassemble
         # everything so that jit-analyze can handle those.
-        if self.coreclr_args.metrics is not None:
+        if self.coreclr_args.metrics is not None and self.coreclr_args.metrics != ["PerfScore"]:
             contexts = diffs
             examples = []
         else:
@@ -2686,22 +2816,29 @@ class SuperPMIReplayAsmDiffs:
             smallest_contexts = sorted(diffs, key=lambda r: int(r["Context size"]))[:20]
             display_subset("Smallest {} contexts with binary differences:", smallest_contexts)
 
-            # Order by byte-wise improvement, largest improvements first
-            by_diff_size = sorted(diffs, key=lambda r: int(r["Diff size"]) - int(r["Base size"]))
-            # 20 top improvements, byte-wise
-            top_improvements_bytes = by_diff_size[:20]
-            # 20 top regressions, byte-wise
-            top_regressions_bytes = by_diff_size[-20:]
+            if self.coreclr_args.metrics is None:
+                base_metric_name = "Base size"
+                diff_metric_name = "Diff size"
+            else:
+                base_metric_name = "Base PerfScore"
+                diff_metric_name = "Diff PerfScore"
 
-            display_subset("Top {} improvements, byte-wise:", top_improvements_bytes)
-            display_subset("Top {} regressions, byte-wise:", top_regressions_bytes)
+            # Order by improvement, largest improvements first
+            by_diff = sorted(diffs, key=lambda r: float(r[diff_metric_name]) - float(r[base_metric_name]))
+            # 20 top improvements
+            top_improvements = by_diff[:20]
+            # 20 top regressions
+            top_regressions = by_diff[-20:]
+
+            display_subset("Top {} improvements:", top_improvements)
+            display_subset("Top {} regressions:", top_regressions)
 
             # Order by percentage-wise size improvement, largest improvements first
             def diff_pct(r):
-                base = int(r["Base size"])
+                base = float(r[base_metric_name])
                 if base == 0:
                     return 0
-                diff = int(r["Diff size"])
+                diff = float(r[diff_metric_name])
                 return (diff - base) / base
 
             by_diff_size_pct = sorted(diffs, key=diff_pct)
@@ -2723,7 +2860,7 @@ class SuperPMIReplayAsmDiffs:
 
             example_improvements = by_diff_size_pct_examples[:3]
             example_regressions = by_diff_size_pct_examples[3:][-3:]
-            contexts = smallest_contexts + top_improvements_bytes + top_regressions_bytes + top_improvements_pct + top_regressions_pct + smallest_zero_size_contexts + example_improvements + example_regressions
+            contexts = smallest_contexts + top_improvements + top_regressions + top_improvements_pct + top_regressions_pct + smallest_zero_size_contexts + example_improvements + example_regressions
             examples = example_improvements + example_regressions
 
         final_contexts_indices = list(set(int(r["Context"]) for r in contexts))
@@ -2872,8 +3009,7 @@ class SuperPMIReplayThroughputDiff:
                     command_string = " ".join(command)
                     logging.debug("'%s': Error return code: %s", command_string, return_code)
 
-                details = read_csv(detailed_info_file)
-                (base_metrics, diff_metrics) = aggregate_diff_metrics(details)
+                (base_metrics, diff_metrics, _) = aggregate_diff_metrics(detailed_info_file)
 
                 if base_metrics is not None and diff_metrics is not None:
                     base_instructions = base_metrics["Overall"]["Diff executed instructions"]
@@ -3426,14 +3562,14 @@ def list_superpmi_collections_container_via_azure_api(path_filter=lambda unused:
     """
 
     require_azure_storage_libraries()
-    from jitutil import ContainerClient, AzureCliCredential
+    from jitutil import ContainerClient, DefaultAzureCredential
 
     superpmi_container_url = az_blob_storage_superpmi_container_uri
 
     paths = []
     ok = True
     try:
-        az_credential = AzureCliCredential()
+        az_credential = DefaultAzureCredential()
         container = ContainerClient.from_container_url(superpmi_container_url, credential=az_credential)
         blob_name_prefix = az_collections_root_folder + "/"
         blob_list = container.list_blobs(name_starts_with=blob_name_prefix, retry_total=0)
@@ -3540,7 +3676,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
 
 
 def process_mch_files_arg(coreclr_args):
-    """ Process the -mch_files argument. If the argument is not specified, then download files
+    r""" Process the -mch_files argument. If the argument is not specified, then download files
         from Azure Storage and any specified private MCH stores.
 
         Any files on UNC (i.e., "\\server\share" paths on Windows) or Azure Storage stores,
@@ -3652,8 +3788,8 @@ def upload_mch(coreclr_args):
         coreclr_args (CoreclrArguments): parsed args
     """
 
-    require_azure_storage_libraries(need_azure_identity=False)
-    from jitutil import BlobServiceClient
+    require_azure_storage_libraries(need_azure_identity=True)
+    from jitutil import BlobServiceClient, DefaultAzureCredential
 
     def upload_blob(file, blob_name):
         blob_client = blob_service_client.get_blob_client(container=az_superpmi_container_name, blob=blob_name)
@@ -3689,7 +3825,9 @@ def upload_mch(coreclr_args):
     for item in files_to_upload:
         logging.info("  %s", item)
 
-    blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=coreclr_args.az_storage_key)
+    default_credential = DefaultAzureCredential()
+
+    blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=default_credential)
     blob_folder_name = "{}/{}/{}/{}".format(az_collections_root_folder, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
 
     total_bytes_uploaded = 0
@@ -4361,6 +4499,11 @@ def setup_args(args):
                             "Method context not valid")
 
         coreclr_args.verify(args,
+                            "produce_repro",
+                            lambda unused: True,
+                            "Unable to set produce_repro")
+
+        coreclr_args.verify(args,
                             "private_store",
                             lambda item: True,
                             "Specify private_store or set environment variable SUPERPMI_PRIVATE_STORE to use a private store.",
@@ -4450,6 +4593,11 @@ def setup_args(args):
                             "compile",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Method context not valid")
+
+        coreclr_args.verify(args,
+                            "produce_repro",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set produce_repro")
 
         coreclr_args.verify(args,
                             "collection_command",
@@ -4551,9 +4699,9 @@ def setup_args(args):
                             "Unable to set clean.")
 
         coreclr_args.verify(args,
-                            "use_zapdisable",
+                            "disable_r2r",
                             lambda unused: True,
-                            "Unable to set use_zapdisable")
+                            "Unable to set disable_r2r")
 
         coreclr_args.verify(args,
                             "tiered_compilation",
@@ -4859,12 +5007,6 @@ def setup_args(args):
         verify_jit_ee_version_arg()
 
         coreclr_args.verify(args,
-                            "az_storage_key",
-                            lambda item: item is not None,
-                            "Specify az_storage_key or set environment variable CLRJIT_AZ_KEY to the key to use.",
-                            modify_arg=lambda arg: os.environ["CLRJIT_AZ_KEY"] if arg is None and "CLRJIT_AZ_KEY" in os.environ else arg)
-
-        coreclr_args.verify(args,
                             "mch_files",
                             lambda unused: True,
                             "Unable to set mch_files")
@@ -4886,12 +5028,6 @@ def setup_args(args):
 
         if not os.path.isdir(coreclr_args.private_store):
             print("Error: private store directory '" + coreclr_args.private_store + "' not found.")
-            sys.exit(1)
-
-        # Safety measure: don't allow CLRJIT_AZ_KEY to be set if we are uploading to a private store.
-        # Note that this should be safe anyway, since we're publishing something private, not public.
-        if "CLRJIT_AZ_KEY" in os.environ:
-            print("Error: environment variable CLRJIT_AZ_KEY is set, but command is `upload-private`, not `upload`. That is not allowed.")
             sys.exit(1)
 
     elif coreclr_args.mode == "download":

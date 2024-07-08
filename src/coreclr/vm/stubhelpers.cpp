@@ -242,7 +242,7 @@ FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, 
     return NULL;
 }
 
-FORCEINLINE static void *GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, ComPlusCallInfo *pComInfo)
+FORCEINLINE static void *GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, CLRToCOMCallInfo *pComInfo)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -262,7 +262,7 @@ NOINLINE static IUnknown* GetCOMIPFromRCWHelper(LPVOID pFCall, OBJECTREF pSrc, M
 
     SafeComHolder<IUnknown> pRetUnk;
 
-    ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
+    CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
     pRetUnk = ComObject::GetComIPFromRCWThrowing(&pSrc, pComInfo->m_pInterfaceMT);
 
     *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
@@ -294,14 +294,14 @@ FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(pMD->IsComPlusCall() || pMD->IsEEImpl());
+        PRECONDITION(pMD->IsCLRToCOMCall() || pMD->IsEEImpl());
     }
     CONTRACTL_END;
 
     OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
     *pfNeedsRelease = false;
 
-    ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
+    CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
     RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
@@ -422,17 +422,6 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, 
 
 #endif // FEATURE_COMINTEROP
 
-FCIMPL0(void, StubHelpers::SetLastError)
-{
-    // Make sure this is the first thing we do after returning from the target, as almost everything can cause the last error to get trashed
-    DWORD lastError = ::GetLastError();
-
-    FCALL_CONTRACT;
-
-    GetThread()->m_dwLastError = lastError;
-}
-FCIMPLEND
-
 FCIMPL0(void, StubHelpers::ClearLastError)
 {
     FCALL_CONTRACT;
@@ -443,7 +432,7 @@ FCIMPLEND
 
 FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 {
-    PCODE pEntryPoint = NULL;
+    PCODE pEntryPoint = (PCODE)NULL;
 
 #ifdef _DEBUG
     BEGIN_PRESERVE_LAST_ERROR;
@@ -517,7 +506,7 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
     // even if the profiler doesn't want to track transitions.
     if (!CORProfilerTrackTransitions())
     {
-        return NULL;
+        return 0;
     }
 
     MethodDesc* pRealMD = NULL;
@@ -633,7 +622,7 @@ FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
         if (pMD != NULL)
         {
             // Retrieve the interface method table.
-            MethodTable *pItfMT = ComPlusCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
+            MethodTable *pItfMT = CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
 
             // Get IUnknown pointer for this interface on this object
             IUnknown* pUnk = ComObject::GetComIPFromRCW(&oref, pItfMT);
@@ -819,40 +808,12 @@ FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 }
 FCIMPLEND
 
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-NOINLINE static void ArrayTypeCheckSlow(Object* element, PtrArray* arr)
-{
-    FC_INNER_PROLOG(StubHelpers::ArrayTypeCheck);
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    if (!ObjIsInstanceOf(element, arr->GetArrayElementTypeHandle()))
-        COMPlusThrow(kArrayTypeMismatchException);
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-FCIMPL2(void, StubHelpers::ArrayTypeCheck, Object* element, PtrArray* arr)
-{
-    FCALL_CONTRACT;
-
-    if (ObjIsInstanceOfCached(element, arr->GetArrayElementTypeHandle()) == TypeHandle::CanCast)
-        return;
-
-    FC_INNER_RETURN_VOID(ArrayTypeCheckSlow(element, arr));
-}
-FCIMPLEND
-#endif // FEATURE_ARRAYSTUB_AS_IL
-
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
 FCIMPL2(void, StubHelpers::MulticastDebuggerTraceHelper, Object* element, INT32 count)
 {
     FCALL_CONTRACT;
     FCUnique(0xa5);
 }
 FCIMPLEND
-#endif // FEATURE_MULTICASTSTUB_AS_IL
 
 FCIMPL0(void*, StubHelpers::NextCallReturnAddress)
 {

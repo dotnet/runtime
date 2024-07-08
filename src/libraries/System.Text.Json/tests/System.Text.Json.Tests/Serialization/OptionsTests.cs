@@ -66,6 +66,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonCommentHandling.Disallow, options.ReadCommentHandling);
             Assert.Equal(JsonUnmappedMemberHandling.Skip, options.UnmappedMemberHandling);
             Assert.False(options.WriteIndented);
+            Assert.False(options.RespectNullableAnnotations);
+            Assert.False(options.RespectRequiredConstructorParameters);
 
             TestIListNonThrowingOperationsWhenImmutable(options.Converters, tc);
             TestIListNonThrowingOperationsWhenImmutable(options.TypeInfoResolverChain, options.TypeInfoResolver);
@@ -73,6 +75,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Setters should always throw; we don't check to see if the value is the same or not.
             Assert.Throws<InvalidOperationException>(() => options.AllowTrailingCommas = options.AllowTrailingCommas);
+            Assert.Throws<InvalidOperationException>(() => options.AllowOutOfOrderMetadataProperties = options.AllowOutOfOrderMetadataProperties);
             Assert.Throws<InvalidOperationException>(() => options.DefaultBufferSize = options.DefaultBufferSize);
             Assert.Throws<InvalidOperationException>(() => options.DictionaryKeyPolicy = options.DictionaryKeyPolicy);
             Assert.Throws<InvalidOperationException>(() => options.Encoder = JavaScriptEncoder.Default);
@@ -84,6 +87,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.UnmappedMemberHandling = options.UnmappedMemberHandling);
             Assert.Throws<InvalidOperationException>(() => options.WriteIndented = options.WriteIndented);
             Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = options.TypeInfoResolver);
+            Assert.Throws<InvalidOperationException>(() => options.RespectNullableAnnotations = options.RespectNullableAnnotations);
+            Assert.Throws<InvalidOperationException>(() => options.RespectRequiredConstructorParameters = options.RespectRequiredConstructorParameters);
 
             TestIListThrowingOperationsWhenImmutable(options.Converters, tc);
             TestIListThrowingOperationsWhenImmutable(options.TypeInfoResolverChain, options.TypeInfoResolver);
@@ -515,6 +520,57 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BasicCompany>(BasicCompany.s_data, options));
         }
 
+        [Theory]
+        [InlineData(new char[] { '\n' }, '\r')]
+        [InlineData(new char[] { '\r', '\n' }, null)]
+        public static void NewLine(char[] newLineChars, char? notExpectedNewLineChars)
+        {
+            var obj = new BasicCompany();
+            obj.Initialize();
+
+            var newLine = new string(newLineChars);
+            var options = new JsonSerializerOptions();
+            var json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(newLine, json);
+
+            // Set custom newLine with indentation enabled
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            options.NewLine = newLine;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(newLine, json);
+
+            if (notExpectedNewLineChars is { } notExpected)
+            {
+                Assert.DoesNotContain(notExpected, json);
+            }
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("\r")]
+        [InlineData("\n\n")]
+        [InlineData("\r\n\r\n")]
+        [InlineData("0")]
+        [InlineData("a")]
+        [InlineData("foo")]
+        [InlineData("$")]
+        [InlineData(".")]
+        [InlineData("\u03b1")]
+        public static void TestNewLineInvalid(string value)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.NewLine = value);
+        }
+
+        [Fact]
+        public static void TestNewLineNullThrows()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentNullException>("value", () => options.NewLine = null);
+        }
+
         private class TestClassForEncoding
         {
             public string MyString { get; set; }
@@ -863,6 +919,89 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual("""{"Value":null,"Thing":null}""", json);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(null)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Options_RespectNullableAnnotationsDefault_FeatureSwitch(bool? state)
+        {
+            var options = new RemoteInvokeOptions();
+            if (state.HasValue)
+            {
+                options.RuntimeConfigurationOptions["System.Text.Json.Serialization.RespectNullableAnnotationsDefault"] = state.Value;
+            }
+
+            string arg = state ?? false ? "true" : "false";
+            RemoteExecutor.Invoke(static arg =>
+            {
+                bool shouldRespectNullableAnnotations = bool.Parse(arg);
+
+                var jsonOptions = new JsonSerializerOptions();
+                Assert.Equal(shouldRespectNullableAnnotations, jsonOptions.RespectNullableAnnotations);
+                Assert.Equal(shouldRespectNullableAnnotations, JsonSerializerOptions.Default.RespectNullableAnnotations);
+
+                var value = new NullableAnnotationsTests.NotNullablePropertyClass();
+                string expectedJson = """{"Property":null}""";
+
+                Assert.Null(value.Property);
+
+                if (shouldRespectNullableAnnotations)
+                {
+                    Assert.Throws<JsonException>(() => JsonSerializer.Serialize(value));
+                    Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<NullableAnnotationsTests.NotNullablePropertyClass>(expectedJson));
+                }
+                else
+                {
+                    string json = JsonSerializer.Serialize(value, jsonOptions);
+                    Assert.Equal(expectedJson, json);
+                    value = JsonSerializer.Deserialize<NullableAnnotationsTests.NotNullablePropertyClass>(json, jsonOptions);
+                    Assert.Null(value.Property);
+                }
+
+            }, arg, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(null)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Options_RespectRequiredConstructorParameters_FeatureSwitch(bool? state)
+        {
+            var options = new RemoteInvokeOptions();
+            if (state.HasValue)
+            {
+                options.RuntimeConfigurationOptions["System.Text.Json.Serialization.RespectRequiredConstructorParametersDefault"] = state.Value;
+            }
+
+            string arg = state ?? false ? "true" : "false";
+            RemoteExecutor.Invoke(static arg =>
+            {
+                bool shouldRespectRequiredConstructorParameters = bool.Parse(arg);
+
+                var jsonOptions = new JsonSerializerOptions();
+                Assert.Equal(shouldRespectRequiredConstructorParameters, jsonOptions.RespectRequiredConstructorParameters);
+                Assert.Equal(shouldRespectRequiredConstructorParameters, JsonSerializerOptions.Default.RespectRequiredConstructorParameters);
+
+                string json = """{"X":1,"Z":3}""";
+
+                if (shouldRespectRequiredConstructorParameters)
+                {
+                    JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Point_3D>(json));
+                    Assert.Contains("'Y'", ex.Message);
+                }
+                else
+                {
+                    Point_3D result = JsonSerializer.Deserialize<Point_3D>(json);
+                    Assert.Equal(1, result.X);
+                    Assert.Equal(0, result.Y);
+                    Assert.Equal(3, result.Z);
+                }
+
+            }, arg, options).Dispose();
+        }
+
         private static void GenericObjectOrJsonElementConverterTestHelper<T>(string converterName, object objectValue, string stringValue)
         {
             var options = new JsonSerializerOptions();
@@ -1035,10 +1174,10 @@ namespace System.Text.Json.Serialization.Tests
                 string effectiveMaxDepthAsStr = effectiveMaxDepth.ToString();
 
                 JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(myList, options));
-                Assert.Contains(effectiveMaxDepthAsStr, ex.ToString());
+                Assert.Contains(effectiveMaxDepthAsStr, ex.Message);
 
                 ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(myList, newOptions));
-                Assert.Contains(effectiveMaxDepthAsStr, ex.ToString());
+                Assert.Contains(effectiveMaxDepthAsStr, ex.Message);
             }
 
             // Zero max depth
@@ -1080,7 +1219,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void CopyConstructor_NullInput()
         {
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => new JsonSerializerOptions(null));
-            Assert.Contains("options", ex.ToString());
+            Assert.Contains("options", ex.Message);
         }
 
         [Fact]
@@ -1415,7 +1554,14 @@ namespace System.Text.Json.Serialization.Tests
                 }
                 else if (propertyType == typeof(string))
                 {
-                    property.SetValue(options, "\t");
+                    if (property.Name is nameof(JsonSerializerOptions.NewLine))
+                    {
+                        property.SetValue(options, "\n");
+                    }
+                    else
+                    {
+                        property.SetValue(options, "\t");
+                    }
                 }
                 else if (propertyType == typeof(IList<JsonConverter>))
                 {

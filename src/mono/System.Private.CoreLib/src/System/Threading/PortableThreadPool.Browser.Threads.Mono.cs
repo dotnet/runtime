@@ -7,7 +7,7 @@ internal sealed partial class PortableThreadPool
 {
     private static partial class WorkerThread
     {
-        private static bool IsIOPending => WebWorkerEventLoop.HasJavaScriptInteropDependents;
+        private static bool IsIOPending => false;
     }
 
     private struct CpuUtilizationReader

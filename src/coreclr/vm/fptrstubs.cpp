@@ -79,7 +79,7 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
         return pPrecode->GetEntryPoint();
     }
 
-    PCODE target = NULL;
+    PCODE target = (PCODE)NULL;
     bool setTargetAfterAddingToHashTable = false;
 
     if (type != GetDefaultType(pMD) &&
@@ -99,7 +99,7 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
     {
         // The funcptr stub must point to the current entry point after it is created and exposed. Keep the target as null for
         // now. The precode will initially point to the prestub and its target will be updated after the precode is exposed.
-        _ASSERTE(target == NULL);
+        _ASSERTE(target == (PCODE)NULL);
         setTargetAfterAddingToHashTable = true;
     }
     else
@@ -123,7 +123,7 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
         AllocMemTracker amt;
         Precode* pNewPrecode = Precode::Allocate(type, pMD, pMD->GetLoaderAllocator(), &amt);
 
-        if (target != NULL)
+        if (target != (PCODE)NULL)
         {
             pNewPrecode->SetTargetInterlocked(target);
         }

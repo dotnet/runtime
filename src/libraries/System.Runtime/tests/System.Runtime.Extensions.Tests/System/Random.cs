@@ -516,7 +516,6 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Shared_ParallelUsage()
         {
             using var barrier = new Barrier(2);
@@ -726,6 +725,16 @@ namespace System.Tests
 
             random.Shuffle(items);
             AssertExtensions.SequenceEqual(stackalloc int[] { 1, 4, 3, 2 }, items);
+        }
+
+        [Fact]
+        public static void Shuffle_Array_Covariance()
+        {
+            Random random = new Random(0x70636A61);
+			string[] items = ["", ""];
+			object[] array = items;
+            random.Shuffle(array);
+            AssertExtensions.SequenceEqual((ReadOnlySpan<string>)["", ""], items);
         }
 
         [Fact]

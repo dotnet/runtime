@@ -187,7 +187,7 @@ typedef struct _AssemblyEventData AssemblyEventData;
 typedef enum {
 	TYPE_FLAGS_DELEGATE = 0x1,
 	TYPE_FLAGS_FINALIZABLE = 0x2,
-	TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT = 0x4,
+	// unused = 0x4,
 	TYPE_FLAGS_ARRAY = 0x8,
 
 	TYPE_FLAGS_ARRAY_RANK_MASK = 0x3F00,
@@ -779,6 +779,8 @@ include_method (MonoMethod *method)
 		return false;
 	} else if (!m_method_is_wrapper (method)) {
 		return true;
+	} else if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD){
+		return true;
 	} else {
 		WrapperInfo *wrapper = mono_marshal_get_wrapper_info (method);
 		return (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_PINVOKE) ? true : false;
@@ -813,7 +815,7 @@ get_module_event_data (
 		module_data->module_flags = MODULE_FLAGS_MANIFEST_MODULE;
 		if (image && image->dynamic)
 			module_data->module_flags |= MODULE_FLAGS_DYNAMIC_MODULE;
-		if (image && image->aot_module)
+		if (image && image->aot_module && (image->aot_module != AOT_MODULE_NOT_FOUND))
 			module_data->module_flags |= MODULE_FLAGS_NATIVE_MODULE;
 
 		module_data->module_il_path = NULL;
@@ -903,7 +905,7 @@ fire_assembly_events (
 	if (assembly->dynamic)
 		assembly_flags |= ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY;
 
-	if (assembly->image && assembly->image->aot_module) {
+	if (assembly->image && assembly->image->aot_module && (assembly->image->aot_module != AOT_MODULE_NOT_FOUND)) {
 		assembly_flags |= ASSEMBLY_FLAGS_NATIVE_ASSEMBLY;
 	}
 
@@ -1547,8 +1549,6 @@ bulk_type_log_single_type (
 		val->fixed_sized_data.flags |= TYPE_FLAGS_FINALIZABLE;
 	if (m_class_is_delegate (klass))
 		val->fixed_sized_data.flags |= TYPE_FLAGS_DELEGATE;
-	if (mono_class_is_com_object (klass))
-		val->fixed_sized_data.flags |= TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT;
 	val->fixed_sized_data.cor_element_type = (uint8_t)mono_underlying_type->type;
 
 	// Sets val variable sized parameter type data, type_parameters_count, and mono_type_parameters associated
@@ -2152,7 +2152,7 @@ get_assembly_event_data (
 		if (assembly->dynamic)
 			assembly_data->assembly_flags |= ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY;
 
-		if (assembly->image && assembly->image->aot_module)
+		if (assembly->image && assembly->image->aot_module && (assembly->image->aot_module != AOT_MODULE_NOT_FOUND))
 			assembly_data->assembly_flags |= ASSEMBLY_FLAGS_NATIVE_ASSEMBLY;
 
 		assembly_data->assembly_name = mono_stringify_assembly_name (&assembly->aname);
@@ -4630,26 +4630,10 @@ ep_rt_mono_runtime_provider_init (void)
 void
 ep_rt_mono_runtime_provider_fini (void)
 {
-	if (_sampled_thread_callstacks)
-		g_array_free (_sampled_thread_callstacks, TRUE);
-	_sampled_thread_callstacks = NULL;
-
-	_max_sampled_thread_count = 32;
-
-	g_free (_runtime_helper_compile_method_jitinfo);
-	_runtime_helper_compile_method_jitinfo = NULL;
-
-	if (_runtime_helper_compile_method)
-		mono_free_method (_runtime_helper_compile_method);
-	_runtime_helper_compile_method = NULL;
-
-	g_free (_monitor_enter_method_jitinfo);
-	_monitor_enter_method_jitinfo = NULL;
-	_monitor_enter_method = NULL;
-
-	g_free (_monitor_enter_v4_method_jitinfo);
-	_monitor_enter_v4_method_jitinfo = NULL;
-	_monitor_enter_v4_method = NULL;
+	// We were cleaning up resources (mutexes, tls data, etc) here but it races with
+	// other threads on shutdown. Skipping cleanup to prevent failures. If unloading
+	// and not leaking these threads becomes a priority we will have to reimplement
+	// cleanup here.
 
 	if (_ep_rt_mono_default_profiler_provider) {
 		mono_profiler_set_jit_begin_callback (_ep_rt_mono_default_profiler_provider, NULL);
@@ -4680,14 +4664,6 @@ ep_rt_mono_runtime_provider_fini (void)
 	_gc_heap_dump_requests = 0;
 	_gc_heap_dump_count = 0;
 	_gc_heap_dump_trigger_count = 0;
-
-	dn_vector_dispose (&_gc_heap_dump_requests_data);
-	memset (&_gc_heap_dump_requests_data, 0, sizeof (_gc_heap_dump_requests_data));
-
-	dn_umap_dispose (&_gc_roots_table);
-	memset (&_gc_roots_table, 0, sizeof (_gc_roots_table));
-
-	ep_rt_spin_lock_free (&_gc_lock);
 }
 
 void

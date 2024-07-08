@@ -49,10 +49,6 @@ namespace ILCompiler.DependencyAnalysis
             if (baseType != null)
                 GetMetadataDependencies(ref dependencies, factory, baseType, "Base type of a reflectable type");
 
-            // TODO-SIZE: if we start trimming interface lists, we can probably trim here
-            foreach (DefType interfaceType in _type.ExplicitlyImplementedInterfaces)
-                GetMetadataDependencies(ref dependencies, factory, interfaceType, "Interface of a reflectable type");
-
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
 
             if (_type.IsEnum)

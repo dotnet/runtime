@@ -15,6 +15,10 @@ include asmmacros.inc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NESTED_ENTRY RhpThrowHwEx, _TEXT
 
+ALTERNATE_ENTRY RhpThrowHwExGEHCONT ; this needs to be an EHCONT target since we'll be context-jumping here.
+
+.GEHCONT RhpThrowHwExGEHCONT
+
         SIZEOF_XmmSaves equ SIZEOF__PAL_LIMITED_CONTEXT - OFFSETOF__PAL_LIMITED_CONTEXT__Xmm6
         STACKSIZEOF_ExInfo equ ((SIZEOF__ExInfo + 15) AND (NOT 15))
 
@@ -92,7 +96,7 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT
         ;; rdx contains the address of the ExInfo
         call    RhThrowHwEx
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
+ALTERNATE_ENTRY RhpThrowHwEx2
 
         ;; no return
         int 3
@@ -184,7 +188,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT
         ;; rdx contains the address of the ExInfo
         call    RhThrowEx
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
+ALTERNATE_ENTRY RhpThrowEx2
 
         ;; no return
         int 3
@@ -269,7 +273,7 @@ NESTED_ENTRY RhpRethrow, _TEXT
         ;; rdx contains the address of the new ExInfo
         call    RhRethrow
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
+ALTERNATE_ENTRY RhpRethrow2
 
         ;; no return
         int 3
@@ -428,7 +432,7 @@ endif
         mov     rdx, [rsp + rsp_offsetof_arguments + 0h]            ;; rdx <- exception object
         call    qword ptr [rsp + rsp_offsetof_arguments + 8h]       ;; call handler funclet
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
+ALTERNATE_ENTRY RhpCallCatchFunclet2
 
         mov     r8, [rsp + rsp_offsetof_arguments + 10h]            ;; r8 <- dispatch context
 
@@ -486,8 +490,9 @@ endif
         INLINE_THREAD_UNHIJACK rdx, rcx, r9                         ;; Thread in rdx, trashes rcx and r9
 
         mov     rcx, [rsp + rsp_offsetof_arguments + 18h]           ;; rcx <- current ExInfo *
+        mov     r10, [r8 + OFFSETOF__REGDISPLAY__IP]                ;; r10 <- original IP value
         mov     r8, [r8 + OFFSETOF__REGDISPLAY__SP]                 ;; r8 <- resume SP value
-        xor     r9d, r9d                                            ;; r9 <- 0
+        xor     r9, r9                                              ;; r9 <- 0
 
    @@:  mov     rcx, [rcx + OFFSETOF__ExInfo__m_pPrevExInfo]        ;; rcx <- next ExInfo
         cmp     rcx, r9
@@ -496,6 +501,20 @@ endif
         jl      @B                                                  ;; keep looping if it's lower than the new SP
 
    @@:  mov     [rdx + OFFSETOF__Thread__m_pExInfoStackHead], rcx   ;; store the new head on the Thread
+
+   ;; Sanity check: if we have shadow stack, it should agree with what we have in rsp
+   LOCAL_STACK_USE equ 118h
+   ifdef _DEBUG
+        rdsspq  r9
+        test    r9, r9
+        jz      @f
+        mov     r9, [r9]
+        cmp     [rsp + LOCAL_STACK_USE], r9
+        je      @f
+        int     3
+   @@:
+        xor     r9, r9                                              ;; r9 <- 0
+   endif
 
         test    [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
         jz      @f
@@ -507,12 +526,28 @@ endif
         ;; It was the ThreadAbortException, so rethrow it
         mov     rcx, STATUS_REDHAWK_THREAD_ABORT
         mov     rdx, rax                                            ;; rdx <- continuation address as exception RIP
-        mov     rsp, r8                                             ;; reset the SP to resume SP value
-        jmp     RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
+        mov     rax, RhpThrowHwEx                                   ;; Throw the ThreadAbortException as a special kind of hardware exception
 
-        ;; reset RSP and jump to the continuation address
+        ;; reset RSP and jump to RAX
    @@:  mov     rsp, r8                                             ;; reset the SP to resume SP value
-        jmp     rax
+
+        ;; if have shadow stack, then we need to reconcile it with the rsp change we have just made
+        rdsspq  r9
+        test    r9, r9
+        jz      NoSSP
+
+        ;; Find the shadow stack pointer for the frame we are going to restore to.
+        ;; The SSP we search is pointing to the return address of the frame represented
+        ;; by the passed in context. So we search for the instruction pointer from 
+        ;; the context and return one slot up from there.
+        ;; (Same logic as in GetSSPForFrameOnCurrentStack)
+        xor     r11, r11
+   @@:  inc     r11
+        cmp     [r9 + r11 * 8 - 8], r10
+        jne     @b
+
+        incsspq r11
+NoSSP:  jmp     rax
 
 
 NESTED_END RhpCallCatchFunclet, _TEXT
@@ -601,7 +636,7 @@ endif
         mov     rcx, [rdx + OFFSETOF__REGDISPLAY__SP]               ;; rcx <- establisher frame
         call    qword ptr [rsp + rsp_offsetof_arguments + 0h]       ;; handler funclet address
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
+ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
         mov     rdx, [rsp + rsp_offsetof_arguments + 8h]            ;; rdx <- regdisplay
 
@@ -666,7 +701,7 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT
         mov     rcx, [r8 + OFFSETOF__REGDISPLAY__SP]                ;; rcx <- establisher frame
         call    rax
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
+ALTERNATE_ENTRY RhpCallFilterFunclet2
 
         ;; RAX contains the result of the filter execution
 

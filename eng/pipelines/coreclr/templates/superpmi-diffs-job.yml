@@ -5,10 +5,9 @@ parameters:
   osSubgroup: ''                  # optional -- operating system subgroup
   condition: true
   pool: ''
-  timeoutInMinutes: 240           # build timeout
+  timeoutInMinutes: 360           # build timeout
   variables: {}
   helixQueues: ''
-  dependOnEvaluatePaths: false
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-diffs-job.yml'
   diffType: 'asmdiffs'            # required -- 'asmdiffs', 'tpdiff', or 'all'
   baseJitOptions: ''              # e.g. JitStressModeNames=STRESS_PHYSICAL_PROMOTION;JitFullyInt=1
@@ -25,7 +24,6 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     condition: ${{ parameters.condition }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     helixQueues: ${{ parameters.helixQueues }}
     diffType: ${{ parameters.diffType }}
@@ -33,9 +31,9 @@ jobs:
     diffJitOptions: ${{ parameters.diffJitOptions }}
     dependsOn:
       - ${{ if in(parameters.diffType, 'asmdiffs', 'all') }}:
-        - ${{ format('coreclr_jit_build_{0}{1}_{2}_checked', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+        - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_checked_'
       - ${{ if in(parameters.diffType, 'tpdiff', 'all') }}:
-        - ${{ format('coreclr_jit_build_{0}{1}_{2}_release', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+        - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_release_'
 
     variables:
     - ${{ each variable in parameters.variables }}:
@@ -48,8 +46,6 @@ jobs:
       - ${{ if ne(parameters.osGroup, 'windows') }}:
         - name: releaseProductRootFolderPath
           value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release'
-      - name: releaseProductArtifactName
-        value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_release'
 
     steps:
 
@@ -57,16 +53,18 @@ jobs:
       # Download jit checked builds
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(buildProductRootFolderPath)
-          artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-          artifactName: '$(buildProductArtifactName)'
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+          artifactFileName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
+          artifactName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)'
           displayName: 'JIT checked build'
+          cleanUnpackFolder: false
 
     - ${{ if in(parameters.diffType, 'tpdiff', 'all') }}:
       # Download jit release builds
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(releaseProductRootFolderPath)
-          artifactFileName: '$(releaseProductArtifactName)$(archiveExtension)'
-          artifactName: '$(releaseProductArtifactName)'
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+          artifactFileName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
+          artifactName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)'
           displayName: 'JIT release build'
+          cleanUnpackFolder: false

@@ -21,7 +21,7 @@ namespace System.Linq
 
         private static IEnumerable<TSource> TakeRangeIterator<TSource>(IEnumerable<TSource> source, int startIndex, int endIndex)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
             Debug.Assert(startIndex >= 0 && startIndex < endIndex);
 
             using IEnumerator<TSource> e = source.GetEnumerator();

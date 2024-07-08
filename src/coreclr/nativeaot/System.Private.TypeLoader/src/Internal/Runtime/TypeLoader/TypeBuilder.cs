@@ -300,7 +300,7 @@ namespace Internal.Runtime.TypeLoader
             if (method.UnboxingStub)
             {
                 // Strip unboxing stub, note the first parameter which is false
-                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(false, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation, IntPtr.Zero, false);
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(false, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
             }
 
             uint nativeLayoutInfoToken;
@@ -311,9 +311,11 @@ namespace Internal.Runtime.TypeLoader
                 throw new MissingTemplateException();
             }
 
-            if (templateMethod.FunctionPointer != IntPtr.Zero)
+            // We might have a mismatch between unboxing/non-unboxing variants so only remember it for static methods
+            if (TypeLoaderEnvironment.IsStaticMethodSignature(templateMethod.NameAndSignature)
+                && templateMethod.FunctionPointer != IntPtr.Zero)
             {
-                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer, isFunctionPointerUSG: false);
+                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer);
             }
 
             // Ensure that if this method is non-shareable from a normal canonical perspective, then
@@ -1080,7 +1082,7 @@ namespace Internal.Runtime.TypeLoader
 
             // The first is a pointer that points to the TypeManager indirection cell.
             // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
-            IntPtr** lazySignature = (IntPtr**)signature.ToPointer();
+            IntPtr** lazySignature = (IntPtr**)signature;
             typeManager = new TypeManagerHandle(lazySignature[0][0]);
             offset = checked((uint)new IntPtr(lazySignature[1]).ToInt32());
             reader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(typeManager);

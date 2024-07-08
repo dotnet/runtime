@@ -38,7 +38,13 @@
     </ItemGroup>
 
     <ItemGroup Condition="!$(SkipOnTestRuntimes.Contains('$(PackageRID)'))">
-      <TestConsoleApps Include="@(TestConsoleAppSourceFiles->'%(ProjectFile)')" Condition="!$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(PackageRID)'))">
+      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(PackageRID)'))" />
+
+      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="'$(RunNativeAotTestApps)' == 'true' and '%(TestConsoleAppSourceFiles.NativeAotIncompatible)' == 'true'" />
+
+      <_AppSourceFiles Include="@(TestConsoleAppSourceFiles)" Exclude="@(_SkippedAppSourceFiles)" />
+
+      <TestConsoleApps Include="@(_AppSourceFiles->'%(ProjectFile)')">
         <ProjectCompileItems>%(FullPath)</ProjectCompileItems>
       </TestConsoleApps>
       <TestConsoleApps AdditionalProperties="MSBuildEnableWorkloadResolver=$(MSBuildEnableWorkloadResolver)" Condition="'$(MSBuildEnableWorkloadResolver)' != ''" />
@@ -81,6 +87,9 @@
       <_additionalPropertiesString>@(_propertiesAsItems->'&lt;%(Identity)&gt;%(Value)&lt;/%(Identity)&gt;', '%0a    ')</_additionalPropertiesString>
     </PropertyGroup>
 
+    <!-- RunNativeAotTestApps trumps TestTrimming, same as PublishAot trumps PublishTrimmed, but it's very likely not what the user intended. -->
+    <Error Condition="'$(RunNativeAotTestApps)' == 'true' and '$(TestTrimming)' == 'true'" Text="Not possible to test both IL trimming and AOT at the same time" />
+
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile File="$(_projectFile)"
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
@@ -88,7 +97,7 @@
                                                  .Replace('{NetCoreAppMaximumVersion}', '$(NetCoreAppMaximumVersion)')
                                                  .Replace('{UseMonoRuntime}','$(UseMonoRuntime)')
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
-                                                 .Replace('{PublishAot}','$(IsNativeAotTestProject)')
+                                                 .Replace('{PublishAot}','$(RunNativeAotTestApps)')
                                                  .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
                                                  .Replace('{AdditionalProperties}', '$(_additionalPropertiesString)')
                                                  .Replace('{ToolsILLinkDir}', '$(ToolsILLinkDir)')
@@ -119,7 +128,8 @@
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackDir}', '$(MicrosoftNetCoreAppRuntimePackDir)')
                                                  .Replace('{NativeSanitizersTargets}', '$(RepositoryEngineeringDir)nativeSanitizers.targets')
                                                  .Replace('{AppHostSourcePath}', '$(AppHostSourcePath)')
-                                                 .Replace('{SingleFileHostSourcePath}', '$(SingleFileHostSourcePath)'))"
+                                                 .Replace('{SingleFileHostSourcePath}', '$(SingleFileHostSourcePath)')
+                                                 .Replace('{SanitizerRuntimeFolder}', '$(DotNetHostBinDir)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile);
                        @(_additionalProjectSourceFiles)"
@@ -141,7 +151,7 @@
 
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Publish"
-             Properties="Configuration=$(Configuration);BuildProjectReferences=false;TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture)" />
+             Properties="Configuration=$(Configuration);BuildProjectReferences=false;TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture);_IsPublishing=true" />
   </Target>
 
   <Target Name="ExecuteApplications"
@@ -155,7 +165,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ExecutionExitCode" />
     </Exec>
 
-    <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems). The Command %(TestConsoleApps.TestCommand) return a non-success exit code." ContinueOnError="ErrorAndContinue" />
+    <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems). The Command %(TestConsoleApps.TestCommand) return a non-success exit code $(ExecutionExitCode)." ContinueOnError="ErrorAndContinue" />
   </Target>
 
   <Target Name="Build" DependsOnTargets="ExecuteApplications" />

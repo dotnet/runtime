@@ -12,6 +12,7 @@ using Internal.IL;
 using Internal.TypeSystem;
 
 using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 
 namespace ILCompiler
 {
@@ -36,17 +37,19 @@ namespace ILCompiler
         private readonly ILProvider _ilProvider;
         private readonly TypePreinitializationPolicy _policy;
         private readonly ReadOnlyFieldPolicy _readOnlyPolicy;
+        private readonly FlowAnnotations _flowAnnotations;
         private readonly Dictionary<FieldDesc, Value> _fieldValues = new Dictionary<FieldDesc, Value>();
         private readonly Dictionary<string, StringInstance> _internedStrings = new Dictionary<string, StringInstance>();
         private readonly Dictionary<TypeDesc, RuntimeTypeValue> _internedTypes = new Dictionary<TypeDesc, RuntimeTypeValue>();
 
-        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy)
+        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
         {
             _type = owningType;
             _compilationGroup = compilationGroup;
             _ilProvider = ilProvider;
             _policy = policy;
             _readOnlyPolicy = readOnlyPolicy;
+            _flowAnnotations = flowAnnotations;
 
             // Zero initialize all fields we model.
             foreach (var field in owningType.GetFields())
@@ -58,7 +61,7 @@ namespace ILCompiler
             }
         }
 
-        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, MetadataType type)
+        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations, MetadataType type)
         {
             Debug.Assert(type.HasStaticConstructor);
             Debug.Assert(!type.IsGenericDefinition);
@@ -85,7 +88,7 @@ namespace ILCompiler
             Status status;
             try
             {
-                preinit = new TypePreinit(type, compilationGroup, ilProvider, policy, readOnlyPolicy);
+                preinit = new TypePreinit(type, compilationGroup, ilProvider, policy, readOnlyPolicy, flowAnnotations);
                 int instructions = 0;
                 status = preinit.TryScanMethod(type.GetStaticConstructor(), null, null, ref instructions, out _);
             }
@@ -244,6 +247,11 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Array out of bounds");
                             }
 
+                            if (elementType.RequiresAlign8())
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
+                            }
+
                             AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
                             stack.Push(new ArrayInstance(elementType.MakeArrayType(), elementCount, allocSite));
                         }
@@ -313,6 +321,11 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
                             }
 
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                            }
+
                             if (_fieldValues[field] is IAssignableValue assignableField)
                             {
                                 if (!assignableField.TryAssign(stack.PopIntoLocation(field.FieldType)))
@@ -351,7 +364,7 @@ namespace ILCompiler
                                 && field.OwningType.HasStaticConstructor
                                 && _policy.CanPreinitialize(field.OwningType))
                             {
-                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy);
+                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _flowAnnotations);
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
 
@@ -410,6 +423,11 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
                             }
 
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                            }
+
                             Value fieldValue = _fieldValues[field];
                             if (fieldValue == null || !fieldValue.TryCreateByRef(out Value byRefValue))
                             {
@@ -450,6 +468,11 @@ namespace ILCompiler
                                     && !((MetadataType)owningType).IsBeforeFieldInit)
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
+                            }
+
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(method))
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                             }
 
                             Value[] methodParams = new Value[numParams];
@@ -510,8 +533,24 @@ namespace ILCompiler
 
                             if (owningType.HasFinalizer)
                             {
-                                // Finalizer might have observable side effects
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
+                                // We have a finalizer. There's still a small chance it has been nopped out
+                                // with a feature switch. Check for that.
+                                byte[] finalizerMethodILBytes = _ilProvider.GetMethodIL(owningType.GetFinalizer()).GetILBytes();
+                                if (finalizerMethodILBytes.Length != 1 || finalizerMethodILBytes[0] != (byte)ILOpcode.ret)
+                                {
+                                    // Finalizer might have observable side effects
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
+                                }
+                            }
+
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(ctor))
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                            }
+
+                            if (owningType.RequiresAlign8())
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
                             }
 
                             Value[] ctorParameters = new Value[ctorSig.Length + 1];
@@ -712,6 +751,11 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Byref field");
                             }
 
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                            }
+
                             if (instance.Value is not IHasInstanceFields settableInstance
                                 || !settableInstance.TrySetField(field, value))
                             {
@@ -751,6 +795,11 @@ namespace ILCompiler
                                 || field.IsStatic)
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode);
+                            }
+
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                             }
 
                             StackEntry instance = stack.Pop();
@@ -1589,6 +1638,9 @@ namespace ILCompiler
                             {
                                 if (type.IsNullable)
                                     return Status.Fail(methodIL.OwningMethod, opcode);
+
+                                if (type.RequiresAlign8())
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
 
                                 Value value = stack.PopIntoLocation(type);
                                 AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
@@ -2751,16 +2803,16 @@ namespace ILCompiler
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk");
 
-                    // m_firstParameter
+                    // _firstParameter
                     builder.EmitPointerReloc(thisNode);
 
-                    // m_helperObject
+                    // _helperObject
                     builder.EmitZeroPointer();
 
-                    // m_extraFunctionPointerOrData
+                    // _extraFunctionPointerOrData
                     builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
 
-                    // m_functionPointer
+                    // _functionPointer
                     Debug.Assert(creationInfo.Thunk != null);
                     builder.EmitPointerReloc(creationInfo.Thunk);
                 }
@@ -2768,17 +2820,17 @@ namespace ILCompiler
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance");
 
-                    // m_firstParameter
+                    // _firstParameter
                     _firstParameter.WriteFieldData(ref builder, factory);
 
-                    // m_helperObject
+                    // _helperObject
                     builder.EmitZeroPointer();
 
-                    // m_extraFunctionPointerOrData
+                    // _extraFunctionPointerOrData
                     builder.EmitZeroPointer();
 
-                    // m_functionPointer
-                    builder.EmitPointerReloc(factory.CanonicalEntrypoint(_methodPointed));
+                    // _functionPointer
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
             }
 

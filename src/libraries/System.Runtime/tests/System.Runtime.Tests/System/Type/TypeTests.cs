@@ -513,6 +513,26 @@ namespace System.Tests
             Assert.Equal(expectedType, Type.GetType(typeName.ToLower(), throwOnError: false, ignoreCase: true));
         }
 
+        public static IEnumerable<object[]> GetTypeByName_InvalidElementType()
+        {
+            Type expectedException = PlatformDetection.IsMonoRuntime
+                ? typeof(ArgumentException) // https://github.com/dotnet/runtime/issues/45033
+                : typeof(TypeLoadException);
+
+            yield return new object[] { "System.Int32&&", expectedException, true };
+            yield return new object[] { "System.Int32&*", expectedException, true };
+            yield return new object[] { "System.Int32&[]", expectedException, true };
+            yield return new object[] { "System.Int32&[*]", expectedException, true };
+            yield return new object[] { "System.Int32&[,]", expectedException, true };
+
+            // https://github.com/dotnet/runtime/issues/45033
+            if (!PlatformDetection.IsMonoRuntime)
+            {
+                yield return new object[] { "System.Void[]", expectedException, true };
+                yield return new object[] { "System.TypedReference[]", expectedException, true };
+            }
+        }
+
         [Theory]
         [InlineData("system.nullable`1[system.int32]", typeof(TypeLoadException), false)]
         [InlineData("System.NonExistingType", typeof(TypeLoadException), false)]
@@ -522,6 +542,7 @@ namespace System.Tests
         [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
         [InlineData(".System.Int32", typeof(TypeLoadException), false)]
         [InlineData("..Outside`1", typeof(TypeLoadException), false)]
+        [MemberData(nameof(GetTypeByName_InvalidElementType))]
         public void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
         {
             if (!alwaysThrowsException)
@@ -1167,9 +1188,6 @@ namespace System.Tests
                     }
                     else
                     {
-                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/90863")]
-                        if (classType.Type == typeof(SIMs.C2Implicit<string>) && interfaceType.Type == typeof(SIMs.I1<string>)) continue;
-
                         // It's implemented implicitly by the level 2 interface
                         MTarget = interfaceType.Level2InterfaceType.GetMethod(interfaceType.MethodNamePrefix + "M", bindingFlags);
                         GTarget = interfaceType.Level2InterfaceType.GetMethod(interfaceType.MethodNamePrefix + "G", bindingFlags);
@@ -1294,7 +1312,7 @@ namespace System.Tests
 
         static class DIMs
         {
-            
+
             internal interface I1
             {
                 void M() { throw new Exception("e"); }

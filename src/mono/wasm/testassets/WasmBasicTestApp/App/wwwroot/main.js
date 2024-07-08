@@ -33,9 +33,11 @@ switch (testCase) {
                 Math.floor(Math.random() * 5) + 5,
                 Math.floor(Math.random() * 5) + 10
             ];
+            console.log(`Failing test at assembly indexes [${failAtAssemblyNumbers.join(", ")}]`);
+            let alreadyFailed = [];
             dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity, behavior) => {
                 if (type === "dotnetjs") {
-                    // loadBootResource could return string with unqualified name of resource. 
+                    // loadBootResource could return string with unqualified name of resource.
                     // It assumes that we resolve it with document.baseURI
                     // we test it here
                     return `_framework/${name}`;
@@ -44,10 +46,11 @@ switch (testCase) {
                     return defaultUri;
                 }
 
-                assemblyCounter++;
-                if (!failAtAssemblyNumbers.includes(assemblyCounter))
+                const currentCounter = assemblyCounter++;
+                if (!failAtAssemblyNumbers.includes(currentCounter) || alreadyFailed.includes(defaultUri))
                     return defaultUri;
 
+                alreadyFailed.push(defaultUri);
                 testOutput("Throw error instead of downloading resource");
                 const error = new Error("Simulating a failed fetch");
                 error.silent = true;
@@ -63,12 +66,59 @@ switch (testCase) {
             }
         });
         break;
+    case "OutErrOverrideWorks":
+        dotnet.withModuleConfig({
+            out: (message) => {
+                console.log("Emscripten out override works!");
+                console.log(message)
+            },
+            err: (message) => {
+                console.error("Emscripten err override works!");
+                console.error(message)
+            },
+        });
+        break;
+    case "InterpPgoTest":
+        dotnet
+            .withConsoleForwarding()
+            .withRuntimeOptions(['--interp-pgo-logging'])
+            .withInterpreterPgo(true);
+        break;
+    case "DownloadThenInit":
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (url, fetchArgs) => {
+            testOutput("fetching " + url);
+            return originalFetch(url, fetchArgs);
+        };
+        await dotnet.download();
+        testOutput("download finished");
+        break;
+    case "MaxParallelDownloads":
+        const maxParallelDownloads = params.get("maxParallelDownloads");
+        let activeFetchCount = 0;
+        const originalFetch2 = globalThis.fetch;
+        globalThis.fetch = async (...args) => {
+            activeFetchCount++;
+            testOutput(`Fetch started. Active downloads: ${activeFetchCount}`);
+            try {
+                const response = await originalFetch2(...args);
+                activeFetchCount--;
+                testOutput(`Fetch completed. Active downloads: ${activeFetchCount}`);
+                return response;
+            } catch (error) {
+                activeFetchCount--;
+                testOutput(`Fetch failed. Active downloads: ${activeFetchCount}`);
+                throw error;
+            }
+        };
+        dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
+        break;
 }
 
-const { getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
-const assemblyExtension = config.resources.assembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
+const assemblyExtension = config.resources.coreAssembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
 
 // Run the test case
 try {
@@ -92,6 +142,30 @@ try {
             exit(0);
             break;
         case "DownloadResourceProgressTest":
+            exit(0);
+            break;
+        case "OutErrOverrideWorks":
+            dotnet.run();
+            break;
+        case "DebugLevelTest":
+            testOutput("WasmDebugLevel: " + config.debugLevel);
+            exit(0);
+            break;
+        case "InterpPgoTest":
+            setModuleImports('main.js', {
+                window: {
+                    location: {
+                        href: () => globalThis.window.location.href
+                    }
+                }
+            });
+            const iterationCount = params.get("iterationCount") ?? "70";
+            exports.InterpPgoTest.TryToTier(parseInt(iterationCount));
+            await INTERNAL.interp_pgo_save_data();
+            exit(0);
+            break;
+        case "DownloadThenInit":
+        case "MaxParallelDownloads":
             exit(0);
             break;
         default:

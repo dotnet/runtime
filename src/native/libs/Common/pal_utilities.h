@@ -15,6 +15,8 @@
 #include <unistd.h>
 #include <limits.h>
 
+#include <minipal/utils.h>
+
 #ifdef DEBUG
 #define assert_err(cond, msg, err) do \
 { \
@@ -42,16 +44,6 @@
 // See https://stackoverflow.com/questions/51231405
 #define CONST_CAST2(TOTYPE, FROMTYPE, X) ((union { FROMTYPE _q; TOTYPE _nq; }){ ._q = (X) }._nq)
 #define CONST_CAST(TYPE, X) CONST_CAST2(TYPE, const TYPE, (X))
-
-#ifndef __has_attribute
-#define __has_attribute(x) (0)
-#endif
-
-#if __has_attribute(fallthrough)
-#define FALLTHROUGH __attribute__((fallthrough))
-#else
-#define FALLTHROUGH
-#endif
 
 /**
  * Abstraction helper method to safely copy strings using strlcpy or strcpy_s

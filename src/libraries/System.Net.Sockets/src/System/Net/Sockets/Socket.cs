@@ -636,7 +636,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                if (_addressFamily == AddressFamily.InterNetwork)
+                if (_addressFamily == AddressFamily.InterNetwork || (_addressFamily == AddressFamily.InterNetworkV6 && DualMode))
                 {
                     return (int)GetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment)! != 0 ? true : false;
                 }
@@ -648,7 +648,7 @@ namespace System.Net.Sockets
 
             set
             {
-                if (_addressFamily == AddressFamily.InterNetwork)
+                if (_addressFamily == AddressFamily.InterNetwork || (_addressFamily == AddressFamily.InterNetworkV6 && DualMode))
                 {
                     SetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment, value ? 1 : 0);
                 }
@@ -1909,8 +1909,6 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, receivedAddress.Buffer, out int socketAddressSize, out bytesTransferred);
-            receivedAddress.Size = socketAddressSize;
-
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
             if (errorCode != SocketError.Success)
@@ -1927,6 +1925,7 @@ namespace System.Net.Sockets
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
+            receivedAddress.Size = socketAddressSize;
             return bytesTransferred;
         }
 
@@ -3095,14 +3094,22 @@ namespace System.Net.Sockets
             ArgumentNullException.ThrowIfNull(e);
 
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
-            if (e._socketAddress == null)
-            {
-                if (endPointSnapshot == null)
-                {
-                    throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
-                }
 
-                // Prepare SocketAddress
+            // RemoteEndPoint should be set unless somebody used SendTo with their own SA.
+            // In that case RemoteEndPoint will be null and we take provided SA as given.
+            if (endPointSnapshot == null && e._socketAddress == null)
+            {
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
+            }
+
+            if (e._socketAddress != null && endPointSnapshot is IPEndPoint ipep && e._socketAddress.Family == endPointSnapshot?.AddressFamily)
+            {
+                // we have matching SocketAddress. Since this is only used internally, it is ok to overwrite it without
+                ipep.Serialize(e._socketAddress.Buffer.Span);
+            }
+            else if (endPointSnapshot != null)
+            {
+                // Prepare new SocketAddress
                 e._socketAddress = Serialize(ref endPointSnapshot);
             }
 
@@ -3746,7 +3753,7 @@ namespace System.Net.Sockets
 
             if (disconnectOnFailure && _isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
                     errorCode != SocketError.IOPending && errorCode != SocketError.NoBufferSpaceAvailable &&
-                    errorCode != SocketError.TimedOut)))
+                    errorCode != SocketError.TimedOut && errorCode != SocketError.OperationAborted)))
             {
                 // The socket is no longer a valid socket.
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Invalidating socket.");

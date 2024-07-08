@@ -5,9 +5,9 @@
 
 #include <SDKDDKVer.h>
 
-#if _WIN32_WINNT < 0x0601
-#error "Mono requires Windows 7 or later."
-#endif /* _WIN32_WINNT < 0x0601 */
+#if _WIN32_WINNT < 0x0602
+#error "Mono requires Windows 8 or later."
+#endif /* _WIN32_WINNT < 0x0602 */
 
 #ifndef HAVE_WINAPI_FAMILY_SUPPORT
 
@@ -53,9 +53,6 @@
 
 /* Targeting the Fuchsia platform */
 #cmakedefine HOST_FUCHSIA 1
-
-/* Targeting the AIX and PASE platforms */
-#cmakedefine HOST_AIX 1
 
 /* Host Platform is Win32 */
 #cmakedefine HOST_WIN32 1
@@ -108,12 +105,6 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H 1
 
-/* Define to 1 if you have the <signal.h> header file. */
-#cmakedefine HAVE_SIGNAL_H 1
-
-/* Define to 1 if you have the <setjmp.h> header file. */
-#cmakedefine HAVE_SETJMP_H 1
-
 /* Define to 1 if you have the <syslog.h> header file. */
 #cmakedefine HAVE_SYSLOG_H 1
 
@@ -131,9 +122,6 @@
 
 /* Define to 1 if you have the <sys/syscall.h> header file. */
 #cmakedefine HAVE_SYS_SYSCALL_H 1
-
-/* Define to 1 if you have the <sys/uio.h> header file. */
-#cmakedefine HAVE_SYS_UIO_H 1
 
 /* Define to 1 if you have the <sys/param.h> header file. */
 #cmakedefine HAVE_SYS_PARAM_H 1
@@ -162,9 +150,6 @@
 /* Define to 1 if you have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H 1
 
-/* Define to 1 if you have the <grp.h> header file. */
-#cmakedefine HAVE_GRP_H 1
-
 /* Define to 1 if you have the <sys/select.h> header file. */
 #cmakedefine HAVE_SYS_SELECT_H 1
 
@@ -183,9 +168,6 @@
 /* Define to 1 if you have the <unwind.h> header file. */
 #cmakedefine HAVE_UNWIND_H 1
 
-/* Use static ICU */
-#cmakedefine STATIC_ICU 1
-
 /* Use in-tree zlib */
 #cmakedefine INTERNAL_ZLIB 1
 
@@ -200,9 +182,6 @@
 
 /* Define to 1 if you have the <wchar.h> header file. */
 #cmakedefine HAVE_WCHAR_H 1
-
-/* Define to 1 if you have the <linux/magic.h> header file. */
-#cmakedefine HAVE_LINUX_MAGIC_H 1
 
 /* Define to 1 if you have the <android/legacy_signal_inlines.h> header file.
    */
@@ -235,9 +214,6 @@
 /* Disable support debug logging */
 #cmakedefine DISABLE_LOGGING 1
 
-/* Disable COM support */
-#cmakedefine DISABLE_COM 1
-
 /* Disable advanced SSA JIT optimizations */
 #cmakedefine DISABLE_SSA 1
 
@@ -247,9 +223,6 @@
 
 /* Disable the interpreter. */
 #cmakedefine DISABLE_INTERPRETER 1
-
-/* Disable non-blittable marshalling */
-#cmakedefine DISABLE_NONBLITTABLE
 
 /* Disable SIMD intrinsics related optimizations. */
 #cmakedefine DISABLE_SIMD 1
@@ -359,9 +332,6 @@
 /* Define to 1 if you have the `closelog' function. */
 #cmakedefine HAVE_CLOSELOG 1
 
-/* Define to 1 if you have the `atexit' function. */
-#cmakedefine HAVE_ATEXIT 1
-
 /* Define to 1 if you have the `popen' function. */
 #cmakedefine HAVE_POPEN 1
 
@@ -388,9 +358,6 @@
 
 /* Define to 1 if you have the <pthread_np.h> header file. */
 #cmakedefine HAVE_PTHREAD_NP_H 1
-
-/* Define to 1 if you have the `pthread_mutex_timedlock' function. */
-#cmakedefine HAVE_PTHREAD_MUTEX_TIMEDLOCK 1
 
 /* Define to 1 if you have the `pthread_getattr_np' function. */
 #cmakedefine HAVE_PTHREAD_GETATTR_NP 1
@@ -448,14 +415,8 @@
 /* Have getpid */
 #cmakedefine HAVE_GETPID 1
 
-/* Have mktemp */
-#cmakedefine HAVE_MKTEMP 1
-
 /* Define to 1 if you have the <sys/mman.h> header file. */
 #cmakedefine HAVE_SYS_MMAN_H 1
-
-/* Define to 1 if you have the <sys/mount.h> header file. */
-#cmakedefine HAVE_SYS_MOUNT_H 1
 
 /* Define to 1 if you have the `mremap' function. */
 #cmakedefine HAVE_MREMAP 1
@@ -504,9 +465,6 @@
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H 1
 
-/* Define to 1 if you have the <dirent.h> header file. */
-#cmakedefine HAVE_DIRENT_H 1
-
 /* Define to 1 if you have the <CommonCrypto/CommonDigest.h> header file. */
 #cmakedefine HAVE_COMMONCRYPTO_COMMONDIGEST_H 1
 
@@ -524,9 +482,6 @@
 
 /* Define to 1 if you have the <winternl.h> header file. */
 #cmakedefine HAVE_WINTERNL_H 1
-
-/* Have socklen_t */
-#cmakedefine HAVE_SOCKLEN_T 1
 
 /* Define to 1 if you have the `execvp' function. */
 #cmakedefine HAVE_EXECVP 1
@@ -566,12 +521,6 @@
 
 /* ... */
 #cmakedefine TARGET_PS3 1
-
-/* ... */
-#cmakedefine TARGET_XBOX360 1
-
-/* ... */
-#cmakedefine TARGET_PS4 1
 
 /* Target is RISC-V */
 #cmakedefine TARGET_RISCV 1
@@ -674,9 +623,6 @@
 
 /* host or target doesn't allow unaligned memory access */
 #cmakedefine NO_UNALIGNED_ACCESS 1
-
-/* Support for the deprecated attribute */
-#cmakedefine HAVE_DEPRECATED 1
 
 /* Moving collector */
 #cmakedefine HAVE_MOVING_COLLECTOR 1

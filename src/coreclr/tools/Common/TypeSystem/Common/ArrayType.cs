@@ -260,9 +260,18 @@ namespace Internal.TypeSystem
                         case ArrayMethodKind.AddressWithHiddenArg:
                             {
                                 var parameters = new TypeDesc[_owningType.Rank + 1];
-                                parameters[0] = Context.GetPointerType(Context.GetWellKnownType(WellKnownType.Void));
-                                for (int i = 0; i < _owningType.Rank; i++)
-                                    parameters[i + 1] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
+                                if (Context.Target.Architecture == TargetArchitecture.X86)
+                                {
+                                    for (int i = 0; i < _owningType.Rank; i++)
+                                        parameters[i] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
+                                    parameters[_owningType.Rank] = Context.GetPointerType(Context.GetWellKnownType(WellKnownType.Void));
+                                }
+                                else
+                                {
+                                    parameters[0] = Context.GetPointerType(Context.GetWellKnownType(WellKnownType.Void));
+                                    for (int i = 0; i < _owningType.Rank; i++)
+                                        parameters[i + 1] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
+                                }
                                 _signature = new MethodSignature(0, 0, _owningType.ElementType.MakeByRefType(), parameters, MethodSignature.EmbeddedSignatureMismatchPermittedFlag);
                             }
                             break;

@@ -7,7 +7,7 @@ parameters:
   _const_paths:
     _wasm_specific_only: [
         eng/testing/bump-chrome-version.proj
-        eng/testing/ChromeVersions.props
+        eng/testing/BrowserVersions.props
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
         eng/testing/scenarios/BuildWasiAppsJobsList.txt
@@ -15,16 +15,21 @@ parameters:
         eng/testing/tests.browser.targets
         eng/testing/tests.was*.targets
         eng/testing/was*provisioning.targets
+        eng/testing/workloads-browser.targets
         eng/testing/workloads-testing.targets
+        eng/testing/workloads-wasi.targets
+        eng/testing/workloads-wasm.targets
         src/libraries/sendtohelix-browser.targets
         src/libraries/sendtohelix-wasi.targets
         src/libraries/sendtohelix-wasm.targets
+        src/libraries/System.Runtime.InteropServices.JavaScript/*
         src/mono/mono/**/*wasm*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
         src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/*
         src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
+        src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/**/*
         src/mono/nuget/Microsoft.NET.Workload*
         src/mono/sample/wasm/*
         src/mono/browser/*
@@ -53,7 +58,7 @@ parameters:
     ]
     _wasm_chrome: [
         eng/testing/bump-chrome-version.proj
-        eng/testing/ChromeVersions.props
+        eng/testing/BrowserVersions.props
     ]
     _perf_pipeline_specific_only: [
         eng/pipelines/runtime-wasm-perf.yml
@@ -157,7 +162,13 @@ jobs:
     - subset: tools_illink
       include:
       - src/tools/illink/*
+      - src/coreclr/tools/aot/ILCompiler.DependencyAnalysisFramework/*
+      - src/coreclr/tools/ILVerification/*
       - global.json
+
+    - subset: tools_cdacreader
+      include:
+      - src/native/managed/cdacreader/*
 
     - subset: installer
       include:
@@ -191,9 +202,6 @@ jobs:
       - src/coreclr/jit/*
       - src/coreclr/pal/*
       - src/coreclr/vm/*
-    - subset: coreclr_jit
-      include:
-      - src/coreclr/jit/*
 
     #
     # ** WASM **
@@ -209,7 +217,11 @@ jobs:
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/tests.browser.targets
       - eng/testing/tests.was*.targets
+      - src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
+      - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets
+      - eng/testing/workloads-wasi.targets
+      - eng/testing/workloads-wasm.targets
       - src/installer/pkg/sfx/Microsoft.NETCore.App/*
       - src/libraries/sendtohelix*
       - src/libraries/System.Net.WebSockets.Client/*
@@ -295,7 +307,11 @@ jobs:
       exclude:
       - eng/testing/scenarios/BuildWasiAppsJobsList.txt
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+        src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
+      - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets
+      - eng/testing/workloads-wasi.targets
+      - eng/testing/workloads-wasm.targets
       - src/mono/mono/component/mini-wasm-debugger.c
       - src/mono/browser/debugger/*
       - src/mono/wasm/host/*

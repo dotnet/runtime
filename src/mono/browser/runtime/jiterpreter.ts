@@ -4,7 +4,7 @@
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
-import { getU16, getU32_unaligned, localHeapViewU8 } from "./memory";
+import { getU16 } from "./memory";
 import { WasmValtype, WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -12,15 +12,15 @@ import {
     MintOpcodePtr, WasmBuilder, addWasmFunctionPointer,
     _now, isZeroPageReserved,
     getRawCwrap, importDef, JiterpreterOptions, getOptions, recordFailure,
-    getMemberOffset, getCounter, modifyCounter,
+    getCounter, modifyCounter,
     simdFallbackCounters, getWasmFunctionTable
 } from "./jiterpreter-support";
 import {
-    JiterpMember, BailoutReasonNames, BailoutReason,
+    BailoutReasonNames, BailoutReason,
     JiterpreterTable, JiterpCounter,
 } from "./jiterpreter-enums";
 import {
-    generateWasmBody
+    generateWasmBody, generateBackwardBranchTable
 } from "./jiterpreter-trace-generator";
 import { mono_jiterp_free_method_data_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_jiterp_free_method_data_jit_call } from "./jiterpreter-jit-call";
@@ -34,10 +34,6 @@ export const
     // Record a trace of all managed interpreter opcodes then dump it to console
     //  if an error occurs while compiling the output wasm
     traceOnError = false,
-    // Record trace but dump it when the trace has a runtime error instead
-    //  requires trapTraceErrors to work and will slow trace compilation +
-    //  increase memory usage
-    traceOnRuntimeError = false,
     // Trace the method name, location and reason for each abort
     traceAbortLocations = false,
     // Count the number of times a given method is seen as a call target, then
@@ -60,12 +56,7 @@ export const
     traceNullCheckOptimizations = false,
     // Print diagnostic information when generating backward branches
     // 1 = failures only, 2 = full detail
-    traceBackBranches = 0,
-    // If we encounter an enter opcode that looks like a loop body and it was already
-    //  jitted, we should abort the current trace since it's not worth continuing
-    // Unproductive if we have backward branches enabled because it can stop us from jitting
-    //  nested loops
-    abortAtJittedLoopBodies = true,
+    defaultTraceBackBranches = 0,
     // Enable generating conditional backward branches for ENDFINALLY opcodes if we saw some CALL_HANDLER
     //  opcodes previously, up to this many potential return addresses. If a trace contains more potential
     //  return addresses than this we will not emit code for the ENDFINALLY opcode
@@ -107,7 +98,7 @@ export class InstrumentedTraceState {
     operand1: number | undefined;
     operand2: number | undefined;
 
-    constructor(name: string) {
+    constructor (name: string) {
         this.name = name;
         this.eip = <any>0;
     }
@@ -123,13 +114,13 @@ export class TraceInfo {
     bailoutCount: number | undefined;
     isVerbose: boolean;
 
-    constructor(ip: MintOpcodePtr, index: number, isVerbose: number) {
+    constructor (ip: MintOpcodePtr, index: number, isVerbose: number) {
         this.ip = ip;
         this.index = index;
         this.isVerbose = !!isVerbose;
     }
 
-    get hitCount() {
+    get hitCount () {
         return cwraps.mono_jiterp_get_trace_hit_count(this.index);
     }
 }
@@ -234,7 +225,7 @@ const mathOps1d =
         "powf",
     ];
 
-function recordBailout(ip: number, traceIndex: number, reason: BailoutReason) {
+function recordBailout (ip: number, traceIndex: number, reason: BailoutReason) {
     cwraps.mono_jiterp_trace_bailout(reason);
     // Counting these is not meaningful and messes up the end of run statistics
     if (reason === BailoutReason.Return)
@@ -260,7 +251,7 @@ function recordBailout(ip: number, traceIndex: number, reason: BailoutReason) {
     return ip;
 }
 
-function getTraceImports() {
+function getTraceImports () {
     if (traceImports)
         return traceImports;
 
@@ -294,7 +285,7 @@ function getTraceImports() {
         importDef("stfld_o", getRawCwrap("mono_jiterp_set_object_field")),
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
         importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
-        importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
+        ["stelemr_tc", "stelemr", getRawCwrap("mono_jiterp_stelem_ref")],
         importDef("fma", getRawCwrap("fma")),
         importDef("fmaf", getRawCwrap("fmaf")),
     ];
@@ -322,7 +313,7 @@ function getTraceImports() {
     return traceImports;
 }
 
-function initialize_builder(builder: WasmBuilder) {
+function initialize_builder (builder: WasmBuilder) {
     // Function type for compiled traces
     builder.defineType(
         "trace",
@@ -658,7 +649,7 @@ function initialize_builder(builder: WasmBuilder) {
         WasmValtype.void, true
     );
     builder.defineType(
-        "stelem_ref",
+        "stelemr",
         {
             "o": WasmValtype.i32,
             "aindex": WasmValtype.i32,
@@ -703,7 +694,7 @@ function initialize_builder(builder: WasmBuilder) {
     }
 }
 
-function assert_not_null(
+function assert_not_null (
     value: number, expectedValue: number, traceIndex: number, ip: MintOpcodePtr
 ) {
     if (value && (value === expectedValue))
@@ -713,7 +704,7 @@ function assert_not_null(
 }
 
 // returns function id
-function generate_wasm(
+function generate_wasm (
     frame: NativePointer, methodName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
     traceIndex: number, methodFullName: string | undefined,
@@ -788,7 +779,6 @@ function generate_wasm(
             "math_rhs64": WasmValtype.i64,
             "temp_f32": WasmValtype.f32,
             "temp_f64": WasmValtype.f64,
-            "backbranched": WasmValtype.i32,
         };
         if (builder.options.enableSimd) {
             traceLocals["v128_zero"] = WasmValtype.v128;
@@ -884,9 +874,8 @@ function generate_wasm(
         //  independently jitting traces will not stomp on each other and all threads
         //  have a globally consistent view of which function pointer maps to each trace.
         rejected = false;
-        mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
-        let idx : number;
+        let idx: number;
         if (presetFunctionPointer) {
             const fnTable = getWasmFunctionTable();
             fnTable.set(presetFunctionPointer, fn);
@@ -901,7 +890,7 @@ function generate_wasm(
         //  suites or benchmarks if you've enabled stats
         const tracesCompiled = getCounter(JiterpCounter.TracesCompiled);
         if (builder.options.enableStats && tracesCompiled && (tracesCompiled % autoDumpInterval) === 0)
-            jiterpreter_dump_stats(false, true);
+            jiterpreter_dump_stats(true);
 
         return idx;
     } catch (exc: any) {
@@ -959,7 +948,7 @@ function generate_wasm(
     }
 }
 
-export function trace_current_ip(traceId: number, eip: MintOpcodePtr) {
+export function trace_current_ip (traceId: number, eip: MintOpcodePtr) {
     const tup = instrumentedTraces[traceId];
     if (!tup)
         throw new Error(`Unrecognized instrumented trace id ${traceId}`);
@@ -967,14 +956,14 @@ export function trace_current_ip(traceId: number, eip: MintOpcodePtr) {
     mostRecentTrace = tup;
 }
 
-export function trace_operands(a: number, b: number) {
+export function trace_operands (a: number, b: number) {
     if (!mostRecentTrace)
         throw new Error("No trace active");
     mostRecentTrace.operand1 = a >>> 0;
     mostRecentTrace.operand2 = b >>> 0;
 }
 
-export function record_abort(traceIndex: number, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
+export function record_abort (traceIndex: number, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
     if (typeof (reason) === "number") {
         cwraps.mono_jiterp_adjust_abort_count(reason, 1);
         reason = getOpcodeName(reason);
@@ -997,7 +986,7 @@ export function record_abort(traceIndex: number, ip: MintOpcodePtr, traceName: s
 const JITERPRETER_TRAINING = 0;
 const JITERPRETER_NOT_JITTED = 1;
 
-export function mono_interp_tier_prepare_jiterpreter(
+export function mono_interp_tier_prepare_jiterpreter (
     frame: NativePointer, method: MonoMethod, ip: MintOpcodePtr, index: number,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr, isVerbose: number,
     presetFunctionPointer: number
@@ -1031,11 +1020,8 @@ export function mono_interp_tier_prepare_jiterpreter(
     const methodName = utf8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
 
-    const imethod = getU32_unaligned(getMemberOffset(JiterpMember.Imethod) + <any>frame);
-    const backBranchCount = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
-    const pBackBranches = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
-    let backwardBranchTable = backBranchCount
-        ? new Uint16Array(localHeapViewU8().buffer, pBackBranches, backBranchCount)
+    let backwardBranchTable = mostRecentOptions.noExitBackwardBranches
+        ? generateBackwardBranchTable(ip, startOfBody, sizeOfBody)
         : null;
 
     // If we're compiling a trace that doesn't start at the beginning of a method,
@@ -1045,7 +1031,7 @@ export function mono_interp_tier_prepare_jiterpreter(
         const threshold = (<any>ip - <any>startOfBody) / 2;
         let foundReachableBranchTarget = false;
         for (let i = 0; i < backwardBranchTable.length; i++) {
-            if (backwardBranchTable[i] > threshold) {
+            if (backwardBranchTable[i] >= threshold) {
                 foundReachableBranchTarget = true;
                 break;
             }
@@ -1075,7 +1061,7 @@ export function mono_interp_tier_prepare_jiterpreter(
 
 // NOTE: This will potentially be called once for every trace entry point
 //  in a given method, not just once per method
-export function mono_jiterp_free_method_data_js(
+export function mono_jiterp_free_method_data_js (
     method: MonoMethod, imethod: number, traceIndex: number
 ) {
     // TODO: Uninstall the trace function pointer from the function pointer table,
@@ -1087,14 +1073,14 @@ export function mono_jiterp_free_method_data_js(
     mono_jiterp_free_method_data_jit_call(method);
 }
 
-export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
+export function jiterpreter_dump_stats (concise?: boolean): void {
     if (!runtimeHelpers.runtimeReady) {
         return;
     }
-    if (!mostRecentOptions || (b !== undefined))
+    if (!mostRecentOptions)
         mostRecentOptions = getOptions();
 
-    if (!mostRecentOptions.enableStats && (b !== undefined))
+    if (!mostRecentOptions.enableStats)
         return;
 
     const backBranchesEmitted = getCounter(JiterpCounter.BackBranchesEmitted),
@@ -1256,10 +1242,4 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
 
     for (const k in simdFallbackCounters)
         mono_log_info(`// simd ${k}: ${simdFallbackCounters[k]} fallback insn(s)`);
-
-    if ((typeof (globalThis.setTimeout) === "function") && (b !== undefined))
-        setTimeout(
-            () => jiterpreter_dump_stats(b),
-            15000
-        );
 }

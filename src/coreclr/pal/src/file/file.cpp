@@ -35,6 +35,7 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 #include <sys/mount.h>
 #include <errno.h>
 #include <limits.h>
+#include <fcntl.h>
 
 using namespace CorUnix;
 
@@ -1529,6 +1530,52 @@ done:
     return bRet;
 }
 
+/*++
+InternalOpen
+
+Wrapper for open.
+
+Input parameters:
+
+szPath = pointer to a pathname of a file to be opened
+nFlags = arguments that control how the file should be accessed
+mode = file permission settings that are used only when a file is created
+
+Return value:
+    File descriptor on success, -1 on failure
+--*/
+int
+CorUnix::InternalOpen(
+    const char *szPath,
+    int nFlags,
+    ...
+    )
+{
+    int nRet = -1;
+    int mode = 0;
+    va_list ap;
+
+    // If nFlags does not contain O_CREAT, the mode parameter will be ignored.
+    if (nFlags & O_CREAT)
+    {
+        va_start(ap, nFlags);
+        mode = va_arg(ap, int);
+        va_end(ap);
+    }
+
+    do
+    {
+#if OPEN64_IS_USED_INSTEAD_OF_OPEN
+        nRet = open64(szPath, nFlags, mode);
+#else
+        nRet = open(szPath, nFlags, mode);
+#endif
+    }
+    while ((nRet == -1) && (errno == EINTR));
+
+    return nRet;
+}
+
 PAL_ERROR
 CorUnix::InternalWriteFile(
     CPalThread *pThread,
@@ -1939,8 +1986,8 @@ InternalSetFilePointerForUnixFd(
 {
     PAL_ERROR palError = NO_ERROR;
     int     seek_whence = 0;
-    __int64 seek_offset = 0LL;
-    __int64 seek_res = 0LL;
+    int64_t seek_offset = 0LL;
+    int64_t seek_res = 0LL;
     off_t old_offset;
 
     switch( dwMoveMethod )
@@ -1969,7 +2016,7 @@ InternalSetFilePointerForUnixFd(
     if ( lpDistanceToMoveHigh )
     {
         /* set the high 32 bits of the offset */
-        seek_offset = ((__int64)*lpDistanceToMoveHigh << 32);
+        seek_offset = ((int64_t)*lpDistanceToMoveHigh << 32);
 
         /* set the low 32 bits */
         /* cast to unsigned long to avoid sign extension */
@@ -2026,7 +2073,7 @@ InternalSetFilePointerForUnixFd(
         }
     }
 
-    seek_res = (__int64)lseek( iUnixFd,
+    seek_res = (int64_t)lseek( iUnixFd,
                                seek_offset,
                                seek_whence );
     if ( seek_res < 0 )
@@ -2835,7 +2882,7 @@ GetTempFileNameW(
         prefix_stringPS.CloseBuffer(prefix_size - 1);
     }
 
-    tempfile_name = (char*)InternalMalloc(MAX_LONGPATH);
+    tempfile_name = (char*)malloc(MAX_LONGPATH);
     if (tempfile_name == NULL)
     {
         pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -3546,43 +3593,4 @@ fail:
     pStdOut = INVALID_HANDLE_VALUE;
     pStdErr = INVALID_HANDLE_VALUE;
     return FALSE;
-}
-
-/*++
-FILECleanupStdHandles
-
-Remove all regions, locked by a file pointer, from shared memory
-
-(no parameters)
-
---*/
-void FILECleanupStdHandles(void)
-{
-    HANDLE stdin_handle;
-    HANDLE stdout_handle;
-    HANDLE stderr_handle;
-
-    TRACE("closing standard handles\n");
-    stdin_handle = pStdIn;
-    stdout_handle = pStdOut;
-    stderr_handle = pStdErr;
-
-    pStdIn = INVALID_HANDLE_VALUE;
-    pStdOut = INVALID_HANDLE_VALUE;
-    pStdErr = INVALID_HANDLE_VALUE;
-
-    if (stdin_handle != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(stdin_handle);
-    }
-
-    if (stdout_handle != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(stdout_handle);
-    }
-
-    if (stderr_handle != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(stderr_handle);
-    }
 }

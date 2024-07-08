@@ -213,7 +213,7 @@ namespace System.Text.Json
         internal sealed class CachingContext
         {
             private readonly ConcurrentDictionary<Type, CacheEntry> _cache = new();
-#if !NETCOREAPP
+#if !NET
             private readonly Func<Type, CacheEntry> _cacheEntryFactory;
 #endif
 
@@ -221,7 +221,7 @@ namespace System.Text.Json
             {
                 Options = options;
                 HashCode = hashCode;
-#if !NETCOREAPP
+#if !NET
                 _cacheEntryFactory = type => CreateCacheEntry(type, this);
 #endif
             }
@@ -254,7 +254,7 @@ namespace System.Text.Json
 
             private CacheEntry GetOrAddCacheEntry(Type type)
             {
-#if NETCOREAPP
+#if NET
                 return _cache.GetOrAdd(type, CreateCacheEntry, this);
 #else
                 return _cache.GetOrAdd(type, _cacheEntryFactory);
@@ -504,7 +504,11 @@ namespace System.Text.Json
                     left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
                     left._maxDepth == right._maxDepth &&
+                    left.NewLine == right.NewLine && // Read through property due to lazy initialization of the backing field
+                    left._allowOutOfOrderMetadataProperties == right._allowOutOfOrderMetadataProperties &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
+                    left._respectNullableAnnotations == right._respectNullableAnnotations &&
+                    left._respectRequiredConstructorParameters == right._respectRequiredConstructorParameters &&
                     left._ignoreNullValues == right._ignoreNullValues &&
                     left._ignoreReadOnlyProperties == right._ignoreReadOnlyProperties &&
                     left._ignoreReadonlyFields == right._ignoreReadonlyFields &&
@@ -560,7 +564,11 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);
                 AddHashCode(ref hc, options._maxDepth);
+                AddHashCode(ref hc, options.NewLine); // Read through property due to lazy initialization of the backing field
+                AddHashCode(ref hc, options._allowOutOfOrderMetadataProperties);
                 AddHashCode(ref hc, options._allowTrailingCommas);
+                AddHashCode(ref hc, options._respectNullableAnnotations);
+                AddHashCode(ref hc, options._respectRequiredConstructorParameters);
                 AddHashCode(ref hc, options._ignoreNullValues);
                 AddHashCode(ref hc, options._ignoreReadOnlyProperties);
                 AddHashCode(ref hc, options._ignoreReadonlyFields);
@@ -589,19 +597,19 @@ namespace System.Text.Json
 
                 static void AddHashCode<TValue>(ref HashCode hc, TValue? value)
                 {
-                    if (typeof(TValue).IsValueType)
+                    if (typeof(TValue).IsSealed)
                     {
                         hc.Add(value);
                     }
                     else
                     {
-                        Debug.Assert(!typeof(TValue).IsSealed, "Sealed reference types like string should not use this method.");
+                        // Use the built-in hashcode for types that could be overriding GetHashCode().
                         hc.Add(RuntimeHelpers.GetHashCode(value));
                     }
                 }
             }
 
-#if !NETCOREAPP
+#if !NET
             /// <summary>
             /// Polyfill for System.HashCode.
             /// </summary>

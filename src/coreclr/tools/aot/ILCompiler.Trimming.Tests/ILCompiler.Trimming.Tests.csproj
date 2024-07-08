@@ -15,16 +15,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
-
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" />
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextVersion)" />
 
     <ProjectReference Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests.Cases/**/*.csproj" />
     <ProjectReference Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj" />
     <ProjectReference Include="../ILCompiler.Compiler/ILCompiler.Compiler.csproj" />
     <ProjectReference Include="../ILCompiler.RyuJit/ILCompiler.RyuJit.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/TypeNameResolver.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/ITryResolve.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/ModuleDefinitionExtensions.cs" />
+    <Compile Include="$(LibrariesProjectRoot)/Common/src/System/Reflection/Metadata/TypeNameHelpers.cs" />
+    <Compile Include="$(LibrariesProjectRoot)/Common/src/System/Text/ValueStringBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>

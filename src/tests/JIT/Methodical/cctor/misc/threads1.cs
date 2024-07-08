@@ -16,6 +16,7 @@ namespace Precise
             test.b = 0xF;
         }
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             try

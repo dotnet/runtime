@@ -156,9 +156,9 @@ struct ResolveStub
 
 private:
     friend struct ResolveHolder;
-    const static int resolveEntryPointLen = 20;
-    const static int slowEntryPointLen = 4;
-    const static int failEntryPointLen = 9;
+    constexpr static int resolveEntryPointLen = 20;
+    constexpr static int slowEntryPointLen = 4;
+    constexpr static int failEntryPointLen = 9;
 
     DWORD _resolveEntryPoint[resolveEntryPointLen];
     DWORD _slowEntryPoint[slowEntryPointLen];
@@ -226,10 +226,12 @@ struct ResolveHolder
         //  addi t0, t0, -12
         _stub._resolveEntryPoint[n++] = 0xff428293;
 
+        constexpr size_t entryPointsLen = ResolveStub::resolveEntryPointLen+ResolveStub::slowEntryPointLen+ResolveStub::failEntryPointLen;
+        constexpr size_t hashedTokenOffset = offsetof(ResolveStub, _hashedToken);
         // 	lw  t6, 0(t0)  #t6 = this._hashedToken
-        _stub._resolveEntryPoint[n++] = 0x0002af83 | (33 << 22); //(20+4+9)*4<<20;
-        _ASSERTE((ResolveStub::resolveEntryPointLen+ResolveStub::slowEntryPointLen+ResolveStub::failEntryPointLen) == 33);
-        _ASSERTE((33<<2) == (offsetof(ResolveStub, _hashedToken) -offsetof(ResolveStub, _resolveEntryPoint[0])));
+        _stub._resolveEntryPoint[n++] = 0x0002af83 | (hashedTokenOffset << 20);
+        static_assert_no_msg(entryPointsLen << 2 == hashedTokenOffset);
+        static_assert_no_msg(offsetof(ResolveStub, _resolveEntryPoint[0]) == 0);
 
         // 	xor	 t1, t1, t6
         _stub._resolveEntryPoint[n++] = 0x01f34333;
@@ -241,10 +243,10 @@ struct ResolveHolder
         _stub._resolveEntryPoint[n++] = 0x00cfdf9b;
         // 	and  t1, t1, t6
         _stub._resolveEntryPoint[n++] = 0x01f37333;
+        constexpr size_t cacheAddressOffset = offsetof(ResolveStub, _cacheAddress);
         // 	ld  t6, 0(t0)    # t6 = this._cacheAddress
-        _stub._resolveEntryPoint[n++] = 0x0002bf83 | (36 << 22); //(20+4+9+1+2)*4<<20;
-        _ASSERTE((ResolveStub::resolveEntryPointLen+ResolveStub::slowEntryPointLen+ResolveStub::failEntryPointLen+1+2) == 36);
-        _ASSERTE((36<<2) == (offsetof(ResolveStub, _cacheAddress) -offsetof(ResolveStub, _resolveEntryPoint[0])));
+        _stub._resolveEntryPoint[n++] = 0x0002bf83 | (cacheAddressOffset << 20);
+        static_assert_no_msg((entryPointsLen+1+2) << 2 == cacheAddressOffset);
         //  add t1, t6, t1
         _stub._resolveEntryPoint[n++] = 0x006f8333;
         // 	ld  t1, 0(t1)    # t1 = e = this._cacheAddress[i]
@@ -252,10 +254,10 @@ struct ResolveHolder
 
         // 	ld  t6, 0(t1)    # t6 = Check mt == e.pMT;
         _stub._resolveEntryPoint[n++] = 0x00033f83 | ((offsetof(ResolveCacheElem, pMT) & 0xfff) << 20);
+        constexpr size_t tokenOffset = offsetof(ResolveStub, _token);
         // 	ld  t2, 0(t0)  #  $t2 = this._token
-        _stub._resolveEntryPoint[n++] = 0x0002b383 | (38<<22);//(20+4+9+1+2+2)*4<<20;
-        _ASSERTE((ResolveStub::resolveEntryPointLen+ResolveStub::slowEntryPointLen+ResolveStub::failEntryPointLen+1+4) == 38);
-        _ASSERTE((38<<2) == (offsetof(ResolveStub, _token) -offsetof(ResolveStub, _resolveEntryPoint[0])));
+        _stub._resolveEntryPoint[n++] = 0x0002b383 | (tokenOffset << 20);
+        static_assert_no_msg((entryPointsLen+1+4) << 2 == tokenOffset);
 
         // 	bne  t6, t3, next
         _stub._resolveEntryPoint[n++] = 0x01cf9a63;// | PC_REL_OFFSET(_slowEntryPoint[0], n);
@@ -288,19 +290,19 @@ struct ResolveHolder
         // 	auipc t0, 0
         _stub._slowEntryPoint[0] = 0x00000297;
         // 	ld  t6, 0(t0)    # r21 = _resolveWorkerTarget;
-        _ASSERTE((0x14*4) == ((INT32)(offsetof(ResolveStub, _resolveWorkerTarget) - (offsetof(ResolveStub, _slowEntryPoint[0])))));
-        _ASSERTE((ResolveStub::slowEntryPointLen + ResolveStub::failEntryPointLen+1+3*2) == 0x14);
+        static_assert_no_msg((0x14*4) == ((INT32)(offsetof(ResolveStub, _resolveWorkerTarget) - (offsetof(ResolveStub, _slowEntryPoint[0])))));
+        static_assert_no_msg((ResolveStub::slowEntryPointLen + ResolveStub::failEntryPointLen+1+3*2) == 0x14);
         _stub._slowEntryPoint[1] = 0x0002bf83 | ((0x14 * 4) << 20);
 
         // 	ld  t2, 0(t0)    # t2 = this._token;
         _stub._slowEntryPoint[2] = 0x0002b383 | ((0x12 * 4) << 20); //(18*4=72=0x48)<<20
-        _ASSERTE((ResolveStub::slowEntryPointLen+ResolveStub::failEntryPointLen+1+4)*4 == (0x12 * 4));
-        _ASSERTE((0x12 * 4) == (offsetof(ResolveStub, _token) -offsetof(ResolveStub, _slowEntryPoint[0])));
+        static_assert_no_msg((ResolveStub::slowEntryPointLen+ResolveStub::failEntryPointLen+1+4)*4 == (0x12 * 4));
+        static_assert_no_msg((0x12 * 4) == (offsetof(ResolveStub, _token) -offsetof(ResolveStub, _slowEntryPoint[0])));
 
         // 	jalr  x0, t6, 0
         _stub._slowEntryPoint[3] = 0x000f8067;
 
-         _ASSERTE(4 == ResolveStub::slowEntryPointLen);
+        static_assert_no_msg(4 == ResolveStub::slowEntryPointLen);
 
         // ResolveStub._failEntryPoint(a0:MethodToken, a1,.., a7, t5:IndirectionCellAndFlags)
         // {
@@ -315,8 +317,8 @@ struct ResolveHolder
         _stub._failEntryPoint[0] = 0x00000297;
         // 	ld  t1, 0(t0)    # t1 = _pCounter;  0x2800000=((failEntryPointLen+1)*4)<<20.
         _stub._failEntryPoint[1] = 0x0002b303 | 0x2800000;
-        _ASSERTE((((ResolveStub::failEntryPointLen+1)*4)<<20) == 0x2800000);
-        _ASSERTE((0x2800000>>20) == ((INT32)(offsetof(ResolveStub, _pCounter) - (offsetof(ResolveStub, _failEntryPoint[0])))));
+        static_assert_no_msg((((ResolveStub::failEntryPointLen+1)*4)<<20) == 0x2800000);
+        static_assert_no_msg((0x2800000>>20) == ((INT32)(offsetof(ResolveStub, _pCounter) - (offsetof(ResolveStub, _failEntryPoint[0])))));
         // 	lw  t6, 0(t1)
         _stub._failEntryPoint[2] = 0x00032f83;
         // 	addi  t6, t6, -1
@@ -325,7 +327,7 @@ struct ResolveHolder
         // 	sw  t6, 0(t1)
         _stub._failEntryPoint[4] = 0x01f32023;
 
-        _ASSERTE(SDF_ResolveBackPatch == 0x1);
+        static_assert_no_msg(SDF_ResolveBackPatch == 0x1);
         // ;; ori t5, t5, t6 >=0 ? SDF_ResolveBackPatch:0;
         // 	slti t6, t6, 0
         _stub._failEntryPoint[5] = 0x000faf93;
@@ -337,8 +339,8 @@ struct ResolveHolder
         // 	j	_resolveEntryPoint   // pc - 128 = pc + 4 - resolveEntryPointLen * 4 - slowEntryPointLen * 4 - failEntryPointLen * 4;
         _stub._failEntryPoint[8] = 0xf81ff06f;
 
-        _ASSERTE(9 == ResolveStub::failEntryPointLen);
-         _stub._pCounter = counterAddr;
+        static_assert_no_msg(9 == ResolveStub::failEntryPointLen);
+        _stub._pCounter = counterAddr;
         _stub._hashedToken         = hashedToken << LOG2_PTRSIZE;
         _stub._cacheAddress        = (size_t) cacheAddr;
         _stub._token               = dispatchToken;
@@ -372,8 +374,30 @@ struct VTableCallStub
 
     inline size_t size()
     {
-        _ASSERTE(!"RISCV64:NYI");
-        return 0;
+        LIMITED_METHOD_CONTRACT;
+
+        BYTE* pStubCode = (BYTE *)this;
+
+
+        if ((*(DWORD*)(&pStubCode[12])) == 0x000e8067)
+        {
+            // jalr x0, t4, 0
+            return 20;//4*ins + slot = 4*4 + 4;
+        }
+
+        //auipc t1, 0
+        assert((*(DWORD*)(&pStubCode[4])) == 0x00000317);
+
+        size_t cbSize = 36;
+
+        // ld t4, 0(t4)
+        if ((*(DWORD*)(&pStubCode[16])) == 0x000ebe83)
+        {
+            if ((*(DWORD*)(&pStubCode[28])) == 0x000ebe83)
+                cbSize += 12;
+        }
+
+        return cbSize;
     }
 
     inline PCODE        entryPoint()        const { LIMITED_METHOD_CONTRACT;  return (PCODE)&_entryPoint[0]; }
@@ -402,8 +426,8 @@ struct VTableCallHolder
         STATIC_CONTRACT_WRAPPER;
         unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
         unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-        int indirectionsCodeSize = (offsetOfIndirection >= 0x1000 ? 12 : 4) + (offsetAfterIndirection >= 0x1000 ? 12 : 4);
-        int indirectionsDataSize = (offsetOfIndirection >= 0x1000 ? 4 : 0) + (offsetAfterIndirection >= 0x1000 ? 4 : 0);
+        int indirectionsCodeSize = (offsetOfIndirection > 2047 ? 12 : 4) + (offsetAfterIndirection > 2047 ? 12 : 4);
+        int indirectionsDataSize = (offsetOfIndirection > 2047 ? 4 : 0) + (offsetAfterIndirection > 2047 ? 4 : 0);
         return 12 + indirectionsCodeSize + ((indirectionsDataSize > 0) ? (indirectionsDataSize + 4) : 0);
     }
 
@@ -444,15 +468,15 @@ void VTableCallHolder::Initialize(unsigned slot)
     *(UINT32*)p = 0x00053e83; // VTABLECALL_STUB_FIRST_DWORD
     p += 4;
 
-    if ((offsetOfIndirection >= 0x1000) || (offsetAfterIndirection >= 0x1000))
+    if ((offsetOfIndirection > 2047) || (offsetAfterIndirection > 2047))
     {
         *(UINT32*)p = 0x00000317; // auipc t1, 0
         p += 4;
     }
 
-    if (offsetOfIndirection >= 0x1000)
+    if (offsetOfIndirection > 2047)
     {
-        uint dataOffset = 20 + (offsetAfterIndirection >= 0x1000 ? 12 : 4);
+        uint dataOffset = 20 + (offsetAfterIndirection > 2047 ? 12 : 4);
 
         // lwu t3,dataOffset(t1)
         *(DWORD*)p = 0x00036e03 | ((UINT32)dataOffset << 20); p += 4;
@@ -467,13 +491,13 @@ void VTableCallHolder::Initialize(unsigned slot)
         *(DWORD*)p = 0x000ebe83 | ((UINT32)offsetOfIndirection << 20); p += 4;
     }
 
-    if (offsetAfterIndirection >= 0x1000)
+    if (offsetAfterIndirection > 2047)
     {
-        uint indirectionsCodeSize = (offsetOfIndirection >= 0x1000 ? 12 : 4);
-        uint indirectionsDataSize = (offsetOfIndirection >= 0x1000 ? 4 : 0);
+        uint indirectionsCodeSize = (offsetOfIndirection > 2047 ? 12 : 4);
+        uint indirectionsDataSize = (offsetOfIndirection > 2047 ? 4 : 0);
         uint dataOffset = 20 + indirectionsCodeSize + indirectionsDataSize;
 
-        // ldw t3,dataOffset(t1)
+        // lwu t3,dataOffset(t1)
         *(DWORD*)p = 0x00036e03 | ((UINT32)dataOffset << 20); p += 4;
         // add t4, t4, t3
         *(DWORD*)p = 0x01ce8eb3; p += 4;
@@ -490,12 +514,12 @@ void VTableCallHolder::Initialize(unsigned slot)
     *(UINT32*)p = 0x000e8067; p += 4;
 
     // data labels:
-    if (offsetOfIndirection >= 0x1000)
+    if (offsetOfIndirection > 2047)
     {
         *(UINT32*)p = (UINT32)offsetOfIndirection;
         p += 4;
     }
-    if (offsetAfterIndirection >= 0x1000)
+    if (offsetAfterIndirection > 2047)
     {
         *(UINT32*)p = (UINT32)offsetAfterIndirection;
         p += 4;

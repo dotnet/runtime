@@ -49,20 +49,10 @@ namespace System.Text.Json.Serialization
 
             if (typeInfo.CreateObject is null)
             {
-                // The contract model was not able to produce a default constructor for two possible reasons:
-                // 1. Either the declared collection type is abstract and cannot be instantiated.
-                // 2. The collection type does not specify a default constructor.
-                if (Type.IsAbstract || Type.IsInterface)
-                {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
-                }
-                else
-                {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(Type, ref reader, ref state);
-                }
+                ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(typeInfo, ref reader, ref state);
             }
 
-            state.Current.ReturnValue = typeInfo.CreateObject()!;
+            state.Current.ReturnValue = typeInfo.CreateObject();
             Debug.Assert(state.Current.ReturnValue is TDictionary);
         }
 
@@ -256,10 +246,19 @@ namespace System.Text.Json.Serialization
 
                         if (state.Current.CanContainMetadata)
                         {
-                            ReadOnlySpan<byte> propertyName = reader.GetSpan();
+                            ReadOnlySpan<byte> propertyName = reader.GetUnescapedSpan();
                             if (JsonSerializer.IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
                             {
-                                ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                                if (options.AllowOutOfOrderMetadataProperties)
+                                {
+                                    reader.SkipWithVerify();
+                                    state.Current.EndElement();
+                                    continue;
+                                }
+                                else
+                                {
+                                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                                }
                             }
                         }
 

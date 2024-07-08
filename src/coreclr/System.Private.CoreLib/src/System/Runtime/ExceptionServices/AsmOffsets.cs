@@ -25,9 +25,15 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0xbe0;
 #endif // TARGET_UNIX
 #elif TARGET_ARM64
+#if TARGET_UNIX
+    public const int SIZEOF__REGDISPLAY = 0x9e0;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x938;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x940;
+#else // TARGET_UNIX
     public const int SIZEOF__REGDISPLAY = 0x940;
     public const int OFFSETOF__REGDISPLAY__SP = 0x898;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x8a0;
+#endif // TARGET_UNIX
 #elif TARGET_ARM
     public const int SIZEOF__REGDISPLAY = 0x410;
     public const int OFFSETOF__REGDISPLAY__SP = 0x3ec;
@@ -48,14 +54,14 @@ class AsmOffsets
 
 #if TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x8;
-    public const int SIZEOF__StackFrameIterator = 0x370;
-    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x352;
-    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x368;
+    public const int SIZEOF__StackFrameIterator = 0x358;
+    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x33A;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x350;
 #else // TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x4;
-    public const int SIZEOF__StackFrameIterator = 0x2d8;
-    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x2c2;
-    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x2d0;
+    public const int SIZEOF__StackFrameIterator = 0x2c8;
+    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x2b6;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x2c4;
 #endif // TARGET_64BIT
 
 #else // DEBUG
@@ -71,9 +77,15 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0xbd8;
 #endif // TARGET_UNIX
 #elif TARGET_ARM64
+#if TARGET_UNIX
+    public const int SIZEOF__REGDISPLAY = 0x9d0;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x930;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x938;
+#else // TARGET_UNIX
     public const int SIZEOF__REGDISPLAY = 0x930;
     public const int OFFSETOF__REGDISPLAY__SP = 0x890;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x898;
+#endif // TARGET_UNIX
 #elif TARGET_ARM
     public const int SIZEOF__REGDISPLAY = 0x408;
     public const int OFFSETOF__REGDISPLAY__SP = 0x3e8;
@@ -94,14 +106,14 @@ class AsmOffsets
 
 #if TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x8;
-    public const int SIZEOF__StackFrameIterator = 0x370;
-    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x34a;
-    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x360;
+    public const int SIZEOF__StackFrameIterator = 0x350;
+    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x332;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x348;
 #else // TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x4;
-    public const int SIZEOF__StackFrameIterator = 0x2d0;
-    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x2ba;
-    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x2c8;
+    public const int SIZEOF__StackFrameIterator = 0x2c0;
+    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x2ae;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x2bc;
 #endif // TARGET_64BIT
 
 #endif // DEBUG
@@ -111,9 +123,13 @@ class AsmOffsets
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0xc20;
 #else // TARGET_UNIX
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x4d0;
-#endif // TARGET_UNIx
+#endif // TARGET_UNIX
 #elif TARGET_ARM64
+#if TARGET_UNIX
+    public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x3e0;
+#else // TARGET_UNIX
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x390;
+#endif // TARGET_UNIX
 #elif TARGET_ARM
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x1a0;
 #elif TARGET_X86
@@ -155,7 +171,7 @@ class AsmOffsets
     public const int OFFSETOF__ExInfo__m_kind = 0xd0;
     public const int OFFSETOF__ExInfo__m_passNumber = 0xd1;
     public const int OFFSETOF__ExInfo__m_idxCurClause = 0xd4;
-    public const int OFFSETOF__ExInfo__m_frameIter = 0xe0;
+    public const int OFFSETOF__ExInfo__m_frameIter = 0xd8;
     public const int OFFSETOF__ExInfo__m_notifyDebuggerSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator;
 #else // TARGET_64BIT
     public const int SIZEOF__EHEnum = 0x10;

@@ -102,7 +102,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(TestDataWithPredicate))]
         public void Any_Predicate(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
         {
-            if (predicate == null)
+            if (predicate is null)
             {
                 Assert.Equal(expected, source.Any());
             }
@@ -115,7 +115,7 @@ namespace System.Linq.Tests
         [Theory, MemberData(nameof(TestDataWithPredicate))]
         public void AnyRunOnce(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
         {
-            if (predicate == null)
+            if (predicate is null)
             {
                 Assert.Equal(expected, source.RunOnce().Any());
             }

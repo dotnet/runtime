@@ -28,7 +28,7 @@ Removing specific feature data might result in an exception that starts with `[C
 * For prerequisites run `.devcontainer/postCreateCommand.sh` (it is run automatically on creation if using Codespaces)
 * Building:
     ```
-    ./build.sh /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:IcuTracing=true
+    ./build.sh /p:TargetOS=Browser /p:TargetArchitecture=wasm
     ```
   Output is located in `artifacts/bin/icu-browser-wasm`.
 
@@ -45,7 +45,7 @@ Removing specific feature data might result in an exception that starts with `[C
     ```
 * Building:
  ```bash
-  ./build.sh /p:TargetOS=Android /p:TargetArchitecture=x64 /p:IcuTracing=true
+  ./build.sh /p:TargetOS=Android /p:TargetArchitecture=x64
   ```
 
 Output from both builds will be located in subdirectories of `artifacts/bin`. Copy the generated `.dat` files to your project location and provide the path to it in the `.csproj`, e.g.:

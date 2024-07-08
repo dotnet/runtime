@@ -74,7 +74,7 @@ inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
 
     // Dynamic modules must receive ClassLoad callbacks in order to receive metadata updates as the module
     // evolves. So we force this on here and refuse to change it for all dynamic modules.
-    if (pRuntimeModule->IsReflection())
+    if (pRuntimeModule->IsReflectionEmit())
     {
         EnableClassLoadCallbacks(TRUE);
     }
@@ -202,7 +202,7 @@ inline TADDR FuncEvalFrame::GetReturnAddressPtr()
 
     if (GetDebuggerEval()->m_evalDuringException)
     {
-        return NULL;
+        return (TADDR)NULL;
     }
     else
     {
@@ -213,7 +213,7 @@ inline TADDR FuncEvalFrame::GetReturnAddressPtr()
 //
 // This updates the register display for a FuncEvalFrame.
 //
-inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     SUPPORTS_DAC;
     DebuggerEval * pDE = GetDebuggerEval();

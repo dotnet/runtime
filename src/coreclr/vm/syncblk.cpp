@@ -69,6 +69,10 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     CONTRACTL_END;
 
     FreeUMEntryThunk();
+
+#if defined(FEATURE_COMWRAPPERS)
+    delete m_managedObjectComWrapperMap;
+#endif // FEATURE_COMWRAPPERS
 }
 
 #ifndef TARGET_UNIX
@@ -594,7 +598,7 @@ void SyncBlockCache::CleanupSyncBlocks()
             pParam->psb = NULL;
 
             // pulse GC mode to allow GC to perform its work
-            if (FinalizerThread::GetFinalizerThread()->CatchAtSafePointOpportunistic())
+            if (FinalizerThread::GetFinalizerThread()->CatchAtSafePoint())
             {
                 FinalizerThread::GetFinalizerThread()->PulseGCMode();
             }
@@ -2093,7 +2097,7 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
 // Warning: Assumes you already own the cache lock.
 //          Assumes nothing allocated inside the SyncBlock (only releases the memory, does not destruct.)
 //
-// This holder really just meets GetSyncBlock()'s special needs. It's not a general purpose holder.
+// This holder really just meets GetSyncBlock()'s special requirements. It's not a general purpose holder.
 
 
 // Do not inline this call. (fyuan)
@@ -2104,7 +2108,7 @@ void VoidDeleteSyncBlockMemory(SyncBlock* psb)
     SyncBlockCache::GetSyncBlockCache()->DeleteSyncBlockMemory(psb);
 }
 
-typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, NULL> SyncBlockMemoryHolder;
+typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, 0> SyncBlockMemoryHolder;
 
 
 // get the sync block for an existing object
@@ -2677,7 +2681,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
                 {
                     duration = end - start;
                 }
-                duration = min(duration, (DWORD)timeOut);
+                duration = min(duration, (ULONGLONG)timeOut);
                 timeOut -= (INT32)duration;
             }
         }
@@ -2847,21 +2851,22 @@ BOOL SyncBlock::Wait(INT32 timeOut)
 
     _ASSERTE ((SyncBlock*)((DWORD_PTR)walk->m_Next->m_WaitSB & ~1)== this);
 
-    PendingSync   syncState(walk);
-
-    OBJECTREF     obj = m_Monitor.GetOwningObject();
-    syncState.m_Object = OBJECTREFToObject(obj);
-
-    m_Monitor.IncrementTransientPrecious();
-
     // While we are in this frame the thread is considered blocked on the
-    // event of the monitor lock according to the debugger
+    // event of the monitor lock according to the debugger. DebugBlockingItemHolder
+    // can trigger a GC, so set it up before accessing the owning object.
     DebugBlockingItem blockingMonitorInfo;
     blockingMonitorInfo.dwTimeout = timeOut;
     blockingMonitorInfo.pMonitor = &m_Monitor;
     blockingMonitorInfo.pAppDomain = SystemDomain::GetCurrentDomain();
     blockingMonitorInfo.type = DebugBlock_MonitorEvent;
     DebugBlockingItemHolder holder(pCurThread, &blockingMonitorInfo);
+
+    PendingSync   syncState(walk);
+
+    OBJECTREF     obj = m_Monitor.GetOwningObject();
+    syncState.m_Object = OBJECTREFToObject(obj);
+
+    m_Monitor.IncrementTransientPrecious();
 
     GCPROTECT_BEGIN(obj);
     {

@@ -8,16 +8,14 @@ using System.IO;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.Cli.Build.Framework;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeUnitTests
+namespace HostActivation.Tests
 {
     public class NativeUnitTests
     {
         [Fact]
         public void Native_Test_Fx_Ver()
         {
-            RepoDirectoriesProvider repoDirectoriesProvider = new RepoDirectoriesProvider();
-
-            string testPath = Path.Combine(repoDirectoriesProvider.HostTestArtifacts, Binaries.GetExeFileNameForCurrentPlatform("test_fx_ver"));
+            string testPath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, Binaries.GetExeFileNameForCurrentPlatform("test_fx_ver"));
 
             Command testCommand = Command.Create(testPath);
             testCommand

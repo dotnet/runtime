@@ -12,13 +12,10 @@
 //#error I am a part of util.hpp Please don't include me alone !
 //#endif
 
-
-
 #ifndef _H_SPINLOCK_
 #define _H_SPINLOCK_
 
 #include <stddef.h>
-
 
 // #SwitchToThreadSpinning
 //
@@ -112,12 +109,12 @@ public:
         return (BOOL)m_value;
     }
 
-    typedef Holder<DangerousNonHostedSpinLock *, DangerousNonHostedSpinLock::AcquireLock, DangerousNonHostedSpinLock::ReleaseLock> Holder;
-    typedef ConditionalStateHolder<DangerousNonHostedSpinLock *, DangerousNonHostedSpinLock::TryAcquireLock, DangerousNonHostedSpinLock::ReleaseLock> TryHolder;
+    typedef Holder<DangerousNonHostedSpinLock *, DangerousNonHostedSpinLock::AcquireLock, DangerousNonHostedSpinLock::ReleaseLock> LockHolder;
+    typedef ConditionalStateHolder<DangerousNonHostedSpinLock *, DangerousNonHostedSpinLock::TryAcquireLock, DangerousNonHostedSpinLock::ReleaseLock> LockTryHolder;
 };
 
-typedef DangerousNonHostedSpinLock::Holder DangerousNonHostedSpinLockHolder;
-typedef DangerousNonHostedSpinLock::TryHolder DangerousNonHostedSpinLockTryHolder;
+typedef DangerousNonHostedSpinLock::LockHolder DangerousNonHostedSpinLockHolder;
+typedef DangerousNonHostedSpinLock::LockTryHolder DangerousNonHostedSpinLockTryHolder;
 
 
 class SpinLock;
@@ -134,7 +131,8 @@ enum LOCK_TYPE
 #endif
     LOCK_REFLECTCACHE = 5,
     LOCK_CORMAP = 7,
-    LOCK_TYPE_DEFAULT  = 8
+    LOCK_TLSDATA = 8,
+    LOCK_TYPE_DEFAULT = 9
 };
 
 //----------------------------------------------------------------------------
@@ -153,6 +151,7 @@ private:
         LONG                m_lock;     // LONG used in interlocked exchange
     };
 
+#ifdef _DEBUG
     enum SpinLockState
     {
         UnInitialized,
@@ -163,7 +162,6 @@ private:
     Volatile<SpinLockState>      m_Initialized; // To verify initialized
                                         // And initialize once
 
-#ifdef _DEBUG
     LOCK_TYPE           m_LockType;     // lock type to track statistics
 
     // Check for dead lock situation.
@@ -204,6 +202,7 @@ public:
     static void AcquireLock(SpinLock *s);
     static void ReleaseLock(SpinLock *s);
 
+#ifndef DACCESS_COMPILE
     class Holder
     {
         SpinLock *  m_pSpinLock;
@@ -224,9 +223,10 @@ public:
             m_pSpinLock->FreeLock();
         }
     };
+#endif // !DACCESS_COMPILE
 };
 
-
+#ifndef DACCESS_COMPILE
 typedef SpinLock::Holder SpinLockHolder;
 #define TAKE_SPINLOCK_AND_DONOT_TRIGGER_GC(lock) \
                         SpinLockHolder __spinLockHolder(lock);\
@@ -243,6 +243,8 @@ typedef SpinLock::Holder SpinLockHolder;
 #define RELEASE_SPINLOCK_NO_HOLDER(lock)        \
     SpinLock::ReleaseLock(lock);                \
 }                                               \
+
+#endif // !DACCESS_COMPILE
 
 __inline BOOL IsOwnerOfSpinLock (LPVOID lock)
 {

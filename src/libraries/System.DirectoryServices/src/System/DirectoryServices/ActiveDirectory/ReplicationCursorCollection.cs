@@ -49,13 +49,13 @@ namespace System.DirectoryServices.ActiveDirectory
             else
                 count = ((DS_REPL_CURSORS)cursors).cNumCursors;
 
-            IntPtr addr = (IntPtr)0;
+            IntPtr addr = 0;
 
             for (int i = 0; i < count; i++)
             {
                 if (advanced)
                 {
-                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_CURSOR_3)));
+                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf<DS_REPL_CURSOR_3>());
                     DS_REPL_CURSOR_3 cursor = new DS_REPL_CURSOR_3();
                     Marshal.PtrToStructure(addr, cursor);
 
@@ -69,7 +69,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_CURSOR)));
+                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf<DS_REPL_CURSOR>());
                     DS_REPL_CURSOR cursor = new DS_REPL_CURSOR();
                     Marshal.PtrToStructure(addr, cursor);
 

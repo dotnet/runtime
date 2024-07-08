@@ -33,9 +33,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 true);
 
             // ./host/fxr/<version>/hostfxr.dll - this is the component being tested
-            SharedFramework.CopyDirectory(
-                builtDotNetCli.GreatestVersionHostFxrPath,
-                Path.Combine(_path, "host", "fxr", Path.GetFileName(builtDotNetCli.GreatestVersionHostFxrPath)));
+            string hostfxrDir = Path.Combine(_path, "host", "fxr", Path.GetFileName(builtDotNetCli.GreatestVersionHostFxrPath));
+            Directory.CreateDirectory(hostfxrDir);
+            File.Copy(
+                builtDotNetCli.GreatestVersionHostFxrFilePath,
+                Path.Combine(hostfxrDir, Binaries.HostFxr.FileName));
         }
 
         /// <summary>
@@ -118,7 +120,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             // ./shared/Microsoft.NETCore.App/<version> - create a mock of the root framework
             string netCoreAppPath = AddFramework(Constants.MicrosoftNETCoreApp, version);
 
-            string currentRid = TestContext.TargetRID;
+            string currentRid = TestContext.BuildRID;
 
             NetCoreAppBuilder.ForNETCoreApp(Constants.MicrosoftNETCoreApp, currentRid)
                 .WithStandardRuntimeFallbacks()

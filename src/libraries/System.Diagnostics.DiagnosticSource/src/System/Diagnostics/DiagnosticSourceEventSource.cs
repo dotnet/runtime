@@ -174,7 +174,7 @@ namespace System.Diagnostics
                         "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
     internal sealed class DiagnosticSourceEventSource : EventSource
     {
-        public static DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();
+        public static readonly DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();
 
         public static class Keywords
         {
@@ -1240,7 +1240,7 @@ namespace System.Diagnostics
                     }
                 }
 
-                public bool IsStatic { get; private set; }
+                public bool IsStatic { get; }
 
                 /// <summary>
                 /// Given an object fetch the property that this PropertySpec represents.
@@ -1362,7 +1362,7 @@ namespace System.Diagnostics
                     private static PropertyFetch CreateEnumeratePropertyFetch(Type type, TypeInfo enumerableOfTType)
                     {
                         Type elemType = enumerableOfTType.GetGenericArguments()[0];
-#if NETCOREAPP
+#if NET
                         if (!RuntimeFeature.IsDynamicCodeSupported && elemType.IsValueType)
                         {
                             return new EnumeratePropertyFetch(type);
@@ -1377,7 +1377,7 @@ namespace System.Diagnostics
                         Justification = "MakeGenericType is only called when IsDynamicCodeSupported is true or only with ref types.")]
                     private static PropertyFetch CreatePropertyFetch(Type type, PropertyInfo propertyInfo)
                     {
-#if NETCOREAPP
+#if NET
                         if (!RuntimeFeature.IsDynamicCodeSupported && (propertyInfo.DeclaringType!.IsValueType || propertyInfo.PropertyType.IsValueType))
                         {
                             return new ReflectionPropertyFetch(type, propertyInfo);
@@ -1434,19 +1434,19 @@ namespace System.Diagnostics
                         private readonly StructFunc<TStruct, TProperty> _propertyFetch;
                     }
 
-#if NETCOREAPP
+#if NET
                     /// <summary>
                     /// A fetcher that can be used when MakeGenericType isn't available.
                     /// </summary>
                     private sealed class ReflectionPropertyFetch : PropertyFetch
                     {
-                        private readonly PropertyInfo _property;
+                        private readonly MethodInvoker _getterInvoker;
                         public ReflectionPropertyFetch(Type type, PropertyInfo property) : base(type)
                         {
-                            _property = property;
+                            _getterInvoker = MethodInvoker.Create(property.GetMethod!);
                         }
 
-                        public override object? Fetch(object? obj) => _property.GetValue(obj);
+                        public override object? Fetch(object? obj) => _getterInvoker.Invoke(obj);
                     }
 
                     /// <summary>

@@ -186,7 +186,7 @@ public:
             // As of 4/11/2012 I could repro this by turning on the COMPLUS log and
             // the LOG() at line methodtablebuilder.cpp:7845
             // MethodTableBuilder::PlaceRegularStaticFields() calls GetOffset()
-            if((DWORD)(DWORD_PTR&)m_pMTOfEnclosingClass > 16)
+            if((DWORD)reinterpret_cast<DWORD_PTR&>(m_pMTOfEnclosingClass) > 16)
             {
                 _ASSERTE(!this->IsRVA() || (m_dwOffset == OutOfLine_BigRVAOffset()));
             }
@@ -285,6 +285,14 @@ public:
         SetOffset(FIELD_OFFSET_NEW_ENC);
     }
 
+    BOOL IsCollectible()    
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        LoaderAllocator *pLoaderAllocator = GetApproxEnclosingMethodTable()->GetLoaderAllocator();
+        return pLoaderAllocator->IsCollectible();
+    }
+
     // Was this field added by EnC?
     // If this is true, then this object is an instance of EnCFieldDesc
     BOOL IsEnCNew()
@@ -344,8 +352,8 @@ public:
     VOID    SetValue16(OBJECTREF o, DWORD dwValue);
     BYTE    GetValue8(OBJECTREF o);
     VOID    SetValue8(OBJECTREF o, DWORD dwValue);
-    __int64 GetValue64(OBJECTREF o);
-    VOID    SetValue64(OBJECTREF o, __int64 value);
+    int64_t GetValue64(OBJECTREF o);
+    VOID    SetValue64(OBJECTREF o, int64_t value);
 
     PTR_MethodTable GetApproxEnclosingMethodTable()
     {
@@ -384,20 +392,6 @@ public:
         return GetApproxEnclosingMethodTable()->GetNumGenericArgs();
     }
 
-   PTR_BYTE GetBaseInDomainLocalModule(DomainLocalModule * pLocalModule)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (GetFieldType() == ELEMENT_TYPE_CLASS || GetFieldType() == ELEMENT_TYPE_VALUETYPE)
-        {
-            return pLocalModule->GetGCStaticsBasePointer(GetEnclosingMethodTable());
-        }
-        else
-        {
-            return pLocalModule->GetNonGCStaticsBasePointer(GetEnclosingMethodTable());
-        }
-    }
-
     PTR_BYTE GetBase()
     {
         CONTRACTL
@@ -409,7 +403,14 @@ public:
 
         MethodTable *pMT = GetEnclosingMethodTable();
 
-        return GetBaseInDomainLocalModule(pMT->GetDomainLocalModule());
+        if (GetFieldType() == ELEMENT_TYPE_CLASS || GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            return pMT->GetGCStaticsBasePointer();
+        }
+        else
+        {
+            return pMT->GetNonGCStaticsBasePointer();
+        }
     }
 
     // returns the address of the field
@@ -481,16 +482,16 @@ public:
         *(BYTE*)GetCurrentStaticAddress() = (BYTE)dwValue;
     }
 
-    __int64 GetStaticValue64()
+    int64_t GetStaticValue64()
     {
         WRAPPER_NO_CONTRACT;
-        return *(__int64*)GetCurrentStaticAddress();
+        return *(int64_t*)GetCurrentStaticAddress();
     }
 
-    VOID    SetStaticValue64(__int64 qwValue)
+    VOID    SetStaticValue64(int64_t qwValue)
     {
         WRAPPER_NO_CONTRACT;
-        *(__int64*)GetCurrentStaticAddress() = qwValue;
+        *(int64_t*)GetCurrentStaticAddress() = qwValue;
     }
 
     void* GetCurrentStaticAddress()
@@ -513,12 +514,15 @@ public:
         else {
             PTR_BYTE base = 0;
             if (!IsRVA()) // for RVA the base is ignored
+            {
+                GetEnclosingMethodTable()->EnsureStaticDataAllocated();
                 base = GetBase();
+            }
             return GetStaticAddress((void *)dac_cast<TADDR>(base));
         }
     }
 
-    VOID    CheckRunClassInitThrowing()
+    void CheckRunClassInitThrowing()
     {
         CONTRACTL
         {

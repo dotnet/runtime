@@ -54,7 +54,7 @@ Visual Studio's capabilities as a full IDE provide a lot of help making the runt
 5. Set `Command=$(SolutionDir)\..\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)\corerun.exe`. This points to the folder where the built runtime binaries are present.
 6. Set `Command Arguments=<managed app you wish to run>` (e.g. HelloWorld.dll).
 7. Set `Working Directory=$(SolutionDir)\..\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)`. This points to the folder containing CoreCLR binaries.
-8. Set `Environment=CORE_LIBRARIES=$(SolutionDir)\..\..\..\..\bin\runtime\<target-framework>-windows-$(Configuration)-$(Platform)`, where '\<target-framework\>' is the target framework of current branch; for example `net6.0`, `net7.0` or `net8.0`. A few notes on this step:
+8. Set `Environment=CORE_LIBRARIES=$(SolutionDir)\..\..\..\..\bin\runtime\<target-framework>-windows-$(Configuration)-$(Platform)`, where '\<target-framework\>' is the target framework of current branch; for example `net6.0`, `net8.0` or `net9.0`. A few notes on this step:
 
 * This points to the folder containing core libraries except `System.Private.CoreLib`.
 * This step can be skipped if you are debugging CLR tests that reference only `System.Private.CoreLib`. Otherwise, it's required to debug a real-world application that references anything else, including `System.Runtime`.
@@ -84,7 +84,7 @@ Steps 1-9 only need to be done once as long as there's been no changes to the CM
         },
         {
           "name": "CORE_LIBRARIES",
-          // for example net8.0-windows-Debug-x64
+          // for example net9.0-windows-Debug-x64
           "value": "${cmake.installRoot}\\..\\..\\runtime\\<tfm>-windows-<configuration>-<arch>\\"
         }
       ],
@@ -113,7 +113,7 @@ Visual Studio Code instructions coming soon!
 
 Under normal circumstances, SOS usually comes shipped with Windbg, so no additional installation is required. However, if this is not the case for you, you want to use another version, or any other circumstance that requires you to install it separately/additionally, here are two links with useful information on how to get it set up:
 
-* The official [Microsoft docs on SOS](https://docs.microsoft.com/dotnet/core/diagnostics/dotnet-sos).
+* The official [Microsoft docs on SOS](https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-sos).
 * The instructions at the [diagnostics repo](https://github.com/dotnet/diagnostics/blob/master/documentation/installing-sos-windows-instructions.md).
 
 For more information on SOS commands click [here](https://github.com/dotnet/diagnostics/blob/master/documentation/sos-debugging-extension-windows.md).
@@ -140,7 +140,7 @@ If for some reason `System.Private.CoreLib.dll` is missing, you can rebuild it w
 
 For Linux and macOS, you have to install SOS by yourself, as opposed to Windows' Windbg. The instructions are very similar however, and you can find them on these two links:
 
-* The official [Microsoft docs on SOS](https://docs.microsoft.com/dotnet/core/diagnostics/dotnet-sos).
+* The official [Microsoft docs on SOS](https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-sos).
 * The instructions at the [diagnostics repo](https://github.com/dotnet/diagnostics/blob/master/documentation/installing-sos-instructions.md).
 
 It might also be the case that you would need the latest changes in SOS, or you're working with a not-officially-supported scenario that actually works. The most common occurrence of this scenario is when using macOS Arm64. In this case, you have to build SOS from the diagnostics repo (linked above). Once you have it done, then simply load it to your `lldb`. More details in the following section.
@@ -150,7 +150,7 @@ It might also be the case that you would need the latest changes in SOS, or you'
 **NOTE**: Only `lldb` is supported to use with SOS. You can also use `gdb`, `cgdb`, or other debuggers, but you might not have access to SOS.
 
 1. Perform a build of the _clr_ subset of the runtime repo.
-2. Start lldb passing `corerun`, the app to run (e.g. `HelloWorld.dll`), and any arguments this app might need: `lldb /path/to/corerun /path/to/app.dll <app args go here>`
+2. Start lldb passing `corerun`, the app to run (e.g. `HelloWorld.dll`), and any arguments this app might need: `lldb -- /path/to/corerun /path/to/app.dll <app args go here>`
 3. If you're using the installed version of SOS, you can skip this step. If you built SOS manually, you have to load it before starting the debugging session: `plugin load /path/to/built/sos/libsosplugin.so`. Note that `.so` is for Linux, and `.dylib` is for macOS. You can find more information in the diagnostics repo [private sos build doc](https://github.com/dotnet/diagnostics/blob/main/documentation/using-sos-private-build.md).
 4. Launch program: `process launch -s`
 5. To stop breaks on _SIGUSR1_ signals used by the runtime run the following command: `process handle -s false SIGUSR1`
@@ -227,11 +227,11 @@ Starting with Visual Studio 2022 version 17.5, Visual Studio will validate that 
 
 > Unable to attach to CoreCLR. Signature validation failed for a .NET Runtime Debugger library because the file is unsigned.
 >
-> This error is expected if you are working with non-official releases of .NET (example: daily builds from https://github.com/dotnet/installer). See https://aka.ms/vs/unsigned-dotnet-debugger-lib for more information.
+> This error is expected if you are working with non-official releases of .NET (example: daily builds from https://github.com/dotnet/sdk). See https://aka.ms/vs/unsigned-dotnet-debugger-lib for more information.
 
 If the target process is using a .NET Runtime that is either from a daily build, or one that you built on your own computer, this error will show up. **NOTE**: This error should never happen for official builds of the .NET Runtime from Microsoft. So don’t disable the validation if you expect to be using a .NET Runtime supported by Microsoft.
 
 There are three ways to configure Visual Studio to disable signature validation:
-1.	The [`DOTNET_ROOT` environment variable](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86): if Visual Studio is started from a command prompt where `DOTNET_ROOT` is set, it will ignore unsigned .NET runtime debugger libraries which are under the `DOTNET_ROOT` directory.
+1.	The [`DOTNET_ROOT` environment variable](https://learn.microsoft.com/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86): if Visual Studio is started from a command prompt where `DOTNET_ROOT` is set, it will ignore unsigned .NET runtime debugger libraries which are under the `DOTNET_ROOT` directory.
 2.	The `VSDebugger_ValidateDotnetDebugLibSignatures` environment variable: If you want to temporarily disable signature validation, run `set VSDebugger_ValidateDotnetDebugLibSignatures=0` in a command prompt, and start Visual Studio (devenv.exe) from this command prompt.
 3.	Set the `ValidateDotnetDebugLibSignatures` registry key: To disable signature validation on a more permanent basis, you can set the VS registry key to turn it off. To do so, open a Developer Command Prompt, and run `Common7\IDE\VsRegEdit.exe set local HKCU Debugger\EngineSwitches ValidateDotnetDebugLibSignatures dword 0`

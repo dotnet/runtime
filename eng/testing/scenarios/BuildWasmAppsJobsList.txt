@@ -3,7 +3,7 @@ Wasm.Build.NativeRebuild.Tests.NoopNativeRebuildTest
 Wasm.Build.NativeRebuild.Tests.OptimizationFlagChangeTests
 Wasm.Build.NativeRebuild.Tests.ReferenceNewAssemblyRebuildTest
 Wasm.Build.NativeRebuild.Tests.SimpleSourceChangeRebuildTest
-Wasm.Build.Templates.Tests.InterpPgoTests
+Wasm.Build.Tests.TestAppScenarios.InterpPgoTests
 Wasm.Build.Templates.Tests.NativeBuildTests
 Wasm.Build.Tests.Blazor.AppsettingsTests
 Wasm.Build.Tests.Blazor.BuildPublishTests
@@ -17,6 +17,7 @@ Wasm.Build.Tests.Blazor.NoopNativeRebuildTest
 Wasm.Build.Tests.Blazor.WorkloadRequiredTests
 Wasm.Build.Tests.Blazor.IcuTests
 Wasm.Build.Tests.Blazor.IcuShardingTests
+Wasm.Build.Tests.Blazor.SignalRClientTests
 Wasm.Build.Tests.BuildPublishTests
 Wasm.Build.Tests.ConfigSrcTests
 Wasm.Build.Tests.HybridGlobalizationTests
@@ -33,14 +34,18 @@ Wasm.Build.Tests.PInvokeTableGeneratorTests
 Wasm.Build.Tests.RebuildTests
 Wasm.Build.Tests.SatelliteAssembliesTests
 Wasm.Build.Tests.TestAppScenarios.AppSettingsTests
+Wasm.Build.Tests.TestAppScenarios.DownloadThenInitTests
 Wasm.Build.Tests.TestAppScenarios.LazyLoadingTests
 Wasm.Build.Tests.TestAppScenarios.LibraryInitializerTests
 Wasm.Build.Tests.TestAppScenarios.SatelliteLoadingTests
+Wasm.Build.Tests.TestAppScenarios.ModuleConfigTests
+Wasm.Build.Tests.AspNetCore.SignalRClientTests
 Wasm.Build.Tests.WasmBuildAppTest
 Wasm.Build.Tests.WasmNativeDefaultsTests
 Wasm.Build.Tests.WasmRunOutOfAppBundleTests
 Wasm.Build.Tests.WasmSIMDTests
 Wasm.Build.Tests.WasmTemplateTests
 Wasm.Build.Tests.WorkloadTests
-Wasm.Build.Tests.TestAppScenarios.DownloadResourceProgressTests
 Wasm.Build.Tests.MT.Blazor.SimpleMultiThreadedTests
+Wasm.Build.Tests.TestAppScenarios.WasmSdkDebugLevelTests
+Wasm.Build.Tests.TestAppScenarios.WasmAppBuilderDebugLevelTests

@@ -15,10 +15,9 @@ parameters:
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   helixQueues: ''                 # required -- Helix queues
-  dependOnEvaluatePaths: false
 
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}
@@ -29,7 +28,6 @@ jobs:
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     ${{ if ne(parameters.displayName, '') }}:
@@ -38,13 +36,19 @@ jobs:
       displayName: '${{ parameters.jobName }}'
 
     variables:
+    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+      parameters:
+        runtimeFlavor: coreclr
+        testGroup: ${{ parameters.testGroup }}
+        liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
 
-    - name: PythonScript
-      value: 'py -3'
-    - name: PipScript
-      value: 'py -3 -m pip'
+    - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+
     - name: SpmiCollectionLocation
       value: '$(Build.SourcesDirectory)\artifacts\spmi\'
     - name: SpmiLogsLocation
@@ -59,6 +63,9 @@ jobs:
     container: ${{ parameters.container }}
     steps:
     - ${{ parameters.steps }}
+
+    - script: $(PythonSetupScript)
+      displayName: Enable python venv
 
     - script: |
         mkdir $(SpmiCollectionLocation)

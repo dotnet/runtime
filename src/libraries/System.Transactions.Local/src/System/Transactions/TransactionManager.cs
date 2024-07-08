@@ -432,7 +432,7 @@ namespace System.Transactions
         }
 
         internal static bool? s_implicitDistributedTransactions;
-        internal static object s_implicitDistributedTransactionsLock = new();
+        internal static readonly object s_implicitDistributedTransactionsLock = new();
 #else
         public static bool ImplicitDistributedTransactions
         {

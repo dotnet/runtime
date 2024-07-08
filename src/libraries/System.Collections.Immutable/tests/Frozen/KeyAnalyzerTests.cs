@@ -107,6 +107,13 @@ namespace System.Collections.Frozen.Tests
             Assert.Equal(0, r.HashIndex);
             Assert.Equal(1, r.HashCount);
 
+            r = RunAnalysis(new[] { "0001", "0002", "0003", "0004", "0005", "0006" }, true);
+            Assert.False(r.RightJustifiedSubstring);
+            Assert.False(r.IgnoreCase);
+            Assert.True(r.AllAsciiIfIgnoreCase);
+            Assert.Equal(3, r.HashIndex);
+            Assert.Equal(1, r.HashCount);
+
         }
 
         [Fact]
@@ -226,9 +233,9 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public static void ContainsAnyLetters()
         {
-            Assert.True(KeyAnalyzer.ContainsAnyLetters("abc".AsSpan()));
-            Assert.True(KeyAnalyzer.ContainsAnyLetters("ABC".AsSpan()));
-            Assert.False(KeyAnalyzer.ContainsAnyLetters("123".AsSpan()));
+            Assert.True(KeyAnalyzer.ContainsAnyAsciiLetters("abc".AsSpan()));
+            Assert.True(KeyAnalyzer.ContainsAnyAsciiLetters("ABC".AsSpan()));
+            Assert.False(KeyAnalyzer.ContainsAnyAsciiLetters("123".AsSpan()));
             // note, must only pass ASCII to ContainsAnyLetters, anything else is a
             // Debug.Assert and would not have been called in the actual implementation
         }

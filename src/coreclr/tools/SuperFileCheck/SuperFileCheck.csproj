@@ -40,7 +40,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
-    <PackageDownload Condition="'$(DotNetBuildFromSource)' != 'true'" Include="runtime.$(JITToolsRid).Microsoft.NETCore.Runtime.JIT.Tools">
+    <PackageDownload Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="runtime.$(JITToolsRid).Microsoft.NETCore.Runtime.JIT.Tools">
       <Version>[$(JITToolsVersion)]</Version>
     </PackageDownload>
   </ItemGroup>

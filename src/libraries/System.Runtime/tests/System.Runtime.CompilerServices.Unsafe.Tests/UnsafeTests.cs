@@ -6,6 +6,8 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using Xunit;
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+
 namespace System.Runtime.CompilerServices
 {
     public class UnsafeTests
@@ -14,16 +16,27 @@ namespace System.Runtime.CompilerServices
         public static unsafe void ReadInt32()
         {
             int expected = 10;
-            void* address = Unsafe.AsPointer(ref expected);
+            void* address = Unsafe.AsPointer(ref expected); // Unsafe.AsPointer is safe since expected is on stack
             int ret = Unsafe.Read<int>(address);
             Assert.Equal(expected, ret);
+        }
+
+        [Fact]
+        public static unsafe void ReadSpan()
+        {
+            int i = 42;
+            Span<int> span = new Span<int>(ref i);
+            void* address = Unsafe.AsPointer(ref span); // Unsafe.AsPointer is safe since expected is on stack
+            Span<int> ret = Unsafe.Read<Span<int>>(address);
+            Assert.Equal(1, ret.Length);
+            Assert.Equal(42, ret[0]);
         }
 
         [Fact]
         public static unsafe void WriteInt32()
         {
             int value = 10;
-            int* address = (int*)Unsafe.AsPointer(ref value);
+            int* address = (int*)Unsafe.AsPointer(ref value); // Unsafe.AsPointer is safe since value is on stack
             int expected = 20;
             Unsafe.Write(address, expected);
 
@@ -33,10 +46,24 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
+        public static unsafe void WriteSpan()
+        {
+            int value = 10;
+            int value2 = 20;
+            Span<int> span = new Span<int>(ref value);
+            Span<int>* address = (Span<int>*)Unsafe.AsPointer(ref span); // Unsafe.AsPointer is safe since value is on stack
+            Unsafe.Write(address, new Span<int>(ref value2));
+
+            Assert.Equal(1, span.Length);
+            Assert.Equal(20, span[0]);
+            Assert.True(Unsafe.AreSame(ref value2, ref span[0]));
+        }
+
+        [Fact]
         public static unsafe void WriteBytesIntoInt32()
         {
             int value = 20;
-            int* intAddress = (int*)Unsafe.AsPointer(ref value);
+            int* intAddress = (int*)Unsafe.AsPointer(ref value); // Unsafe.AsPointer is safe since value is on stack
             byte* byteAddress = (byte*)intAddress;
             for (int i = 0; i < 4; i++)
             {
@@ -70,7 +97,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void LongIntoCompoundStruct()
         {
             long value = 1234567891011121314L;
-            long* longAddress = (long*)Unsafe.AsPointer(ref value);
+            long* longAddress = (long*)Unsafe.AsPointer(ref value); // Unsafe.AsPointer is safe since value is on stack
             Byte4Short2 b4s2 = Unsafe.Read<Byte4Short2>(longAddress);
             if (BitConverter.IsLittleEndian)
             {
@@ -117,7 +144,7 @@ namespace System.Runtime.CompilerServices
         {
             int value1 = 10;
             int value2 = 20;
-            int* valueAddress = (int*)Unsafe.AsPointer(ref value1);
+            int* valueAddress = (int*)Unsafe.AsPointer(ref value1); // Unsafe.AsPointer is safe since value1 is on stack
             int** valueAddressPtr = &valueAddress;
             Unsafe.Write(valueAddressPtr, new IntPtr(&value2));
 
@@ -132,7 +159,7 @@ namespace System.Runtime.CompilerServices
         {
             int value = 10;
             int destination = -1;
-            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value));
+            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value)); // Unsafe.AsPointer is safe since value is on stack
             Assert.Equal(10, destination);
             Assert.Equal(10, value);
 
@@ -147,7 +174,7 @@ namespace System.Runtime.CompilerServices
         {
             int value = 10;
             int destination = -1;
-            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value);
+            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value); // Unsafe.AsPointer is safe since destination is on stack
             Assert.Equal(10, destination);
             Assert.Equal(10, value);
 
@@ -163,7 +190,7 @@ namespace System.Runtime.CompilerServices
             Int32Generic<string> destination = default;
             Int32Generic<string> value = new() { Int32 = 5, Value = "a" };
 
-            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value));
+            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value)); // Unsafe.AsPointer is safe since value is on stack
 
             Assert.Equal(5, destination.Int32);
             Assert.Equal("a", destination.Value);
@@ -175,7 +202,7 @@ namespace System.Runtime.CompilerServices
             Int32Generic<string> destination = default;
             Int32Generic<string> value = new() { Int32 = 5, Value = "a" };
 
-            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value);
+            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value); // Unsafe.AsPointer is safe since destination is on stack
 
             Assert.Equal(5, destination.Int32);
             Assert.Equal("a", destination.Value);
@@ -197,6 +224,7 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(4, Unsafe.SizeOf<Byte4>());
             Assert.Equal(8, Unsafe.SizeOf<Byte4Short2>());
             Assert.Equal(512, Unsafe.SizeOf<Byte512>());
+            Assert.Equal(IntPtr.Size * 2, Unsafe.SizeOf<ReadOnlySpan<char>>());
         }
 
         [Theory]
@@ -462,6 +490,26 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(new IntPtr(-3), Unsafe.ByteOffset(ref byte4.B3, ref byte4.B0));
         }
 
+        private static unsafe class StaticReadonlyHolder
+        {
+            public static readonly void* Pointer = (void*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(StaticReadonlyHolder), 1);
+        }
+
+        [Fact]
+        public static unsafe void ByteOffsetConstantRef()
+        {
+            // https://github.com/dotnet/runtime/pull/99019
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static nint NullTest(ref byte origin) => Unsafe.ByteOffset(ref origin, ref Unsafe.NullRef<byte>());
+            Assert.Equal(0, NullTest(ref Unsafe.NullRef<byte>()));
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static ref byte GetStatic(ref byte x) => ref x;
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static nint StaticReadonlyTest(ref byte x) => Unsafe.ByteOffset(ref GetStatic(ref Unsafe.AsRef<byte>(StaticReadonlyHolder.Pointer)), ref x);
+            Assert.Equal(0, StaticReadonlyTest(ref Unsafe.AsRef<byte>(StaticReadonlyHolder.Pointer)));
+        }
+
         [Fact]
         public static unsafe void AsRef()
         {
@@ -473,6 +521,19 @@ namespace System.Runtime.CompilerServices
 
                 r = 0x0EF00EF0;
                 Assert.Equal(0xFE, b[0] | b[1] | b[2] | b[3]);
+            }
+        }
+
+        [Fact]
+        public static unsafe void AsRef_RefStruct()
+        {
+            int i = 42;
+            Span<int> span = new Span<int>(ref i);
+
+            Span<int>* spanPtr = &span;
+            fixed (Span<int>* spanPtrActual = &Unsafe.AsRef<Span<int>>(in span))
+            {
+                Assert.Equal((IntPtr)spanPtr, (IntPtr)spanPtrActual);
             }
         }
 
@@ -558,6 +619,33 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
+        public static void RefAddIntPtr_RefStruct()
+        {
+            int i0 = 42, i1 = 43, i2 = 44, i3 = 45;
+            FourSpans span = new()
+            {
+                Span0 = new Span<int>(ref i0),
+                Span1 = new Span<int>(ref i1),
+                Span2 = new Span<int>(ref i2),
+                Span3 = new Span<int>(ref i3)
+            };
+
+            ref Span<int> spanRef = ref Unsafe.AsRef(in span.Span0);
+            Assert.Equal(42, spanRef[0]);
+
+            spanRef = ref Unsafe.Add(ref spanRef, 1);
+            Assert.Equal(43, spanRef[0]);
+
+            spanRef = ref Unsafe.Add(ref spanRef, 2);
+            Assert.Equal(45, spanRef[0]);
+        }
+
+        private ref struct FourSpans
+        {
+            public Span<int> Span0, Span1, Span2, Span3;
+        }
+
+        [Fact]
         public static void RefAddNuint()
         {
             int[] a = new int[] { 0x123, 0x234, 0x345, 0x456 };
@@ -597,7 +685,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
-        public static void RefSubtract()
+        public static unsafe void RefSubtract()
         {
             string[] a = new string[] { "abc", "def", "ghi", "jkl" };
 
@@ -609,6 +697,11 @@ namespace System.Runtime.CompilerServices
 
             ref string r3 = ref Unsafe.Subtract(ref r2, 3);
             Assert.Equal("abc", r3);
+
+            // https://github.com/dotnet/runtime/pull/99019
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static ref byte NullTest(nuint offset) => ref Unsafe.Subtract(ref Unsafe.NullRef<byte>(), offset);
+            Assert.True(Unsafe.IsNullRef(ref NullTest(0)));
         }
 
         [Fact]
@@ -1098,6 +1191,11 @@ namespace System.Runtime.CompilerServices
             Assert.True(Unsafe.IsNullRef<object>(ref Unsafe.AsRef<object>(null)));
             Assert.True(Unsafe.IsNullRef<string>(ref Unsafe.AsRef<string>(null)));
 
+            // Validate that calling on ref structs works.
+
+            Assert.True(Unsafe.IsNullRef<ReadOnlySpan<char>>(ref Unsafe.NullRef<ReadOnlySpan<char>>()));
+            Assert.True(Unsafe.IsNullRef<Span<string>>(ref Unsafe.NullRef<Span<string>>()));
+
             // Validate on ref created from a pointer
 
             int* p = (int*)0;
@@ -1141,6 +1239,18 @@ namespace System.Runtime.CompilerServices
             Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<int, long>(5));
             Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<long, int>(5));
 
+            // Conversion to/from a class should fail
+
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<string, long>(string.Empty));
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<long, string>(42));
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<string, string>(string.Empty));
+
+            // Conversion to/from nullable value types should fail
+
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<int?, long>(42));
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<long, int?>(42));
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<int?, int?>(42));
+
             // Conversion between floating-point and same sized integral should succeed
 
             Assert.Equal(0x8000_0000u, Unsafe.BitCast<float, uint>(-0.0f));
@@ -1150,6 +1260,12 @@ namespace System.Runtime.CompilerServices
 
             Assert.Equal(int.MinValue, Unsafe.BitCast<uint, int>(0x8000_0000u));
             Assert.Equal(0x8000_0000u, Unsafe.BitCast<int, uint>(int.MinValue));
+
+            // Conversion between same sized ref structs should succeed
+
+            int i = 42;
+            Span<int> span = Unsafe.BitCast<ReadOnlySpan<int>, Span<int>>(new ReadOnlySpan<int>(&i, 1));
+            Assert.Equal(42, span[0]);
 
             // Conversion from runtime SIMD type to a custom struct should succeed
 

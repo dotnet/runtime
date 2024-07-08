@@ -4,67 +4,12 @@
 #ifndef __eetype_inl__
 #define __eetype_inl__
 //-----------------------------------------------------------------------------------------------------------
-inline uint32_t MethodTable::GetHashCode()
-{
-    return m_uHashCode;
-}
-
-#ifdef DACCESS_COMPILE
-inline bool MethodTable::DacVerify()
-{
-    // Use a separate static worker because the worker validates
-    // the whole chain of EETypes and we don't want to accidentally
-    // answer questions from 'this' that should have come from the
-    // 'current' MethodTable.
-    return DacVerifyWorker(this);
-}
-// static
-inline bool MethodTable::DacVerifyWorker(MethodTable* pThis)
-{
-    //*********************************************************************
-    //**** ASSUMES MAX TYPE HIERARCHY DEPTH OF 1024 TYPES              ****
-    //*********************************************************************
-    const int MAX_SANE_RELATED_TYPES = 1024;
-    //*********************************************************************
-    //**** ASSUMES MAX OF 200 INTERFACES IMPLEMENTED ON ANY GIVEN TYPE ****
-    //*********************************************************************
-    const int MAX_SANE_NUM_INSTANCES = 200;
-
-
-    PTR_EEType pCurrentType = dac_cast<PTR_EEType>(pThis);
-    for (int i = 0; i < MAX_SANE_RELATED_TYPES; i++)
-    {
-        // Verify interface map
-        if (pCurrentType->GetNumInterfaces() > MAX_SANE_NUM_INSTANCES)
-            return false;
-
-        // Validate the current type
-        if (!pCurrentType->Validate(false))
-            return false;
-
-        //
-        // Now on to the next type in the hierarchy.
-        //
-
-        pCurrentType = dac_cast<PTR_EEType>(reinterpret_cast<TADDR>(pCurrentType->m_RelatedType.m_pBaseType));
-
-        if (pCurrentType == NULL)
-            break;
-    }
-
-    if (pCurrentType != NULL)
-        return false;   // assume we found an infinite loop
-
-    return true;
-}
-#endif
-
 #if !defined(DACCESS_COMPILE)
-inline PTR_UInt8 FollowRelativePointer(const int32_t* pDist)
+inline PTR_uint8_t FollowRelativePointer(const int32_t* pDist)
 {
     int32_t dist = *pDist;
 
-    PTR_UInt8 result = (PTR_UInt8)pDist + dist;
+    PTR_uint8_t result = (PTR_uint8_t)pDist + dist;
 
     return result;
 }
@@ -107,40 +52,7 @@ __forceinline uint32_t MethodTable::GetFieldOffset(EETypeField eField)
     {
         return cbOffset;
     }
-    cbOffset += relativeOrFullPointerOffset;
-
-#if SUPPORTS_WRITABLE_DATA
-    // Followed by writable data.
-    if (eField == ETF_WritableData)
-    {
-        return cbOffset;
-    }
-    cbOffset += relativeOrFullPointerOffset;
-#endif
-
-    // Followed by the pointer to the finalizer method.
-    if (eField == ETF_Finalizer)
-    {
-        ASSERT(HasFinalizer());
-        return cbOffset;
-    }
-    if (HasFinalizer())
-        cbOffset += relativeOrFullPointerOffset;
-
-    // Followed by the pointer to the optional fields.
-    if (eField == ETF_OptionalFieldsPtr)
-    {
-        ASSERT(HasOptionalFields());
-        return cbOffset;
-    }
-    if (HasOptionalFields())
-        cbOffset += relativeOrFullPointerOffset;
-
-    // Followed by the pointer to the sealed virtual slots
-    if (eField == ETF_SealedVirtualSlots)
-        return cbOffset;
-
-    ASSERT(!"Decoding the rest requires rare flags");
+    ASSERT(!"NYI");
 
     return 0;
 }

@@ -2320,16 +2320,13 @@ emit_type_load_failure (MonoCompile* cfg, MonoClass* klass)
 }
 
 static void
-emit_invalid_program_with_msg (MonoCompile *cfg, MonoError *error_msg, MonoMethod *caller, MonoMethod *callee)
+emit_invalid_program_with_msg (MonoCompile *cfg, char *error_msg)
 {
-	g_assert (!is_ok (error_msg));
-
-	char *str = mono_mem_manager_strdup (cfg->mem_manager, mono_error_get_message (error_msg));
 	MonoInst *iargs[1];
 	if (cfg->compile_aot)
-		EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], str);
+		EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], error_msg);
 	else
-		EMIT_NEW_PCONST (cfg, iargs [0], str);
+		EMIT_NEW_PCONST (cfg, iargs [0], error_msg);
 	mono_emit_jit_icall (cfg, mono_throw_invalid_program, iargs);
 }
 
@@ -3416,8 +3413,8 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 	MonoInst *alloc, *ins;
 
 	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
-		mono_error_set_bad_image (cfg->error, m_class_get_image (cfg->method->klass), "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
-		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+		mono_error_set_invalid_program (cfg->error, "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_INVALID_PROGRAM);
 		return NULL;
 	}
 
@@ -3547,23 +3544,11 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 	}
 
 	/*
-	 * In corelib code, methods which need to do a stack walk declare a StackCrawlMark local and pass it as an
-	 * arguments until it reaches an icall. Its hard to detect which methods do that especially with
-	 * StackCrawlMark.LookForMyCallersCaller, so for now, just hardcode the classes which contain the public
-	 * methods whose caller is needed.
+	 * Methods which do stack walks are marked with [System.Security.DynamicSecurityMethod] in the bcl.
+	 * This check won't work for StackCrawlMark.LookForMyCallersCaller, but thats not currently by the
+	 * stack walk code anyway.
 	 */
-	if (mono_is_corlib_image (m_class_get_image (cmethod->klass))) {
-		const char *cname = m_class_get_name (cmethod->klass);
-		if (!strcmp (cname, "Assembly") ||
-			!strcmp (cname, "AssemblyLoadContext") ||
-			(!strcmp (cname, "Activator"))) {
-			if (!strcmp (cmethod->name, "op_Equality"))
-				return FALSE;
-			return TRUE;
-		}
-	}
-
-	return FALSE;
+	return (cmethod->flags & METHOD_ATTRIBUTE_REQSECOBJ) != 0;
 }
 
 G_GNUC_UNUSED MonoInst*
@@ -4746,6 +4731,15 @@ mini_inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *
 	return inline_method (cfg, cmethod, fsig, sp, ip, real_offset, inline_always, NULL);
 }
 
+static gboolean
+aggressive_inline_method (MonoCompile *cfg, MonoMethod *cmethod)
+{
+	gboolean aggressive_inline = m_method_is_aggressive_inlining (cmethod);
+	if (aggressive_inline)
+		aggressive_inline = !mono_simd_unsupported_aggressive_inline_intrinsic_type (cfg, cmethod);
+	return aggressive_inline;
+}
+
 /*
  * inline_method:
  *
@@ -4871,7 +4865,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->disable_inline = prev_disable_inline;
 	cfg->inline_depth --;
 
-	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))) {
+	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && aggressive_inline_method (cfg, cmethod))) {
 		if (cfg->verbose_level > 2)
 			printf ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
@@ -6431,8 +6425,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	/* serialization and xdomain stuff may need access to private fields and methods */
 	dont_verify = FALSE;
  	dont_verify |= method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE; /* bug #77896 */
-	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP;
-	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP_INVOKE;
 
 	/* still some type unsafety issues in marshal wrappers... (unknown is PtrToStructure) */
 	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;
@@ -7061,11 +7053,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			emit_set_deopt_il_offset (cfg, GPTRDIFF_TO_INT (ip - cfg->cil_start));
 		} else {
 			if ((tblock = cfg->cil_offset_to_bb [ip - cfg->cil_start]) && (tblock != cfg->cbb)) {
-				link_bblock (cfg, cfg->cbb, tblock);
 				if (sp != stack_start) {
+					link_bblock (cfg, cfg->cbb, tblock);
 					handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 					sp = stack_start;
 					CHECK_UNVERIFIABLE (cfg);
+				} else {
+					if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_NOT_REACHED))
+						link_bblock (cfg, cfg->cbb, tblock);
 				}
 				cfg->cbb->next_bb = tblock;
 				cfg->cbb = tblock;
@@ -7519,6 +7514,85 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->gsharedvt_min && mini_is_gsharedvt_variable_signature (fsig))
 				GSHAREDVT_FAILURE (il_op);
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			/*
+			 * We need to modify the signature of the swiftcall calli to account for the lowering of Swift structs.
+ 			 * This is done by replacing struct arguments on stack with a lowered sequence and updating the signature.
+			 */
+			if (fsig->pinvoke && mono_method_signature_has_ext_callconv (fsig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+				g_assert (!fsig->hasthis); // Swift P/Invoke calls shouldn't contain 'this'
+				
+				n = fsig->param_count;
+				sp -= n;
+				// Save the old arguments				
+				MonoInst **old_params = (MonoInst**) mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * n);
+				for (int idx_param = 0; idx_param < n; ++idx_param) {
+					old_params [idx_param] = sp [idx_param];
+				}
+
+				GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), n);
+				uint32_t new_param_count = 0;
+				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+				MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
+				/*
+				 * Go through the lowered arguments, if the argument is a struct, 
+				 * we need to replace it with a sequence of lowered arguments.
+				 * Also record the updated parameters for the new signature.
+				 */
+				for (int idx_param = 0; idx_param < n; ++idx_param) {
+					MonoType *ptype = fsig->params [idx_param];
+					MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+
+					// SwiftSelf, SwiftError, and SwiftIndirectResult are special cases where we need to preserve the class information for the codegen to handle them correctly.
+					if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) {
+						SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+						if (!lowered_swift_struct.by_reference) {
+							// Create a new local variable to store the base address of the struct
+							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+							CHECK_ARG (idx_param);
+							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
+							MONO_ADD_INS (cfg->cbb, struct_base_address);
+
+							for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
+								MonoInst *lowered_arg = NULL;
+								// Load the lowered elements of the struct
+								lowered_arg = mini_emit_memory_load (cfg, lowered_swift_struct.lowered_elements [idx_lowered], struct_base_address, lowered_swift_struct.offsets [idx_lowered], 0);
+								*sp++ = lowered_arg;
+
+								++new_param_count;
+								g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
+							}
+						} else {
+							// For structs that cannot be lowered, we change the argument to byref type
+							ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
+							// Load the address of the struct
+							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+							CHECK_ARG (idx_param);
+							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
+							MONO_ADD_INS (cfg->cbb, struct_base_address);
+							*sp++ = struct_base_address;
+
+							++new_param_count;
+							g_array_append_val (new_params, ptype);
+						}
+					} else {
+						// Copy over non-struct arguments
+						*sp++ = old_params [idx_param];
+
+						++new_param_count;
+						g_array_append_val (new_params, ptype);
+					}
+				}
+
+				// Create a new dummy signature with the lowered arguments				
+				fsig = mono_metadata_signature_dup_new_params (cfg->mempool, NULL, fsig, new_param_count, (MonoType**)new_params->data);
+
+				// Deallocate temp array
+				g_array_free (new_params, TRUE);
+			}
+#endif
+
 			if (method->dynamic && fsig->pinvoke) {
 				MonoInst *args [3];
 
@@ -7541,7 +7615,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				method->dynamic case; for other wrapper types assume the code knows
 				what its doing and added its own GC transitions */
 
-				gboolean skip_gc_trans = fsig->suppress_gc_transition;
+				gboolean skip_gc_trans = mono_method_signature_has_ext_callconv (fsig, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION);
 				if (!skip_gc_trans) {
 #if 0
 					fprintf (stderr, "generating wrapper for calli in method %s with wrapper type %s\n", method->name, mono_wrapper_type_to_str (method->wrapper_type));
@@ -7549,6 +7623,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					if (cfg->compile_aot)
 						cfg->pinvoke_calli_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->pinvoke_calli_signatures, fsig);
+
+					if (fsig->has_type_parameters) {
+						cfg->prefer_instances = TRUE;
+						GENERIC_SHARING_FAILURE (CEE_CALLI);
+					}
 
 					/* Call the wrapper that will do the GC transition instead */
 					MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (method->klass, fsig, cfg->compile_aot);
@@ -7864,7 +7943,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				UNVERIFIED;
 
 			if (!cfg->gshared)
-				g_assert (!mono_method_check_context_used (cmethod));
+				g_assertf (!mono_method_check_context_used (cmethod), "cmethod is %s", mono_method_get_full_name (cmethod));
 
 			CHECK_STACK (n);
 
@@ -8932,6 +9011,11 @@ calli_end:
 			ins->sreg2 = sp [1]->dreg;
 			type_from_op (cfg, ins, sp [0], sp [1]);
 			CHECK_TYPE (ins);
+
+			if (((sp [0]->type == STACK_R4 && sp [1]->type == STACK_R8) ||
+			     (sp [0]->type == STACK_R8 && sp [1]->type == STACK_R4)))
+				add_widen_op (cfg, ins, &sp [0], &sp [1]);
+
 			ins->dreg = alloc_dreg ((cfg), (MonoStackType)(ins)->type);
 
 			/* Use the immediate opcodes if possible */
@@ -9274,7 +9358,7 @@ calli_end:
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
-			if (!mono_class_init_internal (cmethod->klass))
+			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass))
 				TYPE_LOAD_ERROR (cmethod->klass);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
@@ -9590,8 +9674,7 @@ calli_end:
 
 			if (klass == mono_defaults.void_class)
 				UNVERIFIED;
-			if (target_type_is_incompatible (cfg, m_class_get_byval_arg (klass), val))
-				UNVERIFIED;
+
 			/* frequent check in generic code: box (struct), brtrue */
 
 			/*
@@ -9950,6 +10033,8 @@ calli_end:
 				MONO_ADD_INS (cfg->cbb, ins);
 				*sp++ = ins;
 			} else {
+				if (target_type_is_incompatible (cfg, m_class_get_byval_arg (klass), val))
+					UNVERIFIED;
 				*sp++ = mini_emit_box (cfg, val, klass, context_used);
 			}
 			CHECK_CFG_EXCEPTION;
@@ -9987,8 +10072,8 @@ calli_end:
 		case MONO_CEE_STSFLD: {
 			MonoClassField *field;
 			guint foffset;
-			gboolean is_instance;
 			gpointer addr = NULL;
+			gboolean is_instance;
 			gboolean is_special_static;
 			MonoType *ftype;
 			MonoInst *store_val = NULL;
@@ -10072,6 +10157,7 @@ calli_end:
 				}
 				is_instance = FALSE;
 			}
+
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
@@ -10189,7 +10275,6 @@ calli_end:
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, foffset > mono_target_pagesize ());
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 					if (sp [0]->opcode == OP_LDADDR && m_class_is_simd_type (klass) && cfg->opt & MONO_OPT_SIMD) {
 						ins = mono_emit_simd_field_load (cfg, field, sp [0]);
 						if (ins) {
@@ -10197,7 +10282,6 @@ calli_end:
 							goto field_access_end;
 						}
 					}
-#endif
 
 					MonoInst *field_add_inst = sp [0];
 					if (mini_is_gsharedvt_klass (klass)) {
@@ -10557,7 +10641,6 @@ field_access_end:
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
-#ifndef TARGET_S390X
 			if (sp [0]->type == STACK_I8 && TARGET_SIZEOF_VOID_P == 4) {
 				MONO_INST_NEW (cfg, ins, OP_LCONV_TO_OVF_U4);
 				ins->sreg1 = sp [0]->dreg;
@@ -10566,7 +10649,8 @@ field_access_end:
 				MONO_ADD_INS (cfg->cbb, ins);
 				*sp = mono_decompose_opcode (cfg, ins);
 			}
-#else
+
+#if defined(TARGET_S390X) || defined(TARGET_POWERPC64)
 			/* The array allocator expects a 64-bit input, and we cannot rely
 			   on the high bits of a 32-bit result, so we have to extend.  */
 			if (sp [0]->type == STACK_I4 && TARGET_SIZEOF_VOID_P == 8) {
@@ -11172,6 +11256,13 @@ field_access_end:
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 			const MonoJitICallId jit_icall_id = (MonoJitICallId)token;
 			MonoJitICallInfo * const jit_icall_info = mono_find_jit_icall_info (jit_icall_id);
+
+#ifndef MONO_ARCH_HAVE_SWIFTCALL
+			if (mono_method_signature_has_ext_callconv (method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
+				// Swift calling convention is not supported on this platform.
+				emit_not_supported_failure (cfg);
+			}
+#endif
 
 			CHECK_STACK (jit_icall_info->sig->param_count);
 			sp -= jit_icall_info->sig->param_count;
@@ -11832,7 +11923,8 @@ mono_ldptr:
 					/* if we couldn't create a wrapper because cmethod isn't supposed to have an
 					UnmanagedCallersOnly attribute, follow CoreCLR behavior and throw when the
 					method with the ldftn is executing, not when it is being compiled. */
-					emit_invalid_program_with_msg (cfg, wrapper_error, method, cmethod);
+					char *err_msg = mono_mem_manager_strdup (cfg->mem_manager, mono_error_get_message (wrapper_error));
+					emit_invalid_program_with_msg (cfg, err_msg);
 					mono_error_cleanup (wrapper_error);
 					EMIT_NEW_PCONST (cfg, ins, NULL);
 					*sp++ = ins;
@@ -13105,9 +13197,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	stacktypes [(int)'i'] = STACK_PTR;
 	stacktypes [(int)'l'] = STACK_I8;
 	stacktypes [(int)'f'] = STACK_R8;
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 	stacktypes [(int)'x'] = STACK_VTYPE;
-#endif
 
 #if SIZEOF_REGISTER == 4
 	/* Create MonoInsts for longs */

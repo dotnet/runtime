@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using FluentAssertions;
 using ILCompiler.Logging;
 using Internal.TypeSystem;
 using Mono.Cecil;
@@ -160,6 +159,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private static bool IsProducedByNativeAOT (CustomAttribute attr)
 		{
+			if (attr.ConstructorArguments.Count > 2 && attr.ConstructorArguments[^2].Type.Name == "Tool")
+				return ((Tool)attr.ConstructorArguments[^2].Value).HasFlag(Tool.NativeAot);
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
 			return producedBy is null ? true : ((Tool) producedBy).HasFlag (Tool.NativeAot);
 		}
@@ -228,12 +229,29 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						}
 						break;
 
-					case nameof (ExpectedWarningAttribute): {
+					case nameof (ExpectedWarningAttribute) or nameof(UnexpectedWarningAttribute): {
 							var expectedWarningCode = (string) attr.GetConstructorArgumentValue (0);
 							if (!expectedWarningCode.StartsWith ("IL")) {
-								Assert.Fail ($"The warning code specified in {nameof (ExpectedWarningAttribute)} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
+								Assert.Fail ($"The warning code specified in {attr.AttributeType.Name} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
 							}
-							var expectedMessageContains = ((CustomAttributeArgument[]) attr.GetConstructorArgumentValue (1)).Select (a => (string) a.Value).ToArray ();
+							IEnumerable<string> expectedMessageContains = attr.Constructor.Parameters switch
+							{
+								// ExpectedWarningAttribute(string warningCode, params string[] expectedMessages)
+								// ExpectedWarningAttribute(string warningCode, string[] expectedMessages, Tool producedBy, string issueLink)
+								[_, { ParameterType.IsArray: true }, ..]
+									=> ((CustomAttributeArgument[])attr.ConstructorArguments[1].Value)
+										.Select(caa => (string)caa.Value),
+								// ExpectedWarningAttribute(string warningCode, string expectedMessage1, string expectedMessage2, Tool producedBy, string issueLink)
+								[_, { ParameterType.Name: "String" }, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+									=> [(string)attr.GetConstructorArgumentValue(1), (string)attr.GetConstructorArgumentValue(2)],
+								// ExpectedWarningAttribute(string warningCode, string expectedMessage, Tool producedBy, string issueLink)
+								[_, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+									=> [(string)attr.GetConstructorArgumentValue(1)],
+								// ExpectedWarningAttribute(string warningCode, Tool producedBy, string issueLink)
+								[_, { ParameterType.Name: "Tool" }, _]
+									=> [],
+								_ => throw new UnreachableException(),
+							};
 							string fileName = (string) attr.GetPropertyValue ("FileName")!;
 							int? sourceLine = (int?) attr.GetPropertyValue ("SourceLine");
 							int? sourceColumn = (int?) attr.GetPropertyValue ("SourceColumn");

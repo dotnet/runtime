@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.Win32.SafeHandles;
@@ -15,18 +14,29 @@ namespace System.Security.Cryptography.X509Certificates
             throw new NotImplementedException($"{nameof(StorePal)}.{nameof(FromHandle)}");
         }
 
-        private static AndroidCertLoader FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool readingFromFile, X509KeyStorageFlags keyStorageFlags)
+        private static ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool readingFromFile, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
             X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
-            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
 
             if (contentType == X509ContentType.Pkcs12)
             {
-                X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
-                ICertificatePal[] certPals = ReadPkcs12Collection(rawData, password, ephemeralSpecified);
-                return new AndroidCertLoader(certPals);
+                try
+                {
+                    return new CollectionBasedLoader(
+                        X509CertificateLoader.LoadPkcs12Collection(
+                            rawData,
+                            password.DangerousGetSpan(),
+                            keyStorageFlags,
+                            X509Certificate.GetPkcs12Limits(readingFromFile, password)));
+                }
+                catch (Pkcs12LoadLimitExceededException e)
+                {
+                    throw new CryptographicException(
+                        SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                        e);
+                }
             }
             else
             {
@@ -111,33 +121,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             string message = SR.Format(SR.Cryptography_X509_StoreCannotCreate, storeName, storeLocation);
             throw new CryptographicException(message, new PlatformNotSupportedException(message));
-        }
-
-        private static ICertificatePal[] ReadPkcs12Collection(
-            ReadOnlySpan<byte> rawData,
-            SafePasswordHandle password,
-            bool ephemeralSpecified)
-        {
-            using (var reader = new AndroidPkcs12Reader(rawData))
-            {
-                reader.Decrypt(password, ephemeralSpecified);
-
-                ICertificatePal[] certs = new ICertificatePal[reader.GetCertCount()];
-                int idx = 0;
-                foreach (UnixPkcs12Reader.CertAndKey certAndKey in reader.EnumerateAll())
-                {
-                    AndroidCertificatePal pal = (AndroidCertificatePal)certAndKey.Cert!;
-                    if (certAndKey.Key != null)
-                    {
-                        pal.SetPrivateKey(AndroidPkcs12Reader.GetPrivateKey(certAndKey.Key));
-                    }
-
-                    certs[idx] = pal;
-                    idx++;
-                }
-
-                return certs;
-            }
         }
     }
 }

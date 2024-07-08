@@ -18,74 +18,6 @@ extern DebugCheckStubUnwindInfoWorker:proc
 endif
 
 
-GenerateArrayOpStubExceptionCase macro ErrorCaseName, ExceptionName
-
-NESTED_ENTRY ErrorCaseName&_RSIRDI_ScratchArea, _TEXT
-
-        ; account for scratch area, rsi, rdi already on the stack
-        .allocstack 38h
-    END_PROLOGUE
-
-        mov     rcx, CORINFO_&ExceptionName&_ASM
-
-        ; begin epilogue
-
-        add     rsp, 28h        ; pop callee scratch area
-        pop     rdi
-        pop     rsi
-        jmp     JIT_InternalThrow
-
-NESTED_END ErrorCaseName&_RSIRDI_ScratchArea, _TEXT
-
-NESTED_ENTRY ErrorCaseName&_ScratchArea, _TEXT
-
-        ; account for scratch area already on the stack
-        .allocstack 28h
-    END_PROLOGUE
-
-        mov     rcx, CORINFO_&ExceptionName&_ASM
-
-        ; begin epilogue
-
-        add     rsp, 28h        ; pop callee scratch area
-        jmp     JIT_InternalThrow
-
-NESTED_END ErrorCaseName&_ScratchArea, _TEXT
-
-NESTED_ENTRY ErrorCaseName&_RSIRDI, _TEXT
-
-        ; account for rsi, rdi already on the stack
-        .allocstack 10h
-    END_PROLOGUE
-
-        mov     rcx, CORINFO_&ExceptionName&_ASM
-
-        ; begin epilogue
-
-        pop     rdi
-        pop     rsi
-        jmp     JIT_InternalThrow
-
-NESTED_END ErrorCaseName&_RSIRDI, _TEXT
-
-LEAF_ENTRY ErrorCaseName, _TEXT
-
-        mov     rcx, CORINFO_&ExceptionName&_ASM
-
-        ; begin epilogue
-
-        jmp     JIT_InternalThrow
-
-LEAF_END ErrorCaseName, _TEXT
-
-        endm
-
-
-GenerateArrayOpStubExceptionCase ArrayOpStubNullException, NullReferenceException
-GenerateArrayOpStubExceptionCase ArrayOpStubRangeException, IndexOutOfRangeException
-GenerateArrayOpStubExceptionCase ArrayOpStubTypeMismatchException, ArrayTypeMismatchException
-
-
 ; EXTERN_C int __fastcall HelperMethodFrameRestoreState(
 ;         INDEBUG_COMMA(HelperMethodFrame *pFrame)
 ;         MachState *pState
@@ -632,18 +564,6 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT
         pop                     rax
         ret
 NESTED_END ProfileTailcallNaked, _TEXT
-
-
-; EXTERN_C void moveOWord(LPVOID* src, LPVOID* target);
-; <NOTE>
-; MOVDQA is not an atomic operation.  You need to call this function in a crst.
-; </NOTE>
-LEAF_ENTRY moveOWord, _TEXT
-        movdqa      xmm0, [rcx]
-        movdqa      [rdx], xmm0
-
-        ret
-LEAF_END moveOWord, _TEXT
 
 
 extern JIT_InternalThrowFromHelper:proc
