@@ -1623,7 +1623,7 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
         return mt->CanCompareBitsOrUseFastGetHashCode();
     }
 
-    if (mt->ContainsPointers()
+    if (mt->ContainsGCPointers()
         || mt->IsNotTightlyPacked()
         || mt->GetClass()->IsInlineArray())
     {
@@ -1844,6 +1844,41 @@ extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, Metho
     END_QCALL;
 
     return bResult;
+}
+
+extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd)
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = false;
+
+    BEGIN_QCALL;
+
+    // Cache lookup and trivial cases are already handled at managed side. Call the uncached versions directly.
+    _ASSERTE(fromTypeHnd != toTypeHnd);
+
+    GCX_COOP();
+
+    TypeHandle fromTH = TypeHandle::FromPtr(fromTypeHnd);
+    TypeHandle toTH = TypeHandle::FromPtr(toTypeHnd);
+    
+    if (fromTH.IsTypeDesc())
+    {
+        ret = fromTH.AsTypeDesc()->CanCastTo(toTH, NULL);
+    }
+    else if (Nullable::IsNullableForType(toTH, fromTH.AsMethodTable()))
+    {
+        // do not allow type T to be cast to Nullable<T>
+        ret = FALSE;
+    }
+    else
+    {
+        ret = fromTH.AsMethodTable()->CanCastTo(toTH.AsMethodTable(), NULL);
+    }
+
+    END_QCALL;
+
+    return ret;
 }
 
 static MethodTable * g_pStreamMT;

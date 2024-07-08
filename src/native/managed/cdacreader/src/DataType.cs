@@ -26,4 +26,7 @@ public enum DataType
     ExceptionInfo,
     RuntimeThreadLocals,
     Module,
+    MethodTable,
+    EEClass,
+    MethodTableAuxiliaryData,
 }
