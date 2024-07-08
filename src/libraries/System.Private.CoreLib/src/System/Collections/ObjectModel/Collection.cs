@@ -124,7 +124,7 @@ namespace System.Collections.ObjectModel
 
             if ((uint)index > (uint)items.Count)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             InsertItemsRange(index, collection!); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
@@ -152,7 +152,7 @@ namespace System.Collections.ObjectModel
 
             if ((uint)index > (uint)items.Count)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             if (count < 0)
@@ -177,7 +177,7 @@ namespace System.Collections.ObjectModel
 
             if ((uint)index > (uint)items.Count)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             if (count < 0)
@@ -195,7 +195,7 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
 
-            ReplaceItemsRange(index, count, collection!);  // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            ReplaceItemsRange(index, count, collection);
         }
 
         public void RemoveAt(int index)
