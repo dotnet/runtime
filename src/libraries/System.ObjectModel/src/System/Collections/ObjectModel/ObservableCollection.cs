@@ -30,6 +30,12 @@ namespace System.Collections.ObjectModel
         private bool _skipRaisingEvents;
 
         /// <summary>
+        /// <c>true</c> to opt into raising <see cref="NotifyCollectionChangedEventArgs"/> with list
+        /// of items when a range is inserted, removed or replaced. Instead of resets
+        /// </summary>
+        private static bool RaiseRangeCollectionChangedEvents => true;
+
+        /// <summary>
         /// Initializes a new instance of ObservableCollection that is empty and has default initial capacity.
         /// </summary>
         public ObservableCollection()
@@ -126,20 +132,21 @@ namespace System.Collections.ObjectModel
         {
             CheckReentrancy();
 
-            T[] removedItems = null;
-
+            NotifyCollectionChangedEventArgs collectionChangedEventArgs = EventArgsCache.ResetCollectionChanged;
             bool ignore = _skipRaisingEvents;
             if (!ignore)
             {
                 _skipRaisingEvents = true;
 
-                if (count > 0)
+                if (RaiseRangeCollectionChangedEvents && count > 0 && CollectionChanged is not null)
                 {
-                    removedItems = new T[count];
+                    T[] removedItems = new T[count];
                     for (int i = 0; i < count; i++)
                     {
                         removedItems[i] = this[index + i];
                     }
+
+                    collectionChangedEventArgs = new(NotifyCollectionChangedAction.Remove, removedItems, index);
                 }
             }
 
@@ -159,7 +166,7 @@ namespace System.Collections.ObjectModel
             {
                 OnCountPropertyChanged();
                 OnIndexerPropertyChanged();
-                OnCollectionChanged(NotifyCollectionChangedAction.Remove, removedItems, index);
+                OnCollectionChanged(collectionChangedEventArgs);
             }
         }
 
@@ -171,12 +178,25 @@ namespace System.Collections.ObjectModel
         {
             CheckReentrancy();
 
-            _skipRaisingEvents = true;
-
-            T[] itemsToReplace = new T[count - index];
-            for (int i = index; i < count; i++)
+            int countBefore = default;
+            bool skipEvents = _skipRaisingEvents;
+            if (!skipEvents)
             {
-                itemsToReplace[i] = this[i];
+                _skipRaisingEvents = true;
+                countBefore = Count;
+            }
+
+            NotifyCollectionChangedEventArgs collectionChangedEventArgs = EventArgsCache.ResetCollectionChanged;
+            if (RaiseRangeCollectionChangedEvents && !skipEvents && CollectionChanged is not null)
+            {
+                T[] itemsToReplace = new T[count - index];
+                for (int i = index; i < count; i++)
+                {
+                    itemsToReplace[i] = this[i];
+                }
+
+                IList newItems = collection as IList ?? new List<T>(collection);
+                collectionChangedEventArgs = new(NotifyCollectionChangedAction.Replace, newItems, itemsToReplace, index);
             }
 
             try
@@ -185,18 +205,25 @@ namespace System.Collections.ObjectModel
             }
             finally
             {
-                _skipRaisingEvents = false;
+                if (!skipEvents)
+                {
+                    _skipRaisingEvents = false;
+                }
             }
 
-            if (!_skipRaisingEvents)
+            if (!skipEvents)
             {
-                IList newItems = collection is IList list ? list : new List<T>(collection);
-
-                if (newItems.Count > 0)
+                if (countBefore != Count)
                 {
                     OnCountPropertyChanged();
                     OnIndexerPropertyChanged();
-                    OnCollectionChanged(NotifyCollectionChangedAction.Replace, itemsToReplace, newItems, index);
+                    OnCollectionChanged(collectionChangedEventArgs);
+                }
+                else if (count > 0)
+                {
+                    // We replaced positive number of items with the same number of items, only the contents changed
+                    OnIndexerPropertyChanged();
+                    OnCollectionChanged(collectionChangedEventArgs);
                 }
             }
         }
@@ -226,10 +253,12 @@ namespace System.Collections.ObjectModel
         {
             CheckReentrancy();
 
+            int countBefore = default;
             bool ignore = _skipRaisingEvents;
             if (!ignore)
             {
                 _skipRaisingEvents = true;
+                countBefore = Count;
             }
 
             try
@@ -246,13 +275,18 @@ namespace System.Collections.ObjectModel
 
             if (!_skipRaisingEvents)
             {
-                IList newItems = collection is IList list ? list : new List<T>(collection);
+                NotifyCollectionChangedEventArgs collectionChangedEventArgs = EventArgsCache.ResetCollectionChanged;
+                if (RaiseRangeCollectionChangedEvents && CollectionChanged is not null)
+                {
+                    IList newItems = collection as IList ?? new List<T>(collection);
+                    collectionChangedEventArgs = new(NotifyCollectionChangedAction.Add, newItems, index);
+                }
 
-                if (newItems.Count > 0)
+                if (countBefore != Count)
                 {
                     OnCountPropertyChanged();
                     OnIndexerPropertyChanged();
-                    OnCollectionChanged(NotifyCollectionChangedAction.Add, newItems, index);
+                    OnCollectionChanged(collectionChangedEventArgs);
                 }
             }
         }
@@ -386,14 +420,6 @@ namespace System.Collections.ObjectModel
         /// <summary>
         /// Helper to raise CollectionChanged event to any listeners
         /// </summary>
-        private void OnCollectionChanged(NotifyCollectionChangedAction action, IList items, int index)
-        {
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, items, index));
-        }
-
-        /// <summary>
-        /// Helper to raise CollectionChanged event to any listeners
-        /// </summary>
         private void OnCollectionChanged(NotifyCollectionChangedAction action, object? item, int index, int oldIndex)
         {
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, item, index, oldIndex));
@@ -405,14 +431,6 @@ namespace System.Collections.ObjectModel
         private void OnCollectionChanged(NotifyCollectionChangedAction action, object? oldItem, object? newItem, int index)
         {
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, newItem, oldItem, index));
-        }
-
-        /// <summary>
-        /// Helper to raise CollectionChanged event to any listeners
-        /// </summary>
-        private void OnCollectionChanged(NotifyCollectionChangedAction action, IList oldItems, IList newItems, int index)
-        {
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, newItems, oldItems, index));
         }
 
         /// <summary>
