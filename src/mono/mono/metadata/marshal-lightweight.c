@@ -2827,7 +2827,6 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	gc_unsafe_transition_builder_emit_enter(&gc_unsafe_builder);
 
-
 	/* we first do all conversions */
 	tmp_locals = g_newa (int, sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
