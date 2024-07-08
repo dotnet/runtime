@@ -46,7 +46,7 @@ VPTR_CLASS(FlatImageLayout)
 
 #ifdef FEATURE_COMINTEROP
 VPTR_CLASS(ComMethodFrame)
-VPTR_CLASS(ComPlusMethodFrame)
+VPTR_CLASS(CLRToCOMMethodFrame)
 VPTR_CLASS(ComPrestubMethodFrame)
 #endif // FEATURE_COMINTEROP
 
@@ -68,7 +68,6 @@ VPTR_CLASS(HelperMethodFrame_PROTECTOBJ)
 VPTR_CLASS(HijackFrame)
 #endif
 VPTR_CLASS(InlinedCallFrame)
-VPTR_CLASS(MulticastFrame)
 VPTR_CLASS(PInvokeCalliFrame)
 VPTR_CLASS(PrestubMethodFrame)
 VPTR_CLASS(ProtectByRefsFrame)

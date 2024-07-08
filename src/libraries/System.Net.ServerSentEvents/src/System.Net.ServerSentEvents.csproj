@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>true</UseCompilerGeneratedDocXmlFile>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides a simple parser for server-sent events (SSE).
+
+Commonly Used Types:
+System.Net.ServerSentEvents.SseParser</PackageDescription>
+
+    <!-- Disabling baseline validation since this is a brand new package.
+         Once this package has shipped a stable version, the following line
+         should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Net\ServerSentEvents\SseParser_1.cs" />
+    <Compile Include="System\Net\ServerSentEvents\SseItem.cs" />
+    <Compile Include="System\Net\ServerSentEvents\SseItemParser.cs" />
+    <Compile Include="System\Net\ServerSentEvents\SseParser.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+  </ItemGroup>
+
+</Project>

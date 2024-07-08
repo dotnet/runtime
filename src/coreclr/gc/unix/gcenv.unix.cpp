@@ -1218,13 +1218,8 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     if (is_restricted)
         *is_restricted = false;
 
-    // The limit was not cached
-    if (g_RestrictedPhysicalMemoryLimit == 0)
-    {
-        restricted_limit = GetRestrictedPhysicalMemoryLimit();
-        VolatileStore(&g_RestrictedPhysicalMemoryLimit, restricted_limit);
-    }
-    restricted_limit = g_RestrictedPhysicalMemoryLimit;
+    restricted_limit = GetRestrictedPhysicalMemoryLimit();
+    VolatileStore(&g_RestrictedPhysicalMemoryLimit, restricted_limit);
 
     if (restricted_limit != 0 && restricted_limit != SIZE_T_MAX)
     {
@@ -1385,8 +1380,15 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 
         if (memory_load != NULL)
         {
-            bool isRestricted;
-            uint64_t total = GetPhysicalMemoryLimit(&isRestricted);
+            uint64_t total;
+            if (restricted_limit != 0 && restricted_limit != SIZE_T_MAX)
+            {
+                total = restricted_limit;
+            }
+            else
+            {
+                total = g_totalPhysicalMemSize;
+            }
 
             if (total > available)
             {

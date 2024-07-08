@@ -173,7 +173,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [OuterLoop("Modifies user-persisted state")]
+        [OuterLoop("Modifies user-persisted state", ~TestPlatforms.Browser)]
         public static void ExportDoesNotCorruptPrivateKeyMethods()
         {
             string keyName = $"clrtest.{Guid.NewGuid():D}";

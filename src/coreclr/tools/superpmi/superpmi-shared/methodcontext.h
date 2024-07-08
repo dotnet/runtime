@@ -248,6 +248,10 @@ public:
     void dmpGetTypeForBox(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeForBox(CORINFO_CLASS_HANDLE cls);
 
+    void recGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
+    void dmpGetTypeForBoxOnStack(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls);
+
     void recGetBoxHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc result);
     void dmpGetBoxHelper(DWORDLONG key, DWORD value);
     CorInfoHelpFunc repGetBoxHelper(CORINFO_CLASS_HANDLE cls);
@@ -484,9 +488,9 @@ public:
     void     dmpGetThreadLocalFieldInfo(DLD key, DWORD value);
     uint32_t repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType);
 
-    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
+    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
     void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
-    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
+    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
 
     void recGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo);
     void dmpGetThreadLocalStaticInfo_NativeAOT(DWORDLONG key, const Agnostic_GetThreadStaticInfo_NativeAOT& value);
@@ -592,9 +596,13 @@ public:
     void dmpGetAddrOfCaptureThreadGlobal(DWORD key, DLDL value);
     int32_t* repGetAddrOfCaptureThreadGlobal(void** ppIndirection);
 
-    void recGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection, unsigned result);
-    void dmpGetClassDomainID(DWORDLONG key, DLD value);
-    unsigned repGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection);
+    void recGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result);
+    void dmpGetClassStaticDynamicInfo(DWORDLONG key, DLD value);
+    size_t repGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
+
+    void recGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result);
+    void dmpGetClassThreadStaticDynamicInfo(DWORDLONG key, DLD value);
+    size_t repGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
 
     void recGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* result);
     void dmpGetLocationOfThisType(DWORDLONG key, const Agnostic_CORINFO_LOOKUP_KIND& value);
@@ -722,6 +730,10 @@ public:
     void recIsExactType(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpIsExactType(DWORDLONG key, DWORD value);
     bool repIsExactType(CORINFO_CLASS_HANDLE cls);
+
+    void recIsGenericType(CORINFO_CLASS_HANDLE cls, TypeCompareState result);
+    void dmpIsGenericType(DWORDLONG key, DWORD value);
+    TypeCompareState repIsGenericType(CORINFO_CLASS_HANDLE cls);
 
     void recIsNullableType(CORINFO_CLASS_HANDLE cls, TypeCompareState result);
     void dmpIsNullableType(DWORDLONG key, DWORD value);
@@ -998,7 +1010,7 @@ enum mcPackets
     Packet_GetChildType = 39,
     Packet_GetClassAlignmentRequirement = 40,
     Packet_GetClassAttribs = 41,
-    Packet_GetClassDomainID = 42,
+    //Packet_GetClassDomainID = 42,
     Packet_GetClassGClayout = 43,
     Packet_GetClassModuleIdForStatics = 44,
     Packet_GetClassName = 45,
@@ -1170,6 +1182,10 @@ enum mcPackets
     Packet_IsExactType = 215,
     Packet_GetSwiftLowering = 216,
     Packet_IsNullableType = 217,
+    Packet_GetClassStaticDynamicInfo = 218,
+    Packet_GetClassThreadStaticDynamicInfo = 219,
+    Packet_IsGenericType = 220,
+    Packet_GetTypeForBoxOnStack = 221,
 };
 
 void SetDebugDumpVariables();

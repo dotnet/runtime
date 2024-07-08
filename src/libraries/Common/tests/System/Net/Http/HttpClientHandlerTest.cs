@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Sockets;
 #if !NETFRAMEWORK
 using System.Net.Quic;
 #endif
@@ -248,14 +247,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    try
-                    {
-                        await client.GetAsync(ipv6Address);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(client.GetAsync(ipv6Address));
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -300,14 +292,8 @@ namespace System.Net.Http.Functional.Tests
                         // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                         handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     }
-                    try
-                    {
-                        await client.GetAsync(url);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+
+                    await IgnoreExceptions(client.GetAsync(url));
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -910,18 +896,15 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync("HTTP/1.1 200 OK\r\n" + LoopbackServer.CorsHeaders + "Transfer-Encoding: chunked\r\n\r\n");
-                        try
+
+                        await IgnoreExceptions(async () =>
                         {
                             while (!cts.IsCancellationRequested) // infinite to make sure implementation doesn't OOM
                             {
                                 await connection.WriteStringAsync(new string(' ', 10000));
                                 await Task.Delay(1);
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        });
                     });
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
@@ -989,7 +972,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true, true, true)]
         [InlineData(true, true, false)]
         [InlineData(true, false, false)]
@@ -999,11 +982,6 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming, bool slowChunks)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/91757");
-            }
-
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
@@ -1443,6 +1421,11 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            // Tasks are stored and awaited outside of the CreateServerAsync callbacks
+            // to let server disposal abort any pending operations.
+            Task serverTask1 = null;
+            Task serverTask2 = null;
+
             await LoopbackServerFactory.CreateServerAsync(async (server1, url1) =>
             {
                 await LoopbackServerFactory.CreateServerAsync(async (server2, url2) =>
@@ -1452,13 +1435,13 @@ namespace System.Net.Http.Functional.Tests
                         var unblockServers = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                         // First server connects but doesn't send any response yet
-                        Task serverTask1 = server1.AcceptConnectionAsync(async connection1 =>
+                        serverTask1 = server1.AcceptConnectionAsync(async connection1 =>
                         {
                             await unblockServers.Task;
                         });
 
                         // Second server connects and sends some but not all headers
-                        Task serverTask2 = server2.AcceptConnectionAsync(async connection2 =>
+                        serverTask2 = server2.AcceptConnectionAsync(async connection2 =>
                         {
                             await connection2.ReadRequestDataAsync();
                             await connection2.SendPartialResponseHeadersAsync(HttpStatusCode.OK);
@@ -1495,9 +1478,14 @@ namespace System.Net.Http.Functional.Tests
                         {
                             Assert.Equal("12345678901234567890", await response3.Content.ReadAsStringAsync());
                         }
+
+                        await serverTask3;
                     });
                 });
             });
+
+            await IgnoreExceptions(serverTask1);
+            await IgnoreExceptions(serverTask2);
         }
 
         [Theory]
@@ -1675,7 +1663,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(HttpStatusCode responseStatusCode)
         {
@@ -1812,15 +1800,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 await server.AcceptConnectionAsync(async connection =>
                 {
-                    try
-                    {
-                        await connection.ReadRequestDataAsync(readBody: true);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
-                    await clientFinished.Task.WaitAsync(TimeSpan.FromMinutes(2));
+                    await IgnoreExceptions(connection.ReadRequestDataAsync(readBody: true));
                 });
             });
         }
@@ -1916,7 +1896,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -2024,22 +2004,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request()
         {
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 1));
-            Assert.Equal(new Version(1, 1), receivedRequestVersion);
-        }
-
-        [SkipOnPlatform(TestPlatforms.Browser, "Version is not supported on Browser")]
-        [Fact]
-        public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
-        {
-            // SocketsHttpHandler treats 0.0 as a bad version, and throws.
-            if (!IsWinHttpHandler)
-            {
-                return;
-            }
-
-            // The default value for HttpRequestMessage.Version is Version(1,1).
-            // So, we need to set something different (0,0), to test the "unknown" version.
-            Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(0, 0));
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 

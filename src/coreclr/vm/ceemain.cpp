@@ -197,6 +197,10 @@
 #include "diagnosticserveradapter.h"
 #include "eventpipeadapter.h"
 
+#if defined(FEATURE_PERFTRACING) && defined(TARGET_LINUX)
+#include "user_events.h"
+#endif // defined(FEATURE_PERFTRACING) && defined(TARGET_LINUX)
+
 #ifndef TARGET_UNIX
 // Included for referencing __security_cookie
 #include "process.h"
@@ -392,6 +396,12 @@ BOOL g_singleVersionHosting;
 typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
 PINITIALIZECONTEXT2 g_pfnInitializeContext2 = NULL;
 
+static BOOLEAN WINAPI RtlDllShutdownInProgressFallback()
+{
+    return g_fProcessDetach;
+}
+PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress = &RtlDllShutdownInProgressFallback;
+
 #ifdef TARGET_X86
 typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
 PRTLRESTORECONTEXT g_pfnRtlRestoreContext = NULL;
@@ -402,8 +412,12 @@ void InitializeOptionalWindowsAPIPointers()
     HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
     g_pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
 
-#ifdef TARGET_X86
     hm = GetModuleHandleW(_T("ntdll.dll"));
+    PRTLDLLSHUTDOWNINPROGRESS pfn = (PRTLDLLSHUTDOWNINPROGRESS)GetProcAddress(hm, "RtlDllShutdownInProgress");
+    if (pfn != NULL)
+        g_pfnRtlDllShutdownInProgress = pfn;
+
+#ifdef TARGET_X86
     g_pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
 #endif //TARGET_X86
 }
@@ -661,6 +675,9 @@ void EEStartupHelper()
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
         EventPipeAdapter::Initialize();
+#if defined(TARGET_LINUX)
+        InitUserEvents();
+#endif // TARGET_LINUX
 #endif // FEATURE_PERFTRACING
 
 #ifdef TARGET_UNIX
@@ -933,6 +950,8 @@ void EEStartupHelper()
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
+        InitializeThreadStaticData();
+
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
@@ -1150,11 +1169,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     Thread * pThisThread = GetThreadNULLOk();
 #endif
 
-    // If the process is detaching then set the global state.
-    // This is used to get around FreeLibrary problems.
-    if(fIsDllUnloading)
-        g_fProcessDetach = true;
-
     if (IsDbgHelperSpecialThread())
     {
         // Our debugger helper thread does not allow Thread object to be set up.
@@ -1178,7 +1192,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     // ungracefully. This check is an attempt to recognize that case
     // and avoid the impending hang when attempting to get the helper
     // thread to do things for us.
-    if ((g_pDebugInterface != NULL) && g_fProcessDetach)
+    if ((g_pDebugInterface != NULL) && IsAtProcessExit())
         g_pDebugInterface->EarlyHelperThreadDeath();
 #endif // DEBUGGING_SUPPORTED
 
@@ -1195,7 +1209,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // Indicate the EE is the shut down phase.
         g_fEEShutDown |= ShutDown_Start;
 
-        if (!g_fProcessDetach && !g_fFastExitProcess)
+        if (!IsAtProcessExit() && !g_fFastExitProcess)
         {
             g_fEEShutDown |= ShutDown_Finalize1;
 
@@ -1205,7 +1219,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         }
 
         // Ok.  Let's stop the EE.
-        if (!g_fProcessDetach)
+        if (!IsAtProcessExit())
         {
             // Convert key locks into "shutdown" mode. A lock in shutdown mode means:
             // - Only the finalizer/helper/shutdown threads will be able to take the lock.
@@ -1307,7 +1321,7 @@ part2:
         // are already in use, then skip phase 2. This will happen only when those locks
         // are orphaned. In Vista, the penalty for attempting to enter such locks is
         // instant process termination.
-        if (g_fProcessDetach)
+        if (IsAtProcessExit())
         {
             // The assert below is a bit too aggressive and has generally brought cases that have been race conditions
             // and not easily reproed to validate a bug. A typical race scenario is when there are two threads,
@@ -1373,7 +1387,7 @@ part2:
     EX_END_CATCH(SwallowAllExceptions);
 
     ClrFlsClearThreadType(ThreadType_Shutdown);
-    if (!g_fProcessDetach)
+    if (!IsAtProcessExit())
     {
         g_pEEShutDownEvent->Set();
     }
@@ -1393,7 +1407,7 @@ BOOL IsThreadInSTA()
     CONTRACTL_END;
 
     // If ole32.dll is not loaded
-    if (WszGetModuleHandle(W("ole32.dll")) == NULL)
+    if (GetModuleHandle(W("ole32.dll")) == NULL)
     {
         return FALSE;
     }
@@ -1468,17 +1482,6 @@ BOOL IsThreadInSTA()
 //
 // Actual shut down logic is factored out to EEShutDownHelper which may be called
 // directly by EEShutDown, or indirectly on another thread (see code:#STAShutDown).
-//
-// In order that callees may also know the value of fIsDllUnloading, EEShutDownHelper
-// sets g_fProcessDetach = fIsDllUnloading, and g_fProcessDetach may then be retrieved
-// via code:IsAtProcessExit.
-//
-// NOTE 1: Actually, g_fProcessDetach is set to TRUE if fIsDllUnloading is TRUE. But
-// g_fProcessDetach doesn't appear to be explicitly set to FALSE. (Apparently
-// g_fProcessDetach is implicitly initialized to FALSE as clr.dll is loaded.)
-//
-// NOTE 2: EEDllMain(DLL_PROCESS_DETACH) already sets g_fProcessDetach to TRUE, so it
-// appears EEShutDownHelper doesn't have to.
 //
 void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
 {
@@ -1720,10 +1723,15 @@ struct TlsDestructionMonitor
                     thread->m_pFrame = FRAME_TOP;
                     GCX_COOP_NO_DTOR_END();
                 }
+
                 thread->DetachThread(TRUE);
             }
+            else
+            {
+                // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
+                AssertThreadStaticDataFreed();
+            }
 
-            DeleteThreadLocalMemory();
             ThreadDetaching();
         }
     }
@@ -1736,30 +1744,6 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 void EnsureTlsDestructionMonitor()
 {
     tls_destructionMonitor.Activate();
-}
-
-#ifdef _MSC_VER
-__declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
-#else
-__thread ThreadStaticBlockInfo t_ThreadStatics;
-#endif // _MSC_VER
-
-// Delete the thread local memory only if we the current thread
-// is the one executing this code. If we do not guard it, it will
-// end up deleting the thread local memory of the calling thread.
-void DeleteThreadLocalMemory()
-{
-    t_NonGCThreadStaticBlocksSize = 0;
-    t_GCThreadStaticBlocksSize = 0;
-
-    t_ThreadStatics.NonGCMaxThreadStaticBlocks = 0;
-    t_ThreadStatics.GCMaxThreadStaticBlocks = 0;
-
-    delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
-    t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
-
-    delete[] t_ThreadStatics.GCThreadStaticBlocks;
-    t_ThreadStatics.GCThreadStaticBlocks = nullptr;
 }
 
 #ifdef DEBUGGING_SUPPORTED

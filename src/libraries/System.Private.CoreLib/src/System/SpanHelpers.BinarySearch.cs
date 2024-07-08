@@ -12,7 +12,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparable>(
             this ReadOnlySpan<T> span, TComparable comparable)
-            where TComparable : IComparable<T>
+            where TComparable : IComparable<T>, allows ref struct
         {
             if (comparable == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparable);
@@ -22,7 +22,7 @@ namespace System
 
         public static int BinarySearch<T, TComparable>(
             ref T spanStart, int length, TComparable comparable)
-            where TComparable : IComparable<T>
+            where TComparable : IComparable<T>, allows ref struct
         {
             int lo = 0;
             int hi = length - 1;
@@ -59,8 +59,8 @@ namespace System
         }
 
         // Helper to allow sharing all code via IComparable<T> inlineable
-        internal readonly struct ComparerComparable<T, TComparer> : IComparable<T>
-            where TComparer : IComparer<T>
+        internal readonly ref struct ComparerComparable<T, TComparer> : IComparable<T>
+            where TComparer : IComparer<T>, allows ref struct
         {
             private readonly T _value;
             private readonly TComparer _comparer;

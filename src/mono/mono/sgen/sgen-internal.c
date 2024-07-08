@@ -15,6 +15,7 @@
 
 #include "mono/sgen/sgen-gc.h"
 #include "mono/utils/lock-free-alloc.h"
+#include "mono/utils/options.h"
 #include "mono/sgen/sgen-memory-governor.h"
 #include "mono/sgen/sgen-client.h"
 

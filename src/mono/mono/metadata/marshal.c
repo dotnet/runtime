@@ -132,6 +132,7 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_indirect_result, "System.Runtime.InteropServices.Swift", "SwiftIndirectResult")
 
 static gboolean type_is_blittable (MonoType *type);
 
@@ -3698,8 +3699,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
-			int swift_error_args = 0, swift_self_args = 0;
+			int swift_error_args = 0, swift_self_args = 0, swift_indirect_result_args = 0;
 			for (int i = 0; i < method->signature->param_count; ++i) {
 				MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
 				if (param_klass) {
@@ -3711,16 +3713,18 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						swift_error_args++;
 					} else if (param_klass == swift_self) {
 						swift_self_args++;
+					} else if (param_klass == swift_indirect_result) {
+						swift_indirect_result_args++;
 					} else if (!type_is_blittable (method->signature->params [i]) || m_class_is_simd_type (param_klass)) {
-						swift_error_args = swift_self_args = 0;
+						swift_error_args = swift_self_args = swift_indirect_result_args = 0;
 						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-blittable types to a P/Invoke with the Swift calling convention is unsupported.");
 						break;
 					}
 				}
 			}
 
-			if (swift_self_args > 1 || swift_error_args > 1) {
-				mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Method signature contains multiple SwiftSelf or SwiftError arguments.");
+			if (swift_self_args > 1 || swift_error_args > 1 || swift_indirect_result_args > 1) {
+				mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Method signature contains multiple SwiftSelf, SwiftError, SwiftIndirectResult arguments.");
 			}
 
 			if (!is_ok (emitted_error)) {
@@ -6864,9 +6868,11 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	}
 
 	// Non-value types are illegal at the interop boundary.
-	if (type->type == MONO_TYPE_GENERICINST && !mono_type_generic_inst_is_valuetype (type)) {
-		lowering.by_reference = TRUE;
-		return lowering;
+	if (type->type == MONO_TYPE_GENERICINST) {
+		if (!mono_type_generic_inst_is_valuetype (type)) {
+			lowering.by_reference = TRUE;
+			return lowering;
+		}
 	} else if (type->type != MONO_TYPE_VALUETYPE && !mono_type_is_primitive(type)) {
 		lowering.by_reference = TRUE;
 		return lowering;

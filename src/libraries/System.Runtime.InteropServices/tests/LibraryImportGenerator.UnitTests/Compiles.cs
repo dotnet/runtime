@@ -42,6 +42,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.DefaultParameters };
             yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
             yield return new[] { ID(), CodeSnippets.LibraryImportInRefStruct };
+            yield return new[] { ID(), CodeSnippets.ExplicitThis };
 
             // Parameter / return types
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
@@ -706,22 +707,35 @@ namespace LibraryImportGenerator.UnitTests
             return sourceWithoutMarkup;
         }
 
-        public static IEnumerable<object[]> CodeSnippetsToVerifyNoTreesProduced()
+        [Fact]
+        public async Task ValidateNoGeneratedOutputForNoImport()
         {
             string source = """
                 using System.Runtime.InteropServices;
                 public class Basic { }
                 """;
-            yield return new object[] { ID(), source, TestTargetFramework.Standard };
-            yield return new object[] { ID(), source, TestTargetFramework.Framework };
-            yield return new object[] { ID(), source, TestTargetFramework.Net };
+
+            var test = new NoChangeTest(TestTargetFramework.Net)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+
+            await test.RunAsync();
         }
 
+        
+        [OuterLoop("Uses the network for downlevel ref packs")]
+        [InlineData(TestTargetFramework.Standard)]
+        [InlineData(TestTargetFramework.Framework)]
         [Theory]
-        [MemberData(nameof(CodeSnippetsToVerifyNoTreesProduced))]
-        public async Task ValidateNoGeneratedOuptutForNoImport(string id, string source, TestTargetFramework framework)
+        public async Task ValidateNoGeneratedOutputForNoImportDownlevel(TestTargetFramework framework)
         {
-            TestUtils.Use(id);
+            string source = """
+                using System.Runtime.InteropServices;
+                public class Basic { }
+                """;
+
             var test = new NoChangeTest(framework)
             {
                 TestCode = source,

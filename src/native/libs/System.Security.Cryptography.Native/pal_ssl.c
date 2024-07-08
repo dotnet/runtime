@@ -595,6 +595,11 @@ X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
     return cert;
 }
 
+X509* CryptoNative_SslGetCertificate(SSL* ssl)
+{
+    return SSL_get_certificate(ssl);
+}
+
 X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
 {
     // No error queue impact.
@@ -711,6 +716,11 @@ const char* CryptoNative_SslGetServerName(SSL* ssl)
     return SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
 }
 
+SSL_SESSION* CryptoNative_SslGetSession(SSL* ssl)
+{
+    return SSL_get_session(ssl);
+}
+
 int32_t CryptoNative_SslSetSession(SSL* ssl, SSL_SESSION* session)
 {
     return SSL_set_session(ssl, session);
@@ -746,6 +756,16 @@ int CryptoNative_SslSessionSetHostname(SSL_SESSION* session, const char* hostnam
     (const void*)hostname;
 #endif
     return 0;
+}
+
+void CryptoNative_SslSessionSetData(SSL_SESSION* session, void* val)
+{
+    SSL_SESSION_set_ex_data(session, g_ssl_sess_cert_index, val);
+}
+
+void* CryptoNative_SslSessionGetData(SSL_SESSION* session)
+{
+    return SSL_SESSION_get_ex_data(session, g_ssl_sess_cert_index);
 }
 
 int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)

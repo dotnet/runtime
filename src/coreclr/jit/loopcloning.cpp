@@ -1974,7 +1974,8 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     BasicBlock* fastPreheader = fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
-    fastPreheader->bbWeight = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    fastPreheader->bbWeight = preheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    fastPreheader->CopyFlags(preheader, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
 
     assert(preheader->KindIs(BBJ_ALWAYS));
     assert(preheader->TargetIs(loop->GetHeader()));
@@ -2008,6 +2009,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
     slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    slowPreheader->CopyFlags(newPred, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
     slowPreheader->scaleBBWeight(LoopCloneContext::slowPathWeightScaleFactor);
     newPred = slowPreheader;
 

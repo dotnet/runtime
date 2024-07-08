@@ -94,7 +94,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[ExpectedWarning ("IL3050", Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning")]
 			// The way we track arrays causes the analyzer to track exponentially many
 			// ArrayValues in the ValueSet for the pattern in this method, hitting the limit.
 			// When this happens, we replace the ValueSet with an unknown value, producing

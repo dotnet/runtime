@@ -233,7 +233,7 @@ BOOL DictionaryLayout::FindTokenWorker(LoaderAllocator*                 pAllocat
             }
 
             // A lock should be taken by FindToken before being allowed to use an empty slot in the layout
-            _ASSERT(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+            _ASSERT(GetAppDomain()->GetGenericDictionaryExpansionLock()->OwnedByCurrentThread());
 
             PVOID pResultSignature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, slot);
             pDictLayout->m_slots[iSlot].m_signature = pResultSignature;
@@ -270,7 +270,7 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
     {
         STANDARD_VM_CHECK;
         INJECT_FAULT(ThrowOutOfMemory(););
-        PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+        PRECONDITION(GetAppDomain()->GetGenericDictionaryExpansionLock()->OwnedByCurrentThread());
         PRECONDITION(CheckPointer(pResult) && CheckPointer(pSlotOut));
     }
     CONTRACTL_END
@@ -337,7 +337,7 @@ BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
     if (FindTokenWorker(pAllocator, pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
         return TRUE;
 
-    CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+    CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
     {
         // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
         if (FindTokenWorker(pMT->GetLoaderAllocator(), pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
@@ -384,7 +384,7 @@ BOOL DictionaryLayout::FindToken(MethodDesc*                        pMD,
     if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
         return TRUE;
 
-    CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+    CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
     {
         // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
         if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
@@ -502,7 +502,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
         // Only expand the dictionary if the current slot we're trying to use is beyond the size of the dictionary
 
         // Take lock and check for size again, just in case another thread already resized the dictionary
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         pDictionary = pMD->GetMethodDictionary();
         currentDictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);
@@ -560,7 +560,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
         // Only expand the dictionary if the current slot we're trying to use is beyond the size of the dictionary
 
         // Take lock and check for size again, just in case another thread already resized the dictionary
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         pDictionary = pMT->GetDictionary();
         currentDictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);
@@ -783,7 +783,7 @@ Dictionary::PopulateEntry(
 
 #if _DEBUG
         // Lock is needed because dictionary pointers can get updated during dictionary size expansion
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         // MethodTable is expected to be normalized
         Dictionary* pDictionary = pMT->GetDictionary();

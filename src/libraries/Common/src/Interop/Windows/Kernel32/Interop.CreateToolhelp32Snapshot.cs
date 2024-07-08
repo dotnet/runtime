@@ -36,16 +36,16 @@ internal static partial class Interop
             internal fixed char szExeFile[MAX_PATH];
         }
 
-        // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot
+        // https://learn.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static partial nint CreateToolhelp32Snapshot(SnapshotFlags dwFlags, uint th32ProcessID);
 
-        // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32first
+        // https://learn.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32first
         [LibraryImport(Libraries.Kernel32, EntryPoint = "Process32FirstW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool Process32First(nint hSnapshot, PROCESSENTRY32* lppe);
 
-        // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32next
+        // https://learn.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32next
         [LibraryImport(Libraries.Kernel32, EntryPoint = "Process32NextW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool Process32Next(nint hSnapshot, PROCESSENTRY32* lppe);

@@ -9,7 +9,7 @@
     -->
     <NoWarn>436</NoWarn>
     <!-- Disable: CLSCompliant attribute is not needed -->
-    <NoWarn>$(NoWarn);3021</NoWarn>
+    <NoWarn>$(NoWarn);3021;SYSLIB0057</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-android</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
   </PropertyGroup>
@@ -54,7 +54,6 @@
     <Compile Include="..\..\src\System\Net\Security\SslStreamCertificateContext.Linux.cs" />
     <Compile Include="..\..\src\System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs" />
     <Compile Include="..\..\src\System\Net\Security\CipherSuitesPolicyPal.Linux.cs" />
-    <Compile Include="..\..\src\System\Net\Security\SslCertificateTrust.cs" />
     <Compile Include="..\..\src\System\Net\Security\CipherSuitesPolicy.cs" />
 
     <!-- these are not specific to linux, but they are not necessary for tests on other platforms -->
@@ -87,8 +86,10 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs" />
+    <Compile Include="$(CommonPath)System\Net\SafeHandleCache.cs"
+             Link="Common\System\Net\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
-                 Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs"
@@ -143,7 +144,6 @@
              Link="Common\System\Net\Security\TlsAlertMessage.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TargetHostNameHelper.cs"
              Link="Common\System\Net\Security\TargetHostNameHelper.cs" />
-
     <Compile Include="..\..\src\System\Net\SecurityStatusPal.cs"
              Link="ProductionCode\System\Net\SecurityStatusPal.cs" />
     <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
@@ -165,7 +165,9 @@
     <Compile Include="..\..\src\System\Net\Security\ReadWriteAdapter.cs"
              Link="ProductionCode\System\Net\Security\ReadWriteAdapter.cs" />
     <Compile Include="..\..\src\System\Net\SslStreamContext.cs"
-             Link="ProductionCode\System\Net\SslStreamContext.cs" />
+	    Link="ProductionCode\System\Net\SslStreamContext.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SslCertificateTrust.cs"
+	    Link="ProductionCode\System\Net\Security\SslCertificateTrust.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
              Link="ProductionCode\Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsAlertType.cs"

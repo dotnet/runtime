@@ -141,6 +141,7 @@ export type LoaderHelpers = {
 
     afterConfigLoaded: PromiseAndController<MonoConfig>,
     allDownloadsQueued: PromiseAndController<void>,
+    allDownloadsFinished: PromiseAndController<void>,
     wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
     loadingWorkers: PromiseAndController<PThreadWorker[]>,
@@ -253,7 +254,6 @@ export type RuntimeHelpers = {
 }
 export type GlobalizationHelpers = {
 
-    mono_wasm_change_case_invariant: (src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) => VoidPtr;
     mono_wasm_change_case: (culture: number, cultureLength: number, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) => VoidPtr;
     mono_wasm_compare_string: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
     mono_wasm_starts_with: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;

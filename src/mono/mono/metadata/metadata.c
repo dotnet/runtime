@@ -2452,7 +2452,7 @@ mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMem
 
 /**
  * Allocates memory for a MonoMethodSignature based on the provided parameters.
- * 
+ *
  * @param image MonoImage for allocation.
  * @param mp MonoMemPool for allocation.
  * @param mem_manager MonoMemoryManager for allocation.
@@ -2569,10 +2569,10 @@ mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
  * @param sig The original method signature.
  * @param num_params The number parameters in the new signature.
  * @param new_params An array of MonoType pointers representing the new parameters.
- * 
+ *
  * Duplicate an existing \c MonoMethodSignature but with a new set of parameters.
  * This is a Mono runtime internal function.
- * 
+ *
  * @return the new \c MonoMethodSignature structure.
  */
 MonoMethodSignature*
@@ -3340,7 +3340,7 @@ MonoMethodSignature *
 mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context)
 {
 	MonoInflatedMethodSignature helper;
-	MonoInflatedMethodSignature *res;
+	MonoInflatedMethodSignature *res = NULL;
 	CollectData data;
 
 	helper.sig = sig;
@@ -3355,16 +3355,19 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 	mono_mem_manager_lock (mm);
 
 	if (!mm->gsignature_cache)
-		mm->gsignature_cache = g_hash_table_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature);
+		// FIXME: Pick a better pre-reserved size
+		mm->gsignature_cache = dn_simdhash_ght_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature, 256, NULL);
+
 	// FIXME: The lookup is done on the newly allocated sig so it always fails
-	res = (MonoInflatedMethodSignature *)g_hash_table_lookup (mm->gsignature_cache, &helper);
+	dn_simdhash_ght_try_get_value (mm->gsignature_cache, &helper, (gpointer *)&res);
 	if (!res) {
 		res = mono_mem_manager_alloc0 (mm, sizeof (MonoInflatedMethodSignature));
 		// FIXME: sig is an inflated signature not owned by the mem manager
 		res->sig = sig;
 		res->context.class_inst = context->class_inst;
 		res->context.method_inst = context->method_inst;
-		g_hash_table_insert (mm->gsignature_cache, res, res);
+		// FIXME: We're wasting memory and cpu by storing key and value redundantly for this table
+		dn_simdhash_ght_insert (mm->gsignature_cache, res, res);
 	}
 
 	mono_mem_manager_unlock (mm);
