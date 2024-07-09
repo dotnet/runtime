@@ -266,6 +266,17 @@ public sealed unsafe class Target
             : T.TryReadBigEndian(buffer, !IsSigned<T>(), out value);
     }
 
+    public void ReadBuffer(ulong address, Span<byte> buffer)
+    {
+        if (!TryReadBuffer(address, buffer))
+            throw new InvalidOperationException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
+    }
+
+    private bool TryReadBuffer(ulong address, Span<byte> buffer)
+    {
+        return _reader.ReadFromTarget(address, buffer) >= 0;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsSigned<T>() where T : struct, INumberBase<T>, IMinMaxValue<T>
     {
@@ -278,6 +289,19 @@ public sealed unsafe class Target
             throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
+    }
+
+    public void ReadPointers(ulong address, Span<TargetPointer> buffer)
+    {
+        // TODO(cdac) - This could do a single read, and then swizzle in place if it is useful for performance
+        for (int i = 0; i < buffer.Length; i++)
+        {
+            buffer[i] = ReadPointer(address);
+            checked
+            {
+                address += (ulong)_config.PointerSize;
+            }
+        }
     }
 
     public TargetNUInt ReadNUInt(ulong address)
