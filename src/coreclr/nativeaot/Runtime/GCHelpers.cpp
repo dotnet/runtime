@@ -623,6 +623,14 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
         FireAllocationSampled((GC_ALLOC_FLAGS)uFlags, aligned_size, samplingBudget, pObject);
     }
 
+    // There are a variety of conditions that may have invalidated the previous combined_limit value
+    // such as not allocating the object in the AC memory region (UOH allocations), moving the AC, adding
+    // extra alignment padding, allocating a new AC, or allocating an object that consumed the sampling budget.
+    // Rather than test for all the different invalidation conditions individually we conservatively always
+    // recompute it. If sampling isn't enabled this inlined function is just trivially setting
+    // combined_limit=alloc_limit.
+    pThread->UpdateCombinedLimit(isRandomizedSamplingEnabled);
+
     pObject->set_EEType(pEEType);
     if (pEEType->HasComponentSize())
     {

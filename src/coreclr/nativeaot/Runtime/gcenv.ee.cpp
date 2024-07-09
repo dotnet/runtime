@@ -132,12 +132,41 @@ void GCToEEInterface::GcScanRoots(ScanFunc* fn, int condemned, int max_gen, Scan
     sc->thread_under_crawl = NULL;
 }
 
+void InvokeGCAllocCallback(Thread* pThread, enum_alloc_context_func* fn, void* param)
+{
+    // NOTE: Its possible that alloc_ptr = alloc_limit = combined_limit = NULL at this point
+    gc_alloc_context* pAllocContext = pThread->GetAllocContext();
+
+    // The allocation context might be modified by the callback, so we need to save
+    // the remaining sampling budget and restore it after the callback if needed.
+    size_t currentSamplingBudget = (size_t)(*pThread->GetCombinedLimit() - pAllocContext->alloc_ptr);
+    size_t currentSize = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
+
+    fn(pAllocContext, param);
+
+    // If the GC changed the size of the allocation context, we need to recompute the sampling limit
+    // This includes the case where the AC was initially zero-sized/uninitialized.
+    // Functionally we'd get valid results if we called UpdateCombinedLimit() unconditionally but its
+    // empirically a little more performant to only call it when the AC size has changed.
+    if (currentSize != (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr))
+    {
+        pThread->UpdateCombinedLimit();
+    }
+    else
+    {
+        // Restore the remaining sampling budget as the size is the same.
+        *pThread->GetCombinedLimit() = pAllocContext->alloc_ptr + currentSamplingBudget;
+    }
+}
+
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
 {
     FOREACH_THREAD(thread)
     {
-        // TODO: update the combined limit is needed
-        (*fn) (thread->GetAllocContext(), param);
+        //(*fn) (thread->GetAllocContext(), param);
+
+        // update the combined limit is needed
+        InvokeGCAllocCallback(thread, fn, param);
     }
     END_FOREACH_THREAD
 }

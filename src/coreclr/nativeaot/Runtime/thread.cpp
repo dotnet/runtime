@@ -1343,19 +1343,16 @@ bool Thread::IsRandomizedSamplingEnabled()
 
 int Thread::ComputeGeometricRandom()
 {
-    const uint32_t maxValue = 0xFFFFFFFF;
+    const double maxValue = 0xFFFFFFFF;
 
     // compute a random sample from the Geometric distribution
-    double probability = (maxValue - NextRand()) / maxValue;
+    double probability = (maxValue - (double)NextRand()) / maxValue;
     int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
     return threshold;
 }
 
-inline void Thread::UpdateCombinedLimit(bool samplingEnabled)
+void Thread::UpdateCombinedLimit(bool samplingEnabled)
 {
-    // TODO: no op implementation
-    //m_combined_limit = GetAllocContext()->alloc_limit;
-
     gc_alloc_context* alloc_context = GetAllocContext();
     if (!samplingEnabled)
     {
@@ -1371,9 +1368,8 @@ inline void Thread::UpdateCombinedLimit(bool samplingEnabled)
     }
 }
 
-
 // Regenerate the randomized sampling limit and update the m_combined_limit field.
-inline void Thread::UpdateCombinedLimit()
+void Thread::UpdateCombinedLimit()
 {
     UpdateCombinedLimit(IsRandomizedSamplingEnabled());
 }
