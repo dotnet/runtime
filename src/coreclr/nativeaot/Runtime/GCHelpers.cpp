@@ -508,7 +508,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     ASSERT(!pThread->IsDoNotTriggerGcSet());
     ASSERT(pThread->IsCurrentThreadInCooperativeMode());
 
-    if (pEEType->ContainsPointers())
+    if (pEEType->ContainsGCPointers())
     {
         uFlags |= GC_ALLOC_CONTAINS_REF;
         uFlags &= ~GC_ALLOC_ZEROING_OPTIONAL;
@@ -780,7 +780,7 @@ EXTERN_C void QCALLTYPE RhUnregisterFrozenSegment(void* pSegmentHandle)
 
 FCIMPL1(uint32_t, RhGetGCDescSize, MethodTable* pMT)
 {
-    if (!pMT->ContainsPointersOrCollectible())
+    if (!pMT->ContainsGCPointersOrCollectible())
         return 0;
 
     return (uint32_t)CGCDesc::GetCGCDescFromMT(pMT)->GetSize();

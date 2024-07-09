@@ -7,11 +7,10 @@
 #include <winnt.h>
 #include <crtdbg.h> /* _ASSERTE */
 
-#ifdef INTERNAL_ZLIB_INTEL
-#include <external/zlib-intel/zutil.h>
-#else
-#include <external/zlib/zutil.h>
-#endif
+#include <string.h>
+#include <stdlib.h>
+#include <zconf.h>
+#include <zlib_allocator.h>
 
 /* A custom allocator for zlib that provides some defense-in-depth over standard malloc / free.
  * (Windows-specific version)
@@ -92,7 +91,7 @@ typedef struct _DOTNET_ALLOC_COOKIE
 const SIZE_T DOTNET_ALLOC_HEADER_COOKIE_SIZE_WITH_PADDING = (sizeof(DOTNET_ALLOC_COOKIE) + MEMORY_ALLOCATION_ALIGNMENT - 1) & ~((SIZE_T)MEMORY_ALLOCATION_ALIGNMENT  - 1);
 const SIZE_T DOTNET_ALLOC_TRAILER_COOKIE_SIZE = sizeof(DOTNET_ALLOC_COOKIE);
 
-voidpf ZLIB_INTERNAL zcalloc(opaque, items, size)
+voidpf z_custom_calloc(opaque, items, size)
     voidpf opaque;
     unsigned items;
     unsigned size;
@@ -150,7 +149,7 @@ void zcfree_cookie_check_failed()
     __fastfail(FAST_FAIL_HEAP_METADATA_CORRUPTION);
 }
 
-void ZLIB_INTERNAL zcfree(opaque, ptr)
+void z_custom_cfree(opaque, ptr)
     voidpf opaque;
     voidpf ptr;
 {
