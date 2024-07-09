@@ -2113,7 +2113,7 @@ namespace System.Numerics
                 return false;
             }
 
-            if (!double.TryParse(s.Slice(openBracket + 1, semicolon), style, provider, out double real))
+            if (!double.TryParse(s.Slice(openBracket + 1, semicolon - openBracket - 1), style, provider, out double real))
             {
                 result = default;
                 return false;
@@ -2126,7 +2126,7 @@ namespace System.Numerics
                 semicolon += 1;
             }
 
-            if (!double.TryParse(s.Slice(semicolon + 1, closeBracket - semicolon), style, provider, out double imaginary))
+            if (!double.TryParse(s.Slice(semicolon + 1, closeBracket - semicolon - 1), style, provider, out double imaginary))
             {
                 result = default;
                 return false;
