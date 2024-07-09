@@ -10463,7 +10463,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
     {
         return nullptr;
     }
-    assert(intrinOp1->GetHWIntrinsicId() == intrinsicId);
 
     if (needsMatchingBaseType && (intrinOp1->GetSimdBaseType() != simdBaseType))
     {
