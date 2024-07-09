@@ -7535,6 +7535,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 				MonoClass *swift_self_t = mono_class_try_get_swift_self_t_class ();
 				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+				MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 				/*
 				 * Go through the lowered arguments, if the argument is a struct, 
 				 * we need to replace it with a sequence of lowered arguments.
@@ -7545,8 +7546,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoClass *klass = mono_class_from_mono_type_internal (ptype);
 					MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
 
-					// SwiftSelf and SwiftError are special cases where we need to preserve the class information for the codegen to handle them correctly.
-					if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error)) {
+					// SwiftSelf, SwiftError, and SwiftIndirectResult are special cases where we need to preserve the class information for the codegen to handle them correctly.
+					if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) {
 						SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
 						if (!lowered_swift_struct.by_reference) {
 							// Create a new local variable to store the base address of the struct

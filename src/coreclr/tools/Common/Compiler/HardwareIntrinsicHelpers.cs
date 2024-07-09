@@ -74,8 +74,7 @@ namespace ILCompiler
             public const int Avx512Vbmi = 0x10000;
             public const int Serialize = 0x20000;
             public const int Avx10v1 = 0x40000;
-            public const int Avx10v1_v512 = 0x80000;
-            public const int Evex = 0x100000;
+            public const int Evex = 0x80000;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -129,7 +128,7 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("serialize");
                 if ((flags & Avx10v1) != 0)
                     builder.AddSupportedInstructionSet("avx10v1");
-                if ((flags & Avx10v1_v512) != 0)
+                if (((flags & Avx10v1) != 0) && ((flags & Avx512) != 0))
                     builder.AddSupportedInstructionSet("avx10v1_v512");
                 if ((flags & Evex) != 0)
                     builder.AddSupportedInstructionSet("evex");
@@ -198,8 +197,8 @@ namespace ILCompiler
                     InstructionSet.X64_X86Serialize_X64 => Serialize,
                     InstructionSet.X64_AVX10v1 => Avx10v1,
                     InstructionSet.X64_AVX10v1_X64 => Avx10v1,
-                    InstructionSet.X64_AVX10v1_V512 => Avx10v1_v512,
-                    InstructionSet.X64_AVX10v1_V512_X64 => Avx10v1_v512,
+                    InstructionSet.X64_AVX10v1_V512 => (Avx10v1 | Avx512),
+                    InstructionSet.X64_AVX10v1_V512_X64 => (Avx10v1 | Avx512),
                     InstructionSet.X64_EVEX => Evex,
                     InstructionSet.X64_EVEX_X64 => Evex,
 

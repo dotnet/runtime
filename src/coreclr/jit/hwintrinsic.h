@@ -535,6 +535,10 @@ struct HWIntrinsicInfo
 #ifdef TARGET_XARCH
     static bool                isAVX2GatherIntrinsic(NamedIntrinsic id);
     static FloatComparisonMode lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison);
+    static NamedIntrinsic      lookupIdForFloatComparisonMode(NamedIntrinsic      intrinsic,
+                                                              FloatComparisonMode comparison,
+                                                              var_types           simdBaseType,
+                                                              unsigned            simdSize);
 #endif
 
     // Member lookup
@@ -953,6 +957,12 @@ struct HWIntrinsicInfo
 
         switch (id)
         {
+            case NI_Sve_ConditionalExtractAfterLastActiveElement:
+                return NI_Sve_ConditionalExtractAfterLastActiveElementScalar;
+
+            case NI_Sve_ConditionalExtractLastActiveElement:
+                return NI_Sve_ConditionalExtractLastActiveElementScalar;
+
             case NI_Sve_SaturatingDecrementBy16BitElementCount:
                 return NI_Sve_SaturatingDecrementBy16BitElementCountScalar;
 
