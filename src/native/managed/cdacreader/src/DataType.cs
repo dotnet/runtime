@@ -24,5 +24,9 @@ public enum DataType
     ThreadStore,
     GCAllocContext,
     ExceptionInfo,
-    RuntimeThreadLocals
+    RuntimeThreadLocals,
+    Module,
+    MethodTable,
+    EEClass,
+    MethodTableAuxiliaryData,
 }

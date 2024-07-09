@@ -1878,7 +1878,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     // GC reqires the series to be sorted.
     // TODO: fix it so that we emit them in the correct order in the first place.
-    if (pMT->ContainsPointers())
+    if (pMT->ContainsGCPointers())
     {
         CGCDesc* gcDesc = CGCDesc::GetCGCDescFromMT(pMT);
         qsort(gcDesc->GetLowestSeries(), (int)gcDesc->GetNumSeries(), sizeof(CGCDescSeries), compareCGCDescSeries);
@@ -1907,7 +1907,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     //
 
     // structs with GC pointers MUST be pointer sized aligned because the GC assumes it
-    if (IsValueClass() && pMT->ContainsPointers() && (bmtFP->NumInstanceFieldBytes % TARGET_POINTER_SIZE != 0))
+    if (IsValueClass() && pMT->ContainsGCPointers() && (bmtFP->NumInstanceFieldBytes % TARGET_POINTER_SIZE != 0))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
     }
@@ -2098,7 +2098,7 @@ MethodTableBuilder::ResolveInterfaces(
         MethodTable * pParentClass = GetParentMethodTable();
         PREFIX_ASSUME(pParentClass != NULL);
 
-        bmtParent->NumParentPointerSeries  = pParentClass->ContainsPointers() ?
+        bmtParent->NumParentPointerSeries  = pParentClass->ContainsGCPointers() ?
             (DWORD)CGCDesc::GetCGCDescFromMT(pParentClass)->GetNumSeries() : 0;
 
         if (pParentClass->HasFieldsWhichMustBeInited())
@@ -8310,7 +8310,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 }
                 else
 #endif // FEATURE_64BIT_ALIGNMENT
-                if (pByValueMT->ContainsPointers())
+                if (pByValueMT->ContainsGCPointers())
                 {
                     // this field type has GC pointers in it, which need to be pointer-size aligned
                     // so do this if it has not been done already
@@ -8328,13 +8328,13 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
                 dwCumulativeInstanceFieldPos += pByValueMT->GetNumInstanceFieldBytes();
 
-                if (pByValueMT->ContainsPointers())
+                if (pByValueMT->ContainsGCPointers())
                 {
                     // Add pointer series for by-value classes
                     dwNumGCPointerSeries += (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
                 }
 
-                if (!pByValueMT->ContainsPointers() || !pByValueMT->IsAllGCPointers())
+                if (!pByValueMT->ContainsGCPointers() || !pByValueMT->IsAllGCPointers())
                 {
                     isAllGCPointers = false;
                 }
@@ -8677,7 +8677,7 @@ MethodTableBuilder::HandleExplicitLayout(
             else
             {
                 MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
-                if (pByValueMT->IsByRefLike() || pByValueMT->ContainsPointers())
+                if (pByValueMT->IsByRefLike() || pByValueMT->ContainsGCPointers())
                 {
                     if ((pFD->GetOffset() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
                     {
@@ -8874,7 +8874,7 @@ MethodTableBuilder::HandleExplicitLayout(
     memset((void*)vcLayout, nonoref, fieldSize);
 
     // If the type contains pointers fill it out from the GC data
-    if (pMT->ContainsPointers())
+    if (pMT->ContainsGCPointers())
     {
         // use pointer series to locate the orefs
         CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
@@ -9090,7 +9090,7 @@ MethodTableBuilder::HandleGCForExplicitLayout()
 
     if (bmtFP->NumGCPointerSeries != 0)
     {
-        pMT->SetContainsPointers();
+        pMT->SetContainsGCPointers();
 
         // Copy the pointer series map from the parent
         CGCDesc::Init( (PVOID) pMT, bmtFP->NumGCPointerSeries );
@@ -10636,7 +10636,7 @@ MethodTableBuilder::SetupMethodTable2(
         pMT->SetHasClassConstructor();
         CONSISTENCY_CHECK(pMT->GetClassConstructorSlot() == bmtVT->pCCtor->GetSlotIndex());
     }
-    
+
     if (bmtVT->pDefaultCtor != NULL)
     {
         pMT->SetHasDefaultConstructor();
@@ -11566,7 +11566,7 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
         CGCDescSeries *pSeries;
         CGCDescSeries *pHighest;
 
-        pMT->SetContainsPointers();
+        pMT->SetContainsGCPointers();
 
         CGCDesc::Init( (PVOID) pMT, bmtFP->NumGCPointerSeries );
 
@@ -11622,7 +11622,7 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
             {
                 MethodTable* pByValueMT = pByValueClassCache[i];
 
-                if (pByValueMT->ContainsPointers())
+                if (pByValueMT->ContainsGCPointers())
                 {
                     // Offset of the by value class in the class we are building, does NOT include Object
                     DWORD       dwCurrentOffset = pFieldDescList[i].GetOffset();

@@ -192,7 +192,7 @@ namespace System.Globalization
         /// In order to get the exact Hijri year, we compare the exact absolute date for HijriYear and (HijriYear + 1).
         /// From here, we can get the correct Hijri year.
         /// </summary>
-        internal virtual int GetDatePart(long ticks, int part)
+        private int GetDatePart(long ticks, int part)
         {
             CheckTicksRange(ticks);
 

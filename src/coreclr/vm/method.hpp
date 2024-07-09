@@ -2457,9 +2457,7 @@ public:
         StubCOMToCLRInterop,
         StubStructMarshalInterop,
         StubArrayOp,
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
         StubMulticastDelegate,
-#endif
         StubWrapperDelegate,
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
         StubUnboxingIL,
@@ -2611,14 +2609,12 @@ public:
             && GetILStubType() == StubCLRToNativeInterop;
     }
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     bool IsMulticastStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubMulticastDelegate;
     }
-#endif
     bool IsWrapperDelegateStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;

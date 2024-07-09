@@ -22,12 +22,14 @@ namespace System.Globalization
             {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
+                {
                     ret = Interop.Globalization.IsNormalizedNative(normalizationForm, pInput, strInput.Length);
+                }
                 else
-                    ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, strInput.Length);
-#else
-                ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, strInput.Length);
 #endif
+                {
+                    ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, strInput.Length);
+                }
             }
 
             if (ret == -1)
@@ -61,13 +63,15 @@ namespace System.Globalization
                     fixed (char* pDest = &MemoryMarshal.GetReference(buffer))
                     {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    if (GlobalizationMode.Hybrid)
-                        realLen = Interop.Globalization.NormalizeStringNative(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
-                    else
-                        realLen = Interop.Globalization.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
-#else
-                        realLen = Interop.Globalization.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
+                        if (GlobalizationMode.Hybrid)
+                        {
+                            realLen = Interop.Globalization.NormalizeStringNative(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
+                        }
+                        else
 #endif
+                        {
+                            realLen = Interop.Globalization.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
+                        }
                     }
 
                     if (realLen == -1)

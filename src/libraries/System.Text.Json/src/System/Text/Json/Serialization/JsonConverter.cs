@@ -82,13 +82,18 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// The converter supports polymorphic writes; only reserved for System.Object types.
         /// </summary>
-        internal bool CanBePolymorphic { get; set; }
+        internal bool CanBePolymorphic { get; init; }
 
         /// <summary>
         /// The serializer must read ahead all contents of the next JSON value
         /// before calling into the converter for deserialization.
         /// </summary>
-        internal bool RequiresReadAhead { get; set; }
+        internal bool RequiresReadAhead { get; private protected set; }
+
+        /// <summary>
+        /// Whether the converter is a special root-level value streaming converter.
+        /// </summary>
+        internal bool IsRootLevelMultiContentStreamingConverter { get; init; }
 
         /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
