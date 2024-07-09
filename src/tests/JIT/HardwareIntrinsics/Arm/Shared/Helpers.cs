@@ -4136,6 +4136,32 @@ namespace JIT.HardwareIntrinsics.Arm
             return ovf ? byte.MaxValue : result;
         }
 
+        public static double[] AddSequentialAcross(double[] op1, double[] op2)
+        {
+            double[] result = new double[op1.Length];
+            result[0] = op1[0];
+
+            foreach (double num in op2)
+            {
+                result[0] += num;
+            }
+
+            return result;
+        }
+
+        public static float[] AddSequentialAcross(float[] op1, float[] op2)
+        {
+            float[] result = new float[op1.Length];
+            result[0] = op1[0];
+
+            foreach (float num in op2)
+            {
+                result[0] += num;
+            }
+
+            return result;
+        }
+
         public static sbyte NegateSaturate(sbyte op1) => SubtractSaturate((sbyte)0, op1);
 
         public static sbyte SubtractSaturate(sbyte op1, sbyte op2)

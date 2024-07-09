@@ -4253,6 +4253,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> AddSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> AddSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
+        public static System.Numerics.Vector<double> AddSequentialAcross(System.Numerics.Vector<double> initial, System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> AddSequentialAcross(System.Numerics.Vector<float> initial, System.Numerics.Vector<float> value) { throw null; }
+
         public static System.Numerics.Vector<byte> And(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> And(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> And(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
