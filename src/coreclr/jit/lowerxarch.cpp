@@ -3708,7 +3708,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                 {
                     case TernaryLogicUseFlags::None:
                     {
-                        // Encountering none should be very rare and so we'll handle 
+                        // Encountering none should be very rare and so we'll handle
                         // it, but we won't try to optimize it by finding an existing
                         // constant to reuse or similar, as that's more expensive
 
