@@ -428,6 +428,13 @@ namespace System.Net.Sockets
                 {
                     _socketError = socketException.SocketErrorCode;
                 }
+                else if (exception is OperationCanceledException)
+                {
+                    // Preserver information about the cancellation
+                    // when it is canceled at non Socket operation.
+                    // It will be later used to throw the right exception.
+                    _socketError = SocketError.OperationAborted;
+                }
                 else
                 {
                     _socketError = SocketError.SocketError;
