@@ -1516,7 +1516,7 @@ namespace System.Reflection
                 if (!FilterCustomAttributeRecord(caRecord.tkCtor, in scope,
                                                  decoratedModule, decoratedMetadataToken, attributeFilterType!, mustBeInheritable,
                                                  ref derivedAttributes,
-                                                 out RuntimeType? attributeType, out IRuntimeMethodInfo? ctorWithParameters, out bool isVarArg))
+                                                 out RuntimeType attributeType, out IRuntimeMethodInfo? ctorWithParameters, out bool isVarArg))
                 {
                     continue;
                 }
@@ -1635,27 +1635,15 @@ namespace System.Reflection
             RuntimeType attributeFilterType,
             bool mustBeInheritable,
             ref RuntimeType.ListBuilder<object> derivedAttributes,
-            [NotNullWhen(true)] out RuntimeType? attributeType,
+            out RuntimeType attributeType,
             out IRuntimeMethodInfo? ctorWithParameters,
             out bool isVarArg)
         {
             ctorWithParameters = null;
             isVarArg = false;
 
-            try
-            {
-                // Resolve attribute type from ctor parent token found in decorated decoratedModule scope
-                attributeType = (decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null) as RuntimeType)!;
-            }
-            catch when (attributeFilterType.IsSealed)
-            {
-                // If the type of one of the attributes cannot be resolved and the filter type is sealed, we can ignore
-                // the error and return false. We can do this only when looking for sealed attribute types because otherwise,
-                // that type that failed to be resolved could have been a subclass of the filter type, and by ignoring the
-                // error we are potentially returning false information.
-                attributeType = null;
-                return false;
-            }
+            // Resolve attribute type from ctor parent token found in decorated decoratedModule scope
+            attributeType = (decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null) as RuntimeType)!;
 
             // Test attribute type against user provided attribute type filter
             if (!MatchesTypeFilter(attributeType, attributeFilterType))
