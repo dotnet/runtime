@@ -9,6 +9,47 @@ namespace System.Net.Http
 {
     internal static class DiagnosticsHelper
     {
+        internal static string GetRedactedUriString(Uri uri)
+        {
+            Debug.Assert(uri.IsAbsoluteUri);
+
+            if (GlobalHttpSettings.DiagnosticsHandler.DisableUriRedaction)
+            {
+                return uri.AbsoluteUri;
+            }
+
+            string pathAndQuery = uri.PathAndQuery;
+            int queryIndex = pathAndQuery.IndexOf('?');
+
+            bool redactQuery = queryIndex >= 0 && // Query is present.
+                queryIndex < pathAndQuery.Length - 1; // Query is not empty.
+
+            return (redactQuery, uri.IsDefaultPort) switch
+            {
+                (true, true) => $"{uri.Scheme}://{uri.Host}{pathAndQuery.AsSpan(0, queryIndex + 1)}*",
+                (true, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{pathAndQuery.AsSpan(0, queryIndex + 1)}*",
+                (false, true) => $"{uri.Scheme}://{uri.Host}{pathAndQuery}",
+                (false, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{pathAndQuery}"
+            };
+        }
+
+        internal static KeyValuePair<string, object?> GetMethodTag(HttpMethod method, out bool isUnknownMethod)
+        {
+            // Return canonical names for known methods and "_OTHER" for unknown ones.
+            HttpMethod? known = HttpMethod.GetKnownMethod(method.Method);
+            isUnknownMethod = known is null;
+            return new KeyValuePair<string, object?>("http.request.method", isUnknownMethod ? "_OTHER" : known!.Method);
+        }
+
+        internal static string GetProtocolVersionString(Version httpVersion) => (httpVersion.Major, httpVersion.Minor) switch
+        {
+            (1, 0) => "1.0",
+            (1, 1) => "1.1",
+            (2, 0) => "2",
+            (3, 0) => "3",
+            _ => httpVersion.ToString()
+        };
+
         public static bool TryGetErrorType(HttpResponseMessage? response, Exception? exception, out string? errorType)
         {
             if (response is not null)

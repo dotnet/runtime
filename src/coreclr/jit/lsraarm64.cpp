@@ -1980,18 +1980,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 case NI_Sve_LoadVectorNonTemporal:
                 case NI_Sve_LoadVector128AndReplicateToVector:
                 case NI_Sve_StoreAndZip:
-                case NI_Sve_PrefetchBytes:
-                case NI_Sve_PrefetchInt16:
-                case NI_Sve_PrefetchInt32:
-                case NI_Sve_PrefetchInt64:
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
                     srcCount += BuildAddrUses(intrin.op2);
                     break;
 
-                case NI_Sve_GatherPrefetch8Bit:
-                case NI_Sve_GatherPrefetch16Bit:
-                case NI_Sve_GatherPrefetch32Bit:
-                case NI_Sve_GatherPrefetch64Bit:
                 case NI_Sve_GatherVector:
                 case NI_Sve_GatherVectorByteZeroExtend:
                 case NI_Sve_GatherVectorInt16SignExtend:
@@ -2004,6 +1996,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
                 case NI_Sve_GatherVectorUInt32ZeroExtend:
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                    FALLTHROUGH;
+
+                case NI_Sve_PrefetchBytes:
+                case NI_Sve_PrefetchInt16:
+                case NI_Sve_PrefetchInt32:
+                case NI_Sve_PrefetchInt64:
+                case NI_Sve_GatherPrefetch8Bit:
+                case NI_Sve_GatherPrefetch16Bit:
+                case NI_Sve_GatherPrefetch32Bit:
+                case NI_Sve_GatherPrefetch64Bit:
                     if (!varTypeIsSIMD(intrin.op2->gtType))
                     {
                         srcCount += BuildAddrUses(intrin.op2);

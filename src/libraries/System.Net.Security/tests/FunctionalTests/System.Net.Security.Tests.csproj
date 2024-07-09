@@ -33,6 +33,7 @@
     <Compile Include="SslStreamConformanceTests.cs" />
     <Compile Include="SslStreamStreamToStreamTest.cs" />
     <Compile Include="SslStreamNetworkStreamTest.cs" />
+    <Compile Include="SslStreamFramingTest.cs" />
     <Compile Include="SslStreamMutualAuthenticationTest.cs" />
     <Compile Include="TransportContextTest.cs" />
     <!-- NegotiateAuthentication Tests -->

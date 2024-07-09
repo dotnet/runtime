@@ -110,7 +110,7 @@ namespace System.Net.Http.Metrics
             if (response is not null)
             {
                 tags.Add("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
-                tags.Add("network.protocol.version", GetProtocolVersionString(response.Version));
+                tags.Add("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
             }
 
             if (DiagnosticsHelper.TryGetErrorType(response, exception, out string? errorType))
@@ -131,15 +131,6 @@ namespace System.Net.Http.Metrics
             }
         }
 
-        private static string GetProtocolVersionString(Version httpVersion) => (httpVersion.Major, httpVersion.Minor) switch
-        {
-            (1, 0) => "1.0",
-            (1, 1) => "1.1",
-            (2, 0) => "2",
-            (3, 0) => "3",
-            _ => httpVersion.ToString()
-        };
-
         private static TagList InitializeCommonTags(HttpRequestMessage request)
         {
             TagList tags = default;
@@ -154,16 +145,9 @@ namespace System.Net.Http.Metrics
                     tags.Add("server.port", requestUri.Port);
                 }
             }
-            tags.Add(GetMethodTag(request.Method));
+            tags.Add(DiagnosticsHelper.GetMethodTag(request.Method, out _));
 
             return tags;
-        }
-
-        internal static KeyValuePair<string, object?> GetMethodTag(HttpMethod method)
-        {
-            // Return canonical names for known methods and "_OTHER" for unknown ones.
-            HttpMethod? known = HttpMethod.GetKnownMethod(method.Method);
-            return new KeyValuePair<string, object?>("http.request.method", known?.Method ?? "_OTHER");
         }
 
         private sealed class SharedMeter : Meter
