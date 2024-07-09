@@ -4,6 +4,13 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace System.Runtime.InteropServices
+{
+    public static partial class JsonMarshal
+    {
+        public static bool TryGetRawValue(System.Text.Json.JsonElement element, out System.ReadOnlySpan<byte> rawValue) { throw null; }
+    }
+}
 namespace System.Text.Json
 {
     public enum JsonCommentHandling : byte

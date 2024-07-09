@@ -3,6 +3,7 @@
 
 using Xunit;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Tests
 {
@@ -224,6 +225,134 @@ namespace System.Text.Json.Tests
             Assert.IsAssignableFrom<JsonException>(ex);
 
             Assert.Equal(0, reader.BytesConsumed);
+        }
+
+        [Theory]
+        [InlineData("null")]
+        [InlineData("\r\n    null ")]
+        [InlineData("false")]
+        [InlineData("true ")]
+        [InlineData("   42.0 ")]
+        [InlineData(" \"str\" \r\n")]
+        [InlineData(" [     ]")]
+        [InlineData(" [null, true, 42.0, \"str\", [], {}, ]")]
+        [InlineData(" {  } ")]
+        [InlineData("""
+
+            {
+                /* I am a comment */
+                "key1" : 1,
+                "key2" : null,
+                "key3" : true,
+            }
+
+            """)]
+        public static void JsonMarshal_TryGetRawValue_RootValue_ReturnsFullValue(string json)
+        {
+            JsonDocumentOptions options = new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+            using JsonDocument jDoc = JsonDocument.Parse(json, options);
+            JsonElement element = jDoc.RootElement;
+
+            Assert.True(JsonMarshal.TryGetRawValue(element, out ReadOnlySpan<byte> rawValue));
+            Assert.Equal(json.Trim(), Encoding.UTF8.GetString(rawValue.ToArray()));
+        }
+
+        [Fact]
+        public static void JsonMarshal_TryGetRawValue_NestedValues_ReturnsExpectedValue()
+        {
+            const string json = """
+                {
+                    "date": "2021-06-01T00:00:00Z",
+                    "temperatureC": 25,
+                    "summary": "Hot",
+
+                    /* The next property is a JSON object */
+
+                    "nested": {
+                        /* This is a nested JSON object */
+
+                        "nestedDate": "2021-06-01T00:00:00Z",
+                        "nestedTemperatureC": 25,
+                        "nestedSummary": "Hot"
+                    },
+
+                    /* The next property is a JSON array */
+
+                    "nestedArray": [
+                        /* This is a JSON array */
+                        {
+                            "nestedDate": "2021-06-01T00:00:00Z",
+                            "nestedTemperatureC": 25,
+                            "nestedSummary": "Hot"
+                        },
+                    ]
+                }
+                """;
+
+            JsonDocumentOptions options = new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+            using JsonDocument jDoc = JsonDocument.Parse(json, options);
+            JsonElement element = jDoc.RootElement;
+
+            AssertGetRawValue(json, element);
+            AssertGetRawValue("\"2021-06-01T00:00:00Z\"", element.GetProperty("date"));
+            AssertGetRawValue("25", element.GetProperty("temperatureC"));
+            AssertGetRawValue("\"Hot\"", element.GetProperty("summary"));
+
+            JsonElement nested = element.GetProperty("nested");
+            AssertGetRawValue("""
+                    {
+                        /* This is a nested JSON object */
+
+                        "nestedDate": "2021-06-01T00:00:00Z",
+                        "nestedTemperatureC": 25,
+                        "nestedSummary": "Hot"
+                    }
+                """, nested);
+
+            AssertGetRawValue("\"2021-06-01T00:00:00Z\"", nested.GetProperty("nestedDate"));
+            AssertGetRawValue("25", nested.GetProperty("nestedTemperatureC"));
+            AssertGetRawValue("\"Hot\"", nested.GetProperty("nestedSummary"));
+
+            JsonElement nestedArray = element.GetProperty("nestedArray");
+            AssertGetRawValue("""
+                    [
+                        /* This is a JSON array */
+                        {
+                            "nestedDate": "2021-06-01T00:00:00Z",
+                            "nestedTemperatureC": 25,
+                            "nestedSummary": "Hot"
+                        },
+                    ]
+                """, nestedArray);
+
+            JsonElement nestedArrayElement = nestedArray[0];
+            AssertGetRawValue("""
+                        {
+                            "nestedDate": "2021-06-01T00:00:00Z",
+                            "nestedTemperatureC": 25,
+                            "nestedSummary": "Hot"
+                        }
+                """, nestedArrayElement);
+
+            AssertGetRawValue("\"2021-06-01T00:00:00Z\"", nestedArrayElement.GetProperty("nestedDate"));
+            AssertGetRawValue("25", nestedArrayElement.GetProperty("nestedTemperatureC"));
+            AssertGetRawValue("\"Hot\"", nestedArrayElement.GetProperty("nestedSummary"));
+
+            static void AssertGetRawValue(string expectedJson, JsonElement element)
+            {
+                Assert.True(JsonMarshal.TryGetRawValue(element, out ReadOnlySpan<byte> rawValue));
+                Assert.Equal(expectedJson.Trim(), Encoding.UTF8.GetString(rawValue.ToArray()));
+            }
+        }
+
+        [Fact]
+        public static void JsonMarshal_TryGetRawValue_DisposedDocument_ThrowsObjectDisposedException()
+        {
+            JsonDocument jDoc = JsonDocument.Parse("{}");
+            JsonElement element = jDoc.RootElement;
+            jDoc.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => JsonMarshal.TryGetRawValue(element, out ReadOnlySpan<byte> rawValue));
         }
     }
 }
