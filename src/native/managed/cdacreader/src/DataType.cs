@@ -36,4 +36,5 @@ public enum DataType
     ParamTypeDesc,
     TypeVarTypeDesc,
     FnPtrTypeDesc,
+    MethodDesc,
 }

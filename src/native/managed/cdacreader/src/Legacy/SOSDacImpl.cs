@@ -81,8 +81,25 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     public unsafe int GetJumpThunkTarget(void* ctx, ulong* targetIP, ulong* targetMD) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescData(ulong methodDesc, ulong ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData)
     {
+        if (methodDesc == 0)
+        {
+            return HResults.E_INVALIDARG;
+        }
+        if (cRevertedRejitVersions != 0 && rgRevertedRejitData == null)
+        {
+            return HResults.E_INVALIDARG;
+        }
+        if (rgRevertedRejitData != null && pcNeededRevertedRejitData == null)
+        {
+            // If you're asking for reverted rejit data, you'd better ask for the number of
+            // elements we return
+            return HResults.E_INVALIDARG;
+        }
         try
         {
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
+
             return HResults.E_NOTIMPL;
         }
         catch (Exception ex)

@@ -85,6 +85,26 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             internal TargetPointer MethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(MethodTable)].Offset);
         }
 
+
+        internal struct MethodDesc
+        {
+            public readonly Target _target;
+            public readonly Target.TypeInfo _type;
+            internal TargetPointer Address { get; init; }
+
+            internal MethodDesc(Target target, TargetPointer methodDescPointer)
+            {
+                _target = target;
+                _type = target.GetTypeInfo(DataType.pointer /*DataType.MethodDesc*/); // TODO
+                Address = methodDescPointer;
+            }
+
+#pragma warning disable CA1822 // Mark members as static
+            internal TargetPointer MethodTable => TargetPointer.Null; // TODO
+            internal ushort Slot => (ushort)0xffffu; // TODO
+            internal bool HasNonVtableSlot => false; // TODO
+#pragma warning restore CA1822 // Mark members as static
+        }
         internal static MethodTable GetMethodTableData(Target target, TargetPointer methodTablePointer)
         {
             return new MethodTable(target, methodTablePointer);
@@ -95,6 +115,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return new EEClass(target, eeClassPointer);
         }
 
+        internal static MethodDesc GetMethodDescData(Target target, TargetPointer methodDescPointer)
+        {
+            return new MethodDesc(target, methodDescPointer);
+        }
     }
 
     /// <summary>
@@ -194,5 +218,33 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
+    private bool ValidateMethodDescPointer(NonValidated.MethodDesc umd)
+    {
+        try
+        {
+            TargetPointer methodTablePointer = umd.MethodTable;
+            if (methodTablePointer == TargetPointer.Null
+                || methodTablePointer == new TargetPointer(0xffffffff_fffffffful)
+                || methodTablePointer == new TargetPointer(0x00000000_fffffffful))
+            {
+                return false;
+            }
+            MethodTableHandle methodTableHandle = GetMethodTableHandle(methodTablePointer);
 
+            if (umd.Slot >= GetNumMethods(methodTableHandle) && !umd.HasNonVtableSlot) // FIXME: request.cpp looks at m_usNumVtableSlots
+            {
+                return false;
+            }
+
+        }
+        catch (System.Exception)
+        {
+            // TODO(cdac): maybe don't swallow all exceptions? We could consider a richer contract that
+            // helps to track down what sort of memory corruption caused the validation to fail.
+            // TODO(cdac): we could also consider a more fine-grained exception type so we don't mask
+            // programmer mistakes in cdacreader.
+            return false;
+        }
+        return true;
+    }
 }

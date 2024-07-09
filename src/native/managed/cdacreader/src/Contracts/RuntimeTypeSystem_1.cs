@@ -19,6 +19,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     // TODO(cdac): we mutate this dictionary - copies of the RuntimeTypeSystem_1 struct share this instance.
     // If we need to invalidate our view of memory, we should clear this dictionary.
     private readonly Dictionary<TargetPointer, MethodTable> _methodTables = new();
+    private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
 
 
     internal struct MethodTable
@@ -65,6 +66,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodTable = 0,
         TypeDesc = 2,
         ValidMask = 2,
+    }
+
+    internal struct MethodDesc
+    {
+
     }
 
     internal RuntimeTypeSystem_1(Target target, TargetPointer freeObjectMethodTablePointer)
@@ -416,5 +422,39 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 TypeHandles[i] = rts.GetTypeHandle(target.ReadPointer(retAndArgs + (ulong)target.PointerSize * (ulong)i));
             }
         }
+    }
+
+    public MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer)
+    {
+        // if we already validated this address, return a handle
+        if (_methodDescs.ContainsKey(methodDescPointer))
+        {
+            return new MethodDescHandle(methodDescPointer);
+        }
+#if false // TODO
+        // Check if we cached the underlying data already
+        if (_target.ProcessedData.TryGet(methodTablePointer, out Data.MethodTable? methodTableData))
+        {
+            // we already cached the data, we must have validated the address, create the representation struct for our use
+            MethodTable trustedMethodTable = new MethodTable(methodTableData);
+            _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTable);
+            return new MethodTableHandle(methodTablePointer);
+        }
+#endif
+
+        // Otherwse, get ready to validate
+        NonValidated.MethodDesc nonvalidatedMethodDesc = NonValidated.GetMethodDescData(_target, methodDescPointer);
+
+        if (!ValidateMethodDescPointer(nonvalidatedMethodDesc))
+        {
+            throw new InvalidOperationException("Invalid method desc pointer");
+        }
+        // ok, we validated it, cache the data and add the MethodTable_1 struct to the dictionary
+#if false // TODO
+        Data.MethodDesc trustedMethodDescData = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPointer);
+#endif
+        MethodDesc trustedMethodDescF = default; // new MethodDesc(trustedMethodTableData); // TODO
+        _ = _methodDescs.TryAdd(methodDescPointer, trustedMethodDescF);
+        return new MethodDescHandle(methodDescPointer);
     }
 }

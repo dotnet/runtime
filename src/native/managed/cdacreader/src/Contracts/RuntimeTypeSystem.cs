@@ -55,6 +55,16 @@ internal enum CorElementType
     Sentinel = 0x41,
 }
 
+internal readonly struct MethodDescHandle
+{
+    internal MethodDescHandle(TargetPointer address)
+    {
+        Address = address;
+    }
+
+    internal TargetPointer Address { get; }
+}
+
 internal interface IRuntimeTypeSystem : IContract
 {
     static string IContract.Name => nameof(RuntimeTypeSystem);
@@ -113,6 +123,10 @@ internal interface IRuntimeTypeSystem : IContract
     public virtual bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv) => throw new NotImplementedException();
     // Returns null if the TypeHandle is not a class/struct/generic variable
     #endregion TypeHandle inspection APIs
+
+    #region MethodDesc inspection APIs
+    public virtual MethodDescHandle GetMethodDescHandle(TargetPointer targetPointer) => throw new NotImplementedException();
+    #endregion MethodDesc inspection APIs
 }
 
 internal struct RuntimeTypeSystem : IRuntimeTypeSystem
