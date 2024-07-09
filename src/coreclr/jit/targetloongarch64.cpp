@@ -179,8 +179,8 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
             RegisterQueue* regs = varTypeIsFloating(argRegTypeInStruct1) ? &m_floatRegs : &m_intRegs;
             assert(regs->Count() > 0);
 
-            passedSize       = genTypeSize(argRegTypeInStruct1);
-            info.Segments(0) = ABIPassingSegment::InRegister(regs->Dequeue(), 0, passedSize);
+            passedSize      = genTypeSize(argRegTypeInStruct1);
+            info.Segment(0) = ABIPassingSegment::InRegister(regs->Dequeue(), 0, passedSize);
 
             if (argRegTypeInStruct2 != TYP_UNKNOWN)
             {

@@ -690,7 +690,8 @@ namespace System.IO.Tests
             Assert.Same(e, vt.AsTask().Exception.InnerException);
         }
 
-        [Fact]
+        // Browser bypasses SyncTextWriter for faster startup
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task FlushAsync_Precanceled()
         {
             Assert.Equal(TaskStatus.RanToCompletion, TextWriter.Null.FlushAsync(new CancellationToken(true)).Status);
