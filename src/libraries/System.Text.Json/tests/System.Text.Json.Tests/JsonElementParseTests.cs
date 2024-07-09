@@ -234,6 +234,7 @@ namespace System.Text.Json.Tests
         [InlineData("true ")]
         [InlineData("   42.0 ")]
         [InlineData(" \"str\" \r\n")]
+        [InlineData(" \"string with escaping: \\u0041\\u0042\\u0043\" \r\n")]
         [InlineData(" [     ]")]
         [InlineData(" [null, true, 42.0, \"str\", [], {}, ]")]
         [InlineData(" {  } ")]
