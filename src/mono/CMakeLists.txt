@@ -503,12 +503,10 @@ else()
   message(FATAL_ERROR "TARGET_ARCH='${TARGET_ARCH}' not supported.")
 endif()
 
-if(TARGET_ANDROID AND (TARGET_AMD64 OR TARGET_ARM64))
+if(HOST_ANDROID AND (HOST_AMD64 OR HOST_ARM64))
   # Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
   # This applies only to 64-bit binaries
-  if((TARGET_ARCH STREQUAL "arm64") OR (TARGET_ARCH STREQUAL "x86_64"))
-    add_link_options(LINKER:-z,max-page-size=16384)
-  endif()
+  add_link_options(LINKER:-z,max-page-size=16384)
 endif()
 
 # arm64 MacCatalyst runtime host or AOT target is more like Apple mobile targets than x64
