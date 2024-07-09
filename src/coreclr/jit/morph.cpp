@@ -9992,7 +9992,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 // We need both operands to be ConvertMaskToVector in
                 // order to optimize this to a direct mask operation
 
-                if (!op1->OperIsHWIntrinsic())
+                if (!op1->OperIsConvertMaskToVector())
                 {
                     break;
                 }
@@ -10017,11 +10017,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
                 GenTreeHWIntrinsic* cvtOp2 = op2->AsHWIntrinsic();
-
-                if (!cvtOp1->OperIsConvertMaskToVector())
-                {
-                    break;
-                }
 
                 if (!cvtOp2->OperIsConvertMaskToVector())
                 {
