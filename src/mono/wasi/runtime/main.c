@@ -49,7 +49,7 @@ int initialize_runtime()
 #ifndef WASM_SINGLE_FILE
 	mono_set_assemblies_path("managed");
 #endif
-	mono_wasm_load_runtime("", 0);
+	mono_wasm_load_runtime(0);
 
 #ifdef WASI_AFTER_RUNTIME_LOADED_CALLS
 	// This is supplied from the MSBuild itemgroup @(WasiAfterRuntimeLoaded)
