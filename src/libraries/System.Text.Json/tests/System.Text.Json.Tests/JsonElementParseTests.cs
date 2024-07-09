@@ -254,7 +254,7 @@ namespace System.Text.Json.Tests
             using JsonDocument jDoc = JsonDocument.Parse(json, options);
             JsonElement element = jDoc.RootElement;
 
-            Assert.True(JsonMarshal.TryGetRawValue(element, out ReadOnlySpan<byte> rawValue));
+            ReadOnlySpan<byte> rawValue = JsonMarshal.GetRawUtf8Value(element);
             Assert.Equal(json.Trim(), Encoding.UTF8.GetString(rawValue.ToArray()));
         }
 
@@ -341,7 +341,7 @@ namespace System.Text.Json.Tests
 
             static void AssertGetRawValue(string expectedJson, JsonElement element)
             {
-                Assert.True(JsonMarshal.TryGetRawValue(element, out ReadOnlySpan<byte> rawValue));
+                ReadOnlySpan<byte> rawValue = JsonMarshal.GetRawUtf8Value(element);
                 Assert.Equal(expectedJson.Trim(), Encoding.UTF8.GetString(rawValue.ToArray()));
             }
         }
@@ -353,7 +353,7 @@ namespace System.Text.Json.Tests
             JsonElement element = jDoc.RootElement;
             jDoc.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => JsonMarshal.TryGetRawValue(element, out ReadOnlySpan<byte> rawValue));
+            Assert.Throws<ObjectDisposedException>(() => JsonMarshal.GetRawUtf8Value(element));
         }
     }
 }

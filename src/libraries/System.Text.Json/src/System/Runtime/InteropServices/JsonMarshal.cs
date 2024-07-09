@@ -14,16 +14,11 @@ namespace System.Runtime.InteropServices
         /// Gets a <see cref="ReadOnlySpan{T}"/> view over the raw JSON data of the given <see cref="JsonElement"/>.
         /// </summary>
         /// <param name="element">The JSON element from which to extract the span.</param>
-        /// <param name="rawValue">The span containing the raw JSON data of <paramref name="element"/>.</param>
-        /// <returns>
-        ///   <see langword="true"/> if <paramref name="element"/> is backed by a UTF-8 encoded <see cref="JsonDocument"/>,
-        ///   <see langword="false"/> otherwise.
-        /// </returns>
+        /// <returns>The span containing the raw JSON data of<paramref name="element"/>.</returns>
         /// <exception cref="ObjectDisposedException">The underlying <see cref="JsonDocument"/> has been disposed.</exception>
-        public static bool TryGetRawValue(JsonElement element, out ReadOnlySpan<byte> rawValue)
+        public static ReadOnlySpan<byte> GetRawUtf8Value(JsonElement element)
         {
-            rawValue = element.GetRawValue().Span;
-            return true;
+            return element.GetRawValue().Span;
         }
     }
 }
