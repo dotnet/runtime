@@ -26804,8 +26804,6 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
-            case NI_Sve_GatherVectorFirstFaulting:
-            case NI_Sve_LoadVectorFirstFaulting:
             case NI_Sve_SetFfr:
             {
                 return true;
@@ -26997,8 +26995,6 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
-            case NI_Sve_GatherVectorFirstFaulting:
-            case NI_Sve_LoadVectorFirstFaulting:
             case NI_Sve_SetFfr:
             {
                 // Mark as a call and global reference, much as is done for GT_KEEPALIVE

@@ -3467,8 +3467,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     case NI_Sve_GatherPrefetch32Bit:
                     case NI_Sve_GatherPrefetch64Bit:
                     case NI_Sve_GatherPrefetch8Bit:
-                    case NI_Sve_GatherVectorFirstFaulting:
-                    case NI_Sve_LoadVectorFirstFaulting:
                     case NI_Sve_SetFfr:
                     {
                         assert(tree->OperRequiresCallFlag(this));
