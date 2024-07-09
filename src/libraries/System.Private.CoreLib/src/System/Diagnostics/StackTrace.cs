@@ -240,7 +240,7 @@ namespace System.Diagnostics
                     Type? declaringType = mb.DeclaringType;
                     string methodName = mb.Name;
                     bool methodChanged = false;
-                    if (declaringType != null && declaringType.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false))
+                    if (declaringType != null && IsDefinedSafe(declaringType, typeof(CompilerGeneratedAttribute), inherit: false))
                     {
                         isAsync = declaringType.IsAssignableTo(typeof(IAsyncStateMachine));
                         if (isAsync || declaringType.IsAssignableTo(typeof(IEnumerator)))
@@ -384,31 +384,37 @@ namespace System.Diagnostics
                 return false;
             }
 
-            try
+            if (IsDefinedSafe(mb, typeof(StackTraceHiddenAttribute), inherit: false))
             {
-                if (mb.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
-                {
-                    // Don't show where StackTraceHidden is applied to the method.
-                    return false;
-                }
-
-                Type? declaringType = mb.DeclaringType;
-                // Methods don't always have containing types, for example dynamic RefEmit generated methods.
-                if (declaringType != null &&
-                    declaringType.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
-                {
-                    // Don't show where StackTraceHidden is applied to the containing Type of the method.
-                    return false;
-                }
+                // Don't show where StackTraceHidden is applied to the method.
+                return false;
             }
-            catch
+
+            Type? declaringType = mb.DeclaringType;
+            // Methods don't always have containing types, for example dynamic RefEmit generated methods.
+            if (declaringType != null &&
+                IsDefinedSafe(declaringType, typeof(StackTraceHiddenAttribute), inherit: false))
             {
-                // Getting the StackTraceHiddenAttribute has failed, behave as if it was not present.
-                // One of the reasons can be that the method mb or its declaring type use attributes
-                // defined in an assembly that is missing.
+                // Don't show where StackTraceHidden is applied to the containing Type of the method.
+                return false;
             }
 
             return true;
+        }
+
+        private static bool IsDefinedSafe(MemberInfo memberInfo, Type attributeType bool inherit)
+        {
+            try
+            {
+                return memberInfo.IsDefined(attributeType, inherit);
+            }
+            catch
+            {
+                // Checking for the attribute has failed, behave as if it was not present. One of
+                // the reasons can be that the member has attributes defined in an assembly that
+                // is missing.
+                return false;
+            }
         }
 
         private static bool TryResolveStateMachineMethod(ref MethodBase method, out Type declaringType)
