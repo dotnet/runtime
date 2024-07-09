@@ -7,6 +7,7 @@
     <_SampleAssembly Condition="'$(_SampleAssembly)' == ''">$(TargetFileName)</_SampleAssembly>
     <_SampleProjectName>$([System.String]::Copy('$(_SampleProject)').Replace('.csproj',''))</_SampleProjectName>
     <MONO_LOG_LEVEL Condition="false">--env MONO_LOG_LEVEL=debug --env MONO_LOG_MASK=all</MONO_LOG_LEVEL>
+    <WASI_MONO_PRINT_EXIT_CODE>--env WASI_MONO_PRINT_EXIT_CODE=1</WASI_MONO_PRINT_EXIT_CODE>
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
   </PropertyGroup>
 
@@ -16,13 +17,13 @@
     -->
     <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
           Condition="'$(WasmBuildNative)' != 'true'"
-          Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) --dir . dotnet.wasm $(_SampleProjectName)" IgnoreExitCode="true" />
+          Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) $(WASI_MONO_PRINT_EXIT_CODE) -S http --dir . dotnet.wasm $(_SampleProjectName)" IgnoreExitCode="true" />
     <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
           Condition="'$(WasmBuildNative)' == 'true' and '$(WasmSingleFileBundle)' != 'true'"
-          Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) --dir . dotnet.wasm" IgnoreExitCode="true" />
+          Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) $(WASI_MONO_PRINT_EXIT_CODE) -S http --dir . dotnet.wasm" IgnoreExitCode="true" />
     <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
           Condition="'$(WasmSingleFileBundle)' == 'true'"
-          Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) $([System.IO.Path]::ChangeExtension($(_SampleAssembly), '.wasm'))" IgnoreExitCode="true" />
+          Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) $(WASI_MONO_PRINT_EXIT_CODE) -S http $([System.IO.Path]::ChangeExtension($(_SampleAssembly), '.wasm'))" IgnoreExitCode="true" />
   </Target>
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
