@@ -252,6 +252,15 @@ CDAC_TYPE_FIELD(DynamicMetadata, /*uint32*/, Size, cdac_offsets<DynamicMetadata>
 CDAC_TYPE_FIELD(DynamicMetadata, /*inline byte array*/, Data, cdac_offsets<DynamicMetadata>::Data)
 CDAC_TYPE_END(DynamicMetadata)
 
+CDAC_TYPE_BEGIN(MethodDesc)
+CDAC_TYPE_INDETERMINATE(EEClass)
+CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, ChunkIndex, cdac_offsets<MethodDesc>::ChunkIndex)
+CDAC_TYPE_END(MethodDesc)
+
+CDAC_TYPE_BEGIN(MethodDescChunk)
+CDAC_TYPE_SIZE(sizeof(MethodDescChunk))
+CDAC_TYPE_END(MethodDescChunk)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -265,6 +274,7 @@ CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
 #endif
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
+CDAC_GLOBAL(MethodDescAlignment, uint64, MethodDesc::ALIGNMENT)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)

@@ -1908,6 +1908,13 @@ private:
 public:
     static void Init();
 #endif
+
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<> struct cdac_offsets<MethodDesc>
+{
+    static const size_t ChunkIndex = offsetof(MethodDesc, m_chunkIndex);
 };
 
 #ifndef DACCESS_COMPILE
