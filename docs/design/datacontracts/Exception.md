@@ -1,4 +1,4 @@
-# Contract Thread
+# Contract Exception
 
 This contract is for getting information about exceptions in the process.
 
