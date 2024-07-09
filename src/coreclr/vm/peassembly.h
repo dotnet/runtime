@@ -433,7 +433,6 @@ private:
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
     PTR_AssemblyBinder m_pFallbackBinder;
-
 };  // class PEAssembly
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;

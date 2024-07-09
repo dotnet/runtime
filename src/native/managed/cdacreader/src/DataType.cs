@@ -25,7 +25,7 @@ public enum DataType
     GCAllocContext,
     ExceptionInfo,
     RuntimeThreadLocals,
-
+    Module,
     MethodTable,
     EEClass,
     MethodTableAuxiliaryData,

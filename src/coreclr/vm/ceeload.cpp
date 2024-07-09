@@ -406,11 +406,15 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(szName == NULL);
+        PRECONDITION(m_pPEAssembly->IsLoaded());
     }
     CONTRACTL_END;
 
     m_loaderAllocator = GetAssembly()->GetLoaderAllocator();
     m_pSimpleName = m_pPEAssembly->GetSimpleName();
+    m_baseAddress = m_pPEAssembly->HasLoadedPEImage() ? m_pPEAssembly->GetLoadedLayout()->GetBase() : NULL;
+    if (m_pPEAssembly->IsReflectionEmit())
+        m_dwTransientFlags |= IS_REFLECTION_EMIT;
 
     m_Crst.Init(CrstModule);
     m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
