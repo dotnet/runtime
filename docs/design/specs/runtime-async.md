@@ -63,7 +63,11 @@ The second async signature is implicit and runtime-generated and is hereafter re
 * If the async return type is void, the return type of the Task-equivalent signature is the type of the async custom modifier.
 * Otherwise, the Task-equivalent return type is the custom modifier type (either ``Task`1`` or ``ValueTask`1``), substituted with the async return type.
 
-It is an error to explicitly declare a method with the same signature as an async method's "Task-equivalent" signature.
+It is an error to explicitly declare a method with the same signature as an async method's synthesized "Task-equivalent" signature.
+
+Unlike async methods, sync MethodDefs do not always generate two member definitions. However, if the sync MethodDef signature would match the "Task-equivalent" signature of an async method, an async definition is also synthesized. More precisely, sync methods that have a return type of `System.Threading.Task`, `System.Threading.ValueTask`, `System.Threading.Task<T>`, or `System.Threading.ValueTask<T>` and have parameters meeting any further requirements of an async method definition, will generate an equivalent async definition corresponding to the inversion of the rules for generating the async method "Task-equivalent" signature.
+
+_[Note: these rules operate before generic substitution, meaning that a method which only meets requirements after substitution would not be considered as valid.]_
 
 ### I.8.10.2 Method inheritance
 
