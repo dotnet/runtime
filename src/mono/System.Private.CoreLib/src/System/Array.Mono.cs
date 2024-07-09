@@ -329,6 +329,9 @@ namespace System
 
         internal object? InternalGetValue(nint index)
         {
+            if (GetType().GetElementType()!.IsPointer)
+                throw new NotSupportedException(SR.NotSupported_Type);
+
             Array self = this;
             object? res = null;
             GetValueImpl(ObjectHandleOnStack.Create(ref self), ObjectHandleOnStack.Create(ref res), (int)index);
@@ -337,6 +340,9 @@ namespace System
 
         internal void InternalSetValue(object? value, nint index)
         {
+            if (GetType().GetElementType()!.IsPointer)
+                throw new NotSupportedException(SR.NotSupported_Type);
+
             Array self = this;
             SetValueImpl(ObjectHandleOnStack.Create(ref self), ObjectHandleOnStack.Create(ref value), (int)index);
         }
