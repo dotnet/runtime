@@ -930,17 +930,16 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
-        CORINFO_FPSTRUCT_LOWERING lowering;
-        GetFpStructLowering(clsHnd, &lowering);
-        if (lowering.numLoweredElements == 1)
+        const CORINFO_FPSTRUCT_LOWERING* lowering = GetFpStructLowering(clsHnd);
+        if (lowering->numLoweredElements == 1)
         {
-            useType = JITtype2varType(lowering.loweredElements[0]);
+            useType = JITtype2varType(lowering->loweredElements[0]);
             assert(varTypeIsFloating(useType));
             howToReturnStruct = SPK_PrimitiveType;
         }
-        else if (!lowering.byIntegerCallConv)
+        else if (!lowering->byIntegerCallConv)
         {
-            assert(lowering.numLoweredElements == 2);
+            assert(lowering->numLoweredElements == 2);
             howToReturnStruct = SPK_ByValue;
             useType           = TYP_STRUCT;
         }
@@ -1981,6 +1980,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
 #ifdef SWIFT_SUPPORT
     m_swiftLoweringCache = nullptr;
+#endif
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    m_fpStructLoweringCache = nullptr;
 #endif
 
     // check that HelperCallProperties are initialized
@@ -8292,35 +8294,44 @@ void Compiler::GetStructTypeOffset(
 //
 // Arguments:
 //      structHandle - type handle
-//      pLowering - out param; returns the lowering info for the struct fields
 //
 // Return value:
-//      None
-void Compiler::GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle, CORINFO_FPSTRUCT_LOWERING* pLowering)
+//      Lowering info for the struct fields
+const CORINFO_FPSTRUCT_LOWERING* Compiler::GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle)
 {
-    info.compCompHnd->getFpStructLowering(structHandle, pLowering);
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("**** getFpStructInRegistersInfo(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
-               eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
+    if (m_fpStructLoweringCache == nullptr)
+        m_fpStructLoweringCache = new (this, CMK_CallArgs) FpStructLoweringMap(getAllocator(CMK_CallArgs));
 
-        if (pLowering->byIntegerCallConv)
+    CORINFO_FPSTRUCT_LOWERING* lowering;
+    if (!m_fpStructLoweringCache->Lookup(structHandle, &lowering))
+    {
+        lowering = new (this, CMK_CallArgs) CORINFO_FPSTRUCT_LOWERING;
+        info.compCompHnd->getFpStructLowering(structHandle, lowering);
+        m_fpStructLoweringCache->Set(structHandle, lowering);
+#ifdef DEBUG
+        if (verbose)
         {
-            printf("        pass by integer calling convention\n");
-        }
-        else
-        {
-            printf("        may be passed by floating-point calling convention (%zu fields):\n",
-                   pLowering->numLoweredElements);
-            for (size_t i = 0; i < pLowering->numLoweredElements; ++i)
+            printf("**** getFpStructInRegistersInfo(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
+                   eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
+
+            if (lowering->byIntegerCallConv)
             {
-                const char* type = varTypeName(JITtype2varType(pLowering->loweredElements[i]));
-                printf("         * field[%zu]: type %s at offset %u\n", i, type, pLowering->offsets[i]);
+                printf("        pass by integer calling convention\n");
+            }
+            else
+            {
+                printf("        may be passed by floating-point calling convention (%zu fields):\n",
+                       lowering->numLoweredElements);
+                for (size_t i = 0; i < lowering->numLoweredElements; ++i)
+                {
+                    const char* type = varTypeName(JITtype2varType(lowering->loweredElements[i]));
+                    printf("         * field[%zu]: type %s at offset %u\n", i, type, lowering->offsets[i]);
+                }
             }
         }
-    }
 #endif // DEBUG
+    }
+    return lowering;
 }
 
 #endif // defined(UNIX_AMD64_ABI)

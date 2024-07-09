@@ -28941,17 +28941,15 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
-
-            CORINFO_FPSTRUCT_LOWERING lowering;
-            comp->GetFpStructLowering(retClsHnd, &lowering);
             BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
-            if (!lowering.byIntegerCallConv)
+            const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
+            if (!lowering->byIntegerCallConv)
             {
                 comp->compFloatingPointUsed = true;
-                assert(lowering.numLoweredElements == MAX_RET_REG_COUNT);
-                var_types types[MAX_RET_REG_COUNT] = {JITtype2varType(lowering.loweredElements[0]),
-                                                      JITtype2varType(lowering.loweredElements[1])};
+                assert(lowering->numLoweredElements == MAX_RET_REG_COUNT);
+                var_types types[MAX_RET_REG_COUNT] = {JITtype2varType(lowering->loweredElements[0]),
+                                                      JITtype2varType(lowering->loweredElements[1])};
                 assert(varTypeIsFloating(types[0]) || varTypeIsFloating(types[1]));
                 assert((structSize > 8) == ((genTypeSize(types[0]) == 8) || (genTypeSize(types[1]) == 8)));
                 for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)

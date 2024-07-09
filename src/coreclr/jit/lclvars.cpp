@@ -898,21 +898,21 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         }
         else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        CORINFO_FPSTRUCT_LOWERING lowering = {.byIntegerCallConv = true};
+        const CORINFO_FPSTRUCT_LOWERING* lowering = nullptr;
 
         var_types argRegTypeInStruct1 = TYP_UNKNOWN;
         var_types argRegTypeInStruct2 = TYP_UNKNOWN;
 
         if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) && (argSize <= MAX_PASS_MULTIREG_BYTES))
         {
-            GetFpStructLowering(typeHnd, &lowering);
+            lowering = GetFpStructLowering(typeHnd);
         }
 
-        if (!lowering.byIntegerCallConv)
+        if ((lowering != nullptr) && !lowering->byIntegerCallConv)
         {
             assert(varTypeIsStruct(argType));
             int floatNum = 0;
-            if (lowering.numLoweredElements == 1)
+            if (lowering->numLoweredElements == 1)
             {
                 assert(argSize <= 8);
                 assert(varDsc->lvExactSize() <= argSize);
@@ -920,14 +920,14 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 floatNum              = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
 
-                argRegTypeInStruct1 = JITtype2varType(lowering.loweredElements[0]);
+                argRegTypeInStruct1 = JITtype2varType(lowering->loweredElements[0]);
                 assert(varTypeIsFloating(argRegTypeInStruct1));
             }
             else
             {
-                assert(lowering.numLoweredElements == 2);
-                argRegTypeInStruct1 = genActualType(JITtype2varType(lowering.loweredElements[0]));
-                argRegTypeInStruct2 = genActualType(JITtype2varType(lowering.loweredElements[1]));
+                assert(lowering->numLoweredElements == 2);
+                argRegTypeInStruct1 = genActualType(JITtype2varType(lowering->loweredElements[0]));
+                argRegTypeInStruct2 = genActualType(JITtype2varType(lowering->loweredElements[1]));
                 floatNum = (int)varTypeIsFloating(argRegTypeInStruct1) + (int)varTypeIsFloating(argRegTypeInStruct2);
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
                 if (floatNum == 1)
