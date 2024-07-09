@@ -169,7 +169,6 @@ namespace System
             if (reliable)
             {
                 if (!dst_type.Equals(src_type) &&
-                    !(dst_type.IsPointer && src_type.IsPointer) &&
                     !(dst_type.IsPrimitive && src_type.IsPrimitive &&
                       CanChangePrimitive(ObjectHandleOnStack.Create(ref dst_type), ObjectHandleOnStack.Create(ref src_type), true)))
                 {

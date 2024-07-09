@@ -199,7 +199,7 @@ ves_icall_System_Array_GetValueImpl (MonoObjectHandleOnStack array_handle, MonoO
 	MonoClass * const array_class = mono_object_class (array);
 	MonoClass * const element_class = m_class_get_element_class (array_class);
 
-	if (m_class_is_valuetype (element_class)) {
+	if (m_class_is_valuetype (element_class) || mono_class_is_pointer (element_class)) {
 		gsize element_size = mono_array_element_size (array_class);
 		gpointer element_address = mono_array_addr_with_size_fast (array, element_size, (gsize)pos);
 		MonoObject *res = mono_value_box_checked (element_class, element_address, error);
@@ -870,9 +870,6 @@ ves_icall_System_Array_FastCopy (MonoObjectHandleOnStack source_handle, int sour
 
 		/* It's only safe to copy between arrays if we can ensure the source will always have a subtype of the destination. We bail otherwise. */
 		if (!mono_class_is_subclass_of_internal (src_class, dest_class, FALSE))
-			return FALSE;
-
-		if (m_class_is_native_pointer (src_class) || m_class_is_native_pointer (dest_class))
 			return FALSE;
 	}
 

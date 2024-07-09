@@ -3582,6 +3582,10 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 				    gboolean check_interfaces)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+
+	if (mono_class_is_pointer(klass) && mono_class_is_pointer(klassc))
+		return TRUE;
+	
 	/* FIXME test for interfaces with variant generic arguments */
 	if (check_interfaces) {
 		mono_class_init_internal (klass);
