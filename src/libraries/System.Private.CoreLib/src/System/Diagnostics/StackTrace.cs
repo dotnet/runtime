@@ -417,6 +417,20 @@ namespace System.Diagnostics
             }
         }
 
+        private static Attribute[] GetCustomAttributesSafe(MemberInfo memberInfo, Type attributeType, bool inherit)
+        {
+            try
+            {
+                return Attribute.GetCustomAttributes(memberInfo, attributeType, inherit);
+            }
+            catch
+            {
+                // Getting the attributes has failed, return an empty array. One of the reasons
+                // can be that the member has attributes defined in an assembly that is missing.
+                return [];
+            }
+        }
+
         private static bool TryResolveStateMachineMethod(ref MethodBase method, out Type declaringType)
         {
             Debug.Assert(method != null);
@@ -444,7 +458,7 @@ namespace System.Diagnostics
 
             foreach (MethodInfo candidateMethod in methods)
             {
-                StateMachineAttribute[]? attributes = (StateMachineAttribute[])Attribute.GetCustomAttributes(candidateMethod, typeof(StateMachineAttribute), inherit: false);
+                StateMachineAttribute[]? attributes = (StateMachineAttribute[])GetCustomAttributesSafe(candidateMethod, typeof(StateMachineAttribute), inherit: false);
                 if (attributes == null)
                 {
                     continue;
