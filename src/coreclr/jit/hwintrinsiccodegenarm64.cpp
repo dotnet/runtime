@@ -2056,6 +2056,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 if (!varTypeIsSIMD(intrin.op2->gtType))
                 {
+                    // Scatter(Vector<T1> mask, T1* address, Vector<T2> indicies, Vector<T> data)
                     assert(intrin.numOperands == 4);
                     emitAttr baseSize = emitActualTypeSize(intrin.baseType);
 
