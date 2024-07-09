@@ -1535,7 +1535,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     }
     else
     {
-        _ASSERTE(!pMD->HasStableEntryPoint());
         EmitCallLabel(NewExternalCodeLabel((LPVOID)pMD->GetAddrOfSlot()), fTailCall, TRUE);
     }
 }

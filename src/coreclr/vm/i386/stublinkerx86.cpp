@@ -3119,7 +3119,6 @@ VOID StubLinkerCPU::EmitLoadMethodAddressIntoAX(MethodDesc *pMD)
     }
     else
     {
-        _ASSERTE(!pMD->HasStableEntryPoint());
         X86EmitRegLoad(kRAX, (UINT_PTR)pMD->GetAddrOfSlot()); // MOV RAX, DWORD
 
         X86EmitIndexRegLoad(kRAX, kRAX);                // MOV RAX, [RAX]
@@ -3143,8 +3142,6 @@ VOID StubLinkerCPU::EmitTailJumpToMethod(MethodDesc *pMD)
     }
     else
     {
-        _ASSERTE(!pMD->HasStableEntryPoint());
-
         // jmp [slot]
         Emit16(0x25ff);
         Emit32((DWORD)(size_t)pMD->GetAddrOfSlot());

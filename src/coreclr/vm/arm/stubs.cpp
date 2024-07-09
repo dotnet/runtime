@@ -1392,7 +1392,6 @@ void StubLinkerCPU::ThumbEmitTailCallManagedMethod(MethodDesc *pMD)
     }
     else
     {
-        _ASSERTE(!pMD->HasStableEntryPoint());
         // mov r12, #slotaddress
         ThumbEmitMovConstant(ThumbReg(12), (TADDR)pMD->GetAddrOfSlot());
 
