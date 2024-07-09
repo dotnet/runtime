@@ -224,7 +224,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             {
                 // If this is a definition of a retbuf then we process it as
                 // part of the GT_CALL node.
-                if (fgIsHiddenBufferAddressDef(LIR::AsRange(compCurBB), tree))
+                if (fgIsTrackedRetBufferAddress(LIR::AsRange(compCurBB), tree))
                 {
                     break;
                 }
@@ -1340,7 +1340,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     // cannot consider them to be defined at the point of the
                     // LCL_ADDR since there may be uses between the LCL_ADDR
                     // and call.
-                    if (fgIsHiddenBufferAddressDef(blockRange, node))
+                    if (fgIsTrackedRetBufferAddress(blockRange, node))
                     {
                         break;
                     }
@@ -1516,14 +1516,14 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 }
 
 //---------------------------------------------------------------------
-// fgIsHiddenBufferAddressDef - given a LCL_ADDR node, check if it is the
+// fgIsTrackedRetBufferAddress - given a LCL_ADDR node, check if it is the
 // return buffer definition of a call.
 //
 // Arguments
 //    range - the block range containing the LCL_ADDR
 //    node  - the LCL_ADDR
 //
-bool Compiler::fgIsHiddenBufferAddressDef(LIR::Range& range, GenTree* node)
+bool Compiler::fgIsTrackedRetBufferAddress(LIR::Range& range, GenTree* node)
 {
     assert(node->OperIs(GT_LCL_ADDR));
     if ((node->gtFlags & GTF_VAR_DEF) == 0)
