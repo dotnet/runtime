@@ -1981,31 +1981,31 @@ arg_need_temp (ArgInfo *ainfo)
 static gpointer
 arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 {
-        switch (ainfo->storage) {
-		case ArgVtypeInIRegs:
-		case ArgInIReg:
-			if (ainfo->reg == ARMREG_R20)
-				return &ccontext->gregs [PARAM_REGS + 1];
-			else
-				return &ccontext->gregs [ainfo->reg];
-		case ArgInFReg:
-		case ArgInFRegR4:
-		case ArgHFA:
-                        return &ccontext->fregs [ainfo->reg];
-		case ArgOnStack:
-		case ArgOnStackR4:
-		case ArgOnStackR8:
-		case ArgVtypeOnStack:
-			return ccontext->stack + ainfo->offset;
-		case ArgVtypeByRefOnStack:
-			return *(gpointer*)(ccontext->stack + ainfo->offset);
-		case ArgVtypeByRef:
-			return (gpointer) ccontext->gregs [ainfo->reg];
-		case ArgSwiftError:
-			return &ccontext->gregs [PARAM_REGS + 2];
-                default:
-                        g_error ("Arg storage type not yet supported");
-        }
+	switch (ainfo->storage) {
+	case ArgVtypeInIRegs:
+	case ArgInIReg:
+		if (ainfo->reg == ARMREG_R20)
+			return &ccontext->gregs [PARAM_REGS + 1];
+		else
+			return &ccontext->gregs [ainfo->reg];
+	case ArgInFReg:
+	case ArgInFRegR4:
+	case ArgHFA:
+		return &ccontext->fregs [ainfo->reg];
+	case ArgOnStack:
+	case ArgOnStackR4:
+	case ArgOnStackR8:
+	case ArgVtypeOnStack:
+		return ccontext->stack + ainfo->offset;
+	case ArgVtypeByRefOnStack:
+		return *(gpointer*)(ccontext->stack + ainfo->offset);
+	case ArgVtypeByRef:
+		return (gpointer) ccontext->gregs [ainfo->reg];
+	case ArgSwiftError:
+		return &ccontext->gregs [PARAM_REGS + 2];
+	default:
+		g_error ("Arg storage type not yet supported");
+	}
 }
 
 static void
@@ -2014,39 +2014,39 @@ arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
 	g_assert (arg_need_temp (ainfo));
 
 	switch (ainfo->storage) {
-		case ArgHFA: {
-			float *dest_float = (float*)dest;
-			for (int k = 0; k < ainfo->nregs; k++) {
-				*dest_float = *(float*)&ccontext->fregs [ainfo->reg + k];
-				dest_float++;
-			}
-			break;
+	case ArgHFA: {
+		float *dest_float = (float*)dest;
+		for (int k = 0; k < ainfo->nregs; k++) {
+			*dest_float = *(float*)&ccontext->fregs [ainfo->reg + k];
+			dest_float++;
 		}
+		break;
+	}
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
-		case ArgSwiftVtypeLoweredRet: {
-			int i;
-            int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
-			char *storage = (char*)dest;
-            for (i = 0; i < ainfo->nregs; ++i) {
-                switch (ainfo->struct_storage [i]) {
-                    case ArgInIReg:
-                        *(gsize*)(storage + ainfo->offsets [i]) = ccontext->gregs [gr++];
-                        break;
-                    case ArgInFReg:
-                        *(double*)(storage + ainfo->offsets [i]) = ccontext->fregs [fr++];
-                        break;
-                    case ArgInFRegR4:
-                        *(float*)(storage + ainfo->offsets [i]) = *(float*)&ccontext->fregs [fr++];
-                        break;
-                    default:
-                        g_assert_not_reached ();
-                }
-            }
-			break;
+	case ArgSwiftVtypeLoweredRet: {
+		int i;
+		int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
+		char *storage = (char*)dest;
+		for (i = 0; i < ainfo->nregs; ++i) {
+			switch (ainfo->struct_storage [i]) {
+				case ArgInIReg:
+					*(gsize*)(storage + ainfo->offsets [i]) = ccontext->gregs [gr++];
+					break;
+				case ArgInFReg:
+					*(double*)(storage + ainfo->offsets [i]) = ccontext->fregs [fr++];
+					break;
+				case ArgInFRegR4:
+					*(float*)(storage + ainfo->offsets [i]) = *(float*)&ccontext->fregs [fr++];
+					break;
+				default:
+					g_assert_not_reached ();
+			}
 		}
+		break;
+	}
 #endif /* MONO_ARCH_HAVE_SWIFTCALL */
-		default:
-			g_assert_not_reached ();
+	default:
+		g_assert_not_reached ();
 	}
 }
 
