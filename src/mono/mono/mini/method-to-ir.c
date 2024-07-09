@@ -7565,34 +7565,30 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 								g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
 							}
 						} else {
-							if (gklass && (gklass->container_class == swift_self_t)) {
-								// For SwiftSelf<T> that cannot be lowered, we change the argument to byref SwiftSelf type
+							// For structs that cannot be lowered, we change the argument to byref type
+							if (gklass && (gklass->container_class == swift_self_t))
 								ptype = mono_class_get_byref_type (swift_self);
-								MonoInst *swift_self_base_address = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-								CHECK_ARG (idx_param);
-								NEW_ARGLOADA (cfg, swift_self_base_address, idx_param);
-								MONO_ADD_INS (cfg->cbb, swift_self_base_address);
-
-								MonoClassField *klass_fields = m_class_get_fields (klass);
-								MonoInst *struct_base_address = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-								MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_ADD_IMM, struct_base_address->dreg, swift_self_base_address->dreg, klass_fields->offset);
-								*sp++ = struct_base_address;
-
-								++new_param_count;
-								g_array_append_val(new_params, ptype);
-							} else {
-								// For structs that cannot be lowered, we change the argument to byref type
+							else
 								ptype = mono_class_get_byref_type (mono_defaults.int_class);
-								// Load the address of the struct
-								MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-								CHECK_ARG (idx_param);
-								NEW_ARGLOADA (cfg, struct_base_address, idx_param);
-								MONO_ADD_INS (cfg->cbb, struct_base_address);
-								*sp++ = struct_base_address;
 
-								++new_param_count;
-								g_array_append_val (new_params, ptype);
+							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+							CHECK_ARG (idx_param);
+							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
+							MONO_ADD_INS (cfg->cbb, struct_base_address);
+
+							// Load the address of the struct
+							if (gklass && (gklass->container_class == swift_self_t))
+							{
+								MonoClassField *klass_fields = m_class_get_fields (klass);
+								MonoInst *swift_self_base_address = struct_base_address;
+								struct_base_address = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+								MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_ADD_IMM, struct_base_address->dreg, swift_self_base_address->dreg, klass_fields->offset);
 							}
+
+							*sp++ = struct_base_address;
+
+							++new_param_count;
+							g_array_append_val (new_params, ptype);
 						}
 					} else {
 						// Copy over non-struct arguments
