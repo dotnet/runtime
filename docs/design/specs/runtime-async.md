@@ -35,7 +35,7 @@ Only local variables which are "hoisted" may be used across suspension points. T
 Async methods have some temporary restrictions with may be lifted later:
 * The `tail` prefix is forbidden
 * Usage of the `localloc` instruction is forbidden
-* Pinning locals may not be created
+* Pinning locals may not be marked `HoistedLocal`
 
 Other restrictions are likely to be permanent.
 
