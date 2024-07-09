@@ -955,13 +955,8 @@ namespace System.Collections.Concurrent
 
                 bool resizeDesired = false;
                 bool forceRehash = false;
-                try
+                using (acquireLock ? locks[lockNo].EnterScope() : default)
                 {
-                    if (acquireLock)
-                    {
-                        locks[lockNo].Enter();
-                    }
-
                     // If the table just got resized, we may not be holding the right lock, and must retry.
                     // This should be a rare occurrence.
                     if (tables != _tables)
@@ -1047,10 +1042,6 @@ namespace System.Collections.Concurrent
                     {
                         forceRehash = true;
                     }
-                }
-                finally
-                {
-                    locks[lockNo].Exit();
                 }
 
                 // The fact that we got here means that we just performed an insertion. If necessary, we will grow the table.
@@ -2417,10 +2408,8 @@ namespace System.Collections.Concurrent
 
                     bool resizeDesired = false;
                     bool forceRehash = false;
-                    try
+                    using (locks[lockNo].EnterScope())
                     {
-                        locks[lockNo].Enter();
-
                         // If the table just got resized, we may not be holding the right lock, and must retry.
                         // This should be a rare occurrence.
                         if (tables != Dictionary._tables)
@@ -2512,10 +2501,6 @@ namespace System.Collections.Concurrent
                         {
                             forceRehash = true;
                         }
-                    }
-                    finally
-                    {
-                        locks[lockNo].Exit();
                     }
 
                     // The fact that we got here means that we just performed an insertion. If necessary, we will grow the table.
