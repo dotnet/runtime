@@ -91,6 +91,37 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t GetLr() const { return LR; }
     void SetIp(uintptr_t ip) { IP = ip; }
     void SetSp(uintptr_t sp) { SP = sp; }
+#elif defined(TARGET_LOONGARCH64)
+    uintptr_t  FP;
+    uintptr_t  RA;
+
+    uintptr_t  R4;
+    uintptr_t  R5;
+    uintptr_t  R23;
+    uintptr_t  R24;
+    uintptr_t  R25;
+    uintptr_t  R26;
+    uintptr_t  R27;
+    uintptr_t  R28;
+    uintptr_t  R29;
+    uintptr_t  R30;
+    uintptr_t  R31;
+    uintptr_t  R2;
+
+    uintptr_t  SP;
+    uintptr_t  IP;
+
+    uint64_t      F[32 - 24]; // Only the F registers F24..F31 need to be preserved
+                              // (F0-F23 are not preserved according to the ABI spec).
+
+
+    uintptr_t GetIp() const { return IP; }
+    uintptr_t GetSp() const { return SP; }
+    uintptr_t GetFp() const { return FP; }
+    uintptr_t GetRa() const { return RA; }
+    void SetIp(uintptr_t ip) { IP = ip; }
+    void SetSp(uintptr_t sp) { SP = sp; }
+
 #elif defined(UNIX_AMD64_ABI)
     // Param regs: rdi, rsi, rdx, rcx, r8, r9, scratch: rax, rdx (both return val), preserved: rbp, rbx, r12-r15
     uintptr_t  IP;

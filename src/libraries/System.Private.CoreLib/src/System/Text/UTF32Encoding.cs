@@ -62,7 +62,7 @@ namespace System.Text
                 SetDefaultFallbacks();
         }
 
-        internal override void SetDefaultFallbacks()
+        internal sealed override void SetDefaultFallbacks()
         {
             // For UTF-X encodings, we use a replacement fallback with an empty string
             if (_isThrowException)

@@ -294,22 +294,19 @@ void PromotionLiveness::MarkIndex(unsigned index, bool isUse, bool isDef, BitVec
 //
 void PromotionLiveness::InterBlockLiveness()
 {
+    FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    assert(dfsTree != nullptr);
+
     bool changed;
     do
     {
         changed = false;
 
-        for (BasicBlock* block = m_compiler->fgLastBB; block != nullptr; block = block->Prev())
+        for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
         {
-            m_hasPossibleBackEdge |= !block->IsLast() && (block->Next()->bbNum <= block->bbNum);
-            changed |= PerBlockLiveness(block);
+            changed |= PerBlockLiveness(dfsTree->GetPostOrder(i));
         }
-
-        if (!m_hasPossibleBackEdge)
-        {
-            break;
-        }
-    } while (changed);
+    } while (changed && dfsTree->HasCycle());
 
 #ifdef DEBUG
     if (m_compiler->verbose)
@@ -345,7 +342,6 @@ bool PromotionLiveness::PerBlockLiveness(BasicBlock* block)
     BitVecOps::ClearD(m_bvTraits, bbInfo.LiveOut);
     block->VisitRegularSuccs(m_compiler, [=, &bbInfo](BasicBlock* succ) {
         BitVecOps::UnionD(m_bvTraits, bbInfo.LiveOut, m_bbInfo[succ->bbNum].LiveIn);
-        m_hasPossibleBackEdge |= succ->bbNum <= block->bbNum;
         return BasicBlockVisit::Continue;
     });
 
@@ -357,7 +353,6 @@ bool PromotionLiveness::PerBlockLiveness(BasicBlock* block)
         AddHandlerLiveVars(block, m_ehLiveVars);
         BitVecOps::UnionD(m_bvTraits, m_liveIn, m_ehLiveVars);
         BitVecOps::UnionD(m_bvTraits, bbInfo.LiveOut, m_ehLiveVars);
-        m_hasPossibleBackEdge = true;
     }
 
     bool liveInChanged = !BitVecOps::Equal(m_bvTraits, bbInfo.LiveIn, m_liveIn);

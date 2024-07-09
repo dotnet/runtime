@@ -504,7 +504,7 @@ VOID IUnkEntry::ReleaseInterface(RCW *pRCW)
     }
     CONTRACTL_END;
 
-    if (g_fProcessDetach)
+    if (IsAtProcessExit())
     {
         // The Release call is unsafe if the process is going away (calls into
         // DLLs we don't know are even mapped).
@@ -533,14 +533,14 @@ VOID IUnkEntry::Free()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(g_fProcessDetach || m_pUnknown == (IUnknown *)0xBADF00D);
+        PRECONDITION(IsAtProcessExit() || m_pUnknown == (IUnknown *)0xBADF00D);
     }
     CONTRACTL_END;
 
     // Log the de-allocation of the IUnknown entry.
     LOG((LF_INTEROP, LL_INFO10000, "IUnkEntry::Free called for context 0x%08X, to release entry with m_pUnknown %p, on thread %p\n", m_pCtxCookie, m_pUnknown, GetThreadNULLOk()));
 
-    if (g_fProcessDetach)
+    if (IsAtProcessExit())
     {
         IStream *pOldStream = m_pStream;
         if (InterlockedExchangeT(&m_pStream, NULL) == pOldStream)
@@ -846,7 +846,7 @@ HRESULT IUnkEntry::MarshalIUnknownToStreamCallback2(LPVOID pData)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pData));
-        PRECONDITION(g_fProcessDetach == FALSE);
+        PRECONDITION(IsAtProcessExit() == FALSE);
     }
     CONTRACTL_END;
 
@@ -967,7 +967,7 @@ HRESULT IUnkEntry::MarshalIUnknownToStreamCallback(LPVOID pData)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pData));
-        PRECONDITION(g_fProcessDetach == FALSE);
+        PRECONDITION(IsAtProcessExit() == FALSE);
     }
     CONTRACTL_END;
 
@@ -1199,7 +1199,7 @@ CtxEntry::~CtxEntry()
     CONTRACTL_END;
 
     // If the context is a valid context then release it.
-    if (m_pObjCtx && !g_fProcessDetach)
+    if (m_pObjCtx && !IsAtProcessExit())
     {
         SafeRelease(m_pObjCtx);
         m_pObjCtx = NULL;
@@ -1304,7 +1304,7 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
 
     // If we are in process detach, we cannot safely try to enter another context
     // since we don't know if OLE32 is still loaded.
-    if (g_fProcessDetach)
+    if (IsAtProcessExit())
     {
         LOG((LF_INTEROP, LL_INFO100, "Entering into context 0x08%x has failed since we are in process detach\n", m_pCtxCookie));
         return RPC_E_DISCONNECTED;

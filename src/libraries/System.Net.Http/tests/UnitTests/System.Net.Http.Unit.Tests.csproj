@@ -353,6 +353,8 @@
              Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
              Link="ProductionCode\Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs"
              Link="ProductionCode\Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs" />
     <Compile Include="$(CommonPath)System\Runtime\ExceptionServices\ExceptionStackTrace.cs"

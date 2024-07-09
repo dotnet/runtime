@@ -326,7 +326,7 @@ ErrExit:
     return hr;
 }
 
-HRESULT Attribute::ParseArgumentValues(
+HRESULT CustomAttribute::ParseArgumentValues(
     void* pCa,
     INT32 cCa,
     CaValueArrayFactory* pCaValueArrayFactory,
