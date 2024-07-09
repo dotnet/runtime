@@ -9,7 +9,7 @@ namespace System.Net.Http
     {
         // OTel bucket boundary recommendation for 'http.request.duration':
         // https://github.com/open-telemetry/semantic-conventions/blob/release/v1.23.x/docs/http/http-metrics.md#metric-httpclientrequestduration
-        // We are using these boundaries for all network requests that are expected to be short.
+        // We are using the same boundaries for durations which are not expected to be longer than an HTTP request.
         public static InstrumentAdvice<double> ShortHistogramAdvice { get; } = new()
         {
             HistogramBucketBoundaries = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]
