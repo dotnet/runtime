@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
+using System.Numerics;
 using System.Security.Cryptography.Encryption.RC2.Tests;
 using System.Text;
 using Test.Cryptography;
@@ -300,6 +302,150 @@ xVN9ksi/58ByOsIS7vO3cY01w/3Zn3rgkSzHxHUhpW+lEb4xcS2XmuZ/F6e8xOWB
 DqnKE43u09eCOe7vI5p3KULSPCgQwpciGVJWRhJ/nEuBYSwSrtwtyR6BFTsKIHwf
 vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
                 DSATestData.GetDSA2048Params());
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.OSX, "DSASecurityTransforms goes straight to OS, has different failure mode")]
+        public static void ImportNonsensePublicParameters()
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            DSAParameters validParameters = DSATestData.GetDSA2048Params();
+            BigInteger p = new BigInteger(validParameters.P, true, true);
+            BigInteger q = new BigInteger(validParameters.Q, true, true);
+            BigInteger g = new BigInteger(validParameters.G, true, true);
+            BigInteger y = new BigInteger(validParameters.Y, true, true);
+
+            using (DSA dsa = DSAFactory.Create())
+            {
+                // 1 < y < p, 1 < g < p, q is 160/224/256 bits
+                // p is 512..1024 % 64, or 1024/2048/3072 bits
+                ImportSPKI(dsa, p, q, g, p, writer);
+                ImportSPKI(dsa, p, q, g, BigInteger.One, writer);
+                ImportSPKI(dsa, p, q, g, BigInteger.MinusOne, writer);
+                ImportSPKI(dsa, p, q, p, y, writer);
+                ImportSPKI(dsa, p, q, -g, y, writer);
+                ImportSPKI(dsa, p, q, BigInteger.One, y, writer);
+                ImportSPKI(dsa, p, q, BigInteger.MinusOne, y, writer);
+                ImportSPKI(dsa, p, q << 1, g, y, writer);
+                ImportSPKI(dsa, p, q >> 1, g, y, writer);
+                ImportSPKI(dsa, p, -q, g, y, writer);
+                ImportSPKI(dsa, p >> 1, q, g, y, writer);
+                ImportSPKI(dsa, p << 1, q, g, y, writer);
+                ImportSPKI(dsa, BigInteger.One << 4095, q, 2, 97, writer);
+            }
+
+            static void ImportSPKI(
+                DSA key,
+                BigInteger p,
+                BigInteger q,
+                BigInteger g,
+                BigInteger y,
+                AsnWriter writer)
+            {
+                writer.Reset();
+                writer.WriteInteger(y);
+                byte[] encodedPublicKey = writer.Encode();
+                writer.Reset();
+
+                using (writer.PushSequence())
+                {
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteObjectIdentifier("1.2.840.10040.4.1");
+
+                        using (writer.PushSequence())
+                        {
+                            writer.WriteInteger(p);
+                            writer.WriteInteger(q);
+                            writer.WriteInteger(g);
+                        }
+                    }
+
+                    writer.WriteBitString(encodedPublicKey);
+                }
+
+                byte[] spki = writer.Encode();
+                writer.Reset();
+
+                AssertExtensions.ThrowsContains<CryptographicException>(
+                    () => key.ImportSubjectPublicKeyInfo(spki, out _),
+                    "corrupted");
+            }
+        }
+
+        [Fact]
+        public static void ImportNonsensePrivateParameters()
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            DSAParameters validParameters = DSATestData.GetDSA2048Params();
+            BigInteger p = new BigInteger(validParameters.P, true, true);
+            BigInteger q = new BigInteger(validParameters.Q, true, true);
+            BigInteger g = new BigInteger(validParameters.G, true, true);
+            BigInteger x = new BigInteger(validParameters.X, true, true);
+
+            using (DSA dsa = DSAFactory.Create())
+            {
+                // 1 < x < q, 1 < g < p, q is 160/224/256 bits
+                // p is 512..1024 % 64, or 1024/2048/3072 bits
+                ImportPkcs8(dsa, p, q, g, q, writer);
+                ImportPkcs8(dsa, p, q, g, BigInteger.One, writer);
+                // x = -1 gets re-interpreted as x = 255 because of a CAPI compat issue.
+                //ImportPkcs8(dsa, p, q, g, BigInteger.MinusOne, writer);
+                ImportPkcs8(dsa, p, q, g, -x, writer);
+                ImportPkcs8(dsa, p, q, p, x, writer);
+                ImportPkcs8(dsa, p, q, -g, x, writer);
+                ImportPkcs8(dsa, p, q, BigInteger.One, x, writer);
+                ImportPkcs8(dsa, p, q, BigInteger.MinusOne, x, writer);
+                ImportPkcs8(dsa, p, q << 1, g, x, writer);
+                ImportPkcs8(dsa, p, q >> 1, g, x, writer);
+                ImportPkcs8(dsa, p >> 1, q, g, x, writer);
+                ImportPkcs8(dsa, p << 1, q, g, x, writer);
+                ImportPkcs8(dsa, -q, q, g, x, writer);
+                ImportPkcs8(dsa, BigInteger.One << 4095, q, 2, 97, writer);
+                ImportPkcs8(dsa, -p, q, g, x, writer);
+            }
+
+            static void ImportPkcs8(
+                DSA key,
+                BigInteger p,
+                BigInteger q,
+                BigInteger g,
+                BigInteger x,
+                AsnWriter writer)
+            {
+                writer.Reset();
+
+                using (writer.PushSequence())
+                {
+                    writer.WriteInteger(0);
+
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteObjectIdentifier("1.2.840.10040.4.1");
+
+                        using (writer.PushSequence())
+                        {
+                            writer.WriteInteger(p);
+                            writer.WriteInteger(q);
+                            writer.WriteInteger(g);
+                        }
+                    }
+
+                    using (writer.PushOctetString())
+                    {
+                        writer.WriteInteger(x);
+                    }
+                }
+
+                byte[] pkcs8 = writer.Encode();
+                writer.Reset();
+
+                AssertExtensions.ThrowsContains<CryptographicException>(
+                    () => key.ImportPkcs8PrivateKey(pkcs8, out _),
+                    "corrupted");
+            }
         }
 
         [Fact]

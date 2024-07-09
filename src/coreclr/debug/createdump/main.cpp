@@ -175,7 +175,7 @@ int __cdecl main(const int argc, const char* argv[])
 
         if (options.DumpPathTemplate == nullptr)
         {
-            if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
+            if (::GetTempPathWrapper(MAX_LONGPATH, tmpPath) == 0)
             {
                 printf_error("GetTempPath failed (0x%08x)\n", ::GetLastError());
                 return ::GetLastError();
