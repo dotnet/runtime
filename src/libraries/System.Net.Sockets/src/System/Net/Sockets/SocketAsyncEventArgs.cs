@@ -74,7 +74,7 @@ namespace System.Net.Sockets
         private Socket? _currentSocket;
         private bool _userSocket; // if false when performing Connect, _currentSocket should be disposed
         private bool _disposeCalled;
-        internal Activity? _activity;
+        internal Activity? _connectActivity;
 
         // Controls thread safety via Interlocked.
         private const int Configuring = -1;
@@ -225,8 +225,8 @@ namespace System.Net.Sockets
                     break;
 
                 case SocketAsyncOperation.Connect:
-                    SocketsTelemetry.Log.AfterConnect(SocketError, _activity);
-                    _activity = null;
+                    SocketsTelemetry.Log.AfterConnect(SocketError, _connectActivity);
+                    _connectActivity = null;
                     break;
 
                 default:

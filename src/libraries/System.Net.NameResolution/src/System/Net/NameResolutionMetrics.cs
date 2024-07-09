@@ -19,7 +19,7 @@ namespace System.Net
 
         public static bool IsEnabled() => s_lookupDuration.Enabled;
 
-        public static void AfterResolution(TimeSpan duration, string hostName, string? errorType, Exception? exception)
+        public static void AfterResolution(TimeSpan duration, string hostName, Exception? exception)
         {
             var hostNameTag = KeyValuePair.Create("dns.question.name", (object?)hostName);
 
@@ -29,7 +29,7 @@ namespace System.Net
             }
             else
             {
-                errorType ??= NameResolutionTelemetry.GetErrorType(exception);
+                string errorType = NameResolutionTelemetry.GetErrorType(exception);
                 var errorTypeTag = KeyValuePair.Create("error.type", (object?)errorType);
                 s_lookupDuration.Record(duration.TotalSeconds, hostNameTag, errorTypeTag);
             }

@@ -74,7 +74,7 @@ namespace System.Net.Http
             Activity? activity = s_waitForConnectionActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.WaitForConnectionActivityName);
             if (activity is not null)
             {
-                activity.DisplayName = $"wait_for_connection {authority.HostValue}:{authority.Port}";
+                activity.DisplayName = $"HTTP wait_for_connection {authority.HostValue}:{authority.Port}";
             }
 
             return activity;

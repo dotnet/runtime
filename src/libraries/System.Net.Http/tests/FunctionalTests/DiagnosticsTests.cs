@@ -464,7 +464,7 @@ namespace System.Net.Http.Functional.Tests
                         }
 
                         // Verify display names and attributes:
-                        Assert.Equal($"wait_for_connection localhost:{uri.Port}", wait1.DisplayName);
+                        Assert.Equal($"HTTP wait_for_connection localhost:{uri.Port}", wait1.DisplayName);
                         Assert.Equal($"HTTP connection_setup localhost:{uri.Port}", conn.DisplayName);
                         ActivityAssert.HasTag(conn, "network.peer.address",
                             (string a) => a == IPAddress.Loopback.ToString() ||
@@ -1198,7 +1198,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     ActivitySource.AddActivityListener(new ActivityListener
                     {
-                        ShouldListenTo = s => s.Name is "System.Net.Http" or "",
+                        ShouldListenTo = s => s.Name is "System.Net.Http",
                         Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
                         {
                             madeASamplingDecision = true;

@@ -106,12 +106,11 @@ namespace System.Net.Sockets
             {
                 if (endPoint is IPEndPoint ipEndPoint)
                 {
-                    string peerAddress = ipEndPoint.Address.ToString();
                     int port = ipEndPoint.Port;
-                    activity.DisplayName = $"socket connect {peerAddress}:{port}";
+                    activity.DisplayName = $"socket connect {ipEndPoint.Address}:{port}";
                     if (activity.IsAllDataRequested)
                     {
-                        activity.SetTag("network.peer.address", peerAddress);
+                        activity.SetTag("network.peer.address", ipEndPoint.Address.ToString());
                         activity.SetTag("network.peer.port", port);
                         activity.SetTag("network.type", ipEndPoint.AddressFamily == AddressFamily.InterNetwork ? "ipv4" : "ipv6");
                     }

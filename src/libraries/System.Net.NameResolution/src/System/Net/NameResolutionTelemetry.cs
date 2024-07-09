@@ -91,7 +91,7 @@ namespace System.Net
         [NonEvent]
         public void AfterResolution(object hostNameOrAddress, in NameResolutionActivity activity, object? answer, Exception? exception = null)
         {
-            if (!activity.Stop(answer, exception, out TimeSpan duration, out string? errorType))
+            if (!activity.Stop(answer, exception, out TimeSpan duration))
             {
                 // We stopped the System.Diagnostics.Activity at this point and neither metrics nor EventSource is enabled.
                 return;
@@ -116,7 +116,7 @@ namespace System.Net
 
             if (NameResolutionMetrics.IsEnabled())
             {
-                NameResolutionMetrics.AfterResolution(duration, GetHostnameFromStateObject(hostNameOrAddress), errorType, exception);
+                NameResolutionMetrics.AfterResolution(duration, GetHostnameFromStateObject(hostNameOrAddress), exception);
             }
         }
 
@@ -182,9 +182,8 @@ namespace System.Net
         public static bool IsTracingEnabled() => s_activitySource.HasListeners();
 
         // Returns true if either NameResolutionTelemetry or NameResolutionMetrics is enabled.
-        public bool Stop(object? answer, Exception? exception, out TimeSpan duration, out string? errorType)
+        public bool Stop(object? answer, Exception? exception, out TimeSpan duration)
         {
-            errorType = null;
             if (_activity is not null)
             {
                 if (_activity.IsAllDataRequested)
@@ -205,7 +204,7 @@ namespace System.Net
                     else
                     {
                         Debug.Assert(exception is not null);
-                        errorType = NameResolutionTelemetry.GetErrorType(exception);
+                        string errorType = NameResolutionTelemetry.GetErrorType(exception);
                         _activity.SetTag("error.type", errorType);
                     }
                 }
