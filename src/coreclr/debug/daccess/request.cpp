@@ -161,11 +161,6 @@ BOOL DacValidateMethodTable(PTR_MethodTable pMT, BOOL &bIsFree)
             // In rare cases, we've seen the standard check above pass when it shouldn't.
             // Insert additional/ad-hoc tests below.
 
-            // Metadata token should look valid for a class
-            mdTypeDef td = pMT->GetCl();
-            if (td != mdTokenNil && TypeFromToken(td) != mdtTypeDef)
-                goto BadMethodTable;
-
             // BaseSize should always be greater than 0 for valid objects (unless it's an interface)
             // For strings, baseSize is not ptr-aligned
             if (!pMT->IsInterface() && !pMT->IsString())
@@ -1785,40 +1780,85 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
         return E_INVALIDARG;
 
     SOSDacEnter();
+    if (m_cdacSos != NULL)
+    {
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetMethodTableData(mt, MTData);
+        if (FAILED(hr))
+        {
+            hr = GetMethodTableDataImpl(mt, MTData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            DacpMethodTableData mtDataLocal;
+            HRESULT hrLocal = GetMethodTableDataImpl(mt, &mtDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(MTData->BaseSize == mtDataLocal.BaseSize);
+            _ASSERTE(MTData->ComponentSize == mtDataLocal.ComponentSize);
+            _ASSERTE(MTData->bIsFree == mtDataLocal.bIsFree);
+            _ASSERTE(MTData->Module == mtDataLocal.Module);
+            _ASSERTE(MTData->Class == mtDataLocal.Class);
+            _ASSERTE(MTData->ParentMethodTable == mtDataLocal.ParentMethodTable);
+            _ASSERTE(MTData->wNumInterfaces == mtDataLocal.wNumInterfaces);
+            _ASSERTE(MTData->wNumMethods == mtDataLocal.wNumMethods);
+            _ASSERTE(MTData->wNumVtableSlots == mtDataLocal.wNumVtableSlots);
+            _ASSERTE(MTData->wNumVirtuals == mtDataLocal.wNumVirtuals);
+            _ASSERTE(MTData->cl == mtDataLocal.cl);
+            _ASSERTE(MTData->dwAttrClass = mtDataLocal.dwAttrClass);
+            _ASSERTE(MTData->bContainsPointers == mtDataLocal.bContainsPointers);
+            _ASSERTE(MTData->bIsShared == mtDataLocal.bIsShared);
+            _ASSERTE(MTData->bIsDynamic == mtDataLocal.bIsDynamic);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetMethodTableDataImpl (mt, MTData);
+    }
+    SOSDacLeave();
+    return hr;
+}
 
+HRESULT
+ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTableData *MTData)
+{
     PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!DacValidateMethodTable(pMT, bIsFree))
     {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        ZeroMemory(MTData,sizeof(DacpMethodTableData));
-        MTData->BaseSize = pMT->GetBaseSize();
-        if(pMT->IsString())
-            MTData->BaseSize -= sizeof(WCHAR);
-        MTData->ComponentSize = (DWORD)pMT->GetComponentSize();
-        MTData->bIsFree = bIsFree;
-        if(!bIsFree)
-        {
-            MTData->Module = HOST_CDADDR(pMT->GetModule());
-            MTData->Class = HOST_CDADDR(pMT->GetClass());
-            MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
-            MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
-            MTData->wNumMethods = pMT->GetNumMethods();
-            MTData->wNumVtableSlots = pMT->GetNumVtableSlots();
-            MTData->wNumVirtuals = pMT->GetNumVirtuals();
-            MTData->cl = pMT->GetCl();
-            MTData->dwAttrClass = pMT->GetAttrClass();
-            MTData->bContainsPointers = pMT->ContainsPointers();
-            MTData->bIsShared = FALSE;
-            MTData->bIsDynamic = pMT->IsDynamicStatics();
-        }
+        return E_INVALIDARG;
     }
 
-    SOSDacLeave();
-    return hr;
+    ZeroMemory(MTData,sizeof(DacpMethodTableData));
+    MTData->BaseSize = pMT->GetBaseSize();
+    // [compat] SOS DAC APIs added this base size adjustment for strings
+    // due to: "2008/09/25 Title: New implementation of StringBuilder and improvements in String class"
+    // which changed StringBuilder not to use a String as an internal buffer and in the process
+    // changed the String internals so that StringObject::GetBaseSize() now includes the nul terminator character,
+    // which is apparently not expected by SOS.
+    if(pMT->IsString())
+        MTData->BaseSize -= sizeof(WCHAR);
+    MTData->ComponentSize = (DWORD)pMT->GetComponentSize();
+    MTData->bIsFree = bIsFree;
+    if(!bIsFree)
+    {
+        MTData->Module = HOST_CDADDR(pMT->GetModule());
+        // Note: DacpMethodTableData::Class is really a pointer to the canonical method table
+        MTData->Class = HOST_CDADDR(pMT->GetClass()->GetMethodTable());
+        MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
+        MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
+        MTData->wNumMethods = pMT->GetNumMethods(); // printed as "number of vtable slots" and used to iterate over method slots
+        MTData->wNumVtableSlots = 0; // always return 0 since .NET 9
+        MTData->wNumVirtuals = 0; // always return 0 since .NET 9
+        MTData->cl = pMT->GetCl();
+        MTData->dwAttrClass = pMT->GetAttrClass();
+        MTData->bContainsPointers = pMT->ContainsGCPointers();
+        MTData->bIsShared = FALSE;
+        MTData->bIsDynamic = pMT->IsDynamicStatics();
+    }
+    return S_OK;
 }
 
 HRESULT
@@ -2063,25 +2103,51 @@ ClrDataAccess::GetMethodTableTransparencyData(CLRDATA_ADDRESS mt, struct DacpMet
 }
 
 HRESULT
-ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClass, CLRDATA_ADDRESS *value)
+ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClassReallyCanonMT, CLRDATA_ADDRESS *value)
 {
-    if (eeClass == 0 || value == NULL)
+    if (eeClassReallyCanonMT == 0 || value == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
-
-    PTR_EEClass pClass = PTR_EEClass(TO_TADDR(eeClass));
-    if (!DacValidateEEClass(pClass))
+    if (m_cdacSos != NULL)
     {
-        hr = E_INVALIDARG;
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetMethodTableForEEClass(eeClassReallyCanonMT, value);
+        if (FAILED(hr))
+        {
+            hr = GetMethodTableForEEClassImpl(eeClassReallyCanonMT, value);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            CLRDATA_ADDRESS valueLocal;
+            HRESULT hrLocal = GetMethodTableForEEClassImpl(eeClassReallyCanonMT, &valueLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(*value == valueLocal);
+        }
+#endif
     }
     else
     {
-        *value = HOST_CDADDR(pClass->GetMethodTable());
+        hr = GetMethodTableForEEClassImpl (eeClassReallyCanonMT, value);
     }
-
     SOSDacLeave();
     return hr;
+}
+
+HRESULT
+ClrDataAccess::GetMethodTableForEEClassImpl(CLRDATA_ADDRESS eeClassReallyCanonMT, CLRDATA_ADDRESS *value)
+{
+    PTR_MethodTable pCanonMT = PTR_MethodTable(TO_TADDR(eeClassReallyCanonMT));
+    BOOL bIsFree;
+    if (!DacValidateMethodTable(pCanonMT, bIsFree))
+    {
+        return E_INVALIDARG;
+    }
+
+    *value = HOST_CDADDR(pCanonMT);
+    return S_OK;
 }
 
 HRESULT
