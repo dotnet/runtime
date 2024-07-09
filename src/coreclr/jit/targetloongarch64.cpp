@@ -78,45 +78,51 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
         {
             assert(!structLayout->IsBlockLayout());
 
-            FpStructInRegistersInfo fpInfo;
-            CORINFO_CLASS_HANDLE    typeHnd = structLayout->GetClassHandle();
+            CORINFO_CLASS_HANDLE             typeHnd  = structLayout->GetClassHandle();
+            const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(typeHnd);
 
-            fpInfo = comp->GetPassFpStructInRegistersInfo(typeHnd);
-
-            if (fpInfo.flags != FpStruct::UseIntCallConv)
+            if (!lowering->byIntegerCallConv)
             {
-                if ((fpInfo.flags & FpStruct::OnlyOne) != 0)
+                slots = lowering->numLoweredElements;
+                if (lowering->numLoweredElements == 1)
                 {
                     assert(passedSize <= TARGET_POINTER_SIZE);
+                    assert(varTypeIsFloating(JITtype2varType(lowering->loweredElements[0])));
 
-                    slots                 = 1;
                     canPassArgInRegisters = m_floatRegs.Count() > 0;
-
-                    argRegTypeInStruct1 = (passedSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
+                    argRegTypeInStruct1   = (passedSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
                 }
-                else if ((fpInfo.flags & FpStruct::BothFloat) != 0)
+                else
                 {
-                    slots                 = 2;
-                    canPassArgInRegisters = m_floatRegs.Count() >= 2;
+                    assert(lowering->numLoweredElements == 2);
+                    var_types types[] = {
+                        JITtype2varType(lowering->loweredElements[0]),
+                        JITtype2varType(lowering->loweredElements[1]),
+                    };
+                    if (varTypeIsFloating(types[0]) && varTypeIsFloating(types[1]))
+                    {
+                        canPassArgInRegisters = m_floatRegs.Count() >= 2;
 
-                    argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-                    argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-                }
-                else if ((fpInfo.flags & FpStruct::FloatInt) != 0)
-                {
-                    slots                 = 2;
-                    canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
+                        argRegTypeInStruct1 = types[0];
+                        argRegTypeInStruct2 = types[1];
+                    }
+                    else if (!varTypeIsFloating(types[1]))
+                    {
+                        assert(varTypeIsFloating(types[0]));
+                        canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
 
-                    argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-                    argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_LONG : TYP_INT;
-                }
-                else if ((fpInfo.flags & FpStruct::IntFloat) != 0)
-                {
-                    slots                 = 2;
-                    canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
+                        argRegTypeInStruct1 = types[0];
+                        argRegTypeInStruct2 = (genTypeSize(types[1]) == 8) ? TYP_LONG : TYP_INT;
+                    }
+                    else
+                    {
+                        assert(!varTypeIsFloating(types[0]));
+                        assert(varTypeIsFloating(types[1]));
+                        canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
 
-                    argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_LONG : TYP_INT;
-                    argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+                        argRegTypeInStruct1 = (genTypeSize(types[0]) == 8) ? TYP_LONG : TYP_INT;
+                        argRegTypeInStruct2 = types[1];
+                    }
                 }
 
                 assert((slots == 1) || (slots == 2));
