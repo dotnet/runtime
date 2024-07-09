@@ -405,6 +405,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotNull(activity);
                     Assert.Equal(parentActivity, Activity.Current.Parent);
                     IEnumerable<KeyValuePair<string, object?>> tags = activity.TagObjects;
+                    Assert.Equal(method is "CUSTOM" ? "HTTP" : method, activity.DisplayName);
                     VerifyRequestTags(tags, currentUri, expectedUriFull, expectedMethodTag: method is "CUSTOM" ? "_OTHER" : method);
                     VerifyTag(tags, "http.request.method_original", method is "CUSTOM" ? method : null);
 

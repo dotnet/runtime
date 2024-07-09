@@ -112,6 +112,9 @@ namespace System.Net.Http
 
             if (activity is not null)
             {
+                // https://github.com/open-telemetry/semantic-conventions/blob/release/v1.23.x/docs/http/http-spans.md#name
+                activity.DisplayName = HttpMethod.GetKnownMethod(request.Method.Method)?.Method ?? "HTTP";
+
                 if (activity.IsAllDataRequested)
                 {
                     // Add standard tags known before sending the request.
