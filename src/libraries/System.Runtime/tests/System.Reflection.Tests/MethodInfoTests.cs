@@ -307,6 +307,13 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void GetFunctionPointerFromUninstantiatedGenericMethod()
+        {
+            RuntimeMethodHandle handle = typeof(MI_SubClass).GetMethod(nameof(MI_SubClass.StaticGenericMethod))!.MethodHandle;
+            Assert.Throws<InvalidOperationException>(() => handle.GetFunctionPointer());
+        }
+
+        [Fact]
         public void GetHashCodeTest()
         {
             MethodInfo methodInfo = GetMethod(typeof(MI_SubClass), "VoidMethodReturningInt");

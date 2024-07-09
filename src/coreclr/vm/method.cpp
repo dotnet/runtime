@@ -2013,8 +2013,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
 
     if (IsGenericMethodDefinition())
     {
-        _ASSERTE(!"Cannot take the address of an uninstantiated generic method.");
-        COMPlusThrow(kInvalidProgramException);
+        COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR);
     }
 
     if (accessFlags & CORINFO_ACCESS_LDFTN)
