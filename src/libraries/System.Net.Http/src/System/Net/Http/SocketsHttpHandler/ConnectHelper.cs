@@ -55,7 +55,7 @@ namespace System.Net.Http
             return sslOptions;
         }
 
-        public static async ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, Activity? activity, CancellationToken cancellationToken)
+        public static async ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, CancellationToken cancellationToken)
         {
             sslOptions = SetUpRemoteCertificateValidationCallback(sslOptions, request);
 
@@ -81,15 +81,12 @@ namespace System.Net.Http
 
                 if (e is OperationCanceledException)
                 {
-                    ConnectionSetupDiagnostics.AbortActivity(activity, e);
                     throw;
                 }
 
                 if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
                 {
-                    e = CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
-                    ConnectionSetupDiagnostics.AbortActivity(activity, e);
-                    throw e;
+                    throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
                 }
 
                 HttpRequestException ex = new HttpRequestException(HttpRequestError.SecureConnectionError, SR.net_http_ssl_connection_failed, e);
@@ -99,7 +96,6 @@ namespace System.Net.Http
                     // At this point, SSL connection for HTTP / 2 failed, and the exception should indicate the reason for the external client / user.
                     ex.Data["HTTP2_ENABLED"] = false;
                 }
-                ConnectionSetupDiagnostics.AbortActivity(activity, ex);
                 throw ex;
             }
 
@@ -107,9 +103,7 @@ namespace System.Net.Http
             if (cancellationToken.IsCancellationRequested)
             {
                 sslStream.Dispose();
-                Exception ex = CancellationHelper.CreateOperationCanceledException(null, cancellationToken);
-                ConnectionSetupDiagnostics.AbortActivity(activity, ex);
-                throw ex;
+                throw CancellationHelper.CreateOperationCanceledException(null, cancellationToken);
             }
 
             return sslStream;

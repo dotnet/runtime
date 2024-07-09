@@ -37,17 +37,25 @@ namespace System.Net.Http
             return activity;
         }
 
-        public static void StopConnectionSetupActivity(Activity activity, IPEndPoint? remoteEndPoint)
+        public static void StopConnectionSetupActivity(Activity activity, Exception? exception, IPEndPoint? remoteEndPoint)
         {
             Debug.Assert(activity is not null);
-            if (activity.IsAllDataRequested && remoteEndPoint is not null)
+            if (exception is not null)
             {
-                activity.SetTag("network.peer.address", remoteEndPoint.Address.ToString());
+                ReportError(activity, exception);
             }
+            else
+            {
+                if (activity.IsAllDataRequested && remoteEndPoint is not null)
+                {
+                    activity.SetTag("network.peer.address", remoteEndPoint.Address.ToString());
+                }
+            }
+
             activity.Stop();
         }
 
-        public static void AbortActivity(Activity? activity, Exception exception)
+        public static void ReportError(Activity? activity, Exception exception)
         {
             Debug.Assert(exception is not null);
             if (activity is null) return;
@@ -59,7 +67,6 @@ namespace System.Net.Http
                 Debug.Assert(errorType is not null, "DiagnosticsHelper.TryGetErrorType() should succeed whenever an exception is provided.");
                 activity.SetTag("error.type", errorType);
             }
-            activity.Stop();
         }
 
         public static Activity? StartWaitForConnectionActivity(HttpAuthority authority)

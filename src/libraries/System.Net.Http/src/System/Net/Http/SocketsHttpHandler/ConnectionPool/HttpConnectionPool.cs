@@ -569,76 +569,87 @@ namespace System.Net.Http
         {
             Stream? stream = null;
             IPEndPoint? remoteEndPoint = null;
+            Exception? exception = null;
+            TransportContext? transportContext = null;
 
             Activity? activity = ConnectionSetupDiagnostics.StartConnectionSetupActivity(IsSecure, OriginAuthority);
 
-            switch (_kind)
+            try
             {
-                case HttpConnectionKind.Http:
-                case HttpConnectionKind.Https:
-                case HttpConnectionKind.ProxyConnect:
-                    stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, activity, cancellationToken).ConfigureAwait(false);
-                    // remoteEndPoint is returned for diagnostic purposes.
-                    remoteEndPoint = GetRemoteEndPoint(stream);
-                    if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
-                    {
-                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, activity, cancellationToken).ConfigureAwait(false);
-                    }
-                    break;
-
-                case HttpConnectionKind.Proxy:
-                    stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, activity, cancellationToken).ConfigureAwait(false);
-                    // remoteEndPoint is returned for diagnostic purposes.
-                    remoteEndPoint = GetRemoteEndPoint(stream);
-                    if (_sslOptionsProxy != null)
-                    {
-                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, activity, cancellationToken).ConfigureAwait(false);
-                    }
-                    break;
-
-                case HttpConnectionKind.ProxyTunnel:
-                case HttpConnectionKind.SslProxyTunnel:
-                    stream = await EstablishProxyTunnelAsync(async, activity, cancellationToken).ConfigureAwait(false);
-
-                    if (stream is HttpContentStream contentStream && contentStream._connection?._stream is Stream innerStream)
-                    {
-                        remoteEndPoint = GetRemoteEndPoint(innerStream);
-                    }
-
-                    break;
-
-                case HttpConnectionKind.SocksTunnel:
-                case HttpConnectionKind.SslSocksTunnel:
-                    stream = await EstablishSocksTunnel(request, async, activity, cancellationToken).ConfigureAwait(false);
-                    // remoteEndPoint is returned for diagnostic purposes.
-                    remoteEndPoint = GetRemoteEndPoint(stream);
-                    break;
-            }
-
-            Debug.Assert(stream != null);
-
-            TransportContext? transportContext = null;
-            if (IsSecure)
-            {
-                SslStream? sslStream = stream as SslStream;
-                if (sslStream == null)
+                switch (_kind)
                 {
-                    sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, activity, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol}'");
-                    }
-                }
-                transportContext = sslStream.TransportContext;
-                stream = sslStream;
-            }
+                    case HttpConnectionKind.Http:
+                    case HttpConnectionKind.Https:
+                    case HttpConnectionKind.ProxyConnect:
+                        stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        // remoteEndPoint is returned for diagnostic purposes.
+                        remoteEndPoint = GetRemoteEndPoint(stream);
+                        if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
+                        {
+                            stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                        }
+                        break;
 
-            if (activity is not null)
+                    case HttpConnectionKind.Proxy:
+                        stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        // remoteEndPoint is returned for diagnostic purposes.
+                        remoteEndPoint = GetRemoteEndPoint(stream);
+                        if (_sslOptionsProxy != null)
+                        {
+                            stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                        }
+                        break;
+
+                    case HttpConnectionKind.ProxyTunnel:
+                    case HttpConnectionKind.SslProxyTunnel:
+                        stream = await EstablishProxyTunnelAsync(async, cancellationToken).ConfigureAwait(false);
+
+                        if (stream is HttpContentStream contentStream && contentStream._connection?._stream is Stream innerStream)
+                        {
+                            remoteEndPoint = GetRemoteEndPoint(innerStream);
+                        }
+
+                        break;
+
+                    case HttpConnectionKind.SocksTunnel:
+                    case HttpConnectionKind.SslSocksTunnel:
+                        stream = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
+                        // remoteEndPoint is returned for diagnostic purposes.
+                        remoteEndPoint = GetRemoteEndPoint(stream);
+                        break;
+                }
+
+                Debug.Assert(stream != null);
+
+                if (IsSecure)
+                {
+                    SslStream? sslStream = stream as SslStream;
+                    if (sslStream == null)
+                    {
+                        sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol}'");
+                        }
+                    }
+                    transportContext = sslStream.TransportContext;
+                    stream = sslStream;
+                }
+            }
+            catch (Exception ex) when (activity is not null)
             {
-                ConnectionSetupDiagnostics.StopConnectionSetupActivity(activity, remoteEndPoint);
+                exception = ex;
+                throw;
+            }
+            finally
+            {
+                if (activity is not null)
+                {
+                    ConnectionSetupDiagnostics.StopConnectionSetupActivity(activity, exception, remoteEndPoint);
+                }
             }
 
             return (stream, transportContext, activity, remoteEndPoint);
@@ -646,7 +657,7 @@ namespace System.Net.Http
             static IPEndPoint? GetRemoteEndPoint(Stream stream) => (stream as NetworkStream)?.Socket?.RemoteEndPoint as IPEndPoint;
         }
 
-        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, Activity? activity, CancellationToken cancellationToken)
+        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -701,11 +712,9 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                ex = ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
+                throw ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
                     CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken) :
                     ConnectHelper.CreateWrappedException(ex, host, port, cancellationToken);
-                ConnectionSetupDiagnostics.AbortActivity(activity, ex);
-                throw ex;
             }
         }
 
@@ -769,7 +778,7 @@ namespace System.Net.Http
             return newStream;
         }
 
-        private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, Activity? activity, CancellationToken cancellationToken)
+        private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, CancellationToken cancellationToken)
         {
             // Send a CONNECT request to the proxy server to establish a tunnel.
             HttpRequestMessage tunnelRequest = new HttpRequestMessage(HttpMethod.Connect, _proxyUri);
@@ -785,44 +794,34 @@ namespace System.Net.Http
             if (tunnelResponse.StatusCode != HttpStatusCode.OK)
             {
                 tunnelResponse.Dispose();
-                Exception ex = new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode));
-                ConnectionSetupDiagnostics.AbortActivity(activity, ex);
-                throw ex;
+                throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode));
             }
 
             try
             {
                 return tunnelResponse.Content.ReadAsStream(cancellationToken);
             }
-            catch (Exception ex)
+            catch
             {
-                ConnectionSetupDiagnostics.AbortActivity(activity, ex);
                 tunnelResponse.Dispose();
                 throw;
             }
         }
 
-        private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, Activity? activity, CancellationToken cancellationToken)
+        private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(_proxyUri != null);
 
-            Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, activity, cancellationToken).ConfigureAwait(false);
+            Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
 
             try
             {
                 await SocksHelper.EstablishSocksTunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, async, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is not OperationCanceledException)
             {
-                if (e is not OperationCanceledException)
-                {
-                    Debug.Assert(e is not HttpRequestException);
-                    e = new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.net_http_proxy_tunnel_error, e);
-                    ConnectionSetupDiagnostics.AbortActivity(activity, e);
-                    throw e;
-                }
-                ConnectionSetupDiagnostics.AbortActivity(activity, e);
-                throw;
+                Debug.Assert(e is not HttpRequestException);
+                throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.net_http_proxy_tunnel_error, e);
             }
 
             return stream;

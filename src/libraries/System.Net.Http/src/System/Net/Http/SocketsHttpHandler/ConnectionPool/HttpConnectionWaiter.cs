@@ -29,6 +29,7 @@ namespace System.Net.Http
             Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
 
             long startingTimestamp = Stopwatch.GetTimestamp();
+
             Activity? waitForConnectionActivity = ConnectionSetupDiagnostics.StartWaitForConnectionActivity(pool.OriginAuthority);
             try
             {
@@ -41,11 +42,12 @@ namespace System.Net.Http
             }
             catch (Exception ex) when (waitForConnectionActivity is not null)
             {
-                ConnectionSetupDiagnostics.AbortActivity(waitForConnectionActivity, ex);
+                ConnectionSetupDiagnostics.ReportError(waitForConnectionActivity, ex);
                 throw;
             }
             finally
             {
+                waitForConnectionActivity?.Stop();
                 TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
                 int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
 
