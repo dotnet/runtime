@@ -1651,7 +1651,6 @@ public:
 #else
         return false;
 #endif // FEATURE_HW_INTRINSICS
-
     }
 
     bool OperIsConvertVectorToMask() const
