@@ -4188,7 +4188,7 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	if (invoke)
 		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
 	else
-		mono_marshal_set_callconv_from_unmanaged_callers_only_attribute(method, csig);
+		mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (method, csig);
 
 	if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
@@ -4232,6 +4232,7 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 		}
 
 		csig = mono_metadata_signature_dup_new_params (NULL, NULL, get_method_image (method), csig, new_param_count, (MonoType**)new_params->data);
+		g_array_free (new_params, TRUE);
 	}
 
 	if (!marshalling_enabled)
