@@ -617,10 +617,10 @@ add_valuetype_win64 (MonoMethodSignature *signature, ArgInfo *arg_info, MonoType
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 static void
-add_return_valuetype_swiftcall (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type, guint32 *gr, guint32 *fr, guint32 *stack_size)
+add_return_valuetype_swiftcall (ArgInfo *ainfo, MonoType *type, guint32 *gr, guint32 *fr)
 {
-	MonoClass *klass = mono_class_from_mono_type_internal (type);
-	int struct_size = mono_class_value_size (klass, NULL);
+	guint32 align;
+	int size = mini_type_stack_size_full (type, &align, TRUE);
 	SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (type, FALSE);
 	// The structs that cannot be lowered, we pass them by reference
 	if (lowered_swift_struct.by_reference) {
@@ -639,7 +639,7 @@ add_return_valuetype_swiftcall (MonoMethodSignature *sig, ArgInfo *ainfo, MonoTy
 
 	ainfo->storage = ArgSwiftValuetypeLoweredRet;
 	ainfo->nregs = lowered_swift_struct.num_lowered_elements;
-	ainfo->arg_size = struct_size;
+	ainfo->arg_size = size;
 
 	// Record the lowered elements of the struct
 	for (uint32_t idx_lowered_elem = 0; idx_lowered_elem < lowered_swift_struct.num_lowered_elements; ++idx_lowered_elem) {
@@ -669,12 +669,6 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 #ifdef TARGET_WIN32
 	add_valuetype_win64 (sig, ainfo, type, is_return, gr, fr, stack_size);
 #else
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-	if (is_return && sig->pinvoke && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
-		add_return_valuetype_swiftcall (sig, ainfo, type, gr, fr, stack_size);
-		return;
-	}
-#endif
 	guint32 size, quad, nquads, i, nfields;
 	/* Keep track of the size used in each quad so we can */
 	/* use the right size when copying args/return vars.  */
@@ -983,19 +977,27 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	case MONO_TYPE_TYPEDBYREF: {
 		guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
-		add_valuetype (sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
-		g_assert (cinfo->ret.storage != ArgInIReg);
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
-		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && 
-			cinfo->ret.storage == ArgValuetypeAddrInIReg) {
-			/*
-			 * We need to set this even when sig->pinvoke is FALSE, because the `cinfo` gets copied to the
-			 * `cfg->arch` on the first pass. However, later in `amd64_handle_swift_return_buffer_reg` we 
-			 * condition the Swift return buffer handling only to P/Invoke calls. 
-			 */
-			cinfo->need_swift_return_buffer = TRUE;
-		}
+		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+			if (sig->pinvoke)
+				add_return_valuetype_swiftcall (&cinfo->ret, ret_type, &tmp_gr, &tmp_fr);
+			else
+				add_valuetype (sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+
+			if (cinfo->ret.storage == ArgValuetypeAddrInIReg) {
+				/*
+				 * We need to set this even when sig->pinvoke is FALSE, because the `cinfo` gets copied to the
+				 * `cfg->arch` on the first pass. However, later in `amd64_handle_swift_return_buffer_reg` we 
+				 * condition the Swift return buffer handling only to P/Invoke calls. 
+				 */
+				cinfo->need_swift_return_buffer = TRUE;
+			}
+		} else
 #endif
+		{
+			add_valuetype (sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+		}
+		g_assert (cinfo->ret.storage != ArgInIReg);		
 		break;
 	}
 	case MONO_TYPE_VAR:

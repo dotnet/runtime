@@ -1642,7 +1642,7 @@ static void
 add_return_valuetype_swiftcall (CallInfo *cinfo, ArgInfo *ainfo, MonoType *type)
 {
 	guint32 align;
-	int size = mini_type_stack_size_full (type, &align, cinfo->pinvoke);
+	int size = mini_type_stack_size_full (type, &align, TRUE);
 	SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (type, FALSE);
 	// The structs that cannot be lowered, we pass them by reference
 	if (lowered_swift_struct.by_reference) {
