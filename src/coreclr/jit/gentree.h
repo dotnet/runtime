@@ -1642,24 +1642,29 @@ public:
 
     bool OperIsConvertMaskToVector() const
     {
+#if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
         return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
 #elif defined(TARGET_ARM64)
         return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
+#endif // !TARGET_XARCH && !TARGET_ARM64
 #else
         return false;
-#endif
+#endif // FEATURE_HW_INTRINSICS
+
     }
 
     bool OperIsConvertVectorToMask() const
     {
+#if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
         return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
 #elif defined(TARGET_ARM64)
         return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
+#endif // !TARGET_XARCH && !TARGET_ARM64
 #else
         return false;
-#endif
+#endif // FEATURE_HW_INTRINSICS
     }
 
     // This is here for cleaner GT_LONG #ifdefs.
