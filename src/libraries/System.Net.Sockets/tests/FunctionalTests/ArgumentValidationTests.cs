@@ -800,7 +800,7 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                // Skip on Qemu due to https://github.com/dotnet/runtime/issues/104542
+                // Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]
                 if (PlatformDetection.IsQemuLinux && invalidatingAction == 1)
                 {
                     return;
@@ -838,7 +838,7 @@ namespace System.Net.Sockets.Tests
 
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                // Skip on Qemu due to https://github.com/dotnet/runtime/issues/104542
+                // Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]
                 if (PlatformDetection.IsQemuLinux && invalidatingAction == 1)
                 {
                     return;

@@ -147,7 +147,7 @@ namespace System.Net.Sockets.Tests
         {
             if (PlatformDetection.IsQemuLinux && (buffer == null || buffer.Length == 0))
             {
-                // Skip on Qemu due to https://github.com/dotnet/runtime/issues/104545
+                // Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104545)]
                 return;
             }
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
