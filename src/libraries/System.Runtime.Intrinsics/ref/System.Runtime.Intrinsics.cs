@@ -4633,6 +4633,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<uint> ExtractVector(System.Numerics.Vector<uint> upper, System.Numerics.Vector<uint> lower, [ConstantExpected] byte index) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> ExtractVector(System.Numerics.Vector<ulong> upper, System.Numerics.Vector<ulong> lower, [ConstantExpected] byte index) { throw null; }
 
+        public static System.Numerics.Vector<double> FloatingPointExponentialAccelerator(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<float> FloatingPointExponentialAccelerator(System.Numerics.Vector<uint> value) { throw null; }
+
         public static System.Numerics.Vector<double> FusedMultiplyAdd(System.Numerics.Vector<double> addend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> FusedMultiplyAdd(System.Numerics.Vector<float> addend, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> FusedMultiplyAddBySelectedScalar(System.Numerics.Vector<double> addend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, [ConstantExpected] byte rightIndex) { throw null; }
