@@ -53,9 +53,9 @@ const emitJumpKind emitReverseJumpKinds[] = {
 }
 
 /*****************************************************************************
-* Look up the jump kind for an instruction. It better be a conditional
-* branch instruction with a jump kind!
-*/
+ * Look up the jump kind for an instruction. It better be a conditional
+ * branch instruction with a jump kind!
+ */
 
 /*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
 {
@@ -539,8 +539,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(emitGetInsSC(id) <= 4);
             if (insOptsLSL(id->idInsOpt()))
             {
-                assert((emitGetInsSC(id) > 0) ||
-                       (id->idReg2() == REG_ZR)); // REG_ZR encodes SP and we allow a shift of zero
+                assert((emitGetInsSC(id) > 0) || (id->idReg2() == REG_ZR)); // REG_ZR encodes SP and we allow a shift of
+                                                                            // zero
             }
             break;
 
@@ -967,7 +967,7 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
     switch (fmt)
     {
 
-        // These are the formats with "destination" registers:
+            // These are the formats with "destination" registers:
 
         case IF_DI_1B: // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)
         case IF_DI_1D: // DI_1D   X........Nrrrrrr ssssss.....ddddd      Rd       imm(N,r,s)
@@ -1031,7 +1031,7 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
             // Tracked GC pointers cannot be placed into the SIMD registers.
             return false;
 
-        // These are the load/store formats with "target" registers:
+            // These are the load/store formats with "target" registers:
 
         case IF_LS_1A: // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
         case IF_LS_2A: // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
@@ -1471,8 +1471,8 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     return insFormats[ins];
 }
 
-#define LD 1
-#define ST 2
+#define LD  1
+#define ST  2
 #define CMP 4
 #define RSH 8
 #define WID 16
@@ -1733,8 +1733,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     };
     // clang-format on
 
-    const static insFormat formatEncode9[9] = {IF_DR_2E, IF_DR_2G, IF_DI_1B, IF_DI_1D, IF_DV_3C,
-                                               IF_DV_2B, IF_DV_2C, IF_DV_2E, IF_DV_2F};
+    const static insFormat formatEncode9[9]  = {IF_DR_2E, IF_DR_2G, IF_DI_1B, IF_DI_1D, IF_DV_3C,
+                                                IF_DV_2B, IF_DV_2C, IF_DV_2E, IF_DV_2F};
     const static insFormat formatEncode6A[6] = {IF_DR_3A, IF_DR_3B, IF_DR_3C, IF_DI_2A, IF_DV_3A, IF_DV_3E};
     const static insFormat formatEncode6B[6] = {IF_LS_2D, IF_LS_3F, IF_LS_2E, IF_LS_2F, IF_LS_3G, IF_LS_2G};
     const static insFormat formatEncode5A[5] = {IF_LS_2A, IF_LS_2B, IF_LS_2C, IF_LS_3A, IF_LS_1A};
@@ -3743,18 +3743,95 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
     appendToCurIG(id);
 }
 
+//-----------------------------------------------------------------------------
+//  emitIns_Add_Add_Tls_Reloc: Generates pair of "add" instructions needed for TLS access
+//  on windows for NativeAOT.
+//          add reg, reg, #0, LSL #0xC
+//          add reg, reg, #0
+//
+//  Arguments:
+//      attr - Instruction attributes
+//      reg  - Register
+//      imm  - The handle of TLS variable
+//      gtFlags - DEBUG only gtFlags.
+//
+void emitter::emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
+                                        regNumber   reg,
+                                        ssize_t imm DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
+{
+    emitAttr size = EA_SIZE(attr);
+
+    assert(emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    assert(TargetOS::IsWindows);
+
+    assert(isValidGeneralDatasize(size));
+    assert(EA_IS_CNS_SEC_RELOC(attr));
+
+    insFormat fmt = IF_DI_2A;
+
+    instrDesc* id = emitNewInstrCns(attr, 0);
+
+    // add reg, reg, #0, LSL 0xC
+    id->idIns(INS_add);
+    id->idInsFmt(fmt);
+    id->idInsOpt(INS_OPTS_LSL12);
+    id->idAddr()->iiaAddr = (BYTE*)imm;
+
+    id->idReg1(reg);
+    id->idReg2(reg);
+
+    // Since this is relocation, set to 8 byte size.
+    id->idOpSize(EA_8BYTE);
+    id->idSetTlsGD();
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = imm;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+
+    // add reg, reg, #0
+
+    // To differentiate from first add, instead of passing
+    // `attr`, we pass `size` so this instruction is not
+    // set as having "constant relocation" i.e EA_CNS_RELOC_FLG
+    // is not set.
+    id = emitNewInstrCns(size, 0);
+
+    id->idIns(INS_add);
+    id->idInsFmt(fmt);
+    id->idAddr()->iiaAddr = (BYTE*)imm;
+
+    id->idReg1(reg);
+    id->idReg2(reg);
+
+    // Since this is relocation, set to 8 byte size.
+    id->idOpSize(EA_8BYTE);
+    id->idSetTlsGD();
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = imm;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
 /*****************************************************************************
  *
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction     ins,
-                          emitAttr        attr,
-                          regNumber       reg,
-                          ssize_t         imm,
-                          insOpts         opt, /* = INS_OPTS_NONE */
+void emitter::emitIns_R_I(instruction ins,
+                          emitAttr    attr,
+                          regNumber   reg,
+                          ssize_t     imm,
+                          insOpts     opt,     /* = INS_OPTS_NONE */
                           insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */
-                          DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
+                              DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
     emitAttr  size      = EA_SIZE(attr);
     emitAttr  elemsize  = EA_UNKNOWN;
@@ -3940,8 +4017,8 @@ void emitter::emitIns_R_I(instruction     ins,
             // First try the standard 'byteShifted immediate' imm(i8,bySh)
             bsi.immBSVal = 0;
             canEncode    = canEncodeByteShiftedImm(imm, elemsize,
-                                                (ins == INS_mvni), // mvni supports the ones shifting variant (aka MSL)
-                                                &bsi);
+                                                   (ins == INS_mvni), // mvni supports the ones shifting variant (aka MSL)
+                                                   &bsi);
             if (canEncode)
             {
                 imm = bsi.immBSVal;
@@ -4248,6 +4325,47 @@ void emitter::emitIns_Mov(
             break;
         }
 
+        case INS_sve_mov:
+        {
+            if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
+            {
+                assert((opt == INS_OPTS_SCALABLE_B) || insOptsNone(opt));
+                opt  = INS_OPTS_SCALABLE_B;
+                attr = EA_SCALABLE;
+
+                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+                {
+                    return;
+                }
+                fmt = IF_SVE_CZ_4A_L;
+            }
+            else if (isVectorRegister(dstReg) && isVectorRegister(srcReg))
+            {
+                assert(insOptsScalable(opt));
+
+                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+                {
+                    return;
+                }
+                fmt = IF_SVE_AU_3A;
+            }
+            else if (isVectorRegister(dstReg) && isGeneralRegisterOrSP(srcReg))
+            {
+                assert(insOptsScalable(opt));
+                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+                {
+                    return;
+                }
+                srcReg = encodingSPtoZR(srcReg);
+                fmt    = IF_SVE_CB_2A;
+            }
+            else
+            {
+                unreached();
+            }
+
+            break;
+        }
         default:
         {
             unreached();
@@ -4955,8 +5073,8 @@ void emitter::emitIns_R_I_I(instruction ins,
                             regNumber   reg,
                             ssize_t     imm1,
                             ssize_t     imm2,
-                            insOpts     opt /* = INS_OPTS_NONE */
-                            DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = 0 */))
+                            insOpts opt /* = INS_OPTS_NONE */
+                                DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = 0 */))
 {
     emitAttr  size   = EA_SIZE(attr);
     insFormat fmt    = IF_NONE;
@@ -5792,15 +5910,15 @@ void emitter::emitIns_R_R_F(
 }
 
 /*****************************************************************************
-*
-*  Add an instruction referencing two registers and a constant.
-*  Also checks for a large immediate that needs a second instruction
-*  and will load it in reg1
-*
-*  - Supports instructions: add, adds, sub, subs, and, ands, eor and orr
-*  - Requires that reg1 is a general register and not SP or ZR
-*  - Requires that reg1 != reg2
-*/
+ *
+ *  Add an instruction referencing two registers and a constant.
+ *  Also checks for a large immediate that needs a second instruction
+ *  and will load it in reg1
+ *
+ *  - Supports instructions: add, adds, sub, subs, and, ands, eor and orr
+ *  - Requires that reg1 is a general register and not SP or ZR
+ *  - Requires that reg1 != reg2
+ */
 void emitter::emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm)
 {
     assert(isGeneralRegister(reg1));
@@ -6554,7 +6672,7 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
                                        int         varx1,
                                        int         varx2,
                                        int         offs1,
-                                       int offs2 DEBUG_ARG(unsigned var1RefsOffs) DEBUG_ARG(unsigned var2RefsOffs))
+                                       int offs2   DEBUG_ARG(unsigned var1RefsOffs) DEBUG_ARG(unsigned var2RefsOffs))
 {
     assert((ins == INS_stp) || (ins == INS_ldp));
     emitAttr  size  = EA_SIZE(attr);
@@ -7147,7 +7265,7 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
                                 regNumber   reg1,
                                 regNumber   reg2,
                                 regNumber   reg3,
-                                insOpts     opt,         /* = INS_OPTS_NONE */
+                                insOpts     opt, /* = INS_OPTS_NONE */
                                 int         shiftAmount) /* = -1 -- unset   */
 {
     emitAttr  size   = EA_SIZE(attr);
@@ -7840,42 +7958,29 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_sve_ldr:
         {
-            assert(isVectorRegister(reg1));
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
-            fmt      = IF_SVE_IE_2A;
-
-            // TODO-SVE: Don't assume 128bit vectors
-            scale        = NaturalScale_helper(EA_16BYTE);
-            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
+            if (isPredicateRegister(reg1))
             {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
-            }
-            else
-            {
-                useRegForImm      = true;
+                assert(offs == 0);
+                // For predicate, generate based off rsGetRsvdReg()
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-            }
-        }
-        break;
 
-        // TODO-SVE: Fold into INS_sve_ldr once REG_V0 and REG_P0 are distinct
-        case INS_sve_ldr_mask:
-        {
-            assert(isPredicateRegister(reg1));
-            isSimple = false;
-            size     = EA_SCALABLE;
-            attr     = size;
-            fmt      = IF_SVE_ID_2A;
-            ins      = INS_sve_ldr;
+                // add rsvd, fp, #imm
+                emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                // str p0, [rsvd, #0, mul vl]
+                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
+
+                return;
+            }
+
+            assert(isVectorRegister(reg1));
+            fmt = IF_SVE_IE_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8
-            scale        = NaturalScale_helper(EA_2BYTE);
+            scale        = NaturalScale_helper(isVectorRegister(reg1) ? EA_16BYTE : EA_2BYTE);
             ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
 
             if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
@@ -7886,7 +7991,10 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             {
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
             }
         }
         break;
@@ -8119,42 +8227,31 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_sve_str:
         {
-            assert(isVectorRegister(reg1));
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
-            fmt      = IF_SVE_JH_2A;
 
-            // TODO-SVE: Don't assume 128bit vectors
-            scale        = NaturalScale_helper(EA_16BYTE);
-            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+            if (isPredicateRegister(reg1))
+            {
+                assert(offs == 0);
 
-            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-            {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
-            }
-            else
-            {
-                useRegForImm      = true;
+                // For predicate, generate based off rsGetRsvdReg()
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-            }
-        }
-        break;
 
-        // TODO-SVE: Fold into INS_sve_str once REG_V0 and REG_P0 are distinct
-        case INS_sve_str_mask:
-        {
-            assert(isPredicateRegister(reg1));
-            isSimple = false;
-            size     = EA_SCALABLE;
-            attr     = size;
-            fmt      = IF_SVE_JG_2A;
-            ins      = INS_sve_str;
+                // add rsvd, fp, #imm
+                emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                // str p0, [rsvd, #0, mul vl]
+                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
+
+                return;
+            }
+
+            assert(isVectorRegister(reg1));
+            fmt = IF_SVE_JH_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8
-            scale        = NaturalScale_helper(EA_2BYTE);
+            scale        = NaturalScale_helper(isVectorRegister(reg1) ? EA_16BYTE : EA_2BYTE);
             ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
 
             if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
@@ -8165,7 +8262,10 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             {
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
             }
         }
         break;
@@ -8482,9 +8582,9 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This generates code to populate the access for TLS on linux
-void emitter::emitIns_Adrp_Ldr_Add(emitAttr  attr,
-                                   regNumber reg1,
-                                   regNumber reg2,
+void emitter::emitIns_Adrp_Ldr_Add(emitAttr     attr,
+                                   regNumber    reg1,
+                                   regNumber    reg2,
                                    ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
@@ -8537,9 +8637,9 @@ void emitter::emitIns_Adrp_Ldr_Add(emitAttr  attr,
 }
 
 // This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction ins,
-                           emitAttr    attr,
-                           regNumber   ireg,
+void emitter::emitIns_R_AI(instruction  ins,
+                           emitAttr     attr,
+                           regNumber    ireg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr));
@@ -8933,6 +9033,8 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
  *
  * For ARM xreg, xmul and disp are never used and should always be 0/REG_NA.
  *
+ * noSafePoint - force not making this call a safe point in partially interruptible code
+ *
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
 
@@ -8951,7 +9053,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
                            ssize_t          disp /* = 0     */,
-                           bool             isJump /* = false */)
+                           bool             isJump /* = false */,
+                           bool             noSafePoint /* = false */)
 {
     /* Sanity check the arguments depending on callType */
 
@@ -8964,7 +9067,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     // Our stack level should be always greater than the bytes of arguments we push. Just
     // a sanity test.
-    assert((unsigned)abs(argSize) <= codeGen->genStackLevel);
+    assert((unsigned)std::abs(argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
     regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
@@ -9020,11 +9123,32 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark RBM_INTRET appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET;
+    }
+
+    // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
+    if (secondRetSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET_1;
+    }
+    else if (secondRetSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET_1;
+    }
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
@@ -9108,7 +9232,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     if (m_debugInfoSize > 0)
     {
         INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
-        id->idDebugOnlyInfo()->idMemCookie       = (size_t)methHnd; // method token
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
     }
 
 #ifdef LATE_DISASM
@@ -10438,9 +10562,9 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 }
 
 /*****************************************************************************
-*
-*  Output a short branch instruction.
-*/
+ *
+ *  Output a short branch instruction.
+ */
 BYTE* emitter::emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id)
 {
     code_t code = emitInsCode(ins, fmt);
@@ -10503,9 +10627,9 @@ BYTE* emitter::emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, 
 }
 
 /*****************************************************************************
-*
-*  Output a short address instruction.
-*/
+ *
+ *  Output a short address instruction.
+ */
 BYTE* emitter::emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg)
 {
     ssize_t loBits = (distVal & 3);
@@ -10533,9 +10657,9 @@ BYTE* emitter::emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt,
 }
 
 /*****************************************************************************
-*
-*  Output a short constant instruction.
-*/
+ *
+ *  Output a short constant instruction.
+ */
 BYTE* emitter::emitOutputShortConstant(
     BYTE* dst, instruction ins, insFormat fmt, ssize_t imm, regNumber reg, emitAttr opSize)
 {
@@ -10768,7 +10892,7 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 }
 
 /*****************************************************************************
-*
+ *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
  *  is the instruction group that contains the instruction. Updates '*dp' to
@@ -11164,8 +11288,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(ins, fmt);
                 code |= insEncodeReg_Rd(id->idReg1()); // ddddd
                 dst += emitOutput_Instr(dst, code);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr, id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21
-                                                                                  : IMAGE_REL_ARM64_PAGEBASE_REL21);
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr,
+                                     id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21
+                                                     : IMAGE_REL_ARM64_PAGEBASE_REL21);
             }
             else
             {
@@ -11204,12 +11329,41 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_Rn(id->idReg2());       // nnnnn
             dst += emitOutput_Instr(dst, code);
 
-            if (id->idIsReloc())
+            if (id->idIsReloc() && !emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
             {
                 assert(sz == sizeof(instrDesc));
                 assert(id->idAddr()->iiaAddr != nullptr);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr, id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADD_LO12
-                                                                                  : IMAGE_REL_ARM64_PAGEOFFSET_12A);
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
+            }
+            else
+            {
+                if (id->idIsTlsGD())
+                {
+                    if (TargetOS::IsWindows)
+                    {
+                        if (id->idIsReloc())
+                        {
+                            // This is first "add" of "add/add" pair
+                            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_SECREL_HIGH12A);
+                        }
+                        else
+                        {
+                            // This is second "add" of "add/add" pair
+                            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_SECREL_LOW12L);
+                        }
+                    }
+                    else
+                    {
+                        // For unix/arm64 it is the "add" of "adrp/add" pair
+                        emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_AARCH64_TLSDESC_ADD_LO12);
+                    }
+                }
+                else if (id->idIsReloc())
+                {
+                    assert(sz == sizeof(instrDesc));
+                    assert(id->idAddr()->iiaAddr != nullptr);
+                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
+                }
             }
             break;
 
@@ -12356,7 +12510,7 @@ void emitter::emitDispCond(insCond cond)
 {
     const static char* armCond[16] = {"eq", "ne", "hs", "lo", "mi", "pl", "vs", "vc",
                                       "hi", "ls", "ge", "lt", "gt", "le", "AL", "NV"}; // The last two are invalid
-    unsigned imm = (unsigned)cond;
+    unsigned           imm         = (unsigned)cond;
     assert((0 <= imm) && (imm < ArrLen(armCond)));
     printf(armCond[imm]);
 }
@@ -12369,7 +12523,7 @@ void emitter::emitDispFlags(insCflags flags)
 {
     const static char* armFlags[16] = {"0", "v",  "c",  "cv",  "z",  "zv",  "zc",  "zcv",
                                        "n", "nv", "nc", "ncv", "nz", "nzv", "nzc", "nzcv"};
-    unsigned imm = (unsigned)flags;
+    unsigned           imm          = (unsigned)flags;
     assert((0 <= imm) && (imm < ArrLen(armFlags)));
     printf(armFlags[imm]);
 }
@@ -12382,7 +12536,7 @@ void emitter::emitDispBarrier(insBarrier barrier)
 {
     const static char* armBarriers[16] = {"#0", "oshld", "oshst", "osh", "#4",  "nshld", "nshst", "nsh",
                                           "#8", "ishld", "ishst", "ish", "#12", "ld",    "st",    "sy"};
-    unsigned imm = (unsigned)barrier;
+    unsigned           imm             = (unsigned)barrier;
     assert((0 <= imm) && (imm < ArrLen(armBarriers)));
     printf(armBarriers[imm]);
 }
@@ -14241,7 +14395,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
             if (offset != 0)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;
 
@@ -14348,7 +14502,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             else
             {
                 // We require a tmpReg to hold the offset
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // First load/store tmpReg with the large offset constant
                 codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
@@ -14488,7 +14642,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         if (isMulOverflow)
         {
-            regNumber extraReg = dst->GetSingleTempReg();
+            regNumber extraReg = codeGen->internalRegisters.GetSingle(dst);
             assert(extraReg != dst->GetRegNum());
 
             if ((dst->gtFlags & GTF_UNSIGNED) != 0)
@@ -14681,9 +14835,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     switch (insFmt)
     {
-        //
-        //  Branch Instructions
-        //
+            //
+            //  Branch Instructions
+            //
 
         case IF_BI_0A:                                      // b, bl_local
         case IF_BI_0C:                                      // bl, b_tail
@@ -14936,9 +15090,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 break;
             }
 
-        //
-        //  Load/Store Instructions
-        //
+            //
+            //  Load/Store Instructions
+            //
 
         case IF_LS_1A: // ldr, ldrsw (literal, pc relative immediate)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -16350,6 +16504,7 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_sxtw:
         case INS_uxtb:
         case INS_uxth:
+        case INS_sve_mov:
         {
             return true;
         }
@@ -16398,7 +16553,7 @@ bool emitter::IsMovInstruction(instruction ins)
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
 {
-    assert(ins == INS_mov);
+    assert((ins == INS_mov) || (ins == INS_sve_mov));
 
     if (canSkip && (dst == src))
     {
@@ -16617,7 +16772,7 @@ bool emitter::OptimizeLdrStr(instruction ins,
                              insFormat   fmt,
                              bool        localVar,
                              int         varx,
-                             int offs DEBUG_ARG(bool useRsvdReg))
+                             int offs    DEBUG_ARG(bool useRsvdReg))
 {
     assert(ins == INS_ldr || ins == INS_str);
 
@@ -16993,12 +17148,28 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     // store lower 8 bytes
     emitIns_S_R(INS_str, EA_8BYTE, dataReg, varNum, offset);
 
-    // Extract upper 4-bytes from data
-    regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
-    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
+    if (codeGen->internalRegisters.Count(tmpRegProvider) == 0)
+    {
+        // We don't have temp regs - let's do two shuffles then
 
-    // 4-byte write
-    emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
+        // [0,1,2,3] -> [2,3,0,1]
+        emitIns_R_R_R_I(INS_ext, EA_16BYTE, dataReg, dataReg, dataReg, 8, INS_OPTS_16B);
+
+        // store lower 4 bytes
+        emitIns_S_R(INS_str, EA_4BYTE, dataReg, varNum, offset + 8);
+
+        // Restore dataReg to its previous state: [2,3,0,1] -> [0,1,2,3]
+        emitIns_R_R_R_I(INS_ext, EA_16BYTE, dataReg, dataReg, dataReg, 8, INS_OPTS_16B);
+    }
+    else
+    {
+        // Extract upper 4-bytes from data
+        regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
+        emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
+
+        // 4-byte write
+        emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
+    }
 }
 #endif // FEATURE_SIMD
 

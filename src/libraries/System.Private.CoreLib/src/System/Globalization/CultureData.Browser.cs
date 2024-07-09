@@ -4,12 +4,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
     internal sealed partial class CultureData
     {
-        private const int CULTURE_INFO_BUFFER_LEN = 50;
+        private const int CULTURE_INFO_BUFFER_LEN = 60;
         private const int LOCALE_INFO_BUFFER_LEN = 80;
 
         private void JSInitLocaleInfo()
@@ -41,17 +42,22 @@ namespace System.Globalization
 
         private unsafe (string, string) JSGetLocaleInfo(string cultureName, string localeName)
         {
-            char* buffer = stackalloc char[LOCALE_INFO_BUFFER_LEN];
-            int resultLength = Interop.JsGlobalization.GetLocaleInfo(cultureName, localeName, buffer, LOCALE_INFO_BUFFER_LEN, out int exception, out object exResult);
-            if (exception != 0)
-                throw new Exception((string)exResult);
-            string result = new string(buffer, 0, resultLength);
-            string[] subresults = result.Split("##");
-            if (subresults.Length == 0)
-                throw new Exception("LocaleInfo recieved from the Browser is in incorrect format.");
-            if (subresults.Length == 1)
-                return (subresults[0], ""); // Neutral culture
-            return (subresults[0], subresults[1]);
+            ReadOnlySpan<char> cultureNameSpan = cultureName.AsSpan();
+            ReadOnlySpan<char> localeNameSpan = localeName.AsSpan();
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
+            fixed (char* pLocaleName = &MemoryMarshal.GetReference(localeNameSpan))
+            {
+                char* buffer = stackalloc char[LOCALE_INFO_BUFFER_LEN];
+                nint exceptionPtr = Interop.JsGlobalization.GetLocaleInfo(pCultureName, cultureNameSpan.Length, pLocaleName, localeNameSpan.Length, buffer, LOCALE_INFO_BUFFER_LEN, out int resultLength);
+                Helper.MarshalAndThrowIfException(exceptionPtr);
+                string result = new string(buffer, 0, resultLength);
+                string[] subresults = result.Split("##");
+                if (subresults.Length == 0)
+                    throw new Exception("LocaleInfo recieved from the Browser is in incorrect format.");
+                if (subresults.Length == 1)
+                    return (subresults[0], ""); // Neutral culture
+                return (subresults[0], subresults[1]);
+            }
         }
 
         private string JSGetNativeDisplayName(string localeName, string cultureName)
@@ -64,43 +70,82 @@ namespace System.Globalization
 
         private static unsafe CultureData JSLoadCultureInfoFromBrowser(string localeName, CultureData culture)
         {
-            char* buffer = stackalloc char[CULTURE_INFO_BUFFER_LEN];
-            int resultLength = Interop.JsGlobalization.GetCultureInfo(localeName, buffer, CULTURE_INFO_BUFFER_LEN, out int exception, out object exResult);
-            if (exception != 0)
-                throw new Exception((string)exResult);
-            string result = new string(buffer, 0, resultLength);
-            string[] subresults = result.Split("##");
-            if (subresults.Length < 4)
-                throw new Exception("CultureInfo recieved from the Browser is in incorrect format.");
-            culture._sAM1159 = subresults[0];
-            culture._sPM2359 = subresults[1];
-            culture._saLongTimes = new string[] { subresults[2] };
-            culture._saShortTimes = new string[] { subresults[3] };
+            ReadOnlySpan<char> localeNameSpan = localeName.AsSpan();
+            fixed (char* pLocaleName = &MemoryMarshal.GetReference(localeNameSpan))
+            {
+                char* buffer = stackalloc char[CULTURE_INFO_BUFFER_LEN];
+                nint exceptionPtr = Interop.JsGlobalization.GetCultureInfo(pLocaleName, localeNameSpan.Length, buffer, CULTURE_INFO_BUFFER_LEN, out int resultLength);
+                Helper.MarshalAndThrowIfException(exceptionPtr);
+                string result = new string(buffer, 0, resultLength);
+                string[] subresults = result.Split("##");
+                if (subresults.Length < 4)
+                    throw new Exception("CultureInfo recieved from the Browser is in incorrect format.");
+                culture._sAM1159 = subresults[0];
+                culture._sPM2359 = subresults[1];
+                culture._saLongTimes = new string[] { subresults[2] };
+                culture._saShortTimes = new string[] { subresults[3] };
+            }
             return culture;
         }
 
         private static unsafe int GetFirstDayOfWeek(string localeName)
         {
-            int result = Interop.JsGlobalization.GetFirstDayOfWeek(localeName, out int exception, out object ex_result);
-            if (exception != 0)
+            ReadOnlySpan<char> localeNameSpan = localeName.AsSpan();
+            fixed (char* pLocaleName = &MemoryMarshal.GetReference(localeNameSpan))
             {
-                // Failed, just use 0
-                Debug.Fail($"[CultureData.GetFirstDayOfWeek()] failed with {ex_result}");
-                return 0;
+                nint exceptionPtr = Interop.JsGlobalization.GetFirstDayOfWeek(pLocaleName, localeNameSpan.Length, out int result);
+                if (exceptionPtr != IntPtr.Zero)
+                {
+                    int success = Helper.MarshalAndThrowIfException(
+                        exceptionPtr,
+                        failOnlyDebug: true,
+                        failureMessage: $"[CultureData.GetFirstDayOfWeek()] failed with");
+                    // Failed, just use 0
+                    if (success == -1)
+                        return 0;
+                }
+                return result;
             }
-            return result;
         }
 
         private static unsafe int GetFirstWeekOfYear(string localeName)
         {
-            int result = Interop.JsGlobalization.GetFirstWeekOfYear(localeName, out int exception, out object ex_result);
-            if (exception != 0)
+            ReadOnlySpan<char> localeNameSpan = localeName.AsSpan();
+            fixed (char* pLocaleName = &MemoryMarshal.GetReference(localeNameSpan))
             {
-                // Failed, just use 0
-                Debug.Fail($"[CultureData.GetFirstDayOfWeek()] failed with {ex_result}");
-                return 0;
+                nint exceptionPtr = Interop.JsGlobalization.GetFirstWeekOfYear(pLocaleName, localeNameSpan.Length, out int result);
+                if (exceptionPtr != IntPtr.Zero)
+                {
+                    int success = Helper.MarshalAndThrowIfException(
+                        exceptionPtr,
+                        failOnlyDebug: true,
+                        failureMessage: $"[CultureData.GetFirstWeekOfYear()] failed with");
+                    // Failed, just use 0
+                    if (success == -1)
+                        return 0;
+                }
+                return result;
             }
-            return result;
         }
+    }
+
+    internal static class Helper
+    {
+        internal static int MarshalAndThrowIfException(nint exceptionPtr, bool failOnlyDebug = false, string failureMessage = "")
+        {
+            if (exceptionPtr != IntPtr.Zero)
+            {
+                string message = Marshal.PtrToStringUni(exceptionPtr)!;
+                Marshal.FreeHGlobal(exceptionPtr);
+                if (failOnlyDebug)
+                {
+                    Debug.Fail($"{failureMessage} {message}");
+                    return -1;
+                }
+                throw new Exception(message);
+            }
+            return 0;
+        }
+
     }
 }

@@ -17,8 +17,8 @@ namespace System.Security.Cryptography
             SkipSize = skipSize;
         }
 
-        public int MinSize { get; private set; }
-        public int MaxSize { get; private set; }
-        public int SkipSize { get; private set; }
+        public int MinSize { get; }
+        public int MaxSize { get; }
+        public int SkipSize { get; }
     }
 }

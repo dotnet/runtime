@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
     /// </remarks>
     public sealed class KmacXof128 : IDisposable
     {
-        private readonly LiteKmac _kmacProvider;
+        private ConcurrentSafeKmac _kmacProvider;
         private bool _disposed;
 
         /// <summary>
@@ -53,7 +53,12 @@ namespace System.Security.Cryptography
         public KmacXof128(ReadOnlySpan<byte> key, ReadOnlySpan<byte> customizationString = default)
         {
             CheckPlatformSupport();
-            _kmacProvider = LiteHashProvider.CreateKmac(HashAlgorithmNames.KMAC128, key, customizationString, xof: true);
+            _kmacProvider = new ConcurrentSafeKmac(HashAlgorithmNames.KMAC128, key, customizationString, xof: true);
+        }
+
+        private KmacXof128(ConcurrentSafeKmac kmacProvider)
+        {
+            _kmacProvider = kmacProvider;
         }
 
         /// <summary>
@@ -163,6 +168,18 @@ namespace System.Security.Cryptography
 
             int written = _kmacProvider.Current(destination);
             Debug.Assert(written == destination.Length);
+        }
+
+        /// <summary>
+        ///   Creates a new instance of <see cref="KmacXof128" /> with the existing appended data preserved.
+        /// </summary>
+        /// <returns>A clone of the current instance.</returns>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public KmacXof128 Clone()
+        {
+            CheckDisposed();
+            return new KmacXof128(_kmacProvider.Clone());
         }
 
         /// <summary>

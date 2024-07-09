@@ -31,57 +31,13 @@ struct Replacement
     const char* Description = "";
 #endif
 
-    Replacement(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
+    Replacement(unsigned offset, var_types accessType)
+        : Offset(offset)
+        , AccessType(accessType)
     {
     }
 
     bool Overlaps(unsigned otherStart, unsigned otherSize) const;
-};
-
-// Represents significant segments of a struct operation.
-//
-// Essentially a segment tree (but not stored as a tree) that supports boolean
-// Add/Subtract operations of segments. Used to compute the remainder after
-// replacements have been handled as part of a decomposed block operation.
-class StructSegments
-{
-public:
-    struct Segment
-    {
-        unsigned Start = 0;
-        unsigned End   = 0;
-
-        Segment()
-        {
-        }
-
-        Segment(unsigned start, unsigned end) : Start(start), End(end)
-        {
-        }
-
-        bool IntersectsOrAdjacent(const Segment& other) const;
-        bool Intersects(const Segment& other) const;
-        bool Contains(const Segment& other) const;
-        void Merge(const Segment& other);
-    };
-
-private:
-    jitstd::vector<Segment> m_segments;
-
-public:
-    explicit StructSegments(CompAllocator allocator) : m_segments(allocator)
-    {
-    }
-
-    void Add(const Segment& segment);
-    void Subtract(const Segment& segment);
-    bool IsEmpty();
-    bool CoveringSegment(Segment* result);
-    bool Intersects(const Segment& segment);
-
-#ifdef DEBUG
-    void Dump();
-#endif
 };
 
 // Represents information about an aggregate that now has replacements in it.
@@ -96,7 +52,10 @@ struct AggregateInfo
     // Max offset in the struct local of the unpromoted part.
     unsigned UnpromotedMax = 0;
 
-    AggregateInfo(CompAllocator alloc, unsigned lclNum) : Replacements(alloc), LclNum(lclNum), Unpromoted(alloc)
+    AggregateInfo(CompAllocator alloc, unsigned lclNum)
+        : Replacements(alloc)
+        , LclNum(lclNum)
+        , Unpromoted(alloc)
     {
     }
 
@@ -115,7 +74,7 @@ class AggregateInfoMap
 
 public:
     AggregateInfoMap(CompAllocator allocator, unsigned numLocals);
-    void Add(AggregateInfo* agg);
+    void           Add(AggregateInfo* agg);
     AggregateInfo* Lookup(unsigned lclNum);
 
     jitstd::vector<AggregateInfo*>::iterator begin()
@@ -129,12 +88,9 @@ public:
     }
 };
 
-typedef JitHashTable<ClassLayout*, JitPtrKeyFuncs<ClassLayout>, class StructSegments*> ClassLayoutStructSegmentsMap;
-
 class Promotion
 {
-    Compiler*                     m_compiler;
-    ClassLayoutStructSegmentsMap* m_significantSegmentsCache = nullptr;
+    Compiler* m_compiler;
 
     friend class LocalUses;
     friend class LocalsUseVisitor;
@@ -144,12 +100,10 @@ class Promotion
     friend class DecompositionPlan;
     friend class StructSegments;
 
-    StructSegments SignificantSegments(ClassLayout* layout);
-
-    void ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
-                                             const jitstd::vector<Replacement>& replacements,
-                                             Statement**                        prevStmt);
-    void InsertInitStatement(Statement** prevStmt, GenTree* tree);
+    void            ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
+                                                        const jitstd::vector<Replacement>& replacements,
+                                                        Statement**                        prevStmt);
+    void            InsertInitStatement(Statement** prevStmt, GenTree* tree);
     static GenTree* CreateWriteBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement);
     static GenTree* CreateReadBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement);
 
@@ -198,11 +152,12 @@ class Promotion
 
     bool HaveCandidateLocals();
 
-    static bool IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
+    static bool     IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
     static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
 
 public:
-    explicit Promotion(Compiler* compiler) : m_compiler(compiler)
+    explicit Promotion(Compiler* compiler)
+        : m_compiler(compiler)
     {
     }
 
@@ -218,12 +173,15 @@ class StructDeaths
     friend class PromotionLiveness;
 
 private:
-    StructDeaths(BitVec deaths, AggregateInfo* agg) : m_deaths(deaths), m_aggregate(agg)
+    StructDeaths(BitVec deaths, AggregateInfo* agg)
+        : m_deaths(deaths)
+        , m_aggregate(agg)
     {
     }
 
 public:
-    StructDeaths() : m_deaths(BitVecOps::UninitVal())
+    StructDeaths()
+        : m_deaths(BitVecOps::UninitVal())
     {
     }
 
@@ -236,26 +194,27 @@ struct BasicBlockLiveness;
 // Class to compute and track liveness information pertaining promoted structs.
 class PromotionLiveness
 {
-    Compiler*           m_compiler;
-    AggregateInfoMap&   m_aggregates;
-    BitVecTraits*       m_bvTraits                = nullptr;
-    unsigned*           m_structLclToTrackedIndex = nullptr;
-    unsigned            m_numVars                 = 0;
-    BasicBlockLiveness* m_bbInfo                  = nullptr;
-    bool                m_hasPossibleBackEdge     = false;
-    BitVec              m_liveIn;
-    BitVec              m_ehLiveVars;
+    Compiler*                                               m_compiler;
+    AggregateInfoMap&                                       m_aggregates;
+    BitVecTraits*                                           m_bvTraits                = nullptr;
+    unsigned*                                               m_structLclToTrackedIndex = nullptr;
+    unsigned                                                m_numVars                 = 0;
+    BasicBlockLiveness*                                     m_bbInfo                  = nullptr;
+    BitVec                                                  m_liveIn;
+    BitVec                                                  m_ehLiveVars;
     JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BitVec> m_aggDeaths;
 
 public:
     PromotionLiveness(Compiler* compiler, AggregateInfoMap& aggregates)
-        : m_compiler(compiler), m_aggregates(aggregates), m_aggDeaths(compiler->getAllocator(CMK_Promotion))
+        : m_compiler(compiler)
+        , m_aggregates(aggregates)
+        , m_aggDeaths(compiler->getAllocator(CMK_Promotion))
     {
     }
 
-    void Run();
-    bool IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacement);
-    bool IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
+    void         Run();
+    bool         IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacement);
+    bool         IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 
 private:
@@ -297,7 +256,10 @@ public:
     };
 
     ReplaceVisitor(Promotion* prom, AggregateInfoMap& aggregates, PromotionLiveness* liveness)
-        : GenTreeVisitor(prom->m_compiler), m_promotion(prom), m_aggregates(aggregates), m_liveness(liveness)
+        : GenTreeVisitor(prom->m_compiler)
+        , m_promotion(prom)
+        , m_aggregates(aggregates)
+        , m_liveness(liveness)
     {
     }
 

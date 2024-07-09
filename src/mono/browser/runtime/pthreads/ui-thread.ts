@@ -5,12 +5,10 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { } from "../globals";
-import { mono_log_debug, mono_log_warn } from "../logging";
 import { MonoWorkerToMainMessage, monoThreadInfo, mono_wasm_pthread_ptr, update_thread_info, worker_empty_prefix } from "./shared";
 import { Module, ENVIRONMENT_IS_WORKER, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
-import { PThreadLibrary, MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseAndController, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
-import { mono_log_error, mono_log_info } from "../logging";
-import { threads_c_functions as cwraps } from "../cwraps";
+import { PThreadLibrary, MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
+import { mono_log_info, mono_log_debug, mono_log_warn } from "../logging";
 
 const threadPromises: Map<PThreadPtr, PromiseController<Thread>[]> = new Map();
 
@@ -98,7 +96,11 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
             worker.info = Object.assign(worker.info!, message.info, {});
             break;
         case WorkerToMainMessageType.deputyStarted:
-            runtimeHelpers.afterMonoStarted.promise_control.resolve(message.deputyProxyGCHandle);
+            runtimeHelpers.deputyWorker = worker;
+            runtimeHelpers.afterMonoStarted.promise_control.resolve();
+            break;
+        case WorkerToMainMessageType.deputyReady:
+            runtimeHelpers.afterDeputyReady.promise_control.resolve(message.deputyProxyGCHandle);
             break;
         case WorkerToMainMessageType.ioStarted:
             runtimeHelpers.afterIOStarted.promise_control.resolve();
@@ -119,40 +121,25 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
     }
 }
 
-let pendingWorkerLoad: PromiseAndController<void> | undefined;
-
 /// Called by Emscripten internals on the browser thread when a new pthread worker is created and added to the pthread worker pool.
 /// At this point the worker doesn't have any pthread assigned to it, yet.
 export function onWorkerLoadInitiated (worker: PThreadWorker, loaded: Promise<Worker>): void {
     if (!WasmEnableThreads) return;
     worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, ev));
-    if (pendingWorkerLoad == undefined) {
-        pendingWorkerLoad = createPromiseController<void>();
-    }
     loaded.then(() => {
         worker.info.isLoaded = true;
-        if (pendingWorkerLoad != undefined) {
-            pendingWorkerLoad.promise_control.resolve();
-            pendingWorkerLoad = undefined;
-        }
     });
 }
 
-export function thread_available (): Promise<void> {
-    if (!WasmEnableThreads) return null as any;
-    if (pendingWorkerLoad == undefined) {
-        return Promise.resolve();
-    }
-    return pendingWorkerLoad.promise;
-}
 
-export function populateEmscriptenPool (): void {
+export async function populateEmscriptenPool (): Promise<void> {
     if (!WasmEnableThreads) return;
     const unused = getUnusedWorkerPool();
-    for (const worker of loaderHelpers.loadingWorkers) {
+    const loadingWorkers = await loaderHelpers.loadingWorkers.promise;
+    for (const worker of loadingWorkers) {
         unused.push(worker);
     }
-    loaderHelpers.loadingWorkers = [];
+    loadingWorkers.length = 0;
 }
 
 export async function mono_wasm_init_threads () {
@@ -171,11 +158,13 @@ export async function mono_wasm_init_threads () {
     if (workers.length > 0) {
         const promises = workers.map(loadWasmModuleToWorker);
         await Promise.all(promises);
+    } else {
+        mono_log_warn("No workers in the pthread pool, please validate the pthreadPoolInitialSize");
     }
 }
 
 // when we create threads with browser event loop, it's not able to be joined by mono's thread join during shutdown and blocks process exit
-export function cancelThreads () {
+export function postCancelThreads () {
     if (!WasmEnableThreads) return;
     const workers: PThreadWorker[] = getRunningWorkers();
     for (const worker of workers) {
@@ -219,22 +208,6 @@ export function mono_wasm_dump_threads (): void {
     });
 }
 
-export function init_finalizer_thread () {
-    // we don't need it immediately, so we can wait a bit, to keep CPU working on normal startup
-    setTimeout(() => {
-        try {
-            if (loaderHelpers.is_runtime_running()) {
-                cwraps.mono_wasm_init_finalizer_thread();
-            } else {
-                mono_log_debug("init_finalizer_thread skipped");
-            }
-        } catch (err) {
-            mono_log_error("init_finalizer_thread() failed", err);
-            loaderHelpers.mono_exit(1, err);
-        }
-    }, loaderHelpers.config.finalizerThreadStartDelayMs);
-}
-
 export function replaceEmscriptenPThreadUI (modulePThread: PThreadLibrary): void {
     if (!WasmEnableThreads) return;
 
@@ -243,9 +216,6 @@ export function replaceEmscriptenPThreadUI (modulePThread: PThreadLibrary): void
 
     modulePThread.loadWasmModuleToWorker = (worker: PThreadWorker): Promise<PThreadWorker> => {
         const afterLoaded = originalLoadWasmModuleToWorker(worker);
-        afterLoaded.then(() => {
-            availableThreadCount++;
-        });
         onWorkerLoadInitiated(worker, afterLoaded);
         if (loaderHelpers.config.exitOnUnhandledError) {
             worker.onerror = (e) => {
@@ -275,7 +245,6 @@ export function replaceEmscriptenPThreadUI (modulePThread: PThreadLibrary): void
                 }
             }));
         } else {
-            availableThreadCount++;
             originalReturnWorkerToPool(worker);
         }
     };
@@ -285,20 +254,13 @@ export function replaceEmscriptenPThreadUI (modulePThread: PThreadLibrary): void
     }
 }
 
-let availableThreadCount = 0;
-export function is_thread_available () {
-    if (!WasmEnableThreads) return true;
-    return availableThreadCount > 0;
-}
-
 function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
     if (!WasmEnableThreads) return null as any;
 
     if (modulePThread.unusedWorkers.length == 0) {
-        mono_log_warn(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+        mono_log_debug(() => `Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
         const worker = allocateUnusedWorker();
         modulePThread.loadWasmModuleToWorker(worker);
-        availableThreadCount--;
         return worker;
     }
 
@@ -312,12 +274,10 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
         const worker = modulePThread.unusedWorkers[i];
         if (worker.loaded) {
             modulePThread.unusedWorkers.splice(i, 1);
-            availableThreadCount--;
             return worker;
         }
     }
-    mono_log_warn(`Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
-    availableThreadCount--; // negative value
+    mono_log_debug(() => `Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
     return modulePThread.unusedWorkers.pop()!;
 }
 
@@ -355,6 +315,10 @@ export function getUnusedWorkerPool (): PThreadWorker[] {
 
 export function getRunningWorkers (): PThreadWorker[] {
     return getModulePThread().runningWorkers;
+}
+
+export function terminateAllThreads (): void {
+    getModulePThread().terminateAllThreads();
 }
 
 export function loadWasmModuleToWorker (worker: PThreadWorker): Promise<PThreadWorker> {

@@ -120,7 +120,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             // ./shared/Microsoft.NETCore.App/<version> - create a mock of the root framework
             string netCoreAppPath = AddFramework(Constants.MicrosoftNETCoreApp, version);
 
-            string currentRid = TestContext.TargetRID;
+            string currentRid = TestContext.BuildRID;
 
             NetCoreAppBuilder.ForNETCoreApp(Constants.MicrosoftNETCoreApp, currentRid)
                 .WithStandardRuntimeFallbacks()

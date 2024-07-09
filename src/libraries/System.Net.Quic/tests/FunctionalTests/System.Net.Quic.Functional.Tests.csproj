@@ -5,6 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -25,6 +26,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs" Link="Common\System\Net\Configuration.Http.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs" Link="Common\System\Net\Configuration.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Sockets.cs" Link="Common\System\Net\Configuration.Sockets.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs" Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs" Link="TestCommon\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs" Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />

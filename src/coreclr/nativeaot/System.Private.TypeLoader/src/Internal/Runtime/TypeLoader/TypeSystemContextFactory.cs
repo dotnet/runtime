@@ -18,7 +18,7 @@ namespace Internal.Runtime.TypeLoader
         // This allows us to avoid recreating the type resolution context again and again, but still allows it to go away once the types are no longer being built
         private static GCHandle s_cachedContext = GCHandle.Alloc(null, GCHandleType.Weak);
 
-        private static Lock s_lock = new Lock(useTrivialWaits: true);
+        private static readonly Lock s_lock = new Lock(useTrivialWaits: true);
 
         public static TypeSystemContext Create()
         {
@@ -42,6 +42,8 @@ namespace Internal.Runtime.TypeLoader
             TargetArchitecture.X64,
 #elif TARGET_WASM
             TargetArchitecture.Wasm32,
+#elif TARGET_LOONGARCH64
+            TargetArchitecture.LoongArch64,
 #else
 #error Unknown architecture
 #endif

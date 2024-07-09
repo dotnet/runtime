@@ -34,7 +34,7 @@ unsigned BasicBlock::s_nMaxTrees;
 FlowEdge* ShuffleHelper(unsigned hash, FlowEdge* res)
 {
     FlowEdge* head = res;
-    for (FlowEdge *prev = nullptr; res != nullptr; prev = res, res = res->getNextPredEdge())
+    for (FlowEdge* prev = nullptr; res != nullptr; prev = res, res = res->getNextPredEdge())
     {
         unsigned blkHash = (hash ^ (res->getSourceBlock()->bbNum << 16) ^ res->getSourceBlock()->bbNum);
         if (((blkHash % 1879) & 1) && prev != nullptr)
@@ -137,13 +137,17 @@ void FlowEdge::addLikelihood(weight_t addedLikelihood)
 //  AllSuccessorEnumerator: Construct an instance of the enumerator.
 //
 //  Arguments:
-//     comp  - Compiler instance
-//     block - The block whose successors are to be iterated
+//     comp       - Compiler instance
+//     block      - The block whose successors are to be iterated
+//     useProfile - If true, determines the order of successors visited using profile data
 //
-AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
+AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile /* = false */)
+    : m_block(block)
 {
     m_numSuccs = 0;
-    block->VisitAllSuccs(comp, [this](BasicBlock* succ) {
+    block->VisitAllSuccs(
+        comp,
+        [this](BasicBlock* succ) {
         if (m_numSuccs < ArrLen(m_successors))
         {
             m_successors[m_numSuccs] = succ;
@@ -151,18 +155,22 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
 
         m_numSuccs++;
         return BasicBlockVisit::Continue;
-    });
+    },
+        useProfile);
 
     if (m_numSuccs > ArrLen(m_successors))
     {
         m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
 
         unsigned numSuccs = 0;
-        block->VisitAllSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
+        block->VisitAllSuccs(
+            comp,
+            [this, &numSuccs](BasicBlock* succ) {
             assert(numSuccs < m_numSuccs);
             m_pSuccessors[numSuccs++] = succ;
             return BasicBlockVisit::Continue;
-        });
+        },
+            useProfile);
 
         assert(numSuccs == m_numSuccs);
     }
@@ -901,7 +909,6 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
     to->bbStkDepth    = from->bbStkDepth;
     to->bbCodeOffs    = from->bbCodeOffs;
     to->bbCodeOffsEnd = from->bbCodeOffsEnd;
-    VarSetOps::AssignAllowUninitRhs(compiler, to->bbScope, from->bbScope);
 #ifdef DEBUG
     to->bbTgtStkDepth = from->bbTgtStkDepth;
 #endif // DEBUG
@@ -1462,7 +1469,6 @@ void BasicBlock::InitVarSets(Compiler* comp)
     VarSetOps::AssignNoCopy(comp, bbVarDef, VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbLiveIn, VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbLiveOut, VarSetOps::MakeEmpty(comp));
-    VarSetOps::AssignNoCopy(comp, bbScope, VarSetOps::MakeEmpty(comp));
 
     bbMemoryUse     = emptyMemoryKindSet;
     bbMemoryDef     = emptyMemoryKindSet;
@@ -1664,7 +1670,6 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
         VarSetOps::AssignNoCopy(compiler, block->bbVarDef, VarSetOps::MakeEmpty(compiler));
         VarSetOps::AssignNoCopy(compiler, block->bbLiveIn, VarSetOps::MakeEmpty(compiler));
         VarSetOps::AssignNoCopy(compiler, block->bbLiveOut, VarSetOps::MakeEmpty(compiler));
-        VarSetOps::AssignNoCopy(compiler, block->bbScope, VarSetOps::MakeEmpty(compiler));
     }
     else
     {
@@ -1672,7 +1677,6 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
         VarSetOps::AssignNoCopy(compiler, block->bbVarDef, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(compiler, block->bbLiveIn, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(compiler, block->bbLiveOut, VarSetOps::UninitVal());
-        VarSetOps::AssignNoCopy(compiler, block->bbScope, VarSetOps::UninitVal());
     }
 
     block->bbMemoryUse     = emptyMemoryKindSet;
@@ -1811,9 +1815,7 @@ bool BasicBlock::hasEHBoundaryIn() const
     bool returnVal = (bbCatchTyp != BBCT_NONE);
     if (!returnVal)
     {
-#if FEATURE_EH_FUNCLETS
         assert(!HasFlag(BBF_FUNCLET_BEG));
-#endif // FEATURE_EH_FUNCLETS
     }
     return returnVal;
 }
@@ -1832,16 +1834,7 @@ bool BasicBlock::hasEHBoundaryIn() const
 //
 bool BasicBlock::hasEHBoundaryOut() const
 {
-    bool returnVal = KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET);
-
-#if FEATURE_EH_FUNCLETS
-    if (bbKind == BBJ_EHCATCHRET)
-    {
-        returnVal = true;
-    }
-#endif // FEATURE_EH_FUNCLETS
-
-    return returnVal;
+    return KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHCATCHRET);
 }
 
 //------------------------------------------------------------------------
@@ -1891,7 +1884,8 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
 //    comp - compiler instance
 //    other - existing descriptor to copy
 //
-BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other) : bbeCount(other->bbeCount)
+BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other)
+    : bbeCount(other->bbeCount)
 {
     // Allocate and fill in a new dst tab
     //

@@ -60,6 +60,26 @@
         }
       },
       "DevelopmentDependency": false
+    },
+    {
+      "Component": {
+        "Type": "git",
+        "Git": {
+          "RepositoryUrl": "https://github.com/zlib-ng/zlib-ng",
+          "CommitHash": "74253725f884e2424a0dd8ae3f69896d5377f325"
+        }
+      },
+      "DevelopmentDependency": false
+    },
+    {
+      "Component": {
+        "Type": "git",
+        "Git": {
+          "RepositoryUrl": "https://github.com/microsoft/LinuxTracepoints",
+          "CommitHash": "a817b91dfb08b2929ec6d48a211644e3394bf1c7"
+        }
+      },
+      "DevelopmentDependency": false
     }
   ]
 }

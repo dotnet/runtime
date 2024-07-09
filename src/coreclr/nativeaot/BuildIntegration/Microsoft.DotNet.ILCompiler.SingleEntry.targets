@@ -30,6 +30,10 @@
     <_linuxToken>linux-</_linuxToken>
     <_linuxLibcFlavor Condition="$(_targetOS.StartsWith($(_linuxToken)))">$(_targetOS.SubString($(_linuxToken.Length)))</_linuxLibcFlavor>
     <_targetOS Condition="$(_targetOS.StartsWith($(_linuxToken)))">linux</_targetOS>
+
+    <!-- linux-bionic on ARM uses armel (softfp) ABI -->
+    <_targetArchitectureWithAbi>$(_targetArchitecture)</_targetArchitectureWithAbi>
+    <_targetArchitectureWithAbi Condition="'$(_linuxLibcFlavor)' == 'bionic' and '$(_targetArchitecture)' == 'arm'">armel</_targetArchitectureWithAbi>
   </PropertyGroup>
 
   <PropertyGroup>

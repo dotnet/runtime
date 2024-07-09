@@ -12,6 +12,7 @@
 BASEARRAYREF* CastCache::s_pTableRef = NULL;
 OBJECTHANDLE CastCache::s_sentinelTable = NULL;
 DWORD CastCache::s_lastFlushSize     = INITIAL_CACHE_SIZE;
+const DWORD CastCache::INITIAL_CACHE_SIZE;
 
 BASEARRAYREF CastCache::CreateCastCache(DWORD size)
 {

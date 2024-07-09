@@ -20,7 +20,7 @@ To build for Bionic:
   ```sh
   $ dotnet publish -r linux-bionic-arm64 -p:DisableUnsupportedError=true -p:PublishAotUsingRuntimePack=true
   ```
-* You should have a binary under `bin\Release\net8.0\linux-bionic-arm64\publish`. Copy it to an Android device. Either `adb push` or using some GUI.
+* You should have a binary under `bin\Release\net9.0\linux-bionic-arm64\publish`. Copy it to an Android device. Either `adb push` or using some GUI.
 * You can probably run it with `adb shell`, but I used Termux: open Termux, give it access to file system by running `termux-setup-storage`. This will give you access to phone storage under `~/storage`. Copy the binary from `~/storage/...` to `~` (internal storage is not executable and you won't be able to run stuff from it). Then `chmod +x HelloBionic` and `./HelloBionic`. You should see Hello World.
 
 Command line apps are not very interesting for Android. The more interesting scenario are shared libraries that can be called into from Java/Kotlin through JNI. This is very similar to building shared libraries in other languages like C/C++/Rust. `PublishAot` allows building shared libraries that are callable from non-.NET languages. See https://learn.microsoft.com/dotnet/core/deploying/native-aot/interop#native-exports.
@@ -29,12 +29,11 @@ For an example of a Native AOT shared library invoked through JNI from Java see 
 
 ## Known issues
 
-If you hit `error : version script assignment of 'V1.0' to symbol '_init' failed: symbol not defined` - this is a known issue https://github.com/dotnet/runtime/issues/92272, you can add following lines to your csproj to work around:
+If you hit `error : version script assignment of 'V1.0' to symbol '_init' failed: symbol not defined` - this is a known issue with .NET 8 release https://github.com/dotnet/runtime/issues/92272, you can add following lines to your csproj to work around:
 
 ```xml
-<ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-bionic'">
-  <LinkerArg Include="-Wl,--defsym,_init=__libc_init" />
-  <LinkerArg Include="-Wl,--defsym,_fini=__libc_fini" />
+<ItemGroup Condition="$(RuntimeIdentifier.StartsWith('linux-bionic'))">
+  <LinkerArg Include="-Wl,--undefined-version" />
 </ItemGroup>
 ```
 

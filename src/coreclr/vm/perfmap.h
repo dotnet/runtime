@@ -10,8 +10,6 @@
 #include "fstream.h"
 #include "volatile.h"
 
-class PerfInfo;
-
 // Generates a perfmap file.
 class PerfMap
 {
@@ -31,9 +29,6 @@ private:
 
     // The file stream to write the map to.
     CFileStream * m_FileStream;
-
-    // The perfinfo file to log images to.
-    PerfInfo * m_PerfInfo;
 
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
@@ -56,9 +51,6 @@ protected:
 
     // Does the actual work to log a method to the map.
     void LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, const char *optimizationTier);
-
-    // Does the actual work to log an image
-    void LogImage(PEAssembly * pPEAssembly);
 
     // Get the image signature and store it as a string.
     static void GetNativeImageSignature(PEAssembly * pPEAssembly, CHAR * pszSig, unsigned int nSigSize);
@@ -86,9 +78,6 @@ public:
     static void Initialize();
 
     static void Enable(PerfMapType type, bool sendExisting);
-
-    // Log a native image load to the map.
-    static void LogImageLoad(PEAssembly * pPEAssembly);
 
     static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig);
 

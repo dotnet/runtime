@@ -201,7 +201,6 @@ typedef struct _DISPATCHER_CONTEXT {
 #define RUNTIME_FUNCTION__BeginAddress(prf)             (prf)->BeginAddress
 #define RUNTIME_FUNCTION__SetBeginAddress(prf,addr)     ((prf)->BeginAddress = (addr))
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "win64unwind.h"
 #include "daccess.h"
 
@@ -235,7 +234,6 @@ RtlVirtualUnwind (
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
 #endif // HOST_X86
-#endif // FEATURE_EH_FUNCLETS
 
 #endif // TARGET_X86
 

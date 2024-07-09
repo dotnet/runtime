@@ -44,6 +44,7 @@ namespace BigFrames_skippage4
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             Test1();

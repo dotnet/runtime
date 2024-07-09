@@ -364,7 +364,6 @@ add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
 
 upload_parser.add_argument("-mch_files", metavar="MCH_FILE", required=True, nargs='+', help=upload_mch_files_help)
-upload_parser.add_argument("-az_storage_key", help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
 upload_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
@@ -527,7 +526,7 @@ def decode_clrjit_build_string(clrjit_path):
     with open(clrjit_path, "rb") as fh:
         contents = fh.read()
 
-    match = re.search(b'RyuJIT built by ([^\0]+?) targeting ([^\0]+?)-([^\0]+?)(| \(with native PGO\)| \(without native PGO\)|)\0', contents)
+    match = re.search(b'RyuJIT built by ([^\0]+?) targeting ([^\0]+?)-([^\0]+?)(| \\(with native PGO\\)| \\(without native PGO\\)|)\0', contents)
     if match is None:
         return None
 
@@ -1530,7 +1529,7 @@ def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_
 
 
 def parse_replay_asserts(mch_file, replay_output):
-    """ Parse output from failed replay, looking for asserts and correlating them to provide the best
+    r""" Parse output from failed replay, looking for asserts and correlating them to provide the best
         repro scenarios.
 
         Look for lines like:
@@ -2345,8 +2344,9 @@ class SuperPMIReplayAsmDiffs:
                         diff_perfscore = diff_metrics["Overall"]["Diffed PerfScore"]
                         logging.info("Total PerfScore of base: {}".format(base_perfscore))
                         logging.info("Total PerfScore of diff: {}".format(diff_perfscore))
-                        delta_perfscore = diff_perfscore - base_perfscore
-                        logging.info("Total PerfScore of delta: {} ({:.2%} of base)".format(delta_perfscore, delta_perfscore / base_perfscore))
+                        if base_perfscore != 0:
+                            delta_perfscore = diff_perfscore - base_perfscore
+                            logging.info("Total PerfScore of delta: {} ({:.2%} of base)".format(delta_perfscore, delta_perfscore / base_perfscore))
                         logging.info("")
 
                         relative_perfscore_geomean = diff_metrics["Overall"]["Relative PerfScore Geomean"]
@@ -3562,14 +3562,14 @@ def list_superpmi_collections_container_via_azure_api(path_filter=lambda unused:
     """
 
     require_azure_storage_libraries()
-    from jitutil import ContainerClient, AzureCliCredential
+    from jitutil import ContainerClient, DefaultAzureCredential
 
     superpmi_container_url = az_blob_storage_superpmi_container_uri
 
     paths = []
     ok = True
     try:
-        az_credential = AzureCliCredential()
+        az_credential = DefaultAzureCredential()
         container = ContainerClient.from_container_url(superpmi_container_url, credential=az_credential)
         blob_name_prefix = az_collections_root_folder + "/"
         blob_list = container.list_blobs(name_starts_with=blob_name_prefix, retry_total=0)
@@ -3676,7 +3676,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
 
 
 def process_mch_files_arg(coreclr_args):
-    """ Process the -mch_files argument. If the argument is not specified, then download files
+    r""" Process the -mch_files argument. If the argument is not specified, then download files
         from Azure Storage and any specified private MCH stores.
 
         Any files on UNC (i.e., "\\server\share" paths on Windows) or Azure Storage stores,
@@ -3788,8 +3788,8 @@ def upload_mch(coreclr_args):
         coreclr_args (CoreclrArguments): parsed args
     """
 
-    require_azure_storage_libraries(need_azure_identity=False)
-    from jitutil import BlobServiceClient
+    require_azure_storage_libraries(need_azure_identity=True)
+    from jitutil import BlobServiceClient, DefaultAzureCredential
 
     def upload_blob(file, blob_name):
         blob_client = blob_service_client.get_blob_client(container=az_superpmi_container_name, blob=blob_name)
@@ -3825,7 +3825,9 @@ def upload_mch(coreclr_args):
     for item in files_to_upload:
         logging.info("  %s", item)
 
-    blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=coreclr_args.az_storage_key)
+    default_credential = DefaultAzureCredential()
+
+    blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=default_credential)
     blob_folder_name = "{}/{}/{}/{}".format(az_collections_root_folder, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
 
     total_bytes_uploaded = 0
@@ -5005,12 +5007,6 @@ def setup_args(args):
         verify_jit_ee_version_arg()
 
         coreclr_args.verify(args,
-                            "az_storage_key",
-                            lambda item: item is not None,
-                            "Specify az_storage_key or set environment variable CLRJIT_AZ_KEY to the key to use.",
-                            modify_arg=lambda arg: os.environ["CLRJIT_AZ_KEY"] if arg is None and "CLRJIT_AZ_KEY" in os.environ else arg)
-
-        coreclr_args.verify(args,
                             "mch_files",
                             lambda unused: True,
                             "Unable to set mch_files")
@@ -5032,12 +5028,6 @@ def setup_args(args):
 
         if not os.path.isdir(coreclr_args.private_store):
             print("Error: private store directory '" + coreclr_args.private_store + "' not found.")
-            sys.exit(1)
-
-        # Safety measure: don't allow CLRJIT_AZ_KEY to be set if we are uploading to a private store.
-        # Note that this should be safe anyway, since we're publishing something private, not public.
-        if "CLRJIT_AZ_KEY" in os.environ:
-            print("Error: environment variable CLRJIT_AZ_KEY is set, but command is `upload-private`, not `upload`. That is not allowed.")
             sys.exit(1)
 
     elif coreclr_args.mode == "download":

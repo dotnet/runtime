@@ -88,7 +88,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     /// Holds a weak reference to the managed instance.
     /// It allows delegating MsQuic events to the managed object while it still can be collected and finalized.
     /// </summary>
-    private readonly GCHandle _context;
+    private GCHandle _context;
 
     /// <summary>
     /// Optional parent safe handle, used to increment/decrement reference count with the lifetime of this instance.
@@ -145,7 +145,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     }
 }
 
-internal sealed class MsQuicConfigurationSafeHandle : MsQuicSafeHandle
+internal sealed class MsQuicConfigurationSafeHandle : MsQuicSafeHandle, ISafeHandleCachable
 {
     // MsQuicConfiguration handles are cached, so we need to keep track of the
     // number of times a handle is rented. Once we decide to dispose the handle,

@@ -115,7 +115,7 @@ mono_atomic_cas_i64 (volatile gint64 *dest, gint64 exch, gint64 comp)
 	(void)atomic_compare_exchange_strong ((volatile atomic_llong *)dest, (long long*)&comp, exch);
 	return comp;
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error "gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC"
 #endif
 }
 
@@ -188,7 +188,7 @@ mono_atomic_xchg_i64 (volatile gint64 *dest, gint64 exch)
 	g_static_assert (sizeof (atomic_llong) == sizeof (*dest) && ATOMIC_LLONG_LOCK_FREE == 2);
 	return atomic_exchange ((volatile atomic_llong *)dest, exch);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error "gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC"
 #endif
 }
 
@@ -216,7 +216,7 @@ mono_atomic_fetch_add_i64 (volatile gint64 *dest, gint64 add)
 	g_static_assert (sizeof (atomic_llong) == sizeof (*dest) && ATOMIC_LLONG_LOCK_FREE == 2);
 	return atomic_fetch_add ((volatile atomic_llong *)dest, add);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error "gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC"
 #endif
 }
 
@@ -250,7 +250,7 @@ mono_atomic_load_i64 (volatile gint64 *src)
 	g_static_assert (sizeof (atomic_llong) == sizeof (*src) && ATOMIC_LLONG_LOCK_FREE == 2);
 	return atomic_load ((volatile atomic_llong *)src);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error "gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC"
 #endif
 }
 
@@ -292,7 +292,7 @@ mono_atomic_store_i64 (volatile gint64 *dst, gint64 val)
 	g_static_assert (sizeof (atomic_llong) == sizeof (*dst) && ATOMIC_LLONG_LOCK_FREE == 2);
 	atomic_store ((volatile atomic_llong *)dst, val);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error "gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC"
 #endif
 }
 

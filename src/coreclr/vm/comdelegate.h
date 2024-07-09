@@ -17,10 +17,6 @@ class ShuffleThunkCache;
 #include "dllimportcallback.h"
 #include "stubcache.h"
 
-#ifndef FEATURE_MULTICASTSTUB_AS_IL
-typedef ArgBasedStubCache MulticastStubCache;
-#endif
-
 VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, struct ShuffleEntry * pShuffleEntryArray, size_t nEntries);
 
 enum class ShuffleComputationType
@@ -34,15 +30,8 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 class COMDelegate
 {
 private:
-    // friend VOID CPUSTUBLINKER::EmitMulticastInvoke(...);
     // friend VOID CPUSTUBLINKER::EmitShuffleThunk(...);
     friend class CPUSTUBLINKER;
-    friend BOOL MulticastFrame::TraceFrame(Thread *thread, BOOL fromPatch,
-                                TraceDestination *trace, REGDISPLAY *regs);
-
-#ifndef FEATURE_MULTICASTSTUB_AS_IL
-    static MulticastStubCache* m_pMulticastStubCache;
-#endif
 
     static CrstStatic   s_DelegateToFPtrHashCrst;   // Lock for the following hash.
     static PtrHashMap*  s_pDelegateToFPtrHash;      // Hash table containing the Delegate->FPtr pairs
@@ -71,7 +60,7 @@ public:
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);
 
 #ifdef FEATURE_COMINTEROP
-    static ComPlusCallInfo * PopulateComPlusCallInfo(MethodTable * pDelMT);
+    static CLRToCOMCallInfo * PopulateCLRToCOMCallInfo(MethodTable * pDelMT);
 #endif // FEATURE_COMINTEROP
 
     static PCODE GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** ppStubMD, DWORD dwStubFlags);

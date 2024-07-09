@@ -1,7 +1,7 @@
 <Project>
   <ItemGroup>
     <!-- The officially-supported subset of these RIDs should be included in ILCompilerSupportedRids in
-         https://github.com/dotnet/installer/blob/main/src/redist/targets/GenerateBundledVersions.targets -->
+         https://github.com/dotnet/sdk/blob/main/src/Installer/redist-installer/targets/GenerateBundledVersions.targets -->
     <OfficialBuildRID Include="linux-musl-arm" Platform="arm" />
     <OfficialBuildRID Include="linux-arm" Platform="arm" />
     <OfficialBuildRID Include="linux-musl-arm64" Platform="arm64" />
@@ -12,6 +12,7 @@
     <OfficialBuildRID Include="osx-arm64" Platform="arm64" />
     <OfficialBuildRID Include="win-arm64" Platform="arm64" />
     <OfficialBuildRID Include="win-x64" Platform="x64" />
+    <OfficialBuildRID Include="win-x86" Platform="x86" />
     <OfficialBuildRID Include="freebsd-x64" Platform="x64" />
     <OfficialBuildRID Include="freebsd-arm64" Platform="arm64" />
     <OfficialBuildRID Include="$(OutputRID)" Platform="$(TargetArchitecture)" Exclude="@(OfficialBuildRID)" />

@@ -30,6 +30,7 @@ namespace BoxTest_tailjump_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             new Test().Fibonacci(20, true);

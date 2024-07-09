@@ -4,14 +4,17 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace System.Threading.Channels
 {
-    public partial class ChannelClosedException : System.InvalidOperationException
+    public partial class Channel
     {
-#if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-#endif
-        protected ChannelClosedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static System.Threading.Channels.Channel<T> CreateUnboundedPrioritized<T>() { throw null; }
+        public static System.Threading.Channels.Channel<T> CreateUnboundedPrioritized<T>(System.Threading.Channels.UnboundedPrioritizedChannelOptions<T> options) { throw null; }
+    }
+    public sealed partial class UnboundedPrioritizedChannelOptions<T> : System.Threading.Channels.ChannelOptions
+    {
+        public System.Collections.Generic.IComparer<T>? Comparer { get; set; }
     }
 }

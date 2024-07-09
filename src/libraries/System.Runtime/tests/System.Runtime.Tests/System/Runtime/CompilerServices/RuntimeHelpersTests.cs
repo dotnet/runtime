@@ -365,6 +365,12 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<Guid>());
             Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<StructWithoutReferences>());
             Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<StructWithReferences>());
+            Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithoutReferences>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithReferences>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<Span<char>>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<ReadOnlySpan<char>>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithRef>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithNestedRef>());
         }
 
         [Fact]
@@ -409,6 +415,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
         }
 
+#pragma warning disable CS0649
         [StructLayoutAttribute(LayoutKind.Sequential)]
         private struct StructWithoutReferences
         {
@@ -421,6 +428,29 @@ namespace System.Runtime.CompilerServices.Tests
             public int a, b, c;
             public object d;
         }
+
+        private ref struct RefStructWithoutReferences
+        {
+            public int a;
+            public long b;
+        }
+
+        private ref struct RefStructWithReferences
+        {
+            public int a;
+            public object b;
+        }
+
+        private ref struct RefStructWithRef
+        {
+            public ref int a;
+        }
+
+        private ref struct RefStructWithNestedRef
+        {
+            public Span<char> a;
+        }
+#pragma warning restore CS0649
 
         [Fact]
         public static void FixedAddressValueTypeTest()
@@ -436,6 +466,219 @@ namespace System.Runtime.CompilerServices.Tests
             IntPtr fixedPtr2 = FixedClass.AddressOfFixedAge();
 
             Assert.Equal(fixedPtr1, fixedPtr2);
+        }
+
+        [InlineArray(3)]
+        private struct Byte3
+        {
+            public byte b1;
+        }
+
+        [Fact]
+        public static unsafe void SizeOf()
+        {
+            Assert.Equal(1, RuntimeHelpers.SizeOf(typeof(sbyte).TypeHandle));
+            Assert.Equal(1, RuntimeHelpers.SizeOf(typeof(byte).TypeHandle));
+            Assert.Equal(2, RuntimeHelpers.SizeOf(typeof(short).TypeHandle));
+            Assert.Equal(2, RuntimeHelpers.SizeOf(typeof(ushort).TypeHandle));
+            Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(int).TypeHandle));
+            Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(uint).TypeHandle));
+            Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(long).TypeHandle));
+            Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(ulong).TypeHandle));
+            Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(float).TypeHandle));
+            Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(double).TypeHandle));
+            Assert.Equal(3, RuntimeHelpers.SizeOf(typeof(Byte3).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(void*).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate* <void>).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(int).MakeByRefType().TypeHandle));
+            Assert.Throws<ArgumentNullException>(() => RuntimeHelpers.SizeOf(default));
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(List<>).TypeHandle));
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(void).TypeHandle));
+        }
+
+        // We can't even get a RuntimeTypeHandle for a generic parameter type on NativeAOT,
+        // so we don't even get to the method we're testing.
+        // So, let's not even waste time running this test on NativeAOT
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        public static void SizeOfGenericParameter()
+        {
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(List<>).GetGenericArguments()[0].TypeHandle));
+        }
+
+        // We can't even get a RuntimeTypeHandle for a partially-open-generic type on NativeAOT,
+        // so we don't even get to the method we're testing.
+        // So, let's not even waste time running this test on NativeAOT
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        public static void SizeOfPartiallyOpenGeneric()
+        {
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(Dictionary<,>).MakeGenericType(typeof(object), typeof(Dictionary<,>).GetGenericArguments()[1]).TypeHandle));
+        }
+
+        [Fact]
+        public static void BoxPrimitive()
+        {
+            int value = 4;
+            object result = RuntimeHelpers.Box(ref Unsafe.As<int, byte>(ref value), typeof(int).TypeHandle);
+            Assert.Equal(value, Assert.IsType<int>(result));
+        }
+
+        [Fact]
+        public static void BoxPointer()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                nint value = 3;
+                object result = RuntimeHelpers.Box(ref Unsafe.As<nint, byte>(ref value), typeof(void*).TypeHandle);
+            });
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private ref struct ByRefLikeType
+        {
+            public int i;
+        }
+
+        [Fact]
+        public static void BoxByRefLike()
+        {
+            Assert.Throws<NotSupportedException>(() =>
+            {
+                int value = 3;
+                object result = RuntimeHelpers.Box(ref Unsafe.As<int, byte>(ref value), typeof(ByRefLikeType).TypeHandle);
+            });
+        }
+
+        [Fact]
+        public static void BoxStruct()
+        {
+            Span<int> buffer = [0, 42, int.MaxValue];
+            StructWithoutReferences expected = new()
+            {
+                a = buffer[0],
+                b = buffer[1],
+                c = buffer[2]
+            };
+            object result = RuntimeHelpers.Box(ref MemoryMarshal.AsBytes(buffer)[0], typeof(StructWithoutReferences).TypeHandle);
+
+            Assert.Equal(expected, Assert.IsType<StructWithoutReferences>(result));
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct GenericStruct<T>
+        {
+            public T data;
+        }
+
+        [Fact]
+        public static void BoxUnmanagedGenericStruct()
+        {
+            int value = 3;
+            object result = RuntimeHelpers.Box(ref Unsafe.As<int, byte>(ref value), typeof(GenericStruct<int>).TypeHandle);
+
+            Assert.Equal(value, Assert.IsType<GenericStruct<int>>(result).data);
+        }
+
+        [Fact]
+        public static void BoxManagedGenericStruct()
+        {
+            object value = new();
+            object result = RuntimeHelpers.Box(ref Unsafe.As<object, byte>(ref value), typeof(GenericStruct<object>).TypeHandle);
+
+            Assert.Same(value, Assert.IsType<GenericStruct<object>>(result).data);
+        }
+
+        [Fact]
+        public static void BoxNullable()
+        {
+            float? value = 3.14f;
+            object result = RuntimeHelpers.Box(ref Unsafe.As<float?, byte>(ref value), typeof(float?).TypeHandle);
+            Assert.Equal(value, Assert.IsType<float>(result));
+        }
+
+        [Fact]
+        public static void BoxNullNullable()
+        {
+            float? value = null;
+            object? result = RuntimeHelpers.Box(ref Unsafe.As<float?, byte>(ref value), typeof(float?).TypeHandle);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public static void NullBox()
+        {
+            Assert.Throws<NullReferenceException>(() => RuntimeHelpers.Box(ref Unsafe.NullRef<byte>(), typeof(byte).TypeHandle));
+        }
+
+        [Fact]
+        public static void BoxNullTypeHandle()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                byte value = 3;
+                RuntimeHelpers.Box(ref value, default(RuntimeTypeHandle));
+            });
+        }
+
+        [Fact]
+        public static void BoxReferenceType()
+        {
+            string str = "ABC";
+            Assert.Same(str, RuntimeHelpers.Box(ref Unsafe.As<string, byte>(ref str), typeof(string).TypeHandle));
+        }
+
+        [Fact]
+        public static void BoxArrayType()
+        {
+            string[] arr = ["a", "b", "c"];
+            Assert.Same(arr, RuntimeHelpers.Box(ref Unsafe.As<string[], byte>(ref arr), typeof(string[]).TypeHandle));
+        }
+
+        // We can't even get a RuntimeTypeHandle for a generic parameter type on NativeAOT,
+        // so we don't even get to the method we're testing.
+        // So, let's not even waste time running this test on NativeAOT
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        public static void BoxGenericParameterType()
+        {
+            Type t = typeof(List<>).GetGenericArguments()[0];
+            Assert.Throws<ArgumentException>(() =>
+            {
+                byte value = 3;
+                RuntimeHelpers.Box(ref value, t.TypeHandle);
+            });
+        }
+
+        // We can't even get a RuntimeTypeHandle for a partially instantiated generic type on NativeAOT,
+        // so we don't even get to the method we're testing.
+        // So, let's not even waste time running this test on NativeAOT
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        public static void BoxPartiallyOpenGeneric()
+        {
+            Type t = typeof(Dictionary<,>).MakeGenericType(typeof(object), typeof(Dictionary<,>).GetGenericArguments()[1]);
+            Assert.Throws<ArgumentException>(() =>
+            {
+                byte value = 3;
+                RuntimeHelpers.Box(ref value, t.TypeHandle);
+            });
+        }
+
+        [Fact]
+        public static void BoxGenericTypeDefinition()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                byte value = 3;
+                RuntimeHelpers.Box(ref value, typeof(List<>).TypeHandle);
+            });
+        }
+
+        [Fact]
+        public static void BoxVoid()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                byte value = 3;
+                RuntimeHelpers.Box(ref value, typeof(void).TypeHandle);
+            });
         }
     }
 

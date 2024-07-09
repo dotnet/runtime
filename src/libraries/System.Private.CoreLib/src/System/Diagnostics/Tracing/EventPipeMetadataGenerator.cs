@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tracing
             ParameterPayload = 2
         }
 
-        public static EventPipeMetadataGenerator Instance = new EventPipeMetadataGenerator();
+        public static readonly EventPipeMetadataGenerator Instance = new EventPipeMetadataGenerator();
 
         private EventPipeMetadataGenerator() { }
 

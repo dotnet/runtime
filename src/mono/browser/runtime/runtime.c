@@ -65,6 +65,7 @@
 int mono_wasm_enable_gc = 1;
 
 /* Missing from public headers */
+char *mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix);
 void mono_icall_table_init (void);
 void mono_wasm_enable_debugging (int);
 void mono_ee_interp_init (const char *opts);
@@ -76,6 +77,7 @@ int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 void mono_trace_init (void);
+MonoMethod *mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, MonoError *error);
 
 /* Not part of public headers */
 #define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
@@ -212,13 +214,9 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 
 	assert (strlen (name) < 100);
 	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
-	len = strlen (key);
-	for (int i = 0; i < len; ++i) {
-		if (key [i] == '.')
-			key [i] = '_';
-	}
-
-	addr = wasm_dl_get_native_to_interp (key, extra_arg);
+	char *fixedName = mono_fixup_symbol_name ("", key, "");
+	addr = wasm_dl_get_native_to_interp (fixedName, extra_arg);
+	free (fixedName);
 	MONO_EXIT_GC_UNSAFE;
 	return addr;
 }
@@ -228,6 +226,14 @@ static void *sysglobal_native_handle;
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 {
+#if WASM_SUPPORTS_DLOPEN
+	if (!name)
+		return dlopen(NULL, flags);
+#else
+	if (!name)
+		return NULL;
+#endif
+
 	void* handle = wasm_dl_lookup_pinvoke_table (name);
 	if (handle)
 		return handle;
@@ -355,4 +361,26 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 	result = mono_class_get_method_from_name (klass, name, arguments);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
+}
+
+/*
+ * mono_wasm_marshal_get_managed_wrapper:
+ * Creates a wrapper for a function pointer to a method marked with
+ * UnamangedCallersOnlyAttribute.
+ * This wrapper ensures that the interpreter initializes the pointers.
+ */
+void
+mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, int num_params)
+{
+	MonoError error;
+	mono_error_init (&error);
+	MonoAssembly* assembly = mono_wasm_assembly_load (assemblyName);
+	assert (assembly);
+	MonoClass* class = mono_wasm_assembly_find_class (assembly, namespaceName, typeName);
+	assert (class);
+	MonoMethod* method = mono_wasm_assembly_find_method (class, methodName, num_params);
+	assert (method);
+	MonoMethod *managedWrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, &error);
+	assert (managedWrapper);
+	mono_compile_method (managedWrapper);
 }

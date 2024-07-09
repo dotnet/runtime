@@ -23,8 +23,6 @@ function(create_standalone_jit)
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_${TARGETDETAILS_ARCH})
-  elseif(TARGETDETAILS_OS STREQUAL "win_aot")
-    set(JIT_ARCH_LINK_LIBRARIES gcinfo_win_${TARGETDETAILS_ARCH})
   else()
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
   endif()
@@ -169,6 +167,7 @@ set( JIT_SOURCES
   redundantbranchopts.cpp
   regalloc.cpp
   registerargconvention.cpp
+  regMaskTPOps.cpp
   regset.cpp
   scev.cpp
   scopeinfo.cpp
@@ -179,6 +178,7 @@ set( JIT_SOURCES
   ssabuilder.cpp
   ssarenamestate.cpp
   stacklevelsetter.cpp
+  structsegments.cpp
   switchrecognition.cpp
   treelifeupdater.cpp
   unwind.cpp
@@ -380,12 +380,12 @@ set( JIT_HEADERS
   ssaconfig.h
   ssarenamestate.h
   stacklevelsetter.h
+  structsegments.h
   target.h
   targetx86.h
   targetamd64.h
   targetarm.h
   targetarm64.h
-  tinyarray.h
   treelifeupdater.h
   typelist.h
   unwind.h
@@ -659,7 +659,6 @@ else()
   create_standalone_jit(TARGET clrjit_universal_arm_${ARCH_HOST_NAME} OS universal ARCH arm DESTINATIONS .)
   target_compile_definitions(clrjit_universal_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
   create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86 DESTINATIONS .)
-  create_standalone_jit(TARGET clrjit_win_aot_x86_${ARCH_HOST_NAME} OS win_aot ARCH x86 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_RISCV64)
 
 if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)

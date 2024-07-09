@@ -115,7 +115,9 @@ public:
     // Initializes both elements to "NoVN".  Defined in ValueNum.cpp.
     ValueNumPair();
 
-    ValueNumPair(ValueNum lib, ValueNum cons) : m_liberal(lib), m_conservative(cons)
+    ValueNumPair(ValueNum lib, ValueNum cons)
+        : m_liberal(lib)
+        , m_conservative(cons)
     {
     }
 

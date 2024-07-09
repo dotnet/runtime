@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly TypeIndex _typeIndex;
             private readonly bool _emitEnumParseMethod;
             private readonly bool _emitGenericParseEnum;
+            private readonly bool _emitNotNullIfNotNull;
             private readonly bool _emitThrowIfNullMethod;
 
             private readonly SourceWriter _writer = new();
@@ -26,6 +27,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _typeIndex = new TypeIndex(sourceGenSpec.ConfigTypes);
                 _emitEnumParseMethod = sourceGenSpec.EmitEnumParseMethod;
                 _emitGenericParseEnum = sourceGenSpec.EmitGenericParseEnum;
+                _emitNotNullIfNotNull = sourceGenSpec.EmitNotNullIfNotNull;
                 _emitThrowIfNullMethod = sourceGenSpec.EmitThrowIfNullMethod;
             }
 

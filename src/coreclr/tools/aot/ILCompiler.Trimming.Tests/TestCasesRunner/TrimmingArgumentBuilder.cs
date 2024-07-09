@@ -217,7 +217,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			IgnoreLinkAttributes (options.IgnoreLinkAttributes);
 
-#if !NETCOREAPP
+#if !NET
 			if (!string.IsNullOrEmpty (options.Il8n))
 				AddIl8n (options.Il8n);
 #endif

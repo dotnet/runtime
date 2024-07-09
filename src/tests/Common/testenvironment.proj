@@ -81,6 +81,10 @@
       DOTNET_JitSynthesizeCounts;
       DOTNET_JitCheckSynthesizedCounts;
       DOTNET_JitRLCSEGreedy;
+      DOTNET_JitEnableOptRepeat;
+      DOTNET_JitOptRepeat;
+      DOTNET_JitOptRepeatCount;
+      DOTNET_JitDoReversePostOrderLayout;
     </DOTNETVariables>
   </PropertyGroup>
   <ItemGroup>
@@ -239,6 +243,8 @@
     <TestEnvironment Include="syntheticpgo" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitSynthesizeCounts="1" JitCheckSynthesizedCounts="1" />
     <TestEnvironment Include="syntheticpgo_blend" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitSynthesizeCounts="3" JitCheckSynthesizedCounts="1" />
     <TestEnvironment Include="jitrlcse" JitRLCSEGreedy="1" />
+    <TestEnvironment Include="jitoptrepeat" JitEnableOptRepeat="1" JitOptRepeat="*" JitOptRepeatCount="2"/>
+    <TestEnvironment Include="jitoldlayout" JitDoReversePostOrderLayout="0"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
     <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' == 'true'" gcServer="1" GCName="clrgc.dll"/>
@@ -322,7 +328,7 @@
       <_TestEnvFileLine Condition="'false' == 'true' and '$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
 
       <!-- Use Mono in Full AOT mode when running the full-AOT-compiled runtime tests -->
-      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'minifullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />
 
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' != ''" Include="export DOTNET_RUNTIME_VARIANT=$(RuntimeVariant)" />
 

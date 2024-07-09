@@ -205,6 +205,7 @@ typedef int VCSHeapType;
 typedef enum { TYPEDEFTOMETHODTABLE, TYPEREFTOMETHODTABLE } ModuleMapType;
 typedef enum {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap, VtableHeap} VCSHeapType;
 typedef enum {LoaderHeapKindNormal = 0, LoaderHeapKindExplicitControl = 1} LoaderHeapKind;
+typedef enum {MethodTableInitialized = 1, MethodTableInitializationFailed = 2} MethodTableInitializationFlags;
 typedef enum {FreeUnknownRegion = 0, FreeGlobalHugeRegion = 1, FreeGlobalRegion = 2, FreeRegion = 3, FreeSohSegment = 4, FreeUohSegment = 5 } FreeRegionKind;
 typedef void ( *MODULEMAPTRAVERSE )(
     UINT index,
@@ -2801,7 +2802,7 @@ EXTERN_C const IID IID_ISOSDacInterface8;
 /* interface __MIDL_itf_sospriv_0000_0012 */
 /* [local] */
 
-#define SOS_BREAKING_CHANGE_VERSION 4
+#define SOS_BREAKING_CHANGE_VERSION 5
 
 
 extern RPC_IF_HANDLE __MIDL_itf_sospriv_0000_0012_v0_0_c_ifspec;
@@ -3343,6 +3344,118 @@ EXTERN_C const IID IID_ISOSDacInterface13;
 #endif 	/* __ISOSDacInterface13_INTERFACE_DEFINED__ */
 
 
+#ifndef __ISOSDacInterface14_INTERFACE_DEFINED__
+#define __ISOSDacInterface14_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface14 */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSDacInterface14;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("9aa22aca-6dc6-4a0c-b4e0-70d2416b9837")
+    ISOSDacInterface14 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetStaticBaseAddress( 
+            CLRDATA_ADDRESS methodTable,
+            CLRDATA_ADDRESS *nonGCStaticsAddress,
+            CLRDATA_ADDRESS *GCStaticsAddress) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetThreadStaticBaseAddress( 
+            CLRDATA_ADDRESS methodTable,
+            CLRDATA_ADDRESS thread,
+            CLRDATA_ADDRESS *nonGCStaticsAddress,
+            CLRDATA_ADDRESS *GCStaticsAddress) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetMethodTableInitializationFlags( 
+            CLRDATA_ADDRESS methodTable,
+            MethodTableInitializationFlags *initializationStatus) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ISOSDacInterface14Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface14 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface14 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface14 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetStaticBaseAddress )( 
+            ISOSDacInterface14 * This,
+            CLRDATA_ADDRESS methodTable,
+            CLRDATA_ADDRESS *nonGCStaticsAddress,
+            CLRDATA_ADDRESS *GCStaticsAddress);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetThreadStaticBaseAddress )( 
+            ISOSDacInterface14 * This,
+            CLRDATA_ADDRESS methodTable,
+            CLRDATA_ADDRESS thread,
+            CLRDATA_ADDRESS *nonGCStaticsAddress,
+            CLRDATA_ADDRESS *GCStaticsAddress);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetMethodTableInitializationFlags )( 
+            ISOSDacInterface14 * This,
+            CLRDATA_ADDRESS methodTable,
+            MethodTableInitializationFlags *initializationStatus);
+        
+        END_INTERFACE
+    } ISOSDacInterface14Vtbl;
+
+    interface ISOSDacInterface14
+    {
+        CONST_VTBL struct ISOSDacInterface14Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface14_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface14_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface14_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface14_GetStaticBaseAddress(This,methodTable,nonGCStaticsAddress,GCStaticsAddress)	\
+    ( (This)->lpVtbl -> GetStaticBaseAddress(This,methodTable,nonGCStaticsAddress,GCStaticsAddress) ) 
+
+#define ISOSDacInterface14_GetThreadStaticBaseAddress(This,methodTable,thread,nonGCStaticsAddress,GCStaticsAddress)	\
+    ( (This)->lpVtbl -> GetThreadStaticBaseAddress(This,methodTable,thread,nonGCStaticsAddress,GCStaticsAddress) ) 
+
+#define ISOSDacInterface14_GetMethodTableInitializationFlags(This,methodTable,initializationStatus)	\
+    ( (This)->lpVtbl -> GetMethodTableInitializationFlags(This,methodTable,initializationStatus) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSDacInterface14_INTERFACE_DEFINED__ */
+
+
 /* Additional Prototypes for ALL interfaces */
 
 /* end of Additional Prototypes */
@@ -3352,4 +3465,5 @@ EXTERN_C const IID IID_ISOSDacInterface13;
 #endif
 
 #endif
+
 

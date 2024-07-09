@@ -12,8 +12,14 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# We need to set this to Release as there's no way to intercept configuration-specific linker flags
+# for try_compile-style tests (like check_c_source_compiles) and some of the default Debug flags
+# (ie. /INCREMENTAL) conflict with our own flags.
+set(CMAKE_TRY_COMPILE_CONFIGURATION Release)
+
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
+include(CheckLinkerFlag)
 
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
@@ -28,7 +34,6 @@ if (CLR_CMAKE_HOST_UNIX)
         add_compile_options(-Wno-null-conversion)
         add_compile_options(-glldb)
     else()
-        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror=conversion-null>)
         add_compile_options(-g)
     endif()
 endif()
@@ -58,6 +63,7 @@ if (MSVC)
   define_property(TARGET PROPERTY CLR_CONTROL_FLOW_GUARD INHERITED BRIEF_DOCS "Controls the /guard:cf flag presence" FULL_DOCS "Set this property to ON or OFF to indicate if the /guard:cf compiler and linker flag should be present")
   define_property(TARGET PROPERTY CLR_EH_CONTINUATION INHERITED BRIEF_DOCS "Controls the /guard:ehcont flag presence" FULL_DOCS "Set this property to ON or OFF to indicate if the /guard:ehcont compiler flag should be present")
   define_property(TARGET PROPERTY CLR_EH_OPTION INHERITED BRIEF_DOCS "Defines the value of the /EH option" FULL_DOCS "Set this property to one of the valid /EHxx options (/EHa, /EHsc, /EHa-, ...)")
+  define_property(TARGET PROPERTY MSVC_WARNING_LEVEL INHERITED BRIEF_DOCS "Define the warning level for the /Wn option" FULL_DOCS "Set this property to one of the valid /Wn options (/W0, /W1, /W2, /W3, /W4)")
 
   set_property(GLOBAL PROPERTY CLR_CONTROL_FLOW_GUARD ON)
 
@@ -211,8 +217,8 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
       # Disable the use-after-return check for ASAN on Clang. This is because we have a lot of code that
       # depends on the fact that our locals are not saved in a parallel stack, so we can't enable this today.
       # If we ever have a way to detect a parallel stack and track its bounds, we can re-enable this check.
-      add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang>:-fsanitize-address-use-after-return=never>)
-      add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang>:-fsanitize-address-use-after-return=never>)
+      add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-fsanitize-address-use-after-return=never>)
+      add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-fsanitize-address-use-after-return=never>)
     endif()
   endif()
 
@@ -301,7 +307,13 @@ elseif(CLR_CMAKE_HOST_SUNOS)
   add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
 elseif(CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_definitions(-D_XOPEN_SOURCE)
-  add_linker_flag("-Wl,-bind_at_load")
+
+  # the new linker in Xcode 15 (ld_new/ld_prime) deprecated the -bind_at_load flag for macOS which causes a warning
+  # that fails the build since we build with -Werror. Only pass the flag if we need it, i.e. older linkers.
+  check_linker_flag(C "-Wl,-bind_at_load,-fatal_warnings" LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
+  if(LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
+    add_linker_flag("-Wl,-bind_at_load")
+  endif()
 elseif(CLR_CMAKE_HOST_HAIKU)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_linker_flag("-Wl,--no-undefined")
@@ -443,6 +455,8 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 # Unconditionally define _FILE_OFFSET_BITS as 64 on all platforms.
 add_definitions(-D_FILE_OFFSET_BITS=64)
+# Unconditionally define _TIME_BITS as 64 on all platforms.
+add_definitions(-D_TIME_BITS=64)
 
 # Architecture specific files folder name
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
@@ -511,11 +525,6 @@ endif ()
 if (CLR_CMAKE_HOST_UNIX)
   # Disable frame pointer optimizations so profilers can get better call stacks
   add_compile_options(-fno-omit-frame-pointer)
-
-  # The -fms-extensions enable the stuff like __if_exists, __declspec(uuid()), etc.
-  add_compile_options(-fms-extensions)
-  #-fms-compatibility      Enable full Microsoft Visual C++ compatibility
-  #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
 
   # Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
   # using twos-complement representation (this is normally undefined according to the C++ spec).
@@ -661,11 +670,11 @@ if (CLR_CMAKE_HOST_UNIX)
     set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
     add_link_options(-Wno-overriding-t-option)
     if(CLR_CMAKE_HOST_ARCH_ARM64)
-      set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios14.2-macabi")
-      add_link_options(-target arm64-apple-ios14.2-macabi)
+      set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios15.0-macabi")
+      add_link_options(-target arm64-apple-ios15.0-macabi)
     elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-      set(MACOS_VERSION_MIN_FLAGS "-target x86_64-apple-ios13.5-macabi")
-      add_link_options(-target x86_64-apple-ios13.5-macabi)
+      set(MACOS_VERSION_MIN_FLAGS "-target x86_64-apple-ios15.0-macabi")
+      add_link_options(-target x86_64-apple-ios15.0-macabi)
     else()
       clr_unknown_arch()
     endif()
@@ -678,11 +687,10 @@ if (CLR_CMAKE_HOST_UNIX)
     set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
     set(CMAKE_OBJCXX_FLAGS "${CMAKE_OBJCXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
   elseif(CLR_CMAKE_HOST_OSX)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0")
     if(CLR_CMAKE_HOST_ARCH_ARM64)
-      set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
       add_compile_options(-arch arm64)
     elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-      set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
       add_compile_options(-arch x86_64)
     else()
       clr_unknown_arch()
@@ -777,7 +785,8 @@ if (MSVC)
 
   # [[! Microsoft.Security.SystemsADM.10086 !]] - SDL required warnings
   # set default warning level to 4 but allow targets to override it.
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W$<GENEX_EVAL:$<IF:$<BOOL:$<TARGET_PROPERTY:MSVC_WARNING_LEVEL>>,$<TARGET_PROPERTY:MSVC_WARNING_LEVEL>,4>>>)
+  set_property(GLOBAL PROPERTY MSVC_WARNING_LEVEL 4)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W$<TARGET_PROPERTY:MSVC_WARNING_LEVEL>>)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oy->) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls

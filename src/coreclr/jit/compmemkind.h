@@ -10,6 +10,7 @@
 // and the corresponding array of string names for these enum members.
 
 // clang-format off
+CompMemKindMacro(ABI)
 CompMemKindMacro(AssertionProp)
 CompMemKindMacro(ASTNode)
 CompMemKindMacro(InstDesc)

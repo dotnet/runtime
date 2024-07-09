@@ -124,21 +124,21 @@ enum RegisterOrder
 /************************************************************************/
 
 private:
-bool emitInsIsCompare(instruction ins);
-bool emitInsIsLoad(instruction ins);
-bool emitInsIsStore(instruction ins);
-bool emitInsIsLoadOrStore(instruction ins);
-bool emitInsIsVectorRightShift(instruction ins);
-bool emitInsIsVectorLong(instruction ins);
-bool emitInsIsVectorNarrow(instruction ins);
-bool emitInsIsVectorWide(instruction ins);
-bool emitInsDestIsOp2(instruction ins);
+bool     emitInsIsCompare(instruction ins);
+bool     emitInsIsLoad(instruction ins);
+bool     emitInsIsStore(instruction ins);
+bool     emitInsIsLoadOrStore(instruction ins);
+bool     emitInsIsVectorRightShift(instruction ins);
+bool     emitInsIsVectorLong(instruction ins);
+bool     emitInsIsVectorNarrow(instruction ins);
+bool     emitInsIsVectorWide(instruction ins);
+bool     emitInsDestIsOp2(instruction ins);
 emitAttr emitInsTargetRegSize(instrDesc* id);
 emitAttr emitInsLoadStoreSize(instrDesc* id);
 
 emitter::insFormat emitInsFormat(instruction ins);
-emitter::code_t emitInsCode(instruction ins, insFormat fmt);
-emitter::code_t emitInsCodeSve(instruction ins, insFormat fmt);
+emitter::code_t    emitInsCode(instruction ins, insFormat fmt);
+emitter::code_t    emitInsCodeSve(instruction ins, insFormat fmt);
 
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + index<<scale +
 // offset]
@@ -165,7 +165,7 @@ static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
 static bool IsMovInstruction(instruction ins);
-bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
+bool        IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
 
 // Methods to optimize a Ldr or Str with an alternative instruction.
 bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
@@ -191,7 +191,7 @@ FORCEINLINE bool OptimizeLdrStr(instruction ins,
                                 insFormat   fmt,
                                 bool        localVar = false,
                                 int         varx     = -1,
-                                int offs = -1 DEBUG_ARG(bool useRsvdReg = false));
+                                int         offs     = -1 DEBUG_ARG(bool useRsvdReg = false));
 
 emitLclVarAddr* emitGetLclVarPairLclVar2(instrDesc* id)
 {
@@ -207,12 +207,13 @@ emitLclVarAddr* emitGetLclVarPairLclVar2(instrDesc* id)
 }
 
 /************************************************************************
-*
-* This union is used to encode/decode the special ARM64 immediate values
-* that is listed as imm(N,r,s) and referred to as 'bitmask immediate'
-*/
+ *
+ * This union is used to encode/decode the special ARM64 immediate values
+ * that is listed as imm(N,r,s) and referred to as 'bitmask immediate'
+ */
 
-union bitMaskImm {
+union bitMaskImm
+{
     struct
     {
         unsigned immS : 6; // bits 0..5
@@ -223,80 +224,83 @@ union bitMaskImm {
 };
 
 /************************************************************************
-*
-*  Convert between a 64-bit immediate and its 'bitmask immediate'
-*   representation imm(i16,hw)
-*/
+ *
+ *  Convert between a 64-bit immediate and its 'bitmask immediate'
+ *   representation imm(i16,hw)
+ */
 
 static INT64 emitDecodeBitMaskImm(const emitter::bitMaskImm bmImm, emitAttr size);
 
 /************************************************************************
-*
-* This union is used to encode/decode the special ARM64 immediate values
-* that is listed as imm(i16,hw) and referred to as 'halfword immediate'
-*/
+ *
+ * This union is used to encode/decode the special ARM64 immediate values
+ * that is listed as imm(i16,hw) and referred to as 'halfword immediate'
+ */
 
-union halfwordImm {
+union halfwordImm
+{
     struct
     {
         unsigned immVal : 16; // bits  0..15
-        unsigned immHW : 2;   // bits 16..17
+        unsigned immHW  : 2;  // bits 16..17
     };
     unsigned immHWVal; // concat HW:Val forming a 18-bit unsigned immediate
 };
 
 /************************************************************************
-*
-*  Convert between a 64-bit immediate and its 'halfword immediate'
-*   representation imm(i16,hw)
-*/
+ *
+ *  Convert between a 64-bit immediate and its 'halfword immediate'
+ *   representation imm(i16,hw)
+ */
 
 static INT64 emitDecodeHalfwordImm(const emitter::halfwordImm hwImm, emitAttr size);
 
 /************************************************************************
-*
-* This union is used to encode/decode the special ARM64 immediate values
-* that is listed as imm(i16,by) and referred to as 'byteShifted immediate'
-*/
+ *
+ * This union is used to encode/decode the special ARM64 immediate values
+ * that is listed as imm(i16,by) and referred to as 'byteShifted immediate'
+ */
 
-union byteShiftedImm {
+union byteShiftedImm
+{
     struct
     {
-        unsigned immVal : 8;  // bits  0..7
-        unsigned immBY : 2;   // bits  8..9
+        unsigned immVal  : 8; // bits  0..7
+        unsigned immBY   : 2; // bits  8..9
         unsigned immOnes : 1; // bit   10
     };
     unsigned immBSVal; // concat Ones:BY:Val forming a 10-bit unsigned immediate
 };
 
 /************************************************************************
-*
-*  Convert between a 16/32-bit immediate and its 'byteShifted immediate'
-*   representation imm(i8,by)
-*/
+ *
+ *  Convert between a 16/32-bit immediate and its 'byteShifted immediate'
+ *   representation imm(i8,by)
+ */
 
 static UINT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
 
 /************************************************************************
-*
-* This union is used to encode/decode the special ARM64 immediate values
-* that are use for FMOV immediate and referred to as 'float 8-bit immediate'
-*/
+ *
+ * This union is used to encode/decode the special ARM64 immediate values
+ * that are use for FMOV immediate and referred to as 'float 8-bit immediate'
+ */
 
-union floatImm8 {
+union floatImm8
+{
     struct
     {
         unsigned immMant : 4; // bits 0..3
-        unsigned immExp : 3;  // bits 4..6
+        unsigned immExp  : 3; // bits 4..6
         unsigned immSign : 1; // bits 7
     };
     unsigned immFPIVal; // concat Sign:Exp:Mant forming an 8-bit unsigned immediate
 };
 
 /************************************************************************
-*
-*  Convert between a double and its 'float 8-bit immediate' representation
-*/
+ *
+ *  Convert between a double and its 'float 8-bit immediate' representation
+ */
 
 static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
 
@@ -319,17 +323,18 @@ static double emitDecodeSmallFloatImm(ssize_t imm, instruction ins);
 static bool emitIsValidEncodedSmallFloatImm(size_t imm);
 
 /************************************************************************
-*
-*  This union is used to encode/decode the cond, nzcv and imm5 values for
-*   instructions that use them in the small constant immediate field
-*/
+ *
+ *  This union is used to encode/decode the cond, nzcv and imm5 values for
+ *   instructions that use them in the small constant immediate field
+ */
 
-union condFlagsImm {
+union condFlagsImm
+{
     struct
     {
-        insCond   cond : 4;  // bits  0..3
+        insCond   cond  : 4; // bits  0..3
         insCflags flags : 4; // bits  4..7
-        unsigned  imm5 : 5;  // bits  8..12
+        unsigned  imm5  : 5; // bits  8..12
     };
     unsigned immCFVal; // concat imm5:flags:cond forming an 13-bit unsigned immediate
 };
@@ -695,7 +700,8 @@ static code_t insEncodeSimm(ssize_t imm)
     const ssize_t imm_min = -imm_max;
     assert(imm_min <= imm && imm < imm_max);
 
-    union {
+    union
+    {
         ssize_t simm;
         size_t  uimm;
     } conv;
@@ -1199,6 +1205,11 @@ inline static bool isHighPredicateRegister(regNumber reg)
     return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
 }
 
+inline static bool isMaskReg(regNumber reg)
+{
+    return isPredicateRegister(reg);
+}
+
 inline static bool isEvenRegister(regNumber reg)
 {
     if (isGeneralRegister(reg))
@@ -1444,6 +1455,7 @@ void emitIns_R_I(instruction     ins,
                  insOpts         opt  = INS_OPTS_NONE,
                  insScalableOpts sopt = INS_SCALABLE_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                      DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+void emitIns_Add_Add_Tls_Reloc(emitAttr attr, regNumber reg, ssize_t imm DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitInsSve_R_I(instruction     ins,
                     emitAttr        attr,
@@ -1669,7 +1681,7 @@ void emitIns_R_R_R_I_LdStPair(instruction ins,
                               int         varx1 = -1,
                               int         varx2 = -1,
                               int         offs1 = -1,
-                              int offs2 = -1 DEBUG_ARG(unsigned var1RefsOffs = BAD_IL_OFFSET)
+                              int         offs2 = -1 DEBUG_ARG(unsigned var1RefsOffs = BAD_IL_OFFSET)
                                               DEBUG_ARG(unsigned var2RefsOffs = BAD_IL_OFFSET));
 
 void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
@@ -1698,14 +1710,14 @@ void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int of
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
-void emitIns_Adrp_Ldr_Add(emitAttr  attr,
-                          regNumber reg1,
-                          regNumber reg2,
+void emitIns_Adrp_Ldr_Add(emitAttr     attr,
+                          regNumber    reg1,
+                          regNumber    reg2,
                           ssize_t addr DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-void emitIns_R_AI(instruction ins,
-                  emitAttr    attr,
-                  regNumber   ireg,
+void emitIns_R_AI(instruction  ins,
+                  emitAttr     attr,
+                  regNumber    ireg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
@@ -1739,15 +1751,16 @@ void emitIns_Call(EmitCallType          callType,
                   regNumber        xreg,
                   unsigned         xmul,
                   ssize_t          disp,
-                  bool             isJump);
+                  bool             isJump,
+                  bool             noSafePoint = false);
 
-BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
+BYTE*    emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* i, code_t code);
-BYTE* emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id);
-BYTE* emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id);
-BYTE* emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg);
-BYTE* emitOutputShortConstant(
-    BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg, emitAttr opSize);
+BYTE*    emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id);
+BYTE*    emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id);
+BYTE*    emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg);
+BYTE*    emitOutputShortConstant(
+       BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg, emitAttr opSize);
 BYTE* emitOutputVectorConstant(
     BYTE* dst, ssize_t distVal, regNumber dstReg, regNumber addrReg, emitAttr opSize, emitAttr elemSize);
 
@@ -1794,9 +1807,9 @@ inline bool emitIsLoadLabel(instrDesc* jmp)
 }
 
 /*****************************************************************************
-*
-*  Given a instrDesc, return true if it's a load constant instruction.
-*/
+ *
+ *  Given a instrDesc, return true if it's a load constant instruction.
+ */
 
 inline bool emitIsLoadConstant(instrDesc* jmp)
 {

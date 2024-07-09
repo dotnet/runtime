@@ -53,9 +53,9 @@
                                            // target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter,
                                            // filter-handler, fault) and directly execute 'finally' clauses.
-
-  #define FEATURE_EH_CALLFINALLY_THUNKS 0  // Generate call-to-finally code in "thunks" in the enclosing EH region,
-                                           // protected by "cloned finally" clauses.
+#if !defined(UNIX_X86_ABI)
+  #define FEATURE_EH_WINDOWS_X86   1       // Enable support for SEH regions
+#endif
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based
                                            // frames for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
@@ -145,12 +145,15 @@
   #define MAX_VAR_ORDER_SIZE       6
 
   // The order here is fixed: it must agree with an order assumed in eetwain...
-  #define REG_CALLEE_SAVED_ORDER   REG_EDI,REG_ESI,REG_EBX,REG_EBP
-  #define RBM_CALLEE_SAVED_ORDER   RBM_EDI,RBM_ESI,RBM_EBX,RBM_EBP
+  // NB: x86 GC decoder does not report return registers at call sites.
+  #define RBM_CALL_GC_REGS_ORDER   RBM_EDI,RBM_ESI,RBM_EBX,RBM_EBP
+  #define RBM_CALL_GC_REGS         (RBM_EDI|RBM_ESI|RBM_EBX|RBM_EBP)
 
   #define CNT_CALLEE_SAVED        (4)
   #define CNT_CALLEE_TRASH        (3)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
+  // NB: x86 GC decoder does not report return registers at call sites.
+  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED)
 
   #define CNT_CALLEE_SAVED_FLOAT  (0)
   #define CNT_CALLEE_TRASH_FLOAT  (6)
@@ -227,7 +230,6 @@
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   // Note that x86 normally emits an optimized (source-register-specific) write barrier, but can emit
   // a call to a "general" write barrier.
-  CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_EAX | RBM_EDX)

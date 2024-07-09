@@ -43,7 +43,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"
-#include "oavariant.h"
 #include "mngstdinterfaces.h"
 #endif // FEATURE_COMINTEROP
 
@@ -104,6 +103,7 @@ static const Entry s_QCall[] =
     DllImportEntry(QCall_FreeGCHandleForTypeHandle)
     DllImportEntry(MethodTable_AreTypesEquivalent)
     DllImportEntry(MethodTable_CanCompareBitsOrUseFastGetHashCode)
+    DllImportEntry(TypeHandle_CanCastTo_NoCacheLookup)
     DllImportEntry(ValueType_GetHashCodeStrategy)
     DllImportEntry(RuntimeTypeHandle_MakePointer)
     DllImportEntry(RuntimeTypeHandle_MakeByRef)
@@ -133,6 +133,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeModule_GetScopeName)
     DllImportEntry(RuntimeModule_GetFullyQualifiedName)
     DllImportEntry(RuntimeModule_GetTypes)
+    DllImportEntry(RuntimeFieldHandle_GetRVAFieldInfo)
     DllImportEntry(StackFrame_GetMethodDescFromNativeIP)
     DllImportEntry(ModuleBuilder_GetStringConstant)
     DllImportEntry(ModuleBuilder_GetTypeRef)
@@ -172,7 +173,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MdUtf8String_EqualsCaseInsensitive)
     DllImportEntry(Array_CreateInstance)
     DllImportEntry(Array_GetElementConstructorEntrypoint)
-    DllImportEntry(Array_CanAssignArrayType)
     DllImportEntry(AssemblyName_InitializeAssemblySpec)
     DllImportEntry(AssemblyNative_GetFullName)
     DllImportEntry(AssemblyNative_GetLocation)
@@ -253,6 +253,8 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_EndNoGCRegion)
     DllImportEntry(GCInterface_GetTotalMemory)
     DllImportEntry(GCInterface_Collect)
+    DllImportEntry(GCInterface_ReRegisterForFinalize)
+    DllImportEntry(GCInterface_GetNextFinalizableObject)
     DllImportEntry(GCInterface_WaitForPendingFinalizers)
     DllImportEntry(GCInterface_AddMemoryPressure)
     DllImportEntry(GCInterface_RemoveMemoryPressure)
@@ -285,6 +287,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_GetTypeFromCLSID)
     DllImportEntry(MarshalNative_GetIUnknownForObject)
     DllImportEntry(MarshalNative_GetIDispatchForObject)
+    DllImportEntry(MarshalNative_GetIUnknownOrIDispatchForObject)
     DllImportEntry(MarshalNative_GetComInterfaceForObject)
     DllImportEntry(MarshalNative_GetObjectForIUnknown)
     DllImportEntry(MarshalNative_GetUniqueObjectForIUnknown)
@@ -318,7 +321,8 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToManaged)
     DllImportEntry(MngdSafeArrayMarshaler_ConvertContentsToManaged)
     DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
-    DllImportEntry(OAVariant_ChangeType)
+    DllImportEntry(Variant_ConvertSystemColorToOleColor)
+    DllImportEntry(Variant_ConvertOleColorToSystemColor)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)
@@ -333,10 +337,13 @@ static const Entry s_QCall[] =
     DllImportEntry(Monitor_Pulse)
     DllImportEntry(Monitor_PulseAll)
     DllImportEntry(Monitor_GetLockContentionCount)
+    DllImportEntry(MetadataImport_Enum)
     DllImportEntry(ReflectionInvocation_RunClassConstructor)
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)
     DllImportEntry(ReflectionInvocation_CompileMethod)
     DllImportEntry(ReflectionInvocation_PrepareMethod)
+    DllImportEntry(ReflectionInvocation_SizeOf)
+    DllImportEntry(ReflectionInvocation_GetBoxInfo)
     DllImportEntry(ReflectionSerialization_GetCreateUninitializedObjectInfo)
 #if defined(FEATURE_COMWRAPPERS)
     DllImportEntry(ComWrappers_GetIUnknownImpl)

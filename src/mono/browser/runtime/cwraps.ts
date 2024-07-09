@@ -33,6 +33,7 @@ const threading_cwraps: SigLine[] = WasmEnableThreads ? [
     [true, "mono_wasm_register_ui_thread", "void", []],
     [true, "mono_wasm_register_io_thread", "void", []],
     [true, "mono_wasm_print_thread_dump", "void", []],
+    [true, "mono_wasm_synchronization_context_pump", "void", []],
     [true, "mono_threads_wasm_sync_run_in_target_thread_done", "void", ["number"]],
 ] : [];
 
@@ -62,12 +63,11 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_intern_string_ref", "void", ["number"]],
 
     [false, "mono_wasm_exit", "void", ["number"]],
-    [false, "mono_wasm_abort", "void", []],
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     // These two need to be lazy because they may be missing
     [() => !runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
-    [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_browser", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_jsexport", "void", ["number", "number"]],
@@ -99,6 +99,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_size_of_stackval", "number", []],
     [true, "mono_jiterp_parse_option", "number", ["string"]],
     [true, "mono_jiterp_get_options_as_json", "number", []],
+    [true, "mono_jiterp_get_option_as_int", "number", ["string"]],
     [true, "mono_jiterp_get_options_version", "number", []],
     [true, "mono_jiterp_adjust_abort_count", "number", ["number", "number"]],
     [true, "mono_jiterp_register_jit_call_thunk", "void", ["number", "number"]],
@@ -157,6 +158,7 @@ export interface t_ThreadingCwraps {
     mono_wasm_register_ui_thread(): void;
     mono_wasm_register_io_thread(): void;
     mono_wasm_print_thread_dump(): void;
+    mono_wasm_synchronization_context_pump(): void;
     mono_threads_wasm_sync_run_in_target_thread_done(sem: VoidPtr): void;
 }
 
@@ -190,7 +192,6 @@ export interface t_Cwraps {
     mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
 
     mono_wasm_exit(exit_code: number): void;
-    mono_wasm_abort(): void;
     mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
@@ -228,6 +229,7 @@ export interface t_Cwraps {
     mono_jiterp_type_get_raw_value_size(type: MonoType): number;
     mono_jiterp_parse_option(name: string): number;
     mono_jiterp_get_options_as_json(): number;
+    mono_jiterp_get_option_as_int(name: string): number;
     mono_jiterp_get_options_version(): number;
     mono_jiterp_adjust_abort_count(opcode: number, delta: number): number;
     mono_jiterp_register_jit_call_thunk(cinfo: number, func: number): void;

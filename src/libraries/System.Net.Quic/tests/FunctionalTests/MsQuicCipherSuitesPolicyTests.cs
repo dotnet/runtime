@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Collections.Generic;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -11,7 +12,7 @@ namespace System.Net.Quic.Tests
     [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     [SkipOnPlatform(TestPlatforms.Windows, "CipherSuitesPolicy is not supported on Windows")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsArmProcess))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public class MsQuicCipherSuitesPolicyTests : QuicTestBase
     {
         public MsQuicCipherSuitesPolicyTests(ITestOutputHelper output) : base(output) { }
@@ -48,7 +49,7 @@ namespace System.Net.Quic.Tests
         [Theory]
         [InlineData(new TlsCipherSuite[] { })]
         [InlineData(new[] { TlsCipherSuite.TLS_AES_128_CCM_8_SHA256 })]
-        public void NoSupportedCiphers_ThrowsArgumentException(TlsCipherSuite[] ciphers)
+        public async Task NoSupportedCiphers_ThrowsArgumentException(TlsCipherSuite[] ciphers)
         {
             CipherSuitesPolicy policy = new CipherSuitesPolicy(ciphers);
             var listenerOptions = new QuicListenerOptions()
@@ -62,11 +63,16 @@ namespace System.Net.Quic.Tests
                     return ValueTask.FromResult(serverOptions);
                 }
             };
-            Assert.ThrowsAsync<ArgumentException>(async () => await CreateQuicListener(listenerOptions));
+            await using var listener = await CreateQuicListener(listenerOptions);
 
-            var clientOptions = CreateQuicClientOptions(new IPEndPoint(IPAddress.Loopback, 5000));
+            // Creating a connection with incompatible ciphers.
+            var clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
             clientOptions.ClientAuthenticationOptions.CipherSuitesPolicy = policy;
-            Assert.ThrowsAsync<ArgumentException>(async () => await CreateQuicConnection(clientOptions));
+            await Assert.ThrowsAsync<ArgumentException>(async () => await CreateQuicConnection(clientOptions));
+
+            // Creating a connection to a server configured with incompatible ciphers.
+            await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(listener.LocalEndPoint));
+            await Assert.ThrowsAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
         }
 
         [Fact]

@@ -56,7 +56,7 @@ PELoader *              g_pPELoader;
 void *                  g_pMetaData;
 unsigned                g_cbMetaData;
 IMAGE_COR20_HEADER *    g_CORHeader;
-DynamicArray<__int32>  *g_pPtrTags = NULL;      //to keep track of all "ldptr"
+DynamicArray<int32_t>  *g_pPtrTags = NULL;      //to keep track of all "ldptr"
 DynamicArray<DWORD>    *g_pPtrSize= NULL;      //to keep track of all "ldptr"
 int                     g_iPtrCount = 0;
 mdToken *               g_cl_list = NULL;
@@ -249,7 +249,7 @@ WCHAR* RstrW(unsigned id)
     LoadNativeStringResource(NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME),id, buff, cchBuff, NULL);
 #else
     _ASSERTE(g_hResources != NULL);
-    WszLoadString(g_hResources,id,buff,cchBuff);
+    LoadString(g_hResources,id,buff,cchBuff);
 #endif
     if(id == IDS_E_NORVA)
         wcscat_s(buff,cchBuff,W(" */"));
@@ -262,7 +262,7 @@ char* RstrA(unsigned n, unsigned codepage)
     WCHAR* wz = RstrW(n);
     // Unicode -> UTF-8
     memset(buff,0,sizeof(buff));
-    if(!WszWideCharToMultiByte(codepage,0,(LPCWSTR)wz,-1,buff,sizeof(buff),NULL,NULL))
+    if(!WideCharToMultiByte(codepage,0,(LPCWSTR)wz,-1,buff,sizeof(buff),NULL,NULL))
         buff[0] = 0;
     return buff;
 }
@@ -899,7 +899,7 @@ void DumpMscorlib(void* GUICookie)
             // Retrieve the type def properties as well, so that we can check a few more things about
             // the System.Object type
             //
-            if (SUCCEEDED(g_pPubImport->GetTypeDefProps(tkObjectTypeDef, NULL, NULL, 0, &dwClassAttrs, &tkExtends)))
+            if (SUCCEEDED(g_pPubImport->GetTypeDefProps(tkObjectTypeDef, NULL, 0, NULL, &dwClassAttrs, &tkExtends)))
             {
                 bool bExtends = g_pPubImport->IsValidToken(tkExtends);
                 bool isClass = ((dwClassAttrs & tdClassSemanticsMask) == tdClass);
@@ -1914,7 +1914,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 for(n=0; n < numElements; n++)
                 {
                     if(n) appendStr(out," ");
-                    _gcvt_s(str,64,*((float*)dataPtr), 8);
+                    sprintf_s(str, 64, "%.*g", 8, (double)(*((float*)dataPtr)));
                     float df = (float)atof(str);
                     // Must compare as underlying bytes, not floating point otherwise optimizer will
                     // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
@@ -1933,7 +1933,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 {
                     if(n) appendStr(out," ");
                     char *pch;
-                    _gcvt_s(str,64,*((double*)dataPtr), 17);
+                    sprintf_s(str, 64, "%.*g", 17, *((double*)dataPtr));
                     double df = strtod(str, &pch);
                     // Must compare as underlying bytes, not floating point otherwise optimizer will
                     // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
@@ -2605,7 +2605,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
         case ELEMENT_TYPE_R4:
             {
                 char szf[32];
-                _gcvt_s(szf,32,MDDV.m_fltValue, 8);
+                sprintf_s(szf, 32, "%.*g", 8, (double)MDDV.m_fltValue);
                 float df = (float)atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
@@ -2619,7 +2619,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
         case ELEMENT_TYPE_R8:
             {
                 char szf[32], *pch;
-                _gcvt_s(szf,32,MDDV.m_dblValue, 17);
+                sprintf_s(szf, 32, "%.*g", 17, MDDV.m_dblValue);
                 double df = strtod(szf, &pch); //atof(szf);
                 szf[31]=0;
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
@@ -3119,7 +3119,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         if (chName)
         {
             char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-            WszWideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
+            WideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"%s",ProperName(sz));
         }
         CHECK_REMAINING_SIZE;
@@ -3187,7 +3187,7 @@ void DumpGenericParsCA(mdToken tok, void* GUICookie/*=NULL*/)
                     //if(u16_strlen(wzArgName) >= MAX_CLASSNAME_LENGTH)
                     //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
                     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-                    WszWideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
+                    WideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
                     szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"%s ",ProperName(sz));
                 }
                 else
@@ -3255,7 +3255,7 @@ void DumpGenericParsCA(mdToken tok, void* GUICookie/*=NULL*/)
                         if (chName > 0)
                         {
                             char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE / 2]);
-                            WszWideCharToMultiByte(CP_UTF8, 0, wzArgName, -1, sz, UNIBUF_SIZE, NULL, NULL);
+                            WideCharToMultiByte(CP_UTF8, 0, wzArgName, -1, sz, UNIBUF_SIZE, NULL, NULL);
                             szptr += sprintf_s(szptr, SZSTRING_REMAINING_SIZE(szptr), "  %s", ProperName(sz));
                         }
                         else
@@ -3538,7 +3538,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
         pComSig = NULL;
     }
 
-    if (cComSig == NULL)
+    if (cComSig == 0)
     {
         sprintf_s(szString, SZSTRING_SIZE, "%sERROR: method '%s' has no signature", g_szAsmCodeIndent, pszMemberName);
         printError(GUICookie, ERRORMSG(szString));
@@ -4010,7 +4010,7 @@ BOOL DumpField(mdToken FuncToken, const char *pszClassName,void *GUICookie, BOOL
     {
         pComSig = NULL;
     }
-    if (cComSig == NULL)
+    if (cComSig == 0)
     {
         char sz[2048];
         sprintf_s(sz,2048,"%sERROR: field '%s' has no signature",g_szAsmCodeIndent,pszMemberName);
@@ -5053,8 +5053,8 @@ void DumpVTables(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
             }
             else
             {
-                sprintf_s(szString,SZSTRING_SIZE,"//         [0x%04x]            (0x%16llx)", iSlot, VAL64(*(unsigned __int64 *) pSlot));
-                pSlot += sizeof(unsigned __int64);
+                sprintf_s(szString,SZSTRING_SIZE,"//         [0x%04x]            (0x%16llx)", iSlot, VAL64(*(uint64_t *) pSlot));
+                pSlot += sizeof(uint64_t);
             }
             printLine(GUICookie,szStr);
 
@@ -5880,7 +5880,7 @@ IMetaDataTables *pITables = NULL;
 //ULONG sizeRec, count;
 //int   size, size2;
 int   metaSize = 0;
-__int64 fTableSeen;
+int64_t fTableSeen;
 inline void TableSeen(unsigned long n) { fTableSeen |= (I64(1) << n); }
 inline int IsTableSeen(unsigned long n) { return (fTableSeen & (I64(1) << n)) ? 1 : 0;}
 inline void TableSeenReset() { fTableSeen = 0;}
@@ -6904,8 +6904,8 @@ void DumpVtable(void* GUICookie)
                                 }
                                 else
                                 {
-                                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," %016I64X", VAL64(*(unsigned __int64 *)pSlot));
-                                    pSlot += sizeof(unsigned __int64);
+                                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," %016I64X", VAL64(*(uint64_t *)pSlot));
+                                    pSlot += sizeof(uint64_t);
                                 }
                                 if (g_prVTableRef == NULL)
                                 {
@@ -6981,7 +6981,7 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
                 int nLength = (int) strlen(pszObjFileName)+1;
                 pwzObjFileName = new WCHAR[nLength];
                 memset(pwzObjFileName,0,sizeof(WCHAR)*nLength);
-                WszMultiByteToWideChar(CP_UTF8,0,pszObjFileName,-1,pwzObjFileName,nLength);
+                MultiByteToWideChar(CP_UTF8,0,pszObjFileName,-1,pwzObjFileName,nLength);
             }
             DisplayFile((WCHAR*)pwzFileName, true, g_ulMetaInfoFilter, pwzObjFileName, DumpMI);
             g_pDisp->Release();
@@ -7427,9 +7427,9 @@ BOOL DumpFile()
     }
 
     memset(wzInputFileName,0,sizeof(WCHAR)*MAX_FILENAME_LENGTH);
-    WszMultiByteToWideChar(CP_UTF8,0,pszFilename,-1,wzInputFileName,MAX_FILENAME_LENGTH);
+    MultiByteToWideChar(CP_UTF8,0,pszFilename,-1,wzInputFileName,MAX_FILENAME_LENGTH);
     memset(szFilenameANSI,0,MAX_FILENAME_LENGTH*3);
-    WszWideCharToMultiByte(g_uConsoleCP,0,wzInputFileName,-1,szFilenameANSI,MAX_FILENAME_LENGTH*3,NULL,NULL);
+    WideCharToMultiByte(g_uConsoleCP,0,wzInputFileName,-1,szFilenameANSI,MAX_FILENAME_LENGTH*3,NULL,NULL);
         fSuccess = g_pPELoader->open(wzInputFileName);
 
     if (fSuccess == FALSE)
@@ -7779,7 +7779,7 @@ ReportAndExit:
         {
             WCHAR wzResFileName[2048], *pwc;
             memset(wzResFileName,0,sizeof(wzResFileName));
-            WszMultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzResFileName,2048);
+            MultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzResFileName,2048);
             pwc = (WCHAR*)u16_strrchr(wzResFileName,L'.');
             if(pwc == NULL) pwc = &wzResFileName[u16_strlen(wzResFileName)];
             wcscpy_s(pwc, 2048 - (pwc - wzResFileName), L".res");

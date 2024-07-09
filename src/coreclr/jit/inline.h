@@ -222,9 +222,9 @@ public:
     }
 
     // Policy observations
-    virtual void NoteSuccess() = 0;
-    virtual void NoteBool(InlineObservation obs, bool value) = 0;
-    virtual void NoteFatal(InlineObservation obs) = 0;
+    virtual void NoteSuccess()                                   = 0;
+    virtual void NoteBool(InlineObservation obs, bool value)     = 0;
+    virtual void NoteFatal(InlineObservation obs)                = 0;
     virtual void NoteInt(InlineObservation obs, int value)       = 0;
     virtual void NoteDouble(InlineObservation obs, double value) = 0;
 
@@ -321,7 +321,7 @@ protected:
 
 private:
     // No copying or assignment supported
-    InlinePolicy(const InlinePolicy&) = delete;
+    InlinePolicy(const InlinePolicy&)            = delete;
     InlinePolicy& operator=(const InlinePolicy&) = delete;
 
 protected:
@@ -558,7 +558,7 @@ public:
 
 private:
     // No copying or assignment allowed.
-    InlineResult(const InlineResult&) = delete;
+    InlineResult(const InlineResult&)            = delete;
     InlineResult& operator=(const InlineResult&) = delete;
 
     // Report/log/dump decision as appropriate
@@ -637,16 +637,16 @@ struct InlArgInfo
     CallArg* arg;                         // the caller argument
     GenTree* argBashTmpNode;              // tmp node created, if it may be replaced with actual arg
     unsigned argTmpNum;                   // the argument tmp number
-    unsigned argIsUsed : 1;               // is this arg used at all?
-    unsigned argIsInvariant : 1;          // the argument is a constant or a local variable address
-    unsigned argIsLclVar : 1;             // the argument is a local variable
-    unsigned argIsThis : 1;               // the argument is the 'this' pointer
-    unsigned argHasSideEff : 1;           // the argument has side effects
-    unsigned argHasGlobRef : 1;           // the argument has a global ref
-    unsigned argHasCallerLocalRef : 1;    // the argument value depends on an aliased caller local
-    unsigned argHasTmp : 1;               // the argument will be evaluated to a temp
-    unsigned argHasLdargaOp : 1;          // Is there LDARGA(s) operation on this argument?
-    unsigned argHasStargOp : 1;           // Is there STARG(s) operation on this argument?
+    unsigned argIsUsed               : 1; // is this arg used at all?
+    unsigned argIsInvariant          : 1; // the argument is a constant or a local variable address
+    unsigned argIsLclVar             : 1; // the argument is a local variable
+    unsigned argIsThis               : 1; // the argument is the 'this' pointer
+    unsigned argHasSideEff           : 1; // the argument has side effects
+    unsigned argHasGlobRef           : 1; // the argument has a global ref
+    unsigned argHasCallerLocalRef    : 1; // the argument value depends on an aliased caller local
+    unsigned argHasTmp               : 1; // the argument will be evaluated to a temp
+    unsigned argHasLdargaOp          : 1; // Is there LDARGA(s) operation on this argument?
+    unsigned argHasStargOp           : 1; // Is there STARG(s) operation on this argument?
     unsigned argIsByRefToStructLocal : 1; // Is this arg an address of a struct local or a normed struct local or a
                                           // field in them?
     unsigned argIsExact : 1;              // Is this arg of an exact class?
@@ -658,10 +658,10 @@ struct InlLclVarInfo
 {
     CORINFO_CLASS_HANDLE lclTypeHandle;             // Type handle from the signature. Available for structs and REFs.
     var_types            lclTypeInfo;               // Type from the signature.
-    unsigned char        lclHasLdlocaOp : 1;        // Is there LDLOCA(s) operation on this local?
-    unsigned char        lclHasStlocOp : 1;         // Is there a STLOC on this local?
+    unsigned char        lclHasLdlocaOp        : 1; // Is there LDLOCA(s) operation on this local?
+    unsigned char        lclHasStlocOp         : 1; // Is there a STLOC on this local?
     unsigned char        lclHasMultipleStlocOp : 1; // Is there more than one STLOC on this local
-    unsigned char        lclIsPinned : 1;
+    unsigned char        lclIsPinned           : 1;
 };
 
 // InlineInfo provides detailed information about a particular inline candidate.
@@ -887,8 +887,8 @@ private:
     InlinePolicy* m_Policy;            // policy that evaluated this inline
     unsigned      m_TreeID;            // ID of the GenTreeCall in the parent
     bool          m_Devirtualized : 1; // true if this was a devirtualized call
-    bool          m_Guarded : 1;       // true if this was a guarded call
-    bool          m_Unboxed : 1;       // true if this call now invokes the unboxed entry
+    bool          m_Guarded       : 1; // true if this was a guarded call
+    bool          m_Unboxed       : 1; // true if this call now invokes the unboxed entry
 
 #endif // defined(DEBUG)
 
@@ -993,6 +993,12 @@ public:
         m_ImportCount++;
     }
 
+    // Return number of import attempts
+    unsigned GetImportCount() const
+    {
+        return m_ImportCount;
+    }
+
     // Inform strategy about the inline decision for a prejit root
     void NotePrejitDecision(const InlineResult& r)
     {
@@ -1026,7 +1032,7 @@ public:
     void DumpDataContents(FILE* file);
 
     // Dump xml-formatted description of inlines
-    void DumpXml(FILE* file = stderr, unsigned indent = 0);
+    void        DumpXml(FILE* file = stderr, unsigned indent = 0);
     static void FinalizeXml(FILE* file = stderr);
 
     // Cache for file position of this method in the inline xml
@@ -1049,7 +1055,7 @@ public:
     enum
     {
         ALWAYS_INLINE_SIZE              = 16,
-        IMPLEMENTATION_MAX_INLINE_SIZE  = _UI16_MAX,
+        IMPLEMENTATION_MAX_INLINE_SIZE  = UINT16_MAX,
         IMPLEMENTATION_MAX_INLINE_DEPTH = 1000
     };
 

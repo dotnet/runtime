@@ -57,10 +57,16 @@ public:
 class JitPrimeInfo
 {
 public:
-    constexpr JitPrimeInfo() : prime(0), magic(0), shift(0)
+    constexpr JitPrimeInfo()
+        : prime(0)
+        , magic(0)
+        , shift(0)
     {
     }
-    constexpr JitPrimeInfo(unsigned p, unsigned m, unsigned s) : prime(p), magic(m), shift(s)
+    constexpr JitPrimeInfo(unsigned p, unsigned m, unsigned s)
+        : prime(p)
+        , magic(m)
+        , shift(s)
     {
     }
     unsigned prime;
@@ -70,9 +76,9 @@ public:
     // Compute `numerator` / `prime` using magic division
     unsigned magicNumberDivide(unsigned numerator) const
     {
-        unsigned __int64 num     = numerator;
-        unsigned __int64 mag     = magic;
-        unsigned __int64 product = (num * mag) >> (32 + shift);
+        uint64_t num     = numerator;
+        uint64_t mag     = magic;
+        uint64_t product = (num * mag) >> (32 + shift);
         return (unsigned)product;
     }
 
@@ -130,7 +136,10 @@ public:
         Value m_val;
 
         template <class... Args>
-        Node(Node* next, Key k, Args&&... args) : m_next(next), m_key(k), m_val(std::forward<Args>(args)...)
+        Node(Node* next, Key k, Args&&... args)
+            : m_next(next)
+            , m_key(k)
+            , m_val(std::forward<Args>(args)...)
         {
         }
 
@@ -166,7 +175,12 @@ public:
     //    JitHashTable always starts out empty, with no allocation overhead.
     //    Call Reallocate to prime with an initial size if desired.
     //
-    JitHashTable(Allocator alloc) : m_alloc(alloc), m_table(nullptr), m_tableSizeInfo(), m_tableCount(0), m_tableMax(0)
+    JitHashTable(Allocator alloc)
+        : m_alloc(alloc)
+        , m_table(nullptr)
+        , m_tableSizeInfo()
+        , m_tableCount(0)
+        , m_tableMax(0)
     {
 #ifndef __GNUC__ // these crash GCC
         static_assert_no_msg(Behavior::s_growth_factor_numerator > Behavior::s_growth_factor_denominator);
@@ -219,7 +233,7 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // Lookup: Get a pointer to the value associated to the specified key.
+    // LookupPointer: Get a pointer to the value associated to the specified key.
     // if any.
     //
     // Arguments:
@@ -248,6 +262,48 @@ public:
     }
 
     //------------------------------------------------------------------------
+    // LookupPointerOrAdd: Get a pointer to the value associated to the specified key.
+    // If not present, add it with the specified default value and return a pointer to it.
+    //
+    // Arguments:
+    //    k - the key
+    //    defaultValue - Default value to add to the table if the key was not present
+    //
+    // Return Value:
+    //    A pointer to the value associated with the specified key.
+    //
+    Value* LookupPointerOrAdd(Key k, Value defaultValue)
+    {
+        CheckGrowth();
+
+        assert(m_tableSizeInfo.prime != 0);
+
+        unsigned index = GetIndexForKey(k);
+
+        Node* n = m_table[index];
+        while (n != nullptr)
+        {
+            if (KeyFuncs::Equals(k, n->m_key))
+            {
+                return &n->m_val;
+            }
+
+            n = n->m_next;
+        }
+
+        n              = new (m_alloc) Node(m_table[index], k, defaultValue);
+        m_table[index] = n;
+        m_tableCount++;
+        return &n->m_val;
+    }
+
+    enum SetKind
+    {
+        None,
+        Overwrite
+    };
+
+    //------------------------------------------------------------------------
     // Set: Associate the specified value with the specified key.
     //
     // Arguments:
@@ -265,12 +321,6 @@ public:
     //    If the key already exists and kind is Normal
     //    this method will assert
     //
-    enum SetKind
-    {
-        None,
-        Overwrite
-    };
-
     bool Set(Key k, Value v, SetKind kind = None)
     {
         CheckGrowth();
@@ -492,7 +542,8 @@ public:
     class KeyIterator : public NodeIterator
     {
     public:
-        KeyIterator(const JitHashTable* hash, bool begin) : NodeIterator(hash, begin)
+        KeyIterator(const JitHashTable* hash, bool begin)
+            : NodeIterator(hash, begin)
         {
         }
 
@@ -506,7 +557,8 @@ public:
     class ValueIterator : public NodeIterator
     {
     public:
-        ValueIterator(const JitHashTable* hash, bool begin) : NodeIterator(hash, begin)
+        ValueIterator(const JitHashTable* hash, bool begin)
+            : NodeIterator(hash, begin)
         {
         }
 
@@ -521,7 +573,8 @@ public:
     class KeyValueIterator : public NodeIterator
     {
     public:
-        KeyValueIterator(const JitHashTable* hash, bool begin) : NodeIterator(hash, begin)
+        KeyValueIterator(const JitHashTable* hash, bool begin)
+            : NodeIterator(hash, begin)
         {
         }
 
@@ -538,7 +591,8 @@ public:
         const JitHashTable* const m_hash;
 
     public:
-        KeyIteration(const JitHashTable* hash) : m_hash(hash)
+        KeyIteration(const JitHashTable* hash)
+            : m_hash(hash)
         {
         }
 
@@ -559,7 +613,8 @@ public:
         const JitHashTable* const m_hash;
 
     public:
-        ValueIteration(const JitHashTable* hash) : m_hash(hash)
+        ValueIteration(const JitHashTable* hash)
+            : m_hash(hash)
         {
         }
 
@@ -580,7 +635,8 @@ public:
         const JitHashTable* const m_hash;
 
     public:
-        KeyValueIteration(const JitHashTable* hash) : m_hash(hash)
+        KeyValueIteration(const JitHashTable* hash)
+            : m_hash(hash)
         {
         }
 

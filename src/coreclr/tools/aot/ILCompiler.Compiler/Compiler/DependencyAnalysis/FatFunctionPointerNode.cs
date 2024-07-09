@@ -15,22 +15,24 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class FatFunctionPointerNode : DehydratableObjectNode, IMethodNode, ISymbolDefinitionNode
     {
-        private bool _isUnboxingStub;
+        private readonly bool _isUnboxingStub;
+        private readonly bool _isAddressTaken;
 
         public bool IsUnboxingStub => _isUnboxingStub;
 
-        public FatFunctionPointerNode(MethodDesc methodRepresented, bool isUnboxingStub)
+        public FatFunctionPointerNode(MethodDesc methodRepresented, bool isUnboxingStub, bool addressTaken)
         {
             // We should not create these for methods that don't have a canonical method body
             Debug.Assert(methodRepresented.GetCanonMethodTarget(CanonicalFormKind.Specific) != methodRepresented);
 
             Method = methodRepresented;
             _isUnboxingStub = isUnboxingStub;
+            _isAddressTaken = addressTaken;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            string prefix = _isUnboxingStub ? "__fatunboxpointer_" : "__fatpointer_";
+            string prefix = $"__fat{(_isUnboxingStub ? "unbox" : "")}{(_isAddressTaken ? "addresstaken" : "")}pointer_";
             sb.Append(prefix).Append(nameMangler.GetMangledMethodName(Method));
         }
 
@@ -67,7 +69,10 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             // Pointer to the canonical body of the method
-            builder.EmitPointerReloc(factory.MethodEntrypoint(canonMethod, _isUnboxingStub));
+            ISymbolNode target = _isAddressTaken
+                ? factory.AddressTakenMethodEntrypoint(canonMethod, _isUnboxingStub)
+                : factory.MethodEntrypoint(canonMethod, _isUnboxingStub);
+            builder.EmitPointerReloc(target);
 
             // Find out what's the context to use
             ISortableSymbolNode contextParameter;
@@ -94,6 +99,10 @@ namespace ILCompiler.DependencyAnalysis
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             var compare = _isUnboxingStub.CompareTo(((FatFunctionPointerNode)other)._isUnboxingStub);
+            if (compare != 0)
+                return compare;
+
+            compare = _isAddressTaken.CompareTo(((FatFunctionPointerNode)other)._isAddressTaken);
             if (compare != 0)
                 return compare;
 

@@ -162,6 +162,14 @@ namespace ILCompiler
         }
 #endif
 
+        protected override MetadataType? ProcessExportedType(MetadataType exported, ModuleDesc assembly, XPathNavigator nav)
+        {
+            // Rooting module metadata roots type forwarder metadata for all types in the module that are reflection visible.
+            // (We don't track individual type forwarders right now.)
+            _dependencies.Add(_factory.ModuleMetadata(assembly), "Type used through forwarder");
+            return base.ProcessExportedType(exported, assembly, nav);
+        }
+
         protected override void ProcessType(TypeDesc type, XPathNavigator nav)
         {
             Debug.Assert(ShouldProcessElement(nav));

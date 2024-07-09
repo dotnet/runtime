@@ -1862,16 +1862,17 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [pindex]);
-			if (klass == swift_self && sig->pinvoke) {
+			if ((klass == swift_self || klass == swift_indirect_result) && sig->pinvoke) {
 				guint32 align;
 				MonoType *ptype = mini_get_underlying_type (sig->params [pindex]);
 				int size = mini_type_stack_size_full (ptype, &align, cinfo->pinvoke);
 				g_assert (size == 8);
 
 				ainfo->storage = ArgVtypeInIRegs;
-				ainfo->reg = ARMREG_R20;
+				ainfo->reg = (klass == swift_self) ? ARMREG_R20 : ARMREG_R8;
 				ainfo->nregs = 1;
 				ainfo->size = size;
 				continue;
@@ -2081,7 +2082,7 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 			storage = alloca (temp_size);
 		else
 			storage = arg_get_storage (ccontext, ainfo);
-		memset (ccontext, 0, sizeof (CallContext)); // FIXME
+
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
@@ -2877,17 +2878,23 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		}
 		case ArgSwiftError: {
 			ins->flags |= MONO_INST_VOLATILE;
-			size = 8;
-			align = 8;
-			offset += align - 1;
-			offset &= ~(align - 1);
 			ins->opcode = OP_REGOFFSET;
-			ins->inst_basereg = cfg->frame_reg;
-			ins->inst_offset = offset;
-			offset += size;
+			if (ainfo->offset) {
+				g_assert (cfg->arch.args_reg);
+				ins->inst_basereg = cfg->arch.args_reg;
+				ins->inst_offset = ainfo->offset;
+			} else {
+				ins->inst_offset = offset;
+				offset += 8;
+			}
 
 			cfg->arch.swift_error_var = ins;
-			cfg->used_int_regs |= 1 << ARMREG_R21;
+
+			/* In the n2m case, the error register functions as an extra return register
+			 * and is thus is not treated as callee-saved.
+			 */
+			if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+ 				cfg->used_int_regs |= 1 << ARMREG_R21;
 			break;
 		}
 		default:
@@ -3704,7 +3711,7 @@ opcode_to_armcond (int opcode)
 	case OP_COND_EXC_INO:
 		return ARMCOND_VC;
 	default:
-		printf ("%s\n", mono_inst_name (opcode));
+		printf ("" M_PRI_INST "\n", mono_inst_name (opcode));
 		g_assert_not_reached ();
 		return -1;
 	}
@@ -3731,8 +3738,13 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 	MonoCallInst *call;
 
 	if (cfg->arch.swift_error_var) {
-		code = emit_ldrx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
-		code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
+		if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			code = emit_ldrx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+			code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
+		} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+			/* Load the value of SwiftError into R21 */
+			code = emit_ldrx (code, ARMREG_R21, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+		}
 	}
 
 	call = (MonoCallInst*)ins;
@@ -5388,6 +5400,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (!cfg->method->save_lmf);
 
 			max_len += call->stack_usage / sizeof (target_mgreg_t) * ins_get_size (OP_TAILCALL_PARAMETER);
+			// HACK: In cpu-arm64.mdesc the tailcall opcodes have a len of 255, which is
+			// arbitrary, but it's the max uint8 value.  It looks like in some
+			// circumstances we need more space than that.
+			//
+			// Add some more space to acount for mono_arm_emit_destroy_frame and
+			// emit_load_regset, below
+			max_len += 64;
 			while (G_UNLIKELY (offset + max_len > cfg->code_size)) {
 				cfg->code_size *= 2;
 				cfg->native_code = (unsigned char *)mono_realloc_native_code (cfg);
@@ -5801,13 +5820,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		default:
-			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
+			g_warning ("unknown opcode " M_PRI_INST " in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
 		}
 		
 	after_instruction_emit:
 		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
-			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
+			g_warning ("wrong maximal instruction length of instruction " M_PRI_INST " (expected %d, got %d)",
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
 		
@@ -5937,11 +5956,14 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				code = emit_strfpq (code, ainfo->reg, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
 				break;
 			case ArgSwiftError:
-				if (ainfo->offset) {
-					code = emit_ldrx (code, ARMREG_IP0, cfg->arch.args_reg, ainfo->offset);
-					code = emit_strx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
-				} else {
-					code = emit_strx (code, ainfo->reg, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+					if (ainfo->offset == 0) {
+						code = emit_strx (code, ainfo->reg, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+					}
+				} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+					arm_addx_imm (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
+					/* Relies on arguments being passed on the stack */
+					code = emit_strx (code, ARMREG_IP0, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
 				}
 				break;
 			default:

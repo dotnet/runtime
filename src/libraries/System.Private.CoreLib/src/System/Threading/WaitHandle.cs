@@ -117,6 +117,10 @@ namespace System.Threading
             SafeWaitHandle? waitHandle = _waitHandle;
             ObjectDisposedException.ThrowIf(waitHandle is null, this);
 
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
+
             bool success = false;
             try
             {

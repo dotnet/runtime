@@ -5,25 +5,23 @@
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- This doesn't run on V8 because it lacks websocket support -->
-    <Scenario>WasmTestOnBrowser</Scenario>
+    <Scenario>WasmTestOnChrome</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
-    <XunitShowProgress>true</XunitShowProgress>
-
-    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
-    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
+    <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="package.json" />
     <WasmExtraFilesToDeploy Include="package-lock.json" />
 
-    <NodeNpmModule Include="ws" Alias="WebSocket" />
+    <NodeNpmModule Include="ws" />
   </ItemGroup>
 
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->

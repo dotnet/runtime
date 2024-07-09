@@ -29,6 +29,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
             PopulateBuiltAppDirectory();
         }
 
+        private SingleFileTestApp(SingleFileTestApp source)
+            : base(source)
+        {
+            AppName = source.AppName;
+            selfContained = source.selfContained;
+            builtApp = new TestApp(Path.Combine(Location, "builtApp"), AppName);
+        }
+
         /// <summary>
         /// Create a framework-dependent single-file test app from pre-built output of <paramref name="appName"/>.
         /// </summary>
@@ -72,6 +80,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             fileSpecs.Sort((a, b) => string.CompareOrdinal(a.BundleRelativePath, b.BundleRelativePath));
             return fileSpecs;
         }
+
+        public SingleFileTestApp Copy() => new SingleFileTestApp(this);
 
         public string Bundle(BundleOptions options = BundleOptions.None, Version? bundleVersion = null)
         {
@@ -132,6 +142,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return new DirectoryInfo(Path.Combine(root, Name, manifest.BundleID));
         }
 
+        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false)
+        {
+            if (selfContained)
+            {
+                builtApp.CreateSingleFileHost(isWindowsGui, copyResources, disableCetCompat);
+            }
+            else
+            {
+                builtApp.CreateAppHost(isWindowsGui, copyResources, disableCetCompat);
+            }
+        }
+
         private void PopulateBuiltAppDirectory()
         {
             // Copy the compiled app output - the app is expected to have been built as framework-dependent
@@ -144,7 +166,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             File.Delete(builtApp.DepsJson);
 
             var shortVersion = TestContext.Tfm[3..]; // trim "net" from beginning
-            var builder = NetCoreAppBuilder.ForNETCoreApp(AppName, TestContext.TargetRID, shortVersion);
+            var builder = NetCoreAppBuilder.ForNETCoreApp(AppName, TestContext.BuildRID, shortVersion);
 
             // Update the .runtimeconfig.json
             builder.WithRuntimeConfig(c =>
@@ -164,7 +186,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     .WithAsset(Path.GetFileName(builtApp.AppDll), f => f.NotOnDisk())));
             if (selfContained)
             {
-                builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.TargetRID}", TestContext.MicrosoftNETCoreAppVersion, l => l
+                builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.BuildRID}", TestContext.MicrosoftNETCoreAppVersion, l => l
                     .WithAssemblyGroup(string.Empty, g =>
                     {
                         foreach (var file in Binaries.GetRuntimeFiles().Assemblies)
@@ -182,14 +204,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             builder.Build(builtApp);
 
             // Create the apphost for the app
-            if (selfContained)
-            {
-                builtApp.CreateSingleFileHost();
-            }
-            else
-            {
-                builtApp.CreateAppHost();
-            }
+            CreateAppHost();
         }
     }
 }

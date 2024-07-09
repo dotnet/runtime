@@ -255,7 +255,7 @@ namespace System.Collections.Tests
             return set;
         }
 
-#if NETCOREAPP
+#if NET
         /// <summary>
         /// Create a HashSet with a specific initial capacity and fill it with a specific number of elements.
         /// </summary>

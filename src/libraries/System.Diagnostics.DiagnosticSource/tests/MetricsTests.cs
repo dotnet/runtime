@@ -3,7 +3,7 @@
 
 using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
-using System.Diagnostics.Metrics;
+using System.Diagnostics.Tests;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +13,29 @@ namespace System.Diagnostics.Metrics.Tests
 {
     public class MetricsTests
     {
+        [Fact]
+        public void MeasurementConstructionTest()
+        {
+            for (int i = 0; i < 35; i++)
+            {
+                TagListTests.CreateTagList(i, out TagList tags);
+                TagListTests.ValidateTags(in tags, i);
+                KeyValuePair<string, object>[] tagsArray = tags.ToArray();
+
+                var measurement = new Measurement<int>(i, tags);
+                Assert.Equal(i, measurement.Value);
+                TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
+
+                measurement = new Measurement<int>(i, tagsArray);
+                Assert.Equal(i, measurement.Value);
+                TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
+
+                measurement = new Measurement<int>(i, tagsArray.AsSpan());
+                Assert.Equal(i, measurement.Value);
+                TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
+            }
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MeterConstructionTest()
         {
@@ -50,6 +73,9 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableUpDownCounter<long> observableUpDownCounter = meter.CreateObservableUpDownCounter<long>("ObservableUpDownCounter", () => -1, "request", "request ObservableUpDownCounter");
                 ValidateInstrumentInfo(observableUpDownCounter, "ObservableUpDownCounter", "request", "request ObservableUpDownCounter", false, true);
 
+                Gauge<int> gauge = meter.CreateGauge<int>("Gauge", "C", "Temperature Gauge");
+                ValidateInstrumentInfo(gauge, "Gauge", "C", "Temperature Gauge", false, false);
+
                 ObservableGauge<double> observableGauge = meter.CreateObservableGauge<double>("ObservableGauge", () => 10, "Fahrenheit", "Fahrenheit ObservableGauge");
                 ValidateInstrumentInfo(observableGauge, "ObservableGauge", "Fahrenheit", "Fahrenheit ObservableGauge", false, true);
             }).Dispose();
@@ -62,6 +88,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Meter meter = new Meter("CreateInstrumentParametersTest");
 
                 Assert.Throws<ArgumentNullException>(() => meter.CreateCounter<byte>(null, "seconds", "Seconds Counter"));
+                Assert.Throws<ArgumentNullException>(() => meter.CreateGauge<byte>(null, "C", "Temperature Gauge"));
                 Assert.Throws<ArgumentNullException>(() => meter.CreateUpDownCounter<float>(null, "items", "Items UpDownCounter"));
                 Assert.Throws<ArgumentNullException>(() => meter.CreateHistogram<short>(null, "seconds", "Seconds Counter"));
                 Assert.Throws<ArgumentNullException>(() => meter.CreateObservableCounter<long>(null, () => 0, "seconds", "Seconds ObservableCounter"));
@@ -84,6 +111,14 @@ namespace System.Diagnostics.Metrics.Tests
                 Counter<float> counter5 = meter.CreateCounter<float>("Counter5", "seconds", "Seconds Counter");
                 Counter<double> counter6 = meter.CreateCounter<double>("Counter6", "seconds", "Seconds Counter");
                 Counter<decimal> counter7 = meter.CreateCounter<decimal>("Counter7", "seconds", "Seconds Counter");
+
+                Gauge<byte> gauge1 = meter.CreateGauge<byte>("Gauge1", "C", "Temperature Gauge");
+                Gauge<short> gauge2 = meter.CreateGauge<short>("Gauge2", "C", "Temperature Gauge");
+                Gauge<int> gauge3 = meter.CreateGauge<int>("Gauge3", "C", "Temperature Gauge");
+                Gauge<long> gauge4 = meter.CreateGauge<long>("Gauge4", "C", "Temperature Gauge");
+                Gauge<float> gauge5 = meter.CreateGauge<float>("Gauge5", "C", "Temperature Gauge");
+                Gauge<double> gauge6 = meter.CreateGauge<double>("Gauge6", "C", "Temperature Gauge");
+                Gauge<decimal> gauge7 = meter.CreateGauge<decimal>("Gauge7", "C", "Temperature Gauge");
 
                 UpDownCounter<byte> upDownCounter1 = meter.CreateUpDownCounter<byte>("UpDownCounter1", "seconds", "Seconds UpDownCounter");
                 UpDownCounter<short> upDownCounter2 = meter.CreateUpDownCounter<short>("UpDownCounter2", "seconds", "Seconds Counter");
@@ -158,16 +193,18 @@ namespace System.Diagnostics.Metrics.Tests
 
                     Assert.Equal(2, instrumentsEncountered);
 
+                    Gauge<double> gauge = meter.CreateGauge<double>("Gauge1", "C", "Temperature Gauge");
                     Histogram<byte> histogram = meter.CreateHistogram<byte>("histogram1", "seconds", "Seconds histogram");
                     ObservableCounter<byte> observableCounter = meter.CreateObservableCounter<byte>("observableCounter1", () => 0, "seconds", "Seconds ObservableCounter");
                     UpDownCounter<long> upDownCounter = meter.CreateUpDownCounter<long>("UpDownCounter4", "request", "Requests UpDownCounter");
                     ObservableUpDownCounter<byte> observableUpDownCounter = meter.CreateObservableUpDownCounter<byte>("observableUpDownCounter1", () => 0, "items", "Items ObservableCounter");
 
-                    Assert.Equal(6, instrumentsEncountered);
+                    Assert.Equal(7, instrumentsEncountered);
 
-                    // Enable listening to the 4 instruments
+                    // Enable listening to the 5 instruments
 
                     listener.EnableMeasurementEvents(counter, counter);
+                    listener.EnableMeasurementEvents(gauge, gauge);
                     listener.EnableMeasurementEvents(observableGauge, observableGauge);
                     listener.EnableMeasurementEvents(histogram, histogram);
                     listener.EnableMeasurementEvents(observableCounter, observableCounter);
@@ -238,76 +275,148 @@ namespace System.Diagnostics.Metrics.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void InstrumentMeasurementTest()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void InstrumentMeasurementTest(bool useSpan)
         {
-            RemoteExecutor.Invoke(() => {
+            RemoteExecutor.Invoke((string useSpanStr) => {
                 Meter meter = new Meter("InstrumentMeasurementTest");
+                bool useSpan = bool.Parse(useSpanStr);
 
                 Counter<byte> counter = meter.CreateCounter<byte>("byteCounter");
-                InstrumentMeasurementAggregationValidation(counter, (value, tags) => { counter.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter, (value, tags) => { AddToCounter(counter, value, tags, useSpan); } );
+
+                Gauge<byte> gauge = meter.CreateGauge<byte>("byteGauge");
+                InstrumentMeasurementAggregationValidation(gauge, (value, tags) => { RecordToGauge(gauge, value, tags, useSpan); }, allowNegative: true);
 
                 UpDownCounter<byte> upDownCounter = meter.CreateUpDownCounter<byte>("byteUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter, (value, tags) => { upDownCounter.Add(value, tags); });
+                InstrumentMeasurementAggregationValidation(upDownCounter, (value, tags) => { AddToUpDownCounter(upDownCounter, value, tags, useSpan); });
 
                 Counter<short> counter1 = meter.CreateCounter<short>("shortCounter");
-                InstrumentMeasurementAggregationValidation(counter1, (value, tags) => { counter1.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter1, (value, tags) => { AddToCounter(counter1, value, tags, useSpan); } );
+
+                Gauge<short> gauge1 = meter.CreateGauge<short>("shortGauge");
+                InstrumentMeasurementAggregationValidation(gauge1, (value, tags) => { RecordToGauge(gauge1, value, tags, useSpan); }, allowNegative: true);
 
                 UpDownCounter<short> upDownCounter1 = meter.CreateUpDownCounter<short>("shortUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter1, (value, tags) => { upDownCounter1.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter1, (value, tags) => { AddToUpDownCounter(upDownCounter1, value, tags, useSpan); }, true);
 
                 Counter<int> counter2 = meter.CreateCounter<int>("intCounter");
-                InstrumentMeasurementAggregationValidation(counter2, (value, tags) => { counter2.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter2, (value, tags) => { AddToCounter(counter2, value, tags, useSpan); } );
+
+                Gauge<int> gauge2 = meter.CreateGauge<int>("intGauge");
+                InstrumentMeasurementAggregationValidation(gauge2, (value, tags) => { RecordToGauge(gauge2, value, tags, useSpan); }, allowNegative: true);
 
                 UpDownCounter<int> upDownCounter2 = meter.CreateUpDownCounter<int>("intUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter2, (value, tags) => { upDownCounter2.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter2, (value, tags) => { AddToUpDownCounter(upDownCounter2, value, tags, useSpan); }, true);
 
                 Counter<long> counter3 = meter.CreateCounter<long>("longCounter");
-                InstrumentMeasurementAggregationValidation(counter3, (value, tags) => { counter3.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter3, (value, tags) => { AddToCounter(counter3, value, tags, useSpan); } );
+
+                Gauge<long> gauge3 = meter.CreateGauge<long>("longGauge");
+                InstrumentMeasurementAggregationValidation(gauge3, (value, tags) => { RecordToGauge(gauge3, value, tags, useSpan); }, allowNegative: true);
 
                 UpDownCounter<long> upDownCounter3 = meter.CreateUpDownCounter<long>("longUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter3, (value, tags) => { upDownCounter3.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter3, (value, tags) => { AddToUpDownCounter(upDownCounter3, value, tags, useSpan); }, true);
 
                 Counter<float> counter4 = meter.CreateCounter<float>("floatCounter");
-                InstrumentMeasurementAggregationValidation(counter4, (value, tags) => { counter4.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter4, (value, tags) => { AddToCounter(counter4, value, tags, useSpan); } );
+
+                Gauge<float> gauge4 = meter.CreateGauge<float>("floatGauge");
+                InstrumentMeasurementAggregationValidation(gauge4, (value, tags) => { RecordToGauge(gauge4, value, tags, useSpan); }, allowNegative: true);
 
                 UpDownCounter<float> upDownCounter4 = meter.CreateUpDownCounter<float>("floatUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter4, (value, tags) => { upDownCounter4.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter4, (value, tags) => { AddToUpDownCounter(upDownCounter4, value, tags, useSpan); }, true);
 
                 Counter<double> counter5 = meter.CreateCounter<double>("doubleCounter");
-                InstrumentMeasurementAggregationValidation(counter5, (value, tags) => { counter5.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter5, (value, tags) => { AddToCounter(counter5, value, tags, useSpan); } );
+
+                Gauge<double> gauge5 = meter.CreateGauge<double>("doubleGauge");
+                InstrumentMeasurementAggregationValidation(gauge5, (value, tags) => { RecordToGauge(gauge5, value, tags, useSpan); }, allowNegative: true);
 
                 UpDownCounter<double> upDownCounter5 = meter.CreateUpDownCounter<double>("doubleUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter5, (value, tags) => { upDownCounter5.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter5, (value, tags) => { AddToUpDownCounter(upDownCounter5, value, tags, useSpan); }, true);
 
                 Counter<decimal> counter6 = meter.CreateCounter<decimal>("decimalCounter");
-                InstrumentMeasurementAggregationValidation(counter6, (value, tags) => { counter6.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter6, (value, tags) => { AddToCounter(counter6, value, tags, useSpan); } );
+
+                Gauge<decimal> gauge6 = meter.CreateGauge<decimal>("decimalGauge");
+                InstrumentMeasurementAggregationValidation(gauge6, (value, tags) => { RecordToGauge(gauge6, value, tags, useSpan); }, allowNegative: true);
 
                 UpDownCounter<decimal> upDownCounter6 = meter.CreateUpDownCounter<decimal>("decimalUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter6, (value, tags) => { upDownCounter6.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter6, (value, tags) => { AddToUpDownCounter(upDownCounter6, value, tags, useSpan); }, true);
 
                 Histogram<byte> histogram = meter.CreateHistogram<byte>("byteHistogram");
-                InstrumentMeasurementAggregationValidation(histogram, (value, tags) => { histogram.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram, (value, tags) => { Record(histogram, value, tags, useSpan); } );
 
                 Histogram<short> histogram1 = meter.CreateHistogram<short>("shortHistogram");
-                InstrumentMeasurementAggregationValidation(histogram1, (value, tags) => { histogram1.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram1, (value, tags) => { Record(histogram1, value, tags, useSpan); } );
 
                 Histogram<int> histogram2 = meter.CreateHistogram<int>("intHistogram");
-                InstrumentMeasurementAggregationValidation(histogram2, (value, tags) => { histogram2.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram2, (value, tags) => { Record(histogram2, value, tags, useSpan); } );
 
                 Histogram<long> histogram3 = meter.CreateHistogram<long>("longHistogram");
-                InstrumentMeasurementAggregationValidation(histogram3, (value, tags) => { histogram3.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram3, (value, tags) => { Record(histogram3, value, tags, useSpan); } );
 
                 Histogram<float> histogram4 = meter.CreateHistogram<float>("floatHistogram");
-                InstrumentMeasurementAggregationValidation(histogram4, (value, tags) => { histogram4.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram4, (value, tags) => { Record(histogram4, value, tags, useSpan); } );
 
                 Histogram<double> histogram5 = meter.CreateHistogram<double>("doubleHistogram");
-                InstrumentMeasurementAggregationValidation(histogram5, (value, tags) => { histogram5.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram5, (value, tags) => { Record(histogram5, value, tags, useSpan); } );
 
                 Histogram<decimal> histogram6 = meter.CreateHistogram<decimal>("decimalHistogram");
-                InstrumentMeasurementAggregationValidation(histogram6, (value, tags) => { histogram6.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram6, (value, tags) => { Record(histogram6, value, tags, useSpan); } );
 
-            }).Dispose();
+            }, useSpan.ToString()).Dispose();
+
+            void AddToCounter<T>(Counter<T> counter, T delta, KeyValuePair<string, object?>[] tags, bool useSpan) where T : struct
+            {
+                if (useSpan)
+                {
+                    counter.Add(delta, (ReadOnlySpan<KeyValuePair<string, object?>>)tags);
+                }
+                else
+                {
+                    counter.Add(delta, tags);
+                }
+            }
+
+            void RecordToGauge<T>(Gauge<T> gauge, T value, KeyValuePair<string, object?>[] tags, bool useSpan) where T : struct
+            {
+                if (useSpan)
+                {
+                    gauge.Record(value, (ReadOnlySpan<KeyValuePair<string, object?>>)tags);
+                }
+                else
+                {
+                    gauge.Record(value, tags);
+                }
+            }
+
+            void AddToUpDownCounter<T>(UpDownCounter<T> upDownCounter, T delta, KeyValuePair<string, object?>[] tags, bool useSpan) where T : struct
+            {
+                if (useSpan)
+                {
+                    upDownCounter.Add(delta, (ReadOnlySpan<KeyValuePair<string, object?>>)tags);
+                }
+                else
+                {
+                    upDownCounter.Add(delta, tags);
+                }
+            }
+
+            void Record<T>(Histogram<T> histogram, T value, KeyValuePair<string, object?>[] tags, bool useSpan) where T : struct
+            {
+                if (useSpan)
+                {
+                    histogram.Record(value, (ReadOnlySpan<KeyValuePair<string, object?>>)tags);
+                }
+                else
+                {
+                    histogram.Record(value, tags);
+                }
+            }
         }
 
 
@@ -651,6 +760,42 @@ namespace System.Diagnostics.Metrics.Tests
                                                             return (decimal)(value * 2);
                                                         });
 
+                InstrumentPassingVariableTagsParametersTest<byte>(meter.CreateGauge<byte>("Gauge"), (instrument, value, tags) =>
+                                                        {
+                                                            PublishGaugeMeasurement(instrument as Gauge<byte>, value, tags);
+                                                            return (byte)(value * 2);
+                                                        });
+                InstrumentPassingVariableTagsParametersTest<short>(meter.CreateGauge<short>("Gauge"), (instrument, value, tags) =>
+                                                        {
+                                                            PublishGaugeMeasurement(instrument as Gauge<short>, value, tags);
+                                                            return (short)(value * 2);
+                                                        });
+                InstrumentPassingVariableTagsParametersTest<int>(meter.CreateGauge<int>("Gauge"), (instrument, value, tags) =>
+                                                        {
+                                                            PublishGaugeMeasurement(instrument as Gauge<int>, value, tags);
+                                                            return (int)(value * 2);
+                                                        });
+                InstrumentPassingVariableTagsParametersTest<long>(meter.CreateGauge<long>("Gauge"), (instrument, value, tags) =>
+                                                        {
+                                                            PublishGaugeMeasurement(instrument as Gauge<long>, value, tags);
+                                                            return (long)(value * 2);
+                                                        });
+                InstrumentPassingVariableTagsParametersTest<float>(meter.CreateGauge<float>("Gauge"), (instrument, value, tags) =>
+                                                        {
+                                                            PublishGaugeMeasurement(instrument as Gauge<float>, value, tags);
+                                                            return (float)(value * 2);
+                                                        });
+                InstrumentPassingVariableTagsParametersTest<double>(meter.CreateGauge<double>("Gauge"), (instrument, value, tags) =>
+                                                        {
+                                                            PublishGaugeMeasurement(instrument as Gauge<double>, value, tags);
+                                                            return (double)(value * 2);
+                                                        });
+                InstrumentPassingVariableTagsParametersTest<decimal>(meter.CreateGauge<decimal>("Gauge"), (instrument, value, tags) =>
+                                                        {
+                                                            PublishGaugeMeasurement(instrument as Gauge<decimal>, value, tags);
+                                                            return (decimal)(value * 2);
+                                                        });
+
                 InstrumentPassingVariableTagsParametersTest<byte>(meter.CreateUpDownCounter<byte>("Counter"), (instrument, value, tags) =>
                                                         {
                                                             PublishUpDownCounterMeasurement(instrument as UpDownCounter<byte>, value, tags);
@@ -735,6 +880,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Meter meter4 = new Meter("MeterDisposalsTest4");
                 Meter meter5 = new Meter("MeterDisposalsTest5");
                 Meter meter6 = new Meter("MeterDisposalsTest6");
+                Meter meter7 = new Meter("MeterDisposalsTest7");
 
                 Counter<int> counter = meter1.CreateCounter<int>("Counter");
                 Histogram<double> histogram = meter2.CreateHistogram<double>("Histogram");
@@ -742,6 +888,7 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableGauge<decimal> observableGauge = meter4.CreateObservableGauge<decimal>("ObservableGauge", () => new Measurement<decimal>(5.7m, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
                 UpDownCounter<short> upDownCounter = meter5.CreateUpDownCounter<short>("UpDownCounter");
                 ObservableUpDownCounter<int> observableUpDownCounter = meter6.CreateObservableUpDownCounter<int>("ObservableUpDownCounter", () => new Measurement<int>(-5, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
+                Gauge<int> gauge = meter7.CreateGauge<int>("Gauge");
 
                 using MeterListener listener = new MeterListener();
                 listener.InstrumentPublished = (theInstrument, theListener) => theListener.EnableMeasurementEvents(theInstrument, theInstrument);
@@ -767,35 +914,42 @@ namespace System.Diagnostics.Metrics.Tests
                 histogram.Record(1);
                 Assert.Equal(3, count);
 
+                gauge.Record(1);
+                Assert.Equal(4, count);
+
                 listener.RecordObservableInstruments();
-                Assert.Equal(6, count);
+                Assert.Equal(7, count);
 
                 meter1.Dispose();
                 counter.Add(1);
-                Assert.Equal(6, count);
+                Assert.Equal(7, count);
 
                 meter2.Dispose();
                 histogram.Record(1);
-                Assert.Equal(6, count);
+                Assert.Equal(7, count);
 
                 meter5.Dispose();
                 upDownCounter.Add(-10);
-                Assert.Equal(6, count);
+                Assert.Equal(7, count);
+
+                meter7.Dispose();
+                gauge.Record(-10);
+                Assert.Equal(7, count);
 
                 listener.RecordObservableInstruments();
-                Assert.Equal(9, count);
+                Assert.Equal(10, count);
 
                 meter3.Dispose();
                 listener.RecordObservableInstruments();
-                Assert.Equal(11, count);
+                Assert.Equal(12, count);
 
                 meter4.Dispose();
                 listener.RecordObservableInstruments();
-                Assert.Equal(12, count);
+                Assert.Equal(13, count);
 
                 meter6.Dispose();
                 listener.RecordObservableInstruments();
-                Assert.Equal(12, count);
+                Assert.Equal(13, count);
 
             }).Dispose();
         }
@@ -807,6 +961,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Meter meter = new Meter("ListenerDisposalsTest");
 
                 Counter<int> counter = meter.CreateCounter<int>("Counter");
+                Gauge<int> gauge = meter.CreateGauge<int>("Gauge");
                 UpDownCounter<short> upDownCounter = meter.CreateUpDownCounter<short>("upDownCounter");
                 Histogram<double> histogram = meter.CreateHistogram<double>("Histogram");
                 ObservableCounter<long> observableCounter = meter.CreateObservableCounter<long>("ObservableCounter", () => new Measurement<long>(10, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
@@ -840,23 +995,93 @@ namespace System.Diagnostics.Metrics.Tests
                 histogram.Record(1);
                 Assert.Equal(3, count);
 
+                gauge.Record(1);
+                Assert.Equal(4, count);
+
                 listener.RecordObservableInstruments();
-                Assert.Equal(6, count);
+                Assert.Equal(7, count);
 
                 listener.Dispose();
-                Assert.Equal(6, completedMeasurements);
+                Assert.Equal(7, completedMeasurements);
 
                 counter.Add(1);
-                Assert.Equal(6, count);
+                Assert.Equal(7, count);
 
                 upDownCounter.Add(-1);
-                Assert.Equal(6, count);
+                Assert.Equal(7, count);
 
                 histogram.Record(1);
-                Assert.Equal(6, count);
+                Assert.Equal(7, count);
+
+                gauge.Record(1);
+                Assert.Equal(7, count);
 
                 listener.RecordObservableInstruments();
-                Assert.Equal(6, count);
+                Assert.Equal(7, count);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ListenerWithoutMeasurementsCompletedDisposalsTest()
+        {
+            RemoteExecutor.Invoke(() => {
+                Meter meter = new Meter("MinimalListenerDisposalsTest");
+
+                Counter<int> counter = meter.CreateCounter<int>("Counter");
+                Gauge<int> gauge = meter.CreateGauge<int>("Gauge");
+                UpDownCounter<short> upDownCounter = meter.CreateUpDownCounter<short>("upDownCounter");
+                Histogram<double> histogram = meter.CreateHistogram<double>("Histogram");
+                ObservableCounter<long> observableCounter = meter.CreateObservableCounter("ObservableCounter", () => new Measurement<long>(10, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
+                ObservableGauge<decimal> observableGauge = meter.CreateObservableGauge("ObservableGauge", () => new Measurement<decimal>(5.7m, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
+                ObservableUpDownCounter<float> observableUpDownCounter = meter.CreateObservableUpDownCounter("ObservableUpDownCounter", () => new Measurement<float>(-5.7f, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
+
+                MeterListener listener = new MeterListener();
+                listener.InstrumentPublished = (theInstrument, theListener) => theListener.EnableMeasurementEvents(theInstrument, theInstrument);
+
+                int count = 0;
+
+                listener.SetMeasurementEventCallback<short>((inst, measurement, tags, state)   => count++);
+                listener.SetMeasurementEventCallback<int>((inst, measurement, tags, state)     => count++);
+                listener.SetMeasurementEventCallback<float>((inst, measurement, tags, state)   => count++);
+                listener.SetMeasurementEventCallback<double>((inst, measurement, tags, state)  => count++);
+                listener.SetMeasurementEventCallback<long>((inst, measurement, tags, state)    => count++);
+                listener.SetMeasurementEventCallback<decimal>((inst, measurement, tags, state) => count++);
+
+                listener.Start();
+
+                Assert.Equal(0, count);
+
+                counter.Add(1);
+                Assert.Equal(1, count);
+
+                upDownCounter.Add(-1);
+                Assert.Equal(2, count);
+
+                histogram.Record(1);
+                Assert.Equal(3, count);
+
+                gauge.Record(1);
+                Assert.Equal(4, count);
+
+                listener.RecordObservableInstruments();
+                Assert.Equal(7, count);
+
+                listener.Dispose();
+
+                counter.Add(1);
+                Assert.Equal(7, count);
+
+                upDownCounter.Add(-1);
+                Assert.Equal(7, count);
+
+                histogram.Record(1);
+                Assert.Equal(7, count);
+
+                gauge.Record(1);
+                Assert.Equal(7, count);
+
+                listener.RecordObservableInstruments();
+                Assert.Equal(7, count);
             }).Dispose();
         }
 
@@ -894,6 +1119,14 @@ namespace System.Diagnostics.Metrics.Tests
 
                 counter.Add(1);
                 Assert.Equal(9, count);
+
+                Gauge<int> gauge = meter.CreateGauge<int>("Gauge");
+
+                gauge.Record(1);
+                Assert.Equal(12, count);
+
+                gauge.Record(1);
+                Assert.Equal(15, count);
             }).Dispose();
         }
 
@@ -904,6 +1137,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Meter meter = new Meter("NullMeasurementEventCallbackTest");
 
                 Counter<int> counter = meter.CreateCounter<int>("Counter");
+                Gauge<int> gauge = meter.CreateGauge<int>("Gauge");
 
                 MeterListener listener = new MeterListener();
 
@@ -919,9 +1153,15 @@ namespace System.Diagnostics.Metrics.Tests
                 counter.Add(1);
                 Assert.Equal(1, count);
 
+                gauge.Record(1);
+                Assert.Equal(2, count);
+
                 listener.SetMeasurementEventCallback<int>(null);
                 counter.Add(1);
-                Assert.Equal(1, count);
+                Assert.Equal(2, count);
+
+                gauge.Record(1);
+                Assert.Equal(2, count);
 
                 Assert.Throws<InvalidOperationException>(() => listener.SetMeasurementEventCallback<ulong>(null));
             }).Dispose();
@@ -944,6 +1184,7 @@ namespace System.Diagnostics.Metrics.Tests
                 listener.Start();
 
                 string newState = "2";
+                // EnableMeasurementEvents will cause MeasurementsCompleted get invoked because measurements were registered before with a different state.
                 listener.EnableMeasurementEvents(counter, newState);
                 Assert.Equal(1, completedCount);
                 lastState = newState;
@@ -970,6 +1211,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Meter meter = new Meter("ParallelRunningTest");
 
                 Counter<int> counter = meter.CreateCounter<int>("Counter");
+                Gauge<int> gauge = meter.CreateGauge<int>("Gauge");
                 UpDownCounter<int> upDownCounter = meter.CreateUpDownCounter<int>("UpDownCounter");
                 Histogram<int> histogram = meter.CreateHistogram<int>("Histogram");
                 ObservableCounter<int> observableCounter = meter.CreateObservableCounter<int>("ObservableCounter", () => 1);
@@ -983,7 +1225,7 @@ namespace System.Diagnostics.Metrics.Tests
                 listener.SetMeasurementEventCallback<int>((inst, measurement, tags, state) => Interlocked.Add(ref totalCount, measurement));
                 listener.Start();
 
-                Task[] taskList = new Task[9];
+                Task[] taskList = new Task[11];
 
                 int loopLength = 10_000;
 
@@ -996,10 +1238,12 @@ namespace System.Diagnostics.Metrics.Tests
                 taskList[6] = Task.Factory.StartNew(() => { for (int i = 0; i < loopLength; i++) { upDownCounter.Add(1); } });
                 taskList[7] = Task.Factory.StartNew(() => { for (int i = 0; i < loopLength; i++) { upDownCounter.Add(1); } });
                 taskList[8] = Task.Factory.StartNew(() => { for (int i = 0; i < loopLength; i++) { listener.RecordObservableInstruments(); } });
+                taskList[9] = Task.Factory.StartNew(() => { for (int i = 0; i < loopLength; i++) { gauge.Record(1); } });
+                taskList[10] = Task.Factory.StartNew(() => { for (int i = 0; i < loopLength; i++) { gauge.Record(1); } });
 
                 Task.WaitAll(taskList);
 
-                Assert.Equal(loopLength * 15, totalCount);
+                Assert.Equal(loopLength * 17, totalCount);
             }).Dispose();
         }
 
@@ -1057,6 +1301,8 @@ namespace System.Diagnostics.Metrics.Tests
                                 int c = Interlocked.Increment(ref counterCounter);
                                 Counter<int> counter = meters[index].CreateCounter<int>("Counter");
                                 counter.Add(1);
+                                Gauge<int> gauge = meters[index].CreateGauge<int>("Gauge");
+                                gauge.Record(1);
                             }
 
                             meters[index].Dispose();
@@ -1080,10 +1326,12 @@ namespace System.Diagnostics.Metrics.Tests
                 using (MeterListener listener = new MeterListener())
                 {
                     Counter<int> counter = meter.CreateCounter<int>("Counter");
+                    Gauge<int> gauge = meter.CreateGauge<int>("Gauge");
                     UpDownCounter<int> upDownCounter = meter.CreateUpDownCounter<int>("UpDownCounter");
                     Histogram<int> histogram = meter.CreateHistogram<int>("histogram");
 
                     listener.EnableMeasurementEvents(counter, counter);
+                    listener.EnableMeasurementEvents(gauge, gauge);
                     listener.EnableMeasurementEvents(upDownCounter, upDownCounter);
                     listener.EnableMeasurementEvents(histogram, histogram);
 
@@ -1100,12 +1348,14 @@ namespace System.Diagnostics.Metrics.Tests
 
                     expectedTags = new KeyValuePair<string, object?>[0];
                     counter.Add(10, new TagList());
+                    gauge.Record(5);
                     upDownCounter.Add(-1, new TagList());
                     histogram.Record(10, new TagList());
 
                     // 1 Tags
                     expectedTags = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key1", "Value1") };
                     counter.Add(10, new TagList() { expectedTags[0] });
+                    gauge.Record(1, new TagList() { expectedTags[0] });
                     upDownCounter.Add(-2, new TagList() { expectedTags[0] });
                     histogram.Record(10, new TagList() { new KeyValuePair<string, object?>("Key1", "Value1") });
 
@@ -1117,6 +1367,7 @@ namespace System.Diagnostics.Metrics.Tests
                     }.ToArray();
 
                     counter.Add(10, new TagList() { expectedTags[0], expectedTags[1] });
+                    gauge.Record(2, new TagList() { expectedTags[0], expectedTags[1] });
                     upDownCounter.Add(-3, new TagList() { expectedTags[0], expectedTags[1] });
                     histogram.Record(10, new TagList() { expectedTags[0], expectedTags[1] });
 
@@ -1134,6 +1385,7 @@ namespace System.Diagnostics.Metrics.Tests
                     }.ToArray();
 
                     counter.Add(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7] });
+                    gauge.Record(3, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7] });
                     upDownCounter.Add(-4, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7] });
                     histogram.Record(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7] });
 
@@ -1156,6 +1408,8 @@ namespace System.Diagnostics.Metrics.Tests
                     }.ToArray();
 
                     counter.Add(10, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7],
+                                                     expectedTags[8], expectedTags[9], expectedTags[10], expectedTags[11], expectedTags[12] });
+                    gauge.Record(3, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7],
                                                      expectedTags[8], expectedTags[9], expectedTags[10], expectedTags[11], expectedTags[12] });
                     upDownCounter.Add(-5, new TagList() { expectedTags[0], expectedTags[1], expectedTags[2], expectedTags[3], expectedTags[4], expectedTags[5], expectedTags[6], expectedTags[7],
                                                      expectedTags[8], expectedTags[9], expectedTags[10], expectedTags[11], expectedTags[12] });
@@ -1244,10 +1498,17 @@ namespace System.Diagnostics.Metrics.Tests
                 Counter<int> counter1 = meter.CreateCounter<int>("name1");
                 Counter<int> counter2 = meter.CreateCounter<int>("name1");
 
+                Gauge<int> gauge1 = meter.CreateGauge<int>("name1");
+                Gauge<int> gauge2 = meter.CreateGauge<int>("name1");
+
                 Assert.True(object.ReferenceEquals(counter1, counter2));
+                Assert.True(object.ReferenceEquals(gauge1, gauge2));
 
                 Counter<int> counter3 = meter.CreateCounter<int>("name1", "unique");
+                Gauge<int> gauge3 = meter.CreateGauge<int>("name1", "unique");
+
                 Assert.False(object.ReferenceEquals(counter1, counter3));
+                Assert.False(object.ReferenceEquals(gauge1, gauge3));
 
                 var list1 = new List<KeyValuePair<string, object?>>
                 {
@@ -1258,15 +1519,23 @@ namespace System.Diagnostics.Metrics.Tests
                 Counter<int> counter4 = meter.CreateCounter<int>("name", null, null, list1);
                 Counter<int> counter5 = meter.CreateCounter<int>("name", null, null, list1);
 
+                Gauge<int> gauge4 = meter.CreateGauge<int>("name", null, null, list1);
+                Gauge<int> gauge5 = meter.CreateGauge<int>("name", null, null, list1);
+
                 Assert.True(object.ReferenceEquals(counter4, counter5));
+                Assert.True(object.ReferenceEquals(gauge4, gauge5));
 
                 Counter<int> counter6 = meter.CreateCounter<int>("name", "diff", null, list1);
+                Gauge<int> gauge6 = meter.CreateGauge<int>("name", "diff", null, list1);
 
                 Assert.False(object.ReferenceEquals(counter4, counter6));
+                Assert.False(object.ReferenceEquals(gauge4, gauge6));
 
                 Counter<long> counter7 = meter.CreateCounter<long>("name", null, null, list1);
+                Gauge<long> gauge7 = meter.CreateGauge<long>("name", null, null, list1);
 
                 Assert.False(object.ReferenceEquals(counter4, counter7));
+                Assert.False(object.ReferenceEquals(gauge4, gauge7));
 
                 var list2 = new List<KeyValuePair<string, object?>>
                 {
@@ -1275,8 +1544,10 @@ namespace System.Diagnostics.Metrics.Tests
                 };
 
                 Counter<int> counter8 = meter.CreateCounter<int>("name", null, null, list2);
+                Gauge<int> gauge8 = meter.CreateGauge<int>("name", null, null, list2);
 
                 Assert.False(object.ReferenceEquals(counter4, counter8));
+                Assert.False(object.ReferenceEquals(gauge4, gauge8));
 
                 Histogram<int> histogram1 = meter.CreateHistogram<int>("name", null, null, list2);
 
@@ -1333,12 +1604,20 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Same(counter9, counter10);
                 Assert.Same(counter9, counter11);
 
+                Gauge<int> gauge9 = meter.CreateGauge<int>("name9", null, null, l1);
+                Gauge<int> gauge10 = meter.CreateGauge<int>("name9", null, null, l2);
+                Gauge<int> gauge11 = meter.CreateGauge<int>("name9", null, null, l3);
+                Assert.Same(gauge9, gauge10);
+                Assert.Same(gauge9, gauge11);
+
                 KeyValuePair<string, object?>[] t1 = counter9.Tags.ToArray();
                 Assert.Equal(l1.Count, t1.Length);
                 t1[0] = new KeyValuePair<string, object?>(t1[0].Key, "newValue"); // change value of one item;
                 Counter<int> counter12 = meter.CreateCounter<int>("name9", null, null, t1);
                 Assert.NotSame(counter9, counter12);
 
+                Gauge<int> gauge12 = meter.CreateGauge<int>("name9", null, null, t1);
+                Assert.NotSame(gauge9, gauge12);
             }).Dispose();
         }
 
@@ -1395,9 +1674,61 @@ namespace System.Diagnostics.Metrics.Tests
                     Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
                 }
 
+                Instrument ins14 = meter.CreateGauge<int>("Gauge", null, null, new TagList() { { "c1", "cv-1" } });
+                Assert.Equal(new[] { new KeyValuePair<string, object?>("c1", "cv-1") }, ins14.Tags);
+
+                Instrument ins15 = meter.CreateGauge<int>("counter", null, null, l);
+                insArray = ins15.Tags.ToArray();
+                Assert.Equal(l.Count, insArray.Length);
+                for (int i = 0; i < insArray.Length - 1; i++)
+                {
+                    Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
+                }
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestHistogramCreationWithAdvice()
+        {
+           RemoteExecutor.Invoke(() =>
+           {
+               using Meter meter = new Meter(nameof(TestHistogramCreationWithAdvice));
+
+               Histogram<int> histogramWithoutAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithoutAdvice));
+
+               Assert.Null(histogramWithoutAdvice.Advice);
+
+               int[] explicitBucketBoundaries = new int[] { 0, 100, 1000, 10000 };
+
+               Histogram<int> histogramWithAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithAdvice), advice: new InstrumentAdvice<int> { HistogramBucketBoundaries = explicitBucketBoundaries });
+
+               Assert.NotNull(histogramWithAdvice.Advice?.HistogramBucketBoundaries);
+               Assert.Equal(explicitBucketBoundaries, histogramWithAdvice.Advice.HistogramBucketBoundaries);
+           }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRecordingWithEmptyTagList()
+        {
+           RemoteExecutor.Invoke(() =>
+           {
+                using MeterListener meterListener = new MeterListener();
+                using Meter meter = new Meter("demo");
+
+                int count = 0;
+
+                Counter<int> counter = meter.CreateCounter<int>("counter");
+                meterListener.SetMeasurementEventCallback<int>((instrument, measurement, tags,state) => count += measurement);
+                meterListener.EnableMeasurementEvents(counter);
+
+                counter.Add(1);
+                counter.Add(1, new TagList());
+                counter.Add(1, Array.Empty<KeyValuePair<string, object>>());
+                counter.Add(1, new TagList(Array.Empty<KeyValuePair<string, object>>()));
+
+                Assert.Equal(4, count);
+           }).Dispose();
+        }
 
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct
         {
@@ -1414,6 +1745,24 @@ namespace System.Diagnostics.Metrics.Tests
                 case 8: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]); break;
                 case 9: counter.Add(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7], tags[8]); break;
                 default: counter.Add(value, tags); break;
+            }
+        }
+
+        private void PublishGaugeMeasurement<T>(Gauge<T> gauge, T value, KeyValuePair<string, object?>[] tags) where T : struct
+        {
+            switch (tags.Length)
+            {
+                case 0: gauge.Record(value); break;
+                case 1: gauge.Record(value, tags[0]); break;
+                case 2: gauge.Record(value, tags[0], tags[1]); break;
+                case 3: gauge.Record(value, tags[0], tags[1], tags[2]); break;
+                case 4: gauge.Record(value, tags[0], tags[1], tags[2], tags[3]); break;
+                case 5: gauge.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4]); break;
+                case 6: gauge.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5]); break;
+                case 7: gauge.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6]); break;
+                case 8: gauge.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7]); break;
+                case 9: gauge.Record(value, tags[0], tags[1], tags[2], tags[3], tags[4], tags[5], tags[6], tags[7], tags[8]); break;
+                default: gauge.Record(value, tags); break;
             }
         }
 
