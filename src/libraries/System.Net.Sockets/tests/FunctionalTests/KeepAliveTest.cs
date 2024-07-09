@@ -121,7 +121,8 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotQemuLinux))] // Skip on Qemu due to https://gitlab.com/qemu-project/qemu/-/issues/2390
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/104545", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public void Socket_Get_KeepAlive_Time_AsByteArray_OptionLengthZero_Failure()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -144,9 +145,9 @@ namespace System.Net.Sockets.Tests
         [InlineData(new byte[3] { 0, 0, 0 })]
         public void Socket_Get_KeepAlive_Time_AsByteArray_BufferNullOrTooSmall_Failure(byte[] buffer)
         {
-            if (!PlatformDetection.IsNotQemuLinux && (buffer == null || buffer.Length == 0))
+            if (PlatformDetection.IsQemuLinux && (buffer == null || buffer.Length == 0))
             {
-                // Skip on Qemu due to https://gitlab.com/qemu-project/qemu/-/issues/2390
+                // Skip on Qemu due to https://github.com/dotnet/runtime/issues/104545
                 return;
             }
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

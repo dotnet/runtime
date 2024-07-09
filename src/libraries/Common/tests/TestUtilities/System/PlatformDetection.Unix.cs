@@ -309,13 +309,7 @@ namespace System
         {
             if (IsLinux)
             {
-                foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
-                {
-                    if (((String)entry.Key).ToUpper() == "DOTNET_RUNNING_UNDER_QEMU")
-                    {
-                        return true;
-                    }
-                }
+                return Environment.GetEnvironmentVariable("DOTNET_RUNNING_UNDER_QEMU") != null;
             }
             return false;
         }

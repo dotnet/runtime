@@ -15,7 +15,6 @@ namespace System.Net.Sockets.Tests
     public partial class SocketOptionNameTest
     {
         private static bool SocketsReuseUnicastPortSupport => Capability.SocketsReuseUnicastPortSupport().HasValue;
-        private static bool SupportedOnPlatform = PlatformDetection.IsNotWindowsNanoNorServerCore && PlatformDetection.IsNotQemuLinux;
 
         [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption()
@@ -51,7 +50,8 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotQemuLinux))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/104547", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public void MulticastOption_CreateSocketSetGetOption_GroupAndInterfaceIndex_SetSucceeds_GetThrows()
         {
             int interfaceIndex = 0;
@@ -65,7 +65,8 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportedOnPlatform))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286 and Qemu
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/104547", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
@@ -121,9 +122,10 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportedOnPlatform))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286 and Qemu
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/104547", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
