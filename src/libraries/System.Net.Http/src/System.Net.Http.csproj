@@ -385,6 +385,8 @@
              Link="Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp.cs"
              Link="Common\Interop\Windows\WinHttp\Interop.winhttp.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs" />
     <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs"
@@ -480,6 +482,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+    <Reference Include="Microsoft.Win32.Registry" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">

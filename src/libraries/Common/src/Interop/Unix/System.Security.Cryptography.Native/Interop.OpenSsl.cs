@@ -573,6 +573,16 @@ internal static partial class Interop
                 throw handshakeException;
             }
 
+            // in case of TLS 1.3 post-handshake authentication, SslDoHandhaske
+            // may return SSL_ERROR_NONE while still expecting more data from
+            // the client. Attempts to send app data in this state would result
+            // in SSL_ERROR_WANT_READ from SslWrite, override the return status
+            // to continue waiting for the rest of the TLS frames
+            if (context.IsServer && token.Size == 0 && errorCode == Ssl.SslErrorCode.SSL_ERROR_NONE && Ssl.IsSslRenegotiatePending(context))
+            {
+                return SecurityStatusPalErrorCode.ContinueNeeded;
+            }
+
             bool stateOk = Ssl.IsSslStateOK(context);
             if (stateOk)
             {

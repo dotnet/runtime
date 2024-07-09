@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.X509Certificates
         private bool _preserveUnknownAttributes;
         private bool _ignorePrivateKeys;
         private bool _ignoreEncryptedAuthSafes;
+        private bool _allowDuplicateAttributes;
 
         /// <summary>
         ///   Gets a shared reference to the default loader limits.
@@ -72,6 +73,7 @@ namespace System.Security.Cryptography.X509Certificates
                     PreserveKeyName = true,
                     PreserveCertificateAlias = true,
                     PreserveUnknownAttributes = true,
+                    AllowDuplicateAttributes = true,
                 });
 
         /// <summary>
@@ -117,6 +119,7 @@ namespace System.Security.Cryptography.X509Certificates
             _preserveUnknownAttributes = copyFrom._preserveUnknownAttributes;
             _ignorePrivateKeys = copyFrom._ignorePrivateKeys;
             _ignoreEncryptedAuthSafes = copyFrom._ignoreEncryptedAuthSafes;
+            _allowDuplicateAttributes = copyFrom._allowDuplicateAttributes;
         }
 
         /// <summary>
@@ -363,6 +366,24 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 CheckReadOnly();
                 _ignoreEncryptedAuthSafes = value;
+            }
+        }
+
+        /// <summary>
+        ///   Gets or sets a value indicating whether duplicate attributes are permitted.
+        /// </summary>
+        /// <value>
+        ///   <see langword="true" /> to permit duplicate attributes;
+        ///   <see langword="false" /> to fail loading when duplicate attributes are found.
+        ///   The default is <see langword="false" />.
+        /// </value>
+        internal bool AllowDuplicateAttributes
+        {
+            get => _allowDuplicateAttributes;
+            set
+            {
+                CheckReadOnly();
+                _allowDuplicateAttributes = value;
             }
         }
 

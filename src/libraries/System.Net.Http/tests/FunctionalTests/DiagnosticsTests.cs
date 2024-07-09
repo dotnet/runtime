@@ -26,8 +26,6 @@ namespace System.Net.Http.Functional.Tests
         private static bool EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported =>
             string.IsNullOrEmpty(Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName)) && RemoteExecutor.IsSupported;
 
-        private static readonly Uri InvalidUri = new("http://nosuchhost.invalid");
-
         public DiagnosticsTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
