@@ -42,7 +42,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include <dlfcn.h>
 #include <mach-o/loader.h>
 #include <sys/mman.h>
-#include <minipal/cpufeatures.h>
 
 using namespace CorUnix;
 
@@ -684,7 +683,7 @@ HijackFaultingThread(
 #if defined(HOST_AMD64)
     threadContext.ContextFlags = CONTEXT_FLOATING_POINT | CONTEXT_XSTATE;
     CONTEXT_GetThreadContextFromThreadState(x86_AVX512_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
-    
+
     threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
     CONTEXT_GetThreadContextFromThreadState(x86_THREAD_STATE, (thread_state_t)&exceptionInfo.ThreadState, &threadContext);
 
