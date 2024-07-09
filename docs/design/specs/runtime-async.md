@@ -76,3 +76,7 @@ For the purposes of inheritance and hiding, both async signatures ([### I.8.6.1.
 ### II.10.3.2 The .override directive
 
 Async methods participate in overrides through both definitions (both signatures). An async method with a .override overrides the target method signature, as well as the secondary "Task-equivalent" signature if applicable. An async method may also override a sync method matching the "Task-equivalent" signature, if an async signature is not present on the base class. A sync method may also override an async method's "Task-equivalent" signature. This will behave as though both the async and "Task-equivalent" methods have been overridden.
+
+### II.15.4.6 async methods
+
+In certain cases described in [I.8.6.1.5 Method signatures] MethodDef definitions for sync and async methods may result in the definition of additional "implicit" definitions. All call sites to an implicit definition must use a MethodRef, even if the implicit method is definined inside the same module or assembly. The "explicit" definition which exists in metadata can be called using a regular `MethodDef` token.
