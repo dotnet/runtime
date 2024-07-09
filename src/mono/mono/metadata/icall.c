@@ -867,6 +867,9 @@ ves_icall_System_Array_FastCopy (MonoObjectHandleOnStack source_handle, int sour
 		if (m_class_is_valuetype (dest_class) || m_class_is_enumtype (dest_class) ||
 		 	m_class_is_valuetype (src_class) || m_class_is_valuetype (src_class))
 			return FALSE;
+		
+		if (!mono_class_is_assignable_from_internal(dest_class, src_class))
+			return FALSE;
 
 		/* It's only safe to copy between arrays if we can ensure the source will always have a subtype of the destination. We bail otherwise. */
 		if (!mono_class_is_subclass_of_internal (src_class, dest_class, FALSE))
