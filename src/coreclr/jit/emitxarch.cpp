@@ -2087,8 +2087,6 @@ emitter::code_t emitter::AddRexRPrefix(const instrDesc* id, code_t code)
     else if (TakesRex2Prefix(id))
     {
         assert(IsRex2EncodableInstruction(ins));
-
-        // TODO-xarch-apx: there is no overlapping between REX2 and VEX/EVEX instructions so it should be fine to have the paths in this way.
         return code |= 0xD50400000000ULL; // REX2.B3
     }
 
@@ -2120,9 +2118,9 @@ emitter::code_t emitter::AddRexXPrefix(const instrDesc* id, code_t code)
             return code & 0xFFBFFFFFFFFFFFULL;
         }
     }
-    else if (TakesRex2Prefix(id) && IsRex2EncodableInstruction(ins))
+    else if (TakesRex2Prefix(id))
     {
-        // TODO-apx: there is no overlapping between REX2 and VEX/EVEX instructions so it should be fine to have the paths in this way.
+        assert(IsRex2EncodableInstruction(ins));
         return code |= 0xD50200000000ULL; // REX2.B3
     }
 
@@ -2154,9 +2152,9 @@ emitter::code_t emitter::AddRexBPrefix(const instrDesc* id, code_t code)
             return code & 0xFFDFFFFFFFFFFFULL;
         }
     }
-    else if (TakesRex2Prefix(id) && IsRex2EncodableInstruction(ins))
+    else if (TakesRex2Prefix(id))
     {
-        // TODO-apx: there is no overlapping between REX2 and VEX/EVEX instructions so it should be fine to have the paths in this way.
+        assert(IsRex2EncodableInstruction(ins));
         return code |= 0xD50100000000ULL; // REX2.B3
     }
 
@@ -15207,7 +15205,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
                     code |= 0x1;
                 }
 
-                if(TakesRex2Prefix(id))
+                if (TakesRex2Prefix(id))
                 {
                     code = AddRex2Prefix(ins, code);
                 }
@@ -15245,8 +15243,8 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             code = insEncodeOpreg(id, reg, size);
 
             // TODO-xarch-apx: it is TBD if we will use REX2 for PUSH/POP,
-            //                 the implementation help is optional.
-            if(TakesRex2Prefix(id))
+            //                 the implementation here is optional.
+            if (TakesRex2Prefix(id))
             {
                 code = AddRex2Prefix(ins, code);
             }
@@ -15271,7 +15269,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 
             code = insCodeRR(ins);
 
-            if(TakesRex2Prefix(id))
+            if (TakesRex2Prefix(id))
             {
                 code = AddRex2Prefix(ins, code);
             }
@@ -15314,7 +15312,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 
             code = insEncodeMRreg(id, reg, EA_1BYTE, insCodeMR(ins));
 
-            if(TakesRex2Prefix(id))
+            if (TakesRex2Prefix(id))
             {
                 code = AddRex2Prefix(ins, code);
                 dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
@@ -15359,12 +15357,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
                 }
             }
 
-            code = AddSimdPrefixIfNeeded(id, code, size);
-
-            if (TakesRex2Prefix(id))
-            {
-                code = AddRex2Prefix(ins, code);
-            }
+            code = AddX86PrefixIfNeeded(id, code, size);
 
             if (TakesRexWPrefix(id))
             {
@@ -15480,11 +15473,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
         code = insCodeRM(ins);
-        if(TakesRex2Prefix(id))
-        {
-            code = AddRex2Prefix(ins, code);
-        }
-        code = AddSimdPrefixIfNeeded(id, code, size);
+        code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeRMreg(id, code) | (int)(size == EA_2BYTE);
 #ifdef TARGET_AMD64
 
@@ -15509,16 +15498,11 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
         code = insCodeRM(ins);
-        code = AddSimdPrefixIfNeeded(id, code, size);
+        code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeRMreg(id, code);
         if ((ins == INS_crc32) && (size > EA_1BYTE))
         {
             code |= 0x0100;
-        }
-
-        if(TakesRex2Prefix(id))
-        {
-            code = AddRex2Prefix(ins, code);
         }
 
         if (size == EA_2BYTE)
@@ -16376,8 +16360,8 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
             code = insCodeMI(ins);
 
             // TODO-xarch-apx: it is TBD if we will use REX2 for PUSH/POP,
-            //                 the implementation help is optional.
-            if(TakesRex2Prefix(id))
+            //                 the implementation here is optional.
+            if (TakesRex2Prefix(id))
             {
                 code = AddRex2Prefix(ins, code);
             }
@@ -16395,7 +16379,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
             }
             else
             {
-                if (TakesRexWPrefix(id))
+                if (TakesRexWPrefix(id) || TakesRex2Prefix(id))
                 {
                     code = AddRexWPrefix(id, code);
                     dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
@@ -17476,18 +17460,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             code = insCodeMR(ins);
             // Emit the VEX prefix if it exists
-            code = AddSimdPrefixIfNeeded(id, code, size);
+            code = AddX86PrefixIfNeeded(id, code, size);
             code = insEncodeMRreg(id, id->idReg1(), size, code);
 
             // set the W bit
             if (size != EA_1BYTE)
             {
                 code |= 1;
-            }
-
-            if(TakesRex2Prefix(id))
-            {
-                code = AddRex2Prefix(ins, code);
             }
 
             // Emit the REX prefix if it exists
@@ -18170,7 +18149,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddSimdPrefixIfNeeded(id, code, size);
+                code = AddX86PrefixIfNeeded(id, code, size);
 
                 // In case of AVX instructions that take 3 operands, encode reg1 as first source.
                 // Note that reg1 is both a source and a destination.
@@ -18182,11 +18161,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     // encode source operand reg in 'vvvv' bits in 1's complement form
                     code = insEncodeReg3456(id, id->idReg1(), size, code);
-                }
-
-                if (TakesRex2Prefix(id))
-                {
-                    code = AddRex2Prefix(ins, code);
                 }
 
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
