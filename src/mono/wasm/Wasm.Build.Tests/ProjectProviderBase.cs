@@ -391,7 +391,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             expectedFingerprinted.Add(expectedFingerprintedItem);
         }
 
-        AssertFileNames(expected, actual);
+        AssertFileNames(expectedFingerprinted, actual);
         if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
         {
             string srcPath = assertOptions.PredefinedIcudt!;
