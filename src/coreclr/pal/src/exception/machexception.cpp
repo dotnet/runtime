@@ -682,23 +682,8 @@ HijackFaultingThread(
     BuildExceptionRecord(exceptionInfo, &exceptionRecord);
 
 #if defined(HOST_AMD64)
-    int cpuFeatures = minipal_getcpufeatures();
-    threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0))
-    {
-        threadContext.ContextFlags |= CONTEXT_XSTATE;
-        CONTEXT_GetThreadContextFromThreadState(x86_AVX512_STATE, (thread_state_t)&exceptionInfo.AVX512State, &threadContext);
-    }
-    else if(((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0))
-    {
-        threadContext.ContextFlags |= CONTEXT_XSTATE;
-        CONTEXT_GetThreadContextFromThreadState(x86_AVX_STATE, (thread_state_t)&exceptionInfo.AVXState, &threadContext);
-    }
-    else
-    {
-        CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
-    }
+    threadContext.ContextFlags = CONTEXT_FLOATING_POINT | CONTEXT_XSTATE;
+    CONTEXT_GetThreadContextFromThreadState(x86_AVX512_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
     
     threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
     CONTEXT_GetThreadContextFromThreadState(x86_THREAD_STATE, (thread_state_t)&exceptionInfo.ThreadState, &threadContext);
@@ -1277,28 +1262,22 @@ MachExceptionInfo::MachExceptionInfo(mach_port_t thread, MachMessage& message)
         Subcodes[i] = message.GetExceptionCode(i);
 
 #if defined(HOST_AMD64)
-    int cpuFeatures = minipal_getcpufeatures();
     mach_msg_type_number_t count = x86_THREAD_STATE_COUNT;
     machret = thread_get_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, &count);
     CHECK_MACH("thread_get_state", machret);
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0))
-    {
-        count = x86_AVX512_STATE_COUNT;
-        machret = thread_get_state(thread, x86_AVX512_STATE, (thread_state_t)&AVX512State, &count);
-        CHECK_MACH("thread_get_state(avx512)", machret);
-    }
-    else if(((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0))
+    count = x86_AVX512_STATE_COUNT;
+    machret = thread_get_state(thread, x86_AVX512_STATE, (thread_state_t)&FloatState, &count);
+    if (machret != KERN_SUCCESS)
     {
         count = x86_AVX_STATE_COUNT;
-        machret = thread_get_state(thread, x86_AVX_STATE, (thread_state_t)&AVXState, &count);
-        CHECK_MACH("thread_get_state(avx)", machret);
-    }
-    else
-    {
-        count = x86_FLOAT_STATE_COUNT;
-        machret = thread_get_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, &count);
-        CHECK_MACH("thread_get_state(float)", machret);
+        machret = thread_get_state(thread, x86_AVX_STATE, (thread_state_t)&FloatState, &count);
+        if (machret != KERN_SUCCESS)
+        {
+            count = x86_FLOAT_STATE_COUNT;
+            machret = thread_get_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, &count);
+            CHECK_MACH("thread_get_state(float)", machret);
+        }
     }
     count = x86_DEBUG_STATE_COUNT;
     machret = thread_get_state(thread, x86_DEBUG_STATE, (thread_state_t)&DebugState, &count);

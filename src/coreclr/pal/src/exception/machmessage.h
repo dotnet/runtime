@@ -84,10 +84,8 @@ struct MachExceptionInfo
     mach_exception_data_type_t Subcodes[2];
 #if defined(HOST_AMD64)
     x86_thread_state_t ThreadState;
-    x86_float_state_t FloatState;
+    x86_avx512_state_t FloatState;
     x86_debug_state_t DebugState;
-    x86_avx_state_t AVXState;
-    x86_avx512_state_t AVX512State;
 #elif defined(HOST_ARM64)
     arm_thread_state64_t ThreadState;
     arm_neon_state64_t FloatState;
