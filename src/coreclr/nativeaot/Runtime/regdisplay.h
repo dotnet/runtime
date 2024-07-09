@@ -169,6 +169,62 @@ struct REGDISPLAY
     inline void SetIP(PCODE IP) { this->IP = IP; }
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
 };
+
+#elif defined(TARGET_LOONGARCH64)
+
+struct REGDISPLAY
+{
+    PTR_uintptr_t pR0;
+    PTR_uintptr_t pRA;
+    PTR_uintptr_t pR2;
+
+    uintptr_t   SP;
+
+    PTR_uintptr_t pR4;
+    PTR_uintptr_t pR5;
+    PTR_uintptr_t pR6;
+    PTR_uintptr_t pR7;
+    PTR_uintptr_t pR8;
+    PTR_uintptr_t pR9;
+    PTR_uintptr_t pR10;
+    PTR_uintptr_t pR11;
+    PTR_uintptr_t pR12;
+    PTR_uintptr_t pR13;
+    PTR_uintptr_t pR14;
+    PTR_uintptr_t pR15;
+    PTR_uintptr_t pR16;
+    PTR_uintptr_t pR17;
+    PTR_uintptr_t pR18;
+    PTR_uintptr_t pR19;
+    PTR_uintptr_t pR20;
+    PTR_uintptr_t pR21;
+    PTR_uintptr_t pFP;
+    PTR_uintptr_t pR23;
+    PTR_uintptr_t pR24;
+    PTR_uintptr_t pR25;
+    PTR_uintptr_t pR26;
+    PTR_uintptr_t pR27;
+    PTR_uintptr_t pR28;
+    PTR_uintptr_t pR29;
+    PTR_uintptr_t pR30;
+    PTR_uintptr_t pR31;
+
+    PCODE        IP;
+
+    uint64_t       F[32-24]; // Only the F registers F24..F31 needs to be preserved
+                             // (F0-F23 are not preserved according to the ABI spec).
+                             // These need to be unwound during a stack walk
+                             // for EH, but not adjusted, so we only need
+                             // their values, not their addresses
+
+    inline PCODE GetIP() { return IP; }
+    inline uintptr_t GetSP() { return SP; }
+    inline uintptr_t GetFP() { return *pFP; }
+
+    inline void SetIP(PCODE IP) { this->IP = IP; }
+    inline void SetSP(uintptr_t SP) { this->SP = SP; }
+};
+
 #elif defined(TARGET_WASM)
 
 struct REGDISPLAY
@@ -185,7 +241,7 @@ struct REGDISPLAY
     inline void SetIP(PCODE IP) { }
     inline void SetSP(uintptr_t SP) { }
 };
-#endif // HOST_X86 || HOST_AMD64 || HOST_ARM || HOST_ARM64 || HOST_WASM
+#endif // HOST_X86 || HOST_AMD64 || HOST_ARM || HOST_ARM64 || HOST_WASM || HOST_LOONGARCH64
 
 typedef REGDISPLAY * PREGDISPLAY;
 

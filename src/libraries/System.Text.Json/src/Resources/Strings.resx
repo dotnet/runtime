@@ -246,6 +246,9 @@
   <data name="JsonElementHasWrongType" xml:space="preserve">
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>
+  <data name="JsonNumberExponentTooLarge" xml:space="preserve">
+    <value>The exponent value in the specified JSON number is too large.</value>
+  </data>
   <data name="DefaultTypeInfoResolverImmutable" xml:space="preserve">
     <value>Cannot add callbacks to the 'Modifiers' property after the resolver has been used for the first time.</value>
   </data>
