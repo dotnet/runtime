@@ -5,6 +5,10 @@
 
 #include "pal_compiler.h"
 #include <pal_ssl_types.h>
+
+//#include <sys/socket.h>
+//#include <netinet/in.h>
+#include <Network/Network.h>
 #include <Security/Security.h>
 #include <Security/SecureTransport.h>
 
@@ -278,3 +282,45 @@ Adds one or more certificates to a server's list of certification authorities (C
 Returns the output of SSLSetCertificateAuthorities.
 */
 PALEXPORT int32_t AppleCryptoNative_SslSetCertificateAuthorities(SSLContextRef sslContext, CFArrayRef certificates, int32_t replaceExisting);
+
+typedef enum
+{
+    PAL_NwStatusUpdates_UnknownError = 0,
+    PAL_NwStatusUpdates_FramerStart = 1,
+    PAL_NwStatusUpdates_HandshakeFinished = 2,
+    PAL_NwStatusUpdates_HandshakeFailed = 3,
+    PAL_NwStatusUpdates_ConnectionReadFinished = 4,
+    PAL_NwStatusUpdates_ConnectionWriteFinished = 5,
+    PAL_NwStatusUpdates_ConnectionWriteFailed = 6,
+    PAL_NwStatusUpdates_ConnectionError = 7,
+    PAL_NwStatusUpdates_ConnectionCancelled = 8,
+} PAL_NwStatusUpdates_en;
+
+
+typedef int (*SslStatusUpdateFunc)(size_t gcHandle, PAL_NwStatusUpdates_en status, size_t data1, size_t data2);
+
+/* This will initialize Network Framework and it will setup basic handlers */
+PALEXPORT int32_t AppleCryptoNative_NwInit(SslStatusUpdateFunc statusFunc, SSLReadFunc readFunc, SSLWriteFunc writeFunc);
+
+PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer, size_t gcHandle);
+PALEXPORT int32_t AppleCryptoNative_NwSendToConnection(nw_connection_t connection, size_t gcHandle, uint8_t* buffer, int length);
+PALEXPORT int32_t AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t gcHandle, uint8_t* buffer, unsigned int length);
+
+PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * data, int dataLength);
+
+PALEXPORT int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName);
+
+PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut);
+
+//PALEXPORT int32_t AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, SecTrustRef* pChainOut, int32_t* pOSStatus);
+PALEXPORT int32_t AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, CFArrayRef* certificates, int* count);
+PALEXPORT int32_t AppleCryptoNative_NwCancelConnection(nw_connection_t connection);
+
+
+/*
+Pump the TLS handshake.
+
+Returns an indication of what state the error is in. Any negative number means an error occurred.
+*/
+PALEXPORT int AppleCryptoNative_NwStartTlsHandshake(nw_connection_t connection, size_t gcHandle);
+

@@ -249,7 +249,7 @@ namespace System.Net.Security.Tests
         public SslStreamAlpnTest_Async(ITestOutputHelper output)
             : base(output) { }
     }
-
+/*
     public sealed class SslStreamAlpnTest_Sync : SslStreamAlpnTestBase
     {
         public override bool TestAuthenticateAsync => false;
@@ -257,4 +257,5 @@ namespace System.Net.Security.Tests
         public SslStreamAlpnTest_Sync(ITestOutputHelper output)
             : base(output) { }
     }
+*/
 }

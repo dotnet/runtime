@@ -6,9 +6,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Security;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
 
 using PAL_TlsHandshakeState = Interop.AppleCrypto.PAL_TlsHandshakeState;
 using PAL_TlsIo = Interop.AppleCrypto.PAL_TlsIo;
@@ -28,6 +31,8 @@ namespace System.Net.Security
         // Since ST is not producing the framed empty message just call this false and avoid the
         // special case of an empty array being passed to the `fixed` statement.
         internal const bool CanEncryptEmptyMessage = false;
+
+        internal const bool UseAsyncDecrypt = true;
 
         public static void VerifyPackageInfo()
         {
@@ -105,7 +110,7 @@ namespace System.Net.Security
             return HandshakeInternal(ref context, inputBuffer, sslAuthenticationOptions);
         }
 
-        public static ProtocolToken Renegotiate(
+          public static ProtocolToken Renegotiate(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             SslAuthenticationOptions sslAuthenticationOptions)
@@ -139,6 +144,29 @@ namespace System.Net.Security
                     MemoryHandle memHandle = input.Pin();
                     try
                     {
+                        if (securityContext.UseNwFramework)
+                        {
+
+                            Console.WriteLine("EncryptMessage called with {0} bytes of data", input.Length);
+                            securityContext.Encrypt(memHandle.Pointer, input.Length, ref token);
+                            //securityContext._writeWaiter!.Reset();
+                            //Interop.AppleCrypto.NwSendToConnection(sslHandle, GCHandle.ToIntPtr(securityContext.gcHandle), (byte*)memHandle.Pointer, input.Length);
+
+                            //Interop.AppleCrypto.SslProcessInputData(securityContext._framer, (byte*)memHandle.Pointer, input.Length);
+                            //Console.WriteLine("EncryptMessage waiting???");
+                            //securityContext._writeWaiter!.Wait();
+                            //Console.WriteLine("EncryptMessage wait done!!! {0}");
+                            //if _writeStatus
+
+
+                            //token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+
+                            //securityContext.ReadPendingWrites(ref token);
+                            //Console.WriteLine("EncryptMessage have {0} encrypted bytes", token.Size);
+
+                            return token;
+
+                        }
                         PAL_TlsIo status = Interop.AppleCrypto.SslWrite(
                                 sslHandle,
                                 (byte*)memHandle.Pointer,
@@ -195,6 +223,40 @@ namespace System.Net.Security
             try
             {
                 SafeSslHandle sslHandle = securityContext.SslContext;
+
+                if (securityContext.UseNwFramework)
+                {
+                        Console.WriteLine("PAL Called dectrypt with {0} bytes!!!!", buffer.Length);
+                        //securityContext._waiter!.Reset();
+                        unsafe
+                        {
+                            Debug.Assert(buffer.Length > 0);
+
+                            fixed (byte* ptr = buffer)
+                            {
+                                //securityContext._readWaiter!.Reset();
+        //                        lock (securityContext)
+                                {
+                                    //securityContext.Tcs ??= new TaskCompletionSource<SecurityStatusPalErrorCode>();
+                                    if (buffer.Length > 0)
+                                    {
+                                         Console.WriteLine("PAL Called dectrypt calling NwProcessInputData!!!! 0x{0:x}", sslHandle.DangerousGetHandle());
+                                         Interop.AppleCrypto.NwProcessInputData(sslHandle, securityContext._framer, ptr, buffer.Length);
+                                         Console.WriteLine("PAL Called dectrypt NwProcessInputData is done 0x{0:x}!!!!!", sslHandle.DangerousGetHandle());
+                                    }
+
+                                    if (securityContext.Tcs == null)
+                                    {
+                                        securityContext.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+                                        Interop.AppleCrypto.NwReadFromConnection(securityContext.SslContext, GCHandle.ToIntPtr(securityContext.gcHandle), ptr, buffer.Length);
+                                        Console.WriteLine("ALlocated new task {0} and styarted read", securityContext.Tcs.Task.GetHashCode());
+                                    }
+                                    return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePendig);
+                                }
+                            }
+                        }
+                }
+
                 securityContext.Write(buffer);
 
                 unsafe
@@ -280,6 +342,38 @@ namespace System.Net.Security
             return true;
         }
 
+        public static Task<SecurityStatusPalErrorCode>? GetHandshakeTask(SafeFreeCredentials _, SafeDeleteSslContext context)
+        {
+            if (context.BytesReadyForConnection > 0)
+            {
+                Console.WriteLine("GetHandshakeTask Returning comple task with {0}", context.BytesReadyForConnection );
+                return Task.FromResult<SecurityStatusPalErrorCode>(SecurityStatusPalErrorCode.ContinueNeeded);
+            }
+
+            Console.WriteLine("GetHandshakeTask returning {0} {1}", context.Tcs, context.Tcs?.Task.GetHashCode());
+            return context.Tcs?.Task;
+        }
+
+        public static Task<SecurityStatusPalErrorCode>? GetDecryptTask(SafeDeleteSslContext securityContext, int length)
+        {
+            return securityContext.UseNwFramework ? securityContext!.StartDecrypt(length) : null;
+        }
+
+        public static void GetPendingWriteData(SafeDeleteSslContext context, ref ProtocolToken token)
+        {
+            context!.ReadPendingWrites(ref token);
+        }
+
+        public static int GetAvailableDecryptedBytes(SafeDeleteSslContext securityContext)
+        {
+            return securityContext.BytesReadyFromConnection;
+        }
+
+        public static int ReadDecryptedData(SafeDeleteSslContext securityContext, Span<byte> buffer)
+        {
+            return securityContext.Read(buffer);
+        }
+
         private static ProtocolToken HandshakeInternal(
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
@@ -296,13 +390,13 @@ namespace System.Net.Security
                     context = sslContext;
                 }
 
-                if (inputBuffer.Length > 0)
+                if (inputBuffer.Length > 0 && !context.UseNwFramework)
                 {
                     sslContext!.Write(inputBuffer);
                 }
 
                 SafeSslHandle sslHandle = sslContext!.SslContext;
-                token.Status = PerformHandshake(sslHandle);
+                token.Status = context.UseNwFramework ?  sslContext.PerformNwHandshake(inputBuffer) : PerformHandshake(sslHandle);
 
                 if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {

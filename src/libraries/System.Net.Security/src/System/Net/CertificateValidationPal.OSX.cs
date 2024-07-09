@@ -30,7 +30,7 @@ namespace System.Net
                     errors |= SslPolicyErrors.RemoteCertificateChainErrors;
                 }
 
-                if (!isServer && checkCertName)
+                if (!isServer && checkCertName && ! (((SafeDeleteSslContext)securityContext).UseNwFramework))
                 {
                     SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
 
@@ -67,9 +67,22 @@ namespace System.Net
 
             X509Certificate2? result = null;
 
-            using (SafeX509ChainHandle chainHandle = Interop.AppleCrypto.SslCopyCertChain(sslContext))
+            if (((SafeDeleteSslContext)securityContext).UseNwFramework)
             {
-                long chainSize = Interop.AppleCrypto.X509ChainGetChainSize(chainHandle);
+                SafeCFArrayHandle certificates;
+
+                int osStatus = Interop.AppleCrypto.NwCopyCertChain(sslContext, out certificates, out int chainSize);
+
+                Console.WriteLine("GetRemoteCertificate!!!!!! {0} {1} {2}", osStatus, certificates, chainSize);
+                /*
+                for (int i = 0; i < chainSize; i++)
+                {
+                    IntPtr certHandle = Interop.CoreFoundation.CFArrayGetValueAtIndex(certificates, i);
+                    Console.WriteLine("Got cert handle 0x{0:x} at indedx {1}", certHandle, i);
+                    var c = new X509Certificate2(certHandle);
+                    Console.WriteLine(c);
+                }
+                */
 
                 if (retrieveChainCertificates && chainSize > 1)
                 {
@@ -83,7 +96,7 @@ namespace System.Net
                     // Any any additional intermediate CAs to ExtraStore.
                     for (int i = 1; i < chainSize; i++)
                     {
-                        IntPtr certHandle = Interop.AppleCrypto.X509ChainGetCertificateAtIndex(chainHandle, i);
+                        IntPtr certHandle = Interop.CoreFoundation.CFArrayGetValueAtIndex(certificates, i);
                         chain.ChainPolicy.ExtraStore.Add(new X509Certificate2(certHandle));
                     }
                 }
@@ -92,8 +105,40 @@ namespace System.Net
                 // to match what the Windows and Unix PALs do.
                 if (chainSize > 0)
                 {
-                    IntPtr certHandle = Interop.AppleCrypto.X509ChainGetCertificateAtIndex(chainHandle, 0);
+                    IntPtr certHandle = Interop.CoreFoundation.CFArrayGetValueAtIndex(certificates, 0);
                     result = new X509Certificate2(certHandle);
+                }
+            }
+            else
+            {
+                using (SafeX509ChainHandle chainHandle = Interop.AppleCrypto.SslCopyCertChain(sslContext))
+                {
+                    long chainSize = Interop.AppleCrypto.X509ChainGetChainSize(chainHandle);
+
+                    if (retrieveChainCertificates && chainSize > 1)
+                    {
+                        chain ??= new X509Chain();
+                        if (chainPolicy != null)
+                        {
+                            chain.ChainPolicy = chainPolicy;
+                        }
+
+                        // First certificate is peer's certificate.
+                        // Any any additional intermediate CAs to ExtraStore.
+                        for (int i = 1; i < chainSize; i++)
+                        {
+                            IntPtr certHandle = Interop.AppleCrypto.X509ChainGetCertificateAtIndex(chainHandle, i);
+                            chain.ChainPolicy.ExtraStore.Add(new X509Certificate2(certHandle));
+                        }
+                    }
+
+                    // This will be a distinct object than remoteCertificateStore[0] (if applicable),
+                    // to match what the Windows and Unix PALs do.
+                    if (chainSize > 0)
+                    {
+                        IntPtr certHandle = Interop.AppleCrypto.X509ChainGetCertificateAtIndex(chainHandle, 0);
+                        result = new X509Certificate2(certHandle);
+                    }
                 }
             }
 

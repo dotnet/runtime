@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
 
@@ -21,6 +22,7 @@ namespace System.Net.Security
 
         internal const bool StartMutualAuthAsAnonymous = false;
         internal const bool CanEncryptEmptyMessage = false;
+        internal const bool UseAsyncDecrypt = false;
 
         public static void VerifyPackageInfo()
         {
@@ -171,6 +173,31 @@ namespace System.Net.Security
             SslAuthenticationOptions _3)
         {
             return false;
+        }
+
+        public static Task<SecurityStatusPalErrorCode>? GetHandshakeTask(SafeFreeCredentials _1, SafeDeleteSslContext _2)
+        {
+            return null;
+        }
+
+        public static Task<SecurityStatusPalErrorCode>? GetDecryptTask(SafeDeleteSslContext _1, int _2)
+        {
+            return null;
+        }
+
+        public static void GetPendingWriteData(SafeDeleteSslContext _1, ref ProtocolToken _2)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static int GetAvailableDecryptedBytes(SafeDeleteSslContext securityContext)
+        {
+            return 0;
+        }
+
+        public static int ReadDecryptedData(SafeDeleteSslContext securityContext, Span<byte> buffer)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         private static ProtocolToken HandshakeInternal(

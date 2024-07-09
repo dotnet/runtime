@@ -17,6 +17,7 @@ set(NATIVECRYPTO_SOURCES
     pal_seckey.c
     pal_signverify.c
     pal_ssl.c
+    pal_ssl.m
     pal_symmetric.c
     pal_x509.c
     pal_x509chain.c

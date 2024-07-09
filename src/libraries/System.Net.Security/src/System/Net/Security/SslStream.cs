@@ -778,9 +778,17 @@ namespace System.Net.Security
 
                 try
                 {
-                    ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
-                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
-                    return vt.GetAwaiter().GetResult();
+                    if (OperatingSystem.IsMacOS())
+                    {
+                        Task<int> t = ReadAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken), isSync: true).AsTask();
+                        return t.GetAwaiter().GetResult();
+                    }
+                    else
+                    {
+                        ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
+                        Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                        return vt.GetAwaiter().GetResult();
+                    }
                 }
                 finally
                 {
@@ -793,9 +801,18 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateBufferArguments(buffer, offset, count);
-            ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), default(CancellationToken));
-            Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
-            return vt.GetAwaiter().GetResult();
+
+            if (OperatingSystem.IsMacOS())
+            {
+                Task<int> t =  ReadAsyncInternal<SyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), default(CancellationToken), isSync: true).AsTask();
+                return t.GetAwaiter().GetResult();
+            }
+            else
+            {
+                ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), default(CancellationToken));
+                Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                return vt.GetAwaiter().GetResult();
+            }
         }
 
         public override void WriteByte(byte value) => Write(new ReadOnlySpan<byte>(ref value));

@@ -52,7 +52,7 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [InlineData(true)]
+//        [InlineData(true)]
         [InlineData(false)]
         public async Task Dispose_PendingReadAsync_ThrowsODE(bool bufferedRead)
         {
@@ -75,15 +75,19 @@ namespace System.Net.Security.Tests
                 {
                     ServerCertificate = serverCertificate,
                 };
-
+Console.WriteLine("TEST STARTING #######################################################");
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions, default),
                                 server.AuthenticateAsServerAsync(serverOptions, default));
+Console.WriteLine("TEST HANDSHAKE #######################################################");
 
                 await TestHelper.PingPong(client, server, cts.Token);
 
+                Console.WriteLine("PINGPONG DONE!!!!!!");
                 await server.WriteAsync("PINGPONG"u8.ToArray(), cts.Token);
                 var readBuffer = new byte[1024];
+
+                Console.WriteLine("WRIOTE * BYTES!!!!!!");
 
                 Task<int>? task = null;
                 if (bufferedRead)

@@ -10,6 +10,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
@@ -45,6 +46,8 @@ namespace System.Net.Security
 
         internal const bool StartMutualAuthAsAnonymous = true;
         internal const bool CanEncryptEmptyMessage = true;
+        internal const bool UseAsyncDecrypt = false;
+
 
         private static readonly byte[] s_sessionTokenBuffer = InitSessionTokenBuffer();
 
@@ -197,6 +200,30 @@ namespace System.Net.Security
             }
 
             return token;
+        }
+
+        public static Task<SecurityStatusPalErrorCode>? GetHandshakeTask(SafeFreeCredentials _1, SafeDeleteSslContext _2)
+        {
+            return null;
+        }
+
+        public static Task<SecurityStatusPalErrorCode>? GetDecryptTask(SafeDeleteSslContext _1, int _2)
+        {
+            return null;
+        }
+        public static void GetPendingWriteData(SafeDeleteSslContext _1, ref ProtocolToken _2)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static int GetAvailableDecryptedBytes(SafeDeleteSslContext _)
+        {
+            return 0;
+        }
+
+        public static int ReadDecryptedData(SafeDeleteSslContext securityContext, Span<byte> buffer)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         public static ProtocolToken Renegotiate(

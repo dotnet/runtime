@@ -14,19 +14,39 @@ namespace System.Net.Security
             SafeSslHandle sslContext = context.SslContext;
             SslProtocols protocol;
             TlsCipherSuite cipherSuite;
+            int osStatus;
 
-            int osStatus = Interop.AppleCrypto.SslGetProtocolVersion(sslContext, out protocol);
+            if (context.UseNwFramework)
+            {
+                osStatus = Interop.AppleCrypto.NwGetConnectionInfo(sslContext, out protocol, out cipherSuite );
 
-            if (osStatus != 0)
-                throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+                if (osStatus != 0)
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+Console.WriteLine("UpdateSslConnectionInfo with {0} {1}", protocol, cipherSuite);
+            }
+            else
+            {
+                osStatus = Interop.AppleCrypto.SslGetProtocolVersion(sslContext, out protocol);
 
-            osStatus = Interop.AppleCrypto.SslGetCipherSuite(sslContext, out cipherSuite);
+                if (osStatus != 0)
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
 
-            if (osStatus != 0)
-                throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+                osStatus = Interop.AppleCrypto.SslGetCipherSuite(sslContext, out cipherSuite);
+
+                if (osStatus != 0)
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+            }
 
             Protocol = (int)protocol;
             TlsCipherSuite = cipherSuite;
+            MapCipherSuite(cipherSuite);
+
+            if (context.UseNwFramework)
+            {
+                // No ALPN yet
+                return;
+            }
+
             if (context.IsServer)
             {
                 if (context.SelectedApplicationProtocol.Protocol.Length > 0)
@@ -53,8 +73,6 @@ namespace System.Net.Security
             {
                 ApplicationProtocol = Interop.AppleCrypto.SslGetAlpnSelected(sslContext);
             }
-
-            MapCipherSuite(cipherSuite);
         }
     }
 }

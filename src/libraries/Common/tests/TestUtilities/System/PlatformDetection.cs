@@ -531,7 +531,7 @@ namespace System
 
             }
 
-            return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
+            return ((IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
         }
 
         private static bool OpenSslGetTlsSupport(SslProtocols protocol)

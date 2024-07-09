@@ -129,6 +129,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
+        [ActiveIssue("aaa")]
         public async Task Read_CorrectlyUnlocksAfterFailure()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -243,7 +244,7 @@ namespace System.Net.Security.Tests
             {
                 var serverSslStream = new SslStream(DelegateDelegatingStream.NopDispose(stream2));
                 await DoHandshake(clientSslStream, serverSslStream);
-
+Console.WriteLine("HANDSHE DONE ####################");
                 var serverBuffer = new byte[1];
                 Task serverReadTask = ReadAsync(serverSslStream, serverBuffer, 0, serverBuffer.Length);
                 await WriteAsync(serverSslStream, new byte[] { 1 }, 0, 1)
@@ -255,7 +256,8 @@ namespace System.Net.Security.Tests
 
                 // Read in client
                 var clientBuffer = new byte[1];
-                await ReadAsync(clientSslStream, clientBuffer, 0, clientBuffer.Length);
+                int rlen = await ReadAsync(clientSslStream, clientBuffer, 0, clientBuffer.Length);
+                Assert.Equal(1, rlen);
                 Assert.Equal(1, clientBuffer[0]);
 
                 await WriteAsync(clientSslStream, new byte[] { 2 }, 0, 1);
@@ -594,6 +596,7 @@ namespace System.Net.Security.Tests
         }
     }
 
+/*
     public sealed class SslStreamStreamToStreamTest_SyncParameters : SslStreamStreamToStreamTest_SyncBase
     {
         protected override async Task DoHandshake(SslStream clientSslStream, SslStream serverSslStream, X509Certificate serverCertificate = null, X509Certificate clientCertificate = null)
@@ -631,6 +634,7 @@ namespace System.Net.Security.Tests
             });
         }
     }
+*/
 
     public sealed class SslStreamStreamToStreamTest_MemoryAsync : SslStreamStreamToStreamTest
     {

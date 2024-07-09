@@ -2,43 +2,109 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
+
+using PAL_NwStatusUpdates = Interop.AppleCrypto.PAL_NwStatusUpdates;
+
 
 namespace System.Net
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
+        public static readonly unsafe bool CanUseNwFramework = Interop.AppleCrypto.NwInit(&FramerStatusUpdate, &ReadFromConnection, &WriteToConnection) == 0;
+        public bool UseNwFramework;
         // mapped from OSX error codes
         private const int OSStatus_writErr = -20;
         private const int OSStatus_readErr = -19;
         private const int OSStatus_noErr = 0;
         private const int OSStatus_errSSLWouldBlock = -9803;
+
+        private const int OSStatus_errSecUserCanceled = -128;
         private const int InitialBufferSize = 2048;
         private readonly SafeSslHandle _sslContext;
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
+        public GCHandle gcHandle;
+
+        private  ManualResetEventSlim? _writeWaiter;
+        private int _writeStatus;
+        public ManualResetEventSlim? _readWaiter;
+        public IntPtr _framer;
+        public SecurityStatusPalErrorCode state = SecurityStatusPalErrorCode.ContinueNeeded;
+        public bool handshakeStarted;
+
+        public TaskCompletionSource<SecurityStatusPalErrorCode>? Tcs;
+       //public TaskCompletionSource<SecurityStatusPalErrorCode>? WriteTcs;
+
         public SafeSslHandle SslContext => _sslContext;
         public SslApplicationProtocol SelectedApplicationProtocol;
         public bool IsServer;
 
-        public SafeDeleteSslContext(SslAuthenticationOptions sslAuthenticationOptions)
+        private bool _handshakeDone;
+        private bool _disposed;
+
+/*
+        static unsafe SafeDeleteSslContext()
+        {
+            if (Interop.AppleCrypto.NwInit(&FramerStatusUpdate, &ReadFromConnection, &WriteToConnection) == 0)
+            {
+                CanUseNwFramework = true;
+            }
+        }
+*/
+        public unsafe SafeDeleteSslContext(SslAuthenticationOptions sslAuthenticationOptions)
             : base(IntPtr.Zero)
         {
             try
             {
                 int osStatus;
 
-                _sslContext = CreateSslContext(sslAuthenticationOptions);
+                UseNwFramework = CanUseNwFramework && sslAuthenticationOptions.IsClient &&
+                                    sslAuthenticationOptions.CipherSuitesPolicy == null &&
+                                    sslAuthenticationOptions.ApplicationProtocols == null &&
+                                    sslAuthenticationOptions.ClientCertificates == null &&
+                                    sslAuthenticationOptions.CertificateContext == null &&
+                                    sslAuthenticationOptions.CertSelectionDelegate == null;
 
-                // Make sure the class instance is associated to the session and is provided
-                // in the Read/Write callback connection parameter
-                SslSetConnection(_sslContext);
+                if (UseNwFramework)
+                {
+                    //Console.WriteLine("SafeDeleteSslContext creating {0} connection to {1} with ")
+                    gcHandle = GCHandle.Alloc(this, GCHandleType.Weak);
+                    _sslContext = Interop.AppleCrypto.NwCreateContext(0, GCHandle.ToIntPtr(gcHandle));
+
+                    Console.WriteLine("SafeDeleteSslContext creating {0} connection to {1} with {2} {3}", sslAuthenticationOptions.IsClient, sslAuthenticationOptions.TargetHost, GCHandle.ToIntPtr(gcHandle), _sslContext );
+
+                    Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+                    _writeWaiter = new ManualResetEventSlim();
+                    _readWaiter = new ManualResetEventSlim();
+                }
+                else
+                {
+                    _sslContext = CreateSslContext(sslAuthenticationOptions, UseNwFramework);
+                    // Make sure the class instance is associated to the session and is provided
+                    // in the Read/Write callback connection parameter
+                    SslSetConnection(_sslContext);
+                }
+
+                if (UseNwFramework)
+                {
+                    osStatus = Interop.AppleCrypto.NwSetTlsOptions(_sslContext, GCHandle.ToIntPtr(gcHandle), sslAuthenticationOptions.TargetHost);
+                    if (osStatus != 0)
+                    {
+                        throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+                    }
+
+                    return;
+                }
 
                 unsafe
                 {
@@ -136,12 +202,13 @@ namespace System.Net
             }
         }
 
-        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions sslAuthenticationOptions)
+        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions sslAuthenticationOptions, bool useNwFramework)
         {
             switch (sslAuthenticationOptions.EncryptionPolicy)
             {
                 case EncryptionPolicy.RequireEncryption:
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
+
                 case EncryptionPolicy.AllowNoEncryption:
                     // SecureTransport doesn't allow TLS_NULL_NULL_WITH_NULL, but
                     // since AllowNoEncryption intersect OS-supported isn't nothing,
@@ -176,9 +243,12 @@ namespace System.Net
                     SetCertificate(sslContext, sslAuthenticationOptions.CertificateContext);
                 }
 
-                Interop.AppleCrypto.SslBreakOnCertRequested(sslContext, true);
-                Interop.AppleCrypto.SslBreakOnServerAuth(sslContext, true);
-                Interop.AppleCrypto.SslBreakOnClientAuth(sslContext, true);
+                if (!useNwFramework)
+                {
+                    Interop.AppleCrypto.SslBreakOnCertRequested(sslContext, true);
+                    Interop.AppleCrypto.SslBreakOnServerAuth(sslContext, true);
+                    Interop.AppleCrypto.SslBreakOnClientAuth(sslContext, true);
+                }
             }
             catch
             {
@@ -192,7 +262,6 @@ namespace System.Net
         private void SslSetConnection(SafeSslHandle sslContext)
         {
             GCHandle handle = GCHandle.Alloc(this, GCHandleType.Weak);
-
             Interop.AppleCrypto.SslSetConnection(sslContext, GCHandle.ToIntPtr(handle));
         }
 
@@ -200,28 +269,158 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
+            Console.WriteLine("DISPOSE OMN {0} handle {1} !!!!!!!", GetHashCode(), disposing);
             if (disposing)
             {
+                _disposed = true;
                 SafeSslHandle sslContext = _sslContext;
+
                 if (null != sslContext)
                 {
+                    if (UseNwFramework)
+                    {
+                        lock (SslContext)
+                        {
+                        // Interop.AppleCrypto.NwStartHandshake(SslContext, GCHandle.ToIntPtr(gcHandle));
+                            Interop.AppleCrypto.NwCancelConnection(_sslContext);
+                        }
+                    }
+
                     lock (_sslContext)
                     {
                         _inputBuffer.Dispose();
                         _outputBuffer.Dispose();
                     }
-                    sslContext.Dispose();
+                    //slContext.Dispose();
+                }
+                if (gcHandle.IsAllocated)
+                {
+                    //gcHandle.Free();
                 }
             }
 
             base.Dispose(disposing);
         }
 
+        protected override bool ReleaseHandle()
+        {
+            Console.WriteLine("RELEASE CALLED on {0} handle {1}", GetHashCode(), GCHandle.ToIntPtr(gcHandle));
+            return true;
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe int FramerStatusUpdate(IntPtr gcHandle, PAL_NwStatusUpdates status, IntPtr data1, IntPtr data2)
+        {
+            // we should not ever throw in unmanaged callback
+            try
+            {
+                Console.WriteLine("FramerStatusUpdate called with {0} {1} {2} and {3}", gcHandle, status, data1, data2);
+
+                SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(gcHandle).Target;
+                if (context == null)
+                {
+                    Console.WriteLine("WTF !!!! failed to get conext from {0}", gcHandle);
+                    return -1;
+                }
+            //Debug.Assert(context != null);
+                switch (status)
+                {
+                    case PAL_NwStatusUpdates.FramerStart:
+                            context._framer = data1;
+                            break;
+                    case PAL_NwStatusUpdates.HandshakeFinished:
+                        Console.WriteLine("FramerStatusUpdate TLS handshake completed !!!!!! '{0}'", context.Tcs?.Task.GetHashCode());
+                        context.state = SecurityStatusPalErrorCode.OK;
+                        //context._waiter!.Set();
+                        bool result = context.Tcs!.TrySetResult(SecurityStatusPalErrorCode.OK);
+                        Console.WriteLine("FramerStatusUpdate TLS handshake completed : notification with {0}", result);
+                        //context.Tcs = null;
+                        context._handshakeDone = true;
+                        break;
+                    case PAL_NwStatusUpdates.HandshakeFailed:
+                        int osStatus = data1.ToInt32();
+                        Console.WriteLine("FramerStatusUpdate TLS handshake failed with {0} !!!!!!", osStatus);
+                        //context.state = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, new Win32Exception((int)data));
+                        context.state = SecurityStatusPalErrorCode.InternalError;
+                        //context._waiter!.Set();
+                        //context.Tcs!.TrySetException(new Win32Exception(data1.ToInt32()));
+                        if (context.Tcs != null)
+                        {
+                            context.Tcs.TrySetException(Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus));
+                            //context.Tcs = null;
+                        }
+                        else
+                        {
+                            Console.WriteLine("FramerStatusUpdate TCS is NULL WTF!!!!  0x{0:x}", context._sslContext.DangerousGetHandle());
+                        }
+                        context._handshakeDone = true;
+                        break;
+                    case PAL_NwStatusUpdates.ConnectionCancelled:
+                        //context._waiter!.Set();
+                        context.Tcs?.TrySetException(new OperationCanceledException());
+                        context.Tcs = null;
+                        context._handshakeDone = true;
+                        context._writeStatus = OSStatus_errSecUserCanceled;
+                        context._writeWaiter?.Set();
+                        Console.WriteLine("FramerStatusUpdate  ALL DONE!!!");
+                        break;
+                    case PAL_NwStatusUpdates.ConnectionReadFinished:
+                        Span<byte> data = new Span<byte>((void*)data2, data1.ToInt32());
+                        Console.WriteLine("ConnectionReadFinished with {0} and {1} bytes ready",  data1.ToInt32(), context._inputBuffer.ActiveLength);
+                        //ontext._inputBuffer.EnsureAvailableSpace(data1.ToInt32());
+
+
+                        lock (context)
+                        {
+                    // We are using the input buffer in reverse way here
+                            context.Write(data);
+                            Console.WriteLine("ConnectionReadFinished with {0} and {1} bytes ready",  data1.ToInt32(), context._inputBuffer.ActiveLength);
+                            Console.WriteLine("ConnectionReadFinished Tsc = {0} {1}", context.Tcs, context.Tcs?.Task.GetHashCode());
+
+                            Debug.Assert(context.Tcs != null);
+                            context.Tcs?.TrySetResult(SecurityStatusPalErrorCode.OK);
+                            context._readWaiter!.Set();
+                        }
+                        break;
+                    case PAL_NwStatusUpdates.ConnectionWriteFinished:
+                    case PAL_NwStatusUpdates.ConnectionWriteFailed:
+                        context._writeStatus = data1.ToInt32();
+                        Console.WriteLine("FramerStatusUpdate ConnectionWriteFinished on {0}", context._writeWaiter!.GetHashCode());
+                        //context._writeWaiter!.Set();
+                        break;
+                    default:
+                        Console.WriteLine("FramerStatusUpdate WTF!!!! {0}", status);
+                        Debug.Assert(false);
+                        break;
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return -1;
+            }
+        }
+
         [UnmanagedCallersOnly]
         private static unsafe int WriteToConnection(IntPtr connection, byte* data, void** dataLength)
         {
+
+            GCHandle gcHandle = GCHandle.FromIntPtr(connection);
+
+    Console.WriteLine("WriteToConnection called with 0x{0:x} allocated {1} ?????", connection, gcHandle.IsAllocated);
             SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
-            Debug.Assert(context != null);
+            if (context == null || context._disposed)
+            {
+                //*dataLength = 0;
+                return -1;
+            }
+if (context.UseNwFramework)
+{
+    Console.WriteLine("WriteToConnection OUT1 called for {0} wioyj {1} bytes", context, (ulong)*dataLength);
+}
+
 
             // We don't pool these buffers and we can't because there's a race between their us in the native
             // read/write callbacks and being disposed when the SafeHandle is disposed. This race is benign currently,
@@ -241,11 +440,35 @@ namespace System.Net
                     context._outputBuffer.Commit(toWrite);
                     // Since we can enqueue everything, no need to re-assign *dataLength.
 
+                    if (context.UseNwFramework)
+                    {
+Console.WriteLine("WriteToConnection OUT2 called for {0} wioyj {1} bytes, available {2} in HandShake {3}", context, (ulong)*dataLength, context._outputBuffer.AvailableLength, context._handshakeDone);
+                        //context._waiter!.Set();
+                        if (!context._handshakeDone)
+                        {
+//Console.WriteLine("WriteToConnection1: setting result {0} on {1} new one is {2}", SecurityStatusPalErrorCode.ContinueNeeded, Tcs!.Task.GetHashCode(), context.Tcs.Task.GetHashCode());
+
+                            // get new TCS before signalling completion to avoild race condition
+                            var Tcs = context.Tcs;
+                            context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+
+                    //    context._waiter!.Set();
+                            Tcs!.TrySetResult(SecurityStatusPalErrorCode.ContinuePendig);
+
+                            Console.WriteLine("WriteToConnection2: setting result {0} on {1} new one is {2}", SecurityStatusPalErrorCode.ContinueNeeded, Tcs!.Task.GetHashCode(), context.Tcs.Task.GetHashCode());
+                        }
+                        else
+                        {
+                             Console.WriteLine("WriteToConnection: Waking up {0}", context._writeWaiter!.GetHashCode());
+                             context._writeWaiter!.Set();
+                        }
+                    }
                     return OSStatus_noErr;
                 }
             }
             catch (Exception e)
             {
+                Console.WriteLine(e);
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(context, $"WritingToConnection failed: {e.Message}");
                 return OSStatus_writErr;
@@ -297,19 +520,61 @@ namespace System.Net
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
-            lock (_sslContext)
+            lock (this)
             {
                 _inputBuffer.EnsureAvailableSpace(buf.Length);
                 buf.CopyTo(_inputBuffer.AvailableSpan);
                 _inputBuffer.Commit(buf.Length);
+
+                //Console.WriteLine("++Write {0} bytes, {1} total {2} buffer available", buf.Length, _inputBuffer.ActiveLength, _inputBuffer.AvailableLength);
             }
         }
 
+        internal int Read(Span<byte> buf)
+        {
+            lock (this)
+            {
+                int length = Math.Min(_inputBuffer.ActiveLength, buf.Length);
+                //_inputBuffer.EnsureAvailableSpace(buf.Length);
+                //buf.CopyTo(_inputBuffer.AvailableSpan);
+                //_inputBuffer.Commit(buf.Length);
+                _inputBuffer.ActiveSpan.Slice(0, length).CopyTo(buf);
+                _inputBuffer.Discard(length);
+
+                //Console.WriteLine("READ >>>{0}<<<", System.Text.Encoding.UTF8.GetString(buf.Slice(length)));
+
+               // Console.WriteLine("______Read {0} bytes, {1} remaining", length, _inputBuffer.ActiveLength);
+                return length;
+            }
+        }
+
+        internal unsafe void Encrypt(void* buffer, int bufferLength, ref ProtocolToken token)
+        {
+            _writeWaiter!.Reset();
+            Interop.AppleCrypto.NwSendToConnection(SslContext, GCHandle.ToIntPtr(gcHandle), buffer, bufferLength);
+            Console.WriteLine("Encrypt waitiung for {0}", _writeWaiter.GetHashCode());
+            _writeWaiter!.Wait();
+
+            if (_writeStatus == 0)
+            {
+                token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+                ReadPendingWrites(ref token);
+                Console.WriteLine("Encrypt done for {0} with status {1} and {2} bytes of data", _writeWaiter.GetHashCode(), _writeStatus, token.Size);
+            }
+            else
+            {
+                Console.WriteLine("Encrypt FVAILED ewitgh {0}", token.Status);
+                token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError,
+                                        Interop.AppleCrypto.CreateExceptionForOSStatus((int)_writeStatus));
+            }
+        }
+
+        internal int BytesReadyFromConnection => _inputBuffer.ActiveLength;
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
         internal void ReadPendingWrites(ref ProtocolToken token)
         {
-            lock (_sslContext)
+            //lock (_sslContext)
             {
                 if (_outputBuffer.ActiveLength == 0)
                 {
@@ -393,6 +658,76 @@ namespace System.Net
             ptrs[0] = context!.TargetCertificate.Handle;
 
             Interop.AppleCrypto.SslSetCertificate(sslContext, ptrs);
+        }
+
+        public unsafe Task<SecurityStatusPalErrorCode> StartDecrypt(int size)
+        {
+            //Debug.Assert(size > 0);
+
+            Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+            // We can get zero byte reands and Aplle crypto does not really like zero buffers:w!
+            Interop.AppleCrypto.NwReadFromConnection(SslContext, GCHandle.ToIntPtr(gcHandle), null, size < 0 ? size : int.MaxValue);
+            Console.WriteLine("ALlocated new task {0} and styarted read", Tcs.Task.GetHashCode());
+
+            return Tcs.Task;
+        }
+
+         public unsafe SecurityStatusPal PerformNwHandshake(ReadOnlySpan<byte> inputBuffer)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (handshakeStarted && inputBuffer.Length == 0)
+            {
+                // We may be asked to generate Alter tokens and that is not supported on macOS
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            }
+            //SafeSslHandle sslHandle = sslContext!.SslContext;
+            Console.WriteLine("--------------------- {0}", _handshakeDone);
+            if (_handshakeDone)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
+            }
+Console.WriteLine("PerformNwHandshake called with {0} bytes framer is {1}", inputBuffer.Length, _framer);
+            if (_framer != IntPtr.Zero && inputBuffer.Length > 0)
+            {
+                lock (SslContext)
+                {
+                    ObjectDisposedException.ThrowIf(_disposed, this);
+                    fixed (byte* ptr = &MemoryMarshal.GetReference(inputBuffer))
+                    {
+                        Interop.AppleCrypto.NwProcessInputData(SslContext, _framer, ptr, inputBuffer.Length);
+                    }
+                }
+
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePendig);
+            }
+
+
+            if (inputBuffer.Length == 0)
+            {
+                if (handshakeStarted)
+                {
+                    Console.WriteLine(new StackTrace(true));
+                }
+                Debug.Assert(handshakeStarted == false);
+
+                handshakeStarted = true;
+                bool add = false;
+                // We grab reference to prevent disposal while handshake is pending.
+                this.DangerousAddRef(ref add);
+                Console.WriteLine("Starting handleke on {0} with gchandle {1}", GetHashCode(), GCHandle.ToIntPtr(gcHandle));
+                // (SslContext)
+                {
+                    ObjectDisposedException.ThrowIf(_disposed, this);
+                    Interop.AppleCrypto.NwStartHandshake(SslContext, GCHandle.ToIntPtr(gcHandle));
+                }
+                Console.WriteLine("PerformNwHandshake finished");
+            }
+            //nsole.WriteLine("PerformNwHandshake waiting for response");
+            //_waiter!.Wait();
+            //_waiter.Reset();
+            Console.WriteLine("PerformNwHandshake  wait is doen state is {0}!!!!", state);
+            return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePendig);
+            //return new SecurityStatusPal(state);
         }
     }
 }

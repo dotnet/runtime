@@ -22,6 +22,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [MemberData(nameof(HostNameData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [ActiveIssue("NW")]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
@@ -210,6 +211,7 @@ namespace System.Net.Security.Tests
         [InlineData("\u00E1b\u00E7d\u00EB.com")]
         [InlineData("\u05D1\u05F1.com")]
         [InlineData("\u30B6\u30C7\u30D8.com")]
+        [ActiveIssue("NW does not like non-ascii?")]
         public async Task SslStream_ValidIdn_Success(string name)
         {
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
