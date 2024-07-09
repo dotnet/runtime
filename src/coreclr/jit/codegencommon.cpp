@@ -4024,8 +4024,14 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 continue;
             }
 
-            // TODO-Review: I'm not sure that we're correctly handling the mustInit case for
-            // partially-enregistered vars in the case where we don't use a block init.
+            // Locals that are (only) in registers to begin with do not need
+            // their stack home zeroed. Their register will be zeroed later in
+            // the prolog.
+            if (varDsc->lvIsInReg() && !varDsc->lvLiveInOutOfHndlr)
+            {
+                continue;
+            }
+
             noway_assert(varDsc->lvIsInReg() || varDsc->lvOnFrame);
 
             // lvMustInit can only be set for GC types or TYP_STRUCT types
