@@ -308,17 +308,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         emitSize = emitActualTypeSize(intrin.baseType);
         opt      = INS_OPTS_NONE;
     }
+    else if (HWIntrinsicInfo::IsScalable(intrin.id))
+    {
+        emitSize = EA_SCALABLE;
+        opt      = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
+    }
     else if (intrin.category == HW_Category_Special)
     {
         assert(intrin.id == NI_ArmBase_Yield);
 
         emitSize = EA_UNKNOWN;
         opt      = INS_OPTS_NONE;
-    }
-    else if (HWIntrinsicInfo::IsScalable(intrin.id))
-    {
-        emitSize = EA_SCALABLE;
-        opt      = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
     }
     else
     {

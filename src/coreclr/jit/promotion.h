@@ -200,7 +200,6 @@ class PromotionLiveness
     unsigned*                                               m_structLclToTrackedIndex = nullptr;
     unsigned                                                m_numVars                 = 0;
     BasicBlockLiveness*                                     m_bbInfo                  = nullptr;
-    bool                                                    m_hasPossibleBackEdge     = false;
     BitVec                                                  m_liveIn;
     BitVec                                                  m_ehLiveVars;
     JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BitVec> m_aggDeaths;

@@ -160,6 +160,8 @@ namespace System.Net.Http.Functional.Tests
             private readonly ConcurrentQueue<Measurement<T>> _values = new();
             private Meter? _meter;
 
+            public Action? MeasurementRecorded;
+
             public InstrumentRecorder(string instrumentName)
             {
                 _meterListener.InstrumentPublished = (instrument, listener) =>
@@ -187,7 +189,12 @@ namespace System.Net.Http.Functional.Tests
                 _meterListener.Start();
             }
 
-            private void OnMeasurementRecorded(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state) => _values.Enqueue(new Measurement<T>(measurement, tags));
+            private void OnMeasurementRecorded(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state)
+            {
+                _values.Enqueue(new Measurement<T>(measurement, tags));
+                MeasurementRecorded?.Invoke();
+            }
+
             public IReadOnlyList<Measurement<T>> GetMeasurements() => _values.ToArray();
             public void Dispose() => _meterListener.Dispose();
         }
@@ -334,6 +341,51 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task RequestDuration_HttpTracingEnabled_RecordedWhileRequestActivityRunning()
+        {
+            await RemoteExecutor.Invoke(static testClass =>
+            {
+                HttpMetricsTest test = (HttpMetricsTest)Activator.CreateInstance(Type.GetType(testClass), (ITestOutputHelper)null);
+
+                return test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+                {
+                    using HttpMessageInvoker client = test.CreateHttpMessageInvoker();
+                    using InstrumentRecorder<double> recorder = test.SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+
+                    Activity? activity = null;
+                    bool stopped = false;
+
+                    ActivitySource.AddActivityListener(new ActivityListener
+                    {
+                        ShouldListenTo = s => s.Name is "System.Net.Http",
+                        Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+                        ActivityStarted = created => activity = created,
+                        ActivityStopped = _ => stopped = true
+                    });
+
+                    recorder.MeasurementRecorded = () =>
+                    {
+                        Assert.NotNull(activity);
+                        Assert.False(stopped);
+                        Assert.Same(activity, Activity.Current);
+                    };
+
+                    using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = test.UseVersion };
+                    using HttpResponseMessage response = await test.SendAsync(client, request);
+
+                    Assert.NotNull(activity);
+
+                    Measurement<double> m = Assert.Single(recorder.GetMeasurements());
+                    VerifyRequestDuration(m, uri, test.UseVersion, 200, "GET");
+
+                }, async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync();
+                });
+            }, GetType().FullName).DisposeAsync();
+        }
+
         [Fact]
         public Task RequestDuration_CustomTags_Recorded()
         {
@@ -363,7 +415,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("System.Net.Http.HttpRequestOut.Start")]
         [InlineData("System.Net.Http.Request")]
-        [InlineData("System.Net.Http.HttpRequestOut.Stop")]
         public async Task RequestDuration_CustomTags_DiagnosticListener_Recorded(string eventName)
         {
             await RemoteExecutor.Invoke(static async (testClassName, eventNameInner) =>
