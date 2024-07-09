@@ -197,30 +197,6 @@ extern "C" EXPORT void STDMETHODCALLTYPE EnumerateGCHeapObjects()
     instance->ValidateEnumerateGCHeapObjects(0);
 }
 
-extern "C" EXPORT void STDMETHODCALLTYPE SuspendRuntime()
-{
-    printf("SuspendRuntime PInvoke\n");
-    GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
-    if (instance == nullptr)
-    {
-        printf("Error: profiler instance is null.\n");
-        return;
-    }
-    instance->pCorProfilerInfo->SuspendRuntime();
-}
-
-extern "C" EXPORT void STDMETHODCALLTYPE ResumeRuntime()
-{
-    printf("ResumeRuntime PInvoke\n");
-    GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
-    if (instance == nullptr)
-    {
-        printf("Error: profiler instance is null.\n");
-        return;
-    }
-    instance->pCorProfilerInfo->ResumeRuntime();
-}
-
 extern "C" EXPORT void STDMETHODCALLTYPE EnumerateHeapObjectsInBackgroundThread()
 {
     GCHeapEnumerationProfiler* instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
@@ -234,4 +210,38 @@ extern "C" EXPORT void STDMETHODCALLTYPE EnumerateHeapObjectsInBackgroundThread(
                     std::this_thread::sleep_for(std::chrono::seconds(1));
                     instance->ValidateEnumerateGCHeapObjects(0x80131388);
                 }).detach();
+}
+
+extern "C" EXPORT void STDMETHODCALLTYPE EnumerateGCHeapObjectsWithinProfilerRequestedRuntimeSuspension()
+{
+    GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
+    if (instance == nullptr)
+    {
+        printf("Error: profiler instance is null.\n");
+        return;
+    }
+
+    printf("Suspending Runtime\n");
+    HRESULT hr = instance->pCorProfilerInfo->SuspendRuntime();
+    if (FAILED(hr))
+    {
+        printf("Error: failed to suspend runtime. hr=0x%x\n", hr);
+        return;
+    }
+
+    printf("Enumerating GC Heap Objects\n");
+    hr = instance->ValidateEnumerateGCHeapObjects(0);
+    if (FAILED(hr))
+    {
+        printf("Error: failed to enumerate GC heap objects during profiler requested runtime suspension. hr=0x%x\n", hr);
+        return;
+    }
+
+    printf("Resuming Runtime\n");
+    hr = instance->pCorProfilerInfo->ResumeRuntime();
+    if (FAILED(hr))
+    {
+        printf("Error: failed to resume runtime. hr=0x%x\n", hr);
+        return;
+    }
 }

@@ -18,13 +18,10 @@ namespace Profiler.Tests
         private static extern void EnumerateGCHeapObjects();
 
         [DllImport("Profiler")]
-        private static extern void SuspendRuntime();
-
-        [DllImport("Profiler")]
-        private static extern void ResumeRuntime();
-
-        [DllImport("Profiler")]
         private static extern void EnumerateHeapObjectsInBackgroundThread();
+
+        [DllImport("Profiler")]
+        private static extern void EnumerateGCHeapObjectsWithinProfilerRequestedRuntimeSuspension();
 
         public static int EnumerateGCHeapObjectsSingleThreadNoPriorSuspension()
         {
@@ -36,9 +33,7 @@ namespace Profiler.Tests
         public static int EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension()
         {
             _rootObjects.Add(new CustomGCHeapObject());
-            SuspendRuntime();
-            EnumerateGCHeapObjects();
-            ResumeRuntime();
+            EnumerateGCHeapObjectsWithinProfilerRequestedRuntimeSuspension();
             return 100;
         }
 
