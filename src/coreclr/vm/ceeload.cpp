@@ -2239,61 +2239,40 @@ Module::GetAssemblyIfLoaded(
         if ((pDomainAssembly == NULL) || !pDomainAssembly->IsLoaded())
             pAssembly = NULL;
     }
-#endif //!DACCESS_COMPILE
 
     if (pAssembly == NULL)
     {
-        do
+        IMDInternalImport * pMDImport = (pMDImportOverride == NULL) ? (GetMDImport()) : (pMDImportOverride);
+
+        //we have to be very careful here.
+        //we are using InitializeSpecInternal so we need to make sure that under no condition
+        //the data we pass to it can outlive the assembly spec.
+        AssemblySpec spec;
+        if (FAILED(spec.InitializeSpecInternal(kAssemblyRef,
+                                                pMDImport,
+                                                GetAssembly())))
         {
-            AppDomain * pAppDomainExamine = AppDomain::GetCurrentDomain();
+            return NULL;
+        }
 
-            DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->GetDomainAssembly();
-            if (pCurAssemblyInExamineDomain == NULL)
-            {
-                continue;
-            }
+        // If we have been passed the binding context for the loaded assembly that is being looked up in the
+        // cache, then set it up in the AssemblySpec for the cache lookup to use it below.
+        if (pBinderForLoadedAssembly != NULL)
+        {
+            _ASSERTE(spec.GetBinder() == NULL);
+            spec.SetBinder(pBinderForLoadedAssembly);
+        }
 
-#ifndef DACCESS_COMPILE
-            {
-                IMDInternalImport * pMDImport = (pMDImportOverride == NULL) ? (GetMDImport()) : (pMDImportOverride);
+        DomainAssembly * pDomainAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
 
-                //we have to be very careful here.
-                //we are using InitializeSpecInternal so we need to make sure that under no condition
-                //the data we pass to it can outlive the assembly spec.
-                AssemblySpec spec;
-                if (FAILED(spec.InitializeSpecInternal(kAssemblyRef,
-                                                       pMDImport,
-                                                       pCurAssemblyInExamineDomain)))
-                {
-                    continue;
-                }
+        if (pDomainAssembly && pDomainAssembly->IsLoaded())
+            pAssembly = pDomainAssembly->GetAssembly();
 
-                // If we have been passed the binding context for the loaded assembly that is being looked up in the
-                // cache, then set it up in the AssemblySpec for the cache lookup to use it below.
-                if (pBinderForLoadedAssembly != NULL)
-                {
-                    _ASSERTE(spec.GetBinder() == NULL);
-                    spec.SetBinder(pBinderForLoadedAssembly);
-                }
-                DomainAssembly * pDomainAssembly = nullptr;
-
-                {
-                    pDomainAssembly = pAppDomainExamine->FindCachedAssembly(&spec, FALSE /*fThrow*/);
-                }
-
-                if (pDomainAssembly && pDomainAssembly->IsLoaded())
-                    pAssembly = pDomainAssembly->GetAssembly();
-
-                // Only store in the rid map if working with the current AppDomain.
-                if (fCanUseRidMap && pAssembly)
-                    StoreAssemblyRef(kAssemblyRef, pAssembly);
-
-                if (pAssembly != NULL)
-                    break;
-            }
-#endif //!DACCESS_COMPILE
-        } while (false);
+        // Only store in the rid map if working with the current AppDomain.
+        if (fCanUseRidMap && pAssembly)
+            StoreAssemblyRef(kAssemblyRef, pAssembly);
     }
+#endif //!DACCESS_COMPILE
 
     // When walking the stack or computing GC information this function should never fail.
     _ASSERTE((pAssembly != NULL) || !(IsStackWalkerThread() || IsGCThread()));
@@ -2372,9 +2351,9 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
     }
 
     {
-        PEAssemblyHolder pPEAssembly = GetDomainAssembly()->GetPEAssembly()->LoadAssembly(kAssemblyRef);
+        PEAssemblyHolder pPEAssembly = GetPEAssembly()->LoadAssembly(kAssemblyRef);
         AssemblySpec spec;
-        spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetDomainAssembly());
+        spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetAssembly());
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
         // invoking the custom AssemblyLoadContext implementation that returned a reference to an assembly bound to a different
         // AssemblyLoadContext implementation.
