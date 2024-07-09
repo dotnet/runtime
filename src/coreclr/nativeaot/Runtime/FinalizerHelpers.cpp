@@ -27,6 +27,8 @@ GPTR_DECL(Thread, g_pFinalizerThread);
 CLREventStatic g_FinalizerEvent;
 CLREventStatic g_FinalizerDoneEvent;
 
+static HANDLE g_lowMemoryNotification = NULL;
+
 EXTERN_C void QCALLTYPE ProcessFinalizers();
 
 // Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
@@ -76,6 +78,7 @@ bool RhInitializeFinalization()
         return false;
     if (!g_FinalizerDoneEvent.CreateManualEventNoThrow(false))
         return false;
+    g_lowMemoryNotification = PalCreateLowMemoryResourceNotification();
 
     // Create the finalizer thread itself.
     if (!PalStartFinalizerThread(FinalizerStart, (void*)g_FinalizerEvent.GetOSEvent()))
@@ -132,17 +135,12 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
     // two second timeout expires.
     do
     {
-        HANDLE  lowMemEvent = NULL;
-#if 0 // TODO: hook up low memory notification
-        lowMemEvent = pHeap->GetLowMemoryNotificationEvent();
+        HANDLE  lowMemEvent = g_lowMemoryNotification;
         HANDLE  rgWaitHandles[] = { g_FinalizerEvent.GetOSEvent(), lowMemEvent };
         uint32_t  cWaitHandles = (fLastEventWasLowMemory || (lowMemEvent == NULL)) ? 1 : 2;
         uint32_t  uTimeout = fLastEventWasLowMemory ? 2000 : INFINITE;
 
-        uint32_t uResult = PalWaitForMultipleObjectsEx(cWaitHandles, rgWaitHandles, FALSE, uTimeout, FALSE);
-#else
-        uint32_t uResult = PalWaitForSingleObjectEx(g_FinalizerEvent.GetOSEvent(), INFINITE, FALSE);
-#endif
+        uint32_t uResult = PalCompatibleWaitAny(/*alertable=*/ FALSE, uTimeout, cWaitHandles, rgWaitHandles, /*allowReentrantWait=*/ FALSE);
 
         switch (uResult)
         {

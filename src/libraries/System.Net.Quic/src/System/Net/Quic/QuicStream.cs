@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -359,13 +360,16 @@ public sealed partial class QuicStream
     /// <param name="buffer">The region of memory to write data from.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
     /// <param name="completeWrites">Notifies the peer about gracefully closing the write side, i.e.: sends FIN flag with the data.</param>
-    public async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
+    public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        if (_disposed == 1)
+        {
+            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(QuicStream))));
+        }
 
         if (!_canWrite)
         {
-            throw new InvalidOperationException(SR.net_quic_writing_notallowed);
+            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.net_quic_writing_notallowed)));
         }
 
         if (NetEventSource.Log.IsEnabled())
@@ -373,24 +377,23 @@ public sealed partial class QuicStream
             NetEventSource.Info(this, $"{this} Stream writing memory of '{buffer.Length}' bytes while {(completeWrites ? "completing" : "not completing")} writes.");
         }
 
-        if (_sendTcs.IsCompleted)
+        if (_sendTcs.IsCompleted && cancellationToken.IsCancellationRequested)
         {
             // Special case exception type for pre-canceled token while we've already transitioned to a final state and don't need to abort write.
             // It must happen before we try to get the value task, since the task source is versioned and each instance must be awaited.
-            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromCanceled(cancellationToken);
         }
 
         // Concurrent call, this one lost the race.
         if (!_sendTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
         {
-            throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"));
+            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"))));
         }
 
         // No need to call anything since we already have a result, most likely an exception.
         if (valueTask.IsCompleted)
         {
-            await valueTask.ConfigureAwait(false);
-            return;
+            return valueTask;
         }
 
         // For an empty buffer complete immediately, close the writing side of the stream if necessary.
@@ -401,8 +404,7 @@ public sealed partial class QuicStream
             {
                 CompleteWrites();
             }
-            await valueTask.ConfigureAwait(false);
-            return;
+            return valueTask;
         }
 
         // We own the lock, abort might happen, but exception will get stored instead.
@@ -438,7 +440,7 @@ public sealed partial class QuicStream
             }
         }
 
-        await valueTask.ConfigureAwait(false);
+        return valueTask;
     }
 
     /// <summary>

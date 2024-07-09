@@ -1990,6 +1990,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
     m_signatureToLookupInfoMap = nullptr;
+    m_significantSegmentsMap   = nullptr;
     fgSsaPassesCompleted       = 0;
     fgSsaValid                 = false;
     fgVNPassesCompleted        = 0;
@@ -8372,6 +8373,67 @@ void Compiler::TransferTestDataToNode(GenTree* from, GenTree* to)
 }
 
 #endif // DEBUG
+
+//------------------------------------------------------------------------
+// GetSignificantSegments:
+//   Compute a segment tree containing all significant (non-padding) segments
+//   for the specified class layout.
+//
+// Parameters:
+//   layout - The layout
+//
+// Returns:
+//   Segment tree containing all significant parts of the layout.
+//
+const StructSegments& Compiler::GetSignificantSegments(ClassLayout* layout)
+{
+    StructSegments* cached;
+    if ((m_significantSegmentsMap != nullptr) && m_significantSegmentsMap->Lookup(layout, &cached))
+    {
+        return *cached;
+    }
+
+    COMP_HANDLE compHnd = info.compCompHnd;
+
+    StructSegments* newSegments = new (this, CMK_Promotion) StructSegments(getAllocator(CMK_Promotion));
+
+    if (layout->IsBlockLayout())
+    {
+        newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
+    }
+    else
+    {
+        CORINFO_TYPE_LAYOUT_NODE nodes[256];
+        size_t                   numNodes = ArrLen(nodes);
+        GetTypeLayoutResult      result   = compHnd->getTypeLayout(layout->GetClassHandle(), nodes, &numNodes);
+
+        if (result != GetTypeLayoutResult::Success)
+        {
+            newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
+        }
+        else
+        {
+            for (size_t i = 0; i < numNodes; i++)
+            {
+                const CORINFO_TYPE_LAYOUT_NODE& node = nodes[i];
+                if ((node.type != CORINFO_TYPE_VALUECLASS) || (node.simdTypeHnd != NO_CLASS_HANDLE) ||
+                    node.hasSignificantPadding)
+                {
+                    newSegments->Add(StructSegments::Segment(node.offset, node.offset + node.size));
+                }
+            }
+        }
+    }
+
+    if (m_significantSegmentsMap == nullptr)
+    {
+        m_significantSegmentsMap = new (this, CMK_Promotion) ClassLayoutStructSegmentsMap(getAllocator(CMK_Promotion));
+    }
+
+    m_significantSegmentsMap->Set(layout, newSegments);
+
+    return *newSegments;
+}
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

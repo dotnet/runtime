@@ -185,7 +185,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     // make sure the PE is loaded or R2R will be disabled.
     pPEAssembly->EnsureLoaded();
 
-    if (pPEAssembly->IsDynamic())
+    if (pPEAssembly->IsReflectionEmit())
         // manifest modules of dynamic assemblies are always transient
         m_pModule = ReflectionModule::Create(this, pPEAssembly, pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
@@ -199,7 +199,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     //  loading it entirely.
     //CacheFriendAssemblyInfo();
 
-    if (IsCollectible() && !pPEAssembly->IsDynamic())
+    if (IsCollectible() && !pPEAssembly->IsReflectionEmit())
     {
         COUNT_T size;
         BYTE* start = (BYTE*)pPEAssembly->GetLoadedImageContents(&size);
@@ -1590,9 +1590,8 @@ BOOL Assembly::FileNotFound(HRESULT hr)
 
 
 BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
-                              PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
-                              LPCSTR *szFileName, DWORD *dwLocation,
-                              BOOL fSkipRaiseResolveEvent)
+                             PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
+                             LPCSTR *szFileName, DWORD *dwLocation)
 {
     CONTRACTL
     {
@@ -1602,13 +1601,10 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     }
     CONTRACTL_END;
 
-    DomainAssembly *pAssembly = NULL;
-    BOOL result = GetDomainAssembly()->GetResource(szName, cbResource,
-                                                   pbInMemoryResource, &pAssembly,
-                                                   szFileName, dwLocation,
-                                                   fSkipRaiseResolveEvent);
-    if (result && pAssemblyRef != NULL && pAssembly != NULL)
-        *pAssemblyRef = pAssembly->GetAssembly();
+    BOOL result = GetPEAssembly()->GetResource(szName, cbResource,
+                                                pbInMemoryResource, pAssemblyRef,
+                                                szFileName, dwLocation,
+                                                this);
 
     return result;
 }

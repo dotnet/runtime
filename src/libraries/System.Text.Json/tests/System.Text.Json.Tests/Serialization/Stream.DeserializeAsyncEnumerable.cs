@@ -100,6 +100,111 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(5)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public static async Task DeserializeAsyncEnumerable_Object_TopLevelValues(int count)
+        {
+            JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
+            string json = GenerateJsonTopLevelValues(count);
+            using var stream = new Utf8MemoryStream(json);
+
+            IAsyncEnumerable<SimpleTestClass> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<SimpleTestClass>(stream, topLevelValues:true, options);
+
+            int i = 0;
+            await foreach (SimpleTestClass item in asyncEnumerable)
+            {
+                Assert.Equal(i++, item.MyInt32);
+                item.MyInt32 = 2; // Put correct value back for Verify()
+                item.Verify();
+            }
+
+            Assert.Equal(count, i);
+
+            static string GenerateJsonTopLevelValues(int count)
+            {
+                StringBuilder sb = new();
+                for (int i = 0; i < count; i++)
+                {
+                    var obj = new SimpleTestClass();
+                    obj.Initialize();
+                    obj.MyInt32 = i; // verify order correctness
+
+                    sb.Append(JsonSerializer.Serialize(obj));
+                    sb.Append((i % 5) switch { 0 => "", 1 => " ", 2 => "\t", 3 => "\r\n", _ => "   \n\n\n\n\n   " });
+                }
+
+                return sb.ToString();
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(5)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public static async Task DeserializeAsyncEnumerable_Array_TopLevelValues(int count)
+        {
+            JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
+            string json = GenerateJsonTopLevelValues(count);
+            using var stream = new Utf8MemoryStream(json);
+
+            IAsyncEnumerable<List<int>?> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<List<int>?>(stream, topLevelValues:true, options);
+
+            int i = 0;
+            await foreach (List<int>? item in asyncEnumerable)
+            {
+                switch (i++ % 4)
+                {
+                    case 0:
+                        Assert.Null(item);
+                        break;
+                    case 1:
+                        Assert.Equal([], item);
+                        break;
+                    case 2:
+                        Assert.Equal([1], item);
+                        break;
+                    case 3:
+                        Assert.Equal([1, 2, 3], item);
+                        break;
+                }
+            }
+
+            Assert.Equal(count, i);
+
+            static string GenerateJsonTopLevelValues(int count)
+            {
+                StringBuilder sb = new();
+                for (int i = 0; i < count; i++)
+                {
+                    sb.Append((i % 4) switch { 0 => " null", 1 => "[]", 2 => "[1]", _ => "[1,2,3]" });
+                    sb.Append((i % 5) switch { 0 => "", 1 => " ", 2 => "\t", 3 => "\r\n", _ => "   \n\n\n\n\n   " });
+                }
+
+                return sb.ToString();
+            }
+        }
+
+        [Fact]
+        public static async Task DeserializeAsyncEnumerable_TopLevelValues_TrailingData_ThrowsJsonException()
+        {
+            JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
+            using var stream = new Utf8MemoryStream("""[] [1] [1,2,3] <NotJson/>""");
+
+            IAsyncEnumerable<List<int>> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<List<int>>(stream, topLevelValues:true, options);
+            await using var asyncEnumerator = asyncEnumerable.GetAsyncEnumerator();
+
+            await Assert.ThrowsAnyAsync<JsonException>(async () =>
+            {
+                while (await asyncEnumerator.MoveNextAsync());
+            });
+        }
+
+        [Theory]
         [InlineData(DeserializeAsyncEnumerableOverload.JsonSerializerOptions)]
         [InlineData(DeserializeAsyncEnumerableOverload.JsonTypeInfo)]
         public static async Task DeserializeAsyncEnumerable_ShouldTolerateCustomQueueConverters(DeserializeAsyncEnumerableOverload overload)

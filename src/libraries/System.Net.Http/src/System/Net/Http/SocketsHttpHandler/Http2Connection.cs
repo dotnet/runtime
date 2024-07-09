@@ -496,6 +496,7 @@ namespace System.Net.Http
                 catch (HttpProtocolException e)
                 {
                     InitialSettingsReceived.TrySetException(e);
+                    LogExceptions(InitialSettingsReceived.Task);
                     throw;
                 }
                 catch (Exception e)
