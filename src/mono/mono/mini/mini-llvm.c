@@ -8283,7 +8283,7 @@ MONO_RESTORE_WARNING
 			
 			if (ecount == 3) {
 				// Override to 3 elements + zero
-				ecount == 4;
+				ecount = 4;
 			}
 
 			LLVMTypeRef llvm_type = primitive_type_to_llvm_type (etype);
