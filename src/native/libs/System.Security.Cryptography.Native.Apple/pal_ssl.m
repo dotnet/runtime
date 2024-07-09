@@ -226,7 +226,7 @@ printf("%s:%d: caleld with mesage %p\n", __func__, __LINE__,  (void*)b2);
 //    dispatch_sync(_tlsQueue, ^(void) 
     {
         nw_framer_deliver_input(framer, b2, (size_t)dataLength, message, TRUE);
-        printf("%s:%d:  nw_framer_deliver_input is dine!!! %d %p\n", __func__, __LINE__, dataLength, (void*) connection);
+        printf("%s:%d:  nw_framer_deliver_input is DONE!!! %d %p\n", __func__, __LINE__, dataLength, (void*) connection);
         //nw_framer_schedule_wakeup(framer, 1);
         dispatch_semaphore_signal(sem);
     });

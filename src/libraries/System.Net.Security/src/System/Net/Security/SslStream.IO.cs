@@ -444,11 +444,6 @@ Console.WriteLine("HANDSHAKE updated!!!!!!! ????? {0} with  is {1} frameTask {2}
                 }
 
                 CompleteHandshake(_sslAuthenticationOptions);
-
-                if (_securityContext!.UseNwFramework)
-                {
-                    //Console.WriteLine("###########HANDSHKE FINIOSHED, {0} left", _buffer.EncryptedReadOnlySpan.Length);
-                }
             }
             finally
             {
@@ -994,7 +989,8 @@ Console.WriteLine("ReadAsyncInternal: decryptTask {0} farmeTask {1}", decryptTas
 
                         if (decryptTask.IsCompleted)
                         {
-                                lock (_securityContext!)
+                            int length = 0;
+                              //  lock (_securityContext!)
                                 {
                                    // _securityContext.Tcs = null;
                                     //.WriteLine("decryptTask.IsCompleted DECRYPTED DATA!!!!! {0}", _securityContext!.BytesReadyFromConnection);
@@ -1003,12 +999,14 @@ Console.WriteLine("ReadAsyncInternal: decryptTask {0} farmeTask {1}", decryptTas
 
                                 //Debug.Assert(false);
                                     //int length = _securityContext!.Read(buffer.Span);
-                                    int length = SslStreamPal.ReadDecryptedData(_securityContext!, buffer.Span);
-                                    Console.WriteLine("Git {0} bytes of decrypted data!!!!!", length);
+                                    length = SslStreamPal.ReadDecryptedData(_securityContext!, buffer.Span);
+                                    Console.WriteLine("Git {0} bytes of decrypted data!!!!! ramaining {1}", length, SslStreamPal.GetAvailableDecryptedBytes(_securityContext));
                                     decryptTask = null;
                                     _frameTask = frameTask;
-                                    return length;
+                                  //  return length;
                                 }
+ Console.WriteLine("ReadAsyncInternal got {0} bytes of decrypted data!!!!! ramaining {1}, done with lock", length, SslStreamPal.GetAvailableDecryptedBytes(_securityContext));
+                                return length;
                         }
                         /*()
                         else

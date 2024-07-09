@@ -370,8 +370,8 @@ namespace System.Net
                         //ontext._inputBuffer.EnsureAvailableSpace(data1.ToInt32());
 
 
-                        lock (context)
-                        {
+                        //lock (context)
+                        //{
                     // We are using the input buffer in reverse way here
                             context.Write(data);
                             Console.WriteLine("ConnectionReadFinished with {0} and {1} bytes ready",  data1.ToInt32(), context._inputBuffer.ActiveLength);
@@ -380,7 +380,7 @@ namespace System.Net
                             Debug.Assert(context.Tcs != null);
                             context.Tcs?.TrySetResult(SecurityStatusPalErrorCode.OK);
                             context._readWaiter!.Set();
-                        }
+                        //}
                         break;
                     case PAL_NwStatusUpdates.ConnectionWriteFinished:
                     case PAL_NwStatusUpdates.ConnectionWriteFailed:
@@ -689,7 +689,7 @@ Console.WriteLine("WriteToConnection OUT2 called for {0} wioyj {1} bytes, availa
 Console.WriteLine("PerformNwHandshake called with {0} bytes framer is {1}", inputBuffer.Length, _framer);
             if (_framer != IntPtr.Zero && inputBuffer.Length > 0)
             {
-                lock (SslContext)
+          //      lock (SslContext)
                 {
                     ObjectDisposedException.ThrowIf(_disposed, this);
                     fixed (byte* ptr = &MemoryMarshal.GetReference(inputBuffer))
