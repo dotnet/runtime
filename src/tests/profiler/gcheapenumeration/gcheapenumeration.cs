@@ -12,6 +12,7 @@ namespace Profiler.Tests
     {
         static readonly string ShouldSetMonitorGCEventMaskEnvVar = "Set_Monitor_GC_Event_Mask";
         static readonly Guid GCHeapEnumerationProfilerGuid = new Guid("8753F0E1-6D6D-4329-B8E1-334918869C15");
+        static List<object> _rootObjects = new List<object>();
 
         [DllImport("Profiler")]
         private static extern void EnumerateGCHeapObjects();
@@ -27,14 +28,14 @@ namespace Profiler.Tests
 
         public static int EnumerateGCHeapObjectsSingleThreadNoPriorSuspension()
         {
-            var _ = new CustomGCHeapObject();
+            _rootObjects.Add(new CustomGCHeapObject());
             EnumerateGCHeapObjects();
             return 100;
         }
 
         public static int EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension()
         {
-            var _ = new CustomGCHeapObject();
+            _rootObjects.Add(new CustomGCHeapObject());
             SuspendRuntime();
             EnumerateGCHeapObjects();
             ResumeRuntime();
@@ -43,6 +44,7 @@ namespace Profiler.Tests
 
         public static int EnumerateGCHeapObjectsInBackgroundThreadWithRuntimeSuspension()
         {
+            _rootObjects.Add(new CustomGCHeapObject());
             EnumerateHeapObjectsInBackgroundThread();
             GC.Collect();
             return 100;
@@ -63,7 +65,7 @@ namespace Profiler.Tests
             {
                 startEvent.WaitOne();
                 Thread.Sleep(1000);
-                var _ = new CustomGCHeapObject();
+                _rootObjects.Add(new CustomGCHeapObject());
                 EnumerateGCHeapObjects();
             });
             enumerateThread.Name = "EnumerateGCHeapObjects";
