@@ -930,15 +930,17 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
-        FpStructInRegistersInfo info = GetPassFpStructInRegistersInfo(clsHnd);
-        if ((info.flags & FpStruct::OnlyOne) != 0)
+        CORINFO_FPSTRUCT_LOWERING lowering;
+        GetFpStructLowering(clsHnd, &lowering);
+        if (lowering.numLoweredElements == 1)
         {
+            useType = JITtype2varType(lowering.loweredElements[0]);
+            assert(varTypeIsFloating(useType));
             howToReturnStruct = SPK_PrimitiveType;
-            useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;
         }
-        else if (info.flags != FpStruct::UseIntCallConv)
+        else if (!lowering.byIntegerCallConv)
         {
-            assert((info.flags & (FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::IntFloat)) != 0);
+            assert(lowering.numLoweredElements == 2);
             howToReturnStruct = SPK_ByValue;
             useType           = TYP_STRUCT;
         }
@@ -8285,39 +8287,40 @@ void Compiler::GetStructTypeOffset(
 
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 //------------------------------------------------------------------------
-// GetPassFpStructInRegistersInfo: Gets the information on passing of a struct according to hardware floating-point
-// calling convention.
+// GetFpStructLowering: Gets the information on passing of a struct according to hardware floating-point
+// calling convention, i.e. the types and offsets of struct fields lowered for passing.
 //
 // Arguments:
 //      structHandle - type handle
+//      pLowering - out param; returns the lowering info for the struct fields
 //
 // Return value:
-//      The passing info
-FpStructInRegistersInfo Compiler::GetPassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHandle)
+//      None
+void Compiler::GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    CORINFO_FPSTRUCT_LOWERING lowering;
-    info.compCompHnd->getFpStructLowering(structHandle, &lowering);
+    info.compCompHnd->getFpStructLowering(structHandle, pLowering);
 #ifdef DEBUG
     if (verbose)
     {
         printf("**** getFpStructInRegistersInfo(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
                eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
-#undef getInfoFunc
-        if (lowering.byIntegerCallConv)
+
+        if (pLowering->byIntegerCallConv)
         {
             printf("        pass by integer calling convention\n");
         }
         else
         {
-            printf("        may be passed by floating-point calling convention (%zu fields):\n", lowering.numLoweredElements);
-            for (size_t i = 0; i < lowering.numLoweredElements; ++i)
+            printf("        may be passed by floating-point calling convention (%zu fields):\n",
+                   pLowering->numLoweredElements);
+            for (size_t i = 0; i < pLowering->numLoweredElements; ++i)
             {
-                printf("         * field[%zu]: type %i at offset %u\n", i, lowering.loweredElements[i], lowering.offsets[i]);
+                const char* type = varTypeName(JITtype2varType(pLowering->loweredElements[i]));
+                printf("         * field[%zu]: type %s at offset %u\n", i, type, pLowering->offsets[i]);
             }
         }
     }
 #endif // DEBUG
-    return {};
 }
 
 #endif // defined(UNIX_AMD64_ABI)

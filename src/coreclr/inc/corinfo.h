@@ -2027,13 +2027,18 @@ struct CORINFO_SWIFT_LOWERING
 
 #define MAX_FPSTRUCT_LOWERED_ELEMENTS 2
 
-// Lowering information on fields of a struct passed by hardware floating-point calling convention
-// on RISC-V and LoongArch
+// Lowering information on fields of a struct passed by hardware floating-point calling convention on RISC-V and LoongArch
+// NOTE: all array elements past numLoweredElements are zero-initialized
 struct CORINFO_FPSTRUCT_LOWERING
 {
+    // Whether the struct should be passed by integer calling convention (cannot be passed by FP calling convention).
+    // If true, all other fields of CORINFO_FPSTRUCT_LOWERING are zeroed.
     bool byIntegerCallConv;
+    // Types of lowered struct fields.
     CorInfoType loweredElements[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    // Offsets of lowered struct fields.
     uint32_t offsets[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    // Number of lowered struct fields.
     size_t numLoweredElements;
 };
 

@@ -898,21 +898,21 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         }
         else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        FpStructInRegistersInfo fpInfo = {};
+        CORINFO_FPSTRUCT_LOWERING lowering = {.byIntegerCallConv = true};
 
         var_types argRegTypeInStruct1 = TYP_UNKNOWN;
         var_types argRegTypeInStruct2 = TYP_UNKNOWN;
 
         if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) && (argSize <= MAX_PASS_MULTIREG_BYTES))
         {
-            fpInfo = GetPassFpStructInRegistersInfo(typeHnd);
+            GetFpStructLowering(typeHnd, &lowering);
         }
 
-        if (fpInfo.flags != FpStruct::UseIntCallConv)
+        if (!lowering.byIntegerCallConv)
         {
             assert(varTypeIsStruct(argType));
             int floatNum = 0;
-            if ((fpInfo.flags & FpStruct::OnlyOne) != 0)
+            if (lowering.numLoweredElements == 1)
             {
                 assert(argSize <= 8);
                 assert(varDsc->lvExactSize() <= argSize);
@@ -920,41 +920,26 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 floatNum              = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
 
-                argRegTypeInStruct1 = (varDsc->lvExactSize() == 8) ? TYP_DOUBLE : TYP_FLOAT;
+                argRegTypeInStruct1 = JITtype2varType(lowering.loweredElements[0]);
+                assert(varTypeIsFloating(argRegTypeInStruct1));
             }
-            else if ((fpInfo.flags & FpStruct::BothFloat) != 0)
+            else
             {
-                floatNum              = 2;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 2);
-
-                argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-                argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if ((fpInfo.flags & FpStruct::FloatInt) != 0)
-            {
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
-                canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
-
-                argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-                argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_LONG : TYP_INT;
-            }
-            else if ((fpInfo.flags & FpStruct::IntFloat) != 0)
-            {
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
-                canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
-
-                argRegTypeInStruct1 = (fpInfo.SizeShift1st() == 3) ? TYP_LONG : TYP_INT;
-                argRegTypeInStruct2 = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+                assert(lowering.numLoweredElements == 2);
+                argRegTypeInStruct1 = genActualType(JITtype2varType(lowering.loweredElements[0]));
+                argRegTypeInStruct2 = genActualType(JITtype2varType(lowering.loweredElements[1]));
+                floatNum = (int)varTypeIsFloating(argRegTypeInStruct1) + (int)varTypeIsFloating(argRegTypeInStruct2);
+                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
+                if (floatNum == 1)
+                    canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
             }
 
             assert((floatNum == 1) || (floatNum == 2));
 
             if (!canPassArgInRegisters)
             {
-                // On LoongArch64, if there aren't any remaining floating-point registers to pass the argument,
-                // integer registers (if any) are used instead.
+                // On LoongArch64 and RISCV64, if there aren't any remaining floating-point registers to pass the
+                // argument, integer registers (if any) are used instead.
                 canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
 
                 argRegTypeInStruct1 = TYP_UNKNOWN;

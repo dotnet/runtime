@@ -9535,10 +9535,11 @@ void CEEInfo::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRU
     FpStructInRegistersInfo info = MethodTable::GetFpStructInRegistersInfo(TypeHandle(structHnd));
     if (info.flags != FpStruct::UseIntCallConv)
     {
-        pLowering->byIntegerCallConv = false;
-        pLowering->numLoweredElements = (info.flags & FpStruct::OnlyOne) ? 1 : 2;
-        pLowering->offsets[0] = info.offset1st;
-        pLowering->offsets[1] = info.offset2nd;
+        *pLowering = {
+            .byIntegerCallConv = false,
+            .offsets = { info.offset1st, info.offset2nd },
+            .numLoweredElements = (info.flags & FpStruct::OnlyOne) ? 1ul : 2ul,
+        };
 
         if (info.flags & (FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::OnlyOne))
             pLowering->loweredElements[0] = (info.SizeShift1st() == 3) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
@@ -9548,7 +9549,7 @@ void CEEInfo::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRU
 
         if (info.flags & (FpStruct::FloatInt | FpStruct::IntFloat))
         {
-            size_t index = ((info.flags & FpStruct::IntFloat) != 0) ? 0 : 1;
+            size_t index = ((info.flags & FpStruct::FloatInt) != 0) ? 1 : 0;
             unsigned sizeShift = (index == 0) ? info.SizeShift1st() : info.SizeShift2nd();
             pLowering->loweredElements[index] = (CorInfoType)(CORINFO_TYPE_BYTE + sizeShift * 2);
 
@@ -9558,11 +9559,6 @@ void CEEInfo::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRU
             static_assert(CORINFO_TYPE_BYTE + 2 * 2 == CORINFO_TYPE_INT, "");
             static_assert(CORINFO_TYPE_BYTE + 3 * 2 == CORINFO_TYPE_LONG, "");
         }
-
-#ifdef _DEBUG
-        if (info.flags & FpStruct::OnlyOne)
-            pLowering->loweredElements[1] = CORINFO_TYPE_UNDEF;
-#endif // _DEBUG
     }
     else
     {

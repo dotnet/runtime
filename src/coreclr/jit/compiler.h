@@ -11365,7 +11365,7 @@ public:
         CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1);
 
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-    FpStructInRegistersInfo GetPassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHandle);
+    void GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle, CORINFO_FPSTRUCT_LOWERING* pLowering);
 #endif // defined(UNIX_AMD64_ABI)
 
     void     fgMorphMultiregStructArgs(GenTreeCall* call);

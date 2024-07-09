@@ -28942,30 +28942,30 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
 
-            FpStructInRegistersInfo fpInfo    = comp->GetPassFpStructInRegistersInfo(retClsHnd);
-            BYTE                    gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+            CORINFO_FPSTRUCT_LOWERING lowering;
+            comp->GetFpStructLowering(retClsHnd, &lowering);
+            BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
-
-            if ((fpInfo.flags & FpStruct::BothFloat) != 0)
+            if (!lowering.byIntegerCallConv)
             {
                 comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((fpInfo.SizeShift1st() == 3) || (fpInfo.SizeShift2nd() == 3)));
-                m_regType[0] = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if ((fpInfo.flags & FpStruct::FloatInt) != 0)
-            {
-                comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((fpInfo.SizeShift1st() == 3) || (fpInfo.SizeShift2nd() == 3)));
-                m_regType[0] = (fpInfo.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = (fpInfo.SizeShift2nd() == 3) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
-            }
-            else if ((fpInfo.flags & FpStruct::IntFloat) != 0)
-            {
-                comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((fpInfo.SizeShift1st() == 3) || (fpInfo.SizeShift2nd() == 3)));
-                m_regType[0] = (fpInfo.SizeShift1st() == 3) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
-                m_regType[1] = (fpInfo.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+                assert(lowering.numLoweredElements == MAX_RET_REG_COUNT);
+                var_types types[MAX_RET_REG_COUNT] = {JITtype2varType(lowering.loweredElements[0]),
+                                                      JITtype2varType(lowering.loweredElements[1])};
+                assert(varTypeIsFloating(types[0]) || varTypeIsFloating(types[1]));
+                assert((structSize > 8) == ((genTypeSize(types[0]) == 8) || (genTypeSize(types[1]) == 8)));
+                for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
+                {
+                    if (varTypeIsFloating(types[i]))
+                    {
+                        m_regType[i] = types[i];
+                    }
+                    else
+                    {
+                        assert(varTypeIsIntegralOrI(types[i]));
+                        m_regType[i] = (genTypeSize(types[i]) == 8) ? comp->getJitGCType(gcPtrs[i]) : TYP_INT;
+                    }
+                }
             }
             else
             {
