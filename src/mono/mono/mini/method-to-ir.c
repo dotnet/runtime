@@ -7564,7 +7564,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						} else {
 							// For structs that cannot be lowered, we change the argument to byref type
 							*sp++ = struct_base_address;
-							ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
+							ptype = mono_class_get_byref_type (klass);
 
 							g_array_append_val (new_params, ptype);
 							++new_param_count;
