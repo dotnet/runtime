@@ -115,7 +115,7 @@ extends:
           nameSuffix: '_Smoke'
           extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
+          alwaysRun: true
           scenarios:
             - WasmTestOnWasmtime
 
@@ -125,7 +125,7 @@ extends:
             - wasi_wasm
             - wasi_wasm_win
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          alwaysRun: ${{ variables.isRollingBuild }}
+          alwaysRun: true
 
       #
       # Build Mono release AOT cross-compilers
@@ -149,11 +149,6 @@ extends:
             - build_wasi_wasm_linux_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - wasi
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -169,8 +164,6 @@ extends:
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
-            - build_android_x64_release_MonoAOTOffsets
-            - build_browser_wasm_linux_release_MonoAOTOffsets
             - build_wasi_wasm_linux_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - wasi
@@ -201,9 +194,4 @@ extends:
             - build_wasi_wasm_linux_release_MonoAOTOffsets
             monoCrossAOTTargetOS:
             - wasi
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
