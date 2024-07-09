@@ -4032,7 +4032,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 continue;
             }
 
-            noway_assert(varDsc->lvIsInReg() || varDsc->lvOnFrame);
+            noway_assert(varDsc->lvOnFrame);
 
             // lvMustInit can only be set for GC types or TYP_STRUCT types
             // or when compInitMem is true
