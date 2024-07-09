@@ -158,7 +158,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         try
         {
             Contracts.IException contract = _target.Contracts.Exception;
-            TargetPointer exceptionObjectLocal = contract.GetExceptionInfo(exception, out TargetPointer nextNestedExceptionLocal);
+            TargetPointer exceptionObjectLocal = contract.GetNestedExceptionInfo(exception, out TargetPointer nextNestedExceptionLocal);
             *exceptionObject = exceptionObjectLocal;
             *nextNestedException = nextNestedExceptionLocal;
         }
@@ -178,7 +178,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         try
         {
             Contracts.IException contract = _target.Contracts.Exception;
-            Contracts.ManagedExceptionData exceptionData = contract.GetManagedExceptionData(objectAddress);
+            Contracts.ExceptionData exceptionData = contract.GetExceptionData(objectAddress);
             data->Message = exceptionData.Message;
             data->InnerException = exceptionData.InnerException;
             data->StackTrace = exceptionData.StackTrace;

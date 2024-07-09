@@ -5,7 +5,7 @@ This contract is for getting information about exceptions in the process.
 ## APIs of contract
 
 ```csharp
-record struct ManagedExceptionData(
+record struct ExceptionData(
     TargetPointer Message,
     TargetPointer InnerException,
     TargetPointer StackTrace,
@@ -17,40 +17,40 @@ record struct ManagedExceptionData(
 ```
 
 ``` csharp
-TargetPointer GetExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException);
-ManagedExceptionData GetManagedExceptionData(TargetPointer managedException)
+TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo);
+ExceptionData GetExceptionData(TargetPointer exceptionAddr)
 ```
 
 ## Version 1
 
 Data descriptors used:
 - `ExceptionInfo`
-- `ExceptionObject`
+- `Exception`
 
 ``` csharp
-TargetPointer GetExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException)
+TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo)
 {
-    if (exception == TargetPointer.Null)
+    if (exceptionInfo == TargetPointer.Null)
         throw new InvalidArgumentException();
 
-    nextNestedException = target.ReadPointer(exception + /* ExceptionInfo::PreviousNestedInfo offset*/);
-    TargetPointer thrownObjHandle = target.ReadPointer(exception + /* ExceptionInfo::ThrownObject offset */);
+    nextNestedException = target.ReadPointer(exceptionInfo + /* ExceptionInfo::PreviousNestedInfo offset*/);
+    TargetPointer thrownObjHandle = target.ReadPointer(exceptionInfo + /* ExceptionInfo::ThrownObject offset */);
     return = thrownObjHandle != TargetPointer.Null
         ? target.ReadPointer(thrownObjHandle)
         : TargetPointer.Null;
 }
 
-ManagedExceptionData GetManagedExceptionData(TargetPointer managedException)
+ExceptionData GetExceptionData(TargetPointer exceptionAddr)
 {
-    return new ManagedExceptionData(
-        target.ReadPointer(objectAddress + /* Exception::Message offset */),
-        target.ReadPointer(objectAddress + /* Exception::InnerException offset */),
-        target.ReadPointer(objectAddress + /* Exception::StackTrace offset */),
-        target.ReadPointer(objectAddress + /* Exception::WatsonBuckets offset */),
-        target.ReadPointer(objectAddress + /* Exception::StackTraceString offset */),
-        target.ReadPointer(objectAddress + /* Exception::RemoteStackTraceString offset */),
-        target.Read<int>(objectAddress + /* Exception::HResult offset */),
-        target.Read<int>(objectAddress + /* Exception::XCode offset */),
+    return new ExceptionData(
+        target.ReadPointer(exceptionAddr + /* Exception::Message offset */),
+        target.ReadPointer(exceptionAddr + /* Exception::InnerException offset */),
+        target.ReadPointer(exceptionAddr + /* Exception::StackTrace offset */),
+        target.ReadPointer(exceptionAddr + /* Exception::WatsonBuckets offset */),
+        target.ReadPointer(exceptionAddr + /* Exception::StackTraceString offset */),
+        target.ReadPointer(exceptionAddr + /* Exception::RemoteStackTraceString offset */),
+        target.Read<int>(exceptionAddr + /* Exception::HResult offset */),
+        target.Read<int>(exceptionAddr + /* Exception::XCode offset */),
     );
 }
 ```

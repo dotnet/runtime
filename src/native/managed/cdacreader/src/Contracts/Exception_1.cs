@@ -14,24 +14,24 @@ internal readonly struct Exception_1 : IException
         _target = target;
     }
 
-    TargetPointer IException.GetExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException)
+    TargetPointer IException.GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo)
     {
-        Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exception);
-        nextNestedException = exceptionInfo.PreviousNestedInfo;
+        Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exceptionInfoAddr);
+        nextNestedExceptionInfo = exceptionInfo.PreviousNestedInfo;
         return exceptionInfo.ThrownObject.Object;
     }
 
-    ManagedExceptionData IException.GetManagedExceptionData(TargetPointer managedException)
+    ExceptionData IException.GetExceptionData(TargetPointer exceptionAddr)
     {
-        Data.Exception exceptionObject = _target.ProcessedData.GetOrAdd<Data.Exception>(managedException);
-        return new ManagedExceptionData(
-            exceptionObject.Message,
-            exceptionObject.InnerException,
-            exceptionObject.StackTrace,
-            exceptionObject.WatsonBuckets,
-            exceptionObject.StackTraceString,
-            exceptionObject.RemoteStackTraceString,
-            exceptionObject.HResult,
-            exceptionObject.XCode);
+        Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(exceptionAddr);
+        return new ExceptionData(
+            exception.Message,
+            exception.InnerException,
+            exception.StackTrace,
+            exception.WatsonBuckets,
+            exception.StackTraceString,
+            exception.RemoteStackTraceString,
+            exception.HResult,
+            exception.XCode);
     }
 }
