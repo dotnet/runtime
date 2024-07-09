@@ -122,11 +122,11 @@ static BOOL STDMETHODCALLTYPE heap_walk_fn(ObjectID object, void* callbackState)
 
     ClassID classId{0};
     HRESULT hr = state->instance->pCorProfilerInfo->GetClassFromObject(object, &classId);
-    if (hr != S_OK)
+    if (FAILED(hr))
     {
-        printf("Error: failed to get class ID from object.\n");
-        // Returning FALSE will stop the enumeration, just skip this object and continue
-        return TRUE;
+        printf("Error: failed to get class ID from object with ID 0x%p. hr=0x%x\n", object, hr);
+        state->instance->_failures->fetch_add(1, std::memory_order_relaxed);
+        return FALSE;
     }
 
     String classIdName = state->instance->GetClassIDNameHelper(classId);
