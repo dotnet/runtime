@@ -17,11 +17,6 @@ typedef struct _MonoClassField MonoClassField;
 typedef struct _MonoProperty MonoProperty;
 typedef struct _MonoEvent MonoEvent;
 
-typedef struct MonoVarianceSearchEntry {
-	MonoClass *klass;
-	int interface_offset;
-} MonoVarianceSearchEntry;
-
 typedef enum {
 	MONO_TYPE_NAME_FORMAT_IL,
 	MONO_TYPE_NAME_FORMAT_REFLECTION,
