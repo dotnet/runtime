@@ -30,8 +30,8 @@ HRESULT GCHeapEnumerationProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 
     if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("Set_Monitor_GC_Event_Mask"), bufferSize, &envVarLen, envVar)))
     {
-        _failures++;
         printf("FAIL: ICorProfilerInfo::GetEnvironmentVariable() failed hr=0x%x", hr);
+        IncrementFailures();
         return hr;
     }
     String envVarStr = envVar;
@@ -44,18 +44,34 @@ HRESULT GCHeapEnumerationProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 
     if (FAILED(hr = pCorProfilerInfo->SetEventMask2(eventMask, COR_PRF_HIGH_MONITOR_NONE)))
     {
-        _failures++;
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
+        IncrementFailures();
     }
 
     return hr;
 }
 
+void GCHeapEnumerationProfiler::IncrementFailures()
+{
+    _failures.fetch_add(1, std::memory_order_relaxed);
+}
+
 HRESULT STDMETHODCALLTYPE GCHeapEnumerationProfiler::GarbageCollectionStarted(int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason)
 {
     SHUTDOWNGUARD();
-    printf("GCHeapEnumerationProfiler::GarbageCollectionStarted\nSleeping for 10 seconds\n");
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    printf("GCHeapEnumerationProfiler::GarbageCollectionStarted\n");
+    _gcStartSleeping = TRUE;
+    GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
+    // The current thread should block the subsequent background thread until GC completes
+    // If the call to EnumerateGCHeapObjects doesn't wait for GC to complete, it should
+    // observe IsGCStartSleeping() as true during the heap walk.
+    _threadList.emplace_back(std::thread([instance]()
+                {
+                    printf("EnumerateGCHeapObject on native background thread\n");
+                    instance->ValidateEnumerateGCHeapObjects(S_OK);
+                }));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    _gcStartSleeping = FALSE;
     return S_OK;
 }
 
@@ -66,8 +82,17 @@ HRESULT STDMETHODCALLTYPE GCHeapEnumerationProfiler::GarbageCollectionFinished()
     return S_OK;
 }
 
+bool GCHeapEnumerationProfiler::IsGCStartSleeping()
+{
+    return _gcStartSleeping;
+}
+
 HRESULT GCHeapEnumerationProfiler::Shutdown()
 {
+    // make sure async operations have finished
+    for (auto& t : _threadList) {
+        t.join();
+    }
     Profiler::Shutdown();
 
     if (_expectedExceptions == 1)
@@ -81,13 +106,13 @@ HRESULT GCHeapEnumerationProfiler::Shutdown()
     if (_objectsCount < 100)
     {
         printf("GCHeapEnumerationProfiler::Shutdown: FAIL: Expected at least 100 objects, got %d\n", _objectsCount.load());
-        _failures++;
+        IncrementFailures();
     }
 
     if (_customGCHeapObjectTypesCount != 1)
     {
         printf("GCHeapEnumerationProfiler::Shutdown: FAIL: Expected 1 custom GCHeapObject type, got %d\n", _customGCHeapObjectTypesCount.load());
-        _failures++;
+        IncrementFailures();
     }
 
     if (_failures == 0)
@@ -103,10 +128,6 @@ HRESULT GCHeapEnumerationProfiler::Shutdown()
     return S_OK;
 }
 
-String GCHeapEnumerationProfiler::GetClassIDNameHelper(ClassID classId) {
-    return GetClassIDName(classId);
-}
-
 struct CallbackState
 {
     std::atomic<int>* objectsCount;
@@ -118,18 +139,25 @@ static BOOL STDMETHODCALLTYPE heap_walk_fn(ObjectID object, void* callbackState)
 {
     CallbackState* state = static_cast<CallbackState*>(callbackState);
 
+    if (state->instance->IsGCStartSleeping())
+    {
+        printf("Error: no callbacks expected during GC\n");
+        state->instance->IncrementFailures();
+        return FALSE;
+    }
+
     state->objectsCount->fetch_add(1, std::memory_order_relaxed);
 
     ClassID classId{0};
     HRESULT hr = state->instance->pCorProfilerInfo->GetClassFromObject(object, &classId);
     if (FAILED(hr))
     {
-        printf("Error: failed to get class ID from object with ID 0x%p. hr=0x%x\n", object, hr);
-        state->instance->_failures->fetch_add(1, std::memory_order_relaxed);
+        printf("Error: failed to get class ID from object with ID 0x%p. hr=0x%x\n", (void *)object, hr);
+        state->instance->IncrementFailures();
         return FALSE;
     }
 
-    String classIdName = state->instance->GetClassIDNameHelper(classId);
+    String classIdName = state->instance->GetClassIDName(classId);
     String expectedCustomObjectClass = reinterpret_cast<const WCHAR*>(u"CustomGCHeapObject");
     if (classIdName == expectedCustomObjectClass)
     {
@@ -139,19 +167,14 @@ static BOOL STDMETHODCALLTYPE heap_walk_fn(ObjectID object, void* callbackState)
     return TRUE;
 }
 
-HRESULT GCHeapEnumerationProfiler::EnumerateGCHeapObjects()
+HRESULT GCHeapEnumerationProfiler::ValidateEnumerateGCHeapObjects(HRESULT expected)
 {
-    printf("GCHeapEnumerationProfiler::EnumerateGCHeapObjects\n");
+    printf("GCHeapEnumerationProfiler::ValidateEnumerateGCHeapObjects\n");
     GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
     CallbackState state = { &_objectsCount, instance, &_customGCHeapObjectTypesCount };
 
     printf("Enumerating GC Heap Objects\n");
-    return pCorProfilerInfo->EnumerateGCHeapObjects(heap_walk_fn, &state);
-}
-
-HRESULT GCHeapEnumerationProfiler::ValidateEnumerateGCHeapObjects(HRESULT expected)
-{
-    HRESULT hr = EnumerateGCHeapObjects();
+    HRESULT hr = pCorProfilerInfo->EnumerateGCHeapObjects(heap_walk_fn, &state);
 
     if (hr == expected)
     {
@@ -181,39 +204,30 @@ HRESULT GCHeapEnumerationProfiler::ValidateEnumerateGCHeapObjects(HRESULT expect
         printf("Error: failed to enumerate GC heap objects. hr=0x%x\n", hr);
     }
 
-    _failures++;
+    IncrementFailures();
     return E_FAIL;
 }
 
-extern "C" EXPORT void STDMETHODCALLTYPE EnumerateGCHeapObjects()
+extern "C" EXPORT void STDMETHODCALLTYPE EnumerateGCHeapObjectsWithoutProfilerRequestedRuntimeSuspension()
 {
-    printf("EnumerateGCHeapObjects PInvoke\n");
+    printf("EnumerateGCHeapObjectsWithoutPriorRuntimeSuspension PInvoke\n");
     GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
     if (instance == nullptr)
     {
         printf("Error: profiler instance is null.\n");
         return;
     }
-    instance->ValidateEnumerateGCHeapObjects(0);
-}
 
-extern "C" EXPORT void STDMETHODCALLTYPE EnumerateHeapObjectsInBackgroundThread()
-{
-    GCHeapEnumerationProfiler* instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
-    if (instance == nullptr) {
-        printf("Error: profiler instance is null.\n");
-        return;
+    HRESULT hr = instance->ValidateEnumerateGCHeapObjects(S_OK);
+    if (FAILED(hr))
+    {
+        instance->IncrementFailures();
     }
-
-    std::thread([instance]()
-                {
-                    std::this_thread::sleep_for(std::chrono::seconds(1));
-                    instance->ValidateEnumerateGCHeapObjects(0x80131388);
-                }).detach();
 }
 
 extern "C" EXPORT void STDMETHODCALLTYPE EnumerateGCHeapObjectsWithinProfilerRequestedRuntimeSuspension()
 {
+    printf("EnumerateGCHeapObjectsWithinProfilerRequestedRuntimeSuspension PInvoke\n");
     GCHeapEnumerationProfiler *instance = static_cast<GCHeapEnumerationProfiler*>(GCHeapEnumerationProfiler::Instance);
     if (instance == nullptr)
     {
@@ -221,27 +235,27 @@ extern "C" EXPORT void STDMETHODCALLTYPE EnumerateGCHeapObjectsWithinProfilerReq
         return;
     }
 
-    printf("Suspending Runtime\n");
+    printf("Profiler Suspending Runtime\n");
     HRESULT hr = instance->pCorProfilerInfo->SuspendRuntime();
     if (FAILED(hr))
     {
         printf("Error: failed to suspend runtime. hr=0x%x\n", hr);
+        instance->IncrementFailures();
         return;
     }
 
-    printf("Enumerating GC Heap Objects\n");
-    hr = instance->ValidateEnumerateGCHeapObjects(0);
+    hr = instance->ValidateEnumerateGCHeapObjects(S_OK);
     if (FAILED(hr))
     {
-        printf("Error: failed to enumerate GC heap objects during profiler requested runtime suspension. hr=0x%x\n", hr);
         return;
     }
 
-    printf("Resuming Runtime\n");
+    printf("Profiler Resuming Runtime\n");
     hr = instance->pCorProfilerInfo->ResumeRuntime();
     if (FAILED(hr))
     {
         printf("Error: failed to resume runtime. hr=0x%x\n", hr);
+        instance->IncrementFailures();
         return;
     }
 }

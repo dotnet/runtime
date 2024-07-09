@@ -6855,6 +6855,13 @@ HRESULT ProfToEEInterfaceImpl::SuspendRuntime()
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: SuspendRuntime\n"));
+    if (!IsCalledAsynchronously() && !AreCallbackStateFlagsSet(COR_PRF_CALLBACKSTATE_IN_TRIGGERS_SCOPE))
+    {
+        LOG((LF_CORPROF,
+             LL_ERROR,
+             "**PROF: ERROR: Returning CORPROF_E_UNSUPPORTED_CALL_SEQUENCE due to illegal asynchronous profiler call\n"));
+        return CORPROF_E_UNSUPPORTED_CALL_SEQUENCE;
+    }
 
     if (!g_fEEStarted)
     {
@@ -6887,6 +6894,13 @@ HRESULT ProfToEEInterfaceImpl::ResumeRuntime()
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: ResumeRuntime\n"));
+    if (!IsCalledAsynchronously() && !AreCallbackStateFlagsSet(COR_PRF_CALLBACKSTATE_IN_TRIGGERS_SCOPE))
+    {
+        LOG((LF_CORPROF,
+             LL_ERROR,
+             "**PROF: ERROR: Returning CORPROF_E_UNSUPPORTED_CALL_SEQUENCE due to illegal asynchronous profiler call\n"));
+        return CORPROF_E_UNSUPPORTED_CALL_SEQUENCE;
+    }
 
     if (!g_fEEStarted)
     {
@@ -7644,6 +7658,13 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: EnumerateGCHeapObjects.\n"));
+    if (!IsCalledAsynchronously() && !AreCallbackStateFlagsSet(COR_PRF_CALLBACKSTATE_IN_TRIGGERS_SCOPE))
+    {
+        LOG((LF_CORPROF,
+             LL_ERROR,
+             "**PROF: ERROR: Returning CORPROF_E_UNSUPPORTED_CALL_SEQUENCE due to illegal asynchronous profiler call\n"));
+        return CORPROF_E_UNSUPPORTED_CALL_SEQUENCE;
+    }
 
     if (callback == nullptr)
     {
@@ -7655,22 +7676,38 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
         return CORPROF_E_RUNTIME_UNINITIALIZED;
     }
 
-    bool ownEESuspension = FALSE;
-    if (!ThreadSuspend::SysIsSuspendInProgress() && (ThreadSuspend::GetSuspensionThread() == 0))
+    bool ownEESuspension = false;
+    bool suspendedByThisThread = (ThreadSuspend::GetSuspensionThread() == GetThreadNULLOk());
+    if (suspendedByThisThread && !g_profControlBlock.fProfilerRequestedRuntimeSuspend)
     {
-        g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
-        ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
-        ownEESuspension = TRUE;
-    }
-    else if (!g_profControlBlock.fProfilerRequestedRuntimeSuspend)
-    {
+        // This thread is responsible for suspending the runtime so we can't block
+        // waiting for the runtime to resume. However it wasn't the profiler call that did
+        // the suspend so we don't know what state the GC heap is in. Other threads also might
+        // be modifying it concurrently. In the future more analysis or coordination with other
+        // suspenders might let us narrow the scope of this error condition, but we have no need
+        // to do this now.
         return CORPROF_E_SUSPENSION_IN_PROGRESS;
+    }
+    else if (suspendedByThisThread && g_profControlBlock.fProfilerRequestedRuntimeSuspend)
+    {
+        // This thread previously invoked ICorProfiler::SuspendRuntime(). Our caller
+        // has the responsibility to resume the runtime no earlier than when this API returns
+        // and to preserve the GC heap in a consistent state. We should avoid invoking
+        // SuspendEE/ResumeEE again in this function because those APIs do not support
+        // re-entrant suspends.
     }
     else
     {
-        // The profiler requested a runtime suspension before invoking this API,
-        // so the responsibility of resuming the runtime is outside the scope of this API.
-        // Given that the profiler owns the suspension, walking the GC Heap is safe.
+        _ASSERTE(!suspendedByThisThread);
+        // Its possible some background threads are suspending and resuming the runtime
+        // concurrently. We need to suspend the runtime on this thread to be certain the heap
+        // stays in a walkable state for the duration that we need it to. Our call to
+        // SuspendEE() may race with other threads by design and this thread may block
+        // arbitrarily long inside SuspendEE() for other threads to complete their own
+        // suspensions.
+        g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
+        ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
+        ownEESuspension = TRUE;
     }
 
     // Suspending EE ensures safe object inspection. We permit the GC Heap walk callback to

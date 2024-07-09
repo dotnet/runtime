@@ -1,6 +1,5 @@
 LIBRARY     Profiler.dll
 
 EXPORTS
-            EnumerateGCHeapObjects                                         PRIVATE
-            EnumerateHeapObjectsInBackgroundThread                         PRIVATE
-            EnumerateGCHeapObjectsWithinProfilerRequestedRuntimeSuspension PRIVATE
+            EnumerateGCHeapObjectsWithoutProfilerRequestedRuntimeSuspension PRIVATE
+            EnumerateGCHeapObjectsWithinProfilerRequestedRuntimeSuspension  PRIVATE

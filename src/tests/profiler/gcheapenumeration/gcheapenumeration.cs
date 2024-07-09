@@ -15,10 +15,7 @@ namespace Profiler.Tests
         static List<object> _rootObjects = new List<object>();
 
         [DllImport("Profiler")]
-        private static extern void EnumerateGCHeapObjects();
-
-        [DllImport("Profiler")]
-        private static extern void EnumerateHeapObjectsInBackgroundThread();
+        private static extern void EnumerateGCHeapObjectsWithoutProfilerRequestedRuntimeSuspension();
 
         [DllImport("Profiler")]
         private static extern void EnumerateGCHeapObjectsWithinProfilerRequestedRuntimeSuspension();
@@ -26,7 +23,7 @@ namespace Profiler.Tests
         public static int EnumerateGCHeapObjectsSingleThreadNoPriorSuspension()
         {
             _rootObjects.Add(new CustomGCHeapObject());
-            EnumerateGCHeapObjects();
+            EnumerateGCHeapObjectsWithoutProfilerRequestedRuntimeSuspension();
             return 100;
         }
 
@@ -37,36 +34,12 @@ namespace Profiler.Tests
             return 100;
         }
 
-        public static int EnumerateGCHeapObjectsInBackgroundThreadWithRuntimeSuspension()
-        {
-            _rootObjects.Add(new CustomGCHeapObject());
-            EnumerateHeapObjectsInBackgroundThread();
-            GC.Collect();
-            return 100;
-        }
-
+        // Test invoking ProfToEEInterfaceImpl::EnumerateGCHeapObjects during non-profiler requested runtime suspension, e.g. during GC
+        // ProfToEEInterfaceImpl::EnumerateGCHeapObjects should be invoked by the GarbageCollectionStarted callback
         public static int EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension()
         {
-            ManualResetEvent startEvent = new ManualResetEvent(false);
-            Thread gcThread = new Thread(() =>
-            {
-                startEvent.WaitOne();
-                GC.Collect();
-            });
-            gcThread.Name = "GC.Collect";
-            gcThread.Start();
-
-            Thread enumerateThread = new Thread(() =>
-            {
-                startEvent.WaitOne();
-                Thread.Sleep(1000);
-                _rootObjects.Add(new CustomGCHeapObject());
-                EnumerateGCHeapObjects();
-            });
-            enumerateThread.Name = "EnumerateGCHeapObjects";
-            enumerateThread.Start();
-
-            startEvent.Set();
+            _rootObjects.Add(new CustomGCHeapObject());
+            GC.Collect();
             return 100;
         }
 
@@ -82,38 +55,30 @@ namespace Profiler.Tests
                     case nameof(EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension):
                         return EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension();
 
-                    case nameof(EnumerateGCHeapObjectsInBackgroundThreadWithRuntimeSuspension):
-                        return EnumerateGCHeapObjectsInBackgroundThreadWithRuntimeSuspension();
-
                     case nameof(EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension):
                         return EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension();
                 }
             }
 
-            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsSingleThreadNoPriorSuspension), "FALSE"))
+            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsSingleThreadNoPriorSuspension), false))
             {
                 return 101;
             }
 
-            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension), "FALSE"))
+            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsSingleThreadWithinProfilerRequestedRuntimeSuspension), false))
             {
                 return 102;
             }
 
-            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsInBackgroundThreadWithRuntimeSuspension), "TRUE"))
+            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension), true))
             {
                 return 103;
-            }
-
-            if (!RunProfilerTest(nameof(EnumerateGCHeapObjectsMultiThreadWithCompetingRuntimeSuspension), "FALSE"))
-            {
-                return 104;
             }
 
             return 100;
         }
 
-        private static bool RunProfilerTest(string testName, string shouldSetMonitorGCEventMask)
+        private static bool RunProfilerTest(string testName, bool shouldSetMonitorGCEventMask)
         {
             try
             {
@@ -123,7 +88,7 @@ namespace Profiler.Tests
                                               profileeArguments: testName,
                                               envVars: new Dictionary<string, string>
                                               {
-                                                {ShouldSetMonitorGCEventMaskEnvVar, shouldSetMonitorGCEventMask},
+                                                {ShouldSetMonitorGCEventMaskEnvVar, shouldSetMonitorGCEventMask ? "TRUE" : "FALSE"},
                                               }
                                               ) == 100;
             }

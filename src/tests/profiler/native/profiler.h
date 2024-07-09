@@ -88,20 +88,20 @@ class Profiler : public ICorProfilerCallback11
 {
 private:
     std::atomic<int> refCount;
-    static ProfilerCallback s_callback; 
+    static ProfilerCallback s_callback;
     static ManualEvent s_callbackSet;
-    
+
 
 protected:
     static void NotifyManagedCodeViaCallback(ICorProfilerInfo15 *pCorProfilerInfo);
 
-    String GetClassIDName(ClassID classId);
     String GetFunctionIDName(FunctionID funcId);
     String GetModuleIDName(ModuleID modId);
 
 public:
     static Profiler *Instance;
     static void SetCallback(ProfilerCallback callback);
+    String GetClassIDName(ClassID classId);
 
     ICorProfilerInfo15* pCorProfilerInfo;
 
