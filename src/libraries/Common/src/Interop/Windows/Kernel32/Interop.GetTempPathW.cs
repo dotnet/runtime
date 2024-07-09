@@ -9,5 +9,8 @@ internal static partial class Interop
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
         internal static extern uint GetTempPathW(int bufferLen, ref char buffer);
+
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
+        internal static extern uint GetTempPath2W(int bufferLen, ref char buffer);
     }
 }

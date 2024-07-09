@@ -1567,9 +1567,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTempPathW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetTempPathW.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs</Link>
     </Compile>

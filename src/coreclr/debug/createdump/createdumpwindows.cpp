@@ -73,3 +73,38 @@ exit:
 
     return result;
 }
+
+typedef DWORD(WINAPI *pfnGetTempPathA)(DWORD nBufferLength, LPSTR  lpBuffer);
+
+static volatile pfnGetTempPathA
+g_pfnGetTempPathA = nullptr;
+
+
+DWORD
+GetTempPathWrapper(
+    IN DWORD nBufferLength,
+    OUT LPSTR lpBuffer)
+{
+    if (g_pfnGetTempPathA == nullptr)
+    {
+        HMODULE hKernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+        pfnGetTempPathA pLocalGetTempPathA = NULL;
+        if (hKernel32 != NULL)
+        {
+            // store to thread local variable to prevent data race
+            pLocalGetTempPathA = (pfnGetTempPathA)::GetProcAddress(hKernel32, "GetTempPath2A");
+        }
+
+        if (pLocalGetTempPathA == NULL) // method is only available with Windows 10 Creators Update or later
+        {
+            g_pfnGetTempPathA = &GetTempPathA;
+        }
+        else
+        {
+            g_pfnGetTempPathA = pLocalGetTempPathA;
+        }
+    }
+
+    return g_pfnGetTempPathA(nBufferLength, lpBuffer);
+}
