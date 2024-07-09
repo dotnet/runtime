@@ -1966,6 +1966,12 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
         return false;
     }
 
+    // No point duplicating this block if it does not remove (part of) the join.
+    if ((target->GetTrueTarget() == target) || (target->GetFalseTarget() == target))
+    {
+        return false;
+    }
+
     Statement* const lastStmt  = target->lastStmt();
     Statement* const firstStmt = target->FirstNonPhiDef();
 
