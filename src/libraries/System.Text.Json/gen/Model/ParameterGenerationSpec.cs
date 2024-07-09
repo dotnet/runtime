@@ -32,5 +32,6 @@ namespace System.Text.Json.SourceGeneration
         // so it always satisfies the structural equality requirement for the record.
         public required object? DefaultValue { get; init; }
         public required int ParameterIndex { get; init; }
+        public required bool IsNullable { get; init; }
     }
 }

@@ -9,13 +9,6 @@ set (LLVM_LIBUNWIND_SOURCES_BASE
     src/libunwind.cpp
 )
 
-if(CLR_CMAKE_TARGET_APPLE)
-    set(LLVM_LIBUNWIND_SOURCES_BASE
-        ${LLVM_LIBUNWIND_SOURCES_BASE}
-        src/Unwind_AppleExtras.cpp
-    )
-endif()
-
 set(LLVM_LIBUNWIND_ASM_SOURCES_BASE
     src/UnwindRegistersRestore.S
     src/UnwindRegistersSave.S

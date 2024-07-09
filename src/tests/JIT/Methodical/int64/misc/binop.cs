@@ -9,6 +9,7 @@ namespace JitTest_binop_misc_cs
     public class Test
     {
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             long L1, L2;

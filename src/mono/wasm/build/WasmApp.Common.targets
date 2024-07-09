@@ -113,21 +113,14 @@
   <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
-  <ItemGroup>
-      <_BoolPropertiesThatTriggerRelinking Include="InvariantTimezone" DefaultValueInRuntimePack="false" />
-      <_BoolPropertiesThatTriggerRelinking Include="InvariantGlobalization" DefaultValueInRuntimePack="false" />
-      <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="true" />
-      <_BoolPropertiesThatTriggerRelinking Include="WasmSingleFileBundle" DefaultValueInRuntimePack="false" />
-  </ItemGroup>
-
   <PropertyGroup>
     <PrepareInputsForWasmBuildDependsOn>
       $(PrepareInputsForWasmBuildDependsOn);
       _SetupToolchain;
+      _ReadWasmProps;
       _SetWasmBuildNativeDefaults;
       _GetDefaultWasmAssembliesToBundle;
       _WasmGetRuntimeConfigPath;
-      _ReadWasmProps;
     </PrepareInputsForWasmBuildDependsOn>
 
     <WasmGenerateAppBundleDependsOn>
@@ -162,8 +155,9 @@
     </WasmLinkDotNetDependsOn>
 
     <WasmDedup Condition="'$(WasmDedup)' == ''">true</WasmDedup>
-    <IsWasiProject Condition="'$(IsWasiProject)' == '' and '$(RuntimeIdentifier)' == 'wasi-wasm' and '$(OutputType)' != 'Library'">true</IsWasiProject>
-    <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(OutputType)' != 'Library'">true</IsBrowserWasmProject>
+    <_IsLibraryMode Condition="'$(OutputType)' == 'Library' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">true</_IsLibraryMode>
+    <IsWasiProject Condition="'$(IsWasiProject)' == '' and '$(RuntimeIdentifier)' == 'wasi-wasm' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</IsWasiProject>
+    <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</IsBrowserWasmProject>
     <IsWasmProject Condition="'$(IsWasmProject)' == '' and ('$(IsWasiProject)' == 'true' or '$(IsBrowserWasmProject)' == 'true')">true</IsWasmProject>
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == '' and '$(DisableAutoWasmBuildApp)' != 'true'">Build</WasmBuildAppAfterThisTarget>
 
@@ -173,7 +167,7 @@
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
     <!-- VS uses DeployOnBuild, and sdk sets _IsPublishing -->
     <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and ('$(DeployOnBuild)' == 'true' or '$(_IsPublishing)' == 'true')">true</WasmBuildOnlyAfterPublish>
-    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(OutputType)' != 'Library'">true</WasmGenerateAppBundle>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</WasmGenerateAppBundle>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
 
     <!-- FIXME: can't set to true because
@@ -253,7 +247,7 @@
   <ItemGroup>
     <UpToDateCheckInput Include="@(NativeFileReference)" />
   </ItemGroup>
-  
+
   <PropertyGroup>
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' != '0'">true</_WasmDebuggerSupport>
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
@@ -346,7 +340,7 @@
 
   <Target Name="_WasmGetRuntimeConfigPath">
     <PropertyGroup>
-      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
+      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == '$(AssemblyName)' and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
       <_WasmRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' == '' and $(_MainAssemblyPath) != ''">$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
       <_ParsedRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' != ''">$([System.IO.Path]::GetDirectoryName($(_WasmRuntimeConfigFilePath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
     </PropertyGroup>
@@ -399,6 +393,7 @@
       <WasmOptConfigurationFlags ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <EmccDefaultExportedFunctions ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <EmccDefaultExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <BoolPropertiesThatTriggerRelinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
     </ParameterGroup>
   </UsingTask>
 
@@ -410,6 +405,7 @@
 
       <!-- shared by browser/wasi -->
       <Output TaskParameter="WasmOptConfigurationFlags" ItemName="_DefaulWasmOptConfigurationFlags" />
+      <Output TaskParameter="BoolPropertiesThatTriggerRelinking" ItemName="_BoolPropertiesThatTriggerRelinking" />
     </ReadWasmProps>
 
     <CreateProperty Value="%(_EmccPropItems.Value)" Condition="%(_EmccPropItems.Identity) != ''">
@@ -435,7 +431,7 @@
     </RuntimeConfigParserTask>
 
     <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" />
+      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" LoadingStage="Core" />
     </ItemGroup>
   </Target>
 
@@ -446,7 +442,7 @@
     <!-- Use a unique property, so the already run wasm targets can also run -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="WasmNestedPublishApp"
-             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=">
+             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=;_WasmIsPublishing=$(_IsPublishing)">
       <Output TaskParameter="TargetOutputs" ItemName="WasmNestedPublishAppResultItems" />
     </MSBuild>
 
@@ -625,6 +621,8 @@
 
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(PublishTrimmed)' != 'true'"
            Text="AOT is not supported without IL trimming (PublishTrimmed=true required)." />
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(Configuration)' == 'Debug'"
+           Text="AOT is not supported in debug configuration (Configuration=Release required)." />
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
     <Error Condition="'$(_IsToolchainMissing)' == 'true'"
            Text="$(_ToolchainMissingErrorMessage) SDK is required for AOT'ing assemblies." />
@@ -799,7 +797,8 @@
       PInvokeModules="@(_WasmPInvokeModules)"
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
-      CacheFilePath="$(_WasmM2NCachePath)">
+      CacheFilePath="$(_WasmM2NCachePath)"
+      IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>

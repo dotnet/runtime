@@ -300,7 +300,7 @@ function try_marshal_sync_task_to_js (arg: JSMarshalerArgument, type: MarshalerT
             // when we arrived here from _marshal_cs_object_to_js
             res_converter = cs_to_js_marshalers.get(element_type);
         }
-        mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[element_type]}. ${jsinteropDoc}`);
+        mono_assert(res_converter, () => `Unknown sub_converter for type ${element_type}. ${jsinteropDoc}`);
 
         const val = res_converter(arg);
         return Promise.resolve(val);
@@ -323,13 +323,13 @@ function create_task_holder (res_converter?: MarshalerToJs) {
                     // when we arrived here from _marshal_cs_object_to_js
                     res_converter = cs_to_js_marshalers.get(type);
                 }
-                mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[type]}. ${jsinteropDoc}`);
+                mono_assert(res_converter, () => `Unknown sub_converter for type ${type}. ${jsinteropDoc}`);
 
                 const js_value = res_converter!(argInner);
                 promise_control.resolve(js_value);
             }
         } else {
-            mono_assert(false, () => `Unexpected type ${MarshalerType[type]}`);
+            mono_assert(false, () => `Unexpected type ${type}`);
         }
         mono_wasm_release_cs_owned_object(js_handle);
     });
@@ -478,7 +478,7 @@ function _marshal_cs_object_to_js (arg: JSMarshalerArgument): any {
 
     // other types
     const converter = cs_to_js_marshalers.get(marshaler_type);
-    mono_assert(converter, () => `Unknown converter for type ${MarshalerType[marshaler_type]}. ${jsinteropDoc}`);
+    mono_assert(converter, () => `Unknown converter for type ${marshaler_type}. ${jsinteropDoc}`);
     return converter(arg);
 }
 
@@ -493,7 +493,7 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
         return null;
     }
     const elementSize = array_element_size(element_type);
-    mono_assert(elementSize != -1, () => `Element type ${MarshalerType[element_type]} not supported`);
+    mono_assert(elementSize != -1, () => `Element type ${element_type} not supported`);
     const buffer_ptr = get_arg_intptr(arg);
     const length = get_arg_length(arg);
     let result: Array<any> | TypedArray | null = null;
@@ -533,7 +533,7 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
         const sourceView = localHeapViewF64().subarray(buffer_ptr >> 3, (buffer_ptr >> 3) + length);
         result = sourceView.slice();//copy
     } else {
-        throw new Error(`NotImplementedException ${MarshalerType[element_type]}. ${jsinteropDoc}`);
+        throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);
     }
     Module._free(<any>buffer_ptr);
     return result;
@@ -552,7 +552,7 @@ function _marshal_span_to_js (arg: JSMarshalerArgument, element_type?: Marshaler
     } else if (element_type == MarshalerType.Double) {
         result = new Span(<any>buffer_ptr, length, MemoryViewType.Double);
     } else {
-        throw new Error(`NotImplementedException ${MarshalerType[element_type]}. ${jsinteropDoc}`);
+        throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);
     }
     return result;
 }
@@ -570,7 +570,7 @@ function _marshal_array_segment_to_js (arg: JSMarshalerArgument, element_type?: 
     } else if (element_type == MarshalerType.Double) {
         result = new ArraySegment(<any>buffer_ptr, length, MemoryViewType.Double);
     } else {
-        throw new Error(`NotImplementedException ${MarshalerType[element_type]}. ${jsinteropDoc}`);
+        throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);
     }
     const gc_handle = get_arg_gc_handle(arg);
     if (BuildConfiguration === "Debug") {

@@ -19,7 +19,6 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Debug = System.Diagnostics.Debug;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
-using AssemblyName = System.Reflection.AssemblyName;
 
 namespace ILCompiler
 {
@@ -45,8 +44,8 @@ namespace ILCompiler
         public MstatObjectDumper(string fileName, TypeSystemContext context)
         {
             _fileName = fileName;
-            var asmName = new AssemblyName(Path.GetFileName(fileName));
-            asmName.Version = new Version(VersionMajor, VersionMinor);
+            var asmName = new AssemblyNameInfo(Path.GetFileName(fileName),
+                version: new Version(VersionMajor, VersionMinor));
             _emitter = new MstatEmitter(asmName, context);
             _emitter.AllowUseOfAddGlobalMethod();
         }
@@ -186,7 +185,7 @@ namespace ILCompiler
         {
             private readonly List<(string Name, BlobBuilder Content)> _customSections = new();
 
-            public MstatEmitter(AssemblyName assemblyName, TypeSystemContext context, AssemblyFlags flags = default(AssemblyFlags), byte[] publicKeyArray = null)
+            public MstatEmitter(AssemblyNameInfo assemblyName, TypeSystemContext context, AssemblyFlags flags = default(AssemblyFlags), byte[] publicKeyArray = null)
                 : base(assemblyName, context, flags, publicKeyArray)
             {
             }

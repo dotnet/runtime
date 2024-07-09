@@ -92,6 +92,12 @@ namespace System.Security.Cryptography
             }
         }
 
+        private LiteKmac(SafeBCryptHashHandle hashHandle, int finishFlags)
+        {
+            _hashHandle = hashHandle;
+            _finishFlags = finishFlags;
+        }
+
         public int HashSizeInBytes
         {
             get
@@ -143,6 +149,12 @@ namespace System.Security.Cryptography
             }
 
             return destination.Length;
+        }
+
+        public LiteKmac Clone()
+        {
+            SafeBCryptHashHandle clone = Interop.BCrypt.BCryptDuplicateHash(_hashHandle);
+            return new LiteKmac(clone, _finishFlags);
         }
 
         public void Dispose()

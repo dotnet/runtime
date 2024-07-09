@@ -239,10 +239,10 @@ INST7(ld1sw,             "ld1sw",                 0,                       IF_SV
     // LD1SW   {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_IU_4B_B         11000101010mmmmm 100gggnnnnnttttt     C540 8000   
     // LD1SW   {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_IV_3A           11000101001iiiii 100gggnnnnnttttt     C520 8000   
 
-//    enum               name                     info                                              SVE_AA_3A        SVE_BD_3A        SVE_EE_1A        SVE_FD_3A        SVE_FD_3B        SVE_FD_3C        
+//    enum               name                     info                                              SVE_AA_3A        SVE_AT_3A        SVE_EE_1A        SVE_FD_3A        SVE_FD_3B        SVE_FD_3C        
 INST6(mul,               "mul",                   0,                       IF_SVE_6A,               0x04100000,      0x04206000,      0x2530C000,      0x4420F800,      0x44A0F800,      0x44E0F800       )
     // MUL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_AA_3A           00000100xx010000 000gggmmmmmddddd     0410 0000   
-    // MUL     <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_BD_3A           00000100xx1mmmmm 011000nnnnnddddd     0420 6000   
+    // MUL     <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000100xx1mmmmm 011000nnnnnddddd     0420 6000   
     // MUL     <Zdn>.<T>, <Zdn>.<T>, #<imm>                                              SVE_EE_1A           00100101xx110000 110iiiiiiiiddddd     2530 C000   
     // MUL     <Zd>.H, <Zn>.H, <Zm>.H[<imm>]                                             SVE_FD_3A           010001000i1iimmm 111110nnnnnddddd     4420 F800   
     // MUL     <Zd>.S, <Zn>.S, <Zm>.S[<imm>]                                             SVE_FD_3B           01000100101iimmm 111110nnnnnddddd     44A0 F800   
@@ -364,11 +364,11 @@ INST5(lsr,               "lsr",                   RSH,                     IF_SV
     // LSR     <Zd>.<T>, <Zn>.<T>, <Zm>.D                                                SVE_BG_3A           00000100xx1mmmmm 100001nnnnnddddd     0420 8400   
 
 
-//    enum               name                     info                                              SVE_GX_3A        SVE_GX_3B        SVE_HK_3A        SVE_HL_3A        SVE_HM_2A        
+//    enum               name                     info                                              SVE_GX_3A        SVE_GX_3B        SVE_AT_3A        SVE_HL_3A        SVE_HM_2A        
 INST5(fmul,              "fmul",                  0,                       IF_SVE_5B,               0x64A02000,      0x64E02000,      0x65000800,      0x65028000,      0x651A8000       )
     // FMUL    <Zd>.S, <Zn>.S, <Zm>.S[<imm>]                                             SVE_GX_3A           01100100101iimmm 001000nnnnnddddd     64A0 2000   
     // FMUL    <Zd>.D, <Zn>.D, <Zm>.D[<imm>]                                             SVE_GX_3B           01100100111immmm 001000nnnnnddddd     64E0 2000   
-    // FMUL    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_HK_3A           01100101xx0mmmmm 000010nnnnnddddd     6500 0800   
+    // FMUL    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01100101xx0mmmmm 000010nnnnnddddd     6500 0800   
     // FMUL    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_HL_3A           01100101xx000010 100gggmmmmmddddd     6502 8000   
     // FMUL    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>                                     SVE_HM_2A           01100101xx011010 100ggg0000iddddd     651A 8000   
 
@@ -443,15 +443,15 @@ INST4(fmov,              "fmov",                  0,                       IF_SV
 
 
 
-//    enum               name                     info                                              SVE_BE_3A        SVE_FI_3A        SVE_FI_3B        SVE_FI_3C        
+//    enum               name                     info                                              SVE_AT_3A        SVE_FI_3A        SVE_FI_3B        SVE_FI_3C        
 INST4(sqdmulh,           "sqdmulh",               0,                       IF_SVE_4E,               0x04207000,      0x4420F000,      0x44A0F000,      0x44E0F000       )
-    // SQDMULH <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_BE_3A           00000100xx1mmmmm 011100nnnnnddddd     0420 7000   
+    // SQDMULH <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000100xx1mmmmm 011100nnnnnddddd     0420 7000   
     // SQDMULH <Zd>.H, <Zn>.H, <Zm>.H[<imm>]                                             SVE_FI_3A           010001000i1iimmm 111100nnnnnddddd     4420 F000   
     // SQDMULH <Zd>.S, <Zn>.S, <Zm>.S[<imm>]                                             SVE_FI_3B           01000100101iimmm 111100nnnnnddddd     44A0 F000   
     // SQDMULH <Zd>.D, <Zn>.D, <Zm>.D[<imm>]                                             SVE_FI_3C           01000100111immmm 111100nnnnnddddd     44E0 F000   
 
 INST4(sqrdmulh,          "sqrdmulh",              0,                       IF_SVE_4E,               0x04207400,      0x4420F400,      0x44A0F400,      0x44E0F400       )
-    // SQRDMULH <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                             SVE_BE_3A           00000100xx1mmmmm 011101nnnnnddddd     0420 7400   
+    // SQRDMULH <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                             SVE_AT_3A           00000100xx1mmmmm 011101nnnnnddddd     0420 7400   
     // SQRDMULH <Zd>.H, <Zn>.H, <Zm>.H[<imm>]                                            SVE_FI_3A           010001000i1iimmm 111101nnnnnddddd     4420 F400   
     // SQRDMULH <Zd>.S, <Zn>.S, <Zm>.S[<imm>]                                            SVE_FI_3B           01000100101iimmm 111101nnnnnddddd     44A0 F400   
     // SQRDMULH <Zd>.D, <Zn>.D, <Zm>.D[<imm>]                                            SVE_FI_3C           01000100111immmm 111101nnnnnddddd     44E0 F400   
@@ -581,34 +581,34 @@ INST3(dup,               "dup",                   0,                       IF_SV
     // DUP     <Zd>.<T>, #<imm>{, <shift>}                                               SVE_EB_1A           00100101xx111000 11hiiiiiiiiddddd     2538 C000   
 
 
-//    enum               name                     info                                              SVE_BR_3A        SVE_BR_3B        SVE_CI_3A        
+//    enum               name                     info                                              SVE_AT_3A        SVE_BR_3B        SVE_CI_3A        
 INST3(trn1,              "trn1",                  0,                       IF_SVE_3D,               0x05207000,      0x05A01800,      0x05205000       )
-    // TRN1    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_BR_3A           00000101xx1mmmmm 011100nnnnnddddd     0520 7000   
+    // TRN1    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000101xx1mmmmm 011100nnnnnddddd     0520 7000   
     // TRN1    <Zd>.Q, <Zn>.Q, <Zm>.Q                                                    SVE_BR_3B           00000101101mmmmm 000110nnnnnddddd     05A0 1800   
     // TRN1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>                                              SVE_CI_3A           00000101xx10MMMM 0101000NNNN0DDDD     0520 5000   
 
 INST3(trn2,              "trn2",                  0,                       IF_SVE_3D,               0x05207400,      0x05A01C00,      0x05205400       )
-    // TRN2    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_BR_3A           00000101xx1mmmmm 011101nnnnnddddd     0520 7400   
+    // TRN2    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000101xx1mmmmm 011101nnnnnddddd     0520 7400   
     // TRN2    <Zd>.Q, <Zn>.Q, <Zm>.Q                                                    SVE_BR_3B           00000101101mmmmm 000111nnnnnddddd     05A0 1C00   
     // TRN2    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>                                              SVE_CI_3A           00000101xx10MMMM 0101010NNNN0DDDD     0520 5400   
 
 INST3(uzp1,              "uzp1",                  0,                       IF_SVE_3D,               0x05206800,      0x05A00800,      0x05204800       )
-    // UZP1    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_BR_3A           00000101xx1mmmmm 011010nnnnnddddd     0520 6800   
+    // UZP1    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000101xx1mmmmm 011010nnnnnddddd     0520 6800   
     // UZP1    <Zd>.Q, <Zn>.Q, <Zm>.Q                                                    SVE_BR_3B           00000101101mmmmm 000010nnnnnddddd     05A0 0800   
     // UZP1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>                                              SVE_CI_3A           00000101xx10MMMM 0100100NNNN0DDDD     0520 4800   
 
 INST3(uzp2,              "uzp2",                  0,                       IF_SVE_3D,               0x05206C00,      0x05A00C00,      0x05204C00       )
-    // UZP2    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_BR_3A           00000101xx1mmmmm 011011nnnnnddddd     0520 6C00   
+    // UZP2    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000101xx1mmmmm 011011nnnnnddddd     0520 6C00   
     // UZP2    <Zd>.Q, <Zn>.Q, <Zm>.Q                                                    SVE_BR_3B           00000101101mmmmm 000011nnnnnddddd     05A0 0C00   
     // UZP2    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>                                              SVE_CI_3A           00000101xx10MMMM 0100110NNNN0DDDD     0520 4C00   
 
 INST3(zip1,              "zip1",                  0,                       IF_SVE_3D,               0x05206000,      0x05A00000,      0x05204000       )
-    // ZIP1    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_BR_3A           00000101xx1mmmmm 011000nnnnnddddd     0520 6000   
+    // ZIP1    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000101xx1mmmmm 011000nnnnnddddd     0520 6000   
     // ZIP1    <Zd>.Q, <Zn>.Q, <Zm>.Q                                                    SVE_BR_3B           00000101101mmmmm 000000nnnnnddddd     05A0 0000   
     // ZIP1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>                                              SVE_CI_3A           00000101xx10MMMM 0100000NNNN0DDDD     0520 4000   
 
 INST3(zip2,              "zip2",                  0,                       IF_SVE_3D,               0x05206400,      0x05A00400,      0x05204400       )
-    // ZIP2    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_BR_3A           00000101xx1mmmmm 011001nnnnnddddd     0520 6400   
+    // ZIP2    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000101xx1mmmmm 011001nnnnnddddd     0520 6400   
     // ZIP2    <Zd>.Q, <Zn>.Q, <Zm>.Q                                                    SVE_BR_3B           00000101101mmmmm 000001nnnnnddddd     05A0 0400   
     // ZIP2    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>                                              SVE_CI_3A           00000101xx10MMMM 0100010NNNN0DDDD     0520 4400   
 
@@ -654,14 +654,14 @@ INST3(luti4,             "luti4",                 0,                       IF_SV
     // LUTI4   <Zd>.H, {<Zn>.H }, <Zm>[<index>]                                          SVE_GH_3B_B         01000101ii1mmmmm 101111nnnnnddddd     4520 BC00   
 
 
-//    enum               name                     info                                              SVE_HK_3A        SVE_HL_3A        SVE_HM_2A        
+//    enum               name                     info                                              SVE_AT_3A        SVE_HL_3A        SVE_HM_2A        
 INST3(fadd,              "fadd",                  0,                       IF_SVE_3H,               0x65000000,      0x65008000,      0x65188000       )
-    // FADD    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_HK_3A           01100101xx0mmmmm 000000nnnnnddddd     6500 0000   
+    // FADD    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01100101xx0mmmmm 000000nnnnnddddd     6500 0000   
     // FADD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_HL_3A           01100101xx000000 100gggmmmmmddddd     6500 8000   
     // FADD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>                                     SVE_HM_2A           01100101xx011000 100ggg0000iddddd     6518 8000   
 
 INST3(fsub,              "fsub",                  0,                       IF_SVE_3H,               0x65000400,      0x65018000,      0x65198000       )
-    // FSUB    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_HK_3A           01100101xx0mmmmm 000001nnnnnddddd     6500 0400   
+    // FSUB    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01100101xx0mmmmm 000001nnnnnddddd     6500 0400   
     // FSUB    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_HL_3A           01100101xx000001 100gggmmmmmddddd     6501 8000   
     // FSUB    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>                                     SVE_HM_2A           01100101xx011001 100ggg0000iddddd     6519 8000   
 
@@ -837,60 +837,60 @@ INST3(umlslt,            "umlslt",                0,                       IF_SV
     // UMLSLT  <Zda>.D, <Zn>.S, <Zm>.S[<imm>]                                            SVE_FG_3B           01000100111immmm 1011i1nnnnnddddd     44E0 B400   
 
 
-//    enum               name                     info                                              SVE_EO_3A        SVE_FJ_3A        SVE_FJ_3B        
+//    enum               name                     info                                              SVE_EL_3A        SVE_FJ_3A        SVE_FJ_3B        
 INST3(sqdmlalb,          "sqdmlalb",              0,                       IF_SVE_3Q,               0x44006000,      0x44A02000,      0x44E02000       )
-    // SQDMLALB <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                          SVE_EO_3A           01000100xx0mmmmm 011000nnnnnddddd     4400 6000   
+    // SQDMLALB <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                          SVE_EL_3A           01000100xx0mmmmm 011000nnnnnddddd     4400 6000   
     // SQDMLALB <Zda>.S, <Zn>.H, <Zm>.H[<imm>]                                           SVE_FJ_3A           01000100101iimmm 0010i0nnnnnddddd     44A0 2000   
     // SQDMLALB <Zda>.D, <Zn>.S, <Zm>.S[<imm>]                                           SVE_FJ_3B           01000100111immmm 0010i0nnnnnddddd     44E0 2000   
 
 INST3(sqdmlalt,          "sqdmlalt",              0,                       IF_SVE_3Q,               0x44006400,      0x44A02400,      0x44E02400       )
-    // SQDMLALT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                          SVE_EO_3A           01000100xx0mmmmm 011001nnnnnddddd     4400 6400   
+    // SQDMLALT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                          SVE_EL_3A           01000100xx0mmmmm 011001nnnnnddddd     4400 6400   
     // SQDMLALT <Zda>.S, <Zn>.H, <Zm>.H[<imm>]                                           SVE_FJ_3A           01000100101iimmm 0010i1nnnnnddddd     44A0 2400   
     // SQDMLALT <Zda>.D, <Zn>.S, <Zm>.S[<imm>]                                           SVE_FJ_3B           01000100111immmm 0010i1nnnnnddddd     44E0 2400   
 
 INST3(sqdmlslb,          "sqdmlslb",              0,                       IF_SVE_3Q,               0x44006800,      0x44A03000,      0x44E03000       )
-    // SQDMLSLB <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                          SVE_EO_3A           01000100xx0mmmmm 011010nnnnnddddd     4400 6800   
+    // SQDMLSLB <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                          SVE_EL_3A           01000100xx0mmmmm 011010nnnnnddddd     4400 6800   
     // SQDMLSLB <Zda>.S, <Zn>.H, <Zm>.H[<imm>]                                           SVE_FJ_3A           01000100101iimmm 0011i0nnnnnddddd     44A0 3000   
     // SQDMLSLB <Zda>.D, <Zn>.S, <Zm>.S[<imm>]                                           SVE_FJ_3B           01000100111immmm 0011i0nnnnnddddd     44E0 3000   
 
 INST3(sqdmlslt,          "sqdmlslt",              0,                       IF_SVE_3Q,               0x44006C00,      0x44A03400,      0x44E03400       )
-    // SQDMLSLT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                          SVE_EO_3A           01000100xx0mmmmm 011011nnnnnddddd     4400 6C00   
+    // SQDMLSLT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                          SVE_EL_3A           01000100xx0mmmmm 011011nnnnnddddd     4400 6C00   
     // SQDMLSLT <Zda>.S, <Zn>.H, <Zm>.H[<imm>]                                           SVE_FJ_3A           01000100101iimmm 0011i1nnnnnddddd     44A0 3400   
     // SQDMLSLT <Zda>.D, <Zn>.S, <Zm>.S[<imm>]                                           SVE_FJ_3B           01000100111immmm 0011i1nnnnnddddd     44E0 3400   
 
 
-//    enum               name                     info                                              SVE_FE_3A        SVE_FE_3B        SVE_FN_3A        
+//    enum               name                     info                                              SVE_FE_3A        SVE_FE_3B        SVE_FL_3A        
 INST3(smullb,            "smullb",                0,                       IF_SVE_3R,               0x44A0C000,      0x44E0C000,      0x45007000       )
     // SMULLB  <Zd>.S, <Zn>.H, <Zm>.H[<imm>]                                             SVE_FE_3A           01000100101iimmm 1100i0nnnnnddddd     44A0 C000   
     // SMULLB  <Zd>.D, <Zn>.S, <Zm>.S[<imm>]                                             SVE_FE_3B           01000100111immmm 1100i0nnnnnddddd     44E0 C000   
-    // SMULLB  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FN_3A           01000101xx0mmmmm 011100nnnnnddddd     4500 7000   
+    // SMULLB  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FL_3A           01000101xx0mmmmm 011100nnnnnddddd     4500 7000   
 
 INST3(smullt,            "smullt",                0,                       IF_SVE_3R,               0x44A0C400,      0x44E0C400,      0x45007400       )
     // SMULLT  <Zd>.S, <Zn>.H, <Zm>.H[<imm>]                                             SVE_FE_3A           01000100101iimmm 1100i1nnnnnddddd     44A0 C400   
     // SMULLT  <Zd>.D, <Zn>.S, <Zm>.S[<imm>]                                             SVE_FE_3B           01000100111immmm 1100i1nnnnnddddd     44E0 C400   
-    // SMULLT  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FN_3A           01000101xx0mmmmm 011101nnnnnddddd     4500 7400   
+    // SMULLT  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FL_3A           01000101xx0mmmmm 011101nnnnnddddd     4500 7400   
 
 INST3(umullb,            "umullb",                0,                       IF_SVE_3R,               0x44A0D000,      0x44E0D000,      0x45007800       )
     // UMULLB  <Zd>.S, <Zn>.H, <Zm>.H[<imm>]                                             SVE_FE_3A           01000100101iimmm 1101i0nnnnnddddd     44A0 D000   
     // UMULLB  <Zd>.D, <Zn>.S, <Zm>.S[<imm>]                                             SVE_FE_3B           01000100111immmm 1101i0nnnnnddddd     44E0 D000   
-    // UMULLB  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FN_3A           01000101xx0mmmmm 011110nnnnnddddd     4500 7800   
+    // UMULLB  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FL_3A           01000101xx0mmmmm 011110nnnnnddddd     4500 7800   
 
 INST3(umullt,            "umullt",                0,                       IF_SVE_3R,               0x44A0D400,      0x44E0D400,      0x45007C00       )
     // UMULLT  <Zd>.S, <Zn>.H, <Zm>.H[<imm>]                                             SVE_FE_3A           01000100101iimmm 1101i1nnnnnddddd     44A0 D400   
     // UMULLT  <Zd>.D, <Zn>.S, <Zm>.S[<imm>]                                             SVE_FE_3B           01000100111immmm 1101i1nnnnnddddd     44E0 D400   
-    // UMULLT  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FN_3A           01000101xx0mmmmm 011111nnnnnddddd     4500 7C00   
+    // UMULLT  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FL_3A           01000101xx0mmmmm 011111nnnnnddddd     4500 7C00   
 
 
-//    enum               name                     info                                              SVE_FH_3A        SVE_FH_3B        SVE_FN_3A        
+//    enum               name                     info                                              SVE_FH_3A        SVE_FH_3B        SVE_FL_3A        
 INST3(sqdmullb,          "sqdmullb",              0,                       IF_SVE_3S,               0x44A0E000,      0x44E0E000,      0x45006000       )
     // SQDMULLB <Zd>.S, <Zn>.H, <Zm>.H[<imm>]                                            SVE_FH_3A           01000100101iimmm 1110i0nnnnnddddd     44A0 E000   
     // SQDMULLB <Zd>.D, <Zn>.S, <Zm>.S[<imm>]                                            SVE_FH_3B           01000100111immmm 1110i0nnnnnddddd     44E0 E000   
-    // SQDMULLB <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_FN_3A           01000101xx0mmmmm 011000nnnnnddddd     4500 6000   
+    // SQDMULLB <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_FL_3A           01000101xx0mmmmm 011000nnnnnddddd     4500 6000   
 
 INST3(sqdmullt,          "sqdmullt",              0,                       IF_SVE_3S,               0x44A0E400,      0x44E0E400,      0x45006400       )
     // SQDMULLT <Zd>.S, <Zn>.H, <Zm>.H[<imm>]                                            SVE_FH_3A           01000100101iimmm 1110i1nnnnnddddd     44A0 E400   
     // SQDMULLT <Zd>.D, <Zn>.S, <Zm>.S[<imm>]                                            SVE_FH_3B           01000100111immmm 1110i1nnnnnddddd     44E0 E400   
-    // SQDMULLT <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_FN_3A           01000101xx0mmmmm 011001nnnnnddddd     4500 6400   
+    // SQDMULLT <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_FL_3A           01000101xx0mmmmm 011001nnnnnddddd     4500 6400   
 
 
 //    enum               name                     info                                              SVE_GX_3C        SVE_HK_3B        SVE_HL_3B        
@@ -960,14 +960,14 @@ INST2(rev,               "rev",                   0,                       IF_SV
     // REV     <Pd>.<T>, <Pn>.<T>                                                        SVE_CJ_2A           00000101xx110100 0100000NNNN0DDDD     0534 4000   
 
 
-//    enum               name                     info                                              SVE_AA_3A        SVE_BD_3A                   
+//    enum               name                     info                                              SVE_AA_3A        SVE_AT_3A                   
 INST2(smulh,             "smulh",                 0,                       IF_SVE_2AF,              0x04120000,      0x04206800                  )
     // SMULH   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_AA_3A           00000100xx010010 000gggmmmmmddddd     0412 0000   
-    // SMULH   <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_BD_3A           00000100xx1mmmmm 011010nnnnnddddd     0420 6800   
+    // SMULH   <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000100xx1mmmmm 011010nnnnnddddd     0420 6800   
 
 INST2(umulh,             "umulh",                 0,                       IF_SVE_2AF,              0x04130000,      0x04206C00                  )
     // UMULH   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_AA_3A           00000100xx010011 000gggmmmmmddddd     0413 0000   
-    // UMULH   <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_BD_3A           00000100xx1mmmmm 011011nnnnnddddd     0420 6C00   
+    // UMULH   <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000100xx1mmmmm 011011nnnnnddddd     0420 6C00   
 
 
 //    enum               name                     info                                              SVE_BS_1A        SVE_CZ_4A                   
@@ -1268,13 +1268,13 @@ INST2(pext,              "pext",                  0,                       IF_SV
     // PEXT    {<Pd1>.<T>, <Pd2>.<T>}, <PNn>[<imm>]                                      SVE_DW_2B           00100101xx100000 0111010iNNN1DDDD     2520 7410   
 
 
-//    enum               name                     info                                              SVE_FN_3A        SVE_FN_3B                   
+//    enum               name                     info                                              SVE_FL_3A        SVE_FN_3B                   
 INST2(pmullb,            "pmullb",                0,                       IF_SVE_2BI,              0x45006800,      0x45006800                  )
-    // PMULLB  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FN_3A           01000101xx0mmmmm 011010nnnnnddddd     4500 6800   
+    // PMULLB  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FL_3A           01000101xx0mmmmm 011010nnnnnddddd     4500 6800   
     // PMULLB  <Zd>.Q, <Zn>.D, <Zm>.D                                                    SVE_FN_3B           01000101000mmmmm 011010nnnnnddddd     4500 6800   
 
 INST2(pmullt,            "pmullt",                0,                       IF_SVE_2BI,              0x45006C00,      0x45006C00                  )
-    // PMULLT  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FN_3A           01000101xx0mmmmm 011011nnnnnddddd     4500 6C00   
+    // PMULLT  <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FL_3A           01000101xx0mmmmm 011011nnnnnddddd     4500 6C00   
     // PMULLT  <Zd>.Q, <Zn>.D, <Zm>.D                                                    SVE_FN_3B           01000101000mmmmm 011011nnnnnddddd     4500 6C00   
 
 
@@ -1780,15 +1780,15 @@ INST1(fscale,            "fscale",                0,                       IF_SV
     // FSCALE  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>                                    SVE_HL_3A           01100101xx001001 100gggmmmmmddddd     6509 8000   
 
 
-//    enum               name                     info                                              SVE_HK_3A                                    
-INST1(frecps,            "frecps",                0,                       IF_SVE_HK_3A,            0x65001800                                   )
-    // FRECPS  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_HK_3A           01100101xx0mmmmm 000110nnnnnddddd     6500 1800   
+//    enum               name                     info                                              SVE_AT_3A                                    
+INST1(frecps,            "frecps",                0,                       IF_SVE_AT_3A,            0x65001800                                   )
+    // FRECPS  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01100101xx0mmmmm 000110nnnnnddddd     6500 1800   
 
-INST1(frsqrts,           "frsqrts",               0,                       IF_SVE_HK_3A,            0x65001C00                                   )
-    // FRSQRTS <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_HK_3A           01100101xx0mmmmm 000111nnnnnddddd     6500 1C00   
+INST1(frsqrts,           "frsqrts",               0,                       IF_SVE_AT_3A,            0x65001C00                                   )
+    // FRSQRTS <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01100101xx0mmmmm 000111nnnnnddddd     6500 1C00   
 
-INST1(ftsmul,            "ftsmul",                0,                       IF_SVE_HK_3A,            0x65000C00                                   )
-    // FTSMUL  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_HK_3A           01100101xx0mmmmm 000011nnnnnddddd     6500 0C00   
+INST1(ftsmul,            "ftsmul",                0,                       IF_SVE_AT_3A,            0x65000C00                                   )
+    // FTSMUL  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01100101xx0mmmmm 000011nnnnnddddd     6500 0C00   
 
 //    enum               name                     info                                              SVE_HT_4A                                    
 INST1(facge,             "facge",                 0,                       IF_SVE_HT_4A,            0x6500C010                                   )
@@ -2109,9 +2109,9 @@ INST1(fexpa,             "fexpa",                 0,                       IF_SV
     // FEXPA   <Zd>.<T>, <Zn>.<T>                                                        SVE_BJ_2A           00000100xx100000 101110nnnnnddddd     0420 B800   
 
 
-//    enum               name                     info                                              SVE_BK_3A                                    
-INST1(ftssel,            "ftssel",                0,                       IF_SVE_BK_3A,            0x0420B000                                   )
-    // FTSSEL  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_BK_3A           00000100xx1mmmmm 101100nnnnnddddd     0420 B000   
+//    enum               name                     info                                              SVE_AT_3A                                    
+INST1(ftssel,            "ftssel",                0,                       IF_SVE_AT_3A,            0x0420B000                                   )
+    // FTSSEL  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000100xx1mmmmm 101100nnnnnddddd     0420 B000   
 
 
 //    enum               name                     info                                              SVE_BL_1A                                    
@@ -2170,9 +2170,9 @@ INST1(extq,              "extq",                  0,                       IF_SV
     // EXTQ    <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>                                          SVE_BY_2A           000001010110iiii 001001mmmmmddddd     0560 2400   
 
 
-//    enum               name                     info                                              SVE_CA_3A                                    
-INST1(tbxq,              "tbxq",                  0,                       IF_SVE_CA_3A,            0x05203400                                   )
-    // TBXQ    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_CA_3A           00000101xx1mmmmm 001101nnnnnddddd     0520 3400   
+//    enum               name                     info                                              SVE_AT_3A                                    
+INST1(tbxq,              "tbxq",                  0,                       IF_SVE_AT_3A,            0x05203400                                   )
+    // TBXQ    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           00000101xx1mmmmm 001101nnnnnddddd     0520 3400   
 
 
 //    enum               name                     info                                              SVE_CH_2A                                    
@@ -2311,20 +2311,20 @@ INST1(fdup,              "fdup",                  0,                       IF_SV
     // FDUP    <Zd>.<T>, #<const>                                                        SVE_EA_1A           00100101xx111001 110iiiiiiiiddddd     2539 C000   
 
 
-//    enum               name                     info                                              SVE_EN_3A                                    
-INST1(sqdmlalbt,         "sqdmlalbt",             0,                       IF_SVE_EN_3A,            0x44000800                                   )
-    // SQDMLALBT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                         SVE_EN_3A           01000100xx0mmmmm 000010nnnnnddddd     4400 0800   
+//    enum               name                     info                                              SVE_EL_3A                                    
+INST1(sqdmlalbt,         "sqdmlalbt",             0,                       IF_SVE_EL_3A,            0x44000800                                   )
+    // SQDMLALBT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                         SVE_EL_3A           01000100xx0mmmmm 000010nnnnnddddd     4400 0800   
 
-INST1(sqdmlslbt,         "sqdmlslbt",             0,                       IF_SVE_EN_3A,            0x44000C00                                   )
-    // SQDMLSLBT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                         SVE_EN_3A           01000100xx0mmmmm 000011nnnnnddddd     4400 0C00   
+INST1(sqdmlslbt,         "sqdmlslbt",             0,                       IF_SVE_EL_3A,            0x44000C00                                   )
+    // SQDMLSLBT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                         SVE_EL_3A           01000100xx0mmmmm 000011nnnnnddddd     4400 0C00   
 
 
-//    enum               name                     info                                              SVE_EV_3A                                    
-INST1(sclamp,            "sclamp",                0,                       IF_SVE_EV_3A,            0x4400C000                                   )
-    // SCLAMP  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_EV_3A           01000100xx0mmmmm 110000nnnnnddddd     4400 C000   
+//    enum               name                     info                                              SVE_AT_3A                                    
+INST1(sclamp,            "sclamp",                0,                       IF_SVE_AT_3A,            0x4400C000                                   )
+    // SCLAMP  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01000100xx0mmmmm 110000nnnnnddddd     4400 C000   
 
-INST1(uclamp,            "uclamp",                0,                       IF_SVE_EV_3A,            0x4400C400                                   )
-    // UCLAMP  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_EV_3A           01000100xx0mmmmm 110001nnnnnddddd     4400 C400   
+INST1(uclamp,            "uclamp",                0,                       IF_SVE_AT_3A,            0x4400C400                                   )
+    // UCLAMP  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01000100xx0mmmmm 110001nnnnnddddd     4400 C400   
 
 
 //    enum               name                     info                                              SVE_EW_3A                                    
@@ -2418,23 +2418,23 @@ INST1(usubwt,            "usubwt",                0,                       IF_SV
     // USUBWT  <Zd>.<T>, <Zn>.<T>, <Zm>.<Tb>                                             SVE_FM_3A           01000101xx0mmmmm 010111nnnnnddddd     4500 5C00   
 
 
-//    enum               name                     info                                              SVE_FP_3A                                    
-INST1(eorbt,             "eorbt",                 0,                       IF_SVE_FP_3A,            0x45009000                                   )
-    // EORBT   <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_FP_3A           01000101xx0mmmmm 100100nnnnnddddd     4500 9000   
+//    enum               name                     info                                              SVE_AT_3A                                    
+INST1(eorbt,             "eorbt",                 0,                       IF_SVE_AT_3A,            0x45009000                                   )
+    // EORBT   <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01000101xx0mmmmm 100100nnnnnddddd     4500 9000   
 
-INST1(eortb,             "eortb",                 0,                       IF_SVE_FP_3A,            0x45009400                                   )
-    // EORTB   <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_FP_3A           01000101xx0mmmmm 100101nnnnnddddd     4500 9400   
+INST1(eortb,             "eortb",                 0,                       IF_SVE_AT_3A,            0x45009400                                   )
+    // EORTB   <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01000101xx0mmmmm 100101nnnnnddddd     4500 9400   
 
 
-//    enum               name                     info                                              SVE_FQ_3A                                    
-INST1(bdep,              "bdep",                  0,                       IF_SVE_FQ_3A,            0x4500B400                                   )
-    // BDEP    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_FQ_3A           01000101xx0mmmmm 101101nnnnnddddd     4500 B400   
+//    enum               name                     info                                              SVE_AT_3A                                    
+INST1(bdep,              "bdep",                  0,                       IF_SVE_AT_3A,            0x4500B400                                   )
+    // BDEP    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01000101xx0mmmmm 101101nnnnnddddd     4500 B400   
 
-INST1(bext,              "bext",                  0,                       IF_SVE_FQ_3A,            0x4500B000                                   )
-    // BEXT    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_FQ_3A           01000101xx0mmmmm 101100nnnnnddddd     4500 B000   
+INST1(bext,              "bext",                  0,                       IF_SVE_AT_3A,            0x4500B000                                   )
+    // BEXT    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01000101xx0mmmmm 101100nnnnnddddd     4500 B000   
 
-INST1(bgrp,              "bgrp",                  0,                       IF_SVE_FQ_3A,            0x4500B800                                   )
-    // BGRP    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_FQ_3A           01000101xx0mmmmm 101110nnnnnddddd     4500 B800   
+INST1(bgrp,              "bgrp",                  0,                       IF_SVE_AT_3A,            0x4500B800                                   )
+    // BGRP    <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01000101xx0mmmmm 101110nnnnnddddd     4500 B800   
 
 
 //    enum               name                     info                                              SVE_FR_2A                                    
@@ -2451,15 +2451,15 @@ INST1(ushllt,            "ushllt",                0,                       IF_SV
     // USHLLT  <Zd>.<T>, <Zn>.<Tb>, #<const>                                             SVE_FR_2A           010001010x0xxiii 101011nnnnnddddd     4500 AC00   
 
 
-//    enum               name                     info                                              SVE_FS_3A                                    
-INST1(saddlbt,           "saddlbt",               0,                       IF_SVE_FS_3A,            0x45008000                                   )
-    // SADDLBT <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FS_3A           01000101xx0mmmmm 100000nnnnnddddd     4500 8000   
+//    enum               name                     info                                              SVE_FL_3A                                    
+INST1(saddlbt,           "saddlbt",               0,                       IF_SVE_FL_3A,            0x45008000                                   )
+    // SADDLBT <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FL_3A           01000101xx0mmmmm 100000nnnnnddddd     4500 8000   
 
-INST1(ssublbt,           "ssublbt",               0,                       IF_SVE_FS_3A,            0x45008800                                   )
-    // SSUBLBT <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FS_3A           01000101xx0mmmmm 100010nnnnnddddd     4500 8800   
+INST1(ssublbt,           "ssublbt",               0,                       IF_SVE_FL_3A,            0x45008800                                   )
+    // SSUBLBT <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FL_3A           01000101xx0mmmmm 100010nnnnnddddd     4500 8800   
 
-INST1(ssubltb,           "ssubltb",               0,                       IF_SVE_FS_3A,            0x45008C00                                   )
-    // SSUBLTB <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FS_3A           01000101xx0mmmmm 100011nnnnnddddd     4500 8C00   
+INST1(ssubltb,           "ssubltb",               0,                       IF_SVE_FL_3A,            0x45008C00                                   )
+    // SSUBLTB <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                            SVE_FL_3A           01000101xx0mmmmm 100011nnnnnddddd     4500 8C00   
 
 
 //    enum               name                     info                                              SVE_FV_2A                                    
@@ -2470,18 +2470,18 @@ INST1(sqcadd,            "sqcadd",                0,                       IF_SV
     // SQCADD  <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>                                   SVE_FV_2A           01000101xx000001 11011rmmmmmddddd     4501 D800   
 
 
-//    enum               name                     info                                              SVE_FX_3A                                    
-INST1(sabalb,            "sabalb",                0,                       IF_SVE_FX_3A,            0x4500C000                                   )
-    // SABALB  <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_FX_3A           01000101xx0mmmmm 110000nnnnnddddd     4500 C000   
+//    enum               name                     info                                              SVE_EL_3A                                    
+INST1(sabalb,            "sabalb",                0,                       IF_SVE_EL_3A,            0x4500C000                                   )
+    // SABALB  <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_EL_3A           01000101xx0mmmmm 110000nnnnnddddd     4500 C000   
 
-INST1(sabalt,            "sabalt",                0,                       IF_SVE_FX_3A,            0x4500C400                                   )
-    // SABALT  <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_FX_3A           01000101xx0mmmmm 110001nnnnnddddd     4500 C400   
+INST1(sabalt,            "sabalt",                0,                       IF_SVE_EL_3A,            0x4500C400                                   )
+    // SABALT  <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_EL_3A           01000101xx0mmmmm 110001nnnnnddddd     4500 C400   
 
-INST1(uabalb,            "uabalb",                0,                       IF_SVE_FX_3A,            0x4500C800                                   )
-    // UABALB  <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_FX_3A           01000101xx0mmmmm 110010nnnnnddddd     4500 C800   
+INST1(uabalb,            "uabalb",                0,                       IF_SVE_EL_3A,            0x4500C800                                   )
+    // UABALB  <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_EL_3A           01000101xx0mmmmm 110010nnnnnddddd     4500 C800   
 
-INST1(uabalt,            "uabalt",                0,                       IF_SVE_FX_3A,            0x4500CC00                                   )
-    // UABALT  <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_FX_3A           01000101xx0mmmmm 110011nnnnnddddd     4500 CC00   
+INST1(uabalt,            "uabalt",                0,                       IF_SVE_EL_3A,            0x4500CC00                                   )
+    // UABALT  <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>                                           SVE_EL_3A           01000101xx0mmmmm 110011nnnnnddddd     4500 CC00   
 
 
 //    enum               name                     info                                              SVE_FY_3A                                    
@@ -2651,9 +2651,9 @@ INST1(fminqv,            "fminqv",                0,                       IF_SV
     // FMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>                                                 SVE_GS_3A           01100100xx010111 101gggnnnnnddddd     6417 A000   
 
 
-//    enum               name                     info                                              SVE_GW_3A                                    
-INST1(fclamp,            "fclamp",                0,                       IF_SVE_GW_3A,            0x64202400                                   )
-    // FCLAMP  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_GW_3A           01100100xx1mmmmm 001001nnnnnddddd     6420 2400   
+//    enum               name                     info                                              SVE_AT_3A                                    
+INST1(fclamp,            "fclamp",                0,                       IF_SVE_AT_3A,            0x64202400                                   )
+    // FCLAMP  <Zd>.<T>, <Zn>.<T>, <Zm>.<T>                                              SVE_AT_3A           01100100xx1mmmmm 001001nnnnnddddd     6420 2400   
 
 
 //    enum               name                     info                                              SVE_GW_3B                                    
@@ -2839,11 +2839,6 @@ INST1(ldnt1sw,           "ldnt1sw",               0,                       IF_SV
 //    enum               name                     info                                              SVE_IY_4A                                    
 INST1(st1q,              "st1q",                  0,                       IF_SVE_IY_4A,            0xE4202000                                   )
     // ST1Q    {<Zt>.Q }, <Pg>, [<Zn>.D{, <Xm>}]                                         SVE_IY_4A           11100100001mmmmm 001gggnnnnnttttt     E420 2000
-
-
-// TODO-SVE: Removable once REG_V0 and REG_P0 are distinct
-INST1(str_mask,          "str_mask",              0,                       IF_SN_0A,                BAD_CODE)
-INST1(ldr_mask,          "ldr_mask",              0,                       IF_SN_0A,                BAD_CODE)
 
 // clang-format on
 

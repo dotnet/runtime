@@ -169,27 +169,58 @@ namespace System.Net.Http.Headers
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            using IEnumerator<string?> enumerator = values.GetEnumerator();
-            if (enumerator.MoveNext())
+            if (values is IList<string?> valuesList)
             {
-                TryAddWithoutValidation(descriptor, enumerator.Current);
-                if (enumerator.MoveNext())
+                int count = valuesList.Count;
+
+                if (count > 0)
                 {
+                    // The store value is either a string (a single unparsed value) or a HeaderStoreItemInfo.
+                    // The RawValue on HeaderStoreItemInfo can likewise be either a single string or a List<string>.
+
                     ref object? storeValueRef = ref GetValueRefOrAddDefault(descriptor);
-                    Debug.Assert(storeValueRef is not null);
+                    object? storeValue = storeValueRef;
 
-                    object value = storeValueRef;
-                    if (value is not HeaderStoreItemInfo info)
+                    // If the storeValue was already set or we're adding more than 1 value,
+                    // we'll have to store the values in a List<string> on HeaderStoreItemInfo.
+                    if (storeValue is not null || count > 1)
                     {
-                        Debug.Assert(value is string);
-                        storeValueRef = info = new HeaderStoreItemInfo { RawValue = value };
-                    }
+                        if (storeValue is not HeaderStoreItemInfo info)
+                        {
+                            storeValueRef = info = new HeaderStoreItemInfo { RawValue = storeValue };
+                        }
 
-                    do
-                    {
-                        AddRawValue(info, enumerator.Current ?? string.Empty);
+                        object? rawValue = info.RawValue;
+                        if (rawValue is not List<string> rawValues)
+                        {
+                            info.RawValue = rawValues = new List<string>();
+
+                            if (rawValue != null)
+                            {
+                                rawValues.EnsureCapacity(count + 1);
+                                rawValues.Add((string)rawValue);
+                            }
+                        }
+
+                        rawValues.EnsureCapacity(rawValues.Count + count);
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            rawValues.Add(valuesList[i] ?? string.Empty);
+                        }
                     }
-                    while (enumerator.MoveNext());
+                    else
+                    {
+                        // We're adding a single value to a new header entry. We can store the unparsed value as-is.
+                        storeValueRef = valuesList[0] ?? string.Empty;
+                    }
+                }
+            }
+            else
+            {
+                foreach (string? value in values)
+                {
+                    TryAddWithoutValidation(descriptor, value ?? string.Empty);
                 }
             }
 
@@ -316,17 +347,14 @@ namespace System.Net.Http.Headers
                     // during enumeration so that we can parse the raw value in order to a) return
                     // the correct set of parsed values, and b) update the instance for subsequent enumerations
                     // to reflect that parsing.
-                    info = new HeaderStoreItemInfo() { RawValue = entry.Value };
 
-                    if (EntriesAreLiveView)
-                    {
-                        entries[i].Value = info;
-                    }
-                    else
-                    {
-                        Debug.Assert(Contains(entry.Key));
-                        ((Dictionary<HeaderDescriptor, object>)_headerStore!)[entry.Key] = info;
-                    }
+#nullable disable // https://github.com/dotnet/roslyn/issues/73928
+                    ref object storeValueRef = ref EntriesAreLiveView
+                        ? ref entries[i].Value
+                        : ref CollectionsMarshal.GetValueRefOrNullRef((Dictionary<HeaderDescriptor, object>)_headerStore, entry.Key);
+
+                    info = ReplaceWithHeaderStoreItemInfo(ref storeValueRef, entry.Value);
+#nullable restore
                 }
 
                 // Make sure we parse all raw values before returning the result. Note that this has to be
@@ -698,15 +726,10 @@ namespace System.Net.Http.Headers
             if (!Unsafe.IsNullRef(ref storeValueRef))
             {
                 object value = storeValueRef;
-                if (value is HeaderStoreItemInfo hsi)
-                {
-                    info = hsi;
-                }
-                else
-                {
-                    Debug.Assert(value is string);
-                    storeValueRef = info = new HeaderStoreItemInfo() { RawValue = value };
-                }
+
+                info = value is HeaderStoreItemInfo hsi
+                    ? hsi
+                    : ReplaceWithHeaderStoreItemInfo(ref storeValueRef, value);
 
                 ParseRawHeaderValues(key, info);
                 return true;
@@ -714,6 +737,31 @@ namespace System.Net.Http.Headers
 
             info = null;
             return false;
+        }
+
+        /// <summary>
+        /// Replaces <paramref name="storeValueRef"/> with a new <see cref="HeaderStoreItemInfo"/>,
+        /// or returns the existing <see cref="HeaderStoreItemInfo"/> if a different thread beat us to it.
+        /// </summary>
+        /// <remarks>
+        /// This helper should be used any time we're upgrading a storage slot from an unparsed string to a HeaderStoreItemInfo *while reading*.
+        /// Concurrent writes to the header collection are UB, so we don't need to worry about race conditions when doing the replacement there.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static HeaderStoreItemInfo ReplaceWithHeaderStoreItemInfo(ref object storeValueRef, object value)
+        {
+            Debug.Assert(value is string);
+
+            var info = new HeaderStoreItemInfo() { RawValue = value };
+            object previousValue = Interlocked.CompareExchange(ref storeValueRef, info, value);
+
+            if (ReferenceEquals(previousValue, value))
+            {
+                return info;
+            }
+
+            // Rare race condition: Another thread replaced the value with a HeaderStoreItemInfo.
+            return (HeaderStoreItemInfo)previousValue;
         }
 
         private static void ParseRawHeaderValues(HeaderDescriptor descriptor, HeaderStoreItemInfo info)
@@ -1026,7 +1074,7 @@ namespace System.Net.Http.Headers
 
         private HeaderDescriptor GetHeaderDescriptor(string name)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
             {

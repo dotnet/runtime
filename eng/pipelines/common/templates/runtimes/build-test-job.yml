@@ -44,7 +44,7 @@ jobs:
       displayName: '${{ parameters.runtimeFlavor }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
-    # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
+    # See https://learn.microsoft.com/azure/devops/pipelines/process/conditions
     condition: and(succeeded(), ${{ parameters.condition }})
 
     ${{ if ne(parameters.dependsOn[0], '') }}:

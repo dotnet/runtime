@@ -118,6 +118,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-Wno-cast-align)
         add_compile_options(-Wno-typedef-redefinition)
         add_compile_options(-Wno-c11-extensions)
+        add_compile_options(-Wno-pre-c11-compat) # fixes build on Debian
+        add_compile_options(-Wno-unknown-warning-option) # unknown warning option '-Wno-pre-c11-compat'
         add_compile_options(-Wno-thread-safety-analysis)
         if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             add_compile_options(-Wno-unsafe-buffer-usage)

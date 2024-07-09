@@ -228,14 +228,9 @@ FORCEINLINE void InlineCheckedWriteBarrier(void * dst, void * ref)
 
 FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, size_t cbMemSize)
 {
-    // Check whether the writes were even into the heap. If not there's no card update required.
-    // Also if the size is smaller than a pointer, no write barrier is required.
-    // This case can occur with universal shared generic code where the size
-    // is not known at compile time.
-    if (pMemStart < g_lowest_address || (pMemStart >= g_highest_address) || (cbMemSize < sizeof(uintptr_t)))
-    {
-        return;
-    }
+    // Caller is expected to check whether the writes were even into the heap
+    ASSERT(cbMemSize >= sizeof(uintptr_t));
+    ASSERT((pMemStart >= g_lowest_address) && (pMemStart < g_highest_address));
 
 #ifdef WRITE_BARRIER_CHECK
     // Perform shadow heap updates corresponding to the gc heap updates that immediately preceded this helper

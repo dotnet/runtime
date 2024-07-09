@@ -131,14 +131,14 @@ namespace System.Net.Sockets.Tests
         [InlineData(false, 1)]
         [InlineData(true, 2)] // Begin/EndAccept
         [InlineData(false, 2)]
-        public void CtorAndAccept_SocketNotKeptAliveViaInheritance(bool validateClientOuter, int acceptApiOuter)
+        public async Task CtorAndAccept_SocketNotKeptAliveViaInheritance(bool validateClientOuter, int acceptApiOuter)
         {
             // 300 ms should be long enough to connect if the socket is actually present & listening.
             const int ConnectionTimeoutMs = 300;
 
             // Run the test in another process so as to not have trouble with other tests
             // launching child processes that might impact inheritance.
-            RemoteExecutor.Invoke((validateClientString, acceptApiString) =>
+            await RemoteExecutor.Invoke((validateClientString, acceptApiString) =>
             {
                 bool validateClient = bool.Parse(validateClientString);
                 int acceptApi = int.Parse(acceptApiString);
@@ -211,7 +211,7 @@ namespace System.Net.Sockets.Tests
                         }
                     }
                 }
-            }, validateClientOuter.ToString(), acceptApiOuter.ToString()).Dispose();
+            }, validateClientOuter.ToString(), acceptApiOuter.ToString()).DisposeAsync();
         }
 
         [Theory]

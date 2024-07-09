@@ -67,25 +67,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (type == typeof(int))
             {
-                return ParseInt(value, () => section.Path);
+                return ParseInt(value, section.Path);
             }
             else if (type == typeof(bool?))
             {
-                return ParseBool(value, () => section.Path);
+                return ParseBool(value, section.Path);
             }
             else if (type == typeof(byte[]))
             {
-                return ParseByteArray(value, () => section.Path);
+                return ParseByteArray(value, section.Path);
             }
             else if (type == typeof(global::System.Globalization.CultureInfo))
             {
-                return ParseSystemGlobalizationCultureInfo(value, () => section.Path);
+                return ParseSystemGlobalizationCultureInfo(value, section.Path);
             }
 
             return null;
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
+        public static int ParseInt(string value, string? path)
         {
             try
             {
@@ -93,11 +93,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
 
-        public static bool ParseBool(string value, Func<string?> getPath)
+        public static bool ParseBool(string value, string? path)
         {
             try
             {
@@ -105,11 +105,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(bool)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(bool)}'.", exception);
             }
         }
 
-        public static byte[] ParseByteArray(string value, Func<string?> getPath)
+        public static byte[] ParseByteArray(string value, string? path)
         {
             try
             {
@@ -117,11 +117,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(byte[])}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(byte[])}'.", exception);
             }
         }
 
-        public static global::System.Globalization.CultureInfo ParseSystemGlobalizationCultureInfo(string value, Func<string?> getPath)
+        public static global::System.Globalization.CultureInfo ParseSystemGlobalizationCultureInfo(string value, string? path)
         {
             try
             {
@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.Globalization.CultureInfo)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.Globalization.CultureInfo)}'.", exception);
             }
         }
         #endregion Core binding extensions.

@@ -728,9 +728,6 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
 
 ShuffleThunkCache *COMDelegate::m_pShuffleThunkCache = NULL;
-#ifndef FEATURE_MULTICASTSTUB_AS_IL
-MulticastStubCache *COMDelegate::m_pMulticastStubCache = NULL;
-#endif
 
 CrstStatic   COMDelegate::s_DelegateToFPtrHashCrst;
 PtrHashMap*  COMDelegate::s_pDelegateToFPtrHash = NULL;
@@ -755,13 +752,10 @@ void COMDelegate::Init()
     s_pDelegateToFPtrHash->Init(TRUE, &lock);
 
     m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
-#ifndef FEATURE_MULTICASTSTUB_AS_IL
-    m_pMulticastStubCache = new MulticastStubCache();
-#endif
 }
 
 #ifdef FEATURE_COMINTEROP
-ComPlusCallInfo * COMDelegate::PopulateComPlusCallInfo(MethodTable * pDelMT)
+CLRToCOMCallInfo * COMDelegate::PopulateCLRToCOMCallInfo(MethodTable * pDelMT)
 {
     CONTRACTL
     {
@@ -773,21 +767,21 @@ ComPlusCallInfo * COMDelegate::PopulateComPlusCallInfo(MethodTable * pDelMT)
 
     DelegateEEClass * pClass = (DelegateEEClass *)pDelMT->GetClass();
 
-    // set up the ComPlusCallInfo if it does not exist already
-    if (pClass->m_pComPlusCallInfo == NULL)
+    // set up the CLRToCOMCallInfo if it does not exist already
+    if (pClass->m_pCLRToCOMCallInfo == NULL)
     {
         LoaderHeap *pHeap = pDelMT->GetLoaderAllocator()->GetHighFrequencyHeap();
-        ComPlusCallInfo *pTemp = (ComPlusCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(ComPlusCallInfo)));
+        CLRToCOMCallInfo *pTemp = (CLRToCOMCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(CLRToCOMCallInfo)));
 
         pTemp->m_cachedComSlot = ComMethodTable::GetNumExtraSlots(ifVtable);
         pTemp->InitStackArgumentSize();
 
-        InterlockedCompareExchangeT(&pClass->m_pComPlusCallInfo, pTemp, NULL);
+        InterlockedCompareExchangeT(&pClass->m_pCLRToCOMCallInfo, pTemp, NULL);
     }
 
-    pClass->m_pComPlusCallInfo->m_pInterfaceMT = pDelMT;
+    pClass->m_pCLRToCOMCallInfo->m_pInterfaceMT = pDelMT;
 
-    return pClass->m_pComPlusCallInfo;
+    return pClass->m_pCLRToCOMCallInfo;
 }
 #endif // FEATURE_COMINTEROP
 
@@ -1395,7 +1389,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // The IL marshaling stub performs the function of the shuffle thunk - it simply omits 'this' in
     // the call to unmanaged code. The stub recovers the unmanaged target from the delegate instance.
 
-    _ASSERTE(pMarshalStub != NULL);
+    _ASSERTE(pMarshalStub != (PCODE)NULL);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Wire up the stubs to the new delegate instance.
@@ -2139,7 +2133,6 @@ FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, Object* refThisIn)
 }
 FCIMPLEND
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
 FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 {
     FCALL_CONTRACT;
@@ -2166,7 +2159,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-        DWORD dwInvocationCountNum = pCode->NewLocal(ELEMENT_TYPE_I4);
         DWORD dwLoopCounterNum = pCode->NewLocal(ELEMENT_TYPE_I4);
 
         DWORD dwReturnValNum = -1;
@@ -2174,30 +2166,17 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
             dwReturnValNum = pCode->NewLocal(sig.GetRetTypeHandleNT());
 
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
-        ILCodeLabel *endOfMethod = pCode->NewCodeLabel();
-
-        // Get count of delegates
-        pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
-        pCode->EmitSTLOC(dwInvocationCountNum);
+        ILCodeLabel *checkCount = pCode->NewCodeLabel();
 
         // initialize counter
         pCode->EmitLDC(0);
         pCode->EmitSTLOC(dwLoopCounterNum);
 
+        // Make the shape of the loop similar to what C# compiler emits
+        pCode->EmitBR(checkCount);
+
         //Label_nextDelegate:
         pCode->EmitLabel(nextDelegate);
-
-#ifdef DEBUGGING_SUPPORTED
-        pCode->EmitLoadThis();
-        pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
-#endif // DEBUGGING_SUPPORTED
-
-        // compare LoopCounter with InvocationCount. If equal then branch to Label_endOfMethod
-        pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitLDLOC(dwInvocationCountNum);
-        pCode->EmitBEQ(endOfMethod);
 
         // Load next delegate from array using LoopCounter as index
         pCode->EmitLoadThis();
@@ -2206,9 +2185,8 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitLDELEM_REF();
 
         // Load the arguments
-        UINT paramCount = 0;
-        while(paramCount < sig.NumFixedArgs())
-            pCode->EmitLDARG(paramCount++);
+        for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
+            pCode->EmitLDARG(paramCount);
 
         // call the delegate
         pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
@@ -2223,11 +2201,31 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitADD();
         pCode->EmitSTLOC(dwLoopCounterNum);
 
-        // branch to next delegate
-        pCode->EmitBR(nextDelegate);
+        //Label_checkCount
+        pCode->EmitLabel(checkCount);
+        
+#ifdef DEBUGGING_SUPPORTED
+        ILCodeLabel *invokeTraceHelper = pCode->NewCodeLabel();
+        ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
 
-        //Label_endOfMethod
-        pCode->EmitLabel(endOfMethod);
+        // Call MulticastDebuggerTraceHelper only if any debugger is attached
+        pCode->EmitLDC((DWORD_PTR)&g_CORDebuggerControlFlags);
+        pCode->EmitCONV_I();
+        pCode->EmitLDIND_I4();
+
+        // (g_CORDebuggerControlFlags & DBCF_ATTACHED) != 0
+        pCode->EmitLDC(DBCF_ATTACHED);
+        pCode->EmitAND();
+        pCode->EmitBRTRUE(invokeTraceHelper);
+
+        pCode->EmitLabel(debuggerCheckEnd);
+#endif // DEBUGGING_SUPPORTED
+
+        // compare LoopCounter with InvocationCount. If less then branch to nextDelegate
+        pCode->EmitLDLOC(dwLoopCounterNum);
+        pCode->EmitLoadThis();
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
+        pCode->EmitBLT(nextDelegate);
 
         // load the return value. return value from the last delegate call is returned
         if(fReturnVal)
@@ -2235,6 +2233,17 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         // return
         pCode->EmitRET();
+
+#ifdef DEBUGGING_SUPPORTED
+        // Emit debugging support at the end of the method for better perf
+        pCode->EmitLabel(invokeTraceHelper);
+
+        pCode->EmitLoadThis();
+        pCode->EmitLDLOC(dwLoopCounterNum);
+        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
+
+        pCode->EmitBR(debuggerCheckEnd);
+#endif // DEBUGGING_SUPPORTED
 
         PCCOR_SIGNATURE pSig;
         DWORD cbSig;
@@ -2259,66 +2268,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
     return pStub->GetEntryPoint();
 }
 FCIMPLEND
-
-#else // FEATURE_MULTICASTSTUB_AS_IL
-
-FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisIn);
-    MethodTable *pDelegateMT = refThis->GetMethodTable();
-
-    DelegateEEClass *delegateEEClass = ((DelegateEEClass*)(pDelegateMT->GetClass()));
-    Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
-    if (pStub == NULL)
-    {
-        MethodDesc* pMD = delegateEEClass->GetInvokeMethod();
-
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-        GCX_PREEMP();
-
-        MetaSig sig(pMD);
-
-        UINT_PTR hash = CPUSTUBLINKER::HashMulticastInvoke(&sig);
-
-        pStub = m_pMulticastStubCache->GetStub(hash);
-        if (!pStub)
-        {
-            CPUSTUBLINKER sl;
-
-            LOG((LF_CORDB,LL_INFO10000, "COMD::GIMS making a multicast delegate\n"));
-
-            sl.EmitMulticastInvoke(hash);
-
-            // The cache is process-wide, based on signature.  It never unloads
-            Stub *pCandidate = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_MULTICAST);
-
-            Stub *pWinner = m_pMulticastStubCache->AttemptToSetStub(hash,pCandidate);
-            ExecutableWriterHolder<Stub> candidateWriterHolder(pCandidate, sizeof(Stub));
-            candidateWriterHolder.GetRW()->DecRef();
-
-            if (!pWinner)
-                COMPlusThrowOM();
-
-            LOG((LF_CORDB,LL_INFO10000, "Putting a MC stub at 0x%p (code:0x%p)\n",
-                pWinner, (BYTE*)pWinner+sizeof(Stub)));
-
-            pStub = pWinner;
-        }
-
-        // we don't need to do an InterlockedCompareExchange here - the m_pMulticastStubCache->AttemptToSetStub
-        // will make sure all threads racing here will get the same stub, so they'll all store the same value
-        delegateEEClass->m_pMultiCastInvokeStub = pStub;
-
-        HELPER_METHOD_FRAME_END();
-    }
-
-    return pStub->GetEntryPoint();
-}
-FCIMPLEND
-#endif // FEATURE_MULTICASTSTUB_AS_IL
 
 PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
 {

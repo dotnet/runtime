@@ -1097,29 +1097,6 @@ errno_t __cdecl _wcsnset_s(WCHAR *_Dst, size_t _SizeInWords, WCHAR _Value, size_
 
 #endif
 
-/* wcsnlen */
-extern
-size_t __cdecl wcsnlen(const WCHAR *inString, size_t inMaxSize);
-
-#if _SAFECRT_USE_INLINES || _SAFECRT_IMPL
-
-_SAFECRT__INLINE
-size_t __cdecl wcsnlen(const WCHAR *inString, size_t inMaxSize)
-{
-    size_t n;
-
-    /* Note that we do not check if s == nullptr, because we do not
-     * return errno_t...
-     */
-
-    for (n = 0; n < inMaxSize && *inString; n++, inString++)
-        ;
-
-    return n;
-}
-
-#endif
-
 /* _wmakepath_s */
 _SAFECRT__EXTERN_C
 errno_t __cdecl _wmakepath_s(WCHAR *_Dst, size_t _SizeInWords, const WCHAR *_Drive, const WCHAR *_Dir, const WCHAR *_Filename, const WCHAR *_Ext);

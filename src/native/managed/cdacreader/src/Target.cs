@@ -2,23 +2,66 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-public struct TargetPointer
+public readonly struct TargetPointer : IEquatable<TargetPointer>
 {
     public static TargetPointer Null = new(0);
 
-    public ulong Value;
+    public readonly ulong Value;
     public TargetPointer(ulong value) => Value = value;
+
+    public static implicit operator ulong(TargetPointer p) => p.Value;
+    public static implicit operator TargetPointer(ulong v) => new TargetPointer(v);
+
+    public static bool operator ==(TargetPointer left, TargetPointer right) => left.Value == right.Value;
+    public static bool operator !=(TargetPointer left, TargetPointer right) => left.Value != right.Value;
+
+    public override bool Equals(object? obj) => obj is TargetPointer pointer && Equals(pointer);
+    public bool Equals(TargetPointer other) => Value == other.Value;
+
+    public override int GetHashCode() => Value.GetHashCode();
 }
 
+public readonly struct TargetNUInt
+{
+    public readonly ulong Value;
+    public TargetNUInt(ulong value) => Value = value;
+}
+
+/// <summary>
+/// Representation of the target under inspection
+/// </summary>
+/// <remarks>
+/// This class provides APIs used by contracts for reading from the target and getting type and globals
+/// information based on the target's contract descriptor. Like the contracts themselves in cdacreader,
+/// these are throwing APIs. Any callers at the boundaries (for example, unmanaged entry points, COM)
+/// should handle any exceptions.
+/// </remarks>
 public sealed unsafe class Target
 {
+    public record struct TypeInfo
+    {
+        public uint? Size;
+        public Dictionary<string, FieldInfo> Fields = [];
+
+        public TypeInfo() { }
+    }
+
+    public record struct FieldInfo
+    {
+        public int Offset;
+        public DataType Type;
+        public string? TypeName;
+    }
+
     private const int StackAllocByteThreshold = 1024;
 
     private readonly struct Configuration
@@ -30,8 +73,13 @@ public sealed unsafe class Target
     private readonly Configuration _config;
     private readonly Reader _reader;
 
-    private readonly IReadOnlyDictionary<string, int> _contracts = new Dictionary<string, int>();
+    private readonly Dictionary<string, int> _contracts = [];
     private readonly IReadOnlyDictionary<string, (ulong Value, string? Type)> _globals = new Dictionary<string, (ulong, string?)>();
+    private readonly Dictionary<DataType, TypeInfo> _knownTypes = [];
+    private readonly Dictionary<string, TypeInfo> _types = [];
+
+    internal Contracts.Registry Contracts { get; }
+    internal DataCache ProcessedData { get; }
 
     public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
     {
@@ -48,12 +96,43 @@ public sealed unsafe class Target
 
     private Target(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
     {
+        Contracts = new Contracts.Registry(this);
+        ProcessedData = new DataCache(this);
         _config = config;
         _reader = reader;
 
-        // TODO: [cdac] Read types
-        // note: we will probably want to store the globals and types into a more usable form
         _contracts = descriptor.Contracts ?? [];
+
+        // Read types and map to known data types
+        if (descriptor.Types is not null)
+        {
+            foreach ((string name, ContractDescriptorParser.TypeDescriptor type) in descriptor.Types)
+            {
+                TypeInfo typeInfo = new() { Size = type.Size };
+                if (type.Fields is not null)
+                {
+                    foreach ((string fieldName, ContractDescriptorParser.FieldDescriptor field) in type.Fields)
+                    {
+                        typeInfo.Fields[fieldName] = new FieldInfo()
+                        {
+                            Offset = field.Offset,
+                            Type = field.Type is null ? DataType.Unknown : GetDataType(field.Type),
+                            TypeName = field.Type
+                        };
+                    }
+                }
+
+                DataType dataType = GetDataType(name);
+                if (dataType is not DataType.Unknown)
+                {
+                    _knownTypes[dataType] = typeInfo;
+                }
+                else
+                {
+                    _types[name] = typeInfo;
+                }
+            }
+        }
 
         // Read globals and map indirect values to pointer data
         if (descriptor.Globals is not null)
@@ -159,16 +238,21 @@ public sealed unsafe class Target
         return true;
     }
 
-    public T Read<T>(ulong address, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    private static DataType GetDataType(string type)
     {
-        if (!TryRead(address, out value))
+        if (Enum.TryParse(type, false, out DataType dataType) && Enum.IsDefined(dataType))
+            return dataType;
+
+        return DataType.Unknown;
+    }
+
+    public T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        if (!TryRead(address, _config.IsLittleEndian, _reader, out T value))
             throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;
     }
-
-    public bool TryRead<T>(ulong address, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-        => TryRead(address, _config.IsLittleEndian, _reader, out value);
 
     private static bool TryRead<T>(ulong address, bool isLittleEndian, Reader reader, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
@@ -190,97 +274,148 @@ public sealed unsafe class Target
 
     public TargetPointer ReadPointer(ulong address)
     {
-        if (!TryReadPointer(address, out TargetPointer pointer))
+        if (!TryReadPointer(address, _config, _reader, out TargetPointer pointer))
             throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
     }
 
-    public bool TryReadPointer(ulong address, out TargetPointer pointer)
-        => TryReadPointer(address, _config, _reader, out pointer);
+    public TargetNUInt ReadNUInt(ulong address)
+    {
+        if (!TryReadNUInt(address, _config, _reader, out ulong value))
+            throw new InvalidOperationException($"Failed to read nuint at 0x{address:x8}.");
+
+        return new TargetNUInt(value);
+    }
 
     private static bool TryReadPointer(ulong address, Configuration config, Reader reader, out TargetPointer pointer)
     {
         pointer = TargetPointer.Null;
-
-        Span<byte> buffer = stackalloc byte[config.PointerSize];
-        if (reader.ReadFromTarget(address, buffer) < 0)
+        if (!TryReadNUInt(address, config, reader, out ulong value))
             return false;
 
+        pointer = new TargetPointer(value);
+        return true;
+    }
+
+    private static bool TryReadNUInt(ulong address, Configuration config, Reader reader, out ulong value)
+    {
+        value = 0;
         if (config.PointerSize == sizeof(uint)
             && TryRead(address, config.IsLittleEndian, reader, out uint value32))
         {
-            pointer = new TargetPointer(value32);
+            value = value32;
             return true;
         }
         else if (config.PointerSize == sizeof(ulong)
             && TryRead(address, config.IsLittleEndian, reader, out ulong value64))
         {
-            pointer = new TargetPointer(value64);
+            value = value64;
             return true;
         }
 
         return false;
     }
 
+    public static bool IsAligned(ulong value, int alignment)
+        => (value & (ulong)(alignment - 1)) == 0;
+
+    public bool IsAlignedToPointerSize(uint value)
+        => IsAligned(value, _config.PointerSize);
+    public bool IsAlignedToPointerSize(ulong value)
+        => IsAligned(value, _config.PointerSize);
+    public bool IsAlignedToPointerSize(TargetPointer pointer)
+        => IsAligned(pointer.Value, _config.PointerSize);
+
     public T ReadGlobal<T>(string name) where T : struct, INumber<T>
+        => ReadGlobal<T>(name, out _);
+
+    public T ReadGlobal<T>(string name, out string? type) where T : struct, INumber<T>
     {
-        if (!TryReadGlobal(name, out T value))
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
             throw new InvalidOperationException($"Failed to read global {typeof(T)} '{name}'.");
 
-        return value;
-    }
-
-    public bool TryReadGlobal<T>(string name, out T value) where T : struct, INumber<T>, INumberBase<T>
-    {
-        value = default;
-        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
-            return false;
-
-        // TODO: [cdac] Move type validation out of the read such that it does not have to happen for every read
-        if (global.Type is not null)
-        {
-            string? expectedType = Type.GetTypeCode(typeof(T)) switch
-            {
-                TypeCode.SByte => "int8",
-                TypeCode.Byte => "uint8",
-                TypeCode.Int16 => "int16",
-                TypeCode.UInt16 => "uint16",
-                TypeCode.Int32 => "int32",
-                TypeCode.UInt32 => "uint32",
-                TypeCode.Int64 => "int64",
-                TypeCode.UInt64 => "uint64",
-                _ => null,
-            };
-            if (expectedType is null || global.Type != expectedType)
-            {
-                return false;
-            }
-        }
-
-        value = T.CreateChecked(global.Value);
-        return true;
+        type = global.Type;
+        return T.CreateChecked(global.Value);
     }
 
     public TargetPointer ReadGlobalPointer(string name)
+        => ReadGlobalPointer(name, out _);
+
+    public TargetPointer ReadGlobalPointer(string name, out string? type)
     {
-        if (!TryReadGlobalPointer(name, out TargetPointer pointer))
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
             throw new InvalidOperationException($"Failed to read global pointer '{name}'.");
 
-        return pointer;
+        type = global.Type;
+        return new TargetPointer(global.Value);
     }
 
-    public bool TryReadGlobalPointer(string name, out TargetPointer pointer)
+    public TypeInfo GetTypeInfo(DataType type)
     {
-        pointer = TargetPointer.Null;
-        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
-            return false;
+        if (!_knownTypes.TryGetValue(type, out TypeInfo typeInfo))
+            throw new InvalidOperationException($"Failed to get type info for '{type}'");
 
-        if (global.Type is not null && Array.IndexOf(["pointer", "nint", "nuint"], global.Type) == -1)
-            return false;
+        return typeInfo;
+    }
 
-        pointer = new TargetPointer(global.Value);
-        return true;
+    public TypeInfo GetTypeInfo(string type)
+    {
+        if (_types.TryGetValue(type, out TypeInfo typeInfo))
+        return typeInfo;
+
+        DataType dataType = GetDataType(type);
+        if (dataType is not DataType.Unknown)
+            return GetTypeInfo(dataType);
+
+        throw new InvalidOperationException($"Failed to get type info for '{type}'");
+    }
+
+    internal bool TryGetContractVersion(string contractName, out int version)
+        => _contracts.TryGetValue(contractName, out version);
+
+    /// <summary>
+    /// Store of addresses that have already been read into corresponding data models.
+    /// This is simply used to avoid re-processing data on every request.
+    /// </summary>
+    internal sealed class DataCache
+    {
+        private readonly Target _target;
+        private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
+
+        public DataCache(Target target)
+        {
+            _target = target;
+        }
+
+        public T GetOrAdd<T>(TargetPointer address) where T : IData<T>
+        {
+            if (TryGet(address, out T? result))
+                return result;
+
+            T constructed = T.Create(_target, address);
+            if (_readDataByAddress.TryAdd((address, typeof(T)), constructed))
+                return constructed;
+
+            bool found = TryGet(address, out result);
+            Debug.Assert(found);
+            return result!;
+        }
+
+        public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
+        {
+            data = default;
+            if (!_readDataByAddress.TryGetValue((address, typeof(T)), out object? dataObj))
+                return false;
+
+            if (dataObj is T dataMaybe)
+            {
+                data = dataMaybe;
+                return true;
+            }
+
+            return false;
+        }
     }
 
     private sealed class Reader

@@ -536,11 +536,9 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         {
             case LocaleNumber_MeasurementSystem:
             {
-                NSString *currentLocaleCode = [currentLocale objectForKey:NSLocaleMeasurementSystem];
-                NSString *usLocaleCode = [[[NSLocale alloc] initWithLocaleIdentifier:@"en_US"] objectForKey:NSLocaleMeasurementSystem];
-                const char *measurementSystem = [currentLocaleCode UTF8String];
-                const char *us_measurementSystem = [usLocaleCode UTF8String];
-                value = (measurementSystem == us_measurementSystem) ? 1 : 0;
+                NSString *currenMeasurementSystem = [currentLocale objectForKey:NSLocaleMeasurementSystem];
+                NSString *usMeasurementSystem = [[[NSLocale alloc] initWithLocaleIdentifier:@"en_US"] objectForKey:NSLocaleMeasurementSystem];
+                value = [currenMeasurementSystem isEqualToString:usMeasurementSystem] ? 1 : 0;
                 break;
             }
             case LocaleNumber_FractionalDigitsCount:
@@ -788,13 +786,21 @@ const char* GlobalizationNative_GetICUDataPathFallback(void)
     }
 }
 
+static NSString* GetBaseName(NSString *localeIdentifier)
+{
+    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:localeIdentifier];
+    NSString *languageCode = [locale objectForKey:NSLocaleLanguageCode];
+    return languageCode;
+}
+
 const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
 {
     @autoreleasepool
     {
         if (NSLocale.preferredLanguages.count > 0)
         {
-            return strdup([NSLocale.preferredLanguages[0] UTF8String]);
+            NSString *preferredLanguage = [NSLocale.preferredLanguages objectAtIndex:0];
+            return strdup([GetBaseName(preferredLanguage) UTF8String]);
         }
         else
         {
@@ -815,7 +821,7 @@ const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
                 localeName = currentLocale.localeIdentifier;
             }
 
-            return strdup([localeName UTF8String]);
+            return strdup([GetBaseName(localeName) UTF8String]);
         }
     }
 }

@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
+import { DotnetModuleInternal, CharPtrNull, MainToWorkerMessageType } from "./types/internal";
 import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -14,7 +14,7 @@ import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { init_polyfills_async } from "./polyfills";
 import { strings_init, utf8ToString } from "./strings";
-import { init_managed_exports, install_main_synchronization_context } from "./managed-exports";
+import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
 import { wait_for_all_assets } from "./assets";
@@ -255,16 +255,21 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
             threadsReady = mono_wasm_init_threads();
         }
 
-        await wait_for_all_assets();
+        await runtimeHelpers.coreAssetsInMemory.promise;
 
         if (runtimeHelpers.config.virtualWorkingDirectory) {
             const FS = Module.FS;
             const cwd = runtimeHelpers.config.virtualWorkingDirectory;
-            const wds = FS.stat(cwd);
-            if (!wds) {
+            try {
+                const wds = FS.stat(cwd);
+                if (!wds) {
+                    Module.FS_createPath("/", cwd, true, true);
+                } else {
+                    mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
+                }
+            } catch (e) {
                 Module.FS_createPath("/", cwd, true, true);
             }
-            mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
             FS.chdir(cwd);
         }
 
@@ -287,7 +292,7 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
             runtimeHelpers.managedThreadTID = tcwraps.mono_wasm_create_deputy_thread();
 
             // await mono started on deputy thread
-            runtimeHelpers.proxyGCHandle = await runtimeHelpers.afterMonoStarted.promise;
+            await runtimeHelpers.afterMonoStarted.promise;
             runtimeHelpers.ioThreadTID = tcwraps.mono_wasm_create_io_thread();
 
             // TODO make UI thread not managed/attached https://github.com/dotnet/runtime/issues/100411
@@ -309,6 +314,16 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
 
         if (WasmEnableThreads) {
             await runtimeHelpers.afterIOStarted.promise;
+        }
+
+        await wait_for_all_assets();
+
+        if (WasmEnableThreads) {
+            runtimeHelpers.deputyWorker.thread!.postMessageToWorker({
+                type:"deputyThread",
+                cmd: MainToWorkerMessageType.allAssetsLoaded,
+            });
+            runtimeHelpers.proxyGCHandle = await runtimeHelpers.afterDeputyReady.promise;
         }
 
         runtimeList.registerRuntime(exportedRuntimeAPI);
@@ -545,12 +560,11 @@ export async function start_runtime () {
             monoThreadInfo.isRegistered = true;
             runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
             update_thread_info();
-            runtimeHelpers.proxyGCHandle = install_main_synchronization_context(runtimeHelpers.config.jsThreadBlockingMode!);
             runtimeHelpers.isManagedRunningOnCurrentThread = true;
         }
 
         // get GCHandle of the ctx
-        runtimeHelpers.afterMonoStarted.promise_control.resolve(runtimeHelpers.proxyGCHandle);
+        runtimeHelpers.afterMonoStarted.promise_control.resolve();
 
         if (runtimeHelpers.config.interpreterPgo) {
             await interp_pgo_load_data();

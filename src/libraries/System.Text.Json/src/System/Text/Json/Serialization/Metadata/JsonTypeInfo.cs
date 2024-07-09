@@ -6,6 +6,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.Pipelines;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Reflection;
@@ -47,6 +49,27 @@ namespace System.Text.Json.Serialization.Metadata
             ElementType = converter.ElementType;
             KeyType = converter.KeyType;
         }
+
+        /// <summary>
+        /// Gets the element type corresponding to an enumerable, dictionary or optional type.
+        /// </summary>
+        /// <remarks>
+        /// Returns the element type for enumerable types, the value type for dictionary types,
+        /// and the underlying type for <see cref="Nullable{T}"/> or F# optional types.
+        ///
+        /// Returns <see langword="null"/> for all other types or types using custom converters.
+        /// </remarks>
+        public Type? ElementType { get; }
+
+        /// <summary>
+        /// Gets the key type corresponding to a dictionary type.
+        /// </summary>
+        /// <remarks>
+        /// Returns the key type for dictionary types.
+        ///
+        /// Returns <see langword="null"/> for all other types or types using custom converters.
+        /// </remarks>
+        public Type? KeyType { get; }
 
         /// <summary>
         /// Gets or sets a parameterless factory to be used on deserialization.
@@ -336,6 +359,9 @@ namespace System.Text.Json.Serialization.Metadata
         // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
         internal bool PropertyMetadataSerializationNotSupported { get; set; }
 
+        internal bool IsNullable => Converter.NullableElementConverter is not null;
+        internal bool CanBeNull => PropertyInfoForTypeInfo.PropertyTypeCanBeNull;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ValidateCanBeUsedForPropertyMetadataSerialization()
         {
@@ -344,9 +370,6 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
             }
         }
-
-        internal Type? ElementType { get; }
-        internal Type? KeyType { get; }
 
         /// <summary>
         /// Return the JsonTypeInfo for the element type, or null if the type is not an enumerable or dictionary.
@@ -436,7 +459,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// User-defined custom converters (specified either via <see cref="JsonConverterAttribute"/> or <see cref="JsonSerializerOptions.Converters"/>)
         /// are metadata-agnostic and thus always resolve to <see cref="JsonTypeInfoKind.None"/>.
         /// </remarks>
-        public JsonTypeInfoKind Kind { get; private set; }
+        public JsonTypeInfoKind Kind { get; }
 
         /// <summary>
         /// Dummy <see cref="JsonPropertyInfo"/> instance corresponding to the declaring type of this <see cref="JsonTypeInfo"/>.
@@ -482,6 +505,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        internal JsonNumberHandling EffectiveNumberHandling => _numberHandling ?? Options.NumberHandling;
         private JsonNumberHandling? _numberHandling;
 
         /// <summary>
@@ -597,6 +621,45 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private IJsonTypeInfoResolver? _originatingResolver;
+
+        /// <summary>
+        /// Gets or sets an attribute provider corresponding to the deserialization constructor.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
+        /// <remarks>
+        /// When resolving metadata via the built-in resolvers this will be populated with
+        /// the underlying <see cref="ConstructorInfo" /> of the serialized property or field.
+        /// </remarks>
+        public ICustomAttributeProvider? ConstructorAttributeProvider
+        {
+            get
+            {
+                Func<ICustomAttributeProvider>? ctorAttrProviderFactory = Volatile.Read(ref ConstructorAttributeProviderFactory);
+                ICustomAttributeProvider? ctorAttrProvider = _constructorAttributeProvider;
+
+                if (ctorAttrProvider is null && ctorAttrProviderFactory is not null)
+                {
+                    _constructorAttributeProvider = ctorAttrProvider = ctorAttrProviderFactory();
+                    Volatile.Write(ref ConstructorAttributeProviderFactory, null);
+                }
+
+                return ctorAttrProvider;
+            }
+            internal set
+            {
+                Debug.Assert(!IsReadOnly);
+
+                _constructorAttributeProvider = value;
+                Volatile.Write(ref ConstructorAttributeProviderFactory, null);
+            }
+        }
+
+        // Metadata emanating from the source generator use delayed attribute provider initialization
+        // ensuring that reflection metadata resolution remains pay-for-play and is trimmable.
+        internal Func<ICustomAttributeProvider>? ConstructorAttributeProviderFactory;
+        private ICustomAttributeProvider? _constructorAttributeProvider;
 
         internal void VerifyMutable()
         {
@@ -788,16 +851,16 @@ namespace System.Text.Json.Serialization.Metadata
             // Defines the core predicate that must be checked for every node in the type graph.
             bool IsCurrentNodeCompatible()
             {
-                if (Options.CanUseFastPathSerializationLogic)
-                {
-                    // Simple case/backward compatibility: options uses a combination of compatible built-in converters.
-                    return true;
-                }
-
                 if (IsCustomized)
                 {
                     // Return false if we have detected contract customization by the user.
                     return false;
+                }
+
+                if (Options.CanUseFastPathSerializationLogic)
+                {
+                    // Simple case/backward compatibility: options uses a combination of compatible built-in converters.
+                    return true;
                 }
 
                 return OriginatingResolver.IsCompatibleWithOptions(Options);
@@ -815,45 +878,6 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         internal bool DetermineUsesParameterizedConstructor()
             => Converter.ConstructorIsParameterized && CreateObject is null;
-
-#if DEBUG
-        internal string GetPropertyDebugInfo(ReadOnlySpan<byte> unescapedPropertyName)
-        {
-            string propertyName = JsonHelpers.Utf8GetString(unescapedPropertyName);
-            return $"propertyName = {propertyName}; DebugInfo={GetDebugInfo()}";
-        }
-
-        internal string GetDebugInfo()
-        {
-            ConverterStrategy converterStrategy = Converter.ConverterStrategy;
-            string jtiTypeName = GetType().Name;
-            string typeName = Type.FullName!;
-            bool propCacheInitialized = PropertyCache != null;
-
-            StringBuilder sb = new();
-            sb.AppendLine("{");
-            sb.AppendLine($"  GetType: {jtiTypeName},");
-            sb.AppendLine($"  Type: {typeName},");
-            sb.AppendLine($"  ConverterStrategy: {converterStrategy},");
-            sb.AppendLine($"  IsConfigured: {IsConfigured},");
-            sb.AppendLine($"  HasPropertyCache: {propCacheInitialized},");
-
-            if (propCacheInitialized)
-            {
-                sb.AppendLine("  Properties: {");
-                foreach (JsonPropertyInfo pi in PropertyCache!.Values)
-                {
-                    sb.AppendLine($"    {pi.Name}:");
-                    sb.AppendLine($"{pi.GetDebugInfo(indent: 6)},");
-                }
-
-                sb.AppendLine("  },");
-            }
-
-            sb.AppendLine("}");
-            return sb.ToString();
-        }
-#endif
 
         /// <summary>
         /// Creates a blank <see cref="JsonTypeInfo{T}"/> instance.
@@ -942,7 +966,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Type jsonTypeInfoType = typeof(JsonTypeInfo<>).MakeGenericType(type);
                 jsonTypeInfo = (JsonTypeInfo)jsonTypeInfoType.CreateInstanceNoWrapExceptions(
-                    parameterTypes: new Type[] { typeof(JsonConverter), typeof(JsonSerializerOptions) },
+                    parameterTypes: [typeof(JsonConverter), typeof(JsonSerializerOptions)],
                     parameters: new object[] { converter, options })!;
             }
 
@@ -985,11 +1009,45 @@ namespace System.Text.Json.Serialization.Metadata
             return propertyInfo;
         }
 
-        internal JsonParameterInfoValues[]? ParameterInfoValues { get; set; }
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType, Type? declaringType)
+        {
+            JsonPropertyInfo jsonPropertyInfo;
+
+            if (Options.TryGetTypeInfoCached(propertyType, out JsonTypeInfo? jsonTypeInfo))
+            {
+                // If a JsonTypeInfo has already been cached for the property type,
+                // avoid reflection-based initialization by delegating construction
+                // of JsonPropertyInfo<T> construction to the property type metadata.
+                jsonPropertyInfo = jsonTypeInfo.CreateJsonPropertyInfo(declaringTypeInfo: this, declaringType, Options);
+            }
+            else
+            {
+                // Metadata for `propertyType` has not been registered yet.
+                // Use reflection to instantiate the correct JsonPropertyInfo<T>
+                Type propertyInfoType = typeof(JsonPropertyInfo<>).MakeGenericType(propertyType);
+                jsonPropertyInfo = (JsonPropertyInfo)propertyInfoType.CreateInstanceNoWrapExceptions(
+                    parameterTypes: [typeof(Type), typeof(JsonTypeInfo), typeof(JsonSerializerOptions)],
+                    parameters: new object[] { declaringType ?? Type, this, Options })!;
+            }
+
+            Debug.Assert(jsonPropertyInfo.PropertyType == propertyType);
+            return jsonPropertyInfo;
+        }
+
+        /// <summary>
+        /// Creates a JsonPropertyInfo whose property type matches the type of this JsonTypeInfo instance.
+        /// </summary>
+        private protected abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, Type? declaringType, JsonSerializerOptions options);
+
+        private protected Dictionary<ParameterLookupKey, JsonParameterInfoValues>? _parameterInfoValuesIndex;
 
         // Untyped, root-level serialization methods
         internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue);
+        internal abstract Task SerializeAsObjectAsync(PipeWriter pipeWriter, object? rootValue, int flushThreshold, CancellationToken cancellationToken);
         internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken);
+        internal abstract Task SerializeAsObjectAsync(PipeWriter utf8Json, object? rootValue, CancellationToken cancellationToken);
         internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue);
 
         // Untyped, root-level deserialization methods
@@ -1004,50 +1062,26 @@ namespace System.Text.Json.Serialization.Metadata
             public bool IsPropertyOrderSpecified;
         }
 
-        private sealed class ParameterLookupKey
+        private protected readonly struct ParameterLookupKey(Type type, string name) : IEquatable<ParameterLookupKey>
         {
-            public ParameterLookupKey(string name, Type type)
-            {
-                Name = name;
-                Type = type;
-            }
-
-            public string Name { get; }
-            public Type Type { get; }
-
-            public override int GetHashCode()
-            {
-                return StringComparer.OrdinalIgnoreCase.GetHashCode(Name);
-            }
-
-            public override bool Equals([NotNullWhen(true)] object? obj)
-            {
-                Debug.Assert(obj is ParameterLookupKey);
-
-                ParameterLookupKey other = (ParameterLookupKey)obj;
-                return Type == other.Type && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        private sealed class ParameterLookupValue
-        {
-            public ParameterLookupValue(JsonPropertyInfo jsonPropertyInfo)
-            {
-                JsonPropertyInfo = jsonPropertyInfo;
-            }
-
-            public string? DuplicateName { get; set; }
-            public JsonPropertyInfo JsonPropertyInfo { get; }
+            public Type Type { get; } = type;
+            public string Name { get; } = name;
+            public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Name);
+            public bool Equals(ParameterLookupKey other) => Type == other.Type && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is ParameterLookupKey key && Equals(key);
         }
 
         internal void ConfigureProperties()
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
-            Debug.Assert(PropertyCache is null);
+            Debug.Assert(_propertyCache is null);
+            Debug.Assert(_propertyIndex is null);
             Debug.Assert(ExtensionDataProperty is null);
 
             JsonPropertyInfoList properties = PropertyList;
-            JsonPropertyDictionary<JsonPropertyInfo> propertyCache = CreatePropertyCache(capacity: properties.Count);
+            StringComparer comparer = Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+            Dictionary<string, JsonPropertyInfo> propertyIndex = new(properties.Count, comparer);
+            List<JsonPropertyInfo> propertyCache = new(properties.Count);
 
             int numberOfRequiredProperties = 0;
             bool arePropertiesSorted = true;
@@ -1055,7 +1089,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             foreach (JsonPropertyInfo property in properties)
             {
-                Debug.Assert(property.ParentTypeInfo == this);
+                Debug.Assert(property.DeclaringTypeInfo == this);
 
                 if (property.IsExtensionData)
                 {
@@ -1084,10 +1118,12 @@ namespace System.Text.Json.Serialization.Metadata
                         previousPropertyOrder = property.Order;
                     }
 
-                    if (!propertyCache.TryAddValue(property.Name, property))
+                    if (!propertyIndex.TryAdd(property.Name, property))
                     {
                         ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, property.Name);
                     }
+
+                    propertyCache.Add(property);
                 }
 
                 property.Configure();
@@ -1097,11 +1133,12 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // Properties have been configured by the user and require sorting.
                 properties.SortProperties();
-                propertyCache.List.StableSortByKey(static propInfo => propInfo.Value.Order);
+                propertyCache.StableSortByKey(static propInfo => propInfo.Order);
             }
 
             NumberOfRequiredProperties = numberOfRequiredProperties;
-            PropertyCache = propertyCache;
+            _propertyCache = propertyCache.ToArray();
+            _propertyIndex = propertyIndex;
 
             // Override global UnmappedMemberHandling configuration
             // if type specifies an extension data property.
@@ -1111,73 +1148,83 @@ namespace System.Text.Json.Serialization.Metadata
                     : JsonUnmappedMemberHandling.Skip);
         }
 
+        internal void PopulateParameterInfoValues(JsonParameterInfoValues[] parameterInfoValues)
+        {
+            if (parameterInfoValues.Length == 0)
+            {
+                return;
+            }
+
+            Dictionary<ParameterLookupKey, JsonParameterInfoValues> parameterIndex = new(parameterInfoValues.Length);
+            foreach (JsonParameterInfoValues parameterInfoValue in parameterInfoValues)
+            {
+                ParameterLookupKey paramKey = new(parameterInfoValue.ParameterType, parameterInfoValue.Name);
+                parameterIndex.TryAdd(paramKey, parameterInfoValue); // Ignore conflicts since they are reported at serialization time.
+            }
+
+            ParameterCount = parameterInfoValues.Length;
+            _parameterInfoValuesIndex = parameterIndex;
+        }
+
+        internal void ResolveMatchingParameterInfo(JsonPropertyInfo propertyInfo)
+        {
+            Debug.Assert(
+                CreateObjectWithArgs is null || _parameterInfoValuesIndex is not null,
+                "Metadata with parameterized constructors must have populated parameter info metadata.");
+
+            if (_parameterInfoValuesIndex is not { } index)
+            {
+                return;
+            }
+
+            string propertyName = propertyInfo.MemberName ?? propertyInfo.Name;
+            ParameterLookupKey propKey = new(propertyInfo.PropertyType, propertyName);
+            if (index.TryGetValue(propKey, out JsonParameterInfoValues? matchingParameterInfoValues))
+            {
+                propertyInfo.AddJsonParameterInfo(matchingParameterInfoValues);
+            }
+        }
+
         internal void ConfigureConstructorParameters()
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
             Debug.Assert(DetermineUsesParameterizedConstructor());
-            Debug.Assert(PropertyCache is not null);
-            Debug.Assert(ParameterCache is null);
+            Debug.Assert(_propertyCache is not null);
+            Debug.Assert(_parameterCache is null);
 
-            JsonParameterInfoValues[] jsonParameters = ParameterInfoValues ?? Array.Empty<JsonParameterInfoValues>();
-            var parameterCache = new JsonPropertyDictionary<JsonParameterInfo>(Options.PropertyNameCaseInsensitive, jsonParameters.Length);
+            List<JsonParameterInfo> parameterCache = new(ParameterCount);
+            Dictionary<ParameterLookupKey, JsonParameterInfo> parameterIndex = new(ParameterCount);
 
-            // Cache the lookup from object property name to JsonPropertyInfo using a case-insensitive comparer.
-            // Case-insensitive is used to support both camel-cased parameter names and exact matches when C#
-            // record types or anonymous types are used.
-            // The property name key does not use [JsonPropertyName] or PropertyNamingPolicy since we only bind
-            // the parameter name to the object property name and do not use the JSON version of the name here.
-            var nameLookup = new Dictionary<ParameterLookupKey, ParameterLookupValue>(PropertyCache.Count);
-
-            foreach (KeyValuePair<string, JsonPropertyInfo> kvp in PropertyCache.List)
+            foreach (JsonPropertyInfo propertyInfo in _propertyCache)
             {
-                JsonPropertyInfo jsonProperty = kvp.Value;
-                string propertyName = jsonProperty.MemberName ?? jsonProperty.Name;
-
-                ParameterLookupKey key = new(propertyName, jsonProperty.PropertyType);
-                ParameterLookupValue value = new(jsonProperty);
-
-                if (!nameLookup.TryAdd(key, value))
+                JsonParameterInfo? parameterInfo = propertyInfo.AssociatedParameter;
+                if (parameterInfo is null)
                 {
-                    // More than one property has the same case-insensitive name and Type.
-                    // Remember so we can throw a nice exception if this property is used as a parameter name.
-                    ParameterLookupValue existing = nameLookup[key];
-                    existing.DuplicateName = propertyName;
+                    continue;
                 }
+
+                ParameterLookupKey paramKey = new(propertyInfo.PropertyType, propertyInfo.Name);
+                if (!parameterIndex.TryAdd(paramKey, parameterInfo))
+                {
+                    // Multiple object properties cannot bind to the same constructor parameter.
+                    ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
+                        Type,
+                        parameterInfo.Name,
+                        propertyInfo.Name,
+                        parameterIndex[paramKey].MatchingProperty.Name);
+                }
+
+                parameterCache.Add(parameterInfo);
             }
 
-            foreach (JsonParameterInfoValues parameterInfo in jsonParameters)
+            if (ExtensionDataProperty is { AssociatedParameter: not null })
             {
-                ParameterLookupKey paramToCheck = new(parameterInfo.Name, parameterInfo.ParameterType);
-
-                if (nameLookup.TryGetValue(paramToCheck, out ParameterLookupValue? matchingEntry))
-                {
-                    if (matchingEntry.DuplicateName != null)
-                    {
-                        // Multiple object properties cannot bind to the same constructor parameter.
-                        ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
-                            Type,
-                            parameterInfo.Name!,
-                            matchingEntry.JsonPropertyInfo.Name,
-                            matchingEntry.DuplicateName);
-                    }
-
-                    Debug.Assert(matchingEntry.JsonPropertyInfo != null);
-                    JsonPropertyInfo jsonPropertyInfo = matchingEntry.JsonPropertyInfo;
-                    JsonParameterInfo jsonParameterInfo = jsonPropertyInfo.CreateJsonParameterInfo(parameterInfo);
-                    parameterCache.Add(jsonPropertyInfo.Name, jsonParameterInfo);
-                }
-                // It is invalid for the extension data property to bind to a constructor argument.
-                else if (ExtensionDataProperty != null &&
-                    StringComparer.OrdinalIgnoreCase.Equals(paramToCheck.Name, ExtensionDataProperty.Name))
-                {
-                    Debug.Assert(ExtensionDataProperty.MemberName != null, "Custom property info cannot be data extension property");
-                    ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(ExtensionDataProperty.MemberName, ExtensionDataProperty);
-                }
+                Debug.Assert(ExtensionDataProperty.MemberName != null, "Custom property info cannot be data extension property");
+                ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(ExtensionDataProperty.MemberName, ExtensionDataProperty);
             }
 
-            ParameterCount = jsonParameters.Length;
-            ParameterCache = parameterCache;
-            ParameterInfoValues = null;
+            _parameterCache = parameterCache.ToArray();
+            _parameterInfoValuesIndex = null;
         }
 
         internal static void ValidateType(Type type)
@@ -1287,11 +1334,6 @@ namespace System.Text.Json.Serialization.Metadata
                 typeof(IDictionary<string, JsonElement>).IsAssignableFrom(propertyType) ||
                 // Avoid a reference to typeof(JsonNode) to support trimming.
                 (propertyType.FullName == JsonObjectTypeName && ReferenceEquals(propertyType.Assembly, typeof(JsonTypeInfo).Assembly));
-        }
-
-        internal JsonPropertyDictionary<JsonPropertyInfo> CreatePropertyCache(int capacity)
-        {
-            return new JsonPropertyDictionary<JsonPropertyInfo>(Options.PropertyNameCaseInsensitive, capacity);
         }
 
         private static JsonTypeInfoKind GetTypeInfoKind(Type type, JsonConverter converter)

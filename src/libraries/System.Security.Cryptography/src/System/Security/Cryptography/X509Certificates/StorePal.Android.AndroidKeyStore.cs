@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             private static string GetCertificateHashString(ICertificatePal certPal)
             {
-                return X509Certificate.GetCertHashString(HashAlgorithmName.SHA256, certPal);
+                return X509Certificate.GetCertHashString(HashAlgorithmName.SHA256, certPal.RawData);
             }
 
             private struct EnumCertificatesContext

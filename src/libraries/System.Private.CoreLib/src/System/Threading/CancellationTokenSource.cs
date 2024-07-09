@@ -877,7 +877,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="tokens">The <see cref="CancellationToken">CancellationToken</see> instances to observe.</param>
         /// <returns>A <see cref="CancellationTokenSource"/> that is linked to the source tokens.</returns>
-        public static CancellationTokenSource CreateLinkedTokenSource(/*params*/ ReadOnlySpan<CancellationToken> tokens)
+        public static CancellationTokenSource CreateLinkedTokenSource(params ReadOnlySpan<CancellationToken> tokens)
         {
             return tokens.Length switch
             {

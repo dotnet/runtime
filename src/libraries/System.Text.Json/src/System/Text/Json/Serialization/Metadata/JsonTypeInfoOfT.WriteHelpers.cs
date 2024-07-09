@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipelines;
 using System.Text.Json.Serialization.Converters;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,10 +59,32 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        // Root serialization method for async streaming serialization.
-        internal async Task SerializeAsync(
-            Stream utf8Json,
+        internal Task SerializeAsync(Stream utf8Json,
             T? rootValue,
+            CancellationToken cancellationToken,
+            object? rootValueBoxed = null)
+        {
+            // Value chosen as 90% of the default buffer used in PooledByteBufferWriter.
+            // This is a tradeoff between likelihood of needing to grow the array vs. utilizing most of the buffer
+            int flushThreshold = (int)(Options.DefaultBufferSize * JsonSerializer.FlushThreshold);
+            return SerializeAsync(new PooledByteBufferWriter(Options.DefaultBufferSize, utf8Json), rootValue, flushThreshold, cancellationToken, rootValueBoxed);
+        }
+
+        internal Task SerializeAsync(PipeWriter utf8Json,
+            T? rootValue,
+            CancellationToken cancellationToken,
+            object? rootValueBoxed = null)
+        {
+            // Value chosen as 90% of 4 buffer segments in Pipes. This is semi-arbitrarily chosen and may be changed in future iterations.
+            int flushThreshold = (int)(4 * PipeOptions.Default.MinimumSegmentSize * JsonSerializer.FlushThreshold);
+            return SerializeAsync(utf8Json, rootValue, flushThreshold, cancellationToken, rootValueBoxed);
+        }
+
+        // Root serialization method for async streaming serialization.
+        private async Task SerializeAsync(
+            PipeWriter pipeWriter,
+            T? rootValue,
+            int flushThreshold,
             CancellationToken cancellationToken,
             object? rootValueBoxed = null)
         {
@@ -76,24 +99,37 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
-                using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
-                Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriter(Options, bufferWriter);
+                Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriter(Options, pipeWriter);
 
                 try
                 {
-                    SerializeHandler(writer, rootValue!);
-                    writer.Flush();
+                    try
+                    {
+                        SerializeHandler(writer, rootValue!);
+                        writer.Flush();
+                    }
+                    finally
+                    {
+                        // Record the serialization size in both successful and failed operations,
+                        // since we want to immediately opt out of the fast path if it exceeds the threshold.
+                        OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
+
+                        Utf8JsonWriterCache.ReturnWriter(writer);
+                    }
+
+                    FlushResult result = await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    if (result.IsCanceled)
+                    {
+                        ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
+                    }
                 }
                 finally
                 {
-                    // Record the serialization size in both successful and failed operations,
-                    // since we want to immediately opt out of the fast path if it exceeds the threshold.
-                    OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
-
-                    Utf8JsonWriterCache.ReturnWriter(writer);
+                    if (pipeWriter is PooledByteBufferWriter disposable)
+                    {
+                        disposable.Dispose();
+                    }
                 }
-
-                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
             }
             else if (
 #if NET
@@ -104,7 +140,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Options.TryGetPolymorphicTypeInfoForRootType(rootValue, out JsonTypeInfo? derivedTypeInfo))
             {
                 Debug.Assert(typeof(T) == typeof(object));
-                await derivedTypeInfo.SerializeAsObjectAsync(utf8Json, rootValue, cancellationToken).ConfigureAwait(false);
+                await derivedTypeInfo.SerializeAsObjectAsync(pipeWriter, rootValue, flushThreshold, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -115,17 +151,21 @@ namespace System.Text.Json.Serialization.Metadata
                     supportContinuation: true,
                     supportAsync: true);
 
+                if (!pipeWriter.CanGetUnflushedBytes)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(pipeWriter);
+                }
+                state.PipeWriter = pipeWriter;
                 state.CancellationToken = cancellationToken;
 
-                using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
-                using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
+                var writer = new Utf8JsonWriter(pipeWriter, Options.GetWriterOptions());
 
                 try
                 {
+                    state.FlushThreshold = flushThreshold;
+
                     do
                     {
-                        state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
-
                         try
                         {
                             isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
@@ -139,8 +179,17 @@ namespace System.Text.Json.Serialization.Metadata
                             }
                             else
                             {
-                                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-                                bufferWriter.Clear();
+                                FlushResult result = await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+                                if (result.IsCanceled || result.IsCompleted)
+                                {
+                                    if (result.IsCanceled)
+                                    {
+                                        ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
+                                    }
+
+                                    // Pipe is completed, no one is reading so no point in continuing serialization
+                                    return;
+                                }
                             }
                         }
                         finally
@@ -169,6 +218,15 @@ namespace System.Text.Json.Serialization.Metadata
                         }
 
                     } while (!isFinalBlock);
+
+                    if (CanUseSerializeHandler)
+                    {
+                        // On successful serialization, record the serialization size
+                        // to determine potential suitability of the type for
+                        // fast-path serialization in streaming methods.
+                        Debug.Assert(writer.BytesPending == 0);
+                        OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    }
                 }
                 catch
                 {
@@ -176,14 +234,13 @@ namespace System.Text.Json.Serialization.Metadata
                     await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
                     throw;
                 }
-
-                if (CanUseSerializeHandler)
+                finally
                 {
-                    // On successful serialization, record the serialization size
-                    // to determine potential suitability of the type for
-                    // fast-path serialization in streaming methods.
-                    Debug.Assert(writer.BytesPending == 0);
-                    OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    writer.Dispose();
+                    if (pipeWriter is PooledByteBufferWriter disposable)
+                    {
+                        disposable.Dispose();
+                    }
                 }
             }
         }
@@ -244,10 +301,16 @@ namespace System.Text.Json.Serialization.Metadata
                 using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
                 using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
 
+                if (!bufferWriter.CanGetUnflushedBytes)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(bufferWriter);
+                }
+
+                state.PipeWriter = bufferWriter;
+                state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
+
                 do
                 {
-                    state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
-
                     isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
                     writer.Flush();
 
@@ -271,7 +334,13 @@ namespace System.Text.Json.Serialization.Metadata
         internal sealed override void SerializeAsObject(Utf8JsonWriter writer, object? rootValue)
             => Serialize(writer, JsonSerializer.UnboxOnWrite<T>(rootValue), rootValue);
 
+        internal sealed override Task SerializeAsObjectAsync(PipeWriter pipeWriter, object? rootValue, int flushThreshold, CancellationToken cancellationToken)
+            => SerializeAsync(pipeWriter, JsonSerializer.UnboxOnWrite<T>(rootValue), flushThreshold, cancellationToken, rootValue);
+
         internal sealed override Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken)
+            => SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue);
+
+        internal sealed override Task SerializeAsObjectAsync(PipeWriter utf8Json, object? rootValue, CancellationToken cancellationToken)
             => SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue);
 
         internal sealed override void SerializeAsObject(Stream utf8Json, object? rootValue)

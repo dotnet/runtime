@@ -314,10 +314,13 @@ namespace System
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / x</c>.</para>
         /// </remarks>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ReciprocalEstimate(float x)
         {
+#if MONO
             return 1.0f / x;
+#else
+            return ReciprocalEstimate(x);
+#endif
         }
 
         /// <summary>Returns an estimate of the reciprocal square root of a specified number.</summary>
@@ -329,10 +332,13 @@ namespace System
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(x)</c>.</para>
         /// </remarks>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ReciprocalSqrtEstimate(float x)
         {
+#if MONO || TARGET_RISCV64 || TARGET_LOONGARCH64
             return 1.0f / Sqrt(x);
+#else
+            return ReciprocalSqrtEstimate(x);
+#endif
         }
 
         [Intrinsic]

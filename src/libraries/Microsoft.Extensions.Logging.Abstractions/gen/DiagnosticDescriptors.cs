@@ -208,5 +208,13 @@ namespace Microsoft.Extensions.Logging.Generators
             category: "LoggingGenerator",
             defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor PrimaryConstructorParameterLoggerHidden { get; } = DiagnosticDescriptorHelper.Create(
+            id: "SYSLIB1027",
+            title: new LocalizableResourceString(nameof(SR.PrimaryConstructorParameterLoggerHiddenTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.PrimaryConstructorParameterLoggerHiddenMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Info,
+            isEnabledByDefault: true);
     }
 }
