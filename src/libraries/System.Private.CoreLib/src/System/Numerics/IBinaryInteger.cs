@@ -20,6 +20,118 @@ namespace System.Numerics
             return (quotient, (left - (quotient * right)));
         }
 
+        /// <summary>
+        /// Computes the quotient and remainder of two values.
+        /// Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="rounding"/> is invalid.
+        /// </summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <param name="rounding"></param>
+        /// <returns>The quotient and remainder of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right, DivisionRounding rounding)
+        {
+            return rounding switch
+            {
+                DivisionRounding.Truncate => TSelf.DivRem(left, right),
+                DivisionRounding.Floor => DivRemFloor(left, right),
+                DivisionRounding.Ceiling => DivRemCeiling(left, right),
+                DivisionRounding.AwayFromZero => DivRemAwayFromZero(left, right),
+                DivisionRounding.Euclidean => DivRemEuclidean(left, right),
+                _ => throw new ArgumentOutOfRangeException(nameof(rounding)),
+            };
+        }
+
+        private static (TSelf quotient, TSelf remainder) DivRemFloor(TSelf left, TSelf right)
+        {
+            TSelf quotient = left / right;
+            TSelf remainder = left - (quotient * right);
+
+            if (remainder != TSelf.Zero)
+            {
+                return FloorRounding(left, right, quotient, remainder);
+            }
+
+            return (quotient, remainder);
+        }
+
+        private static (TSelf quotient, TSelf remainder) FloorRounding(TSelf left, TSelf right, TSelf quotient, TSelf remainder)
+        {
+            if (TSelf.Sign(left) != TSelf.Sign(right))
+            {
+                quotient--;
+                remainder += right;
+            }
+
+            return (quotient, remainder);
+        }
+
+        private static (TSelf Quotient, TSelf Remainder) DivRemCeiling(TSelf left, TSelf right)
+        {
+            TSelf quotient = left / right;
+            TSelf remainder = left - (quotient * right);
+
+            if (remainder != TSelf.Zero)
+            {
+                return CeilingRounding(left, right, quotient, remainder);
+            }
+
+            return (quotient, remainder);
+        }
+
+        private static (TSelf quotient, TSelf remainder) CeilingRounding(TSelf left, TSelf right, TSelf quotient, TSelf remainder)
+        {
+            if (TSelf.Sign(left) == TSelf.Sign(right))
+            {
+                quotient++;
+                remainder -= right;
+            }
+
+            return (quotient, remainder);
+        }
+
+        private static (TSelf Quotient, TSelf Remainder) DivRemAwayFromZero(TSelf left, TSelf right)
+        {
+            TSelf quotient = left / right;
+            TSelf remainder = left - (quotient * right);
+
+            if (remainder != TSelf.Zero)
+            {
+                if (TSelf.Sign(left) == TSelf.Sign(right))
+                {
+                    quotient++;
+                }
+                else
+                {
+                    quotient--;
+                }
+            }
+
+            remainder = left - (quotient * right);
+
+            return (quotient, remainder);
+        }
+
+        private static (TSelf Quotient, TSelf Remainder) DivRemEuclidean(TSelf left, TSelf right)
+        {
+            TSelf quotient = left / right;
+            TSelf remainder = left - (quotient * right);
+
+            if (remainder != TSelf.Zero)
+            {
+                if (right > TSelf.Zero)
+                {
+                    return FloorRounding(left, right, quotient, remainder);
+                }
+                else
+                {
+                    return CeilingRounding(left, right, quotient, remainder);
+                }
+            }
+
+            return (quotient, remainder);
+        }
+
         /// <summary>Computes the number of leading zero bits in a value.</summary>
         /// <param name="value">The value whose leading zero bits are to be counted.</param>
         /// <returns>The number of leading zero bits in <paramref name="value" />.</returns>
