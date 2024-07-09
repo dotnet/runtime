@@ -2251,7 +2251,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		int cmpId = (id == SN_IsNegative) ? SN_LessThan : SN_GreaterThanOrEqual;
 		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, op_klass, cmpId, arg0_type, arg0, emit_xzero (cfg, op_klass));
 
-		if (op_klass != NULL) {
+		if (op_klass != klass) {
 			ins = emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
 		}
 		return ins;
