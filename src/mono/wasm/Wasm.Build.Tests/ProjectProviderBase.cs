@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
@@ -45,17 +46,17 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.dll" },
-                                   expectToExist: !BuildTestBase.UseWebcil);
+                                   expectToExist: false);
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.wasm" },
-                                   expectToExist: BuildTestBase.UseWebcil);
+                                   expectToExist: false);
 
-        AssertBootJson(assertOptions);
+        var bootJson = AssertBootJson(assertOptions);
 
         // icu
         if (assertOptions.AssertIcuAssets)
         {
-            AssertIcuAssets(assertOptions);
+            AssertIcuAssets(assertOptions, bootJson);
         }
         else
         {
@@ -345,7 +346,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
     }
 
-    public void AssertIcuAssets(AssertBundleOptionsBase assertOptions)
+    public void AssertIcuAssets(AssertBundleOptionsBase assertOptions, BootJsonData bootJson)
     {
         List<string> expected = new();
         switch (assertOptions.GlobalizationMode)
@@ -379,6 +380,17 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
         if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
             actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules.json"));
+
+        var expectedFingerprinted = new List<string>(expected.Count);
+        foreach (var expectedItem in expected)
+        {
+            var expectedFingerprintedItem = bootJson.resources.fingerprinting.Where(kv => kv.Value == expectedItem).SingleOrDefault().Key;
+            if (string.IsNullOrEmpty(expectedFingerprintedItem))
+                throw new XunitException($"Could not find ICU asset {expectedItem} in fingerprinting in boot config");
+
+            expectedFingerprinted.Add(expectedFingerprintedItem);
+        }
+
         AssertFileNames(expected, actual);
         if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
         {
@@ -390,7 +402,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
     }
 
-    public void AssertBootJson(AssertBundleOptionsBase options)
+    public BootJsonData AssertBootJson(AssertBundleOptionsBase options)
     {
         EnsureProjectDirIsSet();
         // string binFrameworkDir = FindBinFrameworkDir(options.Config, options.IsPublish, options.TargetFramework);
@@ -400,13 +412,16 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         BootJsonData bootJson = ParseBootData(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
+
+        spcExpectedFilename = bootJson.resources.fingerprinting.Where(kv => kv.Value == spcExpectedFilename).SingleOrDefault().Key;
+        if (string.IsNullOrEmpty(spcExpectedFilename))
+            throw new XunitException($"Could not find an assembly System.Private.CoreLib in fingerprinting in {bootJsonPath}");
+
         string? spcActualFilename = bootJson.resources.coreAssembly.Keys
-                                        .Where(a => Path.GetFileNameWithoutExtension(a) == "System.Private.CoreLib")
+                                        .Where(a => a == spcExpectedFilename)
                                         .SingleOrDefault();
         if (spcActualFilename is null)
             throw new XunitException($"Could not find an assembly named System.Private.CoreLib.* in {bootJsonPath}");
-        if (spcExpectedFilename != spcActualFilename)
-            throw new XunitException($"Expected to find {spcExpectedFilename} but found {spcActualFilename} in {bootJsonPath}");
 
         var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
             .Union(bootJson.resources.jsModuleRuntime.Keys)
@@ -454,10 +469,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             throw new XunitException($"In {bootJsonPath}{Environment.NewLine}" +
                                         $"  Expected: {string.Join(", ", expectedEntries.Keys.ToArray())}{Environment.NewLine}" +
                                         $"  Actual  : {string.Join(", ", bootJsonEntries)}");
-
-
         }
         Assert.Collection(bootJsonEntries.Order(), expectedEntries.Values.ToArray());
+
+        return bootJson;
     }
 
     public static BootJsonData ParseBootData(string bootJsonPath)

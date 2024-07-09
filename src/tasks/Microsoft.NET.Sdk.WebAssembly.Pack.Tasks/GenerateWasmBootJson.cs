@@ -191,7 +191,7 @@ public class GenerateWasmBootJson : Task
                 var fileExtension = resource.GetMetadata("Extension");
                 var assetTraitName = resource.GetMetadata("AssetTraitName");
                 var assetTraitValue = resource.GetMetadata("AssetTraitValue");
-                var resourceName = Path.GetFileName(resource.ItemSpec);
+                var resourceName = Path.GetFileName(resource.GetMetadata("OriginalItemSpec"));
                 var resourceRoute = Path.GetFileName(endpointByAsset[resource.ItemSpec].ItemSpec);
 
                 if (TryGetLazyLoadedAssembly(resourceName, out var lazyLoad))
