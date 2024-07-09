@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices
         private static readonly Guid IID_IWeakReferenceSource = new Guid(0x00000038, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 
         private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
-        private static readonly List<GCHandle> s_referenceTrackerNativeObjectWrapperCache = new List<GCHandle>();
+        private static readonly HashSet<GCHandle> s_referenceTrackerNativeObjectWrapperCache = new HashSet<GCHandle>();
         private static readonly Lock s_nativeObjectWrapperCacheLock = new Lock(useTrivialWaits: true);
 
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _ccwTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
