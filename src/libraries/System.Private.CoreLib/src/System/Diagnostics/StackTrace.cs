@@ -402,7 +402,7 @@ namespace System.Diagnostics
             return true;
         }
 
-        private static bool IsDefinedSafe(MemberInfo memberInfo, Type attributeType bool inherit)
+        private static bool IsDefinedSafe(MemberInfo memberInfo, Type attributeType, bool inherit)
         {
             try
             {
