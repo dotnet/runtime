@@ -124,8 +124,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                             return true;
 
                         actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
-                                                       Version: match.Groups[1].Value,
-                                                       Hash: match.Groups[2].Value,
+                                                       Hash: match.Groups[1].Value,
                                                        ActualPath: actualFile);
                     }
                     else
@@ -134,7 +133,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                             return true;
 
                         actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
-                                                       Version: null,
                                                        Hash: null,
                                                        ActualPath: actualFile);
                     }
@@ -180,15 +178,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                        expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                                        expectFingerprintForThisFile: expectFingerprint))
             {
-                if (string.IsNullOrEmpty(actual[expectedFilename].Version))
-                    throw new XunitException($"Expected version in filename: {actual[expectedFilename].ActualPath}");
                 if (string.IsNullOrEmpty(actual[expectedFilename].Hash))
                     throw new XunitException($"Expected hash in filename: {actual[expectedFilename].ActualPath}");
             }
             else
             {
-                if (!string.IsNullOrEmpty(actual[expectedFilename].Version))
-                    throw new XunitException($"Expected no version in filename: {actual[expectedFilename].ActualPath}");
                 if (!string.IsNullOrEmpty(actual[expectedFilename].Hash))
                     throw new XunitException($"Expected no hash in filename: {actual[expectedFilename].ActualPath}");
             }
