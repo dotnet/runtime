@@ -11365,11 +11365,10 @@ public:
         CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1);
 
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-    FpStructInRegistersInfo GetPassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHandle);
-
-    static void GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info,
-                                                    var_types*              type1st,
-                                                    var_types*              type2nd);
+    typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, CORINFO_FPSTRUCT_LOWERING*>
+                                     FpStructLoweringMap;
+    FpStructLoweringMap*             m_fpStructLoweringCache;
+    const CORINFO_FPSTRUCT_LOWERING* GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle);
 #endif // defined(UNIX_AMD64_ABI)
 
     void     fgMorphMultiregStructArgs(GenTreeCall* call);

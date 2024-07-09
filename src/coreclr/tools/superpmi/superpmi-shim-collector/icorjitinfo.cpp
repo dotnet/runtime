@@ -1427,20 +1427,11 @@ void interceptor_ICJI::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_
     mc->recGetSwiftLowering(structHnd, pLowering);
 }
 
-FpStructInRegistersInfo interceptor_ICJI::getLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
+void interceptor_ICJI::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    mc->cr->AddCall("getLoongArch64PassFpStructInRegistersInfo");
-    FpStructInRegistersInfo temp = original_ICorJitInfo->getLoongArch64PassFpStructInRegistersInfo(structHnd);
-    mc->recGetLoongArch64PassFpStructInRegistersInfo(structHnd, temp);
-    return temp;
-}
-
-FpStructInRegistersInfo interceptor_ICJI::getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
-{
-    mc->cr->AddCall("getRiscV64PassFpStructInRegistersInfo");
-    FpStructInRegistersInfo temp = original_ICorJitInfo->getRiscV64PassFpStructInRegistersInfo(structHnd);
-    mc->recGetRiscV64PassFpStructInRegistersInfo(structHnd, temp);
-    return temp;
+    mc->cr->AddCall("getFpStructLowering");
+    original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
+    mc->recGetFpStructLowering(structHnd, pLowering);
 }
 
 // Stuff on ICorDynamicInfo

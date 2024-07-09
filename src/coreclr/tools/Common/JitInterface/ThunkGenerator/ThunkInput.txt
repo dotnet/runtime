@@ -84,6 +84,7 @@ CORINFO_RESOLVED_TOKEN_PTR,CORINFO_RESOLVED_TOKEN*,CORINFO_RESOLVED_TOKEN*,CORIN
 CORINFO_EE_INFO*,ref CORINFO_EE_INFO
 CORINFO_TAILCALL_HELPERS*,ref CORINFO_TAILCALL_HELPERS
 CORINFO_SWIFT_LOWERING*,ref CORINFO_SWIFT_LOWERING
+CORINFO_FPSTRUCT_LOWERING*,ref CORINFO_FPSTRUCT_LOWERING
 CORINFO_GENERICHANDLE_RESULT*,ref CORINFO_GENERICHANDLE_RESULT
 CORINFO_METHOD_INFO*,CORINFO_METHOD_INFO*
 CORINFO_FIELD_INFO*,CORINFO_FIELD_INFO*
@@ -100,7 +101,6 @@ CORINFO_HELPER_DESC*,ref CORINFO_HELPER_DESC
 const CORINFO_HELPER_DESC*,ref CORINFO_HELPER_DESC
 int*,ref int
 unsigned int*,ref uint
-FpStructInRegistersInfo,FpStructInRegistersInfo
 
 CORINFO_JUST_MY_CODE_HANDLE**,ref CORINFO_JUST_MY_CODE_HANDLE_*
 
@@ -290,8 +290,7 @@ FUNCTIONS
     unsigned getMethodHash(CORINFO_METHOD_HANDLE       ftn);
     bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE  structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
     void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
-    FpStructInRegistersInfo getLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd);
-    FpStructInRegistersInfo getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd);
+    void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
     void* getHelperFtn (CorInfoHelpFunc         ftnNum, void                  **ppIndirection);

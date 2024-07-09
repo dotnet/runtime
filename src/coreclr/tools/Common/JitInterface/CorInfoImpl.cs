@@ -3454,16 +3454,57 @@ namespace Internal.JitInterface
             lowering = SwiftPhysicalLowering.LowerTypeForSwiftSignature(HandleToObject(structHnd));
         }
 
-        private FpStructInRegistersInfo getLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_STRUCT_* cls)
+        private void getFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_FPSTRUCT_LOWERING lowering)
         {
-            TypeDesc typeDesc = HandleToObject(cls);
-            return LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(typeDesc);
-        }
+            TypeDesc typeDesc = HandleToObject(structHnd);
+            var target = _compilation.TypeSystemContext.Target;
+            FpStructInRegistersInfo info;
+            if (target.Architecture is TargetArchitecture.RiscV64)
+            {
+                info = RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(typeDesc);
+            }
+            else if (target.Architecture is TargetArchitecture.LoongArch64)
+            {
+                info = LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(typeDesc);
+            }
+            else
+            {
+                Debug.Assert(false, "Unsupported architecture for getFpStructInRegistersInfo");
+                return;
+            }
 
-        private FpStructInRegistersInfo getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc typeDesc = HandleToObject(cls);
-            return RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(typeDesc);
+            if (info.flags != FpStruct.UseIntCallConv)
+            {
+                lowering = new CORINFO_FPSTRUCT_LOWERING {
+                    byIntegerCallConv = false,
+                    numLoweredElements = ((info.flags & FpStruct.OnlyOne) != 0) ? 1 : 2,
+                };
+                lowering.Offsets[0] = info.offset1st;
+                lowering.Offsets[1] = info.offset2nd;
+
+                if ((info.flags & (FpStruct.BothFloat | FpStruct.FloatInt | FpStruct.OnlyOne)) != 0)
+                    lowering.LoweredElements[0] = (info.SizeShift1st() == 3) ? CorInfoType.CORINFO_TYPE_DOUBLE : CorInfoType.CORINFO_TYPE_FLOAT;
+
+                if ((info.flags & (FpStruct.BothFloat | FpStruct.IntFloat)) != 0)
+                    lowering.LoweredElements[1] = (info.SizeShift2nd() == 3) ? CorInfoType.CORINFO_TYPE_DOUBLE : CorInfoType.CORINFO_TYPE_FLOAT;
+
+                if ((info.flags & (FpStruct.FloatInt | FpStruct.IntFloat)) != 0)
+                {
+                    int index = ((info.flags & FpStruct.FloatInt) != 0) ? 1 : 0;
+                    uint sizeShift = (index == 0) ? info.SizeShift1st() : info.SizeShift2nd();
+                    lowering.LoweredElements[index] = (CorInfoType)((int)CorInfoType.CORINFO_TYPE_BYTE + sizeShift * 2);
+
+                    // unittests
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 0 * 2 == (int)CorInfoType.CORINFO_TYPE_BYTE);
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 1 * 2 == (int)CorInfoType.CORINFO_TYPE_SHORT);
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 2 * 2 == (int)CorInfoType.CORINFO_TYPE_INT);
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 3 * 2 == (int)CorInfoType.CORINFO_TYPE_LONG);
+                }
+            }
+            else
+            {
+                lowering = new CORINFO_FPSTRUCT_LOWERING{ byIntegerCallConv = true };
+            }
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)

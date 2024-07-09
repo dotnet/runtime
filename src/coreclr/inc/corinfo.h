@@ -349,13 +349,6 @@ enum StructFloatFieldInfoFlags
 // Bitfields for FpStructInRegistersInfo::flags
 namespace FpStruct
 {
-    enum class IntKind
-    {
-        Integer,
-        GcRef,
-        GcByRef,
-    };
-
     enum Flags
     {
         // Positions of flags and bitfields
@@ -365,7 +358,6 @@ namespace FpStruct
         PosIntFloat     = 3,
         PosSizeShift1st = 4, // 2 bits
         PosSizeShift2nd = 6, // 2 bits
-        PosIntFieldKind = 8, // 2 bits
 
         UseIntCallConv = 0, // struct is passed according to integer calling convention
 
@@ -376,7 +368,6 @@ namespace FpStruct
         IntFloat         =    1 << PosIntFloat,     // has two fields, 2nd is floating and 1st is integer
         SizeShift1stMask = 0b11 << PosSizeShift1st, // log2(size) of 1st field
         SizeShift2ndMask = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
-        IntFieldKindMask = 0b11 << PosIntFieldKind, // the kind of the integer field (FpStruct::IntKind)
         // Note: flags OnlyOne, BothFloat, FloatInt, and IntFloat are mutually exclusive
     };
 }
@@ -395,19 +386,6 @@ struct FpStructInRegistersInfo
 
     unsigned Size1st() const { return 1u << SizeShift1st(); }
     unsigned Size2nd() const { return 1u << SizeShift2nd(); }
-
-    FpStruct::IntKind IntFieldKind() const
-    {
-        return (FpStruct::IntKind)((flags >> FpStruct::PosIntFieldKind) & 0b11);
-    }
-
-    const char* IntFieldKindName() const
-    {
-        static const char* intKindNames[] = { "Integer", "GcRef", "GcByRef" };
-        return (flags & (FpStruct::FloatInt | FpStruct::IntFloat))
-            ? intKindNames[(int)IntFieldKind()]
-            : "None";
-    }
 
     const char* FlagName() const
     {
@@ -2047,6 +2025,23 @@ struct CORINFO_SWIFT_LOWERING
     size_t numLoweredElements;
 };
 
+#define MAX_FPSTRUCT_LOWERED_ELEMENTS 2
+
+// Lowering information on fields of a struct passed by hardware floating-point calling convention on RISC-V and LoongArch
+// NOTE: all array elements past numLoweredElements are zero-initialized
+struct CORINFO_FPSTRUCT_LOWERING
+{
+    // Whether the struct should be passed by integer calling convention (cannot be passed by FP calling convention).
+    // If true, all other fields of CORINFO_FPSTRUCT_LOWERING are zeroed.
+    bool byIntegerCallConv;
+    // Types of lowered struct fields.
+    CorInfoType loweredElements[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    // Offsets of lowered struct fields.
+    uint32_t offsets[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    // Number of lowered struct fields.
+    size_t numLoweredElements;
+};
+
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
@@ -3160,8 +3155,9 @@ public:
     // Classifies a swift structure into primitives or an implicit byref for ABI purposes.
     virtual void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering) = 0;
 
-    virtual FpStructInRegistersInfo getLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls) = 0;
-    virtual FpStructInRegistersInfo getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls) = 0;
+    // Returns lowering info for fields of a RISC-V/LoongArch struct passed in registers according to
+    // hardware floating-point calling convention.
+    virtual void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering) = 0;
 };
 
 /*****************************************************************************

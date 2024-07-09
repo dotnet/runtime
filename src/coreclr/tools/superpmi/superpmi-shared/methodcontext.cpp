@@ -6359,60 +6359,54 @@ void MethodContext::repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_
     }
 }
 
-void MethodContext::recGetLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value)
+void MethodContext::recGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    if (GetLoongArch64PassFpStructInRegistersInfo == nullptr)
-        GetLoongArch64PassFpStructInRegistersInfo = new LightWeightMap<DWORDLONG, FpStructInRegistersInfo>();
+    if (GetFpStructLowering == nullptr)
+        GetFpStructLowering = new LightWeightMap<DWORDLONG, Agnostic_GetFpStructLowering>();
 
     DWORDLONG key = CastHandle(structHnd);
 
-    GetLoongArch64PassFpStructInRegistersInfo->Add(key, value);
-    DEBUG_REC(dmpGetLoongArch64PassFpStructInRegistersInfo(key, value));
-}
+    Agnostic_GetFpStructLowering value;
+    ZeroMemory(&value, sizeof(value));
+    value.byIntegerCallConv = pLowering->byIntegerCallConv ? 1 : 0;
+    if (!pLowering->byIntegerCallConv)
+    {
+        value.numLoweredElements = static_cast<DWORD>(pLowering->numLoweredElements);
+        for (size_t i = 0; i < pLowering->numLoweredElements; i++)
+        {
+            value.loweredElements[i] = static_cast<DWORD>(pLowering->loweredElements[i]);
+            value.offsets[i] = pLowering->offsets[i];
+        }
+    }
 
-void MethodContext::dmpGetLoongArch64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value)
+    GetFpStructLowering->Add(key, value);
+    DEBUG_REC(dmpGetFpStructLowering(key, value));
+}
+void MethodContext::dmpGetFpStructLowering(
+    DWORDLONG key, const Agnostic_GetFpStructLowering& value)
 {
-    printf("GetLoongArch64PassFpStructInRegistersInfo key %016" PRIX64 " value-%#03x-"
-        "{%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKind=%s}\n",
-        key, value.flags,
-        value.FlagName(), value.Size1st(), value.Size2nd(), value.offset1st, value.offset2nd, value.IntFieldKindName());
+    printf("GetFpStructLowering key structHnd-%016" PRIX64 ", value byIntegerCallConv-%u numLoweredElements-%u", key,
+        value.byIntegerCallConv, value.numLoweredElements);
+    for (size_t i = 0; i < value.numLoweredElements; i++)
+    {
+        printf(" [%zu] %u", i, value.loweredElements[i]);
+    }
 }
-
-FpStructInRegistersInfo MethodContext::repGetLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
-{
-    DWORDLONG key = CastHandle(structHnd);
-
-    FpStructInRegistersInfo value = LookupByKeyOrMissNoMessage(GetLoongArch64PassFpStructInRegistersInfo, key);
-    DEBUG_REP(dmpGetLoongArch64PassFpStructInRegistersInfo(key, value));
-    return value;
-}
-
-void MethodContext::recGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value)
-{
-    if (GetRiscV64PassFpStructInRegistersInfo == nullptr)
-        GetRiscV64PassFpStructInRegistersInfo = new LightWeightMap<DWORDLONG, FpStructInRegistersInfo>();
-
-    DWORDLONG key = CastHandle(structHnd);
-
-    GetRiscV64PassFpStructInRegistersInfo->Add(key, value);
-    DEBUG_REC(dmpGetRiscV64PassFpStructInRegistersInfo(key, value));
-}
-
-void MethodContext::dmpGetRiscV64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value)
-{
-    printf("GetRiscV64PassFpStructInRegistersInfo key %016" PRIX64 " value-%#03x-"
-        "{%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKind=%s}\n",
-        key, value.flags,
-        value.FlagName(), value.Size1st(), value.Size2nd(), value.offset1st, value.offset2nd, value.IntFieldKindName());
-}
-
-FpStructInRegistersInfo MethodContext::repGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
+void MethodContext::repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
     DWORDLONG key = CastHandle(structHnd);
+    Agnostic_GetFpStructLowering value = LookupByKeyOrMiss(GetFpStructLowering, key, ": key %016" PRIX64 "", key);
 
-    FpStructInRegistersInfo value = LookupByKeyOrMissNoMessage(GetRiscV64PassFpStructInRegistersInfo, key);
-    DEBUG_REP(dmpGetRiscV64PassFpStructInRegistersInfo(key, value));
-    return value;
+    DEBUG_REP(dmpGetFpStructLowering(key, value));
+
+    pLowering->byIntegerCallConv = value.byIntegerCallConv != 0;
+    pLowering->numLoweredElements = value.numLoweredElements;
+
+    for (size_t i = 0; i < pLowering->numLoweredElements; i++)
+    {
+        pLowering->loweredElements[i] = static_cast<CorInfoType>(value.loweredElements[i]);
+        pLowering->offsets[i] = value.offsets[i];
+    }
 }
 
 void MethodContext::recGetRelocTypeHint(void* target, WORD result)

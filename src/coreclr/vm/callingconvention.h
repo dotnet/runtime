@@ -1693,7 +1693,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
         else
         {
-            info = MethodTable::GetLoongArch64PassFpStructInRegistersInfo(thValueType);
+            info = MethodTable::GetFpStructInRegistersInfo(thValueType);
             if (info.flags != FpStruct::UseIntCallConv)
             {
                 cFPRegs = (info.flags & FpStruct::BothFloat) ? 2 : 1;
@@ -1813,7 +1813,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
         else
         {
-            info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType);
+            info = MethodTable::GetFpStructInRegistersInfo(thValueType);
             if (info.flags != FpStruct::UseIntCallConv)
             {
                 cFPRegs = (info.flags & FpStruct::BothFloat) ? 2 : 1;
@@ -2021,7 +2021,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
             {
                 assert(!thValueType.IsTypeDesc());
-                FpStructInRegistersInfo info = MethodTable::GetLoongArch64PassFpStructInRegistersInfo(thValueType);
+                FpStructInRegistersInfo info = MethodTable::GetFpStructInRegistersInfo(thValueType);
                 flags |= info.flags << RETURN_FP_SIZE_SHIFT;
                 break;
             }
@@ -2029,7 +2029,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
             {
                 assert(!thValueType.IsTypeDesc());
-                FpStructInRegistersInfo info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType);
+                FpStructInRegistersInfo info = MethodTable::GetFpStructInRegistersInfo(thValueType);
                 flags |= info.flags << RETURN_FP_SIZE_SHIFT;
                 break;
             }

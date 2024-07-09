@@ -520,11 +520,9 @@ void getSwiftLowering(
           CORINFO_CLASS_HANDLE structHnd,
           CORINFO_SWIFT_LOWERING* pLowering) override;
 
-FpStructInRegistersInfo getLoongArch64PassFpStructInRegistersInfo(
-          CORINFO_CLASS_HANDLE structHnd) override;
-
-FpStructInRegistersInfo getRiscV64PassFpStructInRegistersInfo(
-          CORINFO_CLASS_HANDLE structHnd) override;
+void getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering) override;
 
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;

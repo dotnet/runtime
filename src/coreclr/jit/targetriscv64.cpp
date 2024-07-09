@@ -58,9 +58,10 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                                                   ClassLayout* structLayout,
                                                   WellKnownArg /*wellKnownParam*/)
 {
-    FpStructInRegistersInfo info      = {};
-    unsigned                intFields = 0, floatFields = 0;
-    unsigned                passedSize;
+    const CORINFO_FPSTRUCT_LOWERING* lowering = nullptr;
+
+    unsigned intFields = 0, floatFields = 0;
+    unsigned passedSize;
 
     if (varTypeIsStruct(type))
     {
@@ -71,22 +72,18 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         }
         else if (!structLayout->IsBlockLayout())
         {
-            info = comp->GetPassFpStructInRegistersInfo(structLayout->GetClassHandle());
-
-            if ((info.flags & FpStruct::OnlyOne) != 0)
+            lowering = comp->GetFpStructLowering(structLayout->GetClassHandle());
+            assert((lowering->numLoweredElements > 0) == !lowering->byIntegerCallConv);
+            assert(lowering->numLoweredElements <= 2);
+            INDEBUG(unsigned debugIntFields = 0;)
+            for (size_t i = 0; i < lowering->numLoweredElements; ++i)
             {
-                floatFields = 1;
+                var_types type = JITtype2varType(lowering->loweredElements[i]);
+                floatFields += (unsigned)varTypeIsFloating(type);
+                INDEBUG(debugIntFields += (unsigned)varTypeIsIntegralOrI(type);)
             }
-            else if ((info.flags & FpStruct::BothFloat) != 0)
-            {
-                floatFields = 2;
-            }
-            else if (info.flags != FpStruct::UseIntCallConv)
-            {
-                assert((info.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0);
-                floatFields = 1;
-                intFields   = 1;
-            }
+            intFields = lowering->numLoweredElements - floatFields;
+            assert(debugIntFields == intFields);
         }
     }
     else
@@ -104,16 +101,14 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         if ((floatFields == 1) && (intFields == 0))
         {
             unsigned offset = 0;
-            if (info.flags == FpStruct::UseIntCallConv)
+            if (lowering != nullptr)
             {
-                assert(varTypeIsFloating(type)); // standalone floating-point real
+                assert(lowering->numLoweredElements == 1); // struct containing just one FP real
+                type       = JITtype2varType(lowering->loweredElements[0]);
+                passedSize = genTypeSize(type);
+                offset     = lowering->offsets[0];
             }
-            else
-            {
-                assert((info.flags & FpStruct::OnlyOne) != 0); // struct containing just one FP real
-                passedSize = info.Size1st();
-                offset     = info.offset1st;
-            }
+            assert(varTypeIsFloating(type));
 
             ABIPassingSegment seg = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, passedSize);
             return ABIPassingInformation::FromSegment(comp, seg);
@@ -122,19 +117,19 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         {
             assert(varTypeIsStruct(type));
             assert((floatFields + intFields) == 2);
-            assert(info.flags != FpStruct::UseIntCallConv);
-            assert((info.flags & FpStruct::OnlyOne) == 0);
+            assert(lowering != nullptr);
+            assert(!lowering->byIntegerCallConv);
+            assert(lowering->numLoweredElements == 2);
 
-            bool isFirstFloat  = (info.flags & (FpStruct::BothFloat | FpStruct::FloatInt)) != 0;
-            bool isSecondFloat = (info.flags & (FpStruct::BothFloat | FpStruct::IntFloat)) != 0;
-            assert(isFirstFloat || isSecondFloat);
+            var_types type0 = JITtype2varType(lowering->loweredElements[0]);
+            var_types type1 = JITtype2varType(lowering->loweredElements[1]);
+            assert(varTypeIsFloating(type0) || varTypeIsFloating(type1));
+            RegisterQueue& queue0 = varTypeIsFloating(type0) ? m_floatRegs : m_intRegs;
+            RegisterQueue& queue1 = varTypeIsFloating(type1) ? m_floatRegs : m_intRegs;
 
-            regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
-            regNumber secondReg = (isSecondFloat ? m_floatRegs : m_intRegs).Dequeue();
-
-            ABIPassingSegment firstSeg  = ABIPassingSegment::InRegister(firstReg, info.offset1st, info.Size1st());
-            ABIPassingSegment secondSeg = ABIPassingSegment::InRegister(secondReg, info.offset2nd, info.Size2nd());
-            return ABIPassingInformation::FromSegments(comp, firstSeg, secondSeg);
+            auto seg0 = ABIPassingSegment::InRegister(queue0.Dequeue(), lowering->offsets[0], genTypeSize(type0));
+            auto seg1 = ABIPassingSegment::InRegister(queue1.Dequeue(), lowering->offsets[1], genTypeSize(type1));
+            return ABIPassingInformation::FromSegments(comp, seg0, seg1);
         }
     }
     else

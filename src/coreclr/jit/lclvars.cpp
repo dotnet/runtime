@@ -898,40 +898,50 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         }
         else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        FpStructInRegistersInfo fpInfo = {};
+        const CORINFO_FPSTRUCT_LOWERING* lowering = nullptr;
 
         var_types argRegTypeInStruct1 = TYP_UNKNOWN;
         var_types argRegTypeInStruct2 = TYP_UNKNOWN;
 
         if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) && (argSize <= MAX_PASS_MULTIREG_BYTES))
         {
-            fpInfo = GetPassFpStructInRegistersInfo(typeHnd);
+            lowering = GetFpStructLowering(typeHnd);
         }
 
-        if (fpInfo.flags != FpStruct::UseIntCallConv)
+        if ((lowering != nullptr) && !lowering->byIntegerCallConv)
         {
             assert(varTypeIsStruct(argType));
-            assert(((fpInfo.flags & FpStruct::OnlyOne) != 0) || varDsc->lvExactSize() <= argSize);
-            cSlotsToEnregister = ((fpInfo.flags & FpStruct::OnlyOne) != 0) ? 1 : 2;
-            int floatNum       = ((fpInfo.flags & FpStruct::BothFloat) != 0) ? 2 : 1;
+            assert((lowering->numLoweredElements == 1) || (lowering->numLoweredElements == 2));
+            if (lowering->numLoweredElements == 1)
+                assert(varDsc->lvExactSize() <= argSize);
+
+            cSlotsToEnregister  = lowering->numLoweredElements;
+            argRegTypeInStruct1 = JITtype2varType(lowering->loweredElements[0]);
+            if (lowering->numLoweredElements == 2)
+                argRegTypeInStruct2 = JITtype2varType(lowering->loweredElements[1]);
+
+            int floatNum = (int)varTypeIsFloating(argRegTypeInStruct1) + (int)varTypeIsFloating(argRegTypeInStruct2);
+            assert(floatNum > 0);
 
             canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
-            if (canPassArgInRegisters && ((fpInfo.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0))
+            if (canPassArgInRegisters && (floatNum < lowering->numLoweredElements))
+            {
+                assert(floatNum == 1);
+                assert(lowering->numLoweredElements == 2);
+                assert(varTypeIsIntegralOrI(argRegTypeInStruct1) || varTypeIsIntegralOrI(argRegTypeInStruct2));
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, 1);
-
-            Compiler::GetTypesFromFpStructInRegistersInfo(fpInfo, &argRegTypeInStruct1, &argRegTypeInStruct2);
+            }
 
             if (!canPassArgInRegisters)
             {
                 // If a struct eligible for passing according to floating-point calling convention cannot be fully
                 // enregistered, it is passed according to integer calling convention -- in up to two integer registers
                 // and/or stack slots, as a lump of bits laid out like in memory.
-                cSlotsToEnregister    = cSlots;
-                canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
-
+                cSlotsToEnregister  = cSlots;
                 argRegTypeInStruct1 = TYP_UNKNOWN;
                 argRegTypeInStruct2 = TYP_UNKNOWN;
 
+                canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
                 if (cSlotsToEnregister == 2)
                 {
                     if (!canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1))

@@ -1238,22 +1238,13 @@ void WrapICorJitInfo::getSwiftLowering(
     API_LEAVE(getSwiftLowering);
 }
 
-FpStructInRegistersInfo WrapICorJitInfo::getLoongArch64PassFpStructInRegistersInfo(
-          CORINFO_CLASS_HANDLE structHnd)
+void WrapICorJitInfo::getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    API_ENTER(getLoongArch64PassFpStructInRegistersInfo);
-    FpStructInRegistersInfo temp = wrapHnd->getLoongArch64PassFpStructInRegistersInfo(structHnd);
-    API_LEAVE(getLoongArch64PassFpStructInRegistersInfo);
-    return temp;
-}
-
-FpStructInRegistersInfo WrapICorJitInfo::getRiscV64PassFpStructInRegistersInfo(
-          CORINFO_CLASS_HANDLE structHnd)
-{
-    API_ENTER(getRiscV64PassFpStructInRegistersInfo);
-    FpStructInRegistersInfo temp = wrapHnd->getRiscV64PassFpStructInRegistersInfo(structHnd);
-    API_LEAVE(getRiscV64PassFpStructInRegistersInfo);
-    return temp;
+    API_ENTER(getFpStructLowering);
+    wrapHnd->getFpStructLowering(structHnd, pLowering);
+    API_LEAVE(getFpStructLowering);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
