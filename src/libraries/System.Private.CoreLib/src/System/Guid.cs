@@ -1015,7 +1015,16 @@ namespace System
                 && Unsafe.Add(ref rA, 3) == Unsafe.Add(ref rB, 3);
         }
 
-        private static int GetResult(uint me, uint them) => me < them ? -1 : 1;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint GetBcAsUInt32(in Guid g) => (uint)Unsafe.Add(ref Unsafe.AsRef(in g._a), 1);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint GetDgAsUInt32(in Guid g) => (uint)Unsafe.Add(ref Unsafe.AsRef(in g._a), 2);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint GetHkAsUInt32(in Guid g) => (uint)Unsafe.Add(ref Unsafe.AsRef(in g._a), 3);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint AdjustEndiannessBc(uint bc) => BitConverter.IsLittleEndian ? uint.RotateLeft(bc, 16) : bc;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint AdjustEndiannessDgHk(uint dgOrHk) => BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(dgOrHk) : dgOrHk;
 
         public int CompareTo(object? value)
         {
@@ -1037,57 +1046,25 @@ namespace System
                 return GetResult((uint)_a, (uint)value._a);
             }
 
-            if (value._b != _b)
+            if (GetBcAsUInt32(value) != GetBcAsUInt32(this))
             {
-                return GetResult((uint)_b, (uint)value._b);
+                return GetResult(AdjustEndiannessBc(GetBcAsUInt32(this)), AdjustEndiannessBc(GetBcAsUInt32(value)));
             }
 
-            if (value._c != _c)
+            if (GetDgAsUInt32(value) != GetDgAsUInt32(this))
             {
-                return GetResult((uint)_c, (uint)value._c);
+                return GetResult(AdjustEndiannessDgHk(GetDgAsUInt32(this)), AdjustEndiannessDgHk(GetDgAsUInt32(value)));
             }
 
-            if (value._d != _d)
+            if (GetHkAsUInt32(value) != GetHkAsUInt32(this))
             {
-                return GetResult(_d, value._d);
-            }
-
-            if (value._e != _e)
-            {
-                return GetResult(_e, value._e);
-            }
-
-            if (value._f != _f)
-            {
-                return GetResult(_f, value._f);
-            }
-
-            if (value._g != _g)
-            {
-                return GetResult(_g, value._g);
-            }
-
-            if (value._h != _h)
-            {
-                return GetResult(_h, value._h);
-            }
-
-            if (value._i != _i)
-            {
-                return GetResult(_i, value._i);
-            }
-
-            if (value._j != _j)
-            {
-                return GetResult(_j, value._j);
-            }
-
-            if (value._k != _k)
-            {
-                return GetResult(_k, value._k);
+                return GetResult(AdjustEndiannessDgHk(GetHkAsUInt32(this)), AdjustEndiannessDgHk(GetHkAsUInt32(value)));
             }
 
             return 0;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static int GetResult(uint me, uint them) => me < them ? -1 : 1;
         }
 
         public static bool operator ==(Guid a, Guid b) => EqualsCore(a, b);
@@ -1504,54 +1481,19 @@ namespace System
                 return (uint)left._a < (uint)right._a;
             }
 
-            if (left._b != right._b)
+            if (GetBcAsUInt32(left) != GetBcAsUInt32(right))
             {
-                return (uint)left._b < (uint)right._b;
+                return AdjustEndiannessBc(GetBcAsUInt32(left)) < AdjustEndiannessBc(GetBcAsUInt32(right));
             }
 
-            if (left._c != right._c)
+            if (GetDgAsUInt32(left) != GetDgAsUInt32(right))
             {
-                return (uint)left._c < (uint)right._c;
+                return AdjustEndiannessDgHk(GetDgAsUInt32(left)) < AdjustEndiannessDgHk(GetDgAsUInt32(right));
             }
 
-            if (left._d != right._d)
+            if (GetHkAsUInt32(left) != GetHkAsUInt32(right))
             {
-                return left._d < right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e < right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f < right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g < right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h < right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i < right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j < right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k < right._k;
+                return AdjustEndiannessDgHk(GetHkAsUInt32(left)) < AdjustEndiannessDgHk(GetHkAsUInt32(right));
             }
 
             return false;
@@ -1565,54 +1507,19 @@ namespace System
                 return (uint)left._a < (uint)right._a;
             }
 
-            if (left._b != right._b)
+            if (GetBcAsUInt32(left) != GetBcAsUInt32(right))
             {
-                return (uint)left._b < (uint)right._b;
+                return AdjustEndiannessBc(GetBcAsUInt32(left)) < AdjustEndiannessBc(GetBcAsUInt32(right));
             }
 
-            if (left._c != right._c)
+            if (GetDgAsUInt32(left) != GetDgAsUInt32(right))
             {
-                return (uint)left._c < (uint)right._c;
+                return AdjustEndiannessDgHk(GetDgAsUInt32(left)) < AdjustEndiannessDgHk(GetDgAsUInt32(right));
             }
 
-            if (left._d != right._d)
+            if (GetHkAsUInt32(left) != GetHkAsUInt32(right))
             {
-                return left._d < right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e < right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f < right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g < right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h < right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i < right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j < right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k < right._k;
+                return AdjustEndiannessDgHk(GetHkAsUInt32(left)) < AdjustEndiannessDgHk(GetHkAsUInt32(right));
             }
 
             return true;
@@ -1626,54 +1533,19 @@ namespace System
                 return (uint)left._a > (uint)right._a;
             }
 
-            if (left._b != right._b)
+            if (GetBcAsUInt32(left) != GetBcAsUInt32(right))
             {
-                return (uint)left._b > (uint)right._b;
+                return AdjustEndiannessBc(GetBcAsUInt32(left)) > AdjustEndiannessBc(GetBcAsUInt32(right));
             }
 
-            if (left._c != right._c)
+            if (GetDgAsUInt32(left) != GetDgAsUInt32(right))
             {
-                return (uint)left._c > (uint)right._c;
+                return AdjustEndiannessDgHk(GetDgAsUInt32(left)) > AdjustEndiannessDgHk(GetDgAsUInt32(right));
             }
 
-            if (left._d != right._d)
+            if (GetHkAsUInt32(left) != GetHkAsUInt32(right))
             {
-                return left._d > right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e > right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f > right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g > right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h > right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i > right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j > right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k > right._k;
+                return AdjustEndiannessDgHk(GetHkAsUInt32(left)) > AdjustEndiannessDgHk(GetHkAsUInt32(right));
             }
 
             return false;
@@ -1687,54 +1559,19 @@ namespace System
                 return (uint)left._a > (uint)right._a;
             }
 
-            if (left._b != right._b)
+            if (GetBcAsUInt32(left) != GetBcAsUInt32(right))
             {
-                return (uint)left._b > (uint)right._b;
+                return AdjustEndiannessBc(GetBcAsUInt32(left)) > AdjustEndiannessBc(GetBcAsUInt32(right));
             }
 
-            if (left._c != right._c)
+            if (GetDgAsUInt32(left) != GetDgAsUInt32(right))
             {
-                return (uint)left._c > (uint)right._c;
+                return AdjustEndiannessDgHk(GetDgAsUInt32(left)) > AdjustEndiannessDgHk(GetDgAsUInt32(right));
             }
 
-            if (left._d != right._d)
+            if (GetHkAsUInt32(left) != GetHkAsUInt32(right))
             {
-                return left._d > right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e > right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f > right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g > right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h > right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i > right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j > right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k > right._k;
+                return AdjustEndiannessDgHk(GetHkAsUInt32(left)) > AdjustEndiannessDgHk(GetHkAsUInt32(right));
             }
 
             return true;
