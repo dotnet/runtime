@@ -1639,7 +1639,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 static void
-add_return_valuetype_swiftcall (MonoMethodSignature *sig, ArgInfo *ainfo, CallInfo *cinfo, MonoType *type)
+add_return_valuetype_swiftcall (CallInfo *cinfo, ArgInfo *ainfo, MonoType *type)
 {
 	guint32 align;
 	int size = mini_type_stack_size_full (type, &align, cinfo->pinvoke);
@@ -1683,16 +1683,8 @@ add_return_valuetype_swiftcall (MonoMethodSignature *sig, ArgInfo *ainfo, CallIn
 #endif /* MONO_ARCH_HAVE_SWIFTCALL */
 
 static void
-add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return, MonoMethodSignature *sig)
+add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 {
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-	// Handle Swift struct lowering in function returns
-	if (is_return && sig && sig->pinvoke && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
-		add_return_valuetype_swiftcall (sig, ainfo, cinfo, t);
-		return;
-	}
-#endif
-
 	int i, size, align_size, nregs, nfields, esize;
 	int field_offsets [16];
 	guint32 align;
@@ -1769,7 +1761,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return,
 }
 
 static void
-add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return, MonoMethodSignature *sig)
+add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 {
 	MonoType *ptype;
 
@@ -1821,7 +1813,7 @@ add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return, Mon
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF:
-		add_valuetype (cinfo, ainfo, ptype, is_return, sig);
+		add_valuetype (cinfo, ainfo, ptype, is_return);
 		break;
 	case MONO_TYPE_VOID:
 		ainfo->storage = ArgNone;
@@ -1836,7 +1828,7 @@ add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return, Mon
 			ainfo->storage = ArgVtypeByRef;
 			ainfo->gsharedvt = TRUE;
 		} else {
-			add_valuetype (cinfo, ainfo, ptype, is_return, sig);
+			add_valuetype (cinfo, ainfo, ptype, is_return);
 		}
 		break;
 	case MONO_TYPE_VAR:
@@ -1886,8 +1878,16 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	cinfo->vararg = sig->call_convention == MONO_CALL_VARARG;
 #endif
 
-	/* Return value */
-	add_param (cinfo, &cinfo->ret, sig->ret, TRUE, sig);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	// Handle Swift struct lowering in function returns
+	if (sig->pinvoke && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && mono_type_is_struct (sig->ret)) {
+		add_return_valuetype_swiftcall (cinfo, &cinfo->ret, sig->ret);
+	} else
+#endif
+	{
+		/* Return value */
+		add_param (cinfo, &cinfo->ret, sig->ret, TRUE);
+	}
 	if (cinfo->ret.storage == ArgVtypeByRef)
 		cinfo->ret.reg = ARMREG_R8;
 	/* Reset state */
@@ -1908,7 +1908,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			cinfo->gr = PARAM_REGS;
 			cinfo->fr = FP_PARAM_REGS;
 			/* Emit the signature cookie just before the implicit arguments */
-			add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type (), FALSE, NULL);
+			add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type (), FALSE);
 		}
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
@@ -1933,14 +1933,14 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				if (sig->pinvoke)
 					ainfo->reg = ARMREG_R21;
 				else
-					add_param (cinfo, ainfo, sig->params [pindex], FALSE, NULL);
+					add_param (cinfo, ainfo, sig->params [pindex], FALSE);
 				ainfo->storage = ArgSwiftError;
 				continue;
 			}
 		}
 #endif
 
-		add_param (cinfo, ainfo, sig->params [pindex], FALSE, NULL);
+		add_param (cinfo, ainfo, sig->params [pindex], FALSE);
 		if (ainfo->storage == ArgVtypeByRef) {
 			/* Pass the argument address in the next register */
 			if (cinfo->gr >= PARAM_REGS) {
@@ -1962,7 +1962,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		cinfo->gr = PARAM_REGS;
 		cinfo->fr = FP_PARAM_REGS;
 		/* Emit the signature cookie just before the implicit arguments */
-		add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type (), FALSE, NULL);
+		add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type (), FALSE);
 	}
 
 	cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
