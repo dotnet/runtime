@@ -117,6 +117,11 @@ namespace ObjectStackAllocation
                 expectedAllocationKind = AllocationKind.Heap;
             }
 
+            if (expectedAllocationKind == AllocationKind.Stack)
+            {
+                ZeroAllocTest();
+            }
+
             classA = new SimpleClassA(f1, f2);
 
             classWithGCField = new SimpleClassWithGCField(f1, f2, null);
@@ -352,5 +357,66 @@ namespace ObjectStackAllocation
             GC.Collect();
             return c.i;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ZeroAllocTest()
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            Case1();
+            EnsureZeroAllocated(before);
+            Case2();
+            EnsureZeroAllocated(before);
+            Case3(null);
+            EnsureZeroAllocated(before);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void EnsureZeroAllocated(long before)
+        {
+            long after = GC.GetAllocatedBytesForCurrentThread();
+            if (after - before != 0)
+                throw new InvalidOperationException($"Unexpected allocation: {after - before} bytes");
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static long Case1()
+        {
+            // Explicit object allocation, but the object
+            // never escapes the method.
+            MyRecord obj = new MyRecord(1, 2, default);
+            return obj.A + obj.B;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Case2()
+        {
+            // Box it
+            object o = new Guid();
+            Consume(42);
+            // Unbox it (multi-use)
+            Consume((Guid)o);
+            Consume((Guid)o);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Case3(object? o)
+        {
+            // A condition to make it more complicated
+            // (and trigger CORINFO_HELP_UNBOX_TYPETEST)
+            if (o == null)
+            {
+                // Box it
+                o = new Guid();
+            }
+            // Unbox it
+            Consume((Guid)o);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Consume<T>(T _)
+        {
+        }
+
+        private record class MyRecord(int A, long B, Guid C);
     }
 }
