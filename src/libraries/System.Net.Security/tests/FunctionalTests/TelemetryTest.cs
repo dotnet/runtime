@@ -17,7 +17,7 @@ namespace System.Net.Security.Tests
 {
     public class TelemetryTest
     {
-        private const string ActivitySourceName = "System.Net.Security";
+        private const string ActivitySourceName = "Experimental.System.Net.Security";
         private const string ActivityName = ActivitySourceName + ".TlsHandshake";
 
         [Fact]
@@ -48,8 +48,9 @@ namespace System.Net.Security.Tests
                 await test.SslStream_StreamToStream_Authentication_Success();
 
                 recorder.VerifyActivityRecorded(2); // client + server
-                Activity clientActivity = recorder.FinishedActivities.Single(a => a.Kind == ActivityKind.Client);
-                Activity serverActivity = recorder.FinishedActivities.Single(a => a.Kind == ActivityKind.Server);
+                Activity clientActivity = recorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS client"));
+                Activity serverActivity = recorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS server"));
+                Assert.True(Enum.GetValues(typeof(SslProtocols)).Length == 8, "We need to extend the mapping in case new values are added to SslProtocols.");
 #pragma warning disable 0618, SYSLIB0039
                 (string protocolName, string protocolVersion) = test.SslProtocol switch
                 {
@@ -63,16 +64,18 @@ namespace System.Net.Security.Tests
                 };
 #pragma warning restore 0618, SYSLIB0039
 
+                Assert.Equal(ActivityKind.Internal, clientActivity.Kind);
                 Assert.True(clientActivity.Duration > TimeSpan.Zero);
-                Assert.Equal("System.Net.Security.TlsHandshake", clientActivity.OperationName);
+                Assert.Equal(ActivityName, clientActivity.OperationName);
                 Assert.Equal($"TLS client {test.Name}", clientActivity.DisplayName);
-                ActivityAssert.HasTag(clientActivity, "tls.client.server_name", test.Name);
+                ActivityAssert.HasTag(clientActivity, "server.address", test.Name);
                 ActivityAssert.HasTag(clientActivity, "tls.protocol.name", protocolName);
                 ActivityAssert.HasTag(clientActivity, "tls.protocol.version", protocolVersion);
                 ActivityAssert.HasNoTag(clientActivity, "error.type");
 
+                Assert.Equal(ActivityKind.Internal, serverActivity.Kind);
                 Assert.True(serverActivity.Duration > TimeSpan.Zero);
-                Assert.Equal("System.Net.Security.TlsHandshake", serverActivity.OperationName);
+                Assert.Equal(ActivityName, serverActivity.OperationName);
                 Assert.StartsWith($"TLS server", serverActivity.DisplayName);
                 ActivityAssert.HasTag(serverActivity, "tls.protocol.name", protocolName);
                 ActivityAssert.HasTag(serverActivity, "tls.protocol.version", protocolVersion);
@@ -93,18 +96,20 @@ namespace System.Net.Security.Tests
 
                 recorder.VerifyActivityRecorded(2); // client + server
 
-                Activity clientActivity = recorder.FinishedActivities.Single(a => a.Kind == ActivityKind.Client);
-                Activity serverActivity = recorder.FinishedActivities.Single(a => a.Kind == ActivityKind.Server);
+                Activity clientActivity = recorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS client"));
+                Activity serverActivity = recorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS server"));
 
+                Assert.Equal(ActivityKind.Internal, clientActivity.Kind);
                 Assert.Equal(ActivityStatusCode.Error, clientActivity.Status);
                 Assert.True(clientActivity.Duration > TimeSpan.Zero);
-                Assert.Equal("System.Net.Security.TlsHandshake", clientActivity.OperationName);
+                Assert.Equal(ActivityName, clientActivity.OperationName);
                 Assert.Equal($"TLS client {test.Name}", clientActivity.DisplayName);
-                ActivityAssert.HasTag(clientActivity, "tls.client.server_name", test.Name);
+                ActivityAssert.HasTag(clientActivity, "server.address", test.Name);
                 ActivityAssert.HasTag(clientActivity, "error.type", typeof(AuthenticationException).FullName);
 
+                Assert.Equal(ActivityKind.Internal, serverActivity.Kind);
                 Assert.True(serverActivity.Duration > TimeSpan.Zero);
-                Assert.Equal("System.Net.Security.TlsHandshake", serverActivity.OperationName);
+                Assert.Equal(ActivityName, serverActivity.OperationName);
                 Assert.StartsWith($"TLS server", serverActivity.DisplayName);
             }).DisposeAsync();
         }

@@ -15,7 +15,7 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private const string ActivitySourceName = "System.Net.Security";
+        private const string ActivitySourceName = "Experimental.System.Net.Security";
         private const string ActivityName = ActivitySourceName + ".TlsHandshake";
 
         private static readonly ActivitySource s_activitySource = new(ActivitySourceName);
@@ -136,13 +136,13 @@ namespace System.Net.Security
                 startingTimestamp = 0;
             }
 
-            using Activity? activity = s_activitySource.StartActivity(ActivityName, IsServer ? ActivityKind.Server : ActivityKind.Client);
+            using Activity? activity = s_activitySource.StartActivity(ActivityName);
             if (activity is not null)
             {
                 activity.DisplayName = IsServer ? "TLS server" : $"TLS client {TargetHostName}";
                 if (activity.IsAllDataRequested && !IsServer)
                 {
-                    activity.SetTag("tls.client.server_name", TargetHostName);
+                    activity.SetTag("server.address", TargetHostName);
                 }
             }
 
