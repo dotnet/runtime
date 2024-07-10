@@ -3292,6 +3292,31 @@ public:
                                    CorInfoType simdBaseJitType,
                                    unsigned    simdSize);
 
+    GenTree* gtNewSimdIsNaNNode(var_types   type,
+                                GenTree*    op1,
+                                CorInfoType simdBaseJitType,
+                                unsigned    simdSize);
+
+    GenTree* gtNewSimdIsNegativeNode(var_types   type,
+                                     GenTree*    op1,
+                                     CorInfoType simdBaseJitType,
+                                     unsigned    simdSize);
+
+    GenTree* gtNewSimdIsPositiveNode(var_types   type,
+                                     GenTree*    op1,
+                                     CorInfoType simdBaseJitType,
+                                     unsigned    simdSize);
+
+    GenTree* gtNewSimdIsPositiveInfinityNode(var_types   type,
+                                             GenTree*    op1,
+                                             CorInfoType simdBaseJitType,
+                                             unsigned    simdSize);
+
+    GenTree* gtNewSimdIsZeroNode(var_types   type,
+                                 GenTree*    op1,
+                                 CorInfoType simdBaseJitType,
+                                 unsigned    simdSize);
+
     GenTree* gtNewSimdLoadNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
@@ -3307,17 +3332,32 @@ public:
                               CorInfoType simdBaseJitType,
                               unsigned    simdSize);
 
+    GenTree* gtNewSimdMaxNativeNode(var_types   type,
+                                    GenTree*    op1,
+                                    GenTree*    op2,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize);
+
     GenTree* gtNewSimdMinNode(var_types   type,
                               GenTree*    op1,
                               GenTree*    op2,
                               CorInfoType simdBaseJitType,
                               unsigned    simdSize);
 
+    GenTree* gtNewSimdMinNativeNode(var_types   type,
+                                    GenTree*    op1,
+                                    GenTree*    op2,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize);
+
     GenTree* gtNewSimdNarrowNode(var_types   type,
                                  GenTree*    op1,
                                  GenTree*    op2,
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
+
+    GenTree* gtNewSimdRoundNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
     GenTree* gtNewSimdShuffleNode(var_types   type,
                                   GenTree*    op1,
@@ -3355,6 +3395,9 @@ public:
                                    GenTree*    op1,
                                    CorInfoType simdBaseJitType,
                                    unsigned    simdSize);
+
+    GenTree* gtNewSimdTruncNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
                                var_types   type,
@@ -5516,6 +5559,7 @@ public:
 
     void fgLocalVarLivenessInit();
 
+    template <bool lowered>
     void fgPerNodeLocalVarLiveness(GenTree* node);
     void fgPerBlockLocalVarLiveness();
 
@@ -5527,7 +5571,7 @@ public:
 
     void fgLiveVarAnalysis();
 
-    void fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call);
+    void fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call);
 
     void fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node);
     bool fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
@@ -5549,6 +5593,7 @@ public:
                        bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
 
     void fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP keepAliveVars);
+    bool fgIsTrackedRetBufferAddress(LIR::Range& range, GenTree* node);
 
     bool fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange);
 

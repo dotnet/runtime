@@ -112,6 +112,39 @@ namespace System.Text.Json.Schema.Tests
             Assert.Contains("depth", ex.Message);
         }
 
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(SimplePoco))]
+        [InlineData(typeof(DiscriminatedUnion))]
+        public void JsonSchemaExporterContext_BaseTypeInfo_ReturnsExpectedValue(Type type)
+        {
+            bool isCallbackInvoked = false;
+            JsonSerializerOptions options = Serializer.DefaultOptions;
+            JsonSchemaExporterOptions exporterOptions = new()
+            {
+                TransformSchemaNode = (ctx, node) =>
+                {
+                    if (typeof(DiscriminatedUnion).IsAssignableFrom(ctx.TypeInfo.Type) &&
+                       typeof(DiscriminatedUnion) != ctx.TypeInfo.Type)
+                    {
+                        Assert.NotNull(ctx.BaseTypeInfo);
+                        Assert.Equal(typeof(DiscriminatedUnion), ctx.BaseTypeInfo.Type);
+                    }
+                    else
+                    {
+                        Assert.Null(ctx.BaseTypeInfo);
+                    }
+
+                    isCallbackInvoked = true;
+                    return node;
+                }
+            };
+
+            options.GetJsonSchemaAsNode(type, exporterOptions);
+            Assert.True(isCallbackInvoked);
+        }
+
         [Fact]
         public void ReferenceHandlePreserve_Enabled_ThrowsNotSupportedException()
         {

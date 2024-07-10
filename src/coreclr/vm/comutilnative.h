@@ -42,9 +42,7 @@ public:
     static FCDECL1(FC_BOOL_RET, IsTransient, INT32 hresult);
     static FCDECL3(StringObject *, StripFileInfo, Object *orefExcepUNSAFE, StringObject *orefStrUNSAFE, CLR_BOOL isRemoteStackTrace);
     static FCDECL0(VOID, PrepareForForeignExceptionRaise);
-    static FCDECL3(VOID, GetStackTracesDeepCopy, Object* pExceptionObjectUnsafe, Object **pStackTraceUnsafe, Object **pDynamicMethodsUnsafe);
-    static FCDECL3(VOID, SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe, Object *pDynamicMethodsUnsafe);
-
+    static FCDECL1(Object *, GetFrozenStackTrace, Object* pExceptionObjectUnsafe);
 
 #ifdef FEATURE_COMINTEROP
     // NOTE: caller cleans up any partially initialized BSTRs in pED
