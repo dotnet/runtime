@@ -1151,9 +1151,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Assert.AreEqual (src.HasGenericParameters, linked.HasGenericParameters);
 			if (src.HasGenericParameters) {
 				for (int i = 0; i < src.GenericParameters.Count; ++i) {
-					// TODO: Verify constraints
 					var srcp = src.GenericParameters[i];
 					var lnkp = linked.GenericParameters[i];
+
+					foreach (var err in VerifyGenericParameterConstraints (srcp, lnkp))
+						yield return err;
+					foreach (var err in VerifyGenericParameterAttributes (srcp, lnkp))
+						yield return err;
 
 					if (!compilerGenerated) {
 						foreach (var err in VerifyCustomAttributes (srcp, lnkp))
@@ -1174,6 +1178,67 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					}
 				}
 			}
+		}
+
+		IEnumerable<string> VerifyGenericParameterConstraints (GenericParameter src, GenericParameter linked)
+		{
+			if (src.HasConstraints != linked.HasConstraints) {
+				yield return $"Mismatch in generic parameter constraints on {src} of {src.Owner}. Input has constraints?: {src.HasConstraints}, Output has constraints?: {linked.HasConstraints}";
+				yield break;
+			}
+			
+			if (!src.HasConstraints)
+				yield break;
+
+			if (src.Constraints.Count != linked.Constraints.Count) {
+				yield return $"Mismatch in generic parameter constraint count on {src} of {src.Owner}. Input has {src.Constraints.Count} constraints, Output has {linked.Constraints.Count} constraints";
+				yield break;
+			}
+
+			// ILLink doesn't rewrite generic parameter constraint types, so just check they are identical to inputs.
+			for (int i = 0; i < src.Constraints.Count; i++) {
+				var srcConstraint = src.Constraints[i];
+				var linkedConstraint = linked.Constraints[i];
+				if (srcConstraint.ConstraintType.FullName != linkedConstraint.ConstraintType.FullName) {
+					yield return $"Mismatch in generic parameter constraint type. {src} constraint {i} is {srcConstraint.ConstraintType.FullName}, {linked} constraint {i} is {linkedConstraint.ConstraintType.FullName}";
+				}
+			}
+
+			// C# doesn't have syntax for annotating generic parameter constraints with arbitrary attributes,
+			// so expected attributes on generic parameter constraints are specified on the generic parameter itself.
+			HashSet<(string ConstraintType, string AttributeType)> expectedConstraintAttributes = src.CustomAttributes
+				.Where (a => IsKeptAttributeOnConstraint (a))
+				.Select (a => (a.ConstructorArguments[0].Value.ToString (), a.ConstructorArguments[1].Value.ToString ()))
+				.ToHashSet ();
+
+			HashSet<(string ConstraintType, string AttributeType)> linkedConstraintAttributes = linked.Constraints
+				.Where (c => c.HasCustomAttributes)
+				.SelectMany (c => c.CustomAttributes.Select (a => (c.ConstraintType.FullName, a.AttributeType.FullName)))
+				.ToHashSet ();
+
+			if (!expectedConstraintAttributes.SetEquals (linkedConstraintAttributes)) {
+				var missing = $"Missing: {string.Join (", ", expectedConstraintAttributes.Except (linkedConstraintAttributes).Select (c => $"{c.AttributeType} on {c.ConstraintType}"))}";
+				var extra = $"Extra: {string.Join (", ", linkedConstraintAttributes.Except (expectedConstraintAttributes).Select (c => $"{c.AttributeType} on {c.ConstraintType}"))}";
+				yield return string.Join (Environment.NewLine, $"Custom attributes on `{src}' generic parameter constraints are not matching:", missing, extra);
+			}
+
+			static bool IsKeptAttributeOnConstraint (CustomAttribute attr) {
+				if (attr.AttributeType.Name != nameof (KeptAttributeOnConstraintAttribute))
+					return false;
+
+				if (attr.ConstructorArguments.Count != 2)
+					throw new NotImplementedException ("Unexpected KeptCustomAttributeOnConstraintAttribute ctor variant");
+
+				return true;
+			}
+		}
+
+		IEnumerable<string> VerifyGenericParameterAttributes (GenericParameter src, GenericParameter linked)
+		{
+			var expectedAttributes = (System.Reflection.GenericParameterAttributes) (GetCustomAttributeCtorValues<object> (src, nameof (KeptGenericParamAttributesAttribute)).FirstOrDefault () ?? System.Reflection.GenericParameterAttributes.None);
+			var linkedAttributes = (System.Reflection.GenericParameterAttributes) linked.Attributes;
+			if (expectedAttributes != linkedAttributes)
+				yield return $"Mismatch in generic parameter attributes on {src} of {src.Owner}. Expected: {expectedAttributes}, Output: {linkedAttributes}";
 		}
 
 		IEnumerable<string> VerifyParameters (IMethodSignature src, IMethodSignature linked, bool compilerGenerated)

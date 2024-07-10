@@ -573,7 +573,6 @@ public:
     void Init(AllocMemTracker *pamTracker);
 
     PTR_Assembly GetAssembly();
-    DomainAssembly* GetDomainAssembly();
 
     void    FreeModules();
 

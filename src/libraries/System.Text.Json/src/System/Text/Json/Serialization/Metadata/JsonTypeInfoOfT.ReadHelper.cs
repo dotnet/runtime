@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization.Converters;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,7 +17,9 @@ namespace System.Text.Json.Serialization.Metadata
         internal T? Deserialize(ref Utf8JsonReader reader, ref ReadStack state)
         {
             Debug.Assert(IsConfigured);
-            return EffectiveConverter.ReadCore(ref reader, Options, ref state);
+            bool success = EffectiveConverter.ReadCore(ref reader, out T? result, Options, ref state);
+            Debug.Assert(success, "Should only return false for async deserialization");
+            return result;
         }
 
         internal async ValueTask<T?> DeserializeAsync(Stream utf8Json, CancellationToken cancellationToken)
@@ -36,9 +36,13 @@ namespace System.Text.Json.Serialization.Metadata
                 while (true)
                 {
                     bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-                    T? value = ContinueDeserialize(ref bufferState, ref jsonReaderState, ref readStack);
+                    bool success = ContinueDeserialize(
+                        ref bufferState,
+                        ref jsonReaderState,
+                        ref readStack,
+                        out T? value);
 
-                    if (bufferState.IsFinalBlock)
+                    if (success)
                     {
                         return value;
                     }
@@ -64,9 +68,13 @@ namespace System.Text.Json.Serialization.Metadata
                 while (true)
                 {
                     bufferState.ReadFromStream(utf8Json);
-                    T? value = ContinueDeserialize(ref bufferState, ref jsonReaderState, ref readStack);
+                    bool success = ContinueDeserialize(
+                        ref bufferState,
+                        ref jsonReaderState,
+                        ref readStack,
+                        out T? value);
 
-                    if (bufferState.IsFinalBlock)
+                    if (success)
                     {
                         return value;
                     }
@@ -79,11 +87,12 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Caches a JsonTypeInfo&lt;Queue&lt;T&gt;&gt; instance used by the DeserializeAsyncEnumerable method.
+        /// Caches JsonTypeInfo&lt;List&lt;T&gt;&gt; instances used by the DeserializeAsyncEnumerable method.
         /// Store as a non-generic type to avoid triggering generic recursion in the AOT compiler.
         /// cf. https://github.com/dotnet/runtime/issues/85184
         /// </summary>
-        internal JsonTypeInfo? _asyncEnumerableQueueTypeInfo;
+        internal JsonTypeInfo? _asyncEnumerableArrayTypeInfo;
+        internal JsonTypeInfo? _asyncEnumerableRootLevelValueTypeInfo;
 
         internal sealed override object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state)
             => Deserialize(ref reader, ref state);
@@ -97,18 +106,22 @@ namespace System.Text.Json.Serialization.Metadata
         internal sealed override object? DeserializeAsObject(Stream utf8Json)
             => Deserialize(utf8Json);
 
-        internal T? ContinueDeserialize(
+        internal bool ContinueDeserialize(
             ref ReadBufferState bufferState,
             ref JsonReaderState jsonReaderState,
-            ref ReadStack readStack)
+            ref ReadStack readStack,
+            out T? value)
         {
             var reader = new Utf8JsonReader(bufferState.Bytes, bufferState.IsFinalBlock, jsonReaderState);
+            bool success = EffectiveConverter.ReadCore(ref reader, out value, Options, ref readStack);
 
-            T? value = EffectiveConverter.ReadCore(ref reader, Options, ref readStack);
             Debug.Assert(reader.BytesConsumed <= bufferState.Bytes.Length);
+            Debug.Assert(!bufferState.IsFinalBlock || reader.AllowMultipleValues || reader.BytesConsumed == bufferState.Bytes.Length,
+                "The reader should have thrown if we have remaining bytes.");
+
             bufferState.AdvanceBuffer((int)reader.BytesConsumed);
             jsonReaderState = reader.CurrentState;
-            return value;
+            return success;
         }
     }
 }

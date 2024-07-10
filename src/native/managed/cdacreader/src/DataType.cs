@@ -22,4 +22,12 @@ public enum DataType
     GCHandle,
     Thread,
     ThreadStore,
+    GCAllocContext,
+    Exception,
+    ExceptionInfo,
+    RuntimeThreadLocals,
+    Module,
+    MethodTable,
+    EEClass,
+    MethodTableAuxiliaryData,
 }

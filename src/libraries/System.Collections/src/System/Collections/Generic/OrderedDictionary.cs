@@ -809,8 +809,8 @@ namespace System.Collections.Generic
             }
 
             // The key doesn't match that index. If it exists elsewhere in the collection, fail.
-            uint _ = 0, collisionCount = 0;
-            if (IndexOf(key, ref _, ref collisionCount) >= 0)
+            uint hashCode = 0, collisionCount = 0;
+            if (IndexOf(key, ref hashCode, ref collisionCount) >= 0)
             {
                 ThrowHelper.ThrowDuplicateKey(key);
             }
@@ -820,6 +820,7 @@ namespace System.Collections.Generic
             // (we could check for this, but in a properly balanced dictionary the chances should
             // be low for a match, so it's not worth it).
             RemoveEntryFromBucket(index);
+            e.HashCode = hashCode;
             e.Key = key;
             e.Value = value;
             PushEntryIntoBucket(ref e, index);
