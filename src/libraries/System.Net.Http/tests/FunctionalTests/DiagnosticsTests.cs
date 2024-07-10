@@ -235,7 +235,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task SendAsync_ExpectedDiagnosticCancelledLogging() 
+        public async Task SendAsync_ExpectedDiagnosticCancelledLogging()
         {
             if (UseVersion == HttpVersion30)
             {
