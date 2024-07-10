@@ -25,7 +25,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.AddRange(expected);
 
-            Assert.NotNull(collection);
             Assert.Equal(expected.Length, collection.Count);
             Assert.Equal(expected, collection.ToArray());
         }
@@ -35,13 +34,10 @@ namespace System.Collections.ObjectModel.Tests
         {
             int[] initial = new int[] { 1, 2, 3, 4 };
             int[] dataToInsert = new int[] { 5, 6, 7, 8 };
-            Collection<int> collection = new Collection<int>();
-            for (int i = 0; i < initial.Length; i++)
-                collection.Add(initial[i]);
+            Collection<int> collection = new Collection<int>(initial);
 
             collection.AddRange(dataToInsert);
 
-            Assert.NotNull(collection);
             Assert.Equal(initial.Length + dataToInsert.Length, collection.Count);
 
             int[] collectionAssertion = collection.ToArray();
@@ -57,7 +53,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.AddRange(expected);
 
-            Assert.NotNull(collection);
             Assert.Equal(expected.Length, collection.Count);
         }
 
@@ -90,7 +85,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.InsertRange(0, expected);
 
-            Assert.NotNull(collection);
             Assert.Equal(expectedLength, collection.Count);
 
             int[] collectionAssertion = collection.ToArray();
@@ -110,7 +104,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.InsertRange(expected.Length - 1, expected);
 
-            Assert.NotNull(collection);
             Assert.Equal(expectedLength, collection.Count);
 
             int[] collectionAssertion = collection.ToArray();
@@ -130,7 +123,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.InsertRange(2, expected);
 
-            Assert.NotNull(collection);
             Assert.Equal(expectedLength, collection.Count);
 
             int[] collectionAssertion = collection.ToArray();
@@ -147,7 +139,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.InsertRange(0, new int[0]);
 
-            Assert.NotNull(collection);
             Assert.Equal(baseCollection.Count, collection.Count);
             Assert.Equal(baseCollection, collection.ToArray());
         }
@@ -221,7 +212,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.RemoveRange(0, 0);
 
-            Assert.NotNull(collection);
             Assert.Equal(expected.Length, collection.Count);
             Assert.Equal(expected, collection.ToArray());
         }
@@ -246,7 +236,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.RemoveRange(0, 3);
 
-            Assert.NotNull(collection);
             Assert.Equal(0, collection.Count);
         }
 
@@ -260,7 +249,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.RemoveRange(0, 2);
 
-            Assert.NotNull(collection);
             Assert.Equal(1, collection.Count);
             Assert.Equal(3, collection[0]);
         }
@@ -275,7 +263,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.RemoveRange(1, 2);
 
-            Assert.NotNull(collection);
             Assert.Equal(1, collection.Count);
             Assert.Equal(1, collection[0]);
         }
@@ -290,7 +277,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.RemoveRange(0, 0);
 
-            Assert.NotNull(collection);
             Assert.Equal(3, collection.Count);
             Assert.Equal(1, collection[0]);
             Assert.Equal(2, collection[1]);
@@ -338,7 +324,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.ReplaceRange(0, 2, replace);
 
-            Assert.NotNull(collection);
             Assert.Equal(initial.Length + 2, collection.Count);
 
             int[] collectionAssertion = collection.ToArray();
@@ -357,7 +342,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.ReplaceRange(2, 2, replace);
 
-            Assert.NotNull(collection);
             Assert.Equal(initial.Length + 2, collection.Count);
 
             int[] collectionAssertion = collection.ToArray();
@@ -376,7 +360,6 @@ namespace System.Collections.ObjectModel.Tests
 
             collection.ReplaceRange(1, 2, replace);
 
-            Assert.NotNull(collection);
             Assert.Equal(initial.Length + 2, collection.Count);
 
             Assert.Equal(initial[0], collection[0]);

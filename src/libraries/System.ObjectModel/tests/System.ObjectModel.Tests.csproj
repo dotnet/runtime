@@ -17,8 +17,10 @@
              Link="Common\System\CollectionsIDictionaryTest.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_MethodsTest.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_RangeMethodTests.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ReentrancyTests.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_Serialization.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_SkipCollectionChangedTests.cs" />
     <Compile Include="System\Collections\ObjectModel\KeyedCollectionTests.cs" />
     <Compile Include="System\Collections\Specialized\NotifyCollectionChangedEventArgsTests.cs" />
     <Compile Include="System\ComponentModel\DataErrorsChangedEventArgsTests.cs" />
@@ -33,11 +35,8 @@
     <Compile Include="ReadOnlyDictionary\ReadOnlyDictionaryTests.cs" />
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_EventsTests.cs" />
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollectionTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
-    </Compile>
-    <Compile Include="ObservableCollection\ObservableCollection_MethodTests.netcoreapp.cs" />
-    <Compile Include="ObservableCollection\ObservableCollection_SkipCollectionChangedTests.netcoreapp.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="KeyedCollection\Serialization.cs" />

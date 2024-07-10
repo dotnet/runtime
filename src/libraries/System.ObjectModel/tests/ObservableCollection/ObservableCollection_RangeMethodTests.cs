@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Specialized;
 using System.Linq;
 using Xunit;
 
 namespace System.Collections.ObjectModel.Tests
 {
-    public partial class ObservableCollection_MethodTests
+    public partial class ObservableCollection_RangeMethodTests
     {
         [Fact]
         public static void InsertRange_NotifyCollectionChanged_Beginning_Test()
@@ -86,64 +87,114 @@ namespace System.Collections.ObjectModel.Tests
             Assert.Equal(dataToInsert, collectionAssertion.AsSpan(4).ToArray());
         }
 
-        [Fact]
-        public static void AddRange_NotifyCollectionChanged_EventArgs_Test()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void AddRange_NotifyCollectionChanged_EventArgs_Test(bool batchCollectionChanged)
         {
             int[] dataToAdd = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-            int[] actualDataAdded = new int[0];
-            ObservableCollection<int> collection = new ObservableCollection<int>();
-            collection.CollectionChanged += (o, e) => actualDataAdded = e.NewItems.Cast<int>().ToArray();
+            ObservableCollection<int> collection = new();
+            NotifyCollectionChangedEventArgs? args = null;
 
+            collection.CollectionChanged += (o, e) => args = e;
             collection.AddRange(dataToAdd);
 
-            Assert.Equal(dataToAdd, actualDataAdded);
+            Assert.NotNull(args);
+            if (batchCollectionChanged)
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Add, args.Action);
+                Assert.Equal(0, args.NewStartingIndex);
+                Assert.Equal(dataToAdd, args.NewItems.Cast<int>().ToArray());
+            }
+            else
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Reset, args.Action);
+            }
         }
 
-        [Fact]
-        public static void InsertRange_NotifyCollectionChanged_EventArgs_Test()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void InsertRange_NotifyCollectionChanged_EventArgs_Test(bool batchCollectionChanged)
         {
             int[] dataToAdd = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-            int[] actualDataAdded = new int[0];
-            ObservableCollection<int> collection = new ObservableCollection<int>();
-            collection.CollectionChanged += (o, e) => actualDataAdded = e.NewItems.Cast<int>().ToArray();
+            ObservableCollection<int> collection = new();
+            NotifyCollectionChangedEventArgs? args = null;
 
+            collection.CollectionChanged += (o, e) => args = e;
             collection.InsertRange(0, dataToAdd);
 
-            Assert.Equal(dataToAdd, actualDataAdded);
+            Assert.NotNull(args);
+            if (batchCollectionChanged)
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Add, args.Action);
+                Assert.Equal(0, args.NewStartingIndex);
+                Assert.Equal(dataToAdd, args.NewItems.Cast<int>().ToArray());
+            }
+            else
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Reset, args.Action);
+            }
         }
 
-        [Fact]
-        public static void InsertRange_NotifyCollectionChanged_EventArgs_Middle_Test()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void InsertRange_NotifyCollectionChanged_EventArgs_Middle_Test(bool batchCollectionChanged)
         {
             int[] dataToAdd = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-            int[] actualDataAdded = new int[0];
             ObservableCollection<int> collection = new ObservableCollection<int>();
+            NotifyCollectionChangedEventArgs? args = null;
+
             for (int i = 0; i < 4; i++)
             {
                 collection.Add(i);
             }
 
-            collection.CollectionChanged += (o, e) => actualDataAdded = e.NewItems.Cast<int>().ToArray();
+            collection.CollectionChanged += (o, e) => args = e;
             collection.InsertRange(2, dataToAdd);
 
-            Assert.Equal(dataToAdd, actualDataAdded);
+            Assert.NotNull(args);
+            if (batchCollectionChanged)
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Add, args.Action);
+                Assert.Equal(2, args.NewStartingIndex);
+                Assert.Equal(dataToAdd, args.NewItems.Cast<int>().ToArray());
+            }
+            else
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Reset, args.Action);
+            }
         }
 
-        [Fact]
-        public static void InsertRange_NotifyCollectionChanged_EventArgs_End_Test()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void InsertRange_NotifyCollectionChanged_EventArgs_End_Test(bool batchCollectionChanged)
         {
             int[] dataToAdd = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-            int[] actualDataAdded = new int[0];
             ObservableCollection<int> collection = new ObservableCollection<int>();
+            NotifyCollectionChangedEventArgs? args = null;
+
             for (int i = 0; i < 4; i++)
             {
                 collection.Add(i);
             }
 
-            collection.CollectionChanged += (o, e) => actualDataAdded = e.NewItems.Cast<int>().ToArray();
+            collection.CollectionChanged += (o, e) => args = e;
             collection.InsertRange(4, dataToAdd);
 
-            Assert.Equal(dataToAdd, actualDataAdded);
+            Assert.NotNull(args);
+            if (batchCollectionChanged)
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Add, args.Action);
+                Assert.Equal(4, args.NewStartingIndex);
+                Assert.Equal(dataToAdd, args.NewItems.Cast<int>().ToArray());
+            }
+            else
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Reset, args.Action);
+            }
         }
 
         [Fact]
@@ -208,62 +259,97 @@ namespace System.Collections.ObjectModel.Tests
             Assert.Throws<ArgumentException>(() => collection.RemoveRange(collection.Count - 2, int.MaxValue));
         }
 
-        [Fact]
-        public static void RemoveRange_NotifyCollectionChanged_EventArgs_IndexOfZero_Test()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void RemoveRange_NotifyCollectionChanged_EventArgs_IndexOfZero_Test(bool batchCollectionChanged)
         {
             int[] initialData = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-            int[] actualDataRemoved = new int[0];
             int numberOfItemsToRemove = 4;
-            ObservableCollection<int> collection = new ObservableCollection<int>();
-            foreach (int item in initialData)
-            {
-                collection.Add(item);
-            }
+            ObservableCollection<int> collection = new(initialData);
+            NotifyCollectionChangedEventArgs? args = null;
 
-            collection.CollectionChanged += (o, e) => actualDataRemoved = e.OldItems.Cast<int>().ToArray();
+            collection.CollectionChanged += (o, e) => args = e;
             collection.RemoveRange(0, numberOfItemsToRemove);
 
             Assert.Equal(initialData.Length - numberOfItemsToRemove, collection.Count);
-            Assert.Equal(initialData.AsSpan(0, numberOfItemsToRemove).ToArray(), actualDataRemoved);
+
+            Assert.NotNull(args);
+            if (batchCollectionChanged)
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Remove, args.Action);
+                Assert.Equal(0, args.OldStartingIndex);
+                Assert.Equal(initialData.AsSpan(0, numberOfItemsToRemove).ToArray(), args.OldItems.Cast<int>().ToArray());
+            }
+            else
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Reset, args.Action);
+            }
         }
 
-        [Fact]
-        public static void RemoveRange_NotifyCollectionChanged_EventArgs_IndexMiddle_Test()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void RemoveRange_NotifyCollectionChanged_EventArgs_IndexMiddle_Test(bool batchCollectionChanged)
         {
             int[] initialData = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-            int[] actualDataRemoved = new int[0];
             int numberOfItemsToRemove = 4;
             int startIndex = 3;
-            ObservableCollection<int> collection = new ObservableCollection<int>();
-            foreach (int item in initialData)
-            {
-                collection.Add(item);
-            }
 
-            collection.CollectionChanged += (o, e) => actualDataRemoved = e.OldItems.Cast<int>().ToArray();
+            ObservableCollection<int> collection = new(initialData);
+            NotifyCollectionChangedEventArgs? args = null;
+
+            collection.CollectionChanged += (o, e) => args = e;
             collection.RemoveRange(startIndex, numberOfItemsToRemove);
 
             Assert.Equal(initialData.Length - numberOfItemsToRemove, collection.Count);
-            Assert.Equal(initialData.AsSpan(startIndex, numberOfItemsToRemove).ToArray(), actualDataRemoved);
+
+            Assert.NotNull(args);
+            if (batchCollectionChanged)
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Remove, args.Action);
+                Assert.Equal(startIndex, args.OldStartingIndex);
+                Assert.Equal(initialData.AsSpan(startIndex, numberOfItemsToRemove).ToArray(), args.OldItems.Cast<int>().ToArray());
+            }
+            else
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Reset, args.Action);
+            }
         }
 
-        [Fact]
-        public static void ReplaceRange_NotifyCollectionChanged_Test()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void ReplaceRange_NotifyCollectionChanged_Test(bool batchCollectionChanged)
         {
             int[] initialData = new int[] { 10, 11, 12, 13 };
             int[] dataToReplace = new int[] { 3, 8 };
-            int eventCounter = 0;
+            int[] expectedResult = new int[] { 10, 3, 8 ,13 };
+            int startIndex = 1;
+            int count = 2;
+
             ObservableCollection<int> collection = new ObservableCollection<int>(initialData);
-            collection.CollectionChanged += (o, e) => eventCounter++;
+            NotifyCollectionChangedEventArgs? args = null;
 
-            collection.ReplaceRange(0, 2, dataToReplace);
+            collection.CollectionChanged += (o, e) => { Assert.Null(args); args = e; };
 
-            Assert.Equal(initialData.Length, collection.Count);
-            Assert.Equal(1, eventCounter);
+            collection.ReplaceRange(startIndex, count, dataToReplace);
 
-            int[] collectionAssertion = collection.ToArray();
-            Assert.Equal(dataToReplace, collectionAssertion.AsSpan(0, 2).ToArray());
-            Assert.Equal(initialData.AsSpan(2, 2).ToArray(), collectionAssertion.AsSpan(2, 2).ToArray());
+            Assert.Equal(expectedResult, collection.ToArray());
+
+            Assert.NotNull(args);
+            if (batchCollectionChanged)
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Replace, args.Action);
+                Assert.Equal(startIndex, args.OldStartingIndex);
+                Assert.Equal(startIndex, args.NewStartingIndex);
+                Assert.Equal(initialData.AsSpan(startIndex, count).ToArray(), args.OldItems.Cast<int>().ToArray());
+                Assert.Equal(dataToReplace, args.NewItems.Cast<int>().ToArray());
+            }
+            else
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Reset, args.Action);
+            }
         }
     }
 }
