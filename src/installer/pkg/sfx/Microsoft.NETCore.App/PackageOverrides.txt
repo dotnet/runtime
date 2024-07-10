@@ -64,7 +64,7 @@ runtime.ubuntu.16.10-x64.runtime.native.System.Net.Security|4.3.1
 runtime.ubuntu.16.10-x64.runtime.native.System.Security.Cryptography|4.3.4
 runtime.ubuntu.16.10-x64.runtime.native.System.Security.Cryptography.OpenSsl|4.3.3
 System.AppContext|4.3.0
-System.Buffers|4.5.1
+System.Buffers|5.0.0
 System.Collections|4.3.0
 System.Collections.Concurrent|4.3.0
 System.Collections.Immutable|9.0.0
@@ -113,7 +113,7 @@ System.Linq|4.3.0
 System.Linq.Expressions|4.3.0
 System.Linq.Parallel|4.3.0
 System.Linq.Queryable|4.3.0
-System.Memory|4.5.5
+System.Memory|5.0.0
 System.Net.Http|4.3.4
 System.Net.Http.Json|9.0.0
 System.Net.NameResolution|4.3.0
@@ -126,12 +126,12 @@ System.Net.Sockets|4.3.0
 System.Net.WebHeaderCollection|4.3.0
 System.Net.WebSockets|4.3.0
 System.Net.WebSockets.Client|4.3.2
-System.Numerics.Vectors|4.5.0
+System.Numerics.Vectors|5.0.0
 System.ObjectModel|4.3.0
 System.Private.DataContractSerialization|4.3.0
 System.Private.Uri|4.3.2
 System.Reflection|4.3.0
-System.Reflection.DispatchProxy|5.0.0
+System.Reflection.DispatchProxy|6.0.0
 System.Reflection.Emit|4.7.0
 System.Reflection.Emit.ILGeneration|4.7.0
 System.Reflection.Emit.Lightweight|4.7.0
@@ -143,7 +143,7 @@ System.Resources.Reader|4.3.0
 System.Resources.ResourceManager|4.3.0
 System.Resources.Writer|4.3.0
 System.Runtime|4.3.1
-System.Runtime.CompilerServices.Unsafe|6.0.0
+System.Runtime.CompilerServices.Unsafe|7.0.0
 System.Runtime.CompilerServices.VisualC|4.3.0
 System.Runtime.Extensions|4.3.1
 System.Runtime.Handles|4.3.0
@@ -178,7 +178,7 @@ System.Threading.Channels|9.0.0
 System.Threading.Overlapped|4.3.0
 System.Threading.Tasks|4.3.0
 System.Threading.Tasks.Dataflow|9.0.0
-System.Threading.Tasks.Extensions|4.5.4
+System.Threading.Tasks.Extensions|5.0.0
 System.Threading.Tasks.Parallel|4.3.0
 System.Threading.Thread|4.3.0
 System.Threading.ThreadPool|4.3.0
@@ -189,4 +189,4 @@ System.Xml.XDocument|4.3.0
 System.Xml.XmlDocument|4.3.0
 System.Xml.XmlSerializer|4.3.0
 System.Xml.XPath|4.3.0
-System.Xml.XPath.XDocument|4.3.0
+System.Xml.XPath.XDocument|5.0.0
