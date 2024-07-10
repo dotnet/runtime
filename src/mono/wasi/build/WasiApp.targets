@@ -185,6 +185,7 @@
       <_WasiClangCommonFlags Include="$(_DefaultWasiClangFlags)" />
       <_WasiClangCommonFlags Include="$(WasiClangFlags)" />
       <_WasiClangCommonFlags Include="--sysroot=&quot;$(WASI_SDK22_PATH.Replace('\', '/'))share/wasi-sysroot&quot;" />
+      <_WasiClangCommonFlags Include="--target=wasm32-unknown-wasip2" />
       <_WasiClangCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
       <_WasiClangCommonFlags Include="-v"                                Condition="'$(WasiClangVerbose)' != 'false'" />
       <!--<_WasiClangCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />-->
@@ -325,8 +326,8 @@
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
 
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++.a" />
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++abi.a" />
+      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasip2\libc++.a" />
+      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasip2\libc++abi.a" />
 
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>

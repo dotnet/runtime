@@ -745,7 +745,7 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(_MonoSkipInitCompiler)' != 'true' and '$(HostOS)' != 'windows'">sh -c 'build_arch=&quot;$(_CompilerTargetArch)&quot; compiler=&quot;$(MonoCCompiler)&quot; . &quot;$(RepositoryEngineeringCommonDir)native/init-compiler.sh&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(_MonoSkipInitCompiler)' == 'true' and '$(HostOS)' != 'windows'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsWasi)' == 'true'">$(_MonoCMakeConfigureCommand) -DWASI_SDK_PREFIX=$(WASI_SDK22_PATH) -DCMAKE_SYSROOT=$(WASI_SDK22_PATH)share/wasi-sysroot -DCMAKE_TOOLCHAIN_FILE=$(WASI_SDK22_PATH)share/cmake/wasi-sdk.cmake -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK22_PATH)share/wasi-sysroot"</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsWasi)' == 'true'">$(_MonoCMakeConfigureCommand) -DWASI_SDK_PREFIX=$(WASI_SDK22_PATH) -DCMAKE_SYSROOT=$(WASI_SDK22_PATH)share/wasi-sysroot -DCMAKE_TOOLCHAIN_FILE=$(RepoRoot)src/native/external/wasi-sdk-p2.cmake -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK22_PATH)share/wasi-sysroot"</_MonoCMakeConfigureCommand>
 
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' != 'windows'">bash -c 'source $(_EmsdkEnvScriptPath) 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
@@ -868,7 +868,7 @@ JS_ENGINES = [NODE_JS]
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotAbi Condition="'$(TargetsBrowser)' == 'true'">wasm32-unknown-none</MonoAotAbi>
-      <MonoAotAbi Condition="'$(TargetsWasi)' == 'true'">wasm32-unknown-wasi</MonoAotAbi>
+      <MonoAotAbi Condition="'$(TargetsWasi)' == 'true'">wasm32-unknown-wasip2</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-wasm32-unknown-none.h</MonoAotOffsetsFile>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(MonoLLVMDir)/$(BuildArchitecture)/lib/libclang.dylib</MonoLibClang>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(MonoLLVMDir)/$(BuildArchitecture)/lib/libclang.so</MonoLibClang>
