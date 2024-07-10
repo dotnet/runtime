@@ -5,29 +5,46 @@
 // scalar evolution analysis (see scev.h and scev.cpp for more information
 // about the scalar evolution analysis).
 //
-// Currently the only optimization done is widening of primary induction
-// variables from 32 bits into 64 bits. This is generally only profitable on
-// x64 that does not allow zero extension of 32-bit values in addressing modes
-// (in contrast, arm64 does have the capability of including zero extensions in
-// addressing modes). For x64 this saves a zero extension for every array
-// access inside the loop, in exchange for some widening or narrowing stores
-// outside the loop:
-//   - To make sure the new widened IV starts at the right value it is
-//   initialized to the value of the narrow IV outside the loop (either in the
-//   preheader or at the def location of the narrow IV). Usually the start
-//   value is a constant, in which case the widened IV is just initialized to
-//   the constant value.
-//   - If the narrow IV is used after the loop we need to store it back from
-//   the widened IV in the exits. We depend on liveness sets to figure out
-//   which exits to insert IR into.
+// Currently the following optimizations are done:
 //
-// These steps ensure that the wide IV has the right value to begin with and
-// the old narrow IV still has the right value after the loop. Additionally,
-// we must replace every use of the narrow IV inside the loop with the widened
-// IV. This is done by a traversal of the IR inside the loop. We do not
-// actually widen the uses of the IV; rather, we keep all uses and defs as
-// 32-bit, which the backend is able to handle efficiently on x64. Because of
-// this we do not need to worry about overflow.
+// IV widening:
+//   This widens primary induction variables from 32 bits into 64 bits. This is
+//   generally only profitable on x64 that does not allow zero extension of
+//   32-bit values in addressing modes (in contrast, arm64 does have the
+//   capability of including zero extensions in addressing modes). For x64 this
+//   saves a zero extension for every array access inside the loop, in exchange
+//   for some widening or narrowing stores outside the loop:
+//     - To make sure the new widened IV starts at the right value it is
+//     initialized to the value of the narrow IV outside the loop (either in
+//     the preheader or at the def location of the narrow IV). Usually the
+//     start value is a constant, in which case the widened IV is just
+//     initialized to the constant value.
+//     - If the narrow IV is used after the loop we need to store it back from
+//     the widened IV in the exits. We depend on liveness sets to figure out
+//     which exits to insert IR into.
+//
+//   These steps ensure that the wide IV has the right value to begin with and
+//   the old narrow IV still has the right value after the loop. Additionally,
+//   we must replace every use of the narrow IV inside the loop with the widened
+//   IV. This is done by a traversal of the IR inside the loop. We do not
+//   actually widen the uses of the IV; rather, we keep all uses and defs as
+//   32-bit, which the backend is able to handle efficiently on x64. Because of
+//   this we do not need to worry about overflow.
+//
+// Loop reversing:
+//   This converts loops that are up-counted into loops that are down-counted.
+//   Down-counted loops can generally do their IV update and compare in a
+//   single instruction, bypassing the need to do a separate comparison with a
+//   bound.
+//
+// Strength reduction (disabled):
+//   This changes the stride of primary IVs in a loop to avoid more expensive
+//   multiplications inside the loop. Commonly the primary IVs are only used
+//   for indexing memory at some element size, which can end up with these
+//   multiplications.
+//
+//   Strength reduction frequently relies on reversing the loop to remove the
+//   last non-multiplied use of the primary IV.
 //
 
 #include "jitpch.h"
