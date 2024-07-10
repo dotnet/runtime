@@ -39,6 +39,9 @@ namespace System.Net.Security.Tests
             // 1 byte reads
             ByteByByte,
 
+            // Receive at most 257 B in one read, targets specifically receiving
+            Chunked,
+
             // coalesce reads to biggest chunks possible
             Coalescing
         }
@@ -75,6 +78,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(HandshakeScenarioData))]
+        // [InlineData(FramingType.Prime257, SslProtocols.Tls12, ClientCertScenario.None)]
         public async Task Handshake_Success(FramingType framingType, SslProtocols sslProtocol, ClientCertScenario clientCertScenario)
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -129,7 +133,6 @@ namespace System.Net.Security.Tests
             Assert.True(serverStream.ReadCalled, "Mocked read method was not used");
 
             await TestHelper.PingPong(client, server);
-
         }
 
         internal class ConfigurableReadStream : Stream
@@ -168,6 +171,7 @@ namespace System.Net.Security.Tests
                 {
                     case FramingType.ByteByByte:
                         return await _stream.ReadAsync(buffer.Length > 0 ? buffer.Slice(0, 1) : buffer, cancellationToken);
+
                     case FramingType.Coalescing:
                         {
                             if (buffer.Length > 0)
@@ -178,6 +182,24 @@ namespace System.Net.Security.Tests
                             }
                             return await _stream.ReadAsync(buffer, cancellationToken);
                         }
+                    case FramingType.Chunked:
+                        {
+                            if (buffer.Length > 0)
+                            {
+                                // wait 10ms, this should be enough for the other side to write as much data
+                                // as it will ever write before receiving something back.
+                                await Task.Delay(10);
+
+                                const int maxRead = 1519; // arbitrarily chosen chunk size
+
+                                if (buffer.Length > maxRead)
+                                {
+                                    buffer = buffer.Slice(0, maxRead);
+                                }
+                            }
+                            return await _stream.ReadAsync(buffer, cancellationToken);
+                        }
+
                     default:
                         throw new NotImplementedException();
                 }

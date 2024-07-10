@@ -470,7 +470,7 @@ namespace System.Net.Security
             {
                 TlsFrameHeader nextHeader = default;
 
-                if (!TlsFrameHelper.TryGetFrameHeader(_buffer.EncryptedReadOnlySpan.Slice(chunkSize), ref nextHeader))
+                if (!TlsFrameHelper.TryGetFrameHeader(availableData.Slice(chunkSize), ref nextHeader))
                 {
                     break;
                 }
@@ -479,7 +479,7 @@ namespace System.Net.Security
 
                 // Can process more handshake frames in single step or during TLS1.3 post-handshake auth, but we should
                 // avoid processing too much so as to preserve API boundary between handshake and I/O.
-                if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) && !_isRenego || frameSize > _buffer.EncryptedLength)
+                if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) && !_isRenego || frameSize > availableData.Length - chunkSize)
                 {
                     // We don't have full frame left or we already have app data which needs to be processed by decrypt.
                     break;
