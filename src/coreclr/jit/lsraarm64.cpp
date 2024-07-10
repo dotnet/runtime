@@ -1475,6 +1475,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
                         break;
 
+                    case NI_Sve_GatherPrefetch8Bit:
+                    case NI_Sve_GatherPrefetch16Bit:
+                    case NI_Sve_GatherPrefetch32Bit:
+                    case NI_Sve_GatherPrefetch64Bit:
+                        if (!varTypeIsSIMD(intrin.op2->gtType))
+                        {
+                            needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
+                        }
+                        else
+                        {
+                            needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
+                        }
+                        break;
+
                     case NI_Sve_SaturatingDecrementBy16BitElementCount:
                     case NI_Sve_SaturatingDecrementBy32BitElementCount:
                     case NI_Sve_SaturatingDecrementBy64BitElementCount:
@@ -1627,7 +1641,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                srcCount += BuildOperandUses(intrin.op1, predMask);
+                if (tgtPrefOp2)
+                {
+                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2, predMask);
+                }
+                else
+                {
+                    srcCount += BuildOperandUses(intrin.op1, predMask);
+                }
             }
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -1899,6 +1920,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         else
         {
             assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3));
+
+            // Special handling for ShiftRightArithmeticForDivide:
+            // We might need an additional register to hold branch targets into the switch table
+            // that encodes the immediate
+            if (intrinEmb.id == NI_Sve_ShiftRightArithmeticForDivide)
+            {
+                assert(embOp2Node->GetOperandCount() == 2);
+                if (!embOp2Node->Op(2)->isContainedIntOrIImmed())
+                {
+                    buildInternalIntRegisterDefForNode(embOp2Node);
+                }
+            }
+
             tgtPrefUse = BuildUse(embOp2Node->Op(1));
             srcCount += 1;
 
@@ -1910,7 +1944,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             srcCount += BuildDelayFreeUses(intrin.op3, embOp2Node->Op(1));
         }
     }
-
     else if (intrin.op2 != nullptr)
     {
         // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
@@ -1921,56 +1954,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         bool             forceOp2DelayFree   = false;
         SingleTypeRegSet lowVectorCandidates = RBM_NONE;
         size_t           lowVectorOperandNum = 0;
-        if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
-        {
-            if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
-            {
-                // If the index is not a constant and the object is not contained or is a local
-                // we will need a general purpose register to calculate the address
-                // internal register must not clobber input index
-                // TODO-Cleanup: An internal register will never clobber a source; this code actually
-                // ensures that the index (op2) doesn't interfere with the target.
-                buildInternalIntRegisterDefForNode(intrinsicTree);
-                forceOp2DelayFree = true;
-            }
 
-            if (!intrin.op2->IsCnsIntOrI() && !intrin.op1->isContained())
-            {
-                // If the index is not a constant or op1 is in register,
-                // we will use the SIMD temp location to store the vector.
-                var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
-                compiler->getSIMDInitTempVarNum(requiredSimdTempType);
-            }
-        }
-        else if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
+        if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
         {
             getLowVectorOperandAndCandidates(intrin, &lowVectorOperandNum, &lowVectorCandidates);
         }
 
-        if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
-            (intrin.op2->isRMWHWIntrinsic(compiler)))
-        {
-            // For ConditionalSelect, if there is an embedded operation, and the operation has RMW semantics
-            // then record delay-free for them.
-            GenTreeHWIntrinsic* intrinEmbOp2 = intrin.op2->AsHWIntrinsic();
-            size_t              numArgs      = intrinEmbOp2->GetOperandCount();
-            assert((numArgs == 1) || (numArgs == 2));
-            const HWIntrinsic intrinEmb(intrinEmbOp2);
-            if (HWIntrinsicInfo::IsLowVectorOperation(intrinEmb.id))
-            {
-                getLowVectorOperandAndCandidates(intrinEmb, &lowVectorOperandNum, &lowVectorCandidates);
-            }
-
-            tgtPrefUse = BuildUse(intrinEmbOp2->Op(1));
-            srcCount += 1;
-
-            for (size_t argNum = 2; argNum <= numArgs; argNum++)
-            {
-                srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1),
-                                               (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
-            }
-        }
-        else if (tgtPrefOp2)
+        if (tgtPrefOp2)
         {
             if (!intrin.op2->isContained())
             {
@@ -1990,19 +1980,44 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 case NI_Sve_LoadVectorNonTemporal:
                 case NI_Sve_LoadVector128AndReplicateToVector:
                 case NI_Sve_StoreAndZip:
+                    assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                    srcCount += BuildAddrUses(intrin.op2);
+                    break;
+
+                case NI_Sve_GatherVector:
+                case NI_Sve_GatherVectorByteZeroExtend:
+                case NI_Sve_GatherVectorInt16SignExtend:
+                case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+                case NI_Sve_GatherVectorInt32SignExtend:
+                case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+                case NI_Sve_GatherVectorSByteSignExtend:
+                case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+                case NI_Sve_GatherVectorUInt16ZeroExtend:
+                case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+                case NI_Sve_GatherVectorUInt32ZeroExtend:
+                    assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                    FALLTHROUGH;
+
                 case NI_Sve_PrefetchBytes:
                 case NI_Sve_PrefetchInt16:
                 case NI_Sve_PrefetchInt32:
                 case NI_Sve_PrefetchInt64:
-                    assert(intrinsicTree->OperIsMemoryLoadOrStore());
-                    srcCount += BuildAddrUses(intrin.op2);
-                    break;
+                case NI_Sve_GatherPrefetch8Bit:
+                case NI_Sve_GatherPrefetch16Bit:
+                case NI_Sve_GatherPrefetch32Bit:
+                case NI_Sve_GatherPrefetch64Bit:
+                    if (!varTypeIsSIMD(intrin.op2->gtType))
+                    {
+                        srcCount += BuildAddrUses(intrin.op2);
+                        break;
+                    }
+                    FALLTHROUGH;
 
                 default:
                 {
                     SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
 
-                    if (intrin.op2->gtType == TYP_MASK)
+                    if (intrin.op2->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
                     {
                         assert(lowVectorOperandNum != 2);
                         candidates = RBM_ALLMASK.GetPredicateRegSet();

@@ -100,7 +100,7 @@ namespace System.Globalization
         /// <summary>
         /// This is used to convert CurrentEra(0) to an appropriate era value.
         /// </summary>
-        internal virtual int CurrentEraValue
+        internal int CurrentEraValue
         {
             get
             {

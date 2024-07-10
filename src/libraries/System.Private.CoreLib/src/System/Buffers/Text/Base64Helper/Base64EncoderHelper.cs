@@ -628,6 +628,12 @@ namespace System.Buffers.Text
             uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
             uint i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
 
+            return ConstructResult(i0, i1, i2, i3);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint ConstructResult(uint i0, uint i1, uint i2, uint i3)
+        {
             if (BitConverter.IsLittleEndian)
             {
                 return i0 | (i1 << 8) | (i2 << 16) | (i3 << 24);
@@ -677,20 +683,8 @@ namespace System.Buffers.Text
                 uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
                 uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
 
-                if (BitConverter.IsLittleEndian)
-                {
-                    dest[0] = (byte)i0;
-                    dest[1] = (byte)i1;
-                    dest[2] = (byte)EncodingPad;
-                    dest[3] = (byte)EncodingPad;
-                }
-                else
-                {
-                    dest[3] = (byte)i0;
-                    dest[2] = (byte)i1;
-                    dest[1] = (byte)EncodingPad;
-                    dest[0] = (byte)EncodingPad;
-                }
+                uint result = ConstructResult(i0, i1, EncodingPad, EncodingPad);
+                Unsafe.WriteUnaligned(dest, result);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -705,20 +699,8 @@ namespace System.Buffers.Text
                 uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
                 uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
 
-                if (BitConverter.IsLittleEndian)
-                {
-                    dest[0] = (byte)i0;
-                    dest[1] = (byte)i1;
-                    dest[2] = (byte)i2;
-                    dest[3] = (byte)EncodingPad;
-                }
-                else
-                {
-                    dest[3] = (byte)i0;
-                    dest[2] = (byte)i1;
-                    dest[1] = (byte)i2;
-                    dest[0] = (byte)EncodingPad;
-                }
+                uint result = ConstructResult(i0, i1, i2, EncodingPad);
+                Unsafe.WriteUnaligned(dest, result);
             }
 
 #if NET
@@ -757,33 +739,9 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe void EncodeThreeAndWrite(byte* threeBytes, byte* destination, ref byte encodingMap)
             {
-                uint t0 = threeBytes[0];
-                uint t1 = threeBytes[1];
-                uint t2 = threeBytes[2];
-
-                uint i = (t0 << 16) | (t1 << 8) | t2;
-
-                byte i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-                byte i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-                byte i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-                byte i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    destination[0] = i0;
-                    destination[1] = i1;
-                    destination[2] = i2;
-                    destination[3] = i3;
-                }
-                else
-                {
-                    destination[3] = i0;
-                    destination[2] = i1;
-                    destination[1] = i2;
-                    destination[0] = i3;
-                }
+                uint result = Encode(threeBytes, ref encodingMap);
+                Unsafe.WriteUnaligned(destination, result);
             }
         }
-
     }
 }

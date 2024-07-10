@@ -1,0 +1,499 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\Arm\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Collections.Generic;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using Xunit;
+
+namespace JIT.HardwareIntrinsics.Arm._Sve
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {TestName}()
+        {
+            var test = new SveScatterVectorBasesTest__{TestName}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works, using Unsafe.Read
+                test.RunBasicScenario_UnsafeRead();
+
+                // Validates basic functionality works
+                test.RunBasicScenario_Load();
+
+                // Validates fully masked out load works.
+                test.RunBasicScenario_FalseMask();
+
+                // Validates fully masked out load with invalid address works.
+                test.RunBasicScenario_NonFaulting();
+
+                // Validates calling via reflection works, using Unsafe.Read
+                test.RunReflectionScenario_UnsafeRead();
+
+                // Validates passing a local works, using Unsafe.Read
+                test.RunLclVarScenario_UnsafeRead();
+
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class SveScatterVectorBasesTest__{TestName}
+    {
+        private struct DataTable
+        {
+            private byte[] inMask;
+            private byte[] inData;
+            public byte[] outArray;
+            private byte[] inAddress;
+
+            private GCHandle inMaskHandle;
+            private GCHandle inAddressHandle;
+            private GCHandle inDataHandle;
+            private GCHandle outHandle;
+
+            private ulong alignment;
+
+            public DataTable({Op1BaseType}[] inMask, {Op1BaseType}[] inData, {Op1BaseType}[] outArray, {Op2BaseType}[] inAddress, int alignment)
+            {
+                int sizeOfInMask = inMask.Length * Unsafe.SizeOf<{Op1BaseType}>();
+                int sizeOfInData = inData.Length * Unsafe.SizeOf<{Op1BaseType}>();
+                int sizeOfOutArray = outArray.Length * Unsafe.SizeOf<{Op1BaseType}>();
+                int sizeOfInOffset = inAddress.Length * Unsafe.SizeOf<{Op2BaseType}>();
+
+                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfInMask || (alignment * 2) < sizeOfInOffset || (alignment * 2) < sizeOfInData)
+                {
+                    throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfInMask: {sizeOfInMask}, sizeOfInOffset: {sizeOfInOffset}, sizeOfInData: {sizeOfInData}");
+                }
+
+                this.inMask = new byte[alignment * 2];
+                this.inData = new byte[alignment * 2];
+                this.outArray = new byte[(alignment * 2) + sizeOfOutArray];
+                this.inAddress = new byte[alignment * 2];
+
+                this.inMaskHandle = GCHandle.Alloc(this.inMask, GCHandleType.Pinned);
+                this.inAddressHandle = GCHandle.Alloc(this.inAddress, GCHandleType.Pinned);
+                this.inDataHandle = GCHandle.Alloc(this.inData, GCHandleType.Pinned);
+                this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inMaskArrayPtr), ref Unsafe.As<{Op1BaseType}, byte>(ref inMask[0]), (uint)sizeOfInMask);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inDataArrayPtr), ref Unsafe.As<{Op1BaseType}, byte>(ref inData[0]), (uint)sizeOfInData);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(outArrayPtr), ref Unsafe.As<{Op1BaseType}, byte>(ref outArray[0]), (uint)sizeOfOutArray);
+
+                // Add the base pointer to the offsets within outArray to create complete pointers.
+                for (var i = 0; i < inAddress.Length; i++) { inAddress[i] += ({Op2BaseType})outArrayPtr; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inAddressArrayPtr), ref Unsafe.As<{Op2BaseType}, byte>(ref inAddress[0]), (uint)sizeOfInOffset);
+            }
+
+            public void* inMaskArrayPtr => Align((byte*)(inMaskHandle.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inAddressArrayPtr => Align((byte*)(inAddressHandle.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inDataArrayPtr => Align((byte*)(inDataHandle.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
+
+            public void Dispose()
+            {
+                inMaskHandle.Free();
+                inDataHandle.Free();
+                inAddressHandle.Free();
+                outHandle.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+
+            public void ResetOutArray()
+            {
+                for (int i = 0; i < this.outArray.Length; i++)
+                {
+                    this.outArray[i] = 0;
+                }
+            }
+        }
+
+        public static void MakeDistinct({Op2BaseType}[] input)
+        {
+            HashSet<{Op2BaseType}> dict = new ();
+            for(var i = 0; i < input.Length;)
+            {
+                if(!dict.Add(input[i]))
+                {
+                    // value already exist
+                    input[i] += sizeof({Op1BaseType});
+                    continue;
+                }
+                i++;
+            }
+        }
+
+        private struct TestStruct
+        {
+            public {Op1VectorType}<{Op1BaseType}> _mask;
+            public {Op1VectorType}<{Op1BaseType}> _data;
+            public {Op2VectorType}<{Op2BaseType}> _address;
+
+            public static TestStruct Create(DataTable _dataTable)
+            {
+                var testStruct = new TestStruct();
+
+                for (var i = 0; i < MaskElementCount; i++) { _maskArr[i] = {NextValueOp1}; }
+                for (var i = 0; i < DataElementCount; i++) { _dataArr[i] = {NextValueOp3}; }
+                _dataTable.ResetOutArray();
+
+                // Fill full of offsets into the data buffer.
+                for (var i = 0; i < AddressElementCount; i++) { _addressArr[i] = ({NextValueOp2} % ({Op2BaseType})OutElementCount ) * sizeof({Op2BaseType}); }
+                MakeDistinct(_addressArr);
+
+                // Add the base pointer to the offsets within outArray to create complete pointers.
+                for (var i = 0; i < AddressElementCount; i++) { _addressArr[i] += ({Op2BaseType})_dataTable.outArrayPtr; }
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskArr[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._data), ref Unsafe.As<{Op1BaseType}, byte>(ref _dataArr[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref testStruct._address), ref Unsafe.As<{Op2BaseType}, byte>(ref _addressArr[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(SveScatterVectorBasesTest__{TestName} testClass)
+            {
+                {Isa}.{Method}(_mask, _address, _data);
+                testClass.ValidateResult(_mask, _data, _address);
+            }
+        }
+
+        private static readonly int LargestVectorSize = 64;
+
+        // A large enough buffer to hold many values.
+        // Values in address will point to locations within this buffer.
+        private static readonly int OutElementCount = 1024;
+        private static readonly int MaskElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
+        private static readonly int DataElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
+        private static readonly int AddressElementCount = Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>() / sizeof({Op2BaseType});
+
+        private static {Op1BaseType}[] _maskArr = new {Op1BaseType}[MaskElementCount];
+        private static {Op1BaseType}[] _dataArr = new {Op1BaseType}[DataElementCount];
+        private static {Op2BaseType}[] _addressArr = new {Op2BaseType}[AddressElementCount];
+        private static {Op1BaseType}[] _falseData = new {Op1BaseType}[DataElementCount];
+
+        private {Op1VectorType}<{Op1BaseType}> _mask;
+        private {Op1VectorType}<{Op1BaseType}> _data;
+        private {Op2VectorType}<{Op2BaseType}> _address;
+        private {Op1VectorType}<{Op1BaseType}> _falseFld;
+
+        private DataTable _dataTable;
+
+        public SveScatterVectorBasesTest__{TestName}()
+        {
+            Succeeded = true;
+
+            for (var i = 0; i < MaskElementCount; i++) { _maskArr[i] = {NextValueOp1}; }
+            for (var i = 0; i < DataElementCount; i++) { _dataArr[i] = {NextValueOp3}; }
+
+            // Fill full of offsets into the data buffer. They wil be expanded to full pointers inside the DataTable constructor.
+            for (var i = 0; i < AddressElementCount; i++) { _addressArr[i] = ({NextValueOp2} % ({Op2BaseType})OutElementCount) * sizeof({Op2BaseType}); }
+            MakeDistinct(_addressArr);
+
+            for (var i = 0; i < DataElementCount; i++) { _falseData[i] = {NextValueOp3}; }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _falseData[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+
+            _dataTable = new DataTable(_maskArr, _dataArr, new {Op1BaseType}[OutElementCount], _addressArr, LargestVectorSize);
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskArr[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _data), ref Unsafe.As<{Op1BaseType}, byte>(ref _dataArr[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _address), ref Unsafe.As<{Op2BaseType}, byte>(ref _addressArr[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
+            _dataTable.ResetOutArray();
+            {Isa}.{Method}(
+                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inMaskArrayPtr),
+                Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inAddressArrayPtr),
+                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inDataArrayPtr)
+            );
+
+            ValidateResult(_dataTable.inMaskArrayPtr, _dataTable.inDataArrayPtr, _dataTable.inAddressArrayPtr);
+
+        }
+
+        public void RunBasicScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask1 = {Isa}.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+            {Op2VectorType}<{Op2BaseType}> loadMask2 = {Isa}.CreateTrueMask{Op2BaseType}(SveMaskPattern.All);
+            _dataTable.ResetOutArray();
+
+            {Isa}.{Method}(
+                {Isa}.LoadVector(loadMask1, ({Op1BaseType}*)(_dataTable.inMaskArrayPtr)),
+                {Isa}.LoadVector(loadMask2, ({Op2BaseType}*)(_dataTable.inAddressArrayPtr)),
+                {Isa}.LoadVector(loadMask1, ({Op1BaseType}*)(_dataTable.inDataArrayPtr))
+            );
+
+            ValidateResult(_dataTable.inMaskArrayPtr, _dataTable.inDataArrayPtr, _dataTable.inAddressArrayPtr);
+        }
+
+        public void RunBasicScenario_FalseMask()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_FalseMask));
+
+            {Op1VectorType}<{Op1BaseType}> falseMask = {Isa}.CreateFalseMask{Op1BaseType}();
+
+            _dataTable.ResetOutArray();
+
+            {Isa}.{Method}(
+                falseMask,
+                Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inAddressArrayPtr),
+                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inDataArrayPtr)
+            );
+
+            ValidateZeroResult(_dataTable.inDataArrayPtr, _dataTable.inAddressArrayPtr);
+        }
+
+        public void RunBasicScenario_NonFaulting()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_NonFaulting));
+
+            {Op1VectorType}<{Op1BaseType}> falseMask = {Isa}.CreateFalseMask{Op1BaseType}();
+            _dataTable.ResetOutArray();
+
+            try
+            {
+                {Isa}.{Method}(
+                    falseMask,
+                    {Op2VectorType}<{Op2BaseType}>.Zero,
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inDataArrayPtr)
+                );
+
+                ValidateZeroResult(_dataTable.inDataArrayPtr, _dataTable.inAddressArrayPtr);
+            }
+            catch
+            {
+                Succeeded = false;
+            }
+        }
+
+        public void RunReflectionScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+
+            _dataTable.ResetOutArray();
+
+            typeof(Sve).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2VectorType}<{Op2BaseType}>), typeof({Op1VectorType}<{Op1BaseType}>) })
+                                     .Invoke(null, new object[] {
+                                        Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inMaskArrayPtr),
+                                        Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inAddressArrayPtr),
+                                        Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inDataArrayPtr),
+                                     });
+
+            ValidateResult(_dataTable.inMaskArrayPtr, _dataTable.inDataArrayPtr, _dataTable.inAddressArrayPtr);
+        }
+
+        public void RunLclVarScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+
+            var mask = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inMaskArrayPtr);
+            var address = Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inAddressArrayPtr);
+            var data = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inDataArrayPtr);
+
+            _dataTable.ResetOutArray();
+            {Isa}.{Method}(mask, address, data);
+
+            ValidateResult(mask, data, address);
+        }
+
+        public void RunClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+            _dataTable.ResetOutArray();
+            {Isa}.{Method}(_mask, _address, _data);
+
+            ValidateResult(_mask, _data, _address);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+            var test = TestStruct.Create(_dataTable);
+
+            {Isa}.{Method}(test._mask, test._address, test._data);
+
+            ValidateResult(test._mask, test._data, test._address);
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create(_dataTable);
+
+            test.RunStructFldScenario(this);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            Succeeded = false;
+
+            try
+            {
+                RunBasicScenario_Load();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                Succeeded = true;
+            }
+        }
+
+        private void ValidateResult({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> data, {Op2VectorType}<{Op2BaseType}> address, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] maskArray = new {Op1BaseType}[MaskElementCount];
+            {Op1BaseType}[] dataArray = new {Op1BaseType}[DataElementCount];
+            {Op2BaseType}[] addressArray = new {Op2BaseType}[AddressElementCount];
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref maskArray[0]), mask);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref dataArray[0]), data);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref addressArray[0]), address);
+
+            ValidateResult(maskArray, dataArray, addressArray, method);
+        }
+
+        private void ValidateResult(void* mask, void* data, void* address, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] maskArray = new {Op1BaseType}[MaskElementCount];
+            {Op1BaseType}[] dataArray = new {Op1BaseType}[DataElementCount];
+            {Op2BaseType}[] addressArray = new {Op2BaseType}[AddressElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref maskArray[0]), ref Unsafe.AsRef<byte>(mask), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref dataArray[0]), ref Unsafe.AsRef<byte>(data), (uint)(Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>()));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref addressArray[0]), ref Unsafe.AsRef<byte>(address), (uint)(Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>()));
+
+            ValidateResult(maskArray, dataArray, addressArray, method);
+        }
+
+        private void ValidateResult({Op1BaseType}[] mask, {Op1BaseType}[] data, {Op2BaseType}[] address, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            var actualResult = new {NarrowingType}[DataElementCount];
+            for (var i = 0; i < DataElementCount; i++)
+            {
+                actualResult[i] = *({NarrowingType}*)(address[i]);
+            }
+
+            for (var i = 0; i < DataElementCount; i++)
+            {
+                {Op1BaseType} expectedResult = mask[i] == 0 ? 0 : data[i];
+                if (actualResult[i] != ({NarrowingType})expectedResult)
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sve)}.{nameof({Isa}.{Method})}({Op1VectorType}<{Op1BaseType}>, {Op2VectorType}<{Op2BaseType}>, {Op1VectorType}<{Op1BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"  mask: ({string.Join(", ", mask)})");
+                TestLibrary.TestFramework.LogInformation($" input: ({string.Join(", ", data)})");
+                TestLibrary.TestFramework.LogInformation($"result: ({string.Join(", ", actualResult)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateZeroResult({Op1VectorType}<{Op1BaseType}> data, {Op2VectorType}<{Op2BaseType}> address, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] dataArray = new {Op1BaseType}[DataElementCount];
+            {Op2BaseType}[] addressArray = new {Op2BaseType}[AddressElementCount];
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref dataArray[0]), data);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref addressArray[0]), address);
+
+            ValidateZeroResult(dataArray, addressArray, method);
+        }
+
+        private void ValidateZeroResult(void* data, void* address, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] dataArray = new {Op1BaseType}[DataElementCount];
+            {Op2BaseType}[] addressArray = new {Op2BaseType}[AddressElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref dataArray[0]), ref Unsafe.AsRef<byte>(data), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref addressArray[0]), ref Unsafe.AsRef<byte>(address), (uint)(Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>()));
+
+            ValidateZeroResult(dataArray, addressArray, method);
+        }
+
+        private void ValidateZeroResult({Op1BaseType}[] data, {Op2BaseType}[] address, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+            var actualResult = new {NarrowingType}[DataElementCount];
+            for (var i = 0; i < DataElementCount; i++)
+            {
+                actualResult[i] = *({NarrowingType}*)(address[i]);
+            }
+
+            for (var i = 0; i < DataElementCount; i++)
+            {
+                if (actualResult[i] != 0)
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sve)}.{nameof({Isa}.{Method})}({Op1VectorType}<{Op1BaseType}>, {Op2VectorType}<{Op2BaseType}>, {Op1VectorType}<{Op1BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"  input: ({string.Join(", ", data)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", actualResult)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}
