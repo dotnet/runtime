@@ -5218,6 +5218,36 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
+        public static float TrigonometricSelectCoefficient(float op1, uint op2)
+        {
+            float result = ((op2 % 2) == 0) ? op1 : (float)1.0;
+            bool isNegative = (op2 & 0b10) == 0b10;
+            
+            if (isNegative != (result < 0))
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+
+        public static float TrigonometricStartingValue(float op1, uint op2)
+        {
+            float result = op1 * op1;
+
+            if (float.IsNaN(result))
+            {
+                return result;
+            }
+
+            if ((op2 % 2) == 1)
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+
         public static float FPReciprocalStepFused(float op1, float op2) => FusedMultiplySubtract(2, op1, op2);
 
         public static float FPReciprocalSqrtStepFused(float op1, float op2) => FusedMultiplySubtract(3, op1, op2) / 2;
@@ -5260,6 +5290,36 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 return op1 * op2;
             }
+        }
+
+        public static double TrigonometricSelectCoefficient(double op1, ulong op2)
+        {
+            double result = ((op2 % 2) == 0) ? op1 : 1.0;
+            bool isNegative = (op2 & 0b10) == 0b10;
+            
+            if (isNegative != (result < 0))
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+
+        public static double TrigonometricStartingValue(double op1, ulong op2)
+        {
+            double result = op1 * op1;
+
+            if (double.IsNaN(result))
+            {
+                return result;
+            }
+
+            if ((op2 % 2) == 1)
+            {
+                result *= -1;
+            }
+
+            return result;
         }
 
         public static double FPReciprocalStepFused(double op1, double op2) => FusedMultiplySubtract(2, op1, op2);
