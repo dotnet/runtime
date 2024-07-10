@@ -4136,27 +4136,37 @@ namespace JIT.HardwareIntrinsics.Arm
             return ovf ? byte.MaxValue : result;
         }
 
-        public static double[] AddSequentialAcross(double[] op1, double[] op2)
+        public static double[] AddSequentialAcross(double[] op1, double[] op2, double[] mask = null)
         {
+            // If mask isn't provided, default to all true
+            mask = mask ?? Enumerable.Repeat<double>(1.0, op1.Length).ToArray();
             double[] result = new double[op1.Length];
             result[0] = op1[0];
 
-            foreach (double num in op2)
+            for (int i = 0; i < op1.Length; i++)
             {
-                result[0] += num;
+                if (mask[i] != 0.0)
+                {
+                    result[0] += op2[i];
+                }
             }
 
             return result;
         }
 
-        public static float[] AddSequentialAcross(float[] op1, float[] op2)
+        public static float[] AddSequentialAcross(float[] op1, float[] op2, float[] mask = null)
         {
+            // If mask isn't provided, default to all true
+            mask = mask ?? Enumerable.Repeat<float>((float)1.0, op1.Length).ToArray();
             float[] result = new float[op1.Length];
             result[0] = op1[0];
 
-            foreach (float num in op2)
+            for (int i = 0; i < op1.Length; i++)
             {
-                result[0] += num;
+                if (mask[i] != 0.0)
+                {
+                    result[0] += op2[i];
+                }
             }
 
             return result;
