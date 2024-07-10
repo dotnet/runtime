@@ -32,7 +32,6 @@ namespace System
         public static bool IsMonoLinuxArm64 => IsMonoRuntime && IsLinux && IsArm64Process;
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
         public static bool IsQemuLinux => IsQemu();
-        public static bool IsNotQemuLinux => !IsQemuLinux;
 
         // OSX family
         public static bool IsApplePlatform => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
