@@ -2146,6 +2146,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
+    BasicBlock* const nextBlock = block->Next();
+
     // Generate a call to the finally, like this:
     //      mov         x0,qword ptr [fp + 10H] / sp    // Load x0 with PSPSym, or sp if PSPSym is not used
     //      bl          finally-funclet
@@ -2160,12 +2162,11 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R0, REG_SPBASE, /* canSkip */ false);
     }
-    GetEmitter()->emitIns_J(INS_bl_local, block->GetTarget());
-
-    BasicBlock* const nextBlock = block->Next();
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
+        GetEmitter()->emitIns_J(INS_bl_local, block->GetTarget());
+
         // We have a retless call, and the last instruction generated was a call.
         // If the next block is in a different EH region (or is the end of the code
         // block), then we need to generate a breakpoint here (since it will never
@@ -2182,12 +2183,12 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         // Because of the way the flowgraph is connected, the liveness info for this one instruction
         // after the call is not (can not be) correct in cases where a variable has a last use in the
-        // handler.  So turn off GC reporting for this single instruction.
+        // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
         GetEmitter()->emitDisableGC();
-
-        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+        GetEmitter()->emitIns_J(INS_bl_local, block->GetTarget());
 
         // Now go to where the finally funclet needs to return to.
+        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
         if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
             // Fall-through.
@@ -2214,8 +2215,19 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
     GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, block->GetTarget(), REG_INTRET);
 }
 
-//  move an immediate value into an integer register
+//  move an immediate value + base address into an integer register
+void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
+                                               regNumber      dstReg,
+                                               regNumber      baseReg,
+                                               ssize_t        imm,
+                                               insFlags flags DEBUGARG(size_t targetHandle)
+                                                   DEBUGARG(GenTreeFlags gtFlags))
+{
+    instGen_Set_Reg_To_Imm(size, dstReg, imm);
+    GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+}
 
+//  move an immediate value into an integer register
 void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
                                      regNumber      reg,
                                      ssize_t        imm,
@@ -2223,12 +2235,19 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
+
+    emitAttr origAttr = size;
     if (!compiler->opts.compReloc)
     {
         size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
     }
 
-    if (EA_IS_RELOC(size))
+    if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_SEC_RELOC(origAttr))
+    {
+        // This emits pair of `add` instructions for TLS reloc
+        GetEmitter()->emitIns_Add_Add_Tls_Reloc(size, reg, imm DEBUGARG(gtFlags));
+    }
+    else if (EA_IS_RELOC(size))
     {
         // This emits a pair of adrp/add (two instructions) with fix-ups.
         GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
@@ -2343,6 +2362,14 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (targetType == TYP_BYREF)
             {
                 attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+            }
+
+            if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                if (con->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+                {
+                    attr = EA_SET_FLG(attr, EA_CNS_SEC_RELOC);
+                }
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,

@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
-        public void FindsLoggerFieldInAnotherParialClass()
+        public void FindsLoggerFieldInAnotherPartialClass()
         {
             var logger = new MockLogger();
 
@@ -35,6 +35,41 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             new PartialClassWithLoggerField(logger).Test();
             Assert.Equal("Test.", logger.LastFormattedString);
         }
+
+#if ROSLYN4_8_OR_GREATER
+        [Fact]
+        public void FindsLoggerInPrimaryConstructorParameter()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+
+            new ClassWithPrimaryConstructor(logger).Test();
+            Assert.Equal("Test.", logger.LastFormattedString);
+        }
+
+        [Fact]
+        public void FindsLoggerInPrimaryConstructorParameterInDifferentPartialDeclaration()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+
+            new ClassWithPrimaryConstructorInDifferentPartialDeclaration(logger).Test();
+            Assert.Equal("Test.", logger.LastFormattedString);
+        }
+
+        [Fact]
+        public void FindsLoggerInFieldInitializedFromPrimaryConstructorParameter()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+
+            new ClassWithPrimaryConstructor(logger).Test();
+            Assert.Equal("Test.", logger.LastFormattedString);
+        }
+#endif
 
         [Fact]
         public void BasicTests()

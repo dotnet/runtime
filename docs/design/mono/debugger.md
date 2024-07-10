@@ -2,7 +2,7 @@
 
 ## Overview
 
-The details of launching a Debugger session for a Blazor WebAssembly application is described [here](https://docs.microsoft.com/en-us/aspnet/core/blazor/debug?view=aspnetcore-6.0&tabs=visual-studio).
+The details of launching a Debugger session for a Blazor WebAssembly application is described [here](https://learn.microsoft.com/aspnet/core/blazor/debug?view=aspnetcore-6.0&tabs=visual-studio).
 
 ## Debugger Attributes
 Web Assembly Debugger supports usage of following attributes:
@@ -18,7 +18,7 @@ Web Assembly Debugger supports usage of following attributes:
   - Stepping In/Over: results in an additional stepping need to proceed to the next line.<br><br>
 - __System.Diagnostics.DebuggerDisplay__
 - __System.Diagnostics.DebuggerTypeProxy__
-- __System.Diagnostics.DebuggerBrowsable__ ([doc](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.debuggerbrowsableattribute?view=net-6.0))
+- __System.Diagnostics.DebuggerBrowsable__ ([doc](https://learn.microsoft.com/dotnet/api/system.diagnostics.debuggerbrowsableattribute?view=net-6.0))
    - Collapsed - displayed normally.
    - RootHidden:
       - Simple type - not displayed in the debugger window.

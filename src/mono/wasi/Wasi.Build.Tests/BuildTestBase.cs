@@ -64,9 +64,9 @@ namespace Wasm.Build.Tests
             {
                 s_buildEnv = new BuildEnvironment();
                 if (EnvironmentVariables.WasiSdkPath is null)
-                    throw new Exception($"Error: WASI_SDK_PATH is not set");
+                    throw new Exception($"Error: WASI_SDK22_PATH is not set");
 
-                s_buildEnv.EnvVars["WASI_SDK_PATH"] = EnvironmentVariables.WasiSdkPath;
+                s_buildEnv.EnvVars["WASI_SDK22_PATH"] = EnvironmentVariables.WasiSdkPath;
                 s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
 
                 s_skipProjectCleanup = !string.IsNullOrEmpty(EnvironmentVariables.SkipProjectCleanup) && EnvironmentVariables.SkipProjectCleanup == "1";
@@ -574,7 +574,7 @@ namespace Wasm.Build.Tests
 
                 // this will ensure that all the async event handling has completed
                 // and should be called after process.WaitForExit(int)
-                // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
+                // https://learn.microsoft.com/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
                 process.WaitForExit();
 
                 process.ErrorDataReceived -= logStdErr;

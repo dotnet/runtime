@@ -990,13 +990,16 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         return OperandDesc(emit->emitSimd64Const(constValue));
                     }
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     case TYP_MASK:
                     {
                         simdmask_t constValue;
                         memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simdmask_t));
                         return OperandDesc(emit->emitSimdMaskConst(constValue));
                     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
                     default:
@@ -1718,7 +1721,6 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 #if defined(TARGET_XARCH)
         return INS_kmovq_msk;
 #elif defined(TARGET_ARM64)
-        unreached(); // TODO-SVE: This needs testing
         return INS_sve_mov;
 #endif
     }
@@ -1873,7 +1875,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_XARCH)
         return INS_kmovq_msk;
 #elif defined(TARGET_ARM64)
-        return INS_sve_ldr_mask;
+        return INS_sve_ldr;
 #endif
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -2082,7 +2084,6 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 #if defined(TARGET_XARCH)
         return INS_kmovq_gpr;
 #elif defined(TARGET_ARM64)
-        unreached(); // TODO-SVE: This needs testing
         return INS_sve_mov;
 #endif
     }
@@ -2194,7 +2195,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #if defined(TARGET_XARCH)
         return INS_kmovq_msk;
 #elif defined(TARGET_ARM64)
-        return INS_sve_str_mask;
+        return INS_sve_str;
 #endif
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS

@@ -37,13 +37,7 @@ int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
 #else // FEATURE_JIT_DEBUGGING
 
 // Some definitions to make this code look more like the CLR utilcode versions it was stolen from.
-#define WszCreateEvent CreateEventW
 #define WszGetModuleFileName GetModuleFileNameW
-
-#ifdef WszRegOpenKeyEx
-#undef WszRegOpenKeyEx
-#define WszRegOpenKeyEx RegOpenKeyExW
-#endif
 
 #ifndef _WIN64
 //------------------------------------------------------------------------------
@@ -101,7 +95,7 @@ BOOL GetRegistryLongValue(HKEY hKeyParent, LPCWSTR szKey, LPCWSTR szName, long* 
         }
     }
 
-    ret = WszRegOpenKeyEx(hKeyParent, szKey, 0, samDesired, &hkey);
+    ret = RegOpenKeyEx(hKeyParent, szKey, 0, samDesired, &hkey);
 
     // If we opened the key, see if there is a value.
     if (ret == ERROR_SUCCESS)
@@ -192,7 +186,7 @@ BOOL IsCurrentModuleFileNameInAutoExclusionList()
     HKEY hKeyHolder;
 
     // Look for "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList"
-    DWORD ret = WszRegOpenKeyEx(HKEY_LOCAL_MACHINE, kUnmanagedDebuggerAutoExclusionListKey, 0, KEY_READ, &hKeyHolder);
+    DWORD ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, kUnmanagedDebuggerAutoExclusionListKey, 0, KEY_READ, &hKeyHolder);
 
     if (ret != ERROR_SUCCESS)
     {
@@ -276,7 +270,7 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
     HKEY hKey;
 
     // Look for "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug"
-    DWORD ret = WszRegOpenKeyEx(HKEY_LOCAL_MACHINE, kUnmanagedDebuggerKey, 0, KEY_READ, &hKey);
+    DWORD ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, kUnmanagedDebuggerKey, 0, KEY_READ, &hKey);
 
     if (ret != ERROR_SUCCESS)
     { // Wow, there's not even an AeDebug hive, so no native debugger, no auto.
@@ -375,7 +369,7 @@ BOOL LaunchJITDebugger()
 
     // We can leave this event as it is since it is inherited by a child process.
     // We will block one scheduler, but the process is asking a user if they want to attach debugger.
-    HANDLE eventHandle = WszCreateEvent(&sa, TRUE, FALSE, NULL);
+    HANDLE eventHandle = CreateEvent(&sa, TRUE, FALSE, NULL);
     if (eventHandle == NULL)
     {
         return FALSE;

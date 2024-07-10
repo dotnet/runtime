@@ -146,12 +146,8 @@ namespace
             case DynamicMethodDesc::StubNativeToCLRInterop: return "IL_STUB_ReversePInvoke";
             case DynamicMethodDesc::StubCOMToCLRInterop:    return "IL_STUB_COMtoCLR";
             case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
-#ifdef FEATURE_ARRAYSTUB_AS_IL
             case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";
-#endif
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
             case DynamicMethodDesc::StubMulticastDelegate:  return "IL_STUB_MulticastDelegate_Invoke";
-#endif
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
             case DynamicMethodDesc::StubUnboxingIL:         return "IL_STUB_UnboxingStub";
             case DynamicMethodDesc::StubInstantiating:      return "IL_STUB_InstantiatingStub";
@@ -236,20 +232,16 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 #endif // _DEBUG
     pMD->m_pResolver = new (pMD->m_pResolver) ILStubResolver();
 
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubArrayOp);
     }
     else
-#endif
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (SF_IsMulticastDelegateStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubMulticastDelegate);
     }
     else
-#endif
     if (SF_IsWrapperDelegateStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubWrapperDelegate);
@@ -300,6 +292,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->SetILStubType(DynamicMethodDesc::StubStructMarshalInterop);
     }
     else
+    if (SF_IsVirtualStaticMethodDispatchStub(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubVirtualStaticMethodDispatch);
+    }
+    else
     {
         // mark certain types of stub MDs with random flags so ILStubManager recognizes them
         if (SF_IsReverseStub(dwStubFlags))
@@ -320,13 +317,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         }
     }
 
-    if (SF_IsVirtualStaticMethodDispatchStub(dwStubFlags))
-    {
-        pMD->SetILStubType(DynamicMethodDesc::StubVirtualStaticMethodDispatch);
-    }
-
 // if we made it this far, we can set a more descriptive stub name
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
     {
         switch(dwStubFlags)
@@ -341,7 +332,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         }
     }
     else
-#endif
     {
         pMD->m_pszMethodName = GetStubMethodName(pMD->GetILStubType());
     }

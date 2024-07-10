@@ -199,7 +199,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { "tr-CY", 1, "MS" };
                 yield return new object[] { "tr-TR", 1, "MS" };
                 yield return new object[] { "uk-UA", 1, "н.е." };
-                yield return new object[] { "vi-VN", 1, PlatformDetection.IsFirefox ? "sau CN" : "CN" }; // sau CN
+                yield return new object[] { "vi-VN", 1, PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "sau CN" : "CN" }; // sau CN
                 yield return new object[] { "zh-CN", 1, "公元" };
                 yield return new object[] { "zh-Hans-HK", 1, "公元" };
                 yield return new object[] { "zh-SG", 1, "公元" };

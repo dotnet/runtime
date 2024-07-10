@@ -84,13 +84,13 @@ namespace System.Runtime.CompilerServices
 
 Current examples of APIs that would need the attribute applied:
 
-- [`Span<T>`](https://docs.microsoft.com/dotnet/api/system.span-1)
+- [`Span<T>`](https://learn.microsoft.com/dotnet/api/system.span-1)
     - `public Span(T[]? array);`
     - `public Span(T[]? array, int start, int length);`
     - `public T[] ToArray();`
     - `public static implicit operator Span<T>(ArraySegment<T> segment);`
     - `public static implicit operator Span<T>(T[]? array);`
-- [`ReadOnlySpan<T>`](https://docs.microsoft.com/dotnet/api/system.readonlyspan-1)
+- [`ReadOnlySpan<T>`](https://learn.microsoft.com/dotnet/api/system.readonlyspan-1)
     - `public ReadOnlySpan(T[]? array);`
     - `public ReadOnlySpan(T[]? array, int start, int length);`
     - `public T[] ToArray();`

@@ -27,41 +27,41 @@
 *.cmd text eol=crlf
 *.bat text eol=crlf
 
-*.cs text=auto diff=csharp
-*.vb text=auto
-*.resx text=auto
-*.c text=auto
-*.cpp text=auto
-*.cxx text=auto
-*.h text=auto
-*.hxx text=auto
-*.py text=auto
-*.rb text=auto
-*.java text=auto
-*.html text=auto
-*.htm text=auto
-*.css text=auto
-*.scss text=auto
-*.sass text=auto
-*.less text=auto
-*.js text=auto
-*.lisp text=auto
-*.clj text=auto
-*.sql text=auto
-*.php text=auto
-*.lua text=auto
-*.m text=auto
-*.asm text=auto
-*.erl text=auto
-*.fs text=auto
-*.fsx text=auto
-*.hs text=auto
+*.cs text diff=csharp
+*.vb text
+*.resx text
+*.c text
+*.cpp text
+*.cxx text
+*.h text
+*.hxx text
+*.py text
+*.rb text
+*.java text
+*.html text
+*.htm text
+*.css text
+*.scss text
+*.sass text
+*.less text
+*.js text
+*.lisp text
+*.clj text
+*.sql text
+*.php text
+*.lua text
+*.m text
+*.asm text
+*.erl text
+*.fs text
+*.fsx text
+*.hs text
 
-*.csproj text=auto
-*.vbproj text=auto
-*.fsproj text=auto
-*.dbproj text=auto
-*.sln text=auto eol=crlf
+*.csproj text
+*.vbproj text
+*.fsproj text
+*.dbproj text
+*.sln text eol=crlf
 
 # Set linguist language for .h files explicitly based on
 # https://github.com/github/linguist/issues/1626#issuecomment-401442069

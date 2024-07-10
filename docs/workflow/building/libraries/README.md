@@ -76,7 +76,7 @@ The libraries build has two logical components, the native build which produces 
 
 The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
-- `-framework|-f` identifies the target framework for the build. Possible values include `net8.0` (currently the latest .NET version) or `net48` (the latest .NET Framework version). (msbuild property `BuildTargetFramework`)
+- `-framework|-f` identifies the target framework for the build. Possible values include `net9.0` (currently the latest .NET version) or `net48` (the latest .NET Framework version). (msbuild property `BuildTargetFramework`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `windows`, `unix`, `linux`, or `osx`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)

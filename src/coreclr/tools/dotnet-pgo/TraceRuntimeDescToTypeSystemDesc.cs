@@ -291,7 +291,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         return null;
                     }
 
-                    minfo.Module = _context.ResolveAssembly(new AssemblyNameInfo(minfo.AssemblyName), throwIfNotFound);
+                    minfo.Module = _context.ResolveAssembly(AssemblyNameInfo.Parse(minfo.AssemblyName), throwIfNotFound);
                     return minfo.Module;
                 }
                 else
