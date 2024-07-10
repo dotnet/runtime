@@ -8,7 +8,12 @@ using Xunit;
 
 namespace System.Collections.ObjectModel.Tests
 {
-    public partial class ObservableCollection_RangeMethodTests
+    /// <summary>
+    /// Tests the public Range modification methods in ObservableCollection<T> as well as verifies
+    /// that the CollectionChanged events and eventargs are fired and populated
+    /// properly.
+    /// </summary>
+    public static class ObservableCollection_RangeMethodTests
     {
         [Fact]
         public static void InsertRange_NotifyCollectionChanged_Beginning_Test()
