@@ -150,7 +150,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             public void RunStructFldScenario({TemplateName}BinaryOpTest__{TestName} testClass)
             {
-                var result = {Isa}.{Method}(_fld1, _fld2, {Imm});
+                var result = {Isa}.{Method}(_fld1, _fld2, Imm);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(_fld1, _fld2, testClass._dataTable.outArrayPtr);
@@ -202,7 +202,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var result = {Isa}.{Method}(
                 Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
                 Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray2Ptr),
-                {Imm}
+                Imm
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -218,7 +218,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var result = {Isa}.{Method}(
                 {LoadIsa}.Load{Op1VectorType}(loadMask, ({Op1BaseType}*)(_dataTable.inArray1Ptr)),
                 {LoadIsa}.Load{Op1VectorType}(loadMask, ({Op1BaseType}*)(_dataTable.inArray2Ptr)),
-                {Imm}
+                Imm
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -233,7 +233,7 @@ namespace JIT.HardwareIntrinsics.Arm
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
                                         Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray2Ptr),
-                                        (byte){Imm}
+                                        (byte)Imm
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
@@ -246,7 +246,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
             var op2 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray2Ptr);
-            var result = {Isa}.{Method}(op1, op2, {Imm});
+            var result = {Isa}.{Method}(op1, op2, Imm);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
@@ -256,7 +256,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = {Isa}.{Method}(_fld1, _fld2, {Imm});
+            var result = {Isa}.{Method}(_fld1, _fld2, Imm);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
@@ -267,7 +267,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = {Isa}.{Method}(test._fld1, test._fld2, {Imm});
+            var result = {Isa}.{Method}(test._fld1, test._fld2, Imm);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);

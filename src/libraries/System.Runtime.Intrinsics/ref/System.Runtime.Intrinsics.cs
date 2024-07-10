@@ -5458,6 +5458,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> TransposeOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> TransposeOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
+        public static System.Numerics.Vector<double> TrigonometricMultiplyAddCoefficient(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, [ConstantExpected(Min = 0, Max = (byte)(7))] byte control) { throw null; }
+        public static System.Numerics.Vector<float> TrigonometricMultiplyAddCoefficient(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(7))] byte control) { throw null; }
+
         public static System.Numerics.Vector<sbyte> UnzipEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> UnzipEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> UnzipEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
