@@ -3981,8 +3981,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 #endif // defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
-            // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
+#if defined(TARGET_XARCH) || defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
             case NI_System_Threading_Interlocked_CompareExchange:
             {
                 var_types retType = JITtype2varType(sig->retType);
@@ -3991,12 +3990,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     break;
                 }
-#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARMARCH)
                 else if (genTypeSize(retType) < 4)
                 {
                     break;
                 }
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARMARCH)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
@@ -4037,12 +4036,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     break;
                 }
-#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARMARCH)
                 else if (genTypeSize(retType) < 4)
                 {
                     break;
                 }
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARMARCH)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
@@ -4068,7 +4067,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                           callType, op1, op2);
                 break;
             }
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
 
             case NI_System_Threading_Interlocked_MemoryBarrier:
             case NI_System_Threading_Interlocked_ReadMemoryBarrier:
