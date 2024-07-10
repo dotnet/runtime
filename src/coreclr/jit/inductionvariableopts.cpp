@@ -1244,7 +1244,7 @@ class StrengthReductionContext
     bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
     bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, int derivedLevel, ScevAddRec** nextIV);
-    bool        StaysWithinManagedObject(ScevAddRec* addRec);
+    bool        StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec);
     bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
     BasicBlock* FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors);
 
@@ -1362,7 +1362,7 @@ bool StrengthReductionContext::TryStrengthReduce()
             }
             assert(nextIV != nullptr);
 
-            if (varTypeIsGC(nextIV->Type) && !StaysWithinManagedObject(nextIV))
+            if (varTypeIsGC(nextIV->Type) && !StaysWithinManagedObject(nextCursors, nextIV))
             {
                 JITDUMP(
                     "    Next IV computes a GC pointer that we cannot prove to be inside a managed object. Bailing.\n",
@@ -1715,12 +1715,13 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
 // be guaranteed to be inside the same managed object for the whole loop.
 //
 // Parameters:
-//   addRec - The add recurrence
+//   cursors - Cursors pointing to next uses that correspond to the specific add-rec.
+//   addRec  - The add recurrence
 //
 // Returns:
 //   True if we were able to prove so.
 //
-bool StrengthReductionContext::StaysWithinManagedObject(ScevAddRec* addRec)
+bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec)
 {
     int64_t offset;
     Scev*   baseScev = addRec->Start->PeelAdditions(&offset);
@@ -1735,12 +1736,36 @@ bool StrengthReductionContext::StaysWithinManagedObject(ScevAddRec* addRec)
         return false;
     }
 
-    ScevLocal* local = (ScevLocal*)baseScev;
-    LclVarDsc* dsc   = m_comp->lvaGetDesc(local->LclNum);
-    if ((dsc->lvClassHnd == NO_CLASS_HANDLE) || !m_comp->info.compCompHnd->isSDArray(dsc->lvClassHnd))
+    // Now use the fact that we keep ARR_ADDRs in the IR when we have array
+    // accesses.
+    GenTreeArrAddr* arrAddr = nullptr;
+    for (int i = 0; i < cursors->Height(); i++)
+    {
+        CursorInfo& cursor = cursors->BottomRef(i);
+        GenTree*    parent = cursor.Tree->gtGetParent(nullptr);
+        if ((parent != nullptr) && parent->OperIs(GT_ARR_ADDR))
+        {
+            arrAddr = parent->AsArrAddr();
+            break;
+        }
+    }
+
+    if (arrAddr == nullptr)
     {
         return false;
     }
+
+    unsigned arrElemSize = arrAddr->GetElemType() == TYP_STRUCT
+                               ? m_comp->typGetObjLayout(arrAddr->GetElemClassHandle())->GetSize()
+                               : genTypeSize(arrAddr->GetElemType());
+
+    int64_t stepCns;
+    if (!addRec->Step->GetConstantValue(m_comp, &stepCns) || ((unsigned)stepCns > arrElemSize))
+    {
+        return false;
+    }
+
+    ScevLocal* local = (ScevLocal*)baseScev;
 
     ValueNum vn = m_scevContext.MaterializeVN(baseScev);
     if (vn == ValueNumStore::NoVN)
