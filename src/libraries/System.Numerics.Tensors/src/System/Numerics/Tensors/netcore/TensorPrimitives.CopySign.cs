@@ -47,6 +47,9 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
+#if NET9_0_OR_GREATER
+                return Vector128.CopySign(x, y);
+#else
                 if (typeof(T) == typeof(float))
                 {
                     return Vector128.ConditionalSelect(Vector128.Create(-0.0f).As<float, T>(), y, x);
@@ -71,10 +74,14 @@ namespace System.Numerics.Tensors
                 }
 
                 return x;
+#endif
             }
 
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
+#if NET9_0_OR_GREATER
+                return Vector256.CopySign(x, y);
+#else
                 if (typeof(T) == typeof(float))
                 {
                     return Vector256.ConditionalSelect(Vector256.Create(-0.0f).As<float, T>(), y, x);
@@ -99,10 +106,14 @@ namespace System.Numerics.Tensors
                 }
 
                 return x;
+#endif
             }
 
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
+#if NET9_0_OR_GREATER
+                return Vector512.CopySign(x, y);
+#else
                 if (typeof(T) == typeof(float))
                 {
                     return Vector512.ConditionalSelect(Vector512.Create(-0.0f).As<float, T>(), y, x);
@@ -127,6 +138,7 @@ namespace System.Numerics.Tensors
                 }
 
                 return x;
+#endif
             }
         }
     }
