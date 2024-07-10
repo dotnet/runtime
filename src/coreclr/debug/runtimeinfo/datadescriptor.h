@@ -141,6 +141,21 @@ CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Pointer, offsetof(gc_alloc_context,
 CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Limit, offsetof(gc_alloc_context, alloc_limit))
 CDAC_TYPE_END(GCAllocContext)
 
+// Exception
+
+// Use exact managed type field names for the descriptor as field names often can't change due to binary serialization or implicit diagnostic contracts
+CDAC_TYPE_BEGIN(Exception)
+CDAC_TYPE_INDETERMINATE(Exception)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _message, cdac_offsets<ExceptionObject>::_message)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _innerException, cdac_offsets<ExceptionObject>::_innerException)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _stackTrace, cdac_offsets<ExceptionObject>::_stackTrace)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _watsonBuckets, cdac_offsets<ExceptionObject>::_watsonBuckets)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _stackTraceString, cdac_offsets<ExceptionObject>::_stackTraceString)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _remoteStackTraceString, cdac_offsets<ExceptionObject>::_remoteStackTraceString)
+CDAC_TYPE_FIELD(Exception, /*int32*/, _HResult, cdac_offsets<ExceptionObject>::_HResult)
+CDAC_TYPE_FIELD(Exception, /*int32*/, _xcode, cdac_offsets<ExceptionObject>::_xcode)
+CDAC_TYPE_END(Exception)
+
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
 #if FEATURE_EH_FUNCLETS
@@ -152,9 +167,28 @@ CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(Ex
 #endif
 CDAC_TYPE_END(ExceptionInfo)
 
+
 CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(GCHandle)
+
+// Loader
+
+CDAC_TYPE_BEGIN(Module)
+CDAC_TYPE_INDETERMINATE(Module)
+CDAC_TYPE_FIELD(Module, /*pointer*/, Assembly, cdac_offsets<Module>::Assembly)
+CDAC_TYPE_FIELD(Module, /*pointer*/, Base, cdac_offsets<Module>::Base)
+CDAC_TYPE_FIELD(Module, /*pointer*/, Flags, cdac_offsets<Module>::Flags)
+CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_offsets<Module>::LoaderAllocator)
+CDAC_TYPE_FIELD(Module, /*pointer*/, ThunkHeap, cdac_offsets<Module>::ThunkHeap)
+
+CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_offsets<Module>::FieldDefToDescMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_offsets<Module>::ManifestModuleReferencesMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, MemberRefToDescMap, cdac_offsets<Module>::MemberRefToDescMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToDescMap, cdac_offsets<Module>::MethodDefToDescMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, TypeDefToMethodTableMap, cdac_offsets<Module>::TypeDefToMethodTableMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_offsets<Module>::TypeRefToMethodTableMap)
+CDAC_TYPE_END(Module)
 
 // Metadata
 
