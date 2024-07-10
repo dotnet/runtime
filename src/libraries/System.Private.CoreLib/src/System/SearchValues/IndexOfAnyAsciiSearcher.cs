@@ -1098,7 +1098,7 @@ namespace System.Buffers
             // http://0x80.pl/articles/simd-byte-lookup.html#universal-algorithm
 
             Vector128<byte> lowNibbles = source & Vector128.Create((byte)0xF);
-            Vector128<byte> highNibbles = Vector128.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector128.Create((byte)0xF);
+            Vector128<byte> highNibbles = source >>> 4;
 
             Vector128<byte> row0 = Vector128.ShuffleUnsafe(bitmapLookup0, lowNibbles);
             Vector128<byte> row1 = Vector128.ShuffleUnsafe(bitmapLookup1, lowNibbles);
@@ -1121,7 +1121,7 @@ namespace System.Buffers
             // http://0x80.pl/articles/simd-byte-lookup.html#universal-algorithm
 
             Vector256<byte> lowNibbles = source & Vector256.Create((byte)0xF);
-            Vector256<byte> highNibbles = Vector256.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector256.Create((byte)0xF);
+            Vector256<byte> highNibbles = source >>> 4;
 
             Vector256<byte> row0 = Avx2.Shuffle(bitmapLookup0, lowNibbles);
             Vector256<byte> row1 = Avx2.Shuffle(bitmapLookup1, lowNibbles);
