@@ -2634,22 +2634,30 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
     //
     if (call->IsSpecialIntrinsic(this, NI_System_Threading_Interlocked_CompareExchangeObject))
     {
-        GenTree* val = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+        GenTree* dst = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+        GenTree* val = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        GenTree* cmp = call->gtArgs.GetUserArgByIndex(2)->GetNode();
         if (val->IsIntegralConst(0))
         {
-            GenTree* dst = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-            GenTree* cmp = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-            // it's fine to reorder val with cmp since val is just 'null'
-            return gtNewAtomicNode(GT_CMPXCHG, call->TypeGet(), dst, val, cmp);
+            // Unfortunately, it's not easy to properly extract args (and their setup nodes). For now,
+            // we require the args to be side effect free and the setup nodes will be handled by
+            // gtWrapWithSideEffects
+            if (((dst->gtFlags | cmp->gtFlags) & GTF_ALL_EFFECT) == 0)
+            {
+                GenTree* atomicNode = gtNewAtomicNode(GT_CMPXCHG, call->TypeGet(), dst, val, cmp);
+                return gtWrapWithSideEffects(atomicNode, call, GTF_ALL_EFFECT, true);
+            }
         }
     }
     else if (call->IsSpecialIntrinsic(this, NI_System_Threading_Interlocked_ExchangeObject))
     {
+        GenTree* dst = call->gtArgs.GetUserArgByIndex(0)->GetNode();
         GenTree* val = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-        if (val->IsIntegralConst(0))
+        if (val->IsIntegralConst(0) && ((dst->gtFlags & GTF_ALL_EFFECT) == 0))
         {
-            GenTree* dst = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-            return gtNewAtomicNode(GT_XCHG, call->TypeGet(), dst, val);
+            // Same here
+            GenTree* atomicNode = gtNewAtomicNode(GT_XCHG, call->TypeGet(), dst, val);
+            return gtWrapWithSideEffects(atomicNode, call, GTF_ALL_EFFECT, true);
         }
     }
 
