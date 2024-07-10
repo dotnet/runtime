@@ -35,6 +35,7 @@ namespace System.Diagnostics.Metrics
 
         static MeterListener()
         {
+            // This ensures that the static Meter gets created before any listeners exist.
             _ = RuntimeMetrics.IsEnabled();
         }
 

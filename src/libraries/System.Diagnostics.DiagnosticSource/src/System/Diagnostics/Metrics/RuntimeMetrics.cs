@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-#if !NETFRAMEWORK && !NETSTANDARD
+#if NET
 using System.Threading;
 #endif
 
@@ -11,13 +10,15 @@ namespace System.Diagnostics.Metrics
 {
     internal static class RuntimeMetrics
     {
+        [ThreadStatic] private static bool t_handlingFirstChanceException;
+
         private const string MeterName = "System.Runtime";
 
         private static readonly Meter s_meter = new(MeterName);
 
         // These MUST align to the possible attribute values defined in the semantic conventions (TODO: link to the spec)
         private static readonly string[] s_genNames = ["gen0", "gen1", "gen2", "loh", "poh"];
-#if !NETFRAMEWORK && !NETSTANDARD
+#if NET
         private static readonly int s_maxGenerations = Math.Min(GC.GetGCMemoryInfo().GenerationInfo.Length, s_genNames.Length);
 #endif
 
@@ -25,7 +26,10 @@ namespace System.Diagnostics.Metrics
         {
             AppDomain.CurrentDomain.FirstChanceException += (source, e) =>
             {
+                if (t_handlingFirstChanceException) return;
+                t_handlingFirstChanceException = true;
                 s_exceptionCount.Add(1, new KeyValuePair<string, object?>("error.type", e.Exception.GetType().Name));
+                t_handlingFirstChanceException = false;
             };
         }
 
@@ -43,7 +47,7 @@ namespace System.Diagnostics.Metrics
             unit: "By",
             description: "The number of bytes currently allocated on the managed GC heap. Fragmentation and other GC committed memory pools are excluded.");
 
-#if !NETFRAMEWORK && !NETSTANDARD
+#if NET
         private static readonly ObservableCounter<long> s_gcMemoryTotalAllocated = s_meter.CreateObservableCounter(
             "dotnet.gc.memory.total_allocated",
             () => GC.GetTotalAllocatedBytes(),
@@ -51,7 +55,7 @@ namespace System.Diagnostics.Metrics
             description: "The approximate number of bytes allocated on the managed GC heap since the process has started. The returned value does not include any native allocations.");
 
         private static readonly ObservableUpDownCounter<long> s_gcMemoryCommited = s_meter.CreateObservableUpDownCounter(
-            "dotnet.gc.memory.commited",
+            "dotnet.gc.memory.committed",
             () =>
             {
                 GCMemoryInfo gcInfo = GC.GetGCMemoryInfo();
@@ -61,7 +65,7 @@ namespace System.Diagnostics.Metrics
                     : [new(gcInfo.TotalCommittedBytes)];
             },
             unit: "By",
-            description: "The amount of committed virtual memory for the managed GC heap, as observed during the latest garbage collection.");
+            description: "The amount of committed virtual memory in use by the .NET GC, as observed during the latest garbage collection.");
 
         private static readonly ObservableUpDownCounter<long> s_gcHeapSize = s_meter.CreateObservableUpDownCounter(
             "dotnet.gc.heap.size",
@@ -106,7 +110,7 @@ namespace System.Diagnostics.Metrics
         private static readonly ObservableCounter<long> s_monitorLockContention = s_meter.CreateObservableCounter(
             "dotnet.monitor.lock_contention.count",
             () => Monitor.LockContentionCount,
-            unit: "s",
+            unit: "{contention}",
             description: "The number of times there was contention when trying to acquire a monitor lock since the process has started.");
 
         // Thread Pool Metrics
@@ -161,13 +165,13 @@ namespace System.Diagnostics.Metrics
             "dotnet.cpu.time",
             GetCpuTime,
             unit: "s",
-            description: "The number of work items that are currently queued to be processed by the thread pool.");
+            description: "CPU time used by the process as reported by the CLR.");
 
         public static bool IsEnabled()
         {
             return s_gcCollectionsCounter.Enabled
                 || s_gcObjectsSize.Enabled
-#if !NETFRAMEWORK && !NETSTANDARD
+#if NET
                 || s_gcMemoryTotalAllocated.Enabled
                 || s_gcMemoryCommited.Enabled
                 || s_gcHeapSize.Enabled
@@ -202,7 +206,7 @@ namespace System.Diagnostics.Metrics
 
         private static IEnumerable<Measurement<double>> GetCpuTime()
         {
-#if !NETFRAMEWORK && !NETSTANDARD
+#if NET
             if (OperatingSystem.IsBrowser() || OperatingSystem.IsTvOS() || OperatingSystem.IsIOS())
                 yield break;
 #endif
@@ -213,7 +217,7 @@ namespace System.Diagnostics.Metrics
             yield return new(process.PrivilegedProcessorTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "system")]);
         }
 
-#if !NETFRAMEWORK && !NETSTANDARD
+#if NET
         private static IEnumerable<Measurement<long>> GetHeapSizes()
         {
             GCMemoryInfo gcInfo = GC.GetGCMemoryInfo();
