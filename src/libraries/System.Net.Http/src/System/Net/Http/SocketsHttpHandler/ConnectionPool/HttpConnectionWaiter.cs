@@ -30,15 +30,10 @@ namespace System.Net.Http
 
             long startingTimestamp = Stopwatch.GetTimestamp();
 
-            Activity? waitForConnectionActivity = ConnectionSetupDiagnostics.StartWaitForConnectionActivity(pool.OriginAuthority);
+            using Activity? waitForConnectionActivity = ConnectionSetupDiagnostics.StartWaitForConnectionActivity(pool.OriginAuthority);
             try
             {
-                T connection = await WaitWithCancellationAsync(async, requestCancellationToken).ConfigureAwait(false);
-                if (waitForConnectionActivity is not null)
-                {
-                    ConnectionSetupDiagnostics.StopWaitForConnectionActivity(waitForConnectionActivity, connection);
-                }
-                return connection;
+                return await WaitWithCancellationAsync(async, requestCancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (waitForConnectionActivity is not null)
             {
@@ -47,7 +42,6 @@ namespace System.Net.Http
             }
             finally
             {
-                waitForConnectionActivity?.Stop();
                 TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
                 int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
 

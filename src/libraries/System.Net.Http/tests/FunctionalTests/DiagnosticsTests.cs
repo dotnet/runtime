@@ -647,7 +647,9 @@ namespace System.Net.Http.Functional.Tests
                         {
                             Assert.Same(conn, tls.Parent);
                         }
-                        wait1.Links.Single(l => l.Context == conn.Context);
+
+                        // req1->conn link:
+                        req1.Links.Single(l => l.Context == conn.Context);
 
                         // Verify timing relationships for connection setup:
                         ActivityAssert.FinishedInOrder(dns, sock);
@@ -675,9 +677,13 @@ namespace System.Net.Http.Functional.Tests
                         // The second request should reuse the first connection, connection_setup and wait_for_connection should not be recorded again.
                         await client.SendAsync(CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true));
                         requestRecorder.VerifyActivityRecorded(2);
-                        Assert.NotSame(req1, requestRecorder.LastFinishedActivity);
+                        Activity req2 = requestRecorder.LastFinishedActivity;
+                        Assert.NotSame(req1, req2);
                         waitForConnectionRecorder.VerifyActivityRecorded(1);
                         connectionSetupRecorder.VerifyActivityRecorded(1);
+
+                        // The second request should also have a link to the shared connection.
+                        req2.Links.Single(l => l.Context == conn.Context);
                     },
                     async server =>
                     {

@@ -548,6 +548,7 @@ namespace System.Net.Http
 
             // Send the request.
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
+            if (ConnectionSetupActivity is not null) ConnectionSetupDiagnostics.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
             CancellationTokenRegistration cancellationRegistration = RegisterCancellation(cancellationToken);
             try
             {

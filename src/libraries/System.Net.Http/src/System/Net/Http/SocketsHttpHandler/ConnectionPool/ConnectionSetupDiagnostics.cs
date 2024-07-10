@@ -80,14 +80,19 @@ namespace System.Net.Http
             return activity;
         }
 
-        public static void StopWaitForConnectionActivity(Activity waitForConnectionActivity, HttpConnectionBase? connection)
+        public static void AddConnectionLinkToRequestActivity(Activity connectionSetupActivity)
         {
-            Debug.Assert(waitForConnectionActivity is not null);
-            if (waitForConnectionActivity.IsAllDataRequested && connection?.ConnectionSetupActivity is Activity connectionSetupActivity)
+            Debug.Assert(connectionSetupActivity is not null);
+
+            // We only support links for request activities created by the "System.Net.Http" ActivitySource.
+            if (DiagnosticsHandler.s_activitySource.HasListeners())
             {
-                waitForConnectionActivity.AddLink(new ActivityLink(connectionSetupActivity.Context));
+                Activity? requestActivity = Activity.Current;
+                if (requestActivity?.Source == DiagnosticsHandler.s_activitySource)
+                {
+                    requestActivity.AddLink(new ActivityLink(connectionSetupActivity.Context));
+                }
             }
-            waitForConnectionActivity.Stop();
         }
     }
 }
