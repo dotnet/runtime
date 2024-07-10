@@ -248,7 +248,7 @@ namespace System.Text.Json.Tests
             }
 
             """)]
-        public static void JsonMarshal_TryGetRawValue_RootValue_ReturnsFullValue(string json)
+        public static void JsonMarshal_GetRawUtf8Value_RootValue_ReturnsFullValue(string json)
         {
             JsonDocumentOptions options = new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
             using JsonDocument jDoc = JsonDocument.Parse(json, options);
@@ -259,7 +259,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void JsonMarshal_TryGetRawValue_NestedValues_ReturnsExpectedValue()
+        public static void JsonMarshal_GetRawUtf8Value_NestedValues_ReturnsExpectedValue()
         {
             const string json = """
                 {
@@ -347,7 +347,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void JsonMarshal_TryGetRawValue_DisposedDocument_ThrowsObjectDisposedException()
+        public static void JsonMarshal_GetRawUtf8Value_DisposedDocument_ThrowsObjectDisposedException()
         {
             JsonDocument jDoc = JsonDocument.Parse("{}");
             JsonElement element = jDoc.RootElement;
