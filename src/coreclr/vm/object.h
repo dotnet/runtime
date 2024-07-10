@@ -2115,7 +2115,7 @@ public:
     INT32 GetSlotsUsed();
     void SetSlotsUsed(INT32 newSlotsUsed);
 #endif // DACCESS_COMPILE
-    
+
     void SetNativeLoaderAllocator(LoaderAllocator * pLoaderAllocator)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2355,6 +2355,21 @@ private:
     void*       _xptrs;
     INT32       _xcode;
     INT32       _HResult;
+
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<>
+struct cdac_offsets<ExceptionObject>
+{
+    static constexpr size_t _message = offsetof(ExceptionObject, _message);
+    static constexpr size_t _innerException = offsetof(ExceptionObject, _innerException);
+    static constexpr size_t _stackTrace = offsetof(ExceptionObject, _stackTrace);
+    static constexpr size_t _watsonBuckets = offsetof(ExceptionObject, _watsonBuckets);
+    static constexpr size_t _stackTraceString = offsetof(ExceptionObject, _stackTraceString);
+    static constexpr size_t _remoteStackTraceString = offsetof(ExceptionObject, _remoteStackTraceString);
+    static constexpr size_t _HResult = offsetof(ExceptionObject, _HResult);
+    static constexpr size_t _xcode = offsetof(ExceptionObject, _xcode);
 };
 
 // Defined in Contracts.cs
