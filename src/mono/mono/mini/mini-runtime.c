@@ -2938,7 +2938,7 @@ mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
 static gpointer
 get_ftnptr_for_method (MonoMethod *method, gboolean need_unbox, MonoError *error)
 {
-	if (method->is_generic) {
+	if (method->is_generic || mono_class_is_gtd (method->klass)) {
 		mono_error_set_generic_error (error, "System", "InvalidOperationException", "");
 		return NULL;
 	}

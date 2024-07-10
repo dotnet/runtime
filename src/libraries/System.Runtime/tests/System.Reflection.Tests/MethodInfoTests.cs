@@ -307,9 +307,35 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void InvokeUninstantiatedGenericType_GenericMethod()
+        {
+            Assert.Throws<InvalidOperationException>(() => GetMethod(typeof(MI_GenericClass<>), "GenericMethod4").Invoke(null, [null]));
+        }
+
+        [Fact]
+        public void InvokeUninstantiatedGenericType_NonGenericMethod()
+        {
+            Assert.Throws<InvalidOperationException>(() => GetMethod(typeof(MI_GenericClass<>), "NonGenericMethod").Invoke(null, [null]));
+        }
+
+        [Fact]
         public void GetFunctionPointerFromUninstantiatedGenericMethod()
         {
             RuntimeMethodHandle handle = typeof(MI_SubClass).GetMethod(nameof(MI_SubClass.StaticGenericMethod))!.MethodHandle;
+            Assert.Throws<InvalidOperationException>(() => handle.GetFunctionPointer());
+        }
+
+        [Fact]
+        public void GetFunctionPointerOnUninstantiatedGenericType_GenericMethod()
+        {
+            RuntimeMethodHandle handle = typeof(MI_GenericClass<>).GetMethod("GenericMethod4")!.MethodHandle;
+            Assert.Throws<InvalidOperationException>(() => handle.GetFunctionPointer());
+        }
+
+        [Fact]
+        public void GetFunctionPointerOnUninstantiatedGenericType_NonGenericMethod()
+        {
+            RuntimeMethodHandle handle = typeof(MI_GenericClass<>).GetMethod("NonGenericMethod")!.MethodHandle;
             Assert.Throws<InvalidOperationException>(() => handle.GetFunctionPointer());
         }
 
@@ -806,6 +832,8 @@ namespace System.Reflection.Tests
         public T GenericMethod1(T t) => t;
         public T GenericMethod2<S>(S s1, T t, string s2) => t;
         public static S GenericMethod3<S>(S s) => s;
+        public static T GenericMethod4(T s) => s;
+        public static void NonGenericMethod() { }
     }
 
     public interface MethodInfoBaseDefinitionInterface
