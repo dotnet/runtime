@@ -364,7 +364,7 @@ if %__BuildNative% EQU 1 (
     set __VCTargetArch=amd64
     if /i "%__HostArch%" == "x86" ( set __VCTargetArch=x86 )
     if /i "%__HostArch%" == "arm64" (
-        set __VCTargetArch=arm64
+        if /i "%__ProcessorArch%" == arm64 (set __VCTargetArch=arm64) else (set __VCTargetArch=x86_arm64)
     )
 
     if NOT DEFINED SkipVCEnvInit (
