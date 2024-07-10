@@ -426,6 +426,9 @@ extern jmethodID g_HostnameVerifierVerify;
 extern jclass    g_HttpsURLConnection;
 extern jmethodID g_HttpsURLConnectionGetDefaultHostnameVerifier;
 
+// javax/net/ssl/KeyManager
+extern jclass    g_KeyManager;
+
 // javax/net/ssl/KeyManagerFactory
 extern jclass    g_KeyManagerFactory;
 extern jmethodID g_KeyManagerFactoryGetInstance;
@@ -502,6 +505,10 @@ extern jclass g_TrustManager;
 // net/dot/android/crypto/DotnetProxyTrustManager
 extern jclass    g_DotnetProxyTrustManager;
 extern jmethodID g_DotnetProxyTrustManagerCtor;
+
+// net/dot/android/crypto/DotnetX509KeyManager
+extern jclass    g_DotnetX509KeyManager;
+extern jmethodID g_DotnetX509KeyManagerCtor;
 
 // net/dot/android/crypto/PalPbkdf2
 extern jclass    g_PalPbkdf2;
@@ -597,6 +604,11 @@ jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
 jfieldID GetOptionalField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
 JNIEnv* GetJNIEnv(void);
+
+// This is supposed to be called by embedders who link the **static** archive of this library.
+// The function must be called from the embedder's `JNI_OnLoad` function prior to using any
+// APIs in this library.
+jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved);
 
 int GetEnumAsInt(JNIEnv *env, jobject enumObj) ARGS_NON_NULL_ALL;
 

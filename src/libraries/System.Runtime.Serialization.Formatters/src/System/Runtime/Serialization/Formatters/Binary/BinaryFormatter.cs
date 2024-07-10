@@ -1,22 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
-
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public sealed partial class BinaryFormatter : IFormatter
     {
-        private static readonly ConcurrentDictionary<Type, TypeInformation> s_typeNameCache = new ConcurrentDictionary<Type, TypeInformation>();
-
         internal ISurrogateSelector? _surrogates;
         internal StreamingContext _context;
         internal SerializationBinder? _binder;
         internal FormatterTypeStyle _typeFormat = FormatterTypeStyle.TypesAlways; // For version resiliency, always put out types
         internal FormatterAssemblyStyle _assemblyFormat = FormatterAssemblyStyle.Simple;
         internal TypeFilterLevel _securityLevel = TypeFilterLevel.Full;
-        internal object[]? _crossAppDomainArray;
 
         public FormatterTypeStyle TypeFormat { get { return _typeFormat; } set { _typeFormat = value; } }
         public FormatterAssemblyStyle AssemblyFormat { get { return _assemblyFormat; } set { _assemblyFormat = value; } }
@@ -34,12 +29,5 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _surrogates = selector;
             _context = context;
         }
-
-        internal static TypeInformation GetTypeInformation(Type type) =>
-            s_typeNameCache.GetOrAdd(type, t =>
-            {
-                string assemblyName = FormatterServices.GetClrAssemblyName(t, out bool hasTypeForwardedFrom);
-                return new TypeInformation(FormatterServices.GetClrTypeFullName(t), assemblyName, hasTypeForwardedFrom);
-            });
     }
 }

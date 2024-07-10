@@ -5238,7 +5238,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
                                                         CORDB_ADDRESS startAddress)
 {
     INTERNAL_SYNC_API_ENTRY(GetProcess());
-    _ASSERTE(startAddress != NULL);
+    _ASSERTE(startAddress != (CORDB_ADDRESS)NULL);
     _ASSERTE(methodDesc != VMPTR_MethodDesc::NullPtr());
 
     CordbNativeCode * pNativeCode = NULL;

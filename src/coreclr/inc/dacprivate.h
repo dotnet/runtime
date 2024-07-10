@@ -230,7 +230,7 @@ struct MSLAYOUT DacpThreadLocalModuleData
 struct MSLAYOUT DacpModuleData
 {
     CLRDATA_ADDRESS Address = 0;
-    CLRDATA_ADDRESS PEAssembly = 0; // A PEAssembly addr
+    CLRDATA_ADDRESS PEAssembly = 0; // Actually the module address in .NET 9+
     CLRDATA_ADDRESS ilBase = 0;
     CLRDATA_ADDRESS metadataStart = 0;
     ULONG64 metadataSize = 0;
@@ -274,11 +274,14 @@ struct MSLAYOUT DacpMethodTableData
 {
     BOOL bIsFree = FALSE; // everything else is NULL if this is true.
     CLRDATA_ADDRESS Module = 0;
+    // Note: DacpMethodTableData::Class is really a pointer to the canonical method table
     CLRDATA_ADDRESS Class = 0;
     CLRDATA_ADDRESS ParentMethodTable = 0;
     WORD wNumInterfaces = 0;
     WORD wNumMethods = 0;
+    // Note: Always 0, since .NET 9
     WORD wNumVtableSlots = 0;
+    // Note: Always 0, since .NET 9
     WORD wNumVirtuals = 0;
     DWORD BaseSize = 0;
     DWORD ComponentSize = 0;
@@ -986,7 +989,7 @@ struct MSLAYOUT DacpGetModuleData
     BOOL IsDynamic = FALSE;
     BOOL IsInMemory = FALSE;
     BOOL IsFileLayout = FALSE;
-    CLRDATA_ADDRESS PEAssembly = 0;
+    CLRDATA_ADDRESS PEAssembly = 0; // Actually the module address in .NET 9+
     CLRDATA_ADDRESS LoadedPEAddress = 0;
     ULONG64 LoadedPESize = 0;
     CLRDATA_ADDRESS InMemoryPdbAddress = 0;

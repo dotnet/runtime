@@ -3,9 +3,16 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 class BodyFoldingTest
 {
+    [UnmanagedCallersOnly(EntryPoint = "FoldableMethod1")]
+    static void FoldableMethod1() { }
+
+    [UnmanagedCallersOnly(EntryPoint = "FoldableMethod2")]
+    static void FoldableMethod2() { }
+
     class SimpleDelegateTargets
     {
         public static object Return1DelStatic() => new object();

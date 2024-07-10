@@ -94,6 +94,20 @@ namespace System.Security.Cryptography
                 _liteHash = LiteHashProvider.CreateHash(hashAlgorithmId);
             }
 
+            private EvpHashProvider(LiteHash hash, bool running)
+            {
+                _liteHash = hash;
+                _running = running;
+            }
+
+            public override EvpHashProvider Clone()
+            {
+                using (ConcurrencyBlock.Enter(ref _block))
+                {
+                    return new EvpHashProvider(_liteHash.Clone(), _running);
+                }
+            }
+
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
                 using (ConcurrencyBlock.Enter(ref _block))
@@ -154,6 +168,20 @@ namespace System.Security.Cryptography
             public HmacHashProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
             {
                 _liteHmac = LiteHashProvider.CreateHmac(hashAlgorithmId, key);
+            }
+
+            private HmacHashProvider(LiteHmac liteHmac, bool running)
+            {
+                _liteHmac = liteHmac;
+                _running = running;
+            }
+
+            public override HmacHashProvider Clone()
+            {
+                using (ConcurrencyBlock.Enter(ref _block))
+                {
+                    return new HmacHashProvider(_liteHmac.Clone(), _running);
+                }
             }
 
             public override void AppendHashData(ReadOnlySpan<byte> data)

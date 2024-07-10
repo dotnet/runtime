@@ -70,20 +70,11 @@ namespace ILCompiler
             public const int Lzcnt = 0x1000;
             public const int AvxVnni = 0x2000;
             public const int Movbe = 0x4000;
-            public const int Avx512f = 0x8000;
-            public const int Avx512f_vl = 0x10000;
-            public const int Avx512bw = 0x20000;
-            public const int Avx512bw_vl = 0x40000;
-            public const int Avx512cd = 0x80000;
-            public const int Avx512cd_vl = 0x100000;
-            public const int Avx512dq = 0x200000;
-            public const int Avx512dq_vl = 0x400000;
-            public const int Avx512Vbmi = 0x800000;
-            public const int Avx512Vbmi_vl = 0x1000000;
-            public const int Serialize = 0x2000000;
-            public const int Avx10v1 = 0x4000000;
-            public const int Avx10v1_v512 = 0x8000000;
-            public const int Evex = 0x10000000;
+            public const int Avx512 = 0x8000;
+            public const int Avx512Vbmi = 0x10000;
+            public const int Serialize = 0x20000;
+            public const int Avx10v1 = 0x40000;
+            public const int Evex = 0x80000;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -117,31 +108,27 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("avxvnni");
                 if ((flags & Movbe) != 0)
                     builder.AddSupportedInstructionSet("movbe");
-                if ((flags & Avx512f) != 0)
+                if ((flags & Avx512) != 0)
+                {
                     builder.AddSupportedInstructionSet("avx512f");
-                if ((flags & Avx512f_vl) != 0)
                     builder.AddSupportedInstructionSet("avx512f_vl");
-                if ((flags & Avx512bw) != 0)
                     builder.AddSupportedInstructionSet("avx512bw");
-                if ((flags & Avx512bw_vl) != 0)
                     builder.AddSupportedInstructionSet("avx512bw_vl");
-                if ((flags & Avx512cd) != 0)
                     builder.AddSupportedInstructionSet("avx512cd");
-                if ((flags & Avx512cd_vl) != 0)
                     builder.AddSupportedInstructionSet("avx512cd_vl");
-                if ((flags & Avx512dq) != 0)
                     builder.AddSupportedInstructionSet("avx512dq");
-                if ((flags & Avx512dq_vl) != 0)
                     builder.AddSupportedInstructionSet("avx512dq_vl");
+                }
                 if ((flags & Avx512Vbmi) != 0)
+                {
                     builder.AddSupportedInstructionSet("avx512vbmi");
-                if ((flags & Avx512Vbmi_vl) != 0)
                     builder.AddSupportedInstructionSet("avx512vbmi_vl");
+                }
                 if ((flags & Serialize) != 0)
                     builder.AddSupportedInstructionSet("serialize");
                 if ((flags & Avx10v1) != 0)
                     builder.AddSupportedInstructionSet("avx10v1");
-                if ((flags & Avx10v1_v512) != 0)
+                if (((flags & Avx10v1) != 0) && ((flags & Avx512) != 0))
                     builder.AddSupportedInstructionSet("avx10v1_v512");
                 if ((flags & Evex) != 0)
                     builder.AddSupportedInstructionSet("evex");
@@ -186,32 +173,32 @@ namespace ILCompiler
                     InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
                     InstructionSet.X64_MOVBE => Movbe,
                     InstructionSet.X64_MOVBE_X64 => Movbe,
-                    InstructionSet.X64_AVX512F => Avx512f,
-                    InstructionSet.X64_AVX512F_X64 => Avx512f,
-                    InstructionSet.X64_AVX512F_VL => Avx512f_vl,
-                    InstructionSet.X64_AVX512F_VL_X64 => Avx512f_vl,
-                    InstructionSet.X64_AVX512BW => Avx512bw,
-                    InstructionSet.X64_AVX512BW_X64 => Avx512bw,
-                    InstructionSet.X64_AVX512BW_VL => Avx512bw_vl,
-                    InstructionSet.X64_AVX512BW_VL_X64 => Avx512bw_vl,
-                    InstructionSet.X64_AVX512CD => Avx512cd,
-                    InstructionSet.X64_AVX512CD_X64 => Avx512cd,
-                    InstructionSet.X64_AVX512CD_VL => Avx512cd_vl,
-                    InstructionSet.X64_AVX512CD_VL_X64 => Avx512cd_vl,
-                    InstructionSet.X64_AVX512DQ => Avx512dq,
-                    InstructionSet.X64_AVX512DQ_X64 => Avx512dq,
-                    InstructionSet.X64_AVX512DQ_VL => Avx512dq_vl,
-                    InstructionSet.X64_AVX512DQ_VL_X64 => Avx512dq_vl,
+                    InstructionSet.X64_AVX512F => Avx512,
+                    InstructionSet.X64_AVX512F_X64 => Avx512,
+                    InstructionSet.X64_AVX512F_VL => Avx512,
+                    InstructionSet.X64_AVX512F_VL_X64 => Avx512,
+                    InstructionSet.X64_AVX512BW => Avx512,
+                    InstructionSet.X64_AVX512BW_X64 => Avx512,
+                    InstructionSet.X64_AVX512BW_VL => Avx512,
+                    InstructionSet.X64_AVX512BW_VL_X64 => Avx512,
+                    InstructionSet.X64_AVX512CD => Avx512,
+                    InstructionSet.X64_AVX512CD_X64 => Avx512,
+                    InstructionSet.X64_AVX512CD_VL => Avx512,
+                    InstructionSet.X64_AVX512CD_VL_X64 => Avx512,
+                    InstructionSet.X64_AVX512DQ => Avx512,
+                    InstructionSet.X64_AVX512DQ_X64 => Avx512,
+                    InstructionSet.X64_AVX512DQ_VL => Avx512,
+                    InstructionSet.X64_AVX512DQ_VL_X64 => Avx512,
                     InstructionSet.X64_AVX512VBMI => Avx512Vbmi,
                     InstructionSet.X64_AVX512VBMI_X64 => Avx512Vbmi,
-                    InstructionSet.X64_AVX512VBMI_VL => Avx512Vbmi_vl,
-                    InstructionSet.X64_AVX512VBMI_VL_X64 => Avx512Vbmi_vl,
+                    InstructionSet.X64_AVX512VBMI_VL => Avx512Vbmi,
+                    InstructionSet.X64_AVX512VBMI_VL_X64 => Avx512Vbmi,
                     InstructionSet.X64_X86Serialize => Serialize,
                     InstructionSet.X64_X86Serialize_X64 => Serialize,
                     InstructionSet.X64_AVX10v1 => Avx10v1,
                     InstructionSet.X64_AVX10v1_X64 => Avx10v1,
-                    InstructionSet.X64_AVX10v1_V512 => Avx10v1_v512,
-                    InstructionSet.X64_AVX10v1_V512_X64 => Avx10v1_v512,
+                    InstructionSet.X64_AVX10v1_V512 => (Avx10v1 | Avx512),
+                    InstructionSet.X64_AVX10v1_V512_X64 => (Avx10v1 | Avx512),
                     InstructionSet.X64_EVEX => Evex,
                     InstructionSet.X64_EVEX_X64 => Evex,
 
@@ -227,7 +214,7 @@ namespace ILCompiler
                     // Vector<T> Sizes
                     InstructionSet.X64_VectorT128 => 0,
                     InstructionSet.X64_VectorT256 => Avx2,
-                    InstructionSet.X64_VectorT512 => Avx512f,
+                    InstructionSet.X64_VectorT512 => Avx512,
 
                     _ => throw new NotSupportedException(((InstructionSet_X64)instructionSet).ToString())
                 };

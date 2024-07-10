@@ -21,8 +21,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
     {
         protected override Version UseVersion => HttpVersion.Version30;
