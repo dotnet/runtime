@@ -4206,25 +4206,6 @@ index_of_class (MonoClass *needle, MonoClass **haystack, int haystack_size) {
 }
 
 static void
-concat_variance_search_table (MonoClass *klass, MonoClass **buf, int buf_size, int *buf_count, MonoClass *current) {
-	MonoClass **table;
-	int table_size;
-	mono_class_get_variance_search_table (current, &table, &table_size);
-	if (!table_size || !table)
-		return;
-
-	for (int i = 0; i < table_size; i++) {
-		MonoClass *iface = table[i];
-		if (index_of_class (iface, buf, *buf_count) >= 0)
-			continue;
-
-		g_assert (*buf_count < buf_size);
-		buf[*buf_count] = table[i];
-		(*buf_count) += 1;
-	}
-}
-
-static void
 build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_size, int *buf_count, MonoClass *current) {
 	if (!m_class_is_interfaces_inited (current)) {
 		ERROR_DECL (error);
@@ -4236,7 +4217,7 @@ build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_si
 		MonoClass **ifaces = m_class_get_interfaces (current);
 		for (guint i = 0; i < c; i++) {
 			MonoClass *iface = ifaces [i];
-			// Avoid adding duplicates.
+			// Avoid adding duplicates or recursing into them.
 			if (index_of_class (iface, buf, *buf_count) >= 0)
 				continue;
 
@@ -4246,7 +4227,7 @@ build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_si
 				(*buf_count) += 1;
 			}
 
-			concat_variance_search_table (klass, buf, buf_size, buf_count, iface);
+			build_variance_search_table_inner (klass, buf, buf_size, buf_count, iface);
 		}
 	}
 }
@@ -4263,7 +4244,7 @@ build_variance_search_table (MonoClass *klass) {
 
 	if (buf_count) {
 		guint bytes = buf_count * sizeof(MonoClass *);
-		result = g_malloc (bytes);
+		result = mono_mem_manager_alloc (m_class_get_mem_manager (klass), bytes);
 		memcpy (result, buf, bytes);
 	}
 	klass->variant_search_table_length = buf_count;
@@ -4278,6 +4259,14 @@ mono_class_get_variance_search_table (MonoClass *klass, MonoClass ***table, int 
 	g_assert (klass);
 	g_assert (table);
 	g_assert (table_size);
+
+	// We will never do a variance search to locate a given interface on an interface, only on
+	//  a fully-defined type or generic instance
+	if (m_class_is_interface (klass)) {
+		*table = NULL;
+		*table_size = 0;
+		return;
+	}
 
 	if (!klass->variant_search_table_inited) {
 		mono_loader_lock ();
