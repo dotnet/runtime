@@ -3276,15 +3276,11 @@ namespace System.Net.Http.Functional.Tests
                 // We should not reach retry limit without failing.
                 Assert.NotEqual(0, maxCount);
 
-                try
+                await IgnoreExceptions(async () =>
                 {
                     await connection.SendGoAway(streamId);
                     await connection.WaitForConnectionShutdownAsync();
-                }
-                catch (Exception ex)
-                {
-                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                }
+                });
             });
         }
 

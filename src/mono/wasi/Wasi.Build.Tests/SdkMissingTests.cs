@@ -74,7 +74,7 @@ public class SdkMissingTests : BuildTestBase
                                     CreateProject: false,
                                     Publish: publish,
                                     TargetFramework: BuildTestBase.DefaultTargetFramework,
-                                    ExtraBuildEnvironmentVariables: new Dictionary<string, string> { { "WASI_SDK_PATH", "x" } },
+                                    ExtraBuildEnvironmentVariables: new Dictionary<string, string> { { "WASI_SDK22_PATH", "x" } },
                                     ExpectSuccess: expectSuccess));
 
         return output;
