@@ -5802,6 +5802,76 @@ bool FlowGraphNaturalLoop::MayExecuteBlockMultipleTimesPerIteration(BasicBlock* 
 }
 
 //------------------------------------------------------------------------
+// IsPostDominatedOnLoopIteration:
+//   Check whether control will always flow through "postDominator" if starting
+//   at "block" and a backedge is taken.
+//
+// Parameters:
+//   block         - The basic block
+//   postDominator - Block to query postdominance of
+//
+// Returns:
+//   True if so.
+//
+bool FlowGraphNaturalLoop::IsPostDominatedOnLoopIteration(BasicBlock* block, BasicBlock* postDominator)
+{
+    assert(ContainsBlock(block) && ContainsBlock(postDominator));
+
+    unsigned index;
+    bool gotIndex = TryGetLoopBlockBitVecIndex(block, &index);
+    assert(gotIndex);
+
+    Compiler* comp = m_dfsTree->GetCompiler();
+    ArrayStack<BasicBlock*> stack(comp->getAllocator(CMK_Loops));
+
+    BitVecTraits traits = LoopBlockTraits();
+    BitVec visited(BitVecOps::MakeEmpty(&traits));
+
+    stack.Push(block);
+    BitVecOps::AddElemD(&traits, visited, index);
+
+    auto queueSuccs = [=, &stack, &traits, &visited](BasicBlock* succ) {
+        if (succ == m_header)
+        {
+            // We managed to reach the header without going through "postDominator".
+            return BasicBlockVisit::Abort;
+        }
+
+        unsigned index;
+        if (!TryGetLoopBlockBitVecIndex(succ, &index) || !BitVecOps::IsMember(&traits, m_blocks, index))
+        {
+            // Block is not inside loop
+            return BasicBlockVisit::Continue;
+        }
+
+        if (!BitVecOps::TryAddElemD(&traits, visited, index))
+        {
+            // Block already visited
+            return BasicBlockVisit::Continue;
+        }
+
+        stack.Push(succ);
+        return BasicBlockVisit::Continue;
+        };
+
+    while (stack.Height() > 0)
+    {
+        BasicBlock* block = stack.Pop();
+        if (block == postDominator)
+        {
+            continue;
+        }
+
+        if (block->VisitAllSuccs(comp, queueSuccs) == BasicBlockVisit::Abort)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // IterConst: Get the constant with which the iterator is modified
 //
 // Returns:
