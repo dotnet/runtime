@@ -197,25 +197,25 @@ namespace Microsoft.Extensions.Caching.Hybrid
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Delegate differences make this unambiguous")]
         public abstract System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<TState, T>(string key, TState state, System.Func<TState, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
-            HybridCacheEntryOptions? options = null, System.Collections.Generic.IReadOnlyCollection<string>? tags = null, System.Threading.CancellationToken token = default);
+            HybridCacheEntryOptions? options = null, System.Collections.Generic.IReadOnlyCollection<string>? tags = null, System.Threading.CancellationToken cancellationToken = default);
         [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Delegate differences make this unambiguous")]
         public System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<T>(string key, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
-            HybridCacheEntryOptions? options = null, System.Collections.Generic.IReadOnlyCollection<string>? tags = null, System.Threading.CancellationToken token = default)
+            HybridCacheEntryOptions? options = null, System.Collections.Generic.IReadOnlyCollection<string>? tags = null, System.Threading.CancellationToken cancellationToken = default)
             => throw new System.NotImplementedException();
 
-        public abstract System.Threading.Tasks.ValueTask SetAsync<T>(string key, T value, HybridCacheEntryOptions? options = null, System.Collections.Generic.IReadOnlyCollection<string>? tags = null, System.Threading.CancellationToken token = default);
+        public abstract System.Threading.Tasks.ValueTask SetAsync<T>(string key, T value, HybridCacheEntryOptions? options = null, System.Collections.Generic.IReadOnlyCollection<string>? tags = null, System.Threading.CancellationToken cancellationToken = default);
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Not ambiguous in context")]
-        public abstract System.Threading.Tasks.ValueTask RemoveAsync(string key, System.Threading.CancellationToken token = default);
+        public abstract System.Threading.Tasks.ValueTask RemoveAsync(string key, System.Threading.CancellationToken cancellationToken = default);
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Not ambiguous in context")]
-        public virtual System.Threading.Tasks.ValueTask RemoveAsync(System.Collections.Generic.IEnumerable<string> keys, System.Threading.CancellationToken token = default)
+        public virtual System.Threading.Tasks.ValueTask RemoveAsync(System.Collections.Generic.IEnumerable<string> keys, System.Threading.CancellationToken cancellationToken = default)
             => throw new System.NotImplementedException();
 
        [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Not ambiguous in context")]
-        public virtual System.Threading.Tasks.ValueTask RemoveByTagAsync(System.Collections.Generic.IEnumerable<string> tags, System.Threading.CancellationToken token = default)
+        public virtual System.Threading.Tasks.ValueTask RemoveByTagAsync(System.Collections.Generic.IEnumerable<string> tags, System.Threading.CancellationToken cancellationToken = default)
             => throw new System.NotImplementedException();
-        public abstract System.Threading.Tasks.ValueTask RemoveByTagAsync(string tag, System.Threading.CancellationToken token = default);
+        public abstract System.Threading.Tasks.ValueTask RemoveByTagAsync(string tag, System.Threading.CancellationToken cancellationToken = default);
     }
 
 }
