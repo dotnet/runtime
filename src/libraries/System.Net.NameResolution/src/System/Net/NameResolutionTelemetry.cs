@@ -156,7 +156,7 @@ namespace System.Net
     /// </summary>
     internal readonly struct NameResolutionActivity
     {
-        private const string ActivitySourceName = "System.Net.NameResolution";
+        private const string ActivitySourceName = "Experimental.System.Net.NameResolution";
         private const string ActivityName = ActivitySourceName + ".DnsLookup";
         private static readonly ActivitySource s_activitySource = new(ActivitySourceName);
 
@@ -171,7 +171,7 @@ namespace System.Net
             if (_activity is not null)
             {
                 string host = NameResolutionTelemetry.GetHostnameFromStateObject(hostNameOrAddress);
-                _activity.DisplayName = $"DNS {host}";
+                _activity.DisplayName = hostNameOrAddress is IPAddress ? $"DNS reverse lookup {host}" : $"DNS lookup {host}";
                 if (_activity.IsAllDataRequested)
                 {
                     _activity.SetTag("dns.question.name", host);
@@ -199,7 +199,7 @@ namespace System.Net
                         };
 
                         Debug.Assert(answerValues is not null);
-                        _activity.SetTag("dns.answer", answerValues);
+                        _activity.SetTag("dns.answers", answerValues);
                     }
                     else
                     {

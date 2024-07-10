@@ -14,13 +14,13 @@ namespace System.Net.NameResolution.Tests
 {
     public class ActivityTest
     {
-        private const string ActivitySourceName = "System.Net.NameResolution";
+        private const string ActivitySourceName = "Experimental.System.Net.NameResolution";
         private const string ActivityName = ActivitySourceName + ".DnsLookup";
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task ResolveValidHostName_ActivityRecorded(bool createParentActivity)
+        public async Task ForwardLookup_ValidHostName_ActivityRecorded(bool createParentActivity)
         {
             await RemoteExecutor.Invoke(static async (createParentActivity) =>
             {
@@ -55,8 +55,8 @@ namespace System.Net.NameResolution.Tests
                 {
                     recorder.VerifyActivityRecorded(timesLookupRecorded);
                     Activity activity = recorder.LastFinishedActivity;
-                    VerifyCommonActivityInfo(activity, ValidHostName);
-                    ActivityAssert.HasTag(activity, "dns.answer", (string[] answers) => answers.Contains(expected4) || answers.Contains(expected6));
+                    VerifyForwardActivityInfo(activity, ValidHostName);
+                    ActivityAssert.HasTag(activity, "dns.answers", (string[] answers) => answers.Contains(expected4) || answers.Contains(expected6));
                     ActivityAssert.HasNoTag(activity, "error.type");
                 }
 
@@ -66,9 +66,53 @@ namespace System.Net.NameResolution.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        public static async Task ResolveInvalidHostName_ActivityRecorded(bool createParentActivity)
+        public async Task ReverseLookup_ValidIP_ActivityRecorded(bool createParentActivity)
         {
-            const string InvalidHostName = $"invalid...example.com...{nameof(ResolveInvalidHostName_ActivityRecorded)}";
+            await RemoteExecutor.Invoke(static async (createParentActivity) =>
+            {
+                string loopbackIPString = IPAddress.Loopback.ToString();
+                using var recorder = new ActivityRecorder(ActivitySourceName, ActivityName)
+                {
+                    ExpectedParent = bool.Parse(createParentActivity) ? new Activity("parent").Start() : null
+                };
+
+                IPHostEntry entry = await Dns.GetHostEntryAsync(IPAddress.Loopback); // Also does a forward lookup
+                Verify(2);
+
+                await Dns.GetHostEntryAsync(loopbackIPString);
+                Verify(4);
+
+                Dns.GetHostEntry(IPAddress.Loopback);
+                Verify(6);
+
+                Dns.GetHostEntry(loopbackIPString);
+                Verify(8);
+
+                Dns.EndGetHostEntry(Dns.BeginGetHostEntry(IPAddress.Loopback, null, null));
+                Verify(10);
+
+                Dns.EndGetHostEntry(Dns.BeginGetHostEntry(loopbackIPString, null, null));
+                Verify(12);
+
+                void Verify(int timesLookupRecorded)
+                {
+                    recorder.VerifyActivityRecorded(timesLookupRecorded);
+                    Activity reverseActivity = recorder.FinishedActivities.ToArray()[^2];
+                    VerifyReverseActivityInfo(reverseActivity, IPAddress.Loopback);
+                    ActivityAssert.HasTag(reverseActivity, "dns.answers", (string[] answers) => answers.Contains(entry.HostName));
+                    ActivityAssert.HasNoTag(reverseActivity, "error.type");
+                    VerifyForwardActivityInfo(recorder.LastStartedActivity, entry.HostName);
+                }
+
+            }, createParentActivity.ToString()).DisposeAsync();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task ForwardLookup_InvalidHostName_ActivityRecorded(bool createParentActivity)
+        {
+            const string InvalidHostName = $"invalid...example.com...{nameof(ForwardLookup_InvalidHostName_ActivityRecorded)}";
 
             await RemoteExecutor.Invoke(async (createParentActivity) =>
             {
@@ -101,18 +145,26 @@ namespace System.Net.NameResolution.Tests
 
                     Activity activity = recorder.LastFinishedActivity;
                     Assert.Equal(ActivityStatusCode.Error, activity.Status);
-                    VerifyCommonActivityInfo(activity, InvalidHostName);
+                    VerifyForwardActivityInfo(activity, InvalidHostName);
                     ActivityAssert.HasTag(activity, "error.type", "host_not_found");
                 }
             }, createParentActivity.ToString()).DisposeAsync();
         }
 
-        static void VerifyCommonActivityInfo(Activity activity, string host)
+        static void VerifyForwardActivityInfo(Activity activity, string question)
         {
             Assert.Equal(ActivityKind.Client, activity.Kind);
-            Assert.Equal("System.Net.NameResolution.DnsLookup", activity.OperationName);
-            Assert.Equal($"DNS {host}", activity.DisplayName);
-            ActivityAssert.HasTag(activity, "dns.question.name", host);
+            Assert.Equal(ActivityName, activity.OperationName);
+            Assert.Equal($"DNS lookup {question}", activity.DisplayName);
+            ActivityAssert.HasTag(activity, "dns.question.name", question);
+        }
+
+        static void VerifyReverseActivityInfo(Activity activity, IPAddress question)
+        {
+            Assert.Equal(ActivityKind.Client, activity.Kind);
+            Assert.Equal(ActivityName, activity.OperationName);
+            Assert.Equal($"DNS reverse lookup {question}", activity.DisplayName);
+            ActivityAssert.HasTag(activity, "dns.question.name", question.ToString());
         }
     }
 }
