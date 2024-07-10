@@ -14,7 +14,7 @@ stages:
       PublishRidAgnosticPackagesFromPlatform: ${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
 
   # Publish to Build Asset Registry in order to generate the ReleaseConfigs artifact.
-  - template: /eng/common/templates/job/publish-build-assets.yml
+  - template: /eng/common/templates-official/job/publish-build-assets.yml
     parameters:
       publishUsingPipelines: true
       dependsOn: PrepareSignedArtifacts
@@ -23,7 +23,7 @@ stages:
         demands: ImageOverride -equals windows.vs2019.amd64
 
 # Stages-based publishing entry point
-- template: /eng/common/templates/post-build/post-build.yml
+- template: /eng/common/templates-official/post-build/post-build.yml
   parameters:
     publishingInfraVersion: ${{ parameters.publishingInfraVersion }}
     validateDependsOn:

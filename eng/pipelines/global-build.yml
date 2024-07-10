@@ -31,6 +31,7 @@ pr:
 extends:
   template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
+    isOfficialBuild: false
     stages:
     - stage: Build
       jobs:
