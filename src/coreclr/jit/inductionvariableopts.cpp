@@ -1783,7 +1783,7 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     // TODO: We could also use assertions on the length of the array. E.g. if
     // we know the length of the array is > 3, then we can allow the add rec to
     // have a later start. Maybe range check can be used?
-    if ((offset < 0) || (offset > OFFSETOF__CORINFO_Array__data))
+    if ((offset < 0) || (offset > (int64_t)OFFSETOF__CORINFO_Array__data))
     {
         return false;
     }
