@@ -461,7 +461,6 @@ namespace System.Net.Security
         private ProtocolToken ProcessTlsFrame(int frameSize)
         {
             int chunkSize = frameSize;
-            int initFrameSize = frameSize;
 
             ReadOnlySpan<byte> availableData = _buffer.EncryptedReadOnlySpan;
 
@@ -488,20 +487,9 @@ namespace System.Net.Security
                 chunkSize += frameSize;
             }
 
-            try
-            {
-                ProtocolToken token = NextMessage(availableData.Slice(0, chunkSize), out int consumed);
-                _buffer.DiscardEncrypted(consumed);
-                return token;
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                System.Console.WriteLine($"FrameSize: {initFrameSize}, {frameSize}");
-                System.Console.WriteLine($"AvailableData: {availableData.Length}, ChunkSize: {chunkSize}");
-                System.Console.WriteLine($"Disposed: {ReferenceEquals(_exception, s_disposedSentinel)}");
-
-                throw;
-            }
+            ProtocolToken token = NextMessage(availableData.Slice(0, chunkSize), out int consumed);
+            _buffer.DiscardEncrypted(consumed);
+            return token;
         }
 
         //
