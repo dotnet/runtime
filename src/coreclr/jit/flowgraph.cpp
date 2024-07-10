@@ -5818,14 +5818,14 @@ bool FlowGraphNaturalLoop::IsPostDominatedOnLoopIteration(BasicBlock* block, Bas
     assert(ContainsBlock(block) && ContainsBlock(postDominator));
 
     unsigned index;
-    bool gotIndex = TryGetLoopBlockBitVecIndex(block, &index);
+    bool     gotIndex = TryGetLoopBlockBitVecIndex(block, &index);
     assert(gotIndex);
 
-    Compiler* comp = m_dfsTree->GetCompiler();
+    Compiler*               comp = m_dfsTree->GetCompiler();
     ArrayStack<BasicBlock*> stack(comp->getAllocator(CMK_Loops));
 
     BitVecTraits traits = LoopBlockTraits();
-    BitVec visited(BitVecOps::MakeEmpty(&traits));
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
 
     stack.Push(block);
     BitVecOps::AddElemD(&traits, visited, index);
@@ -5852,7 +5852,7 @@ bool FlowGraphNaturalLoop::IsPostDominatedOnLoopIteration(BasicBlock* block, Bas
 
         stack.Push(succ);
         return BasicBlockVisit::Continue;
-        };
+    };
 
     while (stack.Height() > 0)
     {
