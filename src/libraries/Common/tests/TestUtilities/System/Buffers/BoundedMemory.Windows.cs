@@ -33,7 +33,7 @@ namespace System.Buffers
 
             // Reserve and commit the entire range as NOACCESS.
 
-            VirtualAllocHandle handle = UnsafeNativeMethods.VirtualAlloc(
+            VirtualAllocHandle handle = VirtualAllocHandle.Allocate(
                 lpAddress: IntPtr.Zero,
                 dwSize: (IntPtr)totalBytesToAllocate /* cast throws OverflowException if out of range */,
                 flAllocationType: VirtualAllocAllocationType.MEM_RESERVE | VirtualAllocAllocationType.MEM_COMMIT,
@@ -91,9 +91,10 @@ namespace System.Buffers
                     try
                     {
                         _handle.DangerousAddRef(ref refAdded);
+                        MEMORY_BASIC_INFORMATION memoryInfo;
                         if (UnsafeNativeMethods.VirtualQuery(
                             lpAddress: _handle.DangerousGetHandle() + _byteOffsetIntoHandle,
-                            lpBuffer: out MEMORY_BASIC_INFORMATION memoryInfo,
+                            lpBuffer: &memoryInfo,
                             dwLength: (IntPtr)sizeof(MEMORY_BASIC_INFORMATION)) == IntPtr.Zero)
                         {
                             Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
@@ -117,11 +118,12 @@ namespace System.Buffers
                         try
                         {
                             _handle.DangerousAddRef(ref refAdded);
-                            if (!UnsafeNativeMethods.VirtualProtect(
+                            VirtualAllocProtection flOldProtect;
+                            if (UnsafeNativeMethods.VirtualProtect(
                                 lpAddress: _handle.DangerousGetHandle() + _byteOffsetIntoHandle,
                                 dwSize: (IntPtr)(&((T*)null)[_elementCount]),
                                 flNewProtect: value,
-                                lpflOldProtect: out _))
+                                lpflOldProtect: &flOldProtect) == 0)
                             {
                                 Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
                                 throw new InvalidOperationException("VirtualProtect failed unexpectedly.");
@@ -279,13 +281,20 @@ namespace System.Buffers
             {
             }
 
+            internal static VirtualAllocHandle Allocate(IntPtr lpAddress, IntPtr dwSize, VirtualAllocAllocationType flAllocationType, VirtualAllocProtection flProtect)
+            {
+                VirtualAllocHandle retVal = new VirtualAllocHandle();
+                retVal.SetHandle(UnsafeNativeMethods.VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect));
+                return retVal;
+            }
+
             // Do not provide a finalizer - SafeHandle's critical finalizer will
             // call ReleaseHandle for you.
 
             public override bool IsInvalid => (handle == IntPtr.Zero);
 
             protected override bool ReleaseHandle() =>
-                UnsafeNativeMethods.VirtualFree(handle, IntPtr.Zero, VirtualAllocAllocationType.MEM_RELEASE);
+                UnsafeNativeMethods.VirtualFree(handle, IntPtr.Zero, VirtualAllocAllocationType.MEM_RELEASE) != 0;
         }
 
         private static class UnsafeNativeMethods
@@ -294,35 +303,19 @@ namespace System.Buffers
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366887(v=vs.85).aspx
             [DllImport(KERNEL32_LIB, SetLastError = true)]
-            public static extern VirtualAllocHandle VirtualAlloc(
-                IntPtr lpAddress,
-                IntPtr dwSize,
-                VirtualAllocAllocationType flAllocationType,
-                VirtualAllocProtection flProtect);
+            public static extern IntPtr VirtualAlloc(IntPtr lpAddress, IntPtr dwSize, VirtualAllocAllocationType flAllocationType, VirtualAllocProtection flProtect);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366892(v=vs.85).aspx
             [DllImport(KERNEL32_LIB, SetLastError = true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool VirtualFree(
-                IntPtr lpAddress,
-                IntPtr dwSize,
-                VirtualAllocAllocationType dwFreeType);
+            public static extern int VirtualFree(IntPtr lpAddress, IntPtr dwSize, VirtualAllocAllocationType dwFreeType);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366898(v=vs.85).aspx
             [DllImport(KERNEL32_LIB, SetLastError = true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool VirtualProtect(
-                IntPtr lpAddress,
-                IntPtr dwSize,
-                VirtualAllocProtection flNewProtect,
-                out VirtualAllocProtection lpflOldProtect);
+            public static extern int VirtualProtect(IntPtr lpAddress, IntPtr dwSize, VirtualAllocProtection flNewProtect, VirtualAllocProtection* lpflOldProtect);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366902(v=vs.85).aspx
             [DllImport(KERNEL32_LIB, SetLastError = true)]
-            public static extern IntPtr VirtualQuery(
-                IntPtr lpAddress,
-                out MEMORY_BASIC_INFORMATION lpBuffer,
-                IntPtr dwLength);
+            public static extern IntPtr VirtualQuery(IntPtr lpAddress, MEMORY_BASIC_INFORMATION* lpBuffer, IntPtr dwLength);
         }
     }
 }
