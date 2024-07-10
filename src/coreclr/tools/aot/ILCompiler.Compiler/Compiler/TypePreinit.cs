@@ -481,16 +481,16 @@ namespace ILCompiler
                                 methodParams[i] = stack.PopIntoLocation(GetArgType(method, i));
                             }
 
-                            if (opcode == ILOpcode.callvirt)
-                            {
-                                // Only support non-virtual methods for now + we don't emulate NRE on null this
-                                if (!owningType.IsValueType && (method.IsVirtual || methodParams[0] == null))
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-
                             Value retVal;
                             if (!method.IsIntrinsic || !TryHandleIntrinsicCall(method, methodParams, out retVal))
                             {
+                                if (opcode == ILOpcode.callvirt)
+                                {
+                                    // Only support non-virtual methods for now + we don't emulate NRE on null this
+                                    if (!owningType.IsValueType && (method.IsVirtual || methodParams[0] == null))
+                                        return Status.Fail(methodIL.OwningMethod, opcode);
+                                }
+
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
                                 Status callResult = TryScanMethod(method, methodParams, recursionProtect, ref instructionCounter, out retVal);
@@ -1926,6 +1926,24 @@ namespace ILCompiler
                         retVal = ValueTypeValue.FromSByte(typeToCheckForValueType.TypeRepresented.IsValueType ? (sbyte)1 : (sbyte)0);
                         return true;
                     }
+                case "get_IsGenericType" when IsSystemType(method.OwningType)
+                        && parameters[0] is RuntimeTypeValue typeToCheckForIsGenericType:
+                {
+                    retVal = ValueTypeValue.FromSByte(typeToCheckForIsGenericType.TypeRepresented.HasInstantiation ? (sbyte)1 : (sbyte)0);
+                    return true;
+                }
+                case "GetGenericTypeDefinition" when IsSystemType(method.OwningType)
+                        && parameters[0] is RuntimeTypeValue typeToCheckForGetGenericTypeDefinition
+                        && typeToCheckForGetGenericTypeDefinition.TypeRepresented.HasInstantiation:
+                {
+                    TypeDesc typeDef = typeToCheckForGetGenericTypeDefinition.TypeRepresented.GetTypeDefinition();
+                    if (!_internedTypes.TryGetValue(typeDef, out RuntimeTypeValue runtimeType))
+                    {
+                        _internedTypes.Add(typeDef, runtimeType = new RuntimeTypeValue(typeDef));
+                    }
+                    retVal = runtimeType;
+                    return true;
+                }
                 case "op_Equality" when IsSystemType(method.OwningType)
                         && (parameters[0] is RuntimeTypeValue || parameters[1] is RuntimeTypeValue):
                     {
