@@ -430,9 +430,8 @@ namespace System.Net.Sockets
                 }
                 else if (exception is OperationCanceledException)
                 {
-                    // Preserver information about the cancellation
-                    // when it is canceled at non Socket operation.
-                    // It will be later used to throw the right exception.
+                    // Preserve information about the cancellation when it is canceled at non Socket operation.
+                    // It is used to throw the right exception later in the stack.
                     _socketError = SocketError.OperationAborted;
                 }
                 else
