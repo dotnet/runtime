@@ -38,7 +38,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     BlockRange().Remove(treeFirstNode, tree);
 
     // Create the call node
-    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType);
+    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->TypeGet());
 
     assert(sig != nullptr);
     var_types retType = JITtype2varType(sig->retType);
@@ -100,7 +100,24 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
             assert(!operand->OperIsFieldList());
 
             sigTyp = comp->impNormStructType(clsHnd);
-            arg    = NewCallArg::Struct(operand, sigTyp, clsHnd);
+
+            if (varTypeIsMask(operand->TypeGet()))
+            {
+#if defined(FEATURE_HW_INTRINSICS)
+                // No managed call takes TYP_MASK, so convert it back to a TYP_SIMD
+
+                unsigned    simdSize;
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(clsHnd, &simdSize);
+                assert(simdSize != 0);
+
+                GenTree* cvtNode = comp->gtNewSimdCvtMaskToVectorNode(sigTyp, operand, simdBaseJitType, simdSize);
+                BlockRange().InsertAfter(operand, LIR::Range(comp->fgSetTreeSeq(cvtNode), cvtNode));
+                operand = cvtNode;
+#else
+                unreached();
+#endif // FEATURE_HW_INTRINSICS
+            }
+            arg = NewCallArg::Struct(operand, sigTyp, clsHnd);
         }
         else
         {
@@ -145,10 +162,46 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
             result = comp->gtNewLclvNode(tmpNum, retType);
         }
 
+        if (varTypeIsMask(tree->TypeGet()))
+        {
+#if defined(FEATURE_HW_INTRINSICS)
+            // No managed call returns TYP_MASK, so convert it from a TYP_SIMD
+
+            unsigned    simdSize;
+            CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(call->gtRetClsHnd, &simdSize);
+            assert(simdSize != 0);
+
+            result = comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, result, simdBaseJitType, simdSize);
+
+            if (tmpNum == BAD_VAR_NUM)
+            {
+                // Propagate flags of "call" to its parent.
+                result->gtFlags |= (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
+            }
+#else
+            unreached();
+#endif // FEATURE_HW_INTRINSICS
+        }
+
         parents.Top(1)->ReplaceOperand(use, result);
 
         if (tmpNum != BAD_VAR_NUM)
         {
+            // We have a return buffer, so we need to insert both the result and the call
+            // since they are independent trees. If we have a convert node, it will indirectly
+            // insert the local node.
+
+            comp->gtSetEvalOrder(result);
+            BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(result), result));
+
+            comp->gtSetEvalOrder(call);
+            BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(call), call));
+        }
+        else
+        {
+            // We don't have a return buffer, so we only need to insert the result, which
+            // will indirectly insert the call in the case we have a convert node as well.
+
             comp->gtSetEvalOrder(result);
             BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(result), result));
         }
@@ -158,18 +211,20 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         // If there's no parent, the tree being replaced is the root of the
         // statement (and no special handling is necessary).
         *use = result;
+
+        comp->gtSetEvalOrder(call);
+        BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(call), call));
     }
 
-    comp->gtSetEvalOrder(call);
-    BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(call), call));
-
-    if (result == call)
+    if (tmpNum == BAD_VAR_NUM)
     {
         // Propagate flags of "call" to its parents.
+        GenTreeFlags callFlags = (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
+
         // 0 is current node, so start at 1
         for (int i = 1; i < parents.Height(); i++)
         {
-            parents.Top(i)->gtFlags |= (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
+            parents.Top(i)->gtFlags |= callFlags;
         }
     }
     else
@@ -402,8 +457,8 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 
             if (immOp2 != nullptr)
             {
-                comp->getHWIntrinsicImmTypes(intrinsicId, &sigInfo, 2, simdBaseType, simdBaseJitType, op2ClsHnd,
-                                             op3ClsHnd, &immSimdSize, &immSimdBaseType);
+                comp->getHWIntrinsicImmTypes(intrinsicId, &sigInfo, 2, simdBaseType, simdBaseJitType, op1ClsHnd,
+                                             op2ClsHnd, op3ClsHnd, &immSimdSize, &immSimdBaseType);
                 HWIntrinsicInfo::lookupImmBounds(intrinsicId, immSimdSize, immSimdBaseType, 2, &immLowerBound,
                                                  &immUpperBound);
 
@@ -418,8 +473,8 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                 immSimdBaseType = simdBaseType;
             }
 
-            comp->getHWIntrinsicImmTypes(intrinsicId, &sigInfo, 1, simdBaseType, simdBaseJitType, op2ClsHnd, op3ClsHnd,
-                                         &immSimdSize, &immSimdBaseType);
+            comp->getHWIntrinsicImmTypes(intrinsicId, &sigInfo, 1, simdBaseType, simdBaseJitType, op1ClsHnd, op2ClsHnd,
+                                         op3ClsHnd, &immSimdSize, &immSimdBaseType);
             HWIntrinsicInfo::lookupImmBounds(intrinsicId, immSimdSize, immSimdBaseType, 1, &immLowerBound,
                                              &immUpperBound);
 #endif

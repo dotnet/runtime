@@ -2,19 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     thread.cpp
 
 Abstract:
-
     Thread object and core APIs
-
-
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -48,6 +40,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #define UNDEF_KERNEL
 #endif
 #include <sys/procfs.h>
+#include <fcntl.h>
 #ifdef UNDEF_KERNEL
 #undef _KERNEL
 #endif

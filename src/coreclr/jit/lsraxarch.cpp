@@ -195,7 +195,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
 #ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR_RET:
-            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR);
+            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR.GetIntRegSet());
             // Plus one for error register
             srcCount = BuildReturn(tree) + 1;
             killMask = getKillSetForReturn();
@@ -213,7 +213,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 assert(tree->TypeGet() == TYP_INT);
                 srcCount = 1;
-                BuildUse(tree->gtGetOp1(), RBM_INTRET);
+                BuildUse(tree->gtGetOp1(), RBM_INTRET.GetIntRegSet());
             }
             break;
 
@@ -442,11 +442,11 @@ int LinearScan::BuildNode(GenTree* tree)
             // Comparand is preferenced to RAX.
             // The remaining two operands can be in any reg other than RAX.
 
-            const SingleTypeRegSet nonRaxCandidates = availableIntRegs & ~RBM_RAX;
+            SingleTypeRegSet nonRaxCandidates = availableIntRegs & ~SRBM_RAX;
             BuildUse(addr, nonRaxCandidates);
-            BuildUse(data, varTypeIsByte(tree) ? (nonRaxCandidates & RBM_BYTE_REGS) : nonRaxCandidates);
-            BuildUse(comparand, RBM_RAX);
-            BuildDef(tree, RBM_RAX);
+            BuildUse(data, varTypeIsByte(tree) ? (nonRaxCandidates & RBM_BYTE_REGS.GetIntRegSet()) : nonRaxCandidates);
+            BuildUse(comparand, SRBM_RAX);
+            BuildDef(tree, SRBM_RAX);
         }
         break;
 
@@ -461,10 +461,10 @@ int LinearScan::BuildNode(GenTree* tree)
                 assert(!varTypeIsByte(data));
 
                 // if tree's value is used, we'll emit a cmpxchg-loop idiom (requires RAX)
-                buildInternalIntRegisterDefForNode(tree, availableIntRegs & ~RBM_RAX);
-                BuildUse(addr, availableIntRegs & ~RBM_RAX);
-                BuildUse(data, availableIntRegs & ~RBM_RAX);
-                BuildDef(tree, RBM_RAX);
+                buildInternalIntRegisterDefForNode(tree, availableIntRegs & ~SRBM_RAX);
+                BuildUse(addr, availableIntRegs & ~SRBM_RAX);
+                BuildUse(data, availableIntRegs & ~SRBM_RAX);
+                BuildDef(tree, SRBM_RAX);
                 buildInternalRegisterUses();
                 srcCount = 2;
                 assert(dstCount == 1);
@@ -485,7 +485,7 @@ int LinearScan::BuildNode(GenTree* tree)
             setDelayFree(addrUse);
             tgtPrefUse = addrUse;
             assert(!data->isContained());
-            BuildUse(data, varTypeIsByte(tree) ? RBM_BYTE_REGS : RBM_NONE);
+            BuildUse(data, varTypeIsByte(tree) ? RBM_BYTE_REGS.GetIntRegSet() : RBM_NONE);
             srcCount = 2;
             assert(dstCount == 1);
             BuildDef(tree);
@@ -577,7 +577,7 @@ int LinearScan::BuildNode(GenTree* tree)
             if (varTypeIsByte(tree))
             {
                 // on X86 we have to use byte-able regs for byte-wide loads
-                BuildUse(tree->gtGetOp1(), RBM_BYTE_REGS);
+                BuildUse(tree->gtGetOp1(), RBM_BYTE_REGS.GetIntRegSet());
                 srcCount = 1;
                 break;
             }
@@ -597,7 +597,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CATCH_ARG:
             srcCount = 0;
             assert(dstCount == 1);
-            BuildDef(tree, RBM_EXCEPTION_OBJECT);
+            BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
 #if defined(FEATURE_EH_WINDOWS_X86)
@@ -652,7 +652,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // and we know REG_SWIFT_ERROR should be busy up to this point, anyway.
             // By forcing LSRA to use REG_SWIFT_ERROR as both the source and destination register,
             // we can ensure the redundant move is elided.
-            BuildDef(tree, RBM_SWIFT_ERROR);
+            BuildDef(tree, RBM_SWIFT_ERROR.GetIntRegSet());
             break;
 #endif // SWIFT_SUPPORT
 
@@ -1065,8 +1065,8 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #endif
     else
     {
-        srcCandidates = availableIntRegs & ~RBM_RCX;
-        dstCandidates = availableIntRegs & ~RBM_RCX;
+        srcCandidates = availableIntRegs & ~SRBM_RCX;
+        dstCandidates = availableIntRegs & ~SRBM_RCX;
     }
 
     // Note that Rotate Left/Right instructions don't set ZF and SF flags.
@@ -1120,8 +1120,8 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     {
         if (!shiftBy->isContained())
         {
-            srcCount += BuildDelayFreeUses(shiftBy, source, RBM_RCX);
-            buildKillPositionsForNode(tree, currentLoc + 1, RBM_RCX);
+            srcCount += BuildDelayFreeUses(shiftBy, source, SRBM_RCX);
+            buildKillPositionsForNode(tree, currentLoc + 1, SRBM_RCX);
         }
         BuildDef(tree, dstCandidates);
     }
@@ -1129,8 +1129,8 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     {
         if (!shiftBy->isContained())
         {
-            srcCount += BuildOperandUses(shiftBy, RBM_RCX);
-            buildKillPositionsForNode(tree, currentLoc + 1, RBM_RCX);
+            srcCount += BuildOperandUses(shiftBy, SRBM_RCX);
+            buildKillPositionsForNode(tree, currentLoc + 1, SRBM_RCX);
         }
     }
     return srcCount;
@@ -1185,7 +1185,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
         // correct argument registers.
-        singleDstCandidates = RBM_PINVOKE_TCB;
+        singleDstCandidates = RBM_PINVOKE_TCB.GetIntRegSet();
     }
     else
 #endif // TARGET_X86
@@ -1197,7 +1197,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
                 // The return value will be on the X87 stack, and we will need to move it.
                 singleDstCandidates = allRegs(registerType);
 #else  // !TARGET_X86
-            singleDstCandidates = RBM_FLOATRET;
+            singleDstCandidates = RBM_FLOATRET.GetFloatRegSet();
 #endif // !TARGET_X86
             }
             else
@@ -1206,11 +1206,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
                 if (registerType == TYP_LONG)
                 {
-                    singleDstCandidates = RBM_LNGRET;
+                    singleDstCandidates = RBM_LNGRET.GetIntRegSet();
                 }
                 else
                 {
-                    singleDstCandidates = RBM_INTRET;
+                    singleDstCandidates = RBM_INTRET.GetIntRegSet();
                 }
             }
         }
@@ -1244,10 +1244,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         // By this point, lowering has ensured that all call arguments are one of the following:
-        // - an arg setup store
-        // - an arg placeholder
-        // - a nop
-        // - a copy blk
         // - a field list
         // - a put arg
         //
@@ -1329,7 +1325,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be restored in the epilog sequence.
-            ctrlExprCandidates = RBM_INT_CALLEE_TRASH;
+            ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
         }
 #ifdef TARGET_X86
         else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
@@ -1342,7 +1338,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Where EAX is also used as an argument to the stub dispatch helper. Make
             // sure that the call target address is computed into EAX in this case.
             assert(ctrlExpr->isIndir() && ctrlExpr->isContained());
-            ctrlExprCandidates = RBM_VIRTUAL_STUB_TARGET;
+            ctrlExprCandidates = RBM_VIRTUAL_STUB_TARGET.GetIntRegSet();
         }
 #endif // TARGET_X86
 
@@ -1353,7 +1349,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Don't assign the call target to any of the argument registers because
             // we will use them to also pass floating point arguments as required
             // by Amd64 ABI.
-            ctrlExprCandidates = availableIntRegs & ~(RBM_ARG_REGS);
+            ctrlExprCandidates = availableIntRegs & ~(RBM_ARG_REGS.GetIntRegSet());
         }
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
@@ -1487,9 +1483,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             break;
 
             case GenTreeBlk::BlkOpKindRepInstr:
-                dstAddrRegMask = RBM_RDI;
-                srcRegMask     = RBM_RAX;
-                sizeRegMask    = RBM_RCX;
+                dstAddrRegMask = SRBM_RDI;
+                srcRegMask     = SRBM_RAX;
+                sizeRegMask    = SRBM_RCX;
                 break;
 
             case GenTreeBlk::BlkOpKindLoop:
@@ -1513,13 +1509,13 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             case GenTreeBlk::BlkOpKindCpObjRepInstr:
                 // We need the size of the contiguous Non-GC-region to be in RCX to call rep movsq.
-                sizeRegMask = RBM_RCX;
+                sizeRegMask = SRBM_RCX;
                 FALLTHROUGH;
 
             case GenTreeBlk::BlkOpKindCpObjUnroll:
                 // The srcAddr must be in a register. If it was under a GT_IND, we need to subsume all of its sources.
-                dstAddrRegMask = RBM_RDI;
-                srcRegMask     = RBM_RSI;
+                dstAddrRegMask = SRBM_RDI;
+                srcRegMask     = SRBM_RSI;
                 break;
 
             case GenTreeBlk::BlkOpKindUnroll:
@@ -1612,9 +1608,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             break;
 
             case GenTreeBlk::BlkOpKindRepInstr:
-                dstAddrRegMask = RBM_RDI;
-                srcRegMask     = RBM_RSI;
-                sizeRegMask    = RBM_RCX;
+                dstAddrRegMask = SRBM_RDI;
+                srcRegMask     = SRBM_RSI;
+                sizeRegMask    = SRBM_RCX;
                 break;
 
             default:
@@ -1676,7 +1672,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     if (internalIsByte && (useCount >= BYTE_REG_COUNT))
     {
         noway_assert(internalIntDef != nullptr);
-        internalIntDef->registerAssignment = RBM_RAX;
+        internalIntDef->registerAssignment = SRBM_RAX;
     }
 #endif
 
@@ -1834,9 +1830,9 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 #ifndef TARGET_X86
         case GenTreePutArgStk::Kind::PartialRepInstr:
 #endif
-            buildInternalIntRegisterDefForNode(putArgStk, RBM_RDI);
-            buildInternalIntRegisterDefForNode(putArgStk, RBM_RCX);
-            buildInternalIntRegisterDefForNode(putArgStk, RBM_RSI);
+            buildInternalIntRegisterDefForNode(putArgStk, SRBM_RDI);
+            buildInternalIntRegisterDefForNode(putArgStk, SRBM_RCX);
+            buildInternalIntRegisterDefForNode(putArgStk, SRBM_RSI);
             break;
 
 #ifdef TARGET_X86
@@ -1931,13 +1927,13 @@ int LinearScan::BuildModDiv(GenTree* tree)
     {
         // We are interested in just the remainder.
         // RAX is used as a trashable register during computation of remainder.
-        dstCandidates = RBM_RDX;
+        dstCandidates = SRBM_RDX;
     }
     else
     {
         // We are interested in just the quotient.
         // RDX gets used as trashable register during computation of quotient
-        dstCandidates = RBM_RAX;
+        dstCandidates = SRBM_RAX;
     }
 
 #ifdef TARGET_X86
@@ -1956,20 +1952,20 @@ int LinearScan::BuildModDiv(GenTree* tree)
         // This situation also requires an internal register.
         buildInternalIntRegisterDefForNode(tree);
 
-        BuildUse(loVal, RBM_EAX);
-        BuildUse(hiVal, RBM_EDX);
+        BuildUse(loVal, SRBM_EAX);
+        BuildUse(hiVal, SRBM_EDX);
         srcCount = 2;
     }
     else
 #endif
     {
         // If possible would like to have op1 in RAX to avoid a register move.
-        RefPosition* op1Use = BuildUse(op1, RBM_EAX);
+        RefPosition* op1Use = BuildUse(op1, SRBM_EAX);
         tgtPrefUse          = op1Use;
         srcCount            = 1;
     }
 
-    srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(RBM_RAX | RBM_RDX));
+    srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(SRBM_RAX | SRBM_RDX));
 
     buildInternalRegisterUses();
 
@@ -2272,6 +2268,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_Vector128_AsVector128Unsafe:
             case NI_Vector128_AsVector2:
             case NI_Vector128_AsVector3:
             case NI_Vector128_ToVector256:
@@ -2312,7 +2309,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // MaskMove hardcodes the destination (op3) in DI/EDI/RDI
                 srcCount += BuildOperandUses(op1, BuildEvexIncompatibleMask(op1));
                 srcCount += BuildOperandUses(op2, BuildEvexIncompatibleMask(op2));
-                srcCount += BuildOperandUses(op3, RBM_EDI);
+                srcCount += BuildOperandUses(op3, SRBM_EDI);
 
                 buildUses = false;
                 break;
@@ -2332,7 +2329,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     srcCount += 1;
                     srcCount += op2->isContained() ? BuildOperandUses(op2, BuildEvexIncompatibleMask(op2))
                                                    : BuildDelayFreeUses(op2, op1, BuildEvexIncompatibleMask(op2));
-                    srcCount += BuildDelayFreeUses(op3, op1, RBM_XMM0);
+                    srcCount += BuildDelayFreeUses(op3, op1, SRBM_XMM0);
 
                     buildUses = false;
                 }
@@ -2381,8 +2378,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(isRMW);
 
                 // DIV implicitly put op1(lower) to EAX and op2(upper) to EDX
-                srcCount += BuildOperandUses(op1, RBM_EAX);
-                srcCount += BuildOperandUses(op2, RBM_EDX);
+                srcCount += BuildOperandUses(op1, SRBM_EAX);
+                srcCount += BuildOperandUses(op2, SRBM_EDX);
 
                 if (!op3->isContained())
                 {
@@ -2405,8 +2402,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
 
                 // result put in EAX and EDX
-                BuildDef(intrinsicTree, RBM_EAX, 0);
-                BuildDef(intrinsicTree, RBM_EDX, 1);
+                BuildDef(intrinsicTree, SRBM_EAX, 0);
+                BuildDef(intrinsicTree, SRBM_EDX, 1);
 
                 buildUses = false;
                 break;
@@ -2416,7 +2413,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_BMI2_X64_MultiplyNoFlags:
             {
                 assert(numArgs == 2 || numArgs == 3);
-                srcCount += BuildOperandUses(op1, RBM_EDX);
+                srcCount += BuildOperandUses(op1, SRBM_EDX);
                 srcCount += BuildOperandUses(op2);
                 if (numArgs == 3)
                 {
@@ -2451,6 +2448,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512F_FusedMultiplySubtractAdd:
             case NI_AVX512F_FusedMultiplySubtractNegated:
             case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
+            case NI_AVX10v1_FusedMultiplyAddNegatedScalar:
+            case NI_AVX10v1_FusedMultiplyAddScalar:
+            case NI_AVX10v1_FusedMultiplySubtractNegatedScalar:
+            case NI_AVX10v1_FusedMultiplySubtractScalar:
             {
                 assert((numArgs == 3) || (intrinsicTree->OperIsEmbRoundingEnabled()));
                 assert(isRMW);
@@ -2572,7 +2573,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_AVX512F_BlendVariableMask:
+            case NI_EVEX_BlendVariableMask:
             {
                 assert(numArgs == 3);
 
@@ -2630,6 +2631,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512VBMI_PermuteVar64x8x2:
             case NI_AVX512VBMI_VL_PermuteVar16x8x2:
             case NI_AVX512VBMI_VL_PermuteVar32x8x2:
+            case NI_AVX10v1_PermuteVar16x8x2:
+            case NI_AVX10v1_PermuteVar2x64x2:
+            case NI_AVX10v1_PermuteVar4x32x2:
+            case NI_AVX10v1_PermuteVar8x16x2:
+            case NI_AVX10v1_PermuteVar32x8x2:
+            case NI_AVX10v1_PermuteVar4x64x2:
+            case NI_AVX10v1_PermuteVar8x32x2:
+            case NI_AVX10v1_PermuteVar16x16x2:
+            case NI_AVX10v1_V512_PermuteVar64x8x2:
             {
                 assert(numArgs == 3);
                 assert(isRMW);
@@ -2786,7 +2796,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
                 else if (isRMW)
                 {
-                    if (!op2->isContained() && HWIntrinsicInfo::IsCommutative(intrinsicId))
+                    if (!op2->isContained() && intrinsicTree->isCommutativeHWIntrinsic())
                     {
                         // When op2 is not contained and we are commutative, we can set op2
                         // to also be a tgtPrefUse. Codegen will then swap the operands.
@@ -2988,7 +2998,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 }
                 if ((nonMemSource != nullptr) && !nonMemSource->isContained() && varTypeIsByte(indirTree))
                 {
-                    srcCandidates = RBM_BYTE_REGS;
+                    srcCandidates = RBM_BYTE_REGS.GetIntRegSet();
                 }
                 if (otherIndir != nullptr)
                 {
@@ -3098,19 +3108,19 @@ int LinearScan::BuildMul(GenTree* tree)
         // Here we set RAX as the only destination candidate
         // In LSRA we set the kill set for this operation to RBM_RAX|RBM_RDX
         //
-        dstCandidates = RBM_RAX;
+        dstCandidates = SRBM_RAX;
     }
     else if (tree->OperGet() == GT_MULHI)
     {
         // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
         // upper 32 bits of the result set the destination candidate to REG_RDX.
-        dstCandidates = RBM_RDX;
+        dstCandidates = SRBM_RDX;
     }
 #if defined(TARGET_X86)
     else if (tree->OperGet() == GT_MUL_LONG)
     {
         // have to use the encoding:RDX:RAX = RAX * rm
-        dstCandidates = RBM_RAX | RBM_RDX;
+        dstCandidates = SRBM_RAX | SRBM_RDX;
         dstCount      = 2;
     }
 #endif

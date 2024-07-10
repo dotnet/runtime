@@ -239,8 +239,8 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 		jit_mm_lock (jit_mm);
 		// FIXME: The lookup can fail if the method is JITted recursively though a type cctor
 		MonoSeqPointInfo *existing_seq_points = NULL;
-		if (!g_hash_table_lookup_extended (jit_mm->seq_points, cfg->method_to_register, NULL, (gpointer *)&existing_seq_points)) {
-			g_hash_table_insert (jit_mm->seq_points, cfg->method_to_register, cfg->seq_point_info);
+		if (!dn_simdhash_ght_try_get_value (jit_mm->seq_points, cfg->method_to_register, (void **)&existing_seq_points)) {
+			dn_simdhash_ght_insert (jit_mm->seq_points, cfg->method_to_register, cfg->seq_point_info);
 		} else {
 			mono_seq_point_info_free (cfg->seq_point_info);
 			cfg->seq_point_info = existing_seq_points;
@@ -259,7 +259,7 @@ MonoSeqPointInfo*
 mono_get_seq_points (MonoMethod *method)
 {
 	ERROR_DECL (error);
-	MonoSeqPointInfo *seq_points;
+	MonoSeqPointInfo *seq_points = NULL;
 	MonoMethod *declaring_generic_method = NULL, *shared_method = NULL;
 	MonoJitMemoryManager *jit_mm;
 
@@ -272,12 +272,12 @@ mono_get_seq_points (MonoMethod *method)
 	// FIXME:
 	jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
-	seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (jit_mm->seq_points, method);
+	dn_simdhash_ght_try_get_value (jit_mm->seq_points, method, (void **)&seq_points);
 	if (!seq_points && method->is_inflated) {
 		/* generic sharing + aot */
-		seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (jit_mm->seq_points, declaring_generic_method);
+		dn_simdhash_ght_try_get_value (jit_mm->seq_points, declaring_generic_method, (void **)&seq_points);
 		if (!seq_points)
-			seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (jit_mm->seq_points, shared_method);
+			dn_simdhash_ght_try_get_value (jit_mm->seq_points, shared_method, (void **)&seq_points);
 	}
 	jit_mm_unlock (jit_mm);
 

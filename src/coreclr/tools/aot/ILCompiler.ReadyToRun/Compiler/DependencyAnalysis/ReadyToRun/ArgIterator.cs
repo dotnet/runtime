@@ -1521,7 +1521,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     _hasArgLocDescForStructInRegs = true;
                                     _argLocDescForStructInRegs.m_floatFlags = floatFieldFlags;
 
-                                    int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * 8;
+                                    int argOfsInner =
+                                        ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND) != 0)
+                                            ? _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * 8
+                                            : _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * 8;
+
                                     _riscv64IdxFPReg++;
                                     _riscv64IdxGenReg++;
                                     return argOfsInner;

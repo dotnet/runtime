@@ -308,7 +308,7 @@ struct TransitionBlock
         {
             return argLocDescForStructInRegs->m_cFloatReg > 0;
         }
-    #elif defined(TARGET_LOONGARCH64)
+    #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (argLocDescForStructInRegs != NULL)
         {
             return argLocDescForStructInRegs->m_cFloatReg > 0;
@@ -1849,7 +1849,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_cFloatReg = 1;
-                int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
+                int argOfs = (flags & STRUCT_FLOAT_FIELD_SECOND)
+                    ? TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8
+                    : TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
                 m_idxFPReg += 1;
 
                 m_argLocDescForStructInRegs.m_structFields = flags;

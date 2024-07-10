@@ -73,9 +73,18 @@ namespace ILCompiler.DependencyAnalysis
             for (int i = firstNode; i < markedNodes.Count; i++)
             {
                 DependencyNodeCore<NodeFactory> entry = markedNodes[i];
-                EETypeNode entryAsEETypeNode = entry as EETypeNode;
+                EETypeNode entryAsEETypeNode;
 
-                if (entryAsEETypeNode == null)
+                // This method is often called with a long list of ScannedMethodNode
+                // or MethodCodeNode nodes. We are not interested in those. In order
+                // to make the type check as cheap as possible we check for specific
+                // *sealed* types instead of doing `entry is EETypeNode` which has
+                // to walk the whole class hierarchy for the non matching nodes.
+                if (entry is ConstructedEETypeNode constructedEETypeNode)
+                    entryAsEETypeNode = constructedEETypeNode;
+                else if (entry is CanonicalEETypeNode canonicalEETypeNode)
+                    entryAsEETypeNode = canonicalEETypeNode;
+                else
                     continue;
 
                 TypeDesc potentialOverrideType = entryAsEETypeNode.Type;

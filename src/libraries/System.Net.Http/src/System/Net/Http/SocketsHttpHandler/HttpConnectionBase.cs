@@ -16,17 +16,19 @@ namespace System.Net.Http
 {
     internal abstract class HttpConnectionBase : IDisposable, IHttpTrace
     {
+        protected readonly HttpConnectionPool _pool;
+
         private static long s_connectionCounter = -1;
 
         // May be null if none of the counters were enabled when the connection was established.
-        private readonly ConnectionMetrics? _connectionMetrics;
+        private ConnectionMetrics? _connectionMetrics;
 
         // Indicates whether we've counted this connection as established, so that we can
         // avoid decrementing the counter once it's closed in case telemetry was enabled in between.
-        private readonly bool _httpTelemetryMarkedConnectionAsOpened;
+        private bool _httpTelemetryMarkedConnectionAsOpened;
 
         private readonly long _creationTickCount = Environment.TickCount64;
-        private long _idleSinceTickCount;
+        private long? _idleSinceTickCount;
 
         /// <summary>Cached string for the last Date header received on this connection.</summary>
         private string? _lastDateHeaderValue;
@@ -35,13 +37,23 @@ namespace System.Net.Http
 
         public long Id { get; } = Interlocked.Increment(ref s_connectionCounter);
 
-        public HttpConnectionBase(HttpConnectionPool pool, IPEndPoint? remoteEndPoint)
+        public HttpConnectionBase(HttpConnectionPool pool)
         {
             Debug.Assert(this is HttpConnection or Http2Connection or Http3Connection);
-            Debug.Assert(pool.Settings._metrics is not null);
+            Debug.Assert(pool != null);
+            _pool = pool;
+        }
+        public HttpConnectionBase(HttpConnectionPool pool, IPEndPoint? remoteEndPoint)
+            : this(pool)
+        {
+            MarkConnectionAsEstablished(remoteEndPoint);
+        }
 
-            SocketsHttpHandlerMetrics metrics = pool.Settings._metrics;
+        protected void MarkConnectionAsEstablished(IPEndPoint? remoteEndPoint)
+        {
+            Debug.Assert(_pool.Settings._metrics is not null);
 
+            SocketsHttpHandlerMetrics metrics = _pool.Settings._metrics;
             if (metrics.OpenConnections.Enabled || metrics.ConnectionDuration.Enabled)
             {
                 // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
@@ -53,9 +65,9 @@ namespace System.Net.Http
                 _connectionMetrics = new ConnectionMetrics(
                     metrics,
                     protocol,
-                    pool.IsSecure ? "https" : "http",
-                    pool.OriginAuthority.HostValue,
-                    pool.IsDefaultPort ? null : pool.OriginAuthority.Port,
+                    _pool.IsSecure ? "https" : "http",
+                    _pool.OriginAuthority.HostValue,
+                    _pool.IsDefaultPort ? null : _pool.OriginAuthority.Port,
                     remoteEndPoint?.Address?.ToString());
 
                 _connectionMetrics.ConnectionEstablished();
@@ -67,9 +79,9 @@ namespace System.Net.Http
             {
                 _httpTelemetryMarkedConnectionAsOpened = true;
 
-                string scheme = pool.IsSecure ? "https" : "http";
-                string host = pool.OriginAuthority.HostValue;
-                int port = pool.OriginAuthority.Port;
+                string scheme = _pool.IsSecure ? "https" : "http";
+                string host = _pool.OriginAuthority.HostValue;
+                int port = _pool.OriginAuthority.Port;
 
                 if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionEstablished(Id, scheme, host, port, remoteEndPoint);
                 else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionEstablished(Id, scheme, host, port, remoteEndPoint);
@@ -101,6 +113,7 @@ namespace System.Net.Http
 
         public void MarkConnectionAsNotIdle()
         {
+            _idleSinceTickCount = null;
             _connectionMetrics?.IdleStateChanged(idle: false);
         }
 
@@ -146,7 +159,7 @@ namespace System.Net.Http
 
         public long GetLifetimeTicks(long nowTicks) => nowTicks - _creationTickCount;
 
-        public virtual long GetIdleTicks(long nowTicks) => nowTicks - _idleSinceTickCount;
+        public long GetIdleTicks(long nowTicks) => _idleSinceTickCount is long idleSinceTickCount ? nowTicks - idleSinceTickCount : 0;
 
         /// <summary>Check whether a connection is still usable, or should be scavenged.</summary>
         /// <returns>True if connection can be used.</returns>
@@ -166,24 +179,6 @@ namespace System.Net.Http
             }
 
             return 100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0');
-        }
-
-        /// <summary>Awaits a task, ignoring any resulting exceptions.</summary>
-        internal static void IgnoreExceptions(ValueTask<int> task)
-        {
-            // Avoid TaskScheduler.UnobservedTaskException firing for any exceptions.
-            if (task.IsCompleted)
-            {
-                if (task.IsFaulted)
-                {
-                    _ = task.AsTask().Exception;
-                }
-            }
-            else
-            {
-                task.AsTask().ContinueWith(static t => _ = t.Exception,
-                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-            }
         }
 
         /// <summary>Awaits a task, logging any resulting exceptions (which are otherwise ignored).</summary>

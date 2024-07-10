@@ -736,7 +736,6 @@ void Ref_Shutdown()
     }
 }
 
-#ifndef FEATURE_NATIVEAOT
 bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
 {
     CONTRACTL
@@ -825,7 +824,6 @@ bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
         offset = last->dwMaxIndex;
     }
 }
-#endif // !FEATURE_NATIVEAOT
 
 void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket)
 {

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
@@ -81,13 +82,18 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// The converter supports polymorphic writes; only reserved for System.Object types.
         /// </summary>
-        internal bool CanBePolymorphic { get; set; }
+        internal bool CanBePolymorphic { get; init; }
 
         /// <summary>
         /// The serializer must read ahead all contents of the next JSON value
         /// before calling into the converter for deserialization.
         /// </summary>
-        internal bool RequiresReadAhead { get; set; }
+        internal bool RequiresReadAhead { get; private protected set; }
+
+        /// <summary>
+        /// Whether the converter is a special root-level value streaming converter.
+        /// </summary>
+        internal bool IsRootLevelMultiContentStreamingConverter { get; init; }
 
         /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
@@ -200,6 +206,10 @@ namespace System.Text.Json.Serialization
         internal abstract void WriteAsPropertyNameCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, bool isWritingExtensionDataProperty);
         internal abstract void WriteNumberWithCustomHandlingAsObject(Utf8JsonWriter writer, object? value, JsonNumberHandling handling);
 
+        /// <summary>
+        /// Gets a schema from the type being converted
+        /// </summary>
+        internal virtual JsonSchema? GetSchema(JsonNumberHandling numberHandling) => null;
 
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }

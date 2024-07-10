@@ -672,6 +672,7 @@ debugger_agent_parse_options (char *options)
 			exit (1);
 		}
 	}
+	g_strfreev (args);
 
 	if (agent_config.server && !agent_config.suspend) {
 		/* Waiting for deferred attachment */

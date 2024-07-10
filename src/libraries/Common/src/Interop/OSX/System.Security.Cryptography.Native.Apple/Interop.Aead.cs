@@ -43,13 +43,13 @@ internal static partial class Interop
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_ChaCha20Poly1305Encrypt(
-                    out SwiftError error,
                     new UnsafeBufferPointer<byte>(keyPtr, key.Length),
                     new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
                     new UnsafeBufferPointer<byte>(plaintextPtr, plaintext.Length),
                     new UnsafeMutableBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
                     new UnsafeMutableBufferPointer<byte>(tagPtr, tag.Length),
-                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length));
+                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length),
+                    out SwiftError error);
 
                 if (error.Value != null)
                 {
@@ -76,13 +76,13 @@ internal static partial class Interop
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_ChaCha20Poly1305Decrypt(
-                    out SwiftError error,
                     new UnsafeBufferPointer<byte>(keyPtr, key.Length),
                     new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
                     new UnsafeBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
                     new UnsafeBufferPointer<byte>(tagPtr, tag.Length),
                     new UnsafeMutableBufferPointer<byte>(plaintextPtr, plaintext.Length),
-                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length));
+                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length),
+                    out SwiftError error);
 
                 if (error.Value != null)
                 {
@@ -116,13 +116,13 @@ internal static partial class Interop
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_AesGcmEncrypt(
-                    out SwiftError error,
                     new UnsafeBufferPointer<byte>(keyPtr, key.Length),
                     new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
                     new UnsafeBufferPointer<byte>(plaintextPtr, plaintext.Length),
                     new UnsafeMutableBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
                     new UnsafeMutableBufferPointer<byte>(tagPtr, tag.Length),
-                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length));
+                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length),
+                    out SwiftError error);
 
                 if (error.Value != null)
                 {
@@ -149,13 +149,13 @@ internal static partial class Interop
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_AesGcmDecrypt(
-                    out SwiftError error,
                     new UnsafeBufferPointer<byte>(keyPtr, key.Length),
                     new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
                     new UnsafeBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
                     new UnsafeBufferPointer<byte>(tagPtr, tag.Length),
                     new UnsafeMutableBufferPointer<byte>(plaintextPtr, plaintext.Length),
-                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length));
+                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length),
+                    out SwiftError error);
 
                 if (error.Value != null)
                 {
@@ -176,46 +176,46 @@ internal static partial class Interop
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_ChaCha20Poly1305Encrypt(
-            out SwiftError error,
             UnsafeBufferPointer<byte> key,
             UnsafeBufferPointer<byte> nonce,
             UnsafeBufferPointer<byte> plaintext,
             UnsafeMutableBufferPointer<byte> ciphertext,
             UnsafeMutableBufferPointer<byte> tag,
-            UnsafeBufferPointer<byte> aad);
+            UnsafeBufferPointer<byte> aad,
+            out SwiftError error);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_ChaCha20Poly1305Decrypt(
-            out SwiftError error,
             UnsafeBufferPointer<byte> key,
             UnsafeBufferPointer<byte> nonce,
             UnsafeBufferPointer<byte> ciphertext,
             UnsafeBufferPointer<byte> tag,
             UnsafeMutableBufferPointer<byte> plaintext,
-            UnsafeBufferPointer<byte> aad);
+            UnsafeBufferPointer<byte> aad,
+            out SwiftError error);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_AesGcmEncrypt(
-            out SwiftError error,
             UnsafeBufferPointer<byte> key,
             UnsafeBufferPointer<byte> nonce,
             UnsafeBufferPointer<byte> plaintext,
             UnsafeMutableBufferPointer<byte> ciphertext,
             UnsafeMutableBufferPointer<byte> tag,
-            UnsafeBufferPointer<byte> aad);
+            UnsafeBufferPointer<byte> aad,
+            out SwiftError error);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_AesGcmDecrypt(
-            out SwiftError error,
             UnsafeBufferPointer<byte> key,
             UnsafeBufferPointer<byte> nonce,
             UnsafeBufferPointer<byte> ciphertext,
             UnsafeBufferPointer<byte> tag,
             UnsafeMutableBufferPointer<byte> plaintext,
-            UnsafeBufferPointer<byte> aad);
+            UnsafeBufferPointer<byte> aad,
+            out SwiftError error);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvSwift) })]
