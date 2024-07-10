@@ -29,8 +29,8 @@
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
-#define               Thread__m_fPreemptiveGCDisabled   0x0C
-#define               Thread__m_pFrame                  0x10
+#define               Thread__m_fPreemptiveGCDisabled   0x04
+#define               Thread__m_pFrame                  0x08
 
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
@@ -201,12 +201,6 @@ ASMCONSTANTS_C_ASSERT(MethodDesc_ALIGNMENT_SHIFT == MethodDesc::ALIGNMENT_SHIFT)
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext == offsetof(ResolveCacheElem, pNext));
 
-#define DomainLocalModule__m_pDataBlob 0x30
-#define DomainLocalModule__m_pGCStatics 0x20
-ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pDataBlob == offsetof(DomainLocalModule, m_pDataBlob));
-ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pGCStatics == offsetof(DomainLocalModule, m_pGCStatics));
-
-
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x08
 ASMCONSTANTS_C_ASSERT(Frame__m_Next == offsetof(Frame, m_Next))
@@ -214,16 +208,16 @@ ASMCONSTANTS_C_ASSERT(Frame__m_Next == offsetof(Frame, m_Next))
 #define               InlinedCallFrame__m_Datum 0x10
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_Datum == offsetof(InlinedCallFrame, m_Datum))
 
-#define               InlinedCallFrame__m_pCallSiteSP 0x20
+#define               InlinedCallFrame__m_pCallSiteSP 0x18
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCallSiteSP == offsetof(InlinedCallFrame, m_pCallSiteSP))
 
-#define               InlinedCallFrame__m_pCallerReturnAddress 0x28
+#define               InlinedCallFrame__m_pCallerReturnAddress 0x20
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCallerReturnAddress == offsetof(InlinedCallFrame, m_pCallerReturnAddress))
 
-#define               InlinedCallFrame__m_pCalleeSavedFP 0x30
+#define               InlinedCallFrame__m_pCalleeSavedFP 0x28
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCalleeSavedFP == offsetof(InlinedCallFrame, m_pCalleeSavedFP))
 
-#define               InlinedCallFrame__m_pThread 0x38
+#define               InlinedCallFrame__m_pThread 0x30
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pThread == offsetof(InlinedCallFrame, m_pThread))
 
 #define FixupPrecodeData__Target 0x00

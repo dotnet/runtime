@@ -16,7 +16,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class LibraryInitializerTests : AppTestBase
+public partial class LibraryInitializerTests : AppTestBase
 {
     public LibraryInitializerTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -26,7 +26,7 @@ public class LibraryInitializerTests : AppTestBase
     [Fact]
     public async Task LoadLibraryInitializer()
     {
-        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer");
+        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer", "App");
         PublishProject("Debug");
 
         var result = await RunSdkStyleAppForPublish(new(Configuration: "Debug", TestScenario: "LibraryInitializerTest"));
@@ -36,10 +36,13 @@ public class LibraryInitializerTests : AppTestBase
         );
     }
 
+    [GeneratedRegex("MONO_WASM: Failed to invoke 'onRuntimeConfigLoaded' on library initializer '../WasmBasicTestApp.[a-z0-9]+.lib.module.js': Error: Error thrown from library initializer")]
+    private static partial Regex AbortStartupOnErrorRegex();
+
     [Fact]
     public async Task AbortStartupOnError()
     {
-        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError");
+        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError", "App");
         PublishProject("Debug");
 
         var result = await RunSdkStyleAppForPublish(new(
@@ -48,6 +51,6 @@ public class LibraryInitializerTests : AppTestBase
             BrowserQueryString: new Dictionary<string, string> { ["throwError"] = "true" },
             ExpectedExitCode: 1
         ));
-        Assert.True(result.ConsoleOutput.Any(m => m.Contains("MONO_WASM: Failed to invoke 'onRuntimeConfigLoaded' on library initializer '../WasmBasicTestApp.lib.module.js': Error: Error thrown from library initializer")), "The library initializer test didn't emit expected error message");
+        Assert.True(result.ConsoleOutput.Any(m => AbortStartupOnErrorRegex().IsMatch(m)), "The library initializer test didn't emit expected error message");
     }
 }

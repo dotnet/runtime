@@ -22,7 +22,6 @@ namespace ILCompiler
     public sealed class AnalysisBasedMetadataManager : MetadataManager, ICompilationRootProvider
     {
         private readonly List<ModuleDesc> _modulesWithMetadata;
-        private readonly List<MetadataType> _typesWithRootedCctorContext;
         private readonly List<TypeDesc> _forcedTypes;
 
         private readonly Dictionary<TypeDesc, MetadataCategory> _reflectableTypes = new Dictionary<TypeDesc, MetadataCategory>();
@@ -36,7 +35,7 @@ namespace ILCompiler
                 new NoDynamicInvokeThunkGenerationPolicy(), Array.Empty<ModuleDesc>(), Array.Empty<TypeDesc>(),
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
-                Array.Empty<MetadataType>(), default)
+                default)
         {
         }
 
@@ -53,12 +52,10 @@ namespace ILCompiler
             IEnumerable<ReflectableEntity<MethodDesc>> reflectableMethods,
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
             IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
-            IEnumerable<MetadataType> rootedCctorContexts,
             MetadataManagerOptions options)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
-            _typesWithRootedCctorContext = new List<MetadataType>(rootedCctorContexts);
             _forcedTypes = new List<TypeDesc>(forcedTypes);
 
             foreach (var refType in reflectableTypes)
@@ -205,11 +202,6 @@ namespace ILCompiler
                     rootProvider.AddReflectionRoot(field, reason);
                 }
             }
-
-            foreach (var type in _typesWithRootedCctorContext)
-            {
-                rootProvider.RootNonGCStaticBaseForType(type, reason);
-            }
         }
 
         private struct Policy : IMetadataPolicy
@@ -259,6 +251,11 @@ namespace ILCompiler
                 }
 
                 return GeneratesMetadata(targetType);
+            }
+
+            public bool GeneratesInterfaceImpl(MetadataType typeDef, MetadataType interfaceImpl)
+            {
+                return _parent.IsInterfaceUsed(interfaceImpl.GetTypeDefinition());
             }
 
             public bool IsBlocked(MetadataType typeDef)

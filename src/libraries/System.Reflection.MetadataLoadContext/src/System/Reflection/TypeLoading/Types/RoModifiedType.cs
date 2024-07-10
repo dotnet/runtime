@@ -152,7 +152,7 @@ namespace System.Reflection
 
         public override IEnumerable<TypeInfo> DeclaredNestedTypes
         {
-#if NETCOREAPP
+#if NET
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicNestedTypes | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
 #endif
             get { throw new NotSupportedException(SR.NotSupported_ModifiedType); }

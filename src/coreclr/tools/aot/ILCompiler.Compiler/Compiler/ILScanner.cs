@@ -264,7 +264,7 @@ namespace ILCompiler
 
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
-            private Dictionary<TypeDesc, IReadOnlyList<MethodDesc>> _vtableSlices = new Dictionary<TypeDesc, IReadOnlyList<MethodDesc>>();
+            private readonly Dictionary<TypeDesc, MethodDesc[]> _vtableSlices = new Dictionary<TypeDesc, MethodDesc[]>();
 
             public ScannedVTableProvider(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
@@ -273,7 +273,16 @@ namespace ILCompiler
                     var vtableSliceNode = node as VTableSliceNode;
                     if (vtableSliceNode != null)
                     {
-                        _vtableSlices.Add(vtableSliceNode.Type, vtableSliceNode.Slots);
+                        ArrayBuilder<MethodDesc> usedSlots = default;
+
+                        for (int i = 0; i < vtableSliceNode.Slots.Count; i++)
+                        {
+                            MethodDesc slot = vtableSliceNode.Slots[i];
+                            if (vtableSliceNode.IsSlotUsed(slot))
+                                usedSlots.Add(slot);
+                        }
+
+                        _vtableSlices.Add(vtableSliceNode.Type, usedSlots.ToArray());
                     }
                 }
             }
@@ -284,7 +293,7 @@ namespace ILCompiler
                 // https://github.com/dotnet/corert/issues/3873
                 if (type.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType)
                 {
-                    if (!_vtableSlices.TryGetValue(type, out IReadOnlyList<MethodDesc> slots))
+                    if (!_vtableSlices.TryGetValue(type, out MethodDesc[] slots))
                     {
                         // If we couldn't find the vtable slice information for this type, it's because the scanner
                         // didn't correctly predict what will be needed.
@@ -297,7 +306,7 @@ namespace ILCompiler
                         string typeName = ExceptionTypeNameFormatter.Instance.FormatName(type);
                         throw new ScannerFailedException($"VTable of type '{typeName}' not computed by the IL scanner.");
                     }
-                    return new PrecomputedVTableSliceNode(type, slots);
+                    return new LazilyBuiltVTableSliceNode(type, slots);
                 }
                 else
                     return new LazilyBuiltVTableSliceNode(type);
@@ -413,7 +422,8 @@ namespace ILCompiler
 
         private sealed class ScannedDevirtualizationManager : DevirtualizationManager
         {
-            private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _constructedMethodTables = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _canonConstructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
@@ -442,7 +452,12 @@ namespace ILCompiler
 
                     if (type != null)
                     {
-                        _constructedTypes.Add(type);
+                        _constructedMethodTables.Add(type);
+                        TypeDesc canonForm = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                        if (canonForm != type)
+                        {
+                            _canonConstructedMethodTables.Add(canonForm);
+                        }
 
                         if (type.IsInterface)
                         {
@@ -687,7 +702,19 @@ namespace ILCompiler
                 return result;
             }
 
-            public override bool CanConstructType(TypeDesc type) => _constructedTypes.Contains(type);
+            public override bool CanReferenceConstructedMethodTable(TypeDesc type)
+            {
+                Debug.Assert(type.NormalizeInstantiation() == type);
+                Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
+                return _constructedMethodTables.Contains(type);
+            }
+
+            public override bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)
+            {
+                Debug.Assert(type.NormalizeInstantiation() == type);
+                Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
+                return _constructedMethodTables.Contains(type) || _canonConstructedMethodTables.Contains(type);
+            }
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
             {

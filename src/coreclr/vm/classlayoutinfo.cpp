@@ -136,7 +136,7 @@ namespace
     )
     {
         UINT32 cbCurOffset = parentSize;
-        BYTE LargestAlignmentRequirement = max(1, min(packingSize, parentAlignmentRequirement));
+        BYTE LargestAlignmentRequirement = max<BYTE>(1, min(packingSize, parentAlignmentRequirement));
 
         // Start with the size inherited from the parent (if any).
         uint32_t calcTotalSize = parentSize;
@@ -198,7 +198,7 @@ namespace
                 COMPlusThrowOM();
 
             // size must be large enough to accommodate layout. If not, we use the layout size instead.
-            calcTotalSize = max(classSize, calcTotalSize);
+            calcTotalSize = max((uint32_t)classSize, calcTotalSize);
         }
         else
         {
@@ -285,7 +285,7 @@ namespace
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
-            if (pNestedType.GetMethodTable()->ContainsPointers())
+            if (pNestedType.GetMethodTable()->ContainsGCPointers())
             {
                 // this field type has GC pointers in it, which need to be pointer-size aligned
                 placementInfo.m_alignment = TARGET_POINTER_SIZE;
@@ -310,7 +310,7 @@ namespace
         if (corElemType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!pNestedType.IsNull());
-            return pNestedType.GetMethodTable()->ContainsPointers() != FALSE;
+            return pNestedType.GetMethodTable()->ContainsGCPointers() != FALSE;
         }
         return TRUE;
     }
@@ -1023,7 +1023,6 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     {
         // The intrinsic Vector<T> type has a special size. Copy the native size and alignment
         // from the managed size and alignment.
-        // Crossgen scenarios block Vector<T> from even being loaded, so only do this check when not in crossgen.
         if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
         {
             pNativeLayoutInfo->m_size = pEEClassLayoutInfo->GetManagedSize();

@@ -846,7 +846,8 @@ namespace System.Text
                 if (length == 0)
                 {
                     ExpandByABlock(count);
-                    length = Math.Min(m_ChunkChars.Length - m_ChunkLength, count);
+                    Debug.Assert(m_ChunkLength == 0 && m_ChunkChars.Length >= count);
+                    length = count;
                 }
                 value.CopyTo(startIndex, new Span<char>(m_ChunkChars, m_ChunkLength, length), length);
 
@@ -1124,17 +1125,58 @@ namespace System.Text
 
         public StringBuilder AppendJoin(string? separator, params object?[] values)
         {
+            if (values is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
+            separator ??= string.Empty;
+            return AppendJoinCore(ref separator.GetRawStringData(), separator.Length, values);
+        }
+
+        /// <summary>
+        /// Concatenates the string representations of the elements in the provided span of objects, using the specified separator between each member,
+        /// then appends the result to the current instance of the string builder.
+        /// </summary>
+        /// <param name="separator">The string to use as a separator. <paramref name="separator"/> is included in the joined strings only if <paramref name="values"/> has more than one element.</param>
+        /// <param name="values">A span that contains the strings to concatenate and append to the current instance of the string builder.</param>
+        /// <returns>A reference to this instance after the append operation has completed.</returns>
+        public StringBuilder AppendJoin(string? separator, params ReadOnlySpan<object?> values)
+        {
             separator ??= string.Empty;
             return AppendJoinCore(ref separator.GetRawStringData(), separator.Length, values);
         }
 
         public StringBuilder AppendJoin<T>(string? separator, IEnumerable<T> values)
         {
+            if (values is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
             separator ??= string.Empty;
             return AppendJoinCore(ref separator.GetRawStringData(), separator.Length, values);
         }
 
         public StringBuilder AppendJoin(string? separator, params string?[] values)
+        {
+            if (values is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
+            separator ??= string.Empty;
+            return AppendJoinCore(ref separator.GetRawStringData(), separator.Length, values);
+        }
+
+        /// <summary>
+        /// Concatenates the strings of the provided span, using the specified separator between each string,
+        /// then appends the result to the current instance of the string builder.
+        /// </summary>
+        /// <param name="separator">The string to use as a separator. <paramref name="separator"/> is included in the joined strings only if <paramref name="values"/> has more than one element.</param>
+        /// <param name="values">A span that contains the strings to concatenate and append to the current instance of the string builder.</param>
+        /// <returns>A reference to this instance after the append operation has completed.</returns>
+        public StringBuilder AppendJoin(string? separator, params ReadOnlySpan<string?> values)
         {
             separator ??= string.Empty;
             return AppendJoinCore(ref separator.GetRawStringData(), separator.Length, values);
@@ -1142,30 +1184,60 @@ namespace System.Text
 
         public StringBuilder AppendJoin(char separator, params object?[] values)
         {
-            return AppendJoinCore(ref separator, 1, values);
+            if (values is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
+            return AppendJoinCore(ref separator, 1, (ReadOnlySpan<object?>)values);
         }
+
+        /// <summary>
+        /// Concatenates the string representations of the elements in the provided span of objects, using the specified char separator between each member,
+        /// then appends the result to the current instance of the string builder.
+        /// </summary>
+        /// <param name="separator">The character to use as a separator. <paramref name="separator"/> is included in the joined strings only if <paramref name="values"/> has more than one element.</param>
+        /// <param name="values">A span that contains the strings to concatenate and append to the current instance of the string builder.</param>
+        /// <returns>A reference to this instance after the append operation has completed.</returns>
+        public StringBuilder AppendJoin(char separator, params ReadOnlySpan<object?> values) =>
+            AppendJoinCore(ref separator, 1, values);
 
         public StringBuilder AppendJoin<T>(char separator, IEnumerable<T> values)
         {
+            if (values is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
             return AppendJoinCore(ref separator, 1, values);
         }
 
         public StringBuilder AppendJoin(char separator, params string?[] values)
         {
-            return AppendJoinCore(ref separator, 1, values);
-        }
-
-        private StringBuilder AppendJoinCore<T>(ref char separator, int separatorLength, IEnumerable<T> values)
-        {
-            Debug.Assert(!Unsafe.IsNullRef(ref separator));
-            Debug.Assert(separatorLength >= 0);
-
-            if (values == null)
+            if (values is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
+            return AppendJoinCore(ref separator, 1, (ReadOnlySpan<string?>)values);
+        }
+
+        /// <summary>
+        /// Concatenates the strings of the provided span, using the specified char separator between each string,
+        /// then appends the result to the current instance of the string builder.
+        /// </summary>
+        /// <param name="separator">The character to use as a separator. <paramref name="separator"/> is included in the joined strings only if <paramref name="values"/> has more than one element.</param>
+        /// <param name="values">A span that contains the strings to concatenate and append to the current instance of the string builder.</param>
+        /// <returns>A reference to this instance after the append operation has completed.</returns>
+        public StringBuilder AppendJoin(char separator, params ReadOnlySpan<string?> values) =>
+            AppendJoinCore(ref separator, 1, values);
+
+        private StringBuilder AppendJoinCore<T>(ref char separator, int separatorLength, IEnumerable<T> values)
+        {
             Debug.Assert(values != null);
+            Debug.Assert(!Unsafe.IsNullRef(ref separator));
+            Debug.Assert(separatorLength >= 0);
+
             using (IEnumerator<T> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
@@ -1192,15 +1264,9 @@ namespace System.Text
             return this;
         }
 
-        private StringBuilder AppendJoinCore<T>(ref char separator, int separatorLength, T[] values)
+        private StringBuilder AppendJoinCore<T>(ref char separator, int separatorLength, ReadOnlySpan<T> values)
         {
-            if (values == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
-            }
-
-            Debug.Assert(values != null);
-            if (values.Length == 0)
+            if (values.IsEmpty)
             {
                 return this;
             }
@@ -1360,19 +1426,19 @@ namespace System.Text
 
         public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
-            return AppendFormatHelper(null, format, new ReadOnlySpan<object?>(in arg0));
+            return AppendFormat(null, format, new ReadOnlySpan<object?>(in arg0));
         }
 
         public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             TwoObjects two = new TwoObjects(arg0, arg1);
-            return AppendFormatHelper(null, format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2));
+            return AppendFormat(null, format, (ReadOnlySpan<object?>)two);
         }
 
         public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-            return AppendFormatHelper(null, format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3));
+            return AppendFormat(null, format, (ReadOnlySpan<object?>)three);
         }
 
         public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
@@ -1380,28 +1446,47 @@ namespace System.Text
             if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
-                // args and format are null. The actual null check for format is in AppendFormatHelper.
+                // args and format are null. The actual null check for format is in AppendFormat(..., span).
                 ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
-            return AppendFormatHelper(null, format, args);
+            return AppendFormat(null, format, args);
+        }
+
+        /// <summary>
+        /// Appends the string returned by processing a composite format string, which contains zero or more format items, to this instance.
+        /// Each format item is replaced by the string representation of a corresponding argument in a parameter span.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="args">A span of objects to format.</param>
+        /// <returns>A reference to this instance after the append operation has completed.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of the expanded string would exceed <see cref="StringBuilder.MaxCapacity"/>.</exception>
+        /// <exception cref="FormatException">
+        /// <paramref name="format"/> is invalid.
+        /// -or-
+        /// The index of a format item is less than 0 (zero), or greater than or equal to the length of the <paramref name="args"/> span.
+        /// </exception>
+        public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> args)
+        {
+            return AppendFormat(null, format, args);
         }
 
         public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
-            return AppendFormatHelper(provider, format, new ReadOnlySpan<object?>(in arg0));
+            return AppendFormat(provider, format, new ReadOnlySpan<object?>(in arg0));
         }
 
         public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             TwoObjects two = new TwoObjects(arg0, arg1);
-            return AppendFormatHelper(provider, format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2));
+            return AppendFormat(provider, format, (ReadOnlySpan<object?>)two);
         }
 
         public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-            return AppendFormatHelper(provider, format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3));
+            return AppendFormat(provider, format, (ReadOnlySpan<object?>)three);
         }
 
         public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
@@ -1409,14 +1494,29 @@ namespace System.Text
             if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
-                // args and format are null. The actual null check for format is in AppendFormatHelper.
+                // args and format are null. The actual null check for format is in AppendFormat(..., span).
                 ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
-            return AppendFormatHelper(provider, format, args);
+            return AppendFormat(provider, format, (ReadOnlySpan<object?>)args);
         }
 
-        internal StringBuilder AppendFormatHelper(IFormatProvider? provider, string format, ReadOnlySpan<object?> args)
+        /// <summary>
+        /// Appends the string returned by processing a composite format string, which contains zero or more format items, to this instance.
+        /// Each format item is replaced by the string representation of a corresponding argument in a parameter span using a specified format provider.
+        /// </summary>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="args">A span of objects to format.</param>
+        /// <returns>A reference to this instance after the append operation has completed.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of the expanded string would exceed <see cref="StringBuilder.MaxCapacity"/>.</exception>
+        /// <exception cref="FormatException">
+        /// <paramref name="format"/> is invalid.
+        /// -or-
+        /// The index of a format item is less than 0 (zero), or greater than or equal to the length of the <paramref name="args"/> span.
+        /// </exception>
+        public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> args)
         {
             ArgumentNullException.ThrowIfNull(format);
 
@@ -1776,7 +1876,7 @@ namespace System.Text
         /// <returns>A reference to this instance after the append operation has completed.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
         /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
-        public StringBuilder AppendFormat(IFormatProvider? provider, CompositeFormat format, ReadOnlySpan<object?> args)
+        public StringBuilder AppendFormat(IFormatProvider? provider, CompositeFormat format, params ReadOnlySpan<object?> args)
         {
             ArgumentNullException.ThrowIfNull(format);
             format.ValidateNumberOfArgs(args.Length);

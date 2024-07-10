@@ -41,9 +41,6 @@ EXTERN_C CODE_LOCATION ReturnFromUniversalTransition;
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransition_DebugStepTailCall;
 #endif
 
-#ifdef TARGET_X86
-EXTERN_C CODE_LOCATION RhpCallFunclet2;
-#endif
 EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
 EXTERN_C CODE_LOCATION RhpCallFinallyFunclet2;
 EXTERN_C CODE_LOCATION RhpCallFilterFunclet2;
@@ -242,6 +239,54 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
         m_HijackedReturnValueKind = retValueKind;
     }
 
+#elif defined(TARGET_LOONGARCH64)
+    m_RegDisplay.pFP = (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(PInvokeTransitionFrame, pFrame, m_FramePointer);
+    m_RegDisplay.pRA = (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(PInvokeTransitionFrame, pFrame, m_RIP);
+
+    ASSERT(!(pFrame->m_Flags & PTFF_SAVE_FP)); // FP should never contain a GC ref
+
+    if (pFrame->m_Flags & PTFF_SAVE_R23) { m_RegDisplay.pR23 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R24) { m_RegDisplay.pR24 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R25) { m_RegDisplay.pR25 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R26) { m_RegDisplay.pR26 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R27) { m_RegDisplay.pR27 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R28) { m_RegDisplay.pR28 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R29) { m_RegDisplay.pR29 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R30) { m_RegDisplay.pR30 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R31) { m_RegDisplay.pR31 = pPreservedRegsCursor++; }
+
+    if (pFrame->m_Flags & PTFF_SAVE_SP) { m_RegDisplay.SP = *pPreservedRegsCursor++; }
+
+    if (pFrame->m_Flags & PTFF_SAVE_R0) { m_RegDisplay.pR0 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_RA) { m_RegDisplay.pRA = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R2) { m_RegDisplay.pR2 = pPreservedRegsCursor++; }
+
+    if (pFrame->m_Flags & PTFF_SAVE_R4) { m_RegDisplay.pR4 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R5) { m_RegDisplay.pR5 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R6) { m_RegDisplay.pR6 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R7) { m_RegDisplay.pR7 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R8) { m_RegDisplay.pR8 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R9) { m_RegDisplay.pR9 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R10) { m_RegDisplay.pR10 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R11) { m_RegDisplay.pR11 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R12) { m_RegDisplay.pR12 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R13) { m_RegDisplay.pR13 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R14) { m_RegDisplay.pR14 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R15) { m_RegDisplay.pR15 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R16) { m_RegDisplay.pR16 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R17) { m_RegDisplay.pR17 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R18) { m_RegDisplay.pR18 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R19) { m_RegDisplay.pR19 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R20) { m_RegDisplay.pR20 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_R21) { m_RegDisplay.pR21 = pPreservedRegsCursor++; }
+
+    GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
+    if (retValueKind != GCRK_Scalar)
+    {
+        m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pR4;
+        m_HijackedReturnValueKind = retValueKind;
+    }
+
 #else // TARGET_ARM
     if (pFrame->m_Flags & PTFF_SAVE_RBX)  { m_RegDisplay.pRbx = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_RSI)  { m_RegDisplay.pRsi = pPreservedRegsCursor++; }
@@ -280,28 +325,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
 #endif // defined(USE_PORTABLE_HELPERS)
 
-    // This function guarantees that the final initialized context will refer to a managed
-    // frame.  In the rare case where the PC does not refer to managed code (and refers to an
-    // assembly thunk instead), unwind through the thunk sequence to find the nearest managed
-    // frame.
-    // NOTE: When thunks are present, the thunk sequence may report a conservative GC reporting
-    // lower bound that must be applied when processing the managed frame.
-
-    ReturnAddressCategory category = CategorizeUnadjustedReturnAddress(m_ControlPC);
-
-    if (category == InManagedCode)
-    {
-        ASSERT(m_pInstance->IsManaged(m_ControlPC));
-    }
-    else if (IsNonEHThunk(category))
-    {
-        UnwindNonEHThunkSequence();
-        ASSERT(m_pInstance->IsManaged(m_ControlPC));
-    }
-    else
-    {
-        FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY("PInvokeTransitionFrame PC points to an unexpected assembly thunk kind.");
-    }
+    // adjust for thunks, if needed
+    EnsureInitializedToManagedFrame();
 
     STRESS_LOG1(LF_STACKWALK, LL_INFO10000, "   %p\n", m_ControlPC);
 }
@@ -426,6 +451,35 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pX1 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, X1);
     // TODO: Copy X2-X7 when we start supporting HVA's
 
+#elif defined(TARGET_LOONGARCH64)
+    //
+    // preserved regs
+    //
+    m_RegDisplay.pR23 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R23);
+    m_RegDisplay.pR24 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R24);
+    m_RegDisplay.pR25 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R25);
+    m_RegDisplay.pR26 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R26);
+    m_RegDisplay.pR27 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R27);
+    m_RegDisplay.pR28 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R28);
+    m_RegDisplay.pR29 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R29);
+    m_RegDisplay.pR30 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R30);
+    m_RegDisplay.pR31 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R31);
+    m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, FP);
+    m_RegDisplay.pRA = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, RA);
+
+    //
+    // preserved vfp regs
+    //
+    for (int32_t i = 0; i < 16 - 8; i++)
+    {
+        m_RegDisplay.F[i] = pCtx->F[i];
+    }
+    //
+    // scratch regs
+    //
+    m_RegDisplay.pR4 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R4);
+    m_RegDisplay.pR5 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R5);
+
 #elif defined(UNIX_AMD64_ABI)
     //
     // preserved regs
@@ -487,7 +541,13 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
 }
 
 // Prepare to start a stack walk from the context listed in the supplied NATIVE_CONTEXT.
-// The supplied context can describe a location in managed code.
+// NOTE: When a return address hijack is executed, the PC in the NATIVE_CONTEXT
+// matches the hijacked return address.  This PC is not guaranteed to be in managed code
+// since the hijacked return address may refer to a location where an assembly thunk called
+// into managed code.
+// NOTE: When the PC is in an assembly thunk, this function will unwind to the next managed
+// frame and may publish a conservative stack range (if and only if any of the unwound
+// thunks report a conservative range).
 void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pCtx, uint32_t dwFlags)
 {
     ASSERT((dwFlags & MethodStateCalculated) == 0);
@@ -501,8 +561,9 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     // properly walk it in parallel.
     ResetNextExInfoForSP(pCtx->GetSp());
 
-    // This codepath is used by the hijack stackwalk. The IP must be in managed code.
-    ASSERT(m_pInstance->IsManaged(dac_cast<PTR_VOID>(pCtx->GetIp())));
+    // This codepath is used by the hijack stackwalk. The IP must be in managed code
+    // or in a conservatively reported assembly thunk.
+    ASSERT(IsValidReturnAddress((void*)pCtx->GetIp()));
 
     //
     // control state
@@ -614,11 +675,82 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pR11 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R11);
     m_RegDisplay.pR12 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R12);
     m_RegDisplay.pLR = (PTR_uintptr_t)PTR_TO_REG(pCtx, Lr);
+
+#elif defined(TARGET_LOONGARCH64)
+
+    //
+    // preserved regs
+    //
+    m_RegDisplay.pR23 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R23);
+    m_RegDisplay.pR24 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R24);
+    m_RegDisplay.pR25 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R25);
+    m_RegDisplay.pR26 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R26);
+    m_RegDisplay.pR27 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R27);
+    m_RegDisplay.pR28 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R28);
+    m_RegDisplay.pR29 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R29);
+    m_RegDisplay.pR30 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R30);
+    m_RegDisplay.pR31 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R31);
+    m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_REG(pCtx, Fp);
+    m_RegDisplay.pRA = (PTR_uintptr_t)PTR_TO_REG(pCtx, Ra);
+
+    //
+    // scratch regs
+    //
+    m_RegDisplay.pR0 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R0);
+    m_RegDisplay.pR2 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R2);
+    m_RegDisplay.pR4 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R4);
+    m_RegDisplay.pR5 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R5);
+    m_RegDisplay.pR6 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R6);
+    m_RegDisplay.pR7 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R7);
+    m_RegDisplay.pR8 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R8);
+    m_RegDisplay.pR9 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R9);
+    m_RegDisplay.pR10 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R10);
+    m_RegDisplay.pR11 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R11);
+    m_RegDisplay.pR12 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R12);
+    m_RegDisplay.pR13 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R13);
+    m_RegDisplay.pR14 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R14);
+    m_RegDisplay.pR15 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R15);
+    m_RegDisplay.pR16 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R16);
+    m_RegDisplay.pR17 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R17);
+    m_RegDisplay.pR18 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R18);
+    m_RegDisplay.pR19 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R19);
+    m_RegDisplay.pR20 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R20);
+    m_RegDisplay.pR21 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R21);
+
 #else
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
 #endif // TARGET_ARM
 
 #undef PTR_TO_REG
+
+    // adjust for thunks, if needed
+    EnsureInitializedToManagedFrame();
+}
+
+void StackFrameIterator::EnsureInitializedToManagedFrame()
+{
+    // This function guarantees that the final initialized context will refer to a managed
+    // frame.  In the rare case where the PC does not refer to managed code (and refers to an
+    // assembly thunk instead), unwind through the thunk sequence to find the nearest managed
+    // frame.
+    // NOTE: When thunks are present, the thunk sequence may report a conservative GC reporting
+    // lower bound that must be applied when processing the managed frame.
+
+    ReturnAddressCategory category = CategorizeUnadjustedReturnAddress(m_ControlPC);
+
+    if (category == InManagedCode)
+    {
+        ASSERT(m_pInstance->IsManaged(m_ControlPC));
+    }
+    else if (IsNonEHThunk(category))
+    {
+        UnwindNonEHThunkSequence();
+        ASSERT(m_pInstance->IsManaged(m_ControlPC));
+    }
+    else
+    {
+        FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY("Unadjusted initial PC points to an unexpected assembly thunk kind.");
+    }
 }
 
 PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
@@ -734,6 +866,18 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pX28 = thisFuncletPtrs.pX28;
     m_RegDisplay.pFP = thisFuncletPtrs.pFP;
 
+#elif defined(TARGET_LOONGARCH64)
+    m_RegDisplay.pR23 = thisFuncletPtrs.pR23;
+    m_RegDisplay.pR24 = thisFuncletPtrs.pR24;
+    m_RegDisplay.pR25 = thisFuncletPtrs.pR25;
+    m_RegDisplay.pR26 = thisFuncletPtrs.pR26;
+    m_RegDisplay.pR27 = thisFuncletPtrs.pR27;
+    m_RegDisplay.pR28 = thisFuncletPtrs.pR28;
+    m_RegDisplay.pR29 = thisFuncletPtrs.pR29;
+    m_RegDisplay.pR30 = thisFuncletPtrs.pR30;
+    m_RegDisplay.pR31 = thisFuncletPtrs.pR31;
+    m_RegDisplay.pFP = thisFuncletPtrs.pFP;
+
 #elif defined(UNIX_AMD64_ABI)
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
     m_RegDisplay.pRbp = thisFuncletPtrs.pRbp;
@@ -778,20 +922,6 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
            (CategorizeUnadjustedReturnAddress(m_ControlPC) == InFilterFuncletInvokeThunk));
 
     PTR_uintptr_t SP;
-
-#ifdef TARGET_X86
-    // First, unwind RhpCallFunclet
-    SP = (PTR_uintptr_t)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
-    m_RegDisplay.SetIP(*SP++);
-    m_RegDisplay.SetSP((uintptr_t)dac_cast<TADDR>(SP));
-    SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
-
-    ASSERT(
-        EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ||
-        EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFinallyFunclet2) ||
-        EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2)
-        );
-#endif
 
     bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
 
@@ -876,7 +1006,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR15 = SP++;
 
 #elif defined(TARGET_X86)
-    SP = (PTR_uintptr_t)(m_RegDisplay.SP);
+    SP = (PTR_uintptr_t)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
 
     if (!isFilterInvoke)
     {
@@ -981,12 +1111,54 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pX27 = SP++;
     m_RegDisplay.pX28 = SP++;
 
+#elif defined(TARGET_LOONGARCH64)
+    PTR_uint64_t f = (PTR_uint64_t)(m_RegDisplay.SP);
+
+    for (int i = 0; i < 8; i++)
+    {
+        m_RegDisplay.F[i] = *f++;
+    }
+
+    SP = (PTR_uintptr_t)f;
+
+    if (!isFilterInvoke)
+    {
+        // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
+        // thunks, but we don't need to know what they are here, so we just skip them.
+        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 6 : 4;
+        // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
+        m_funcletPtrs.pR23  = m_RegDisplay.pR23;
+        m_funcletPtrs.pR24  = m_RegDisplay.pR24;
+        m_funcletPtrs.pR25  = m_RegDisplay.pR25;
+        m_funcletPtrs.pR26  = m_RegDisplay.pR26;
+        m_funcletPtrs.pR27  = m_RegDisplay.pR27;
+        m_funcletPtrs.pR28  = m_RegDisplay.pR28;
+        m_funcletPtrs.pR29  = m_RegDisplay.pR29;
+        m_funcletPtrs.pR30  = m_RegDisplay.pR30;
+        m_funcletPtrs.pR31  = m_RegDisplay.pR31;
+        m_funcletPtrs.pFP   = m_RegDisplay.pFP;
+    }
+
+    m_RegDisplay.pFP  = SP++;
+
+    m_RegDisplay.SetIP(*SP++);
+
+    m_RegDisplay.pR23 = SP++;
+    m_RegDisplay.pR24 = SP++;
+    m_RegDisplay.pR25 = SP++;
+    m_RegDisplay.pR26 = SP++;
+    m_RegDisplay.pR27 = SP++;
+    m_RegDisplay.pR28 = SP++;
+    m_RegDisplay.pR29 = SP++;
+    m_RegDisplay.pR30 = SP++;
+    m_RegDisplay.pR31 = SP++;
+
 #else
     SP = (PTR_uintptr_t)(m_RegDisplay.SP);
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
 
-#if !defined(TARGET_ARM64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     m_RegDisplay.SetIP(PCODEToPINSTR(*SP++));
 #endif
 
@@ -1121,6 +1293,30 @@ public:
     {
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
     }
+
+#elif defined(TARGET_LOONGARCH64)
+
+    // Conservative GC reporting must be applied to everything between the base of the
+    // ReturnBlock and the top of the StackPassedArgs.
+private:
+    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-100 (0x08 bytes)    (fp)
+    uintptr_t m_pushedRA;                  // ChildSP+008     CallerSP-0F8 (0x08 bytes)    (ra)
+    Fp128   m_fpArgRegs[8];                // ChildSP+010     CallerSP-0F0 (0x80 bytes)    (q0-q7)
+    uintptr_t m_returnBlock[4];            // ChildSP+090     CallerSP-070 (0x40 bytes)
+    uintptr_t m_intArgRegs[9];             // ChildSP+0B0     CallerSP-050 (0x48 bytes)    (x0-x8)
+    uintptr_t m_alignmentPad;              // ChildSP+0F8     CallerSP-008 (0x08 bytes)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+100     CallerSP+000 (unknown size)
+
+public:
+    PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
+    PTR_uintptr_t get_AddressOfPushedCallerIP() { return GET_POINTER_TO_FIELD(m_pushedRA); }
+    PTR_uintptr_t get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_returnBlock[0]); }
+
+    void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
+    }
+
 #elif defined(TARGET_WASM)
 private:
     // WASMTODO: #error NYI for this arch
@@ -1192,6 +1388,8 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 #define STACK_ALIGN_SIZE 16
 #elif defined(TARGET_X86)
 #define STACK_ALIGN_SIZE 4
+#elif defined(TARGET_LOONGARCH64)
+#define STACK_ALIGN_SIZE 16
 #elif defined(TARGET_WASM)
 #define STACK_ALIGN_SIZE 4
 #endif
@@ -1257,6 +1455,17 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pRdi = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, Rdi);
     m_RegDisplay.pRsi = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, Rsi);
     m_RegDisplay.pRbx = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, Rbx);
+#elif defined(TARGET_LOONGARCH64)
+    m_RegDisplay.pR23 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R23);
+    m_RegDisplay.pR24 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R24);
+    m_RegDisplay.pR25 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R25);
+    m_RegDisplay.pR26 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R26);
+    m_RegDisplay.pR27 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R27);
+    m_RegDisplay.pR28 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R28);
+    m_RegDisplay.pR29 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R29);
+    m_RegDisplay.pR30 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R30);
+    m_RegDisplay.pR31 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R31);
+    m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, FP);
 #else
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
@@ -1694,6 +1903,13 @@ void StackFrameIterator::CalculateCurrentMethodState()
     m_effectiveSafePointAddress = m_ControlPC;
     m_FramePointer = GetCodeManager()->GetFramePointer(&m_methodInfo, &m_RegDisplay);
 
+#ifdef TARGET_X86
+    if (m_dwFlags & UpdateResumeSp)
+    {
+        m_RegDisplay.ResumeSP = GetCodeManager()->GetResumeSp(&m_methodInfo, &m_RegDisplay);
+    }
+#endif
+
     m_dwFlags |= MethodStateCalculated;
 }
 
@@ -1809,25 +2025,6 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
         return InThrowSiteThunk;
     }
 
-#ifdef TARGET_X86
-    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFunclet2))
-    {
-        PORTABILITY_ASSERT("CategorizeUnadjustedReturnAddress");
-#if 0
-        // See if it is a filter funclet based on the caller of RhpCallFunclet
-        PTR_uintptr_t SP = (PTR_uintptr_t)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
-        PTR_uintptr_t ControlPC = *SP++;
-        if (EQUALS_RETURN_ADDRESS(ControlPC, RhpCallFilterFunclet2))
-        {
-            return InFilterFuncletInvokeThunk;
-        }
-        else
-#endif
-        {
-            return InFuncletInvokeThunk;
-        }
-    }
-#else // TARGET_X86
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallCatchFunclet2) ||
         EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFinallyFunclet2))
     {
@@ -1838,14 +2035,13 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
     {
         return InFilterFuncletInvokeThunk;
     }
-#endif // TARGET_X86
     return InManagedCode;
 #endif // defined(USE_PORTABLE_HELPERS)
 }
 
 #ifndef DACCESS_COMPILE
 
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted))
+bool StackFrameIterator::Init(PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault)
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
 
@@ -1857,41 +2053,38 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIM
 
     // Passing NULL is a special-case to request a standard managed stack trace for the current thread.
     if (pStackwalkCtx == NULL)
-        pThis->InternalInitForStackTrace();
+        InternalInitForStackTrace();
     else
-        pThis->InternalInitForEH(pCurThread, pStackwalkCtx, instructionFault);
+        InternalInitForEH(pCurThread, pStackwalkCtx, instructionFault);
 
-    bool isValid = pThis->IsValid();
+    bool isValid = IsValid();
     if (isValid)
-        pThis->CalculateCurrentMethodState();
+        CalculateCurrentMethodState();
 
-    if (pfIsExceptionIntercepted)
-    {
-        *pfIsExceptionIntercepted = false;
-    }
-
-    FC_RETURN_BOOL(isValid);
+    return isValid;
 }
 
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiNext, (StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted))
+bool StackFrameIterator::Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundReversePInvoke)
 {
+    Thread * pCurThread = ThreadStore::GetCurrentThread();
+
     // The stackwalker is intolerant to hijacked threads, as it is largely expecting to be called from C++
     // where the hijack state of the thread is invariant.  Because we've exposed the iterator out to C#, we
     // need to unhijack every time we callback into C++ because the thread could have been hijacked during our
     // time executing C#.
-    ThreadStore::GetCurrentThread()->Unhijack();
+    pCurThread->Unhijack();
 
     const uint32_t MaxTryRegionIdx = 0xFFFFFFFF;
 
-    ExInfo * pCurExInfo = pThis->m_pNextExInfo;
-    pThis->Next();
-    bool isValid = pThis->IsValid();
+    ExInfo * pCurExInfo = m_pNextExInfo;
+    Next();
+    bool isValid = IsValid();
     if (isValid)
-        pThis->CalculateCurrentMethodState();
+        CalculateCurrentMethodState();
 
     if (puExCollideClauseIdx != NULL)
     {
-        if (pThis->m_dwFlags & StackFrameIterator::ExCollide)
+        if (m_dwFlags & StackFrameIterator::ExCollide)
         {
             ASSERT(pCurExInfo->m_idxCurClause != MaxTryRegionIdx);
             *puExCollideClauseIdx = pCurExInfo->m_idxCurClause;
@@ -1905,8 +2098,15 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiNext, (StackFrameIterator* pThis, uint32_
 
     if (pfUnwoundReversePInvoke != NULL)
     {
-        *pfUnwoundReversePInvoke = (pThis->m_dwFlags & StackFrameIterator::UnwoundReversePInvoke) != 0;
+        *pfUnwoundReversePInvoke = (m_dwFlags & StackFrameIterator::UnwoundReversePInvoke) != 0;
     }
+
+    return isValid;
+}
+
+FCIMPL4(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
+{
+    bool isValid = pThis->Init(pStackwalkCtx, instructionFault);
 
     if (pfIsExceptionIntercepted)
     {
@@ -1915,5 +2115,19 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiNext, (StackFrameIterator* pThis, uint32_
 
     FC_RETURN_BOOL(isValid);
 }
+FCIMPLEND
+
+FCIMPL4(FC_BOOL_RET, RhpSfiNext, StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
+{
+    bool isValid = pThis->Next(puExCollideClauseIdx, pfUnwoundReversePInvoke);
+
+    if (pfIsExceptionIntercepted)
+    {
+        *pfIsExceptionIntercepted = false;
+    }
+
+    FC_RETURN_BOOL(isValid);
+}
+FCIMPLEND
 
 #endif // !DACCESS_COMPILE

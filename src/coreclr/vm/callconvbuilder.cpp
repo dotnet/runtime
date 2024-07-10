@@ -298,15 +298,12 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        TypeHandle type;
-        MethodDesc* pMD;
-        FieldDesc* pFD;
+        ResolvedToken resolved{};
+        pResolver->ResolveToken(token, &resolved);
 
-        pResolver->ResolveToken(token, &type, &pMD, &pFD);
+        _ASSERTE(!resolved.TypeHandle.IsNull());
 
-        _ASSERTE(!type.IsNull());
-
-        *nameOut = type.GetMethodTable()->GetFullyQualifiedNameInfo(namespaceOut);
+        *nameOut = resolved.TypeHandle.GetMethodTable()->GetFullyQualifiedNameInfo(namespaceOut);
 
         return S_OK;
     }
@@ -455,8 +452,8 @@ HRESULT CallConv::TryGetCallingConventionFromUnmanagedCallConv(
     callConvsArg.Init("CallConvs", SERIALIZATION_TYPE_SZARRAY, callConvsType);
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
-    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
-    IfFailThrow(Attribute::ParseAttributeArgumentValues(
+    Assembly* assembly = pMD->GetLoaderModule()->GetAssembly();
+    IfFailThrow(CustomAttribute::ParseArgumentValues(
         pData,
         cData,
         &caValueArrayFactory,
@@ -464,7 +461,7 @@ HRESULT CallConv::TryGetCallingConventionFromUnmanagedCallConv(
         0,
         &callConvsArg,
         1,
-        domainAssembly));
+        assembly ));
 
     // Value isn't defined
     if (callConvsArg.val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
@@ -530,8 +527,8 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
     namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
-    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
-    IfFailThrow(Attribute::ParseAttributeArgumentValues(
+    Assembly* assembly = pMD->GetLoaderModule()->GetAssembly();
+    IfFailThrow(CustomAttribute::ParseArgumentValues(
         pData,
         cData,
         &caValueArrayFactory,
@@ -539,7 +536,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
         0,
         namedArgs,
         ARRAY_SIZE(namedArgs),
-        domainAssembly));
+        assembly));
 
     // If the value isn't defined, then return without setting anything.
     if (namedArgs[0].val.type.tag == SERIALIZATION_TYPE_UNDEFINED)

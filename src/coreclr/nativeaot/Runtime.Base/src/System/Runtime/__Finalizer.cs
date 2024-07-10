@@ -16,7 +16,7 @@ namespace System.Runtime
     // We choose this name to avoid clashing with any future public class with the name Finalizer.
     internal static class __Finalizer
     {
-        [UnmanagedCallersOnly(EntryPoint = "ProcessFinalizers", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(EntryPoint = "ProcessFinalizers")]
         public static void ProcessFinalizers()
         {
 #if INPLACE_RUNTIME
@@ -39,7 +39,7 @@ namespace System.Runtime
                 {
                     // RhpWaitForFinalizerRequest() returned false and indicated that memory is low. We help
                     // out by initiating a garbage collection and then go back to waiting for another request.
-                    InternalCalls.RhCollect(-1, InternalGCCollectionMode.Blocking);
+                    InternalCalls.RhCollect(0, InternalGCCollectionMode.Blocking, lowMemoryP: true);
                 }
             }
         }

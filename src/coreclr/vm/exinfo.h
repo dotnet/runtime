@@ -57,8 +57,6 @@ public:
 
     LPVOID              m_dEsp;             // Esp when  fault occurred, OR esp to restore on endcatch
 
-    StackTraceInfo      m_StackTraceInfo;
-
     PTR_ExInfo          m_pPrevNestedInfo;  // pointer to nested info if are handling nested exception
 
     size_t*             m_pShadowSP;        // Zero this after endcatch
@@ -136,7 +134,7 @@ public:
     EHClauseInfo        m_EHClauseInfo;
     ExceptionFlags      m_ExceptionFlags;
 
-#if defined(TARGET_X86) && defined(DEBUGGING_SUPPORTED)
+#ifdef DEBUGGING_SUPPORTED
     EHContext           m_InterceptionContext;
     BOOL                m_ValidInterceptionContext;
 #endif
@@ -155,9 +153,7 @@ private:
     ExInfo& operator=(const ExInfo &from);
 };
 
-#if defined(TARGET_X86)
 PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable, PTR_ExInfo pStartingEHTracker);
-#endif // TARGET_X86
 
 #else // !FEATURE_EH_FUNCLETS
 
@@ -169,6 +165,12 @@ enum RhEHClauseKind
     RH_EH_CLAUSE_FAULT = 1,
     RH_EH_CLAUSE_FILTER = 2,
     RH_EH_CLAUSE_UNUSED = 3,
+};
+
+enum RhEHFrameType
+{
+    RH_EH_FIRST_FRAME = 1,
+    RH_EH_FIRST_RETHROW_FRAME = 2,
 };
 
 struct RhEHClause
@@ -197,6 +199,13 @@ enum class ExKind : uint8_t
 };
 
 struct PAL_SEHException;
+
+struct LastReportedFuncletInfo
+{
+    PCODE IP;
+    TADDR FP;
+    uint32_t Flags;
+};
 
 struct ExInfo : public ExceptionTrackerBase
 {
@@ -269,6 +278,10 @@ struct ExInfo : public ExceptionTrackerBase
     // CONTEXT and REGDISPLAY used by the StackFrameIterator for stack walking
     CONTEXT        m_exContext;
     REGDISPLAY     m_regDisplay;
+    // Initial explicit frame for stack walking
+    Frame         *m_pInitialFrame;
+    // Info on the last reported funclet used to report references in the parent frame
+    LastReportedFuncletInfo m_lastReportedFunclet;
 
 #if defined(TARGET_UNIX)
     void TakeExceptionPointersOwnership(PAL_SEHException* ex);

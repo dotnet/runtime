@@ -33,82 +33,13 @@
 #define IMAGE_DEBUG_TYPE_EMBEDDED_PORTABLE_PDB  17
 
 #ifndef DACCESS_COMPILE
-//----------------------------------------------------------------------------
-//
-// FindMostRecentUserCodeOnStack - find out the most recent user managed code on stack
-//
-//
-// Arguments:
-//    pContext - [optional] pointer to the context to be restored the user code's context if found
-//
-// Return Value:
-//    The most recent user managed code or NULL if not found.
-//
-// Note:
-//    It is a heuristic approach to get the address of the user managed code that calls into
-//    BCL like System.Diagnostics.Debugger.Break assuming that we can find the original user
-//    code caller with stack walking.
-//
-//    DoWatsonForUserBreak has the address returned from the helper frame that points to an
-//    internal BCL helpful function doing permission check.  From bucketing perspetive it is
-//    more preferable to report the user managed code that invokes Debugger.Break instead.
-//
-//    User managed code is managed code in non-system assembly.   Currently, only CoreLib
-//    is marked as system assembly.
-//
-//----------------------------------------------------------------------------
-UINT_PTR FindMostRecentUserCodeOnStack(void)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END;
 
-    Thread * pThread = GetThread();
-    UINT_PTR address = NULL;
-
-    CONTEXT ctx;
-    REGDISPLAY rd;
-    SetUpRegdisplayForStackWalk(pThread, &ctx, &rd);
-
-    StackFrameIterator frameIter;
-    frameIter.Init(pThread, pThread->GetFrame(), &rd, FUNCTIONSONLY | LIGHTUNWIND);
-
-    while (frameIter.IsValid())
-    {
-        MethodDesc * pMD = frameIter.m_crawl.GetFunction();
-
-        // Is it not a system assembly?  User manged user will not be in system assembly.
-        if ((pMD != NULL) && (!pMD->GetAssembly()->IsSystem()))
-        {
-            CrawlFrame * pCF = &(frameIter.m_crawl);
-            address = (UINT_PTR)GetControlPC(pCF->GetRegisterSet());
-            break;
-        }
-
-        if (frameIter.Next() != SWA_CONTINUE)
-        {
-            break;
-        }
-    }
-
-    return address;
-}
-
-
-// This does a user break, triggered by System.Diagnostics.Debugger.Break, or the IL opcode for break.
 //
 // Notes:
 //    If a managed debugger is attached, this should send the managed UserBreak event.
 //    Else if a native debugger is attached, this should send a native break event (kernel32!DebugBreak)
 //    Else, this should invoke Watson.
 //
-// Historical trivia:
-// - In whidbey, this would still invoke Watson if a native-only debugger is attached.
-// - In arrowhead, the managed debugging pipeline switched to be built on the native pipeline.
 FCIMPL0(void, DebugDebugger::Break)
 {
     FCALL_CONTRACT;
@@ -233,13 +164,13 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     // OutputDebugString will log to native/interop debugger.
     if (pwzModule != NULL)
     {
-        WszOutputDebugString(pwzModule);
-        WszOutputDebugString(W(" : "));
+        OutputDebugString(pwzModule);
+        OutputDebugString(W(" : "));
     }
 
     if (pwzMessage != NULL)
     {
-        WszOutputDebugString(pwzMessage);
+        OutputDebugString(pwzMessage);
     }
 
     // If we're not logging a module prefix, then don't log the newline either.
@@ -248,7 +179,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     // already prepending that to the message, so we append a newline for readability.
     if (pwzModule != NULL)
     {
-        WszOutputDebugString(W("\n"));
+        OutputDebugString(W("\n"));
     }
 
 
@@ -762,7 +693,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     pLoadedPeSize[iNumValidFrames] = (CLR_I4)peSize;
 
                     // Set flag indicating PE file in memory has the on disk layout
-                    if (!pPEAssembly->IsDynamic())
+                    if (!pPEAssembly->IsReflectionEmit())
                     {
                         // This flag is only available for non-dynamic assemblies.
                         CLR_U1 *pIsFileLayout = (CLR_U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
@@ -834,7 +765,7 @@ extern MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
 }
 
 FORCEINLINE void HolderDestroyStrongHandle(OBJECTHANDLE h) { if (h != NULL) DestroyStrongHandle(h); }
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, NULL> StrongHandleHolder;
+typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, 0> StrongHandleHolder;
 
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
@@ -856,7 +787,7 @@ FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
         HELPER_METHOD_FRAME_BEGIN_PROTECT(pData);
 
         Thread * pThread = GetThread();
-        AppDomain * pAppDomain = pThread->GetDomain();
+        AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
         StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(pData);
         MethodTable * pMT = pData->GetGCSafeMethodTable();
@@ -917,7 +848,7 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
         pData->TargetThread->GetInternal() == GetThread())
     {
         // Null target thread specifies current thread.
-        GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY, pStartFrame);
+        GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY | QUICKUNWIND, pStartFrame);
     }
     else
     {
@@ -1046,7 +977,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     }
     else
     {
-        ip = NULL;
+        ip = (PCODE)NULL;
         dwNativeOffset = 0;
     }
 
@@ -1113,9 +1044,9 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 
     // Now get the _stackTrace reference
     StackTraceArray traceData;
-    EXCEPTIONREF(*e)->GetStackTrace(traceData, pDynamicMethodArray);
 
     GCPROTECT_BEGIN(traceData);
+        EXCEPTIONREF(*e)->GetStackTrace(traceData, pDynamicMethodArray);
         // The number of frame info elements in the stack trace info
         pData->cElements = static_cast<int>(traceData.Size());
 
@@ -1152,9 +1083,18 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 // to spot.
                 DWORD dwNativeOffset;
 
-                if (cur.ip)
+                UINT_PTR ip = cur.ip;
+#if defined(DACCESS_COMPILE) && defined(TARGET_AMD64)
+                // Compensate for a bug in the old EH that for a frame that faulted
+                // has the ip pointing to an address before the faulting instruction
+                if (g_isNewExceptionHandlingEnabled && (i == 0) && ((cur.flags & STEF_IP_ADJUSTED) == 0))
                 {
-                    EECodeInfo codeInfo(cur.ip);
+                    ip -= 1;
+                }
+#endif // DACCESS_COMPILE && TARGET_AMD64
+                if (ip)
+                {
+                    EECodeInfo codeInfo(ip);
                     dwNativeOffset = codeInfo.GetRelOffset();
                 }
                 else
@@ -1165,7 +1105,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 pData->pElements[i].InitPass1(
                     dwNativeOffset,
                     pMD,
-                    (PCODE)cur.ip,
+                    (PCODE)ip,
                     cur.flags);
 #ifndef DACCESS_COMPILE
                 pData->pElements[i].InitPass2();
@@ -1194,7 +1134,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     _ASSERTE(pFunc != NULL);
 
     // May have a null IP for ecall frames. If IP is null, then dwNativeOffset should be 0 too.
-    _ASSERTE ( (ip != NULL) || (dwNativeOffset == 0) );
+    _ASSERTE ( (ip != (PCODE)NULL) || (dwNativeOffset == 0) );
 
     this->pFunc = pFunc;
     this->dwOffset = dwNativeOffset;
@@ -1222,7 +1162,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
 
 #ifdef DEBUGGING_SUPPORTED
     // Calculate the IL offset using the debugging services
-    if ((this->ip != NULL) && g_pDebugInterface)
+    if ((this->ip != (PCODE)NULL) && g_pDebugInterface)
     {
         // To get the source line number of the actual code that threw an exception, the dwOffset needs to be
         // adjusted in certain cases when calculating the IL offset.

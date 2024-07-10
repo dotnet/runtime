@@ -4360,7 +4360,7 @@ MetaSig::CompareMethodSigs(
         return FALSE;
     }
 
-    __int8 callConv = *pSig1;
+    int8_t callConv = *pSig1;
 
     pSig1++;
     pSig2++;
@@ -4813,9 +4813,11 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
             if ((specialConstraints2 & (gpDefaultConstructorConstraint | gpNotNullableValueTypeConstraint)) == 0)
                 return FALSE;
         }
-        if ((specialConstraints1 & gpAcceptByRefLike) != 0)
+
+        // Constraints that 'allow' must check the overridden first
+        if ((specialConstraints2 & gpAllowByRefLike) != 0)
         {
-            if ((specialConstraints2 & gpAcceptByRefLike) == 0)
+            if ((specialConstraints1 & gpAllowByRefLike) == 0)
                 return FALSE;
         }
     }
@@ -5060,7 +5062,7 @@ void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTa
         reporter.Find(pMT, 0 /* baseOffset */);
     }
 
-    if (!pMT->ContainsPointers())
+    if (!pMT->ContainsGCPointers())
         return;
 
     CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
@@ -5089,7 +5091,7 @@ void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_Metho
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!pMT->ContainsPointers() && !pMT->IsByRefLike())
+    if (!pMT->ContainsGCPointers() && !pMT->IsByRefLike())
     {
         return;
     }

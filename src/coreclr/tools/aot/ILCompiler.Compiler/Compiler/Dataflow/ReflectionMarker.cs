@@ -30,6 +30,7 @@ namespace ILCompiler.Dataflow
         public NodeFactory Factory { get; }
         public FlowAnnotations Annotations { get; }
         public DependencyList Dependencies { get => _dependencies; }
+        public List<INodeWithRuntimeDeterminedDependencies> RuntimeDeterminedDependencies { get; } = new List<INodeWithRuntimeDeterminedDependencies>();
 
         internal enum AccessKind
         {
@@ -78,16 +79,16 @@ namespace ILCompiler.Dataflow
                     MarkEvent(origin, @event, reason, accessKind);
                     break;
                     // case InterfaceImplementation
-                    //  Nothing to do currently as Native AOT will preserve all interfaces on a preserved type
+                    //  This is handled in the MetadataType case above
             }
         }
 
         internal bool TryResolveTypeNameAndMark(string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, string reason, [NotNullWhen(true)] out TypeDesc? type)
         {
-            ModuleDesc? callingModule = ((diagnosticContext.Origin.MemberDefinition as MethodDesc)?.OwningType as MetadataType)?.Module;
+            ModuleDesc? callingModule = (diagnosticContext.Origin.MemberDefinition.GetOwningType() as MetadataType)?.Module;
 
             List<ModuleDesc> referencedModules = new();
-            TypeDesc foundType = System.Reflection.TypeNameParser.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
+            TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
                 referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary);
             if (foundType == null)
             {
@@ -205,15 +206,9 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            if (type.HasStaticConstructor)
-                CheckAndWarnOnReflectionAccess(origin, type.GetStaticConstructor());
-
-            if (!type.IsGenericDefinition && !type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) && Factory.PreinitializationManager.HasLazyStaticConstructor(type))
-            {
-                // Mark the GC static base - it contains a pointer to the class constructor, but also info
-                // about whether the class constructor already executed and it's what is looked at at runtime.
-                _dependencies.Add(Factory.TypeNonGCStaticsSymbol((MetadataType)type), "RunClassConstructor reference");
-            }
+            MethodDesc cctor = type.GetStaticConstructor();
+            if (cctor != null)
+                MarkMethod(origin, cctor, reason);
         }
 
         internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, AccessKind accessKind = AccessKind.Unspecified)

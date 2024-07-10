@@ -165,8 +165,6 @@ namespace System.Text.Json
 
         internal static JsonDocument ParseValue(ReadOnlySpan<byte> utf8Json, JsonDocumentOptions options)
         {
-            Debug.Assert(utf8Json != null);
-
             byte[] owned = new byte[utf8Json.Length];
             utf8Json.CopyTo(owned);
 
@@ -835,7 +833,7 @@ namespace System.Text.Json
         }
 
         private static async
-#if NETCOREAPP
+#if NET
             ValueTask<ArraySegment<byte>>
 #else
             Task<ArraySegment<byte>>
@@ -873,7 +871,7 @@ namespace System.Text.Json
                     Debug.Assert(rented.Length >= JsonConstants.Utf8Bom.Length);
 
                     lastRead = await stream.ReadAsync(
-#if NETCOREAPP
+#if NET
                         rented.AsMemory(written, utf8BomLength - written),
 #else
                         rented,
@@ -904,7 +902,7 @@ namespace System.Text.Json
                     }
 
                     lastRead = await stream.ReadAsync(
-#if NETCOREAPP
+#if NET
                         rented.AsMemory(written),
 #else
                         rented,

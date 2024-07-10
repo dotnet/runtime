@@ -62,7 +62,7 @@ namespace System.Text
                 SetDefaultFallbacks();
         }
 
-        internal override void SetDefaultFallbacks()
+        internal sealed override void SetDefaultFallbacks()
         {
             // For UTF-X encodings, we use a replacement fallback with an empty string
             if (_isThrowException)
@@ -934,7 +934,7 @@ namespace System.Text
                 if (iChar >= 0x10000)
                 {
                     // Surrogates take 2
-                    if (chars >= charEnd - 1)
+                    if (charEnd - chars < 2)
                     {
                         // Throwing or stopping
                         // We either read enough bytes for bytes-=4 to work, or we're

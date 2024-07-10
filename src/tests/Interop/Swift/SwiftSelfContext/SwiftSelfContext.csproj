@@ -3,7 +3,7 @@
     <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/93631 -->
+    <!-- Swift interop is supported on Apple platforms only -->
     <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' != 'true' and '$(TargetsAppleMobile)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>

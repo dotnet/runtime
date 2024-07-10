@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.RunAndSave);
             var module = assembly.DefineDynamicModule(assemblyName, fileName);
 #else
-            var assembly = AssemblyBuilder.DefinePersistedAssembly(new AssemblyName(assemblyName), typeof(object).Assembly);
+            var assembly = new PersistedAssemblyBuilder(new AssemblyName(assemblyName), typeof(object).Assembly);
             var module = assembly.DefineDynamicModule(assemblyName);
 #endif
             var type = module.DefineType(callSite.ServiceType.Name + "Resolver");

@@ -33,13 +33,14 @@ extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
+    - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      - stage: EvaluatePaths
+        displayName: Evaluate Paths
+        jobs:
+          - template: /eng/pipelines/common/evaluate-default-paths.yml
+
     - stage: Build
       jobs:
-      #
-      # Evaluate paths
-      #
-      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-        - template: /eng/pipelines/common/evaluate-default-paths.yml
 
       #
       # s390x & PPC64 little endian
@@ -57,9 +58,9 @@ extends:
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
             - name: monoContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
@@ -67,8 +68,8 @@ extends:
             timeoutInMinutes: 180
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             postBuildSteps:
@@ -96,9 +97,9 @@ extends:
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
             - name: monoContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
           jobParameters:
             testScope: innerloop
             nameSuffix: AllSubsets_Mono
@@ -106,8 +107,8 @@ extends:
             timeoutInMinutes: 120
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -124,9 +125,9 @@ extends:
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
             - name: monoContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
           jobParameters:
             testScope: innerloop
             nameSuffix: AllSubsets_Mono
@@ -134,8 +135,8 @@ extends:
             timeoutInMinutes: 120
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             ${{ if eq(variables['isRollingBuild'], true) }}:
               # extra steps, run tests

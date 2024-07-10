@@ -58,7 +58,7 @@ namespace System
                 // actually of type U[], where U:T; or that an int[] <-> uint[] or
                 // similar cast has occurred. In any case, since it's always legal
                 // to reinterpret U as T in this scenario (but not necessarily the
-                // other way around), we can use Buffer.Memmove here.
+                // other way around), we can use SpanHelpers.Memmove here.
 
                 T[] newArray = new T[newSize];
                 Buffer.Memmove(
@@ -377,7 +377,7 @@ namespace System
                 if (pMT->ContainsGCPointers)
                     Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
                 else
-                    Buffer.Memmove(ref dst, ref src, byteCount);
+                    SpanHelpers.Memmove(ref dst, ref src, byteCount);
 
                 // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
                 return;
@@ -408,7 +408,7 @@ namespace System
                     if (pMT->ContainsGCPointers)
                         Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
                     else
-                        Buffer.Memmove(ref dst, ref src, byteCount);
+                        SpanHelpers.Memmove(ref dst, ref src, byteCount);
 
                     // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
                     return;

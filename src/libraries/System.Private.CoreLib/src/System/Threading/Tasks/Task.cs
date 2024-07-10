@@ -17,6 +17,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Threading.Tasks.Sources;
 
 namespace System.Threading.Tasks
 {
@@ -1680,7 +1681,7 @@ namespace System.Threading.Tasks
             {
                 // For all other task than TaskContinuations we want to log. TaskContinuations log in their constructor
                 Debug.Assert(m_action != null, "Must have a delegate to be in ScheduleAndStart");
-                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + m_action.Method.Name, 0);
+                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + m_action.GetMethodName(), 0);
             }
 
             try
@@ -3473,15 +3474,16 @@ namespace System.Threading.Tasks
             }
 
             // Not a single; it must be a list.
-            List<object?> continuations = (List<object?>)continuationObject;
+            List<object?> list = (List<object?>)continuationObject;
 
             //
             // Begin processing of continuation list
             //
 
             // Wait for any concurrent adds or removes to be retired
-            lock (continuations) { }
-            int continuationCount = continuations.Count;
+            Monitor.Enter(list);
+            Monitor.Exit(list);
+            Span<object?> continuations = CollectionsMarshal.AsSpan(list);
 
             // Fire the asynchronous continuations first. However, if we're not able to run any continuations synchronously,
             // then we can skip this first pass, since the second pass that tries to run everything synchronously will instead
@@ -3489,7 +3491,7 @@ namespace System.Threading.Tasks
             if (canInlineContinuations)
             {
                 bool forceContinuationsAsync = false;
-                for (int i = 0; i < continuationCount; i++)
+                for (int i = 0; i < continuations.Length; i++)
                 {
                     // For StandardTaskContinuations, we respect the TaskContinuationOptions.ExecuteSynchronously option,
                     // as the developer needs to explicitly opt-into running the continuation synchronously, and if they do,
@@ -3543,7 +3545,7 @@ namespace System.Threading.Tasks
             }
 
             // ... and then fire the synchronous continuations (if there are any).
-            for (int i = 0; i < continuationCount; i++)
+            for (int i = 0; i < continuations.Length; i++)
             {
                 object? currentContinuation = continuations[i];
                 if (currentContinuation == null)
@@ -4510,62 +4512,79 @@ namespace System.Threading.Tasks
 
         // Support method for AddTaskContinuation that takes care of multi-continuation logic.
         // Returns true if and only if the continuation was successfully queued.
-        // THIS METHOD ASSUMES THAT m_continuationObject IS NOT NULL.  That case was taken
-        // care of in the calling method, AddTaskContinuation().
         private bool AddTaskContinuationComplex(object tc, bool addBeforeOthers)
         {
             Debug.Assert(tc != null, "Expected non-null tc object in AddTaskContinuationComplex");
 
             object? oldValue = m_continuationObject;
-
-            // Logic for the case where we were previously storing a single continuation
-            if ((oldValue != s_taskCompletionSentinel) && (!(oldValue is List<object?>)))
+            Debug.Assert(oldValue is not null, "Expected non-null m_continuationObject object");
+            if (oldValue == s_taskCompletionSentinel)
             {
-                // Construct a new TaskContinuation list and CAS it in.
-                Interlocked.CompareExchange(ref m_continuationObject, new List<object?> { oldValue }, oldValue);
-
-                // We might be racing against another thread converting the single into
-                // a list, or we might be racing against task completion, so resample "list"
-                // below.
+                return false;
             }
 
-            // m_continuationObject is guaranteed at this point to be either a List or
-            // s_taskCompletionSentinel.
-            List<object?>? list = m_continuationObject as List<object?>;
-            Debug.Assert((list != null) || (m_continuationObject == s_taskCompletionSentinel),
-                "Expected m_continuationObject to be list or sentinel");
-
-            // If list is null, it can only mean that s_taskCompletionSentinel has been exchanged
-            // into m_continuationObject.  Thus, the task has completed and we should return false
-            // from this method, as we will not be queuing up the continuation.
-            if (list != null)
+            // Logic for the case where we were previously storing a single continuation
+            List<object?>? list = oldValue as List<object?>;
+            if (list is null)
             {
-                lock (list)
+                // Construct a new TaskContinuation list and CAS it in.
+                list = new List<object?>();
+                if (addBeforeOthers)
                 {
-                    // It is possible for the task to complete right after we snap the copy of
-                    // the list.  If so, then fall through and return false without queuing the
-                    // continuation.
-                    if (m_continuationObject != s_taskCompletionSentinel)
-                    {
-                        // Before growing the list we remove possible null entries that are the
-                        // result from RemoveContinuations()
-                        if (list.Count == list.Capacity)
-                        {
-                            list.RemoveAll(l => l == null);
-                        }
+                    list.Add(tc);
+                    list.Add(oldValue);
+                }
+                else
+                {
+                    list.Add(oldValue);
+                    list.Add(tc);
+                }
 
-                        if (addBeforeOthers)
-                            list.Insert(0, tc);
-                        else
-                            list.Add(tc);
+                object? expected = oldValue;
+                oldValue = Interlocked.CompareExchange(ref m_continuationObject, list, expected);
+                if (oldValue == expected)
+                {
+                    // We successfully stored the new list with both continuations in it, so we're done.
+                    return true;
+                }
 
-                        return true; // continuation successfully queued, so return true.
-                    }
+                // We might be racing against another thread converting the single into
+                // a list, or we might be racing against task completion, so recheck for list again.
+                list = oldValue as List<object?>;
+                if (list is null)
+                {
+                    Debug.Assert(oldValue == s_taskCompletionSentinel, "Expected m_continuationObject to be list or sentinel");
+                    return false;
                 }
             }
 
-            // We didn't succeed in queuing the continuation, so return false.
-            return false;
+            lock (list)
+            {
+                // It is possible for the task to complete right after we snap the copy of
+                // the list.  If so, then return false without queuing the continuation.
+                if (m_continuationObject == s_taskCompletionSentinel)
+                {
+                    return false;
+                }
+
+                // Before growing the list we remove possible null entries that are the
+                // result from RemoveContinuations()
+                if (list.Count == list.Capacity)
+                {
+                    list.RemoveAll(l => l == null);
+                }
+
+                if (addBeforeOthers)
+                {
+                    list.Insert(0, tc);
+                }
+                else
+                {
+                    list.Add(tc);
+                }
+            }
+
+            return true; // continuation successfully queued, so return true.
         }
 
         // Record a continuation task or action.
@@ -4603,12 +4622,15 @@ namespace System.Threading.Tasks
             {
                 // This is not a list. If we have a single object (the one we want to remove) we try to replace it with an empty list.
                 // Note we cannot go back to a null state, since it will mess up the AddTaskContinuation logic.
-                if (Interlocked.CompareExchange(ref m_continuationObject, new List<object?>(), continuationObject) != continuationObject)
+                continuationsLocalRef = Interlocked.CompareExchange(ref m_continuationObject, new List<object?>(), continuationObject);
+                if (continuationsLocalRef != continuationObject)
                 {
                     // If we fail it means that either AddContinuationComplex won the race condition and m_continuationObject is now a List
                     // that contains the element we want to remove. Or FinishContinuations set the s_taskCompletionSentinel.
-                    // So we should try to get a list one more time
-                    continuationsLocalListRef = m_continuationObject as List<object?>;
+                    // So we should try to get a list one more time and if it's null then there is nothing else to do.
+                    continuationsLocalListRef = continuationsLocalRef as List<object?>;
+                    if (continuationsLocalListRef is null)
+                        return;
                 }
                 else
                 {
@@ -4617,24 +4639,20 @@ namespace System.Threading.Tasks
                 }
             }
 
-            // if continuationsLocalRef == null it means s_taskCompletionSentinel has been set already and there is nothing else to do.
-            if (continuationsLocalListRef != null)
+            lock (continuationsLocalListRef)
             {
-                lock (continuationsLocalListRef)
+                // There is a small chance that this task completed since we took a local snapshot into
+                // continuationsLocalRef.  In that case, just return; we don't want to be manipulating the
+                // continuation list as it is being processed.
+                if (m_continuationObject == s_taskCompletionSentinel) return;
+
+                // Find continuationObject in the continuation list
+                int index = continuationsLocalListRef.IndexOf(continuationObject);
+
+                if (index >= 0)
                 {
-                    // There is a small chance that this task completed since we took a local snapshot into
-                    // continuationsLocalRef.  In that case, just return; we don't want to be manipulating the
-                    // continuation list as it is being processed.
-                    if (m_continuationObject == s_taskCompletionSentinel) return;
-
-                    // Find continuationObject in the continuation list
-                    int index = continuationsLocalListRef.IndexOf(continuationObject);
-
-                    if (index >= 0)
-                    {
-                        // null out that TaskContinuation entry, which will be interpreted as "to be cleaned up"
-                        continuationsLocalListRef[index] = null;
-                    }
+                    // null out that TaskContinuation entry, which will be interpreted as "to be cleaned up"
+                    continuationsLocalListRef[index] = null;
                 }
             }
         }
@@ -4663,14 +4681,33 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(params Task[] tasks)
         {
-#if DEBUG
-            bool waitResult =
-#endif
-            WaitAllCore(tasks, Timeout.Infinite, default);
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
 
-#if DEBUG
+            bool waitResult = WaitAllCore(tasks, Timeout.Infinite, default);
             Debug.Assert(waitResult, "expected wait to succeed");
-#endif
+        }
+
+        /// <summary>
+        /// Waits for all of the provided <see cref="Task"/> objects to complete execution.
+        /// </summary>
+        /// <param name="tasks">
+        /// An array of <see cref="Task"/> instances on which to wait.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="tasks"/> argument contains a null element.
+        /// </exception>
+        /// <exception cref="AggregateException">
+        /// At least one of the <see cref="Task"/> instances was canceled -or- an exception was thrown during
+        /// the execution of at least one of the <see cref="Task"/> instances.
+        /// </exception>
+        [UnsupportedOSPlatform("browser")]
+        public static void WaitAll(params ReadOnlySpan<Task> tasks)
+        {
+            bool waitResult = WaitAllCore(tasks, Timeout.Infinite, default);
+            Debug.Assert(waitResult, "expected wait to succeed");
         }
 
         /// <summary>
@@ -4707,9 +4744,14 @@ namespace System.Threading.Tasks
         public static bool WaitAll(Task[] tasks, TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            if (totalMilliseconds is < -1 or > int.MaxValue)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
+            }
+
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
             return WaitAllCore(tasks, (int)totalMilliseconds, default);
@@ -4745,6 +4787,11 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout)
         {
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
             return WaitAllCore(tasks, millisecondsTimeout, default);
         }
 
@@ -4774,6 +4821,11 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(Task[] tasks, CancellationToken cancellationToken)
         {
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
             WaitAllCore(tasks, Timeout.Infinite, cancellationToken);
         }
 
@@ -4813,18 +4865,48 @@ namespace System.Threading.Tasks
         /// </exception>
         [UnsupportedOSPlatform("browser")]
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
-        public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken) =>
-            WaitAllCore(tasks, millisecondsTimeout, cancellationToken);
+        public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
+        {
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
+            return WaitAllCore(tasks, millisecondsTimeout, cancellationToken);
+        }
+
+        /// <summary>Waits for all of the provided <see cref="Task"/> objects to complete execution unless the wait is cancelled.</summary>
+        /// <param name="tasks">An <see cref="IEnumerable{T}"/> of Task instances on which to wait.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the tasks to complete.</param>
+        /// <exception cref="ArgumentNullException">The <paramref name="tasks"/> argument is null.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="tasks"/> argument contains a null element.</exception>
+        /// <exception cref="ObjectDisposedException">One or more of the <see cref="Task"/> objects in tasks has been disposed.</exception>
+        /// <exception cref="OperationCanceledException">The <paramref name="cancellationToken"/> was canceled.</exception>
+        /// <exception cref="AggregateException">
+        /// At least one of the <see cref="Task"/> instances was canceled. If a task was canceled, the <see cref="AggregateException"/>
+        /// contains an <see cref="OperationCanceledException"/> in its <see cref="AggregateException.InnerExceptions"/> collection.
+        /// </exception>
+        [UnsupportedOSPlatform("browser")]
+        public static void WaitAll(IEnumerable<Task> tasks, CancellationToken cancellationToken = default)
+        {
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
+            ReadOnlySpan<Task> span =
+                tasks is List<Task> list ? CollectionsMarshal.AsSpan(list) :
+                tasks is Task[] array ? array :
+                CollectionsMarshal.AsSpan(new List<Task>(tasks));
+
+            WaitAllCore(span, Timeout.Infinite, cancellationToken);
+        }
 
         // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
         // to be able to see the method on the stack and inspect arguments).
         [UnsupportedOSPlatform("browser")]
-        private static bool WaitAllCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
+        private static bool WaitAllCore(ReadOnlySpan<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            if (tasks == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            }
             if (millisecondsTimeout < -1)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsTimeout);
@@ -4901,11 +4983,6 @@ namespace System.Threading.Tasks
                         if (task.IsWaitNotificationEnabled) AddToList(task, ref notificationTasks, initSize: 1);
                     }
                 }
-
-                // We need to prevent the tasks array from being GC'ed until we come out of the wait.
-                // This is necessary so that the Parallel Debugger can traverse it during the long wait and
-                // deduce waiter/waitee relationships
-                GC.KeepAlive(tasks);
             }
 
             // Now that we're done and about to exit, if the wait completed and if we have
@@ -5896,20 +5973,20 @@ namespace System.Threading.Tasks
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
-        internal static Task WhenAll(ReadOnlySpan<Task> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Make this public.
+        public static Task WhenAll(params ReadOnlySpan<Task> tasks) =>
             tasks.Length != 0 ? new WhenAllPromise(tasks) : CompletedTask;
 
         /// <summary>A Task that gets completed when all of its constituent tasks complete.</summary>
         private sealed class WhenAllPromise : Task, ITaskCompletionAction
         {
-            /// <summary>Either a single faulted/canceled task, or a list of faulted/canceled tasks.</summary>
-            private object? _failedOrCanceled;
             /// <summary>The number of tasks remaining to complete.</summary>
             private int _remainingToComplete;
 
             internal WhenAllPromise(ReadOnlySpan<Task> tasks)
             {
                 Debug.Assert(tasks.Length != 0, "Expected a non-zero length task array");
+                Debug.Assert(m_stateObject is null, "Expected to be able to use the state object field for faulted/canceled tasks.");
+                m_stateFlags |= (int)InternalTaskOptions.HiddenState;
 
                 // Throw if any of the provided tasks is null. This is best effort to inform the caller
                 // they've made a mistake.  If between the time we check for nulls and the time we hook
@@ -5966,16 +6043,14 @@ namespace System.Threading.Tasks
                     if (!completedTask.IsCompletedSuccessfully)
                     {
                         // Try to store the completed task as the first that's failed or faulted.
-                        if (Interlocked.CompareExchange(ref _failedOrCanceled, completedTask, null) != null)
+                        object? failedOrCanceled = Interlocked.CompareExchange(ref m_stateObject, completedTask, null);
+                        if (failedOrCanceled != null)
                         {
                             // There was already something there.
                             while (true)
                             {
-                                object? failedOrCanceled = _failedOrCanceled;
-                                Debug.Assert(failedOrCanceled is not null);
-
                                 // If it was a list, add it to the list.
-                                if (_failedOrCanceled is List<Task> list)
+                                if (failedOrCanceled is List<Task> list)
                                 {
                                     lock (list)
                                     {
@@ -5986,13 +6061,15 @@ namespace System.Threading.Tasks
 
                                 // Otherwise, it was a Task. Create a new list containing that task and this one, and store it in.
                                 Debug.Assert(failedOrCanceled is Task, $"Expected Task, got {failedOrCanceled}");
-                                if (Interlocked.CompareExchange(ref _failedOrCanceled, new List<Task> { (Task)failedOrCanceled, completedTask }, failedOrCanceled) == failedOrCanceled)
+                                Task first = (Task)failedOrCanceled;
+                                failedOrCanceled = Interlocked.CompareExchange(ref m_stateObject, new List<Task> { first, completedTask }, first);
+                                if (failedOrCanceled == first)
                                 {
                                     break;
                                 }
 
                                 // We lost the race, which means we should loop around one more time and it'll be a list.
-                                Debug.Assert(_failedOrCanceled is List<Task>);
+                                Debug.Assert(failedOrCanceled is List<Task>);
                             }
                         }
                     }
@@ -6001,7 +6078,7 @@ namespace System.Threading.Tasks
                 // Decrement the count, and only continue to complete the promise if we're the last one.
                 if (Interlocked.Decrement(ref _remainingToComplete) == 0)
                 {
-                    object? failedOrCanceled = _failedOrCanceled;
+                    object? failedOrCanceled = m_stateObject;
                     if (failedOrCanceled is null)
                     {
                         if (TplEventSource.Log.IsEnabled())
@@ -6115,7 +6192,13 @@ namespace System.Threading.Tasks
             // Skip a List allocation/copy if tasks is a collection
             if (tasks is ICollection<Task<TResult>> taskCollection)
             {
-                taskArray = new Task<TResult>[taskCollection.Count];
+                int count = taskCollection.Count;
+                if (count == 0)
+                {
+                    return new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default);
+                }
+
+                taskArray = new Task<TResult>[count];
                 taskCollection.CopyTo(taskArray, 0);
                 foreach (Task<TResult> task in taskArray)
                 {
@@ -6124,20 +6207,30 @@ namespace System.Threading.Tasks
                         ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
                     }
                 }
-                return InternalWhenAll(taskArray);
+
+                return new WhenAllPromise<TResult>(taskArray);
             }
 
             // Do some argument checking and convert tasks into a List (later an array)
-            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
             List<Task<TResult>> taskList = new List<Task<TResult>>();
             foreach (Task<TResult> task in tasks)
             {
-                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                if (task is null)
+                {
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                }
+
                 taskList.Add(task);
             }
 
-            // Delegate the rest to InternalWhenAll<TResult>().
-            return InternalWhenAll(taskList.ToArray());
+            return taskList.Count == 0 ?
+                new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default) :
+                new WhenAllPromise<TResult>(taskList.ToArray());
         }
 
         /// <summary>
@@ -6172,13 +6265,49 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<TResult[]> WhenAll<TResult>(params Task<TResult>[] tasks)
         {
-            // Do some argument checking and make a defensive copy of the tasks array
-            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
 
-            int taskCount = tasks.Length;
-            if (taskCount == 0) return InternalWhenAll(tasks); // small optimization in the case of an empty task array
+            return WhenAll((ReadOnlySpan<Task<TResult>>)tasks);
+        }
 
-            Task<TResult>[] tasksCopy = (Task<TResult>[])tasks.Clone();
+        /// <summary>
+        /// Creates a task that will complete when all of the supplied tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to wait on for completion.</param>
+        /// <returns>A task that represents the completion of all of the supplied tasks.</returns>
+        /// <remarks>
+        /// <para>
+        /// If any of the supplied tasks completes in a faulted state, the returned task will also complete in a Faulted state,
+        /// where its exceptions will contain the aggregation of the set of unwrapped exceptions from each of the supplied tasks.
+        /// </para>
+        /// <para>
+        /// If none of the supplied tasks faulted but at least one of them was canceled, the returned task will end in the Canceled state.
+        /// </para>
+        /// <para>
+        /// If none of the tasks faulted and none of the tasks were canceled, the resulting task will end in the RanToCompletion state.
+        /// The Result of the returned task will be set to an array containing all of the results of the
+        /// supplied tasks in the same order as they were provided (e.g. if the input tasks array contained t1, t2, t3, the output
+        /// task's Result will return an TResult[] where arr[0] == t1.Result, arr[1] == t2.Result, and arr[2] == t3.Result).
+        /// </para>
+        /// <para>
+        /// If the supplied array/enumerable contains no tasks, the returned task will immediately transition to a RanToCompletion
+        /// state before it's returned to the caller.  The returned TResult[] will be an array of 0 elements.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="tasks"/> array contained a null task.
+        /// </exception>
+        public static Task<TResult[]> WhenAll<TResult>(params ReadOnlySpan<Task<TResult>> tasks)
+        {
+            if (tasks.IsEmpty)
+            {
+                return new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default);
+            }
+
+            Task<TResult>[] tasksCopy = tasks.ToArray();
             foreach (Task<TResult> task in tasksCopy)
             {
                 if (task is null)
@@ -6187,17 +6316,7 @@ namespace System.Threading.Tasks
                 }
             }
 
-            // Delegate the rest to InternalWhenAll<TResult>()
-            return InternalWhenAll(tasksCopy);
-        }
-
-        // Some common logic to support WhenAll<TResult> methods
-        private static Task<TResult[]> InternalWhenAll<TResult>(Task<TResult>[] tasks)
-        {
-            Debug.Assert(tasks != null, "Expected a non-null tasks array");
-            return (tasks.Length == 0) ? // take shortcut if there are no tasks upon which to wait
-                new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default) :
-                new WhenAllPromise<TResult>(tasks);
+            return new WhenAllPromise<TResult>(tasksCopy);
         }
 
         // A Task<T> that gets completed when all of its constituent tasks complete.
@@ -6337,7 +6456,7 @@ namespace System.Threading.Tasks
         {
             ArgumentNullException.ThrowIfNull(tasks);
 
-            return WhenAny((ReadOnlySpan<Task>)tasks);
+            return WhenAnyCore((ReadOnlySpan<Task>)tasks);
         }
 
         /// <summary>
@@ -6352,7 +6471,22 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException">
         /// The <paramref name="tasks"/> array contained a null task, or was empty.
         /// </exception>
-        private static Task<TTask> WhenAny<TTask>(ReadOnlySpan<TTask> tasks) where TTask : Task
+        public static Task<Task> WhenAny(params ReadOnlySpan<Task> tasks) =>
+            WhenAnyCore(tasks);
+
+        /// <summary>
+        /// Creates a task that will complete when any of the supplied tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to wait on for completion.</param>
+        /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
+        /// <remarks>
+        /// The returned task will complete when any of the supplied tasks has completed.  The returned task will always end in the RanToCompletion state
+        /// with its Result set to the first task to complete.  This is true even if the first task to complete ended in the Canceled or Faulted state.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="tasks"/> array contained a null task, or was empty.
+        /// </exception>
+        private static Task<TTask> WhenAnyCore<TTask>(ReadOnlySpan<TTask> tasks) where TTask : Task
         {
             if (tasks.Length == 2)
             {
@@ -6532,13 +6666,13 @@ namespace System.Threading.Tasks
             {
                 // Take a more efficient path if tasks is actually a list or an array. Arrays are a bit less common,
                 // since if argument was strongly-typed as an array, it would have bound to the array-based overload.
-                if (tasks is List<TTask> tasksAsList)
+                if (tasks.GetType() == typeof(List<TTask>))
                 {
-                    return WhenAny((ReadOnlySpan<TTask>)CollectionsMarshal.AsSpan(tasksAsList));
+                    return WhenAnyCore((ReadOnlySpan<TTask>)CollectionsMarshal.AsSpan(Unsafe.As<List<TTask>>(tasks)));
                 }
                 if (tasks is TTask[] tasksAsArray)
                 {
-                    return WhenAny((ReadOnlySpan<TTask>)tasksAsArray);
+                    return WhenAnyCore((ReadOnlySpan<TTask>)tasksAsArray);
                 }
 
                 int count = tasksAsCollection.Count;
@@ -6606,8 +6740,23 @@ namespace System.Threading.Tasks
         {
             ArgumentNullException.ThrowIfNull(tasks);
 
-            return WhenAny((ReadOnlySpan<Task<TResult>>)tasks);
+            return WhenAnyCore((ReadOnlySpan<Task<TResult>>)tasks);
         }
+
+        /// <summary>
+        /// Creates a task that will complete when any of the supplied tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to wait on for completion.</param>
+        /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
+        /// <remarks>
+        /// The returned task will complete when any of the supplied tasks has completed.  The returned task will always end in the RanToCompletion state
+        /// with its Result set to the first task to complete.  This is true even if the first task to complete ended in the Canceled or Faulted state.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="tasks"/> array contained a null task, or was empty.
+        /// </exception>
+        public static Task<Task<TResult>> WhenAny<TResult>(params ReadOnlySpan<Task<TResult>> tasks) =>
+            WhenAnyCore(tasks);
 
         /// <summary>Creates a task that will complete when either of the supplied tasks have completed.</summary>
         /// <param name="task1">The first task to wait on for completion.</param>
@@ -6640,6 +6789,191 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<Task<TResult>> WhenAny<TResult>(IEnumerable<Task<TResult>> tasks) =>
             WhenAny<Task<TResult>>(tasks);
+        #endregion
+
+        #region WhenEach
+        /// <summary>Creates an <see cref="IAsyncEnumerable{T}"/> that will yield the supplied tasks as those tasks complete.</summary>
+        /// <param name="tasks">The task to iterate through when completed.</param>
+        /// <returns>An <see cref="IAsyncEnumerable{T}"/> for iterating through the supplied tasks.</returns>
+        /// <remarks>
+        /// The supplied tasks will become available to be output via the enumerable once they've completed. The exact order
+        /// in which the tasks will become available is not defined.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="tasks"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="tasks"/> contains a null.</exception>
+        public static IAsyncEnumerable<Task> WhenEach(params Task[] tasks)
+        {
+            ArgumentNullException.ThrowIfNull(tasks);
+            return WhenEach((ReadOnlySpan<Task>)tasks);
+        }
+
+        /// <inheritdoc cref="WhenEach(Task[])"/>
+        public static IAsyncEnumerable<Task> WhenEach(ReadOnlySpan<Task> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
+            WhenEachState.Iterate<Task>(WhenEachState.Create(tasks));
+
+        /// <inheritdoc cref="WhenEach(Task[])"/>
+        public static IAsyncEnumerable<Task> WhenEach(IEnumerable<Task> tasks) =>
+            WhenEachState.Iterate<Task>(WhenEachState.Create(tasks));
+
+        /// <inheritdoc cref="WhenEach(Task[])"/>
+        public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(params Task<TResult>[] tasks)
+        {
+            ArgumentNullException.ThrowIfNull(tasks);
+            return WhenEach((ReadOnlySpan<Task<TResult>>)tasks);
+        }
+
+        /// <inheritdoc cref="WhenEach(Task[])"/>
+        public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(ReadOnlySpan<Task<TResult>> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
+            WhenEachState.Iterate<Task<TResult>>(WhenEachState.Create(ReadOnlySpan<Task>.CastUp(tasks)));
+
+        /// <inheritdoc cref="WhenEach(Task[])"/>
+        public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(IEnumerable<Task<TResult>> tasks) =>
+            WhenEachState.Iterate<Task<TResult>>(WhenEachState.Create(tasks));
+
+        /// <summary>Object used by <see cref="Iterate"/> to store its state.</summary>
+        private sealed class WhenEachState : Queue<Task>, IValueTaskSource, ITaskCompletionAction
+        {
+            /// <summary>Implementation backing the ValueTask used to wait for the next task to be available.</summary>
+            /// <remarks>This is a mutable struct. Do not make it readonly.</remarks>
+            private ManualResetValueTaskSourceCore<bool> _waitForNextCompletedTask = new() { RunContinuationsAsynchronously = true }; // _waitForNextCompletedTask.Set is called while holding a lock
+            /// <summary>0 if this has never been used in an iteration; 1 if it has.</summary>
+            /// <remarks>This is used to ensure we only ever iterate through the tasks once.</remarks>
+            private int _enumerated;
+
+            /// <summary>Called at the beginning of the iterator to assume ownership of the state.</summary>
+            /// <returns>true if the caller owns the state; false if the caller should end immediately.</returns>
+            public bool TryStart() => Interlocked.Exchange(ref _enumerated, 1) == 0;
+
+            /// <summary>Gets or sets the number of tasks that haven't yet been yielded.</summary>
+            public int Remaining { get; set; }
+
+            void ITaskCompletionAction.Invoke(Task completingTask)
+            {
+                lock (this)
+                {
+                    // Enqueue the task into the queue. If the Count is now 1, we transitioned from
+                    // empty to non-empty, which means we need to signal the MRVTSC, as the consumer
+                    // could be waiting on a ValueTask representing a completed task being available.
+                    Enqueue(completingTask);
+                    if (Count == 1)
+                    {
+                        Debug.Assert(_waitForNextCompletedTask.GetStatus(_waitForNextCompletedTask.Version) == ValueTaskSourceStatus.Pending);
+                        _waitForNextCompletedTask.SetResult(default);
+                    }
+                }
+            }
+            bool ITaskCompletionAction.InvokeMayRunArbitraryCode => false;
+
+            // Delegate to _waitForNextCompletedTask for IValueTaskSource implementation.
+            void IValueTaskSource.GetResult(short token) => _waitForNextCompletedTask.GetResult(token);
+            ValueTaskSourceStatus IValueTaskSource.GetStatus(short token) => _waitForNextCompletedTask.GetStatus(token);
+            void IValueTaskSource.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) =>
+                _waitForNextCompletedTask.OnCompleted(continuation, state, token, flags);
+
+            /// <summary>Creates a <see cref="WhenEachState"/> from the specified tasks.</summary>
+            public static WhenEachState? Create(ReadOnlySpan<Task> tasks)
+            {
+                WhenEachState? waiter = null;
+
+                if (tasks.Length != 0)
+                {
+                    waiter = new();
+                    foreach (Task task in tasks)
+                    {
+                        if (task is null)
+                        {
+                            ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                        }
+
+                        waiter.Remaining++;
+                        task.AddCompletionAction(waiter);
+                    }
+                }
+
+                return waiter;
+            }
+
+            /// <inheritdoc cref="Create(ReadOnlySpan{Task})"/>
+            public static WhenEachState? Create(IEnumerable<Task> tasks)
+            {
+                ArgumentNullException.ThrowIfNull(tasks);
+
+                WhenEachState? waiter = null;
+
+                IEnumerator<Task> e = tasks.GetEnumerator();
+                if (e.MoveNext())
+                {
+                    waiter = new();
+                    do
+                    {
+                        Task task = e.Current;
+                        if (task is null)
+                        {
+                            ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                        }
+
+                        waiter.Remaining++;
+                        task.AddCompletionAction(waiter);
+                    }
+                    while (e.MoveNext());
+                }
+
+                return waiter;
+            }
+
+            /// <summary>Iterates through the tasks represented by the provided waiter.</summary>
+            public static async IAsyncEnumerable<T> Iterate<T>(WhenEachState? waiter, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : Task
+            {
+                // The enumerable could have GetAsyncEnumerator called on it multiple times. As we're dealing with Tasks that
+                // only ever transition from non-completed to completed, re-enumeration doesn't have much benefit, so we take
+                // advantage of the optimizations possible by not supporting that and simply have the semantics that, no matter
+                // how many times the enumerable is enumerated, every task is yielded only once. The original GetAsyncEnumerator
+                // call will give back all the tasks, and all subsequent iterations will be empty.
+                if (waiter?.TryStart() is not true)
+                {
+                    yield break;
+                }
+
+                // Loop until we've yielded all tasks.
+                while (waiter.Remaining > 0)
+                {
+                    // Either get the next completed task from the queue, or get a
+                    // ValueTask with which to wait for the next task to complete.
+                    Task? next;
+                    ValueTask waitTask = default;
+                    lock (waiter)
+                    {
+                        // Reset the MRVTSC if it was signaled, then try to dequeue a task and
+                        // either return one we got or return a ValueTask that will be signaled
+                        // when the next completed task is available.
+                        waiter._waitForNextCompletedTask.Reset();
+                        if (!waiter.TryDequeue(out next))
+                        {
+                            waitTask = new(waiter, waiter._waitForNextCompletedTask.Version);
+                        }
+                    }
+
+                    // If we got a completed Task, yield it.
+                    if (next is not null)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        waiter.Remaining--;
+                        yield return (T)next;
+                        continue;
+                    }
+
+                    // If we have a cancellation token and the ValueTask isn't already completed,
+                    // get a Task from the ValueTask so we can use WaitAsync to make the wait cancelable.
+                    // Otherwise, just await the ValueTask directly. We don't need to be concerned
+                    // about suppressing exceptions, as the ValueTask is only ever completed successfully.
+                    if (cancellationToken.CanBeCanceled && !waitTask.IsCompleted)
+                    {
+                        waitTask = new ValueTask(waitTask.AsTask().WaitAsync(cancellationToken));
+                    }
+                    await waitTask.ConfigureAwait(false);
+                }
+            }
+        }
         #endregion
 
         internal static Task<TResult> CreateUnwrapPromise<TResult>(Task outerTask, bool lookForOce)

@@ -186,6 +186,12 @@ export function invoke1V(arg1) {
     fn(arg1);
 }
 
+export function invoke1O(arg1) {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper['Optimized1O'];
+    fn(arg1);
+}
+
 export function invoke1R(arg1) {
     const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
     const fn = JavaScriptTestHelper['Optimized1R'];
@@ -377,6 +383,21 @@ export function back3(arg1, arg2, arg3) {
     }
 }
 
+export function back4(arg1, arg2, arg3, arg4) {
+    if (globalThis.gc) {
+        // console.log('globalThis.gc');
+        globalThis.gc();
+    }
+    try {
+        if (!(arg1 instanceof Function)) throw new Error('expecting Function!')
+
+        return arg1(arg2, arg3, arg4);
+    }
+    catch (ex) {
+        throw ex;
+    }
+}
+
 export function backback(arg1, arg2, arg3) {
     if (globalThis.gc) {
         // console.log('globalThis.gc');
@@ -406,6 +427,11 @@ export async function backbackAsync(arg1, arg2, arg3) {
     return arg1(arg2, arg3);
 }
 
+export async function callJavaScriptLibrary(a, b) {
+    const exports = await App.runtime.getAssemblyExports("JavaScriptLibrary.dll");
+    return exports.JavaScriptLibrary.JavaScriptInterop.ExportedMethod(a, b);
+}
+
 export const instance = {}
 
 globalThis.javaScriptTestHelper = instance;
@@ -426,4 +452,8 @@ export async function setup() {
 
 export function delay(ms) {
     return new Promise(resolve => globalThis.setTimeout(resolve, ms));
+}
+
+export function reject(what) {
+    return new Promise((_, reject) => globalThis.setTimeout(() => reject(what), 0));
 }

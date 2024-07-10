@@ -48,9 +48,9 @@ bool FixupSignatureContainingInternalTypes(
     DWORD           cSig,
     bool checkOnly = false);
 
-// Alias ComPlusCallMethodDesc to regular MethodDesc to simplify definition of the size table
+// Alias CLRToCOMCallMethodDesc to regular MethodDesc to simplify definition of the size table
 #ifndef FEATURE_COMINTEROP
-#define ComPlusCallMethodDesc MethodDesc
+#define CLRToCOMCallMethodDesc MethodDesc
 #endif
 
 // Verify that the structure sizes of our MethodDescs support proper
@@ -62,7 +62,7 @@ static_assert_no_msg((sizeof(FCallMethodDesc)       & MethodDesc::ALIGNMENT_MASK
 static_assert_no_msg((sizeof(NDirectMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(EEImplMethodDesc)      & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(ArrayMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(ComPlusCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert_no_msg((sizeof(CLRToCOMCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
 
 #define METHOD_DESC_SIZES(adjustment)                                       \
@@ -72,7 +72,7 @@ static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK
     adjustment + sizeof(EEImplMethodDesc),           /* mcEEImpl        */  \
     adjustment + sizeof(ArrayMethodDesc),            /* mcArray         */  \
     adjustment + sizeof(InstantiatedMethodDesc),     /* mcInstantiated  */  \
-    adjustment + sizeof(ComPlusCallMethodDesc),      /* mcComInterOp    */  \
+    adjustment + sizeof(CLRToCOMCallMethodDesc),      /* mcComInterOp    */  \
     adjustment + sizeof(DynamicMethodDesc)           /* mcDynamic       */
 
 const BYTE MethodDesc::s_ClassificationSizeTable[] = {
@@ -89,22 +89,10 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot)),
     METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
-
-#ifdef FEATURE_COMINTEROP
-    METHOD_DESC_SIZES(sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(ComPlusCallInfo)),
-
-    METHOD_DESC_SIZES(sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo))
-#endif
 };
 
 #ifndef FEATURE_COMINTEROP
-#undef ComPlusCallMethodDesc
+#undef CLRToCOMCallMethodDesc
 #endif
 
 class ArgIteratorBaseForPInvoke : public ArgIteratorBase
@@ -132,10 +120,10 @@ SIZE_T MethodDesc::SizeOf()
     LIMITED_METHOD_DAC_CONTRACT;
 
     SIZE_T size = s_ClassificationSizeTable[m_wFlags &
-        (mdcClassification
-        | mdcHasNonVtableSlot
-        | mdcMethodImpl
-        | mdcHasNativeCodeSlot)];
+        (mdfClassification
+        | mdfHasNonVtableSlot
+        | mdfMethodImpl
+        | mdfHasNativeCodeSlot)];
 
     return size;
 }
@@ -221,8 +209,55 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 }
 
+HRESULT MethodDesc::EnsureCodeDataExists()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (m_codeData != NULL)
+        return S_OK;
+
+    LoaderHeap* heap = GetLoaderAllocator()->GetHighFrequencyHeap();
+
+    AllocMemTracker amTracker;
+    MethodDescCodeData* alloc = (MethodDescCodeData*)amTracker.Track_NoThrow(heap->AllocMem_NoThrow(S_SIZE_T(sizeof(MethodDescCodeData))));
+    if (alloc == NULL)
+        return E_OUTOFMEMORY;
+
+    // Try to set the field. Suppress clean-up if we win the race.
+    if (InterlockedCompareExchangeT(&m_codeData, (MethodDescCodeData*)alloc, NULL) == NULL)
+        amTracker.SuppressRelease();
+
+    return S_OK;
+}
+
+HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
+{
+    WRAPPER_NO_CONTRACT;
+
+    HRESULT hr;
+    IfFailRet(EnsureCodeDataExists());
+
+    _ASSERTE(m_codeData != NULL);
+    if (InterlockedCompareExchangeT(&m_codeData->VersioningState, state, NULL) != NULL)
+        return S_FALSE;
+
+    return S_OK;
+}
+
 #endif //!DACCESS_COMPILE
 
+PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
+{
+    WRAPPER_NO_CONTRACT;
+    if (m_codeData == NULL)
+        return NULL;
+    return m_codeData->VersioningState;
+}
 
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetNameThrowing()
@@ -914,7 +949,7 @@ PCODE MethodDesc::GetNativeCode()
     }
 
     if (!HasStableEntryPoint() || HasPrecode())
-        return NULL;
+        return (PCODE)NULL;
 
     return GetStableEntryPoint();
 }
@@ -925,7 +960,7 @@ PCODE MethodDesc::GetNativeCodeAnyVersion()
     SUPPORTS_DAC;
 
     PCODE pDefaultCode = GetNativeCode();
-    if (pDefaultCode != NULL)
+    if (pDefaultCode != (PCODE)NULL)
     {
         return pDefaultCode;
     }
@@ -941,13 +976,13 @@ PCODE MethodDesc::GetNativeCodeAnyVersion()
             for (NativeCodeVersionIterator curNative = nativeCollection.Begin(), endNative = nativeCollection.End(); curNative != endNative; curNative++)
             {
                 PCODE native = curNative->GetNativeCode();
-                if(native != NULL)
+                if(native != (PCODE)NULL)
                 {
                     return native;
                 }
             }
         }
-        return NULL;
+        return (PCODE)NULL;
     }
 }
 
@@ -958,7 +993,7 @@ PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
 
     _ASSERTE(HasNativeCodeSlot());
 
-    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot |  mdcMethodImpl)];
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdfClassification | mdfHasNonVtableSlot |  mdfMethodImpl)];
 
     return (PTR_PCODE)(dac_cast<TADDR>(this) + size);
 }
@@ -1045,7 +1080,7 @@ BOOL MethodDesc::IsVarArg()
 }
 
 //*******************************************************************************
-COR_ILMETHOD* MethodDesc::GetILHeader(BOOL fAllowOverrides /*=FALSE*/)
+COR_ILMETHOD* MethodDesc::GetILHeader()
 {
     CONTRACTL
     {
@@ -1058,17 +1093,16 @@ COR_ILMETHOD* MethodDesc::GetILHeader(BOOL fAllowOverrides /*=FALSE*/)
 
     Module *pModule = GetModule();
 
-    // Always pickup 'permanent' overrides like reflection emit, EnC, etc.
-    // but only grab temporary overrides (like profiler rewrites) if asked to
-    TADDR pIL = pModule->GetDynamicIL(GetMemberDef(), fAllowOverrides);
+    // Always pickup overrides like reflection emit, EnC, etc.
+    TADDR pIL = pModule->GetDynamicIL(GetMemberDef());
 
-    if (pIL == NULL)
+    if (pIL == (TADDR)NULL)
     {
         pIL = pModule->GetIL(GetRVA());
     }
 
 #ifdef _DEBUG_IMPL
-    if (pIL != NULL)
+    if (pIL != (TADDR)NULL)
     {
         //
         // This is convenient place to verify that COR_ILMETHOD_DECODER::GetOnDiskSize is in sync
@@ -1082,7 +1116,7 @@ COR_ILMETHOD* MethodDesc::GetILHeader(BOOL fAllowOverrides /*=FALSE*/)
 #endif
 
 #ifdef DACCESS_COMPILE
-    return (pIL != NULL) ? DacGetIlMethod(pIL) : NULL;
+    return (pIL != (TADDR)NULL) ? DacGetIlMethod(pIL) : NULL;
 #else // !DACCESS_COMPILE
     return PTR_COR_ILMETHOD(pIL);
 #endif // !DACCESS_COMPILE
@@ -1158,7 +1192,7 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
                         }
 #endif // UNIX_AMD64_ABI
 
-                        if (pReturnTypeMT->ContainsPointers() || pReturnTypeMT->IsByRefLike())
+                        if (pReturnTypeMT->ContainsGCPointers() || pReturnTypeMT->IsByRefLike())
                         {
                             if (pReturnTypeMT->GetNumInstanceFields() == 1)
                             {
@@ -1928,7 +1962,7 @@ PCODE MethodDesc::GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags /*
 
     PCODE ret = TryGetMultiCallableAddrOfCode(accessFlags);
 
-    if (ret == NULL)
+    if (ret == (PCODE)NULL)
     {
         GCX_COOP();
 
@@ -2036,7 +2070,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     if (IsVersionableWithVtableSlotBackpatch())
     {
         // Caller has to call via slot or allocate funcptr stub
-        return NULL;
+        return (PCODE)NULL;
     }
 
     // Force the creation of the precode if we would eventually got one anyway
@@ -2202,7 +2236,7 @@ void MethodDesc::Reset()
 
     _ASSERTE(InEnCEnabledModule() || // The process is frozen by the debugger
              IsDynamicMethod() || // These are used in a very restricted way
-             GetLoaderModule()->IsReflection()); // Rental methods
+             GetLoaderModule()->IsReflectionEmit()); // Rental methods
 
     // Reset any flags relevant to the old code
     ClearFlagsOnUpdate();
@@ -2214,7 +2248,7 @@ void MethodDesc::Reset()
     else
     {
         // We should go here only for the rental methods
-        _ASSERTE(GetLoaderModule()->IsReflection());
+        _ASSERTE(GetLoaderModule()->IsReflectionEmit());
 
         InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, FALSE);
 
@@ -2223,7 +2257,7 @@ void MethodDesc::Reset()
 
     if (HasNativeCodeSlot())
     {
-        *GetAddrOfNativeCodeSlot() = NULL;
+        *GetAddrOfNativeCodeSlot() = (PCODE)NULL;
     }
     _ASSERTE(!HasNativeCode());
 }
@@ -2265,7 +2299,7 @@ MethodImpl *MethodDesc::GetMethodImpl()
     }
     CONTRACTL_END
 
-    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot)];
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdfClassification | mdfHasNonVtableSlot)];
 
     return PTR_MethodImpl(dac_cast<TADDR>(this) + size);
 }
@@ -2278,7 +2312,7 @@ BOOL MethodDesc::RequiresMethodDescCallingConvention(BOOL fEstimateForChunk /*=F
     LIMITED_METHOD_CONTRACT;
 
     // Interop marshaling is implemented using shared stubs
-    if (IsNDirect() || IsComPlusCall())
+    if (IsNDirect() || IsCLRToCOMCall())
         return TRUE;
 
 
@@ -2315,7 +2349,7 @@ BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
             return TRUE;
 
         // TODO: Can we avoid early allocation of precodes for interfaces and cominterop?
-        if ((IsInterface() && !IsStatic() && IsVirtual()) || IsComPlusCall())
+        if ((IsInterface() && !IsStatic() && IsVirtual()) || IsCLRToCOMCall())
             return TRUE;
     }
 
@@ -2898,7 +2932,7 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
     GetMethodDescChunk()->EnsureTemporaryEntryPointsCreated(pLoaderAllocator, pamTracker);
 
     PTR_PCODE pSlot = GetAddrOfSlot();
-    _ASSERTE(*pSlot == NULL);
+    _ASSERTE(*pSlot == (PCODE)NULL);
     *pSlot = GetTemporaryEntryPoint();
 
     if (RequiresStableEntryPoint())
@@ -2914,7 +2948,7 @@ void MethodDescChunk::CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocat
 {
     WRAPPER_NO_CONTRACT;
 
-    _ASSERTE(GetTemporaryEntryPoints() == NULL);
+    _ASSERTE(GetTemporaryEntryPoints() == (TADDR)NULL);
 
     TADDR temporaryEntryPoints = Precode::AllocateTemporaryEntryPoints(this, pLoaderAllocator, pamTracker);
 
@@ -2928,7 +2962,7 @@ void MethodDescChunk::CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocat
 
     *(((TADDR *)this)-1) = temporaryEntryPoints;
 
-    _ASSERTE(GetTemporaryEntryPoints() != NULL);
+    _ASSERTE(GetTemporaryEntryPoints() != (TADDR)NULL);
 }
 
 //*******************************************************************************
@@ -3108,7 +3142,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot_Locked(
     _ASSERTE(mdLoaderAllocator != nullptr);
     _ASSERTE(mdLoaderAllocator == GetLoaderAllocator());
     _ASSERTE(slotLoaderAllocator != nullptr);
-    _ASSERTE(slot != NULL);
+    _ASSERTE(slot != (TADDR)NULL);
     _ASSERTE(slotType < EntryPointSlots::SlotType_Count);
     _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
@@ -3130,7 +3164,7 @@ FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != (PCODE)NULL);
     _ASSERTE(isPrestubEntryPoint == (entryPoint == GetPrestubEntryPointToBackpatch()));
     _ASSERTE(!isPrestubEntryPoint || !onlyFromPrestubEntryPoint);
     _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
@@ -3185,7 +3219,7 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
     bool mayHaveEntryPointSlotsToBackpatch)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != (PCODE)NULL);
     _ASSERTE(IsVersionable());
     _ASSERTE(mayHaveEntryPointSlotsToBackpatch == MayHaveEntryPointSlotsToBackpatch());
 
@@ -3203,7 +3237,7 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
 void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != (PCODE)NULL);
 
     if (MayHaveEntryPointSlotsToBackpatch())
     {
@@ -3266,7 +3300,7 @@ void MethodDesc::ResetCodeEntryPointForEnC()
         PCODE pCode = *ppCode;
         LOG((LF_CORDB, LL_INFO1000000, "MD::RCEPFENC: %p -> %p\n",
             ppCode, pCode));
-        *ppCode = NULL;
+        *ppCode = (PCODE)NULL;
     }
 }
 
@@ -3297,7 +3331,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
         return InterlockedCompareExchangeT(GetAddrOfNativeCodeSlot(), addr, pExpected) == pExpected;
     }
 
-    _ASSERTE(pExpected == NULL);
+    _ASSERTE(pExpected == (PCODE)NULL);
     return SetStableEntryPointInterlocked(addr);
 }
 
@@ -3306,7 +3340,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
 void MethodDesc::SetMethodEntryPoint(PCODE addr)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(addr != NULL);
+    _ASSERTE(addr != (PCODE)NULL);
 
     // Similarly to GetMethodEntryPoint(), it is up to the caller to ensure that calls to this function are appropriately
     // synchronized. Currently, the only caller synchronizes with the following lock.
@@ -3576,8 +3610,10 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
     const void *target = GetModule()->GetInternalPInvokeTarget(GetRVA());
     _ASSERTE(target != 0);
 
+#ifdef FEATURE_IJW
     if (HeuristicDoesThisLookLikeAGetLastErrorCall((LPBYTE)target))
         target = (BYTE*)FalseGetLastError;
+#endif
 
     // As long as we've set the NDirect target field we don't need to backpatch the import thunk glue.
     // All NDirect calls all through the NDirect target, so if it's updated, then we won't go into
@@ -3661,7 +3697,7 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
 
 #ifdef FEATURE_COMINTEROP
 //*******************************************************************************
-void ComPlusCallMethodDesc::InitComEventCallInfo()
+void CLRToCOMCallMethodDesc::InitComEventCallInfo()
 {
     CONTRACTL
     {
@@ -3678,16 +3714,16 @@ void ComPlusCallMethodDesc::InitComEventCallInfo()
 
     // Retrieve the event provider class.
     WORD cbExtraSlots = ComMethodTable::GetNumExtraSlots(pItfMT->GetComInterfaceType());
-    WORD itfSlotNum = (WORD) m_pComPlusCallInfo->m_cachedComSlot - cbExtraSlots;
+    WORD itfSlotNum = (WORD) m_pCLRToCOMCallInfo->m_cachedComSlot - cbExtraSlots;
     pItfMT->GetEventInterfaceInfo(&pSrcItfClass, &pEvProvClass);
-    m_pComPlusCallInfo->m_pEventProviderMD = MemberLoader::FindMethodForInterfaceSlot(pEvProvClass, pItfMT, itfSlotNum);
+    m_pCLRToCOMCallInfo->m_pEventProviderMD = MemberLoader::FindMethodForInterfaceSlot(pEvProvClass, pItfMT, itfSlotNum);
 
     // If we could not find the method, then the event provider does not support
     // this event. This is a fatal error.
-    if (!m_pComPlusCallInfo->m_pEventProviderMD)
+    if (!m_pCLRToCOMCallInfo->m_pEventProviderMD)
     {
         // Init the interface MD for error reporting.
-        pItfMD = (ComPlusCallMethodDesc*)pItfMT->GetMethodDescForSlot(itfSlotNum);
+        pItfMD = (CLRToCOMCallMethodDesc*)pItfMT->GetMethodDescForSlot(itfSlotNum);
 
         // Retrieve the event provider class name.
         StackSString ssEvProvClassName;
@@ -4011,19 +4047,19 @@ PrecodeType MethodDesc::GetPrecodeType()
 
 #ifdef FEATURE_COMINTEROP
 #ifndef DACCESS_COMPILE
-void ComPlusCallMethodDesc::InitRetThunk()
+void CLRToCOMCallMethodDesc::InitRetThunk()
 {
     WRAPPER_NO_CONTRACT;
 
 #ifdef TARGET_X86
-    if (m_pComPlusCallInfo->m_pRetThunk != NULL)
+    if (m_pCLRToCOMCallInfo->m_pRetThunk != NULL)
         return;
 
     UINT numStackBytes = CbStackPop();
 
-    LPVOID pRetThunk = ComPlusCall::GetRetThunk(numStackBytes);
+    LPVOID pRetThunk = CLRToCOMCall::GetRetThunk(numStackBytes);
 
-    InterlockedCompareExchangeT<void *>(&m_pComPlusCallInfo->m_pRetThunk, pRetThunk, NULL);
+    InterlockedCompareExchangeT<void *>(&m_pCLRToCOMCallInfo->m_pRetThunk, pRetThunk, NULL);
 #endif // TARGET_X86
 }
 #endif //!DACCESS_COMPILE

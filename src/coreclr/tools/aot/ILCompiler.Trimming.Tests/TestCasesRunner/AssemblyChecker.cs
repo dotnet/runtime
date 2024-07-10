@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using FluentAssertions;
 using ILCompiler;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -38,6 +37,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 
 		private readonly BaseAssemblyResolver originalsResolver;
+		private readonly TypeNameResolver originalsTypeNameResolver;
 		private readonly ReaderParameters originalReaderParameters;
 		private readonly AssemblyDefinition originalAssembly;
 		private readonly TrimmedTestCaseResult testResult;
@@ -70,6 +70,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			TrimmedTestCaseResult testResult)
 		{
 			this.originalsResolver = originalsResolver;
+			this.originalsTypeNameResolver = new TypeNameResolver (new TestResolver (), new TestAssemblyNameResolver (originalsResolver));
 			this.originalReaderParameters = originalReaderParameters;
 			this.originalAssembly = original;
 			this.testResult = testResult;
@@ -1469,7 +1470,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						}
 
 						var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString ()!;
-						var expectedType = originalTargetAssembly.MainModule.GetType(expectedTypeName);
+						if (!originalsTypeNameResolver.TryResolveTypeName (originalTargetAssembly, expectedTypeName, out TypeReference? expectedTypeRef, out _))
+							Assert.Fail($"Could not resolve original type `{expectedTypeName}' in assembly {assemblyName}");
+						TypeDefinition expectedType = expectedTypeRef.Resolve ();
 						linkedMembersInAssembly.TryGetValue(new AssemblyQualifiedToken(expectedType), out LinkedEntity? linkedTypeEntity);
 						MetadataType? linkedType = linkedTypeEntity?.Entity as MetadataType;
 

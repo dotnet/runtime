@@ -23,8 +23,8 @@ Building and publishing your project should now use the `apphost`/`singlefilehos
 
 Alternatives to this method include copying the desired apphost to the appropriate `<dotnet_root>/packs` and NuGet cache directories or building the NuGet packages locally and configuring the application to use them via a NuGet.config and the `KnownAppHostPack` item.
 
-## Pointing at a local .NET root
+# Pointing at a local .NET root
 
-For a [framework-dependent application](https://docs.microsoft.com/dotnet/core/deploying/#publish-framework-dependent), you can set the `DOTNET_ROOT` environment variable to point at a local .NET layout.
+For a [framework-dependent application](https://learn.microsoft.com/dotnet/core/deploying/#publish-framework-dependent), you can set the `DOTNET_ROOT` environment variable to point at a local .NET layout.
 
-The [libraries tests](../libraries/testing.md) construct and use such a layout based on your local runtime and libraries build as part of the `libs.pretest` subset. To use that layout, set `DOTNET_ROOT=<repo_root>/artifacts/bin/testhost/net8.0-<os>-<configuration>-<arch>`. Note that the host components (`hostfxr`, `hostpolicy`) in that layout are not from the local build.
+The [libraries tests](../libraries/testing.md) construct and use such a layout based on your local runtime, host, and libraries build as part of the `libs.pretest` subset. To use that layout, set `DOTNET_ROOT=<repo_root>/artifacts/bin/testhost/net<version>-<os>-<configuration>-<arch>` and then run the .NET application.

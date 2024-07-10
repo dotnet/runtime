@@ -262,17 +262,12 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked short(Int128 value)
         {
-            if (~value._upper == 0)
-            {
-                long lower = (long)value._lower;
-                return checked((short)lower);
-            }
-
-            if (value._upper != 0)
+            long lower = (long)value._lower;
+            if ((long)value._upper != lower >> 63)
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return checked((short)value._lower);
+            return checked((short)lower);
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="int" /> value.</summary>
@@ -286,17 +281,12 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked int(Int128 value)
         {
-            if (~value._upper == 0)
-            {
-                long lower = (long)value._lower;
-                return checked((int)lower);
-            }
-
-            if (value._upper != 0)
+            long lower = (long)value._lower;
+            if ((long)value._upper != lower >> 63)
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return checked((int)value._lower);
+            return checked((int)lower);
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="long" /> value.</summary>
@@ -310,17 +300,12 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked long(Int128 value)
         {
-            if (~value._upper == 0)
-            {
-                long lower = (long)value._lower;
-                return lower;
-            }
-
-            if (value._upper != 0)
+            long lower = (long)value._lower;
+            if ((long)value._upper != lower >> 63)
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return checked((long)value._lower);
+            return lower;
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="IntPtr" /> value.</summary>
@@ -334,17 +319,12 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked nint(Int128 value)
         {
-            if (~value._upper == 0)
-            {
-                long lower = (long)value._lower;
-                return checked((nint)lower);
-            }
-
-            if (value._upper != 0)
+            long lower = (long)value._lower;
+            if ((long)value._upper != lower >> 63)
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return checked((nint)value._lower);
+            return checked((nint)lower);
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="sbyte" /> value.</summary>
@@ -360,17 +340,12 @@ namespace System
         [CLSCompliant(false)]
         public static explicit operator checked sbyte(Int128 value)
         {
-            if (~value._upper == 0)
-            {
-                long lower = (long)value._lower;
-                return checked((sbyte)lower);
-            }
-
-            if (value._upper != 0)
+            long lower = (long)value._lower;
+            if ((long)value._upper != lower >> 63)
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return checked((sbyte)value._lower);
+            return checked((sbyte)lower);
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="float" /> value.</summary>
@@ -450,7 +425,7 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="UInt128" />.</returns>
         [CLSCompliant(false)]
-        public static explicit operator UInt128(Int128 value) => new UInt128(value._upper, value._lower);
+        public static explicit operator UInt128(Int128 value) => Unsafe.BitCast<Int128, UInt128>(value);
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="UInt128" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
@@ -463,7 +438,7 @@ namespace System
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return new UInt128(value._upper, value._lower);
+            return Unsafe.BitCast<Int128, UInt128>(value);
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="UIntPtr" /> value.</summary>
@@ -1068,57 +1043,39 @@ namespace System
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper < right._upper)
-                    || ((left._upper == right._upper) && (left._lower < right._lower));
-            }
-            else
-            {
-                return IsNegative(left);
-            }
+            // If left and right have different signs: Signed comparison of _upper gives result since it is stored as two's complement
+            // If signs are equal and left._upper < right._upper: left < right for negative and positive values,
+            //                                                    since _upper is upper 64 bits in two's complement.
+            // If signs are equal and left._upper > right._upper: left > right for negative and positive values,
+            //                                                    since _upper is upper 64 bits in two's complement.
+            // If left._upper == right._upper: unsigned comparison of _lower gives the result for both negative and positive values since
+            //                                 lower values are lower 64 bits in two's complement.
+            return ((long)left._upper < (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower < right._lower));
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper < right._upper)
-                    || ((left._upper == right._upper) && (left._lower <= right._lower));
-            }
-            else
-            {
-                return IsNegative(left);
-            }
+            // See comment in < operator for how this works.
+            return ((long)left._upper < (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower <= right._lower));
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper > right._upper)
-                    || ((left._upper == right._upper) && (left._lower > right._lower));
-            }
-            else
-            {
-                return IsNegative(right);
-            }
+            // See comment in < operator for how this works.
+            return ((long)left._upper > (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower > right._lower));
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper > right._upper)
-                    || ((left._upper == right._upper) && (left._lower >= right._lower));
-            }
-            else
-            {
-                return IsNegative(right);
-            }
+            // See comment in < operator for how this works.
+            return ((long)left._upper > (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower >= right._lower));
         }
 
         //
@@ -1563,6 +1520,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static Int128 INumberBase<Int128>.MinMagnitudeNumber(Int128 x, Int128 y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static Int128 INumberBase<Int128>.MultiplyAddEstimate(Int128 left, Int128 right, Int128 addend) => (left * right) + addend;
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

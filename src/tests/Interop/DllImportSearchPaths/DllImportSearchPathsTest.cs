@@ -21,7 +21,7 @@ public class DllImportSearchPathsTest
 
     public static bool CanLoadAssemblyInSubdirectory =>
         !TestLibrary.Utilities.IsNativeAot &&
-        !TestLibrary.PlatformDetection.IsMonoLLVMFULLAOT &&
+        !TestLibrary.PlatformDetection.IsMonoFULLAOT &&
         !OperatingSystem.IsAndroid() &&
         !OperatingSystem.IsIOS() &&
         !OperatingSystem.IsTvOS() &&

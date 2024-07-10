@@ -12,6 +12,9 @@
 
     <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>
     <SdkWithWorkload_WorkloadStampPath>$(SdkWithWorkloadForTestingPath)workload.stamp</SdkWithWorkload_WorkloadStampPath>
+
+    <TemplateNuGetConfigPathForWorkloadTesting Condition="'$(TemplateNuGetConfigPathForWorkloadTesting)' == '' and '$(RepoRoot)' != ''">$(RepoRoot)NuGet.config</TemplateNuGetConfigPathForWorkloadTesting>
+    <InstallWorkloadUsingArtifactsAfterThisTarget Condition="'$(InstallWorkloadUsingArtifactsAfterThisTarget)' == ''">ArchiveTests</InstallWorkloadUsingArtifactsAfterThisTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(InstallWorkloadForTesting)' == 'true'">
@@ -25,12 +28,12 @@
     <PreparePackagesForWorkloadInstall Condition="'$(PreparePackagesForWorkloadInstall)' == ''">true</PreparePackagesForWorkloadInstall>
     <InstallWorkloadUsingArtifactsDependsOn>
       $(InstallWorkloadUsingArtifactsDependsOn);
+      GetNuGetsToBuildForWorkloadTesting;
+      _PreparePackagesForWorkloadInstall;
       ProvisionDotNetForWorkloadTesting;
       _GetDotNetVersion;
       _FirstDotNetRun;
       _SetPackageVersionForWorkloadsTesting;
-      GetNuGetsToBuildForWorkloadTesting;
-      _PreparePackagesForWorkloadInstall;
       GetWorkloadInputs;
       _InstallWorkloads
     </InstallWorkloadUsingArtifactsDependsOn>
@@ -159,8 +162,12 @@
              TaskName="Microsoft.Workload.Build.Tasks.InstallWorkloadFromArtifacts"
              AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
 
+  <UsingTask Condition="'$(WorkloadBuildTasksAssemblyPath)' != ''"
+             TaskName="Microsoft.Workload.Build.Tasks.PatchNuGetConfig"
+             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
+
   <Target Name="InstallWorkloadUsingArtifacts"
-          AfterTargets="ArchiveTests"
+          AfterTargets="$(InstallWorkloadUsingArtifactsAfterThisTarget)"
           DependsOnTargets="$(InstallWorkloadUsingArtifactsDependsOn)"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
@@ -198,8 +205,11 @@
                      VersionBandForManifestPackages="$(VersionBandForManifestPackages)"
                      LocalNuGetsPath="$(BuiltNugetsDir)"
                      ExtraWorkloadInstallCommandArguments="$(ExtraWorkloadInstallCommandArguments)"
-                     TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
+                     PackageSourceNameForBuiltPackages="$(PackageSourceNameForBuiltPackages)"
+                     TemplateNuGetConfigPath="$(TemplateNuGetConfigPathForWorkloadTesting)"
+                     NuGetConfigPackageSourceMappings="$(NuGetConfigPackageSourceMappingsForWorkloadTesting)"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
+                     WorkloadInstallCommandOutputImportance="$(WorkloadInstallCommandOutputImportance)"
                      IntermediateOutputPath="$(ArtifactsObjDir)"
                      SkipTempDirectoryCleanup="$(SkipTempDirectoryCleanup)"
       />

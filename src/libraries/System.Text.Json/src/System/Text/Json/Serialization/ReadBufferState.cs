@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization
             do
             {
                 int bytesRead = await utf8Json.ReadAsync(
-#if NETCOREAPP
+#if NET
                     bufferState._buffer.AsMemory(bufferState._count),
 #else
                     bufferState._buffer, bufferState._count, bufferState._buffer.Length - bufferState._count,
@@ -80,7 +80,7 @@ namespace System.Text.Json.Serialization
             do
             {
                 int bytesRead = utf8Json.Read(
-#if NETCOREAPP
+#if NET
                     _buffer.AsSpan(_count));
 #else
                     _buffer, _count, _buffer.Length - _count);
@@ -105,7 +105,6 @@ namespace System.Text.Json.Serialization
         public void AdvanceBuffer(int bytesConsumed)
         {
             Debug.Assert(bytesConsumed <= _count);
-            Debug.Assert(!_isFinalBlock || _count == bytesConsumed, "The reader should have thrown if we have remaining bytes.");
 
             _count -= bytesConsumed;
 

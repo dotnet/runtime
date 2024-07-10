@@ -148,7 +148,7 @@ AssemblySpecHash::~AssemblySpecHash()
 
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
-                                  DomainAssembly *pStaticParent)
+                                  Assembly *pStaticParent)
 {
     CONTRACTL
     {
@@ -295,55 +295,6 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     spec.AssemblyNameInit(assemblyNameRef);
 }
 
-
-// Check if the supplied assembly's public key matches up with the one in the Spec, if any
-// Throws an appropriate exception in case of a mismatch
-void AssemblySpec::MatchPublicKeys(Assembly *pAssembly)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Check that the public keys are the same as in the AR.
-    if (!IsStrongNamed())
-        return;
-
-    const void *pbPublicKey;
-    DWORD cbPublicKey;
-    pbPublicKey = pAssembly->GetPublicKey(&cbPublicKey);
-    if (cbPublicKey == 0)
-        ThrowHR(FUSION_E_PRIVATE_ASM_DISALLOWED);
-
-    if (IsAfPublicKey(m_dwFlags))
-    {
-        if ((m_cbPublicKeyOrToken != cbPublicKey) ||
-            memcmp(m_pbPublicKeyOrToken, pbPublicKey, m_cbPublicKeyOrToken))
-        {
-            ThrowHR(FUSION_E_REF_DEF_MISMATCH);
-        }
-    }
-    else
-    {
-        // Ref has a token
-        StrongNameToken strongNameToken;
-
-        IfFailThrow(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey,
-            cbPublicKey,
-            &strongNameToken));
-
-        if ((m_cbPublicKeyOrToken != StrongNameToken::SIZEOF_TOKEN) ||
-            memcmp(m_pbPublicKeyOrToken, &strongNameToken, StrongNameToken::SIZEOF_TOKEN))
-        {
-            ThrowHR(FUSION_E_REF_DEF_MISMATCH);
-        }
-    }
-}
-
 Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFileNotFound)
 {
     CONTRACTL
@@ -374,12 +325,12 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     CONTRACTL_END;
 
     AssemblyBinder *pParentAssemblyBinder = NULL;
-    DomainAssembly *pParentDomainAssembly = GetParentAssembly();
+    Assembly *pParentAssembly = GetParentAssembly();
 
-    if(pParentDomainAssembly != NULL)
+    if(pParentAssembly != NULL)
     {
         // Get the PEAssembly associated with the parent's domain assembly
-        PEAssembly *pParentPEAssembly = pParentDomainAssembly->GetPEAssembly();
+        PEAssembly *pParentPEAssembly = pParentAssembly->GetPEAssembly();
         pParentAssemblyBinder = pParentPEAssembly->GetAssemblyBinder();
     }
 
@@ -1170,7 +1121,7 @@ BOOL AssemblySpecBindingCache::CompareSpecs(UPTR u1, UPTR u2)
     return a1->CompareEx(a2);
 }
 
-DomainAssembly * AssemblySpec::GetParentAssembly()
+Assembly * AssemblySpec::GetParentAssembly()
 {
     LIMITED_METHOD_CONTRACT;
     return m_pParentAssembly;

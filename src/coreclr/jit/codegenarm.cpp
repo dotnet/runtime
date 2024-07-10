@@ -119,12 +119,12 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
-    GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
-
     BasicBlock* nextBlock = block->Next();
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
+        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
+
         if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
             instGen(INS_BREAKPOINT);
@@ -138,12 +138,12 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         // Because of the way the flowgraph is connected, the liveness info for this one instruction
         // after the call is not (can not be) correct in cases where a variable has a last use in the
-        // handler.  So turn off GC reporting for this single instruction.
+        // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
         GetEmitter()->emitDisableGC();
-
-        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
 
         // Now go to where the finally funclet needs to return to.
+        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
         if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
             // Fall-through.
@@ -173,9 +173,9 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 //------------------------------------------------------------------------
 // instGen_Set_Reg_To_Imm: Move an immediate value into an integer register.
 //
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
-                                     regNumber reg,
-                                     ssize_t   imm,
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
+                                     regNumber      reg,
+                                     ssize_t        imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     // reg cannot be a FP register
@@ -280,7 +280,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (targetType == TYP_FLOAT)
             {
                 // Get a temp integer register
-                regNumber tmpReg = tree->GetSingleTempReg();
+                regNumber tmpReg = internalRegisters.GetSingle(tree);
 
                 float f = forceCastToFloat(constValue);
                 instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, *((int*)(&f)));
@@ -293,8 +293,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 unsigned* cv = (unsigned*)&constValue;
 
                 // Get two temp integer registers
-                regNumber tmpReg1 = tree->ExtractTempReg();
-                regNumber tmpReg2 = tree->GetSingleTempReg();
+                regNumber tmpReg1 = internalRegisters.Extract(tree);
+                regNumber tmpReg2 = internalRegisters.GetSingle(tree);
 
                 instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg1, cv[0]);
                 instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg2, cv[1]);
@@ -431,9 +431,9 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
 
     // Setup the regTmp, if there is one.
-    if (tree->AvailableTempRegCount() > 0)
+    if (internalRegisters.Count(tree) > 0)
     {
-        regTmp = tree->ExtractTempReg();
+        regTmp = internalRegisters.Extract(tree);
     }
 
     // If we have an outgoing arg area then we must adjust the SP by popping off the
@@ -647,29 +647,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 //
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
-
-    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    unsigned     jmpTabBase;
-
-    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, false);
-
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
-
-    for (unsigned i = 0; i < jumpCount; i++)
-    {
-        BasicBlock* target = *jumpTable++;
-        noway_assert(target->HasFlag(BBF_HAS_LABEL));
-
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
-
-        GetEmitter()->emitDataGenData(i, target);
-    }
-
-    GetEmitter()->emitDataGenEnd();
-
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, false);
     genMov32RelocatableDataLabel(jmpTabBase, treeNode->GetRegNum());
 
     genProduceReg(treeNode);
@@ -838,7 +816,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
+    bool dstOnStack =
+        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -855,7 +834,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
 
     // Temp register used to perform the sequence of loads and stores.
-    regNumber tmpReg = cpObjNode->ExtractTempReg();
+    regNumber tmpReg = internalRegisters.Extract(cpObjNode);
     assert(genIsValidIntReg(tmpReg));
 
     if (cpObjNode->IsVolatile())
@@ -1048,18 +1027,18 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     {
         // Arm supports unaligned access only for integer types,
         // convert the storing floating data into 1 or 2 integer registers and write them as int.
-        regNumber addr = tree->ExtractTempReg();
+        regNumber addr = internalRegisters.Extract(tree);
         emit->emitIns_R_S(INS_lea, EA_PTRSIZE, addr, varNum, offset);
         if (targetType == TYP_FLOAT)
         {
-            regNumber floatAsInt = tree->GetSingleTempReg();
+            regNumber floatAsInt = internalRegisters.GetSingle(tree);
             emit->emitIns_Mov(INS_vmov_f2i, EA_4BYTE, floatAsInt, dataReg, /* canSkip */ false);
             emit->emitIns_R_R(INS_str, EA_4BYTE, floatAsInt, addr);
         }
         else
         {
-            regNumber halfdoubleAsInt1 = tree->ExtractTempReg();
-            regNumber halfdoubleAsInt2 = tree->GetSingleTempReg();
+            regNumber halfdoubleAsInt1 = internalRegisters.Extract(tree);
+            regNumber halfdoubleAsInt2 = internalRegisters.GetSingle(tree);
             emit->emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, halfdoubleAsInt1, halfdoubleAsInt2, dataReg);
             emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 0);
             emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 4);
@@ -1231,7 +1210,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 
     emitter*  emit       = GetEmitter();
     var_types targetType = treeNode->TypeGet();
-    regNumber intReg     = treeNode->GetSingleTempReg();
+    regNumber intReg     = internalRegisters.GetSingle(treeNode);
     regNumber fpReg      = genConsumeReg(treeNode->AsOp()->gtOp1);
     regNumber targetReg  = treeNode->GetRegNum();
 
@@ -1614,7 +1593,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
     genConsumeOperands(treeNode->AsOp());
 
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     assert(insVcvt != INS_invalid);
     GetEmitter()->emitIns_R_R(insVcvt, dstSize, tmpReg, op1->GetRegNum());
@@ -1673,7 +1652,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                    callTargetReg, // ireg
                                    REG_NA, 0, 0,  // xreg, xmul, disp
                                    false          // isJump
-                                   );
+        );
     }
     else
     {
@@ -1682,7 +1661,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                    gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(), REG_NA, REG_NA, 0,
                                    0,    /* ilOffset, ireg, xreg, xmul, disp */
                                    false /* isJump */
-                                   );
+        );
     }
 
     regSet.verifyRegistersUsed(RBM_CALLEE_TRASH);
@@ -1732,7 +1711,10 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
                       0,           // argSize. Again, we have to lie about it
                       EA_UNKNOWN); // retSize
 
-    if (initReg == argReg)
+    // If initReg is trashed, either because it was an arg to the enter
+    // callback, or because the enter callback itself trashes it, then it needs
+    // to be zero'ed again before using.
+    if (((RBM_PROFILER_ENTER_TRASH | RBM_PROFILER_ENTER_ARG) & genRegMask(initReg)) != RBM_NONE)
     {
         *pInitRegZeroed = false;
     }
@@ -1780,7 +1762,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
         // For the tail call case, the helper call is introduced during lower,
         // so the allocator will arrange things so R0 is not in use here.
         //
-        // For the tail jump case, all reg args have been spilled via genJmpMethod,
+        // For the tail jump case, all reg args have been spilled via genJmpPlaceArgs,
         // so R0 is likewise not in use.
         r0InUse = false;
     }
@@ -1945,14 +1927,15 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
 void CodeGen::genPushFltRegs(regMaskTP regMask)
 {
-    assert(regMask != 0);                        // Don't call uness we have some registers to push
-    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floasting point registers should be in regMask
+    assert(regMask != 0);                        // Don't call unless we have some registers to push
+    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floating point registers should be in regMask
 
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
+
     // regMask should be contiguously set
-    regMaskTP tmpMask = ((regMask >> lowReg) + 1); // tmpMask should have a single bit set
-    assert((tmpMask & (tmpMask - 1)) == 0);
+    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg) + 1); // tmpMask should have a single bit set
+    assert(genMaxOneBit(tmpMask));
     assert(lowReg == REG_F16); // Currently we expect to start at F16 in the unwind codes
 
     // Our calling convention requires that we only use vpush for TYP_DOUBLE registers
@@ -1970,8 +1953,8 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
     // regMask should be contiguously set
-    regMaskTP tmpMask = ((regMask >> lowReg) + 1); // tmpMask should have a single bit set
-    assert((tmpMask & (tmpMask - 1)) == 0);
+    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg) + 1); // tmpMask should have a single bit set
+    assert(genMaxOneBit(tmpMask));
 
     // Our calling convention requires that we only use vpop for TYP_DOUBLE registers
     noway_assert(floatRegCanHoldType(lowReg, TYP_DOUBLE));
@@ -2171,7 +2154,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskTP maskPopRegs      = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP maskPopRegs      = regSet.rsGetModifiedCalleeSavedRegsMask();
     regMaskTP maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
     regMaskTP maskPopRegsInt   = maskPopRegs & ~maskPopRegsFloat;
 
@@ -2210,7 +2193,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         genUsedPopToReturn = false;
     }
 
-    assert(FitsIn<int>(maskPopRegsInt));
+    assert(FitsIn<int>(maskPopRegsInt.getLow()));
     inst_IV(INS_pop, (int)maskPopRegsInt);
     compiler->unwindPopMaskInt(maskPopRegsInt);
 }
@@ -2338,7 +2321,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
     maskPushRegsInt |= maskStackAlloc;
 
-    assert(FitsIn<int>(maskPushRegsInt));
+    assert(FitsIn<int>(maskPushRegsInt.getLow()));
     inst_IV(INS_push, (int)maskPushRegsInt);
     compiler->unwindPushMaskInt(maskPushRegsInt);
 
@@ -2455,7 +2438,7 @@ void CodeGen::genFuncletEpilog()
         compiler->unwindPopMaskFloat(maskPopRegsFloat);
     }
 
-    assert(FitsIn<int>(maskPopRegsInt));
+    assert(FitsIn<int>(maskPopRegsInt.getLow()));
     inst_IV(INS_pop, (int)maskPopRegsInt);
     compiler->unwindPopMaskInt(maskPopRegsInt);
 

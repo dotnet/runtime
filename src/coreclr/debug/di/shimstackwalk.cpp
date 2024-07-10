@@ -150,6 +150,14 @@ BOOL ShimStackWalk::ShouldTrackUMChain(StackWalkInfo * pswInfo)
     if (m_pProcess->IsThreadSuspendedOrHijacked(m_pThread))
         return FALSE;
 
+    // In the case the thread is throwing a managed exception, 
+    // TS_SyncSuspended might not yet be set, resulting in IsThreadSuspendedOrHijacked 
+    // returning false above. We need to check the exception state to make sure we don't
+    // track the chain in this case. Since we know the type of Frame we are dealing with, 
+    // we can make a more accurate determination of whether we should track the chain.
+    if (GetInternalFrameType(pswInfo->GetCurrentInternalFrame()) == STUBFRAME_EXCEPTION) 
+        return FALSE;
+
     return TRUE;
 }
 
@@ -312,6 +320,7 @@ void ShimStackWalk::Populate()
                             // because of the leaf STUBFRAME_EXCEPTION.
                             chainInfo.CancelUMChain();
                             swInfo.m_fSkipChain = true;
+                            swInfo.m_fHasException = true;
                         }
                     }
 
@@ -988,6 +997,20 @@ CorDebugInternalFrameType ShimStackWalk::GetInternalFrameType(ICorDebugInternalF
 
 void ShimStackWalk::AppendFrame(ICorDebugFrame * pFrame, StackWalkInfo * pStackWalkInfo)
 {
+    // We've detected we're in a stackwalk where we have an exception and no further managed frames 
+    // are on top of this frame. To ensure our IP points to the user line that threw the exception, 
+    // we ask the frame to adjust the IP to the call instruction as currently it points to the instruction after it.
+    if (pStackWalkInfo->m_fHasException && pStackWalkInfo->m_cFrame == 0)
+    {
+        RSExtSmartPtr<ICorDebugILFrame> pNFrame3;
+        HRESULT hr = pFrame->QueryInterface(IID_ICorDebugILFrame, reinterpret_cast<void **>(&pNFrame3));
+        if (pNFrame3 != NULL)
+        {
+            CordbJITILFrame* JITILFrameToAdjustIP = (static_cast<CordbJITILFrame*>(pNFrame3.GetValue()));
+            JITILFrameToAdjustIP->AdjustIPAfterException();
+            pStackWalkInfo->m_fHasException = false;                                    
+        }
+    }
     // grow the
     ICorDebugFrame ** ppFrame = m_stackFrames.AppendThrowing();
 
@@ -1469,7 +1492,8 @@ ShimStackWalk::StackWalkInfo::StackWalkInfo()
     m_fProcessingInternalFrame(false),
     m_fSkipChain(false),
     m_fLeafFrame(true),
-    m_fHasConvertedFrame(false)
+    m_fHasConvertedFrame(false),
+    m_fHasException(false)
 {
     m_pChildFrame.Assign(NULL);
     m_pConvertedInternalFrame2.Assign(NULL);

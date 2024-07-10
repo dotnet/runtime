@@ -131,6 +131,10 @@ namespace System
             if (follow == null)
                 return this;
 
+            // Verify that the types are the same...
+            if (!InternalEqualTypes(this, follow))
+                throw new ArgumentException(SR.Arg_DlgtTypeMis);
+
             MulticastDelegate other = (MulticastDelegate)follow;
 
             MulticastDelegate ret = AllocDelegateLike_internal(this);

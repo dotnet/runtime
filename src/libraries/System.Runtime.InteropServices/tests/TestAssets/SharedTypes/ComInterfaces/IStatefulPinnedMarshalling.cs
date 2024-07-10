@@ -86,6 +86,7 @@ namespace SharedTypes.ComInterfaces
                 _canFree = true;
                 if (_isPinned)
                 {
+                    // Unsafe.AsPointer is safe, because the result from GetPinnableReference is pinned
                     _refNativeStruct = new StatefulPinnedNative() { I = _managed.I };
                     return (StatefulPinnedNative*)Unsafe.AsPointer(ref _refNativeStruct);
                 }

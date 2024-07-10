@@ -76,75 +76,9 @@ FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
 }
 FCIMPLEND
 
-// Given an exception object, this method will extract the stacktrace and dynamic method array and set them up for return to the caller.
-FCIMPL3(VOID, ExceptionNative::GetStackTracesDeepCopy, Object* pExceptionObjectUnsafe, Object **pStackTraceUnsafe, Object **pDynamicMethodsUnsafe);
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    ASSERT(pExceptionObjectUnsafe != NULL);
-    ASSERT(pStackTraceUnsafe != NULL);
-    ASSERT(pDynamicMethodsUnsafe != NULL);
-
-    struct
-    {
-        StackTraceArray stackTrace;
-        StackTraceArray stackTraceCopy;
-        EXCEPTIONREF refException;
-        PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
-        PTRARRAYREF dynamicMethodsArrayCopy; // Copy of the object array of Managed Resolvers
-    } gc;
-    gc.refException = NULL;
-    gc.dynamicMethodsArray = NULL;
-    gc.dynamicMethodsArrayCopy = NULL;
-
-    // GC protect the array reference
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-
-    // Get the exception object reference
-    gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
-
-    // Fetch the stacktrace details from the exception under a lock
-    gc.refException->GetStackTrace(gc.stackTrace, &gc.dynamicMethodsArray);
-
-    bool fHaveStackTrace = false;
-    bool fHaveDynamicMethodArray = false;
-
-    if ((unsigned)gc.stackTrace.Size() > 0)
-    {
-        // Deepcopy the array
-        gc.stackTraceCopy.CopyFrom(gc.stackTrace);
-        fHaveStackTrace = true;
-    }
-
-    if (gc.dynamicMethodsArray != NULL)
-    {
-        // Get the number of elements in the dynamic methods array
-        unsigned   cOrigDynamic = gc.dynamicMethodsArray->GetNumComponents();
-
-        // ..and allocate a new array. This can trigger GC or throw under OOM.
-        gc.dynamicMethodsArrayCopy = (PTRARRAYREF)AllocateObjectArray(cOrigDynamic, g_pObjectClass);
-
-        // Deepcopy references to the new array we just allocated
-        memmoveGCRefs(gc.dynamicMethodsArrayCopy->GetDataPtr(), gc.dynamicMethodsArray->GetDataPtr(),
-                                                  cOrigDynamic * sizeof(Object *));
-
-        fHaveDynamicMethodArray = true;
-    }
-
-    // Prep to return
-    *pStackTraceUnsafe = fHaveStackTrace?OBJECTREFToObject(gc.stackTraceCopy.Get()):NULL;
-    *pDynamicMethodsUnsafe = fHaveDynamicMethodArray?OBJECTREFToObject(gc.dynamicMethodsArrayCopy):NULL;
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-// Given an exception object and deep copied instances of a stacktrace and/or dynamic method array, this method will set the latter in the exception object instance.
-FCIMPL3(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe, Object *pDynamicMethodsUnsafe);
+// Given an exception object, this method will mark its stack trace as frozen and return it to the caller.
+// Frozen stack traces are immutable, when a thread attempts to add a frame to it, the stack trace is cloned first.
+FCIMPL1(Object *, ExceptionNative::GetFrozenStackTrace, Object* pExceptionObjectUnsafe);
 {
     CONTRACTL
     {
@@ -157,44 +91,33 @@ FCIMPL3(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionOb
     struct
     {
         StackTraceArray stackTrace;
-        EXCEPTIONREF refException;
-        PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
+        EXCEPTIONREF refException = NULL;
+        PTRARRAYREF keepAliveArray = NULL; // Object array of Managed Resolvers / AssemblyLoadContexts
+        OBJECTREF result = NULL;
     } gc;
-    gc.refException = NULL;
-    gc.dynamicMethodsArray = NULL;
 
     // GC protect the array reference
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
     // Get the exception object reference
     gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
 
-    if (pStackTraceUnsafe != NULL)
-    {
-        // Copy the stacktrace
-        StackTraceArray stackTraceArray((I1ARRAYREF)ObjectToOBJECTREF(pStackTraceUnsafe));
-        gc.stackTrace.Swap(stackTraceArray);
-    }
+    gc.refException->GetStackTrace(gc.stackTrace, &gc.keepAliveArray);
 
-    gc.dynamicMethodsArray = NULL;
-    if (pDynamicMethodsUnsafe != NULL)
-    {
-        gc.dynamicMethodsArray = (PTRARRAYREF)ObjectToOBJECTREF(pDynamicMethodsUnsafe);
-    }
+    gc.stackTrace.MarkAsFrozen();
 
-    // If there is no stacktrace, then there cannot be any dynamic method array. Thus,
-    // save stacktrace only when we have it.
-    if (gc.stackTrace.Size() > 0)
+    if (gc.keepAliveArray != NULL)
     {
-        // Save the stacktrace details in the exception under a lock
-        gc.refException->SetStackTrace(gc.stackTrace.Get(), gc.dynamicMethodsArray);
+        gc.result = gc.keepAliveArray;
     }
     else
     {
-        gc.refException->SetStackTrace(NULL, NULL);
+        gc.result = gc.stackTrace.Get();
     }
-
+    
     HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(gc.result);
 }
 FCIMPLEND
 
@@ -856,6 +779,31 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
     END_QCALL;
 }
 
+extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj)
+{
+    QCALL_CONTRACT;
+
+    PCODE funcPtr = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
+
+    if (target != NULL)
+    {
+        pObj.Set(target);
+
+        MethodTable* pMT = target->GetMethodTable();
+
+        funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
+    }
+
+    END_QCALL;
+
+    return (void*)funcPtr;
+}
 
 /*==========================WaitForPendingFinalizers============================
 **Action: Run all Finalizers that haven't been run.
@@ -900,7 +848,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
 
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
-    gc_alloc_context* ac = pThread->GetAllocContext();
+    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context;
     currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;
@@ -987,7 +935,10 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
     for (Thread *pThread = ThreadStore::GetThreadList(NULL); pThread; pThread = ThreadStore::GetThreadList(pThread))
     {
         gc_alloc_context* ac = pThread->GetAllocContext();
-        allocated -= ac->alloc_limit - ac->alloc_ptr;
+        if (ac != nullptr)
+        {
+            allocated -= ac->alloc_limit - ac->alloc_ptr;
+        }
     }
 
     ThreadSuspend::RestartEE(FALSE, TRUE);
@@ -1081,24 +1032,24 @@ FCIMPLEND
 **Arguments: Object of interest
 **Exceptions: None
 ==============================================================================*/
-FCIMPL1(void, GCInterface::ReRegisterForFinalize, Object *obj)
+extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     // Checked by the caller
-    _ASSERTE(obj != NULL);
+    _ASSERTE(pObj.Get() != NULL);
+    _ASSERTE(pObj.Get()->GetMethodTable()->HasFinalizer());
 
-    if (obj->GetMethodTable()->HasFinalizer())
+    if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, OBJECTREFToObject(pObj.Get())))
     {
-        HELPER_METHOD_FRAME_BEGIN_1(obj);
-        if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, obj))
-        {
-            ThrowOutOfMemory();
-        }
-        HELPER_METHOD_FRAME_END();
+        ThrowOutOfMemory();
     }
+    END_QCALL;
 }
-FCIMPLEND
 
 FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) {
     WRAPPER_NO_CONTRACT;
@@ -1463,22 +1414,6 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
 
 #include <optsmallperfcritical.h>
 
-FCIMPL2(FC_UINT8_RET,COMInterlocked::Exchange8, UINT8 *location, UINT8 value)
-{
-    FCALL_CONTRACT;
-
-    return (UINT8)InterlockedExchange8((CHAR *) location, (CHAR)value);
-}
-FCIMPLEND
-
-FCIMPL2(FC_INT16_RET,COMInterlocked::Exchange16, INT16 *location, INT16 value)
-{
-    FCALL_CONTRACT;
-
-    return InterlockedExchange16((SHORT *) location, value);
-}
-FCIMPLEND
-
 FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
@@ -1492,22 +1427,6 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
     FCALL_CONTRACT;
 
     return InterlockedExchange64((INT64 *) location, value);
-}
-FCIMPLEND
-
-FCIMPL3(FC_UINT8_RET, COMInterlocked::CompareExchange8, UINT8* location, UINT8 value, UINT8 comparand)
-{
-    FCALL_CONTRACT;
-
-    return (UINT8)InterlockedCompareExchange8((CHAR*)location, (CHAR)value, (CHAR)comparand);
-}
-FCIMPLEND
-
-FCIMPL3(FC_INT16_RET, COMInterlocked::CompareExchange16, INT16* location, INT16 value, INT16 comparand)
-{
-    FCALL_CONTRACT;
-
-    return InterlockedCompareExchange16((SHORT*)location, value, comparand);
 }
 FCIMPLEND
 
@@ -1627,8 +1546,9 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
         return mt->CanCompareBitsOrUseFastGetHashCode();
     }
 
-    if (mt->ContainsPointers()
-        || mt->IsNotTightlyPacked())
+    if (mt->ContainsGCPointers()
+        || mt->IsNotTightlyPacked()
+        || mt->GetClass()->IsInlineArray())
     {
         mt->SetHasCheckedCanCompareBitsOrUseFastGetHashCode();
         return FALSE;
@@ -1681,231 +1601,156 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
     return canCompareBitsOrUseFastGetHashCode;
 }
 
-NOINLINE static FC_BOOL_RET CanCompareBitsHelper(MethodTable* mt, OBJECTREF objRef)
+extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
 {
-    FC_INNER_PROLOG(ValueTypeHelper::CanCompareBits);
-
-    _ASSERTE(mt != NULL);
-    _ASSERTE(objRef != NULL);
+    QCALL_CONTRACT;
 
     BOOL ret = FALSE;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
+    BEGIN_QCALL;
+
+    if (mt->GetClass()->IsInlineArray())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_InlineArrayEqualsGetHashCode"));
 
     ret = CanCompareBitsOrUseFastGetHashCode(mt);
 
-    HELPER_METHOD_FRAME_END();
-    FC_INNER_EPILOG();
+    END_QCALL;
 
-    FC_RETURN_BOOL(ret);
+    return ret;
 }
 
-// Return true if the valuetype does not contain pointer, is tightly packed,
-// does not have floating point number field and does not override Equals method.
-FCIMPL1(FC_BOOL_RET, ValueTypeHelper::CanCompareBits, Object* obj)
+enum ValueTypeHashCodeStrategy
 {
-    FCALL_CONTRACT;
+    None,
+    ReferenceField,
+    DoubleField,
+    SingleField,
+    FastGetHashCode,
+    ValueTypeOverride,
+};
 
-    _ASSERTE(obj != NULL);
-    MethodTable* mt = obj->GetMethodTable();
-
-    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
-    {
-        FC_RETURN_BOOL(mt->CanCompareBitsOrUseFastGetHashCode());
-    }
-
-    OBJECTREF objRef(obj);
-
-    FC_INNER_RETURN(FC_BOOL_RET, CanCompareBitsHelper(mt, objRef));
-}
-FCIMPLEND
-
-static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    INT32 hashCode = 0;
-    INT32 *pObj = (INT32*)pObjRef;
-
-    // this is a struct with no refs and no "strange" offsets, just go through the obj and xor the bits
-    INT32 size = mt->GetNumInstanceFieldBytes();
-    for (INT32 i = 0; i < (INT32)(size / sizeof(INT32)); i++)
-        hashCode ^= *pObj++;
-
-    return hashCode;
-}
-
-static INT32 RegularGetValueTypeHashCode(MethodTable *mt, void *pObjRef)
+static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMTOut)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    INT32 hashCode = 0;
+    // Should be handled by caller
+    _ASSERTE(!mt->CanCompareBitsOrUseFastGetHashCode());
 
-    GCPROTECT_BEGININTERIOR(pObjRef);
+    ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
 
-    BOOL canUseFastGetHashCodeHelper = FALSE;
-    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
-    {
-        canUseFastGetHashCodeHelper = mt->CanCompareBitsOrUseFastGetHashCode();
-    }
-    else
-    {
-        canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(mt);
-    }
+    // Grab the first non-null field and return its hash code or 'it' as hash code
+    ApproxFieldDescIterator fdIterator(mt, ApproxFieldDescIterator::INSTANCE_FIELDS);
 
-    // While we should not get here directly from ValueTypeHelper::GetHashCode, if we recurse we need to
-    // be able to handle getting the hashcode for an embedded structure whose hashcode is computed by the fast path.
-    if (canUseFastGetHashCodeHelper)
+    FieldDesc *field;
+    while ((field = fdIterator.Next()) != NULL)
     {
-        hashCode = FastGetValueTypeHashCodeHelper(mt, pObjRef);
-    }
-    else
-    {
-        // it's looking ugly so we'll use the old behavior in managed code. Grab the first non-null
-        // field and return its hash code or 'it' as hash code
-        // <TODO> Note that the old behavior has already been broken for value types
-        //              that is qualified for CanUseFastGetHashCodeHelper. So maybe we should
-        //              change the implementation here to use all fields instead of just the 1st one.
-        // </TODO>
-        //
-        // <TODO> check this approximation - we may be losing exact type information </TODO>
-        ApproxFieldDescIterator fdIterator(mt, ApproxFieldDescIterator::INSTANCE_FIELDS);
-
-        FieldDesc *field;
-        while ((field = fdIterator.Next()) != NULL)
+        _ASSERTE(!field->IsRVA());
+        if (field->IsObjRef())
         {
-            _ASSERTE(!field->IsRVA());
-            if (field->IsObjRef())
+            GCX_COOP();
+            // if we get an object reference we get the hash code out of that
+            if (*(Object**)((BYTE *)objHandle.Get()->UnBox() + *fieldOffset + field->GetOffsetUnsafe()) != NULL)
             {
-                // if we get an object reference we get the hash code out of that
-                if (*(Object**)((BYTE *)pObjRef + field->GetOffsetUnsafe()) != NULL)
-                {
-                    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__OBJECT__GET_HASH_CODE, (*(Object**)((BYTE *)pObjRef + field->GetOffsetUnsafe())));
-                    DECLARE_ARGHOLDER_ARRAY(args, 1);
-                    args[ARGNUM_0] = PTR_TO_ARGHOLDER(*(Object**)((BYTE *)pObjRef + field->GetOffsetUnsafe()));
-                    CALL_MANAGED_METHOD(hashCode, INT32, args);
-                }
-                else
-                {
-                    // null object reference, try next
-                    continue;
-                }
+                *fieldOffset += field->GetOffsetUnsafe();
+                ret = ValueTypeHashCodeStrategy::ReferenceField;
             }
             else
             {
-                CorElementType fieldType = field->GetFieldType();
-                if (fieldType == ELEMENT_TYPE_R8)
+                // null object reference, try next
+                continue;
+            }
+        }
+        else
+        {
+            CorElementType fieldType = field->GetFieldType();
+            if (fieldType == ELEMENT_TYPE_R8)
+            {
+                *fieldOffset += field->GetOffsetUnsafe();
+                ret = ValueTypeHashCodeStrategy::DoubleField;
+            }
+            else if (fieldType == ELEMENT_TYPE_R4)
+            {
+                *fieldOffset += field->GetOffsetUnsafe();
+                ret = ValueTypeHashCodeStrategy::SingleField;
+            }
+            else if (fieldType != ELEMENT_TYPE_VALUETYPE)
+            {
+                *fieldOffset += field->GetOffsetUnsafe();
+                *fieldSize = field->LoadSize();
+                ret = ValueTypeHashCodeStrategy::FastGetHashCode;
+            }
+            else
+            {
+                // got another value type. Get the type
+                TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
+                _ASSERTE(!fieldTH.IsNull());
+                MethodTable* fieldMT = fieldTH.GetMethodTable();
+                if (CanCompareBitsOrUseFastGetHashCode(fieldMT))
                 {
-                    PREPARE_NONVIRTUAL_CALLSITE(METHOD__DOUBLE__GET_HASH_CODE);
-                    DECLARE_ARGHOLDER_ARRAY(args, 1);
-                    args[ARGNUM_0] = PTR_TO_ARGHOLDER(((BYTE *)pObjRef + field->GetOffsetUnsafe()));
-                    CALL_MANAGED_METHOD(hashCode, INT32, args);
+                    *fieldOffset += field->GetOffsetUnsafe();
+                    *fieldSize = field->LoadSize();
+                    ret = ValueTypeHashCodeStrategy::FastGetHashCode;
                 }
-                else if (fieldType == ELEMENT_TYPE_R4)
+                else if (HasOverriddenMethod(fieldMT,
+                                             CoreLibBinder::GetClass(CLASS__VALUE_TYPE),
+                                             CoreLibBinder::GetMethod(METHOD__VALUE_TYPE__GET_HASH_CODE)->GetSlot()))
                 {
-                    PREPARE_NONVIRTUAL_CALLSITE(METHOD__SINGLE__GET_HASH_CODE);
-                    DECLARE_ARGHOLDER_ARRAY(args, 1);
-                    args[ARGNUM_0] = PTR_TO_ARGHOLDER(((BYTE *)pObjRef + field->GetOffsetUnsafe()));
-                    CALL_MANAGED_METHOD(hashCode, INT32, args);
-                }
-                else if (fieldType != ELEMENT_TYPE_VALUETYPE)
-                {
-                    UINT fieldSize = field->LoadSize();
-                    INT32 *pValue = (INT32*)((BYTE *)pObjRef + field->GetOffsetUnsafe());
-                    for (INT32 j = 0; j < (INT32)(fieldSize / sizeof(INT32)); j++)
-                        hashCode ^= *pValue++;
+                    *fieldOffset += field->GetOffsetUnsafe();
+                    *fieldMTOut = fieldMT;
+                    ret = ValueTypeHashCodeStrategy::ValueTypeOverride;
                 }
                 else
                 {
-                    // got another value type. Get the type
-                    TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
-                    _ASSERTE(!fieldTH.IsNull());
-                    hashCode = RegularGetValueTypeHashCode(fieldTH.GetMethodTable(), (BYTE *)pObjRef + field->GetOffsetUnsafe());
+                    *fieldOffset += field->GetOffsetUnsafe();
+                    ret = GetHashCodeStrategy(fieldMT, objHandle, fieldOffset, fieldSize, fieldMTOut);
                 }
             }
-            break;
         }
+        break;
     }
 
-    GCPROTECT_END();
-
-    return hashCode;
+    return ret;
 }
 
-// The default implementation of GetHashCode() for all value types.
-// Note that this implementation reveals the value of the fields.
-// So if the value type contains any sensitive information it should
-// implement its own GetHashCode().
-FCIMPL1(INT32, ValueTypeHelper::GetHashCode, Object* objUNSAFE)
+extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMT)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    if (objUNSAFE == NULL)
-        FCThrow(kNullReferenceException);
+    ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
+    *fieldOffset = 0;
+    *fieldSize = 0;
+    *fieldMT = NULL;
 
-    OBJECTREF obj = ObjectToOBJECTREF(objUNSAFE);
-    VALIDATEOBJECTREF(obj);
+    BEGIN_QCALL;
 
-    INT32 hashCode = 0;
-    MethodTable *pMT = objUNSAFE->GetMethodTable();
+    ret = GetHashCodeStrategy(mt, objHandle, fieldOffset, fieldSize, fieldMT);
 
-    // We don't want to expose the method table pointer in the hash code
-    // Let's use the typeID instead.
-    UINT32 typeID = pMT->LookupTypeID();
-    if (typeID == TypeIDProvider::INVALID_TYPE_ID)
-    {
-        // If the typeID has yet to be generated, fall back to GetTypeID
-        // This only needs to be done once per MethodTable
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
-        typeID = pMT->GetTypeID();
-        HELPER_METHOD_FRAME_END();
-    }
+    END_QCALL;
 
-    // To get less colliding and more evenly distributed hash codes,
-    // we munge the class index with two big prime numbers
-    hashCode = typeID * 711650207 + 2506965631U;
-
-    BOOL canUseFastGetHashCodeHelper = FALSE;
-    if (pMT->HasCheckedCanCompareBitsOrUseFastGetHashCode())
-    {
-        canUseFastGetHashCodeHelper = pMT->CanCompareBitsOrUseFastGetHashCode();
-    }
-    else
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
-        canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(pMT);
-        HELPER_METHOD_FRAME_END();
-    }
-
-    if (canUseFastGetHashCodeHelper)
-    {
-        hashCode ^= FastGetValueTypeHashCodeHelper(pMT, obj->UnBox());
-    }
-    else
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
-        hashCode ^= RegularGetValueTypeHashCode(pMT, obj->UnBox());
-        HELPER_METHOD_FRAME_END();
-    }
-
-    return hashCode;
+    return ret;
 }
-FCIMPLEND
 
 FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 {
     FCALL_CONTRACT;
     return mt->GetNumInstanceFieldBytes();
+}
+FCIMPLEND
+
+FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTable* mt)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(mt->IsTruePrimitive() || mt->IsEnum());
+
+    // MethodTable::GetInternalCorElementType has unnecessary overhead for primitives and enums
+    // Call EEClass::GetInternalCorElementType directly to avoid it
+    return mt->GetClass()->GetInternalCorElementType();
 }
 FCIMPLEND
 
@@ -1922,6 +1767,41 @@ extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, Metho
     END_QCALL;
 
     return bResult;
+}
+
+extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd)
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = false;
+
+    BEGIN_QCALL;
+
+    // Cache lookup and trivial cases are already handled at managed side. Call the uncached versions directly.
+    _ASSERTE(fromTypeHnd != toTypeHnd);
+
+    GCX_COOP();
+
+    TypeHandle fromTH = TypeHandle::FromPtr(fromTypeHnd);
+    TypeHandle toTH = TypeHandle::FromPtr(toTypeHnd);
+    
+    if (fromTH.IsTypeDesc())
+    {
+        ret = fromTH.AsTypeDesc()->CanCastTo(toTH, NULL);
+    }
+    else if (Nullable::IsNullableForType(toTH, fromTH.AsMethodTable()))
+    {
+        // do not allow type T to be cast to Nullable<T>
+        ret = FALSE;
+    }
+    else
+    {
+        ret = fromTH.AsMethodTable()->CanCastTo(toTH.AsMethodTable(), NULL);
+    }
+
+    END_QCALL;
+
+    return ret;
 }
 
 static MethodTable * g_pStreamMT;

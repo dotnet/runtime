@@ -18,6 +18,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static readonly string LocalWsEcho = "ws://" + Environment.GetEnvironmentVariable("DOTNET_TEST_WEBSOCKETHOST") + "/WebSocket/EchoWebSocket.ashx";
 
         [JSImport("globalThis.console.log")]
+        [return: JSMarshalAs<JSType.DiscardNoWait>]
         public static partial void Log(string message);
 
         [JSImport("delay", "InlineTestHelper")]
@@ -37,6 +38,30 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [JSImport("promiseValidateState", "WebWorkerTestHelper")]
         public static partial Task<bool> PromiseValidateState(JSObject state);
+
+        [JSImport("callMeBackSync", "WebWorkerTestHelper")]
+        public static partial Task CallMeBackSync([JSMarshalAs<JSType.Function>] Action syncCallback);
+
+        [JSImport("callExportBackSync", "WebWorkerTestHelper")]
+        public static partial Task CallExportBackSync(string syncExportName);
+
+        public static NamedCall CurrentCallback;
+        public static CancellationToken CurrentCancellationToken = CancellationToken.None;
+        public static Exception? LastException = null;
+
+        [JSExport]
+        public static void CallCurrentCallback()
+        {
+            LastException = null;
+            try
+            {
+                CurrentCallback.Call(CurrentCancellationToken);
+            }
+            catch (Exception ex)
+            {
+                LastException = ex;
+            }
+        }
 
         public static string GetOriginUrl()
         {
@@ -121,7 +146,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public class Executor
     {
         public int ExecutorTID;
-        public SynchronizationContext ExecutorSynchronizationContext;
         private static SynchronizationContext _mainSynchronizationContext;
         public static SynchronizationContext MainSynchronizationContext
         {
@@ -156,7 +180,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Task wrapExecute()
             {
                 ExecutorTID = Environment.CurrentManagedThreadId;
-                ExecutorSynchronizationContext = SynchronizationContext.Current ?? MainSynchronizationContext;
                 AssertTargetThread();
                 return job();
             }
@@ -194,6 +217,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 Assert.False(Thread.CurrentThread.IsThreadPoolThread, "IsThreadPoolThread:" + Thread.CurrentThread.IsThreadPoolThread + " Type " + Type);
             }
+            if (Type == ExecutorType.Main || Type == ExecutorType.JSWebWorker)
+            {
+                Assert.NotNull(SynchronizationContext.Current);
+                Assert.Equal("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext", SynchronizationContext.Current.GetType().FullName);
+            }
+            else
+            {
+                Assert.Null(SynchronizationContext.Current);
+            }
         }
 
         public void AssertAwaitCapturedContext()
@@ -226,51 +258,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     // it could migrate to any TP thread
                     Assert.NotEqual(1, Environment.CurrentManagedThreadId);
                     Assert.True(Thread.CurrentThread.IsThreadPoolThread);
-                    break;
-            }
-        }
-
-        public void AssertBlockingWait(Exception? exception)
-        {
-            switch (Type)
-            {
-                case ExecutorType.Main:
-                case ExecutorType.JSWebWorker:
-                    Assert.NotNull(exception);
-                    Assert.IsType<PlatformNotSupportedException>(exception);
-                    break;
-                case ExecutorType.NewThread:
-                case ExecutorType.ThreadPool:
-                    Assert.Null(exception);
-                    break;
-            }
-        }
-
-        public void AssertInteropThread()
-        {
-            switch (Type)
-            {
-                case ExecutorType.Main:
-                    Assert.Equal(1, Environment.CurrentManagedThreadId);
-                    Assert.Equal(ExecutorTID, Environment.CurrentManagedThreadId);
-                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                    break;
-                case ExecutorType.JSWebWorker:
-                    Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                    Assert.Equal(ExecutorTID, Environment.CurrentManagedThreadId);
-                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                    break;
-                case ExecutorType.NewThread:
-                    // it will synchronously continue on the UI thread
-                    Assert.Equal(1, Environment.CurrentManagedThreadId);
-                    Assert.NotEqual(ExecutorTID, Environment.CurrentManagedThreadId);
-                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                    break;
-                case ExecutorType.ThreadPool:
-                    // it will synchronously continue on the UI thread
-                    Assert.Equal(1, Environment.CurrentManagedThreadId);
-                    Assert.NotEqual(ExecutorTID, Environment.CurrentManagedThreadId);
-                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
                     break;
             }
         }
@@ -346,7 +333,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
                 catch (Exception ex)
                 {
-                    if(ex is AggregateException agg)
+                    if (ex is AggregateException agg)
                     {
                         tcs.TrySetException(agg.InnerException);
                     }
@@ -394,4 +381,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     }
 
     #endregion
+
+    public class NamedCall
+    {
+        public string Name { get; set; }
+        public bool IsBlocking { get; set; }
+        public delegate void Method(CancellationToken ct);
+        public Method Call { get; set; }
+
+        override public string ToString() => Name;
+    }
+
+    public class FinalizerTest
+    {
+        public static bool FinalizerHit;
+        ~FinalizerTest()
+        {
+            FinalizerHit = true;
+        }
+    }
 }

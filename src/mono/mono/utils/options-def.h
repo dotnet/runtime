@@ -58,13 +58,19 @@ DEFINE_BOOL_READONLY(readonly_flag, "readonly-flag", FALSE, "Example")
 */
 
 DEFINE_BOOL(wasm_exceptions, "wasm-exceptions", FALSE, "Enable codegen for WASM exceptions")
-DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
 DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
+#ifdef DISABLE_THREADS
+DEFINE_BOOL(wasm_mmap, "wasm-mmap", TRUE, "Enable custom memory manager for WASM")
+#else
+// Disabled by default for MT because it breaks strcmp somehow (??????)
+DEFINE_BOOL(wasm_mmap, "wasm-mmap", FALSE, "Enable custom memory manager for WASM")
+#endif
 
 #if HOST_BROWSER
-DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", TRUE, "Record interpreter tiering information for automatic PGO")
+DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", FALSE, "Record interpreter tiering information for automatic PGO")
 #else
 DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", FALSE, "Record interpreter tiering information for automatic PGO")
+DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
 #endif
 DEFINE_BOOL(interp_pgo_logging, "interp-pgo-logging", FALSE, "Log messages when interpreter PGO optimizes a method or updates its table")
 DEFINE_BOOL(interp_codegen_timing, "interp-codegen-timing", FALSE, "Measure time spent generating interpreter code and log it periodically")
@@ -79,13 +85,17 @@ DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", TRUE, "JIT
 DEFINE_BOOL(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", TRUE, "JIT specialized WASM interp_entry wrappers")
 // jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
 DEFINE_BOOL(jiterpreter_jit_call_enabled, "jiterpreter-jit-call-enabled", TRUE, "JIT specialized WASM do_jit_call trampolines")
+
+DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
 #else
 // traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
-DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", TRUE, "JIT interpreter opcode traces into WASM")
+DEFINE_BOOL_READONLY(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", FALSE, "JIT interpreter opcode traces into WASM")
 // interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
 DEFINE_BOOL_READONLY(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", FALSE, "JIT specialized WASM interp_entry wrappers")
 // jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
 DEFINE_BOOL_READONLY(jiterpreter_jit_call_enabled, "jiterpreter-jit-call-enabled", FALSE, "JIT specialized WASM do_jit_call trampolines")
+
+DEFINE_BOOL_READONLY(wasm_gc_safepoints, "wasm-gc-safepoints", TRUE, "Use GC safepoints on WASM")
 #endif // DISABLE_THREADS
 
 // enables using WASM try/catch_all instructions where appropriate (currently only do_jit_call),
@@ -121,6 +131,10 @@ DEFINE_BOOL(jiterpreter_backward_branches_enabled, "jiterpreter-backward-branche
 DEFINE_BOOL(jiterpreter_enable_simd, "jiterpreter-simd-enabled", TRUE, "Attempt to use WebAssembly SIMD support")
 // Since the zero page is unallocated, loading array/string/span lengths from null ptrs will yield zero
 DEFINE_BOOL(jiterpreter_zero_page_optimization, "jiterpreter-zero-page-optimization", TRUE, "Exploit the zero page being unallocated to optimize out null checks")
+// We can produce higher quality code by embedding known constants directly into traces instead of loading
+//  the constant from its storage location in the interpreter's locals in memory, even if we can't skip
+//  the write of the constant into memory.
+DEFINE_BOOL(jiterpreter_constant_propagation, "jiterpreter-constant-propagation", TRUE, "Propagate ldc.i4 and ldloca expressions forward to locations where those constants are used")
 // When compiling a jit_call wrapper, bypass sharedvt wrappers if possible by inlining their
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
 DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")

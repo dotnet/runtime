@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+
 namespace System.Numerics.Tensors
 {
     /// <summary>Performs primitive tensor operations over spans of memory.</summary>
@@ -23,7 +25,39 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Throws an <see cref="OverflowException"/> for trying to negate the minimum value of a two-complement value.</summary>
-        internal static void ThrowNegateTwosCompOverflow() => throw new OverflowException(SR.Overflow_NegateTwosCompNum);
+        private static void ThrowNegateTwosCompOverflow() => throw new OverflowException(SR.Overflow_NegateTwosCompNum);
+
+        /// <summary>Creates a span of <typeparamref name="TTo"/> from a <typeparamref name="TFrom"/> when they're the same type.</summary>
+        /// <remarks>
+        /// This is the same as MemoryMarshal.Cast, except only to be used when TFrom and TTo are the same type or effectively
+        /// the same type (e.g. int and nint in a 32-bit process). MemoryMarshal.Cast can't currently be used as it's
+        /// TFrom/TTo are constrained to be value types.
+        /// </remarks>
+        private static unsafe Span<TTo> Rename<TFrom, TTo>(Span<TFrom> span)
+        {
+            Debug.Assert(sizeof(TFrom) == sizeof(TTo));
+#if NET9_0_OR_GREATER
+            return Unsafe.BitCast<Span<TFrom>, Span<TTo>>(span);
+#else
+            return *(Span<TTo>*)(&span);
+#endif
+        }
+
+        /// <summary>Creates a span of <typeparamref name="TTo"/> from a <typeparamref name="TFrom"/> when they're the same type.</summary>
+        /// <remarks>
+        /// This is the same as MemoryMarshal.Cast, except only to be used when TFrom and TTo are the same type or effectively
+        /// the same type (e.g. int and nint in a 32-bit process). MemoryMarshal.Cast can't currently be used as it's
+        /// TFrom/TTo are constrained to be value types.
+        /// </remarks>
+        private static unsafe ReadOnlySpan<TTo> Rename<TFrom, TTo>(ReadOnlySpan<TFrom> span)
+        {
+            Debug.Assert(sizeof(TFrom) == sizeof(TTo));
+#if NET9_0_OR_GREATER
+            return Unsafe.BitCast<ReadOnlySpan<TFrom>, ReadOnlySpan<TTo>>(span);
+#else
+            return *(ReadOnlySpan<TTo>*)(&span);
+#endif
+        }
 
         /// <summary>Mask used to handle alignment elements before vectorized handling of the input.</summary>
         /// <remarks>

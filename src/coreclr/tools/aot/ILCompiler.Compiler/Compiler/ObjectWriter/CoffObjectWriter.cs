@@ -26,7 +26,7 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     /// <remarks>
     /// The PE/COFF object format is described in the official specifciation at
-    /// https://learn.microsoft.com/en-us/windows/win32/debug/pe-format. However,
+    /// https://learn.microsoft.com/windows/win32/debug/pe-format. However,
     /// numerous extensions are missing in the specification. The most notable
     /// ones are listed below.
     ///
@@ -92,7 +92,7 @@ namespace ILCompiler.ObjectWriter
                 Name =
                     section == ObjectNodeSection.TLSSection ? ".tls$" :
                     section == ObjectNodeSection.HydrationTargetSection ? "hydrated" :
-                    (section.Name.StartsWith(".") ? section.Name : "." + section.Name),
+                    (section.Name.StartsWith('.') ? section.Name : "." + section.Name),
                 SectionCharacteristics = section.Type switch
                 {
                     SectionType.ReadOnly =>
@@ -213,6 +213,8 @@ namespace ILCompiler.ObjectWriter
             IDictionary<string, SymbolDefinition> definedSymbols,
             SortedSet<string> undefinedSymbols)
         {
+            Feat00Flags feat00Flags = _machine is Machine.I386 ? Feat00Flags.SafeSEH : 0;
+
             foreach (var (symbolName, symbolDefinition) in definedSymbols)
             {
                 if (_symbolNameToIndex.TryGetValue(symbolName, out uint symbolIndex))
@@ -253,13 +255,18 @@ namespace ILCompiler.ObjectWriter
                     gfidsSectionWriter.WriteLittleEndian<uint>(_symbolNameToIndex[symbolName]);
                 }
 
+                feat00Flags |= Feat00Flags.ControlFlowGuard;
+            }
+
+            if (feat00Flags != 0)
+            {
                 // Emit the feat.00 symbol that controls various linker behaviors
                 _symbols.Add(new CoffSymbol
                 {
                     Name = "@feat.00",
                     StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
                     SectionIndex = uint.MaxValue, // IMAGE_SYM_ABSOLUTE
-                    Value = 0x800, // cfGuardCF flags this object as control flow guard aware
+                    Value = (uint)feat00Flags,
                 });
             }
         }
@@ -347,6 +354,8 @@ namespace ILCompiler.ObjectWriter
                                     IMAGE_REL_BASED_ARM64_BRANCH26 => IMAGE_REL_ARM64_BRANCH26,
                                     IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => IMAGE_REL_ARM64_PAGEBASE_REL21,
                                     IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => IMAGE_REL_ARM64_PAGEOFFSET_12A,
+                                    IMAGE_REL_ARM64_TLS_SECREL_HIGH12A => IMAGE_REL_ARM64_SECREL_HIGH12A,
+                                    IMAGE_REL_ARM64_TLS_SECREL_LOW12L => IMAGE_REL_ARM64_SECREL_LOW12L,
                                     IMAGE_REL_SECREL => IMAGE_REL_ARM64_SECREL,
                                     IMAGE_REL_SECTION => IMAGE_REL_ARM64_SECTION,
                                     _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
@@ -446,8 +455,8 @@ namespace ILCompiler.ObjectWriter
                     // Emit RUNTIME_FUNCTION
                     pdataSectionWriter.EmitAlignment(4);
                     pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, currentSymbolName, start);
-                    // Only x64 has the End symbol
-                    if (_machine == Machine.Amd64)
+                    // Only x86/x64 has the End symbol
+                    if (_machine is Machine.I386 or Machine.Amd64)
                     {
                         pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, currentSymbolName, end);
                     }
@@ -1117,6 +1126,15 @@ namespace ILCompiler.ObjectWriter
                 }
                 return crc;
             }
+        }
+
+        private enum Feat00Flags : uint
+        {
+            SafeSEH = 1,
+            StackGuard = 0x100,
+            SoftwareDevelopmentLifecycle = 0x200,
+            ControlFlowGuard = 0x800,
+            ExceptionContinuationMetadata = 0x4000,
         }
     }
 }

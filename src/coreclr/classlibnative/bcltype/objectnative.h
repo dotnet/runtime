@@ -27,12 +27,12 @@ public:
 
     static FCDECL1(INT32, GetHashCode, Object* vThisRef);
     static FCDECL1(INT32, TryGetHashCode, Object* vThisRef);
-    static FCDECL2(FC_BOOL_RET, Equals, Object *pThisRef, Object *pCompareRef);
-    static FCDECL1(Object*, AllocateUninitializedClone, Object* pObjUNSAFE);
+    static FCDECL2(FC_BOOL_RET, ContentEquals, Object *pThisRef, Object *pCompareRef);
     static FCDECL1(Object*, GetClass, Object* pThis);
     static FCDECL1(FC_BOOL_RET, IsLockHeld, Object* pThisUNSAFE);
 };
 
+extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle);
 extern "C" BOOL QCALLTYPE Monitor_Wait(QCall::ObjectHandleOnStack pThis, INT32 Timeout);
 extern "C" void QCALLTYPE Monitor_Pulse(QCall::ObjectHandleOnStack pThis);
 extern "C" void QCALLTYPE Monitor_PulseAll(QCall::ObjectHandleOnStack pThis);

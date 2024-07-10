@@ -87,6 +87,7 @@ namespace System.Runtime.InteropServices.Marshalling
                     }
                 }
 
+                // Unsafe.AsPointer is safe since buffer must be pinned
                 _unmanagedValue = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
 
                 Marshal.GetAnsiStringBytes(managed, buffer); // Includes null terminator

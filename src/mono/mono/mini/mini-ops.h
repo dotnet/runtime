@@ -775,6 +775,7 @@ MINI_OP(OP_LDELEMA2D, "ldelema2d", NONE, NONE, NONE)
 MINI_OP(OP_MEMCPY, "memcpy", NONE, NONE, NONE)
 /* inlined small memset with constant length */
 MINI_OP(OP_MEMSET, "memset", NONE, NONE, NONE)
+MINI_OP(OP_MEMSET_ZERO, "memset_zero", NONE, IREG, IREG)
 /*
  * A RuntimeType object, the result ldtoken+GetTypeFromHandle.
  * inst_p0 is a MonoClass.
@@ -803,8 +804,6 @@ MINI_OP(OP_NOT_NULL, "not_null", NONE, IREG, NONE)
 MINI_OP(OP_LDTOKEN_FIELD, "ldtoken_field", VREG, VREG, NONE)
 
 /* SIMD opcodes. */
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM) || defined(TARGET_ARM64)
 
 MINI_OP(OP_ICONV_TO_R4_RAW, "iconv_to_r4_raw", FREG, IREG, NONE)
 
@@ -852,8 +851,6 @@ MINI_OP(OP_EXPAND_I4, "expand_i4", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R4, "expand_r4", XREG, FREG, NONE)
 MINI_OP(OP_EXPAND_I8, "expand_i8", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
-
-#endif
 
 // wasm specific SIMD v128
 
@@ -1651,6 +1648,7 @@ MINI_OP(OP_ARM64_SXTL, "arm64_sxtl", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_SXTL2, "arm64_sxtl2", XREG, XREG, NONE)
 
 MINI_OP(OP_ARM64_STM, "arm64_stm", NONE, IREG, VREG)
+MINI_OP(OP_ARM64_STM_ZIP, "arm64_stm_zip", NONE, IREG, VREG)
 
 MINI_OP(OP_ARM64_SMULH, "arm64_smulh", LREG, LREG, LREG)
 MINI_OP(OP_ARM64_SQRT_SCALAR, "arm64_sqrt_scalar", XREG, XREG, NONE)
@@ -1664,6 +1662,7 @@ MINI_OP(OP_ARM64_UZP2, "arm64_uzp2", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_ZIP1, "arm64_zip1", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_ZIP2, "arm64_zip2", XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_ST1_SCALAR, "arm64_st1_scalar", NONE, IREG, XREG, IREG)
+MINI_OP3(OP_ARM64_STM_SCALAR, "arm64_stm_scalar", NONE, IREG, VREG, IREG)
 MINI_OP3(OP_ARM64_STNP, "arm64_stnp", NONE, IREG, XREG, XREG)
 MINI_OP3(OP_ARM64_STNP_SCALAR, "arm64_stnp_scalar", NONE, IREG, XREG, XREG)
 MINI_OP3(OP_ARM64_STP, "arm64_stp", NONE, IREG, XREG, XREG)

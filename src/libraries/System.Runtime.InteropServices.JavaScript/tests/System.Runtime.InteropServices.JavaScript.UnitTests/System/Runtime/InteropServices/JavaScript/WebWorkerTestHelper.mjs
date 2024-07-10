@@ -73,3 +73,13 @@ export function delay(ms) {
 export function getRndInteger(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 }
+
+export async function callMeBackSync(syncCallback) {
+    syncCallback();
+}
+
+export async function callExportBackSync(syncExportName) {
+    const WebWorkerTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.WebWorkerTestHelper;
+    const method = WebWorkerTestHelper[syncExportName]
+    method();
+}

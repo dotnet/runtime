@@ -53,14 +53,12 @@ namespace System.Net.WebSockets
                 return -1;
             }
 
-            int? readyState = webSocket.GetPropertyAsInt32("readyState");
-            if (!readyState.HasValue)
-            {
-                return -1;
-            }
-
-            return readyState.Value;
+            return BrowserInterop.WebSocketGetState(webSocket);
         }
+
+        [JSImport("INTERNAL.ws_get_state")]
+        public static partial int WebSocketGetState(
+            JSObject webSocket);
 
         [JSImport("INTERNAL.ws_wasm_create")]
         public static partial JSObject WebSocketCreate(

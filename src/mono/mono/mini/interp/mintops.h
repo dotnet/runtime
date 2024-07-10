@@ -8,6 +8,7 @@
 #include <config.h>
 #include <glib.h>
 
+// If you change this, update jiterpreter-opcodes.ts.
 typedef enum
 {
 	MintOpNoArgs,
@@ -219,10 +220,11 @@ typedef enum {
 #define MINT_IS_SUPER_BRANCH(op) ((op) >= MINT_BRFALSE_I4_SP && (op) <= MINT_BLT_UN_I8_IMM_SP)
 #define MINT_IS_CALL(op) ((op) >= MINT_CALL && (op) <= MINT_JIT_CALL)
 #define MINT_IS_PATCHABLE_CALL(op) ((op) >= MINT_CALL && (op) <= MINT_VCALL)
-#define MINT_IS_LDC_I4(op) ((op) >= MINT_LDC_I4_M1 && (op) <= MINT_LDC_I4)
+#define MINT_IS_LDC_I4(op) ((op) >= MINT_LDC_I4_0 && (op) <= MINT_LDC_I4)
 #define MINT_IS_LDC_I8(op) ((op) >= MINT_LDC_I8_0 && (op) <= MINT_LDC_I8)
 #define MINT_IS_UNOP(op) ((op) >= MINT_ADD1_I4 && (op) <= MINT_CEQ0_I4)
 #define MINT_IS_BINOP(op) ((op) >= MINT_ADD_I4 && (op) <= MINT_CLT_UN_R8)
+#define MINT_IS_BINOP_IMM(op) ((op) >= MINT_ADD_I4_IMM && (op) <= MINT_SHR_I8_IMM)
 #define MINT_IS_BINOP_SHIFT(op) ((op) >= MINT_SHR_UN_I4 && (op) <= MINT_SHR_I8)
 #define MINT_IS_LDFLD(op) ((op) >= MINT_LDFLD_I1 && (op) <= MINT_LDFLD_O)
 #define MINT_IS_STFLD(op) ((op) >= MINT_STFLD_I1 && (op) <= MINT_STFLD_O)
@@ -233,9 +235,10 @@ typedef enum {
 #define MINT_IS_LDIND_OFFSET(op) ((op) >= MINT_LDIND_OFFSET_I1 && (op) <= MINT_LDIND_OFFSET_I8)
 #define MINT_IS_SIMD_CREATE(op) ((op) >= MINT_SIMD_V128_I1_CREATE && (op) <= MINT_SIMD_V128_I8_CREATE)
 #define MINT_IS_RETURN(op) (((op) >= MINT_RET && (op) <= MINT_RET_U2) || (op) == MINT_RET_I4_IMM || (op) == MINT_RET_I8_IMM)
+#define MINT_IS_BOX(op) ((op) == MINT_BOX || (op) == MINT_BOX_VT || (op) == MINT_BOX_PTR || (op) == MINT_BOX_NULLABLE_PTR)
 
 // TODO Add more
-#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDC_R4 || op == MINT_LDC_R8 || op == MINT_LDPTR || op == MINT_BOX || op == MINT_INITLOCAL)
+#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDC_R4 || op == MINT_LDC_R8 || op == MINT_LDPTR || MINT_IS_BOX(op) || op == MINT_INITLOCAL)
 
 #define MINT_CALL_ARGS 2
 #define MINT_CALL_ARGS_SREG -2

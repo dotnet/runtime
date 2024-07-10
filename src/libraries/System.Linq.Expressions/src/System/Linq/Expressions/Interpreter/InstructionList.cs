@@ -44,7 +44,6 @@ namespace System.Linq.Expressions.Interpreter
 
             public DebugView(InstructionArray array)
             {
-                ArgumentNullException.ThrowIfNull(array);
                 _array = array;
             }
 

@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Tests
         public SampleEnumInt64 MyInt64Enum;
         public SampleEnumUInt64 MyUInt64Enum;
         public SimpleStruct MySimpleStruct;
-        public SimpleTestClass MySimpleTestClass;
+        public SimpleTestClass? MySimpleTestClass;
         public short[] MyInt16Array;
         public int[] MyInt32Array;
         public long[] MyInt64Array;

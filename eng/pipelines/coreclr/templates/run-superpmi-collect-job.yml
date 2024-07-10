@@ -16,10 +16,9 @@ parameters:
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   collectionType: ''
   collectionName: ''
-  dependOnEvaluatePaths: false
 
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}
@@ -32,7 +31,6 @@ jobs:
     continueOnError: ${{ parameters.continueOnError }}
     collectionType: $ {{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'
@@ -42,10 +40,16 @@ jobs:
     # tests collection takes longer so increase timeout to 8 hours
     ${{ if or(eq(parameters.collectionName, 'coreclr_tests'), eq(parameters.collectionName, 'libraries_tests')) }}:
       timeoutInMinutes: 480
-    ${{ if and(ne(parameters.collectionName, 'coreclr_tests'), ne(parameters.collectionName, 'libraries_tests')) }}:
+    ${{ else }}:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
+    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+      parameters:
+        runtimeFlavor: coreclr
+        testGroup: ${{ parameters.testGroup }}
+        liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
     - HelixApiAccessToken: ''
@@ -54,13 +58,11 @@ jobs:
     - CollectionType: ${{ parameters.collectionType }}
     - CollectionName: ${{ parameters.collectionName }}
 
+    - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - name: PythonSetupScript
-        value: 'py -3 -m venv $(Build.SourcesDirectory)\venv'
-      - name: PythonScript
-        value: '$(Build.SourcesDirectory)\venv\Scripts\python.exe'
-      - name: PipScript
-        value: '$(Build.SourcesDirectory)\venv\Scripts\python.exe -m pip'
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
       - name: MchFilesLocation
@@ -72,12 +74,6 @@ jobs:
       - name: PayloadLocation
         value: '$(Build.SourcesDirectory)\payload'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - name: PythonSetupScript
-        value: 'python3 -m venv $(Build.SourcesDirectory)/venv'
-      - name: PythonScript
-        value: '$(Build.SourcesDirectory)/venv/bin/python3'
-      - name: PipScript
-        value: '$(Build.SourcesDirectory)/venv/bin/pip3'
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
       - name: MchFilesLocation
@@ -97,7 +93,7 @@ jobs:
         value: '$(Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'realworld') }}:
       - name: InputDirectory
-        value: '$(Core_Root_Dir)'    
+        value: '$(Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
       - name: InputDirectory
         value: '$(managedTestArtifactRootFolderPath)'
@@ -118,6 +114,7 @@ jobs:
 
     - script: $(PythonSetupScript)
       displayName: Enable python venv
+      condition: always()
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 25 # size in MB
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
@@ -180,13 +177,17 @@ jobs:
         onlyAddExtraIndex: false
 
     # Ensure the Python azure-storage-blob package is installed before doing the upload.
-    - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall
-      displayName: Upgrade Pip to latest and install azure-storage-blob Python package
+    - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+      displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+    - task: AzureCLI@2
       displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
-      env:
-        CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+      inputs:
+        azureSubscription: 'superpmi-collect-rw'
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
 
     # Always upload the available logs for diagnostics
     - task: CopyFiles@2

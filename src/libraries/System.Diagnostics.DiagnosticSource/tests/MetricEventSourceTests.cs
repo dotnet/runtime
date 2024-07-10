@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Globalization;
@@ -9,7 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -269,6 +268,7 @@ namespace System.Diagnostics.Metrics.Tests
             UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description", new TagList() { { "udck1", "udcv1" }, { "udck2", "udcv2" } });
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+            Gauge<int> g = meter.CreateGauge<int>("gauge1", "C", "Temperature", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7"))
@@ -277,21 +277,23 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
+                g.Record(-10);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
+                g.Record(9);
 
                 using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7");
                 listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
-
 
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "", g.Unit, "-10", "9");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
@@ -315,6 +317,7 @@ namespace System.Diagnostics.Metrics.Tests
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () =>
                     { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
+            Gauge<int> g = meter.CreateGauge<int>("gauge1", "C", "Temperature", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7"))
@@ -323,10 +326,12 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
+                g.Record(-1);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
+                g.Record(32);
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter7"))
                 {
@@ -337,8 +342,9 @@ namespace System.Diagnostics.Metrics.Tests
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "", g.Unit, "-1", "32");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
@@ -361,6 +367,7 @@ namespace System.Diagnostics.Metrics.Tests
             UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+            Gauge<int> g = meter.CreateGauge<int>("gauge1", "C", "Temperature");
 
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter7"))
@@ -369,10 +376,12 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
+                g.Record(100);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
+                g.Record(-70);
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7"))
                 {
@@ -383,8 +392,9 @@ namespace System.Diagnostics.Metrics.Tests
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "", g.Unit, "100", "-70");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
@@ -473,6 +483,7 @@ namespace System.Diagnostics.Metrics.Tests
             UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+            Gauge<int> g = meter.CreateGauge<int>("gauge1", "C", "Temperature");
 
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter7"))
@@ -481,10 +492,12 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
+                g.Record(5);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
+                g.Record(10);
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs + 1, "TestMeter7"))
                 {
@@ -498,8 +511,9 @@ namespace System.Diagnostics.Metrics.Tests
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "", g.Unit, "5", "10");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
@@ -523,6 +537,7 @@ namespace System.Diagnostics.Metrics.Tests
             UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+            Gauge<int> g = meterA.CreateGauge<int>("gauge1", "C", "Temperature");
 
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter8;TestMeter9"))
@@ -531,10 +546,12 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
+                g.Record(-100);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
+                g.Record(100);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
 
                 meterA.Dispose();
@@ -550,18 +567,19 @@ namespace System.Diagnostics.Metrics.Tests
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, h); // only h occurs twice because meterA is disposed before listener2 is created
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, h, g); // only h occurs twice because meterA is disposed before listener2 is created
             AssertBeginInstrumentReportingEventsPresent(events2, h);
             AssertInitialEnumerationCompleteEventPresent(events, 2);
             AssertInitialEnumerationCompleteEventPresent(events2);
             AssertCounterEventsPresent(events, meterA.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meterA.Name, g.Name, "", g.Unit, "-100", "100");
             AssertCounterEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meterA.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meterB.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"), ("0.5=21;0.95=21;0.99=21", "1", "21"));
             AssertUpDownCounterEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
             AssertUpDownCounterEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
-            AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc);
+            AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc, g);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -571,6 +589,7 @@ namespace System.Diagnostics.Metrics.Tests
             using Meter meterA = new Meter("TestMeter8", null, new TagList() { { "1Mk1", "1Mv1" }, { "1Mk2", "Mv2" } });
             using Meter meterB = new Meter("TestMeter9", null, new TagList() { { "2Mk1", "2Mv1" } }, new object());
             Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" } });
+            Gauge<int> g = meterA.CreateGauge<int>("gauge1", "C", "Temperature", new TagList() { { "Ck1", "Cv1" } });
             int counterState = 3;
             ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
             int gaugeState = 0;
@@ -587,10 +606,12 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
+                g.Record(-10);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
+                g.Record(9);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
 
                 using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter8;TestMeter9"))
@@ -610,19 +631,20 @@ namespace System.Diagnostics.Metrics.Tests
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, c, oc, og, h, udc, oudc);
-            AssertBeginInstrumentReportingEventsPresent(events2, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g, c, oc, og, h, udc, oudc, g);
+            AssertBeginInstrumentReportingEventsPresent(events2, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events, 2);
             AssertInitialEnumerationCompleteEventPresent(events2);
             AssertCounterEventsPresent(events, meterA.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meterA.Name, g.Name, "", g.Unit, "-10", "9");
             AssertCounterEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meterA.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meterB.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"), ("0.5=21;0.95=21;0.99=21", "1", "21"));
             AssertUpDownCounterEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
             AssertUpDownCounterEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
-            AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc, h);
-            AssertEndInstrumentReportingEventsPresent(events2, c, oc, og, udc, oudc);
+            AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc, h, g);
+            AssertEndInstrumentReportingEventsPresent(events2, c, oc, og, udc, oudc, g);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -632,6 +654,7 @@ namespace System.Diagnostics.Metrics.Tests
             using Meter meterA = new Meter("TestMeter10", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2"}, { "Mk3", null }});
             using Meter meterB = new Meter("TestMeter11", null, null, new object());
             Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" } });
+            Gauge<int> g = meterA.CreateGauge<int>("gauge1", "C", "Temperature", new TagList() { { "Ck1", "Cv1" } });
             int counterState = 3;
             ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
             int gaugeState = 0;
@@ -653,51 +676,69 @@ namespace System.Diagnostics.Metrics.Tests
                 }
             }
 
-            AssertInstrumentPublishingEventsPresent(events, c, oc, og, h, udc, oudc, c, oc, og, h, udc, oudc);
+            AssertInstrumentPublishingEventsPresent(events, c, oc, og, h, udc, oudc, g, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events, 2);
-            AssertInstrumentPublishingEventsPresent(events2, c, oc, og, h, udc, oudc);
+            AssertInstrumentPublishingEventsPresent(events2, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public static bool IsNotBrowserAndRemoteExecuteSupported => PlatformDetection.IsNotBrowser && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(typeof(MetricEventSourceTests), nameof(IsNotBrowserAndRemoteExecuteSupported))]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithEmptyMetadata()
         {
-            using Meter meter = new Meter("TestMeter1", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } }, new object());
-            Counter<int> c = meter.CreateCounter<int>("counter1");
-            int counterState = 3;
-            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; });
-            int gaugeState = 0;
-            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; });
-            Histogram<int> h = meter.CreateHistogram<int>("histogram1");
-            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1");
-            int upDownCounterState = 0;
-            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState -= 11; return upDownCounterState; });
-
-            EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter1"))
+            RemoteExecutor.Invoke(static () =>
             {
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
-                c.Add(5);
-                h.Record(19);
-                udc.Add(-33);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
-                c.Add(12);
-                h.Record(26);
-                udc.Add(-40);
-                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
-                events = listener.Events.ToArray();
-            }
+                CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("fi-FI");
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
-            AssertInitialEnumerationCompleteEventPresent(events);
-            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
-            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("-33", "-33"), ("-40", "-73"));
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "-11"), ("-11", "-22"));
-            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+                using Meter meter = new Meter("TestMeter1", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } }, new object());
+                Counter<int> c = meter.CreateCounter<int>("counter1");
+                Gauge<int> g = meter.CreateGauge<int>("gauge1");
+                int counterState = 3;
+                ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; });
+                int gaugeState = 0;
+                ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; });
+                Histogram<int> h = meter.CreateHistogram<int>("histogram1");
+                UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1");
+                int upDownCounterState = 0;
+                ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState -= 11; return upDownCounterState; });
+
+                EventWrittenEventArgs[] events;
+                using (MetricsEventListener listener = new MetricsEventListener(NullTestOutputHelper.Instance, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter1"))
+                {
+                    listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                    c.Add(5);
+                    h.Record(19);
+                    udc.Add(-33);
+                    g.Record(200);
+                    listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                    c.Add(12);
+                    h.Record(26);
+                    udc.Add(-40);
+                    g.Record(-200);
+                    listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                    events = listener.Events.ToArray();
+                }
+
+                AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
+                AssertInitialEnumerationCompleteEventPresent(events);
+                AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+                AssertGaugeEventsPresent(events, meter.Name, g.Name, "", "", "200", "-200");
+                AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
+                AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
+                AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
+                AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("-33", "-33"), ("-40", "-73"));
+                AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "-11"), ("-11", "-22"));
+                AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+            }).Dispose();
+        }
+
+        private sealed class NullTestOutputHelper : ITestOutputHelper
+        {
+            public static NullTestOutputHelper Instance { get; } = new();
+            public void WriteLine(string message) { }
+            public void WriteLine(string format, params object[] args) { }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -706,6 +747,7 @@ namespace System.Diagnostics.Metrics.Tests
         {
             using Meter meter = new Meter("TestMeter2");
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
+            Gauge<int> g = meter.CreateGauge<int>("gauge1", "C", "Temperature", new TagList() { { "Ck1", "Cv1" } });
             int counterState = 3;
             ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; } , "MB", "Size of universe", new TagList() { { "oCk1", "oCv1" } });
             int gaugeState = 0;
@@ -722,17 +764,20 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
+                g.Record(77);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
+                g.Record(-177);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "", g.Unit, "77", "-177");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
@@ -756,6 +801,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Histogram<int> h;
                 UpDownCounter<int> udc;
                 ObservableUpDownCounter<int> oudc;
+                Gauge<int> g;
 
                 EventWrittenEventArgs[] events;
                 using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter3"))
@@ -765,6 +811,8 @@ namespace System.Diagnostics.Metrics.Tests
                     // the Meter is created after the EventSource was already monitoring
                     meter = new Meter("TestMeter3");
                     c = meter.CreateCounter<int>("counter1");
+                    g = meter.CreateGauge<int>("gauge1");
+
                     int counterState = 3;
                     oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; });
                     int gaugeState = 0;
@@ -777,17 +825,20 @@ namespace System.Diagnostics.Metrics.Tests
                     c.Add(5);
                     h.Record(19);
                     udc.Add(33);
+                    g.Record(1);
                     listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                     c.Add(12);
                     h.Record(26);
                     udc.Add(40);
+                    g.Record(-1);
                     listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                     events = listener.Events.ToArray();
                 }
 
-                AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+                AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
                 AssertInitialEnumerationCompleteEventPresent(events);
                 AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+                AssertGaugeEventsPresent(events, meter.Name, g.Name, "", "", "1", "-1");
                 AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
                 AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
                 AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
@@ -813,6 +864,7 @@ namespace System.Diagnostics.Metrics.Tests
             Histogram<int> h;
             UpDownCounter<int> udc;
             ObservableUpDownCounter<int> oudc;
+            Gauge<int> g;
 
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter4"))
@@ -821,6 +873,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 // Instruments are created after the EventSource was already monitoring
                 c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
+                g = meter.CreateGauge<int>("gauge1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
                 int counterState = 3;
                 oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; });
                 int gaugeState = 0;
@@ -833,17 +886,20 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(-33);
+                g.Record(-1000);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(-40);
+                g.Record(2000);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "", "", "-1000", "2000");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
@@ -880,6 +936,7 @@ namespace System.Diagnostics.Metrics.Tests
             });
             Histogram<int> h = meter.CreateHistogram<int>("histogram1");
             UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1");
+            Gauge<int> g = meter.CreateGauge<int>("gauge1");
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () =>
             {
@@ -902,6 +959,8 @@ namespace System.Diagnostics.Metrics.Tests
                 h.Record(20, new KeyValuePair<string, object?>("Size", 124));
                 udc.Add(-33, new KeyValuePair<string, object?>("Color", "red"));
                 udc.Add(-34, new KeyValuePair<string, object?>("Color", "blue"));
+                g.Record(1, new KeyValuePair<string, object?>("Color", "black"));
+                g.Record(2, new KeyValuePair<string, object?>("Color", "white"));
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 c.Add(12, new KeyValuePair<string, object?>("Color", "red"));
@@ -910,14 +969,18 @@ namespace System.Diagnostics.Metrics.Tests
                 h.Record(27, new KeyValuePair<string, object?>("Size", 124));
                 udc.Add(40, new KeyValuePair<string, object?>("Color", "red"));
                 udc.Add(41, new KeyValuePair<string, object?>("Color", "blue"));
+                g.Record(3, new KeyValuePair<string, object?>("Color", "black"));
+                g.Record(4, new KeyValuePair<string, object?>("Color", "white"));
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=red", "", ("5", "5"), ("12", "17"));
             AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=blue", "", ("6", "6"), ("13", "19"));
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "Color=black", "", "1", "3");
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "Color=white", "", "2", "4");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "Color=red,Size=19", "", ("", "10"), ("7", "17"));
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "Color=blue,Size=4", "", ("", "20"), ("14", "34"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "Color=red,Size=19", "", "9", "18");
@@ -1036,6 +1099,7 @@ namespace System.Diagnostics.Metrics.Tests
             Histogram<int> h = meter.CreateHistogram<int>("histogram1");
 
             UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1");
+            Gauge<int> g = meter.CreateGauge<int>("gauge1");
             int upDownCounterState = 0;
             int upDownCounterCollectInterval = 0;
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () =>
@@ -1060,21 +1124,24 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
+                g.Record(-123);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 // no measurements in interval 3
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
+                g.Record(123);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
                 // no measurements in interval 5
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 5);
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("0", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "", "", "-123", "", "123", "");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("",  "17"), ("0", "17"), ("14", "31"), ("0", "31"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "18", "", "36", "");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("", "0", "0"), ("0.5=26;0.95=26;0.99=26", "1", "26"), ("", "0", "0"));
@@ -1091,6 +1158,7 @@ namespace System.Diagnostics.Metrics.Tests
             using Meter meterA = new Meter("TestMeter8", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", null } }, scope);
             using Meter meterB = new Meter("TestMeter9", null, new TagList() { { "Mk1", null }, { "Mk2", "Mv2" } }, scope);
             Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            Gauge<int> g = meterA.CreateGauge<int>("gauge1", "C", "Temperature");
             int counterState = 3;
             ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
             int gaugeState = 0;
@@ -1107,10 +1175,12 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
+                g.Record(9);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
+                g.Record(90);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
 
                 meterA.Dispose();
@@ -1121,18 +1191,18 @@ namespace System.Diagnostics.Metrics.Tests
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meterA.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meterA.Name, g.Name, "", g.Unit, "9", "90");
             AssertCounterEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meterA.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meterB.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"), ("0.5=21;0.95=21;0.99=21", "1", "21"));
             AssertUpDownCounterEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
             AssertUpDownCounterEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
-            AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc);
+            AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc, g);
         }
-
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [OuterLoop("Slow and has lots of console spew")]
@@ -1143,6 +1213,7 @@ namespace System.Diagnostics.Metrics.Tests
             using Meter meterA = new Meter("TestMeter10", null, null, scope);
             using Meter meterB = new Meter("TestMeter11", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", null } }, scope);
             Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            Gauge<int> g = meterA.CreateGauge<int>("gauge1", "C", "Temperature");
             int counterState = 3;
             ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe",
                                             new TagList() { { "ock1", "ocv1" }, { "ock2", "ocv2" }, { "ock3", "ocv3" } });
@@ -1161,7 +1232,7 @@ namespace System.Diagnostics.Metrics.Tests
                 events = listener.Events.ToArray();
             }
 
-            AssertInstrumentPublishingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertInstrumentPublishingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events);
         }
 
@@ -1337,6 +1408,7 @@ namespace System.Diagnostics.Metrics.Tests
         {
             using Meter meter = new Meter("TestMeter16");
             Counter<int> c = meter.CreateCounter<int>("counter1");
+            Gauge<int> g = meter.CreateGauge<int>("gauge1");
             int counterState = 3;
             ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; });
             int gaugeState = 0;
@@ -1353,17 +1425,20 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
+                g.Record(-10);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
+                g.Record(10);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "", "", "-10", "10");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
@@ -1380,17 +1455,20 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(5);
                 h.Record(19);
                 udc.Add(33);
+                g.Record(-10);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
                 udc.Add(40);
+                g.Record(10);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "", "", "-10", "10");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "31"), ("7", "38"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "36", "45");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
@@ -1471,7 +1549,7 @@ namespace System.Diagnostics.Metrics.Tests
             return sb.ToString();
         }
 
-        private void AssertBeginInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
+        private static void AssertBeginInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
         {
             var beginReportEvents = events.Where(e => e.EventName == "BeginInstrumentReporting").Select(e =>
                 new
@@ -1503,7 +1581,7 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(expectedInstruments.Length, beginReportEvents.Length);
         }
 
-        private void AssertEndInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
+        private static void AssertEndInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
         {
             var beginReportEvents = events.Where(e => e.EventName == "EndInstrumentReporting").Select(e =>
                 new
@@ -1535,27 +1613,27 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(expectedInstruments.Length, beginReportEvents.Length);
         }
 
-        private void AssertInitialEnumerationCompleteEventPresent(EventWrittenEventArgs[] events, int eventsCount = 1)
+        private static void AssertInitialEnumerationCompleteEventPresent(EventWrittenEventArgs[] events, int eventsCount = 1)
         {
             Assert.Equal(eventsCount, events.Where(e => e.EventName == "InitialInstrumentEnumerationComplete").Count());
         }
 
-        private void AssertTimeSeriesLimitPresent(EventWrittenEventArgs[] events)
+        private static void AssertTimeSeriesLimitPresent(EventWrittenEventArgs[] events)
         {
             Assert.Equal(1, events.Where(e => e.EventName == "TimeSeriesLimitReached").Count());
         }
 
-        private void AssertTimeSeriesLimitNotPresent(EventWrittenEventArgs[] events)
+        private static void AssertTimeSeriesLimitNotPresent(EventWrittenEventArgs[] events)
         {
             Assert.Equal(0, events.Where(e => e.EventName == "TimeSeriesLimitReached").Count());
         }
 
-        private void AssertHistogramLimitPresent(EventWrittenEventArgs[] events)
+        private static void AssertHistogramLimitPresent(EventWrittenEventArgs[] events)
         {
             Assert.Equal(1, events.Where(e => e.EventName == "HistogramLimitReached").Count());
         }
 
-        private void AssertInstrumentPublishingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
+        private static void AssertInstrumentPublishingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
         {
             var publishEvents = events.Where(e => e.EventName == "InstrumentPublished").Select(e =>
                 new
@@ -1587,19 +1665,19 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(expectedInstruments.Length, publishEvents.Length);
         }
 
-        private void AssertCounterEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+        private static void AssertCounterEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
             string expectedUnit, params (string, string)[] expected)
         {
             AssertGenericCounterEventsPresent("CounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expected);
         }
 
-        private void AssertUpDownCounterEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+        private static void AssertUpDownCounterEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
             string expectedUnit, params (string, string)[] expected)
         {
             AssertGenericCounterEventsPresent("UpDownCounterRateValuePublished", events, meterName, instrumentName, tags, expectedUnit, expected);
         }
 
-        private void AssertGenericCounterEventsPresent(string eventName, EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+        private static void AssertGenericCounterEventsPresent(string eventName, EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
             string expectedUnit, params (string, string)[] expected)
         {
             var counterEvents = events.Where(e => e.EventName == eventName).Select(e =>
@@ -1623,7 +1701,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        private void AssertCounterEventsNotPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags)
+        private static void AssertCounterEventsNotPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags)
         {
             var counterEvents = events.Where(e => e.EventName == "CounterRateValuePublished").Select(e =>
                 new
@@ -1637,7 +1715,7 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(0, filteredEvents.Length);
         }
 
-        private void AssertGaugeEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+        private static void AssertGaugeEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
             string expectedUnit, params string[] expectedValues)
         {
             var counterEvents = events.Where(e => e.EventName == "GaugeValuePublished").Select(e =>
@@ -1659,7 +1737,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        private void AssertHistogramEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
+        private static void AssertHistogramEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
             string expectedUnit, params (string, string, string)[] expected)
         {
             var counterEvents = events.Where(e => e.EventName == "HistogramValuePublished").Select(e =>
@@ -1685,7 +1763,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        private void AssertHistogramEventsNotPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags)
+        private static void AssertHistogramEventsNotPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags)
         {
             var counterEvents = events.Where(e => e.EventName == "HistogramValuePublished").Select(e =>
                 new
@@ -1698,7 +1776,7 @@ namespace System.Diagnostics.Metrics.Tests
             var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
             Assert.Equal(0, filteredEvents.Length);
         }
-        private void AssertCollectStartStopEventsPresent(EventWrittenEventArgs[] events, double expectedIntervalSecs, int expectedPairs)
+        private static void AssertCollectStartStopEventsPresent(EventWrittenEventArgs[] events, double expectedIntervalSecs, int expectedPairs)
         {
             int startEventsSeen = 0;
             int stopEventsSeen = 0;
@@ -1727,7 +1805,7 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(expectedPairs, stopEventsSeen);
         }
 
-        private void AssertObservableCallbackErrorPresent(EventWrittenEventArgs[] events)
+        private static void AssertObservableCallbackErrorPresent(EventWrittenEventArgs[] events)
         {
             var errorEvents = events.Where(e => e.EventName == "ObservableInstrumentCallbackError").Select(e =>
                 new
@@ -1738,7 +1816,7 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Contains("Example user exception", errorEvents[0].ErrorText);
         }
 
-        private void AssertMultipleSessionsConfiguredIncorrectlyErrorEventsPresent(EventWrittenEventArgs[] events,
+        private static void AssertMultipleSessionsConfiguredIncorrectlyErrorEventsPresent(EventWrittenEventArgs[] events,
             string expectedMaxHistograms, string actualMaxHistograms, string expectedMaxTimeSeries, string actualMaxTimeSeries,
             string expectedRefreshInterval, string actualRefreshInterval)
         {
@@ -1940,8 +2018,6 @@ namespace System.Diagnostics.Metrics.Tests
                 }
             }
         }
-
-
 
         private void AssertOnError()
         {

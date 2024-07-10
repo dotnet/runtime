@@ -57,6 +57,7 @@ namespace hello_rethrowwithhandlerscatchingbase_rethrow_cs
         }
 
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             //Start recording

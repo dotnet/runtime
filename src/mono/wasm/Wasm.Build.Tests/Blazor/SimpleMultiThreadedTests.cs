@@ -38,7 +38,8 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     // }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
-    [InlineData("Debug", false)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/100373")] // to be fixed by: "https://github.com/dotnet/aspnetcore/issues/54365"
+    // [InlineData("Debug", false)] // ActiveIssue https://github.com/dotnet/runtime/issues/98758
     // [InlineData("Debug", true)]
     [InlineData("Release", false)]
     // [InlineData("Release", true)]
@@ -73,7 +74,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
                 runOptions: new BlazorRunOptions(
                     Config: config,
                     ExtraArgs: "--web-server-use-cors --web-server-use-cop",
-                    OnConsoleMessage: (message) =>
+                    OnConsoleMessage: (_, message) =>
                     {
                         if (message.Text.Contains("WasmEnableThreads=true"))
                             hasEmittedWasmEnableThreads = true;

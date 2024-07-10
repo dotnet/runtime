@@ -20,7 +20,7 @@ typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to land at the call instruction.
-#define STACKWALK_CONTROLPC_ADJUST_OFFSET 8
+#define STACKWALK_CONTROLPC_ADJUST_OFFSET 4
 
 #define PRD_TYPE                               LONG
 #define CORDbg_BREAK_INSTRUCTION_SIZE 4
@@ -135,7 +135,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
     // In a DAC build, this function assumes the input is an host address.
     LIMITED_METHOD_DAC_CONTRACT;
 
-    ULONGLONG ptraddr = dac_cast<ULONGLONG>(address);
+    TADDR ptraddr = dac_cast<TADDR>(address);
     *(PRD_TYPE *)ptraddr = instruction;
     FlushInstructionCache(GetCurrentProcess(),
                           address,
@@ -146,7 +146,7 @@ inline PRD_TYPE CORDbgGetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ULONGLONG ptraddr = dac_cast<ULONGLONG>(address);
+    TADDR ptraddr = dac_cast<TADDR>(address);
     return *(PRD_TYPE *)ptraddr;
 }
 

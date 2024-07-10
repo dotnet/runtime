@@ -19,6 +19,7 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
 

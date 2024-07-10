@@ -12,6 +12,7 @@ Param(
   [string]$testscope,
   [switch]$testnobuild,
   [ValidateSet("x86","x64","arm","arm64","wasm")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
+  [switch]$cross = $false,
   [string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
@@ -138,7 +139,7 @@ if (-not $PSBoundParameters.ContainsKey("subset") -and $properties.Length -gt 0 
 }
 
 if ($subset -eq 'help') {
-  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary"
+  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary /tl:false"
   exit 0
 }
 
@@ -261,6 +262,12 @@ if ($vs) {
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
   }
 
+  if ($librariesConfiguration)
+  {
+    # Respect the LibrariesConfiguration variable for building inside VS with different libraries configurations
+    $env:LIBRARIESCONFIGURATION=$librariesConfiguration
+  }
+
   # Respect the RuntimeFlavor variable for building inside VS with a different CoreLib and runtime
   if ($runtimeFlavor)
   {
@@ -324,6 +331,9 @@ foreach ($argument in $PSBoundParameters.Keys)
 if ($env:TreatWarningsAsErrors -eq 'false') {
   $arguments += " -warnAsError 0"
 }
+
+# disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
+$arguments += " /tl:false"
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.

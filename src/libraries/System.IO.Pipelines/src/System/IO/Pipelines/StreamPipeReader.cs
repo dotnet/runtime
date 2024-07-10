@@ -171,7 +171,7 @@ namespace System.IO.Pipelines
             }
         }
 
-#if NETCOREAPP
+#if NET
         public override ValueTask CompleteAsync(Exception? exception = null) =>
             CompleteAndGetNeedsDispose() ? InnerStream.DisposeAsync() : default;
 #endif
@@ -239,7 +239,7 @@ namespace System.IO.Pipelines
 
             return Core(this, minimumSize, tokenSource, cancellationToken);
 
-#if NETCOREAPP
+#if NET
             [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
 #endif
             static async ValueTask<ReadResult> Core(StreamPipeReader reader, int? minimumSize, CancellationTokenSource tokenSource, CancellationToken cancellationToken)

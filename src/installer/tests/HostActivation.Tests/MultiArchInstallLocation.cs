@@ -29,7 +29,7 @@ namespace HostActivation.Tests
                 .DotNetRoot(TestContext.BuiltDotNet.BinPath, arch)
                 .Execute()
                 .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(TestContext.BuiltDotNet.BinPath, TestContext.TargetRID, arch);
+                .And.HaveUsedDotNetRootInstallLocation(TestContext.BuiltDotNet.BinPath, TestContext.BuildRID, arch);
         }
 
         [Fact]
@@ -41,7 +41,7 @@ namespace HostActivation.Tests
                 .DotNetRoot(TestContext.BuiltDotNet.BinPath)
                 .Execute()
                 .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(TestContext.BuiltDotNet.BinPath, TestContext.TargetRID);
+                .And.HaveUsedDotNetRootInstallLocation(TestContext.BuiltDotNet.BinPath, TestContext.BuildRID);
         }
 
         [Fact]
@@ -55,7 +55,7 @@ namespace HostActivation.Tests
                 .DotNetRoot(dotnet, arch)
                 .Execute()
                 .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(dotnet, TestContext.TargetRID, arch)
+                .And.HaveUsedDotNetRootInstallLocation(dotnet, TestContext.BuildRID, arch)
                 .And.NotHaveStdErrContaining("Using environment variable DOTNET_ROOT=");
         }
 
@@ -77,7 +77,7 @@ namespace HostActivation.Tests
                     .DotNetRoot(dotnet, arch)
                     .Execute()
                     .Should().Pass()
-                    .And.HaveUsedDotNetRootInstallLocation(dotnet, TestContext.TargetRID, arch)
+                    .And.HaveUsedDotNetRootInstallLocation(dotnet, TestContext.BuildRID, arch)
                     .And.NotHaveStdErrContaining("Using global install location");
             }
         }
@@ -119,7 +119,7 @@ namespace HostActivation.Tests
                         TestContext.BuiltDotNet.BinPath)
                     .Execute()
                     .Should().Fail()
-                    .And.HaveUsedDotNetRootInstallLocation(app.Location, TestContext.TargetRID)
+                    .And.HaveUsedDotNetRootInstallLocation(app.Location, TestContext.BuildRID)
                     // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
                     .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
             }

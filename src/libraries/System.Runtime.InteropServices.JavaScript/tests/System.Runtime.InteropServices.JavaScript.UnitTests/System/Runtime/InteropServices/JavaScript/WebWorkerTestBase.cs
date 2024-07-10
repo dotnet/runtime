@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
@@ -35,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             cts.Token.Register(() =>
             {
                 var end = DateTime.Now;
-                Console.WriteLine($"Unexpected test case {memberName} timeout after {end - start} ManagedThreadId:{Environment.CurrentManagedThreadId}");
+                WebWorkerTestHelper.Log($"Unexpected test case {memberName} timeout after {end - start} ManagedThreadId:{Environment.CurrentManagedThreadId}");
             });
             return cts;
         }
@@ -45,9 +46,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return Enum.GetValues<ExecutorType>().Select(type => new object[] { new Executor(type) });
         }
 
-        public static IEnumerable<object[]> GetSpecificTargetThreads()
+        public static IEnumerable<object[]> GetBlockingFriendlyTargetThreads()
         {
-            yield return new object[] { new Executor(ExecutorType.JSWebWorker), new Executor(ExecutorType.Main) };
+            yield return new object[] { new Executor(ExecutorType.Main) };
+            yield return new object[] { new Executor(ExecutorType.NewThread) };
+            yield return new object[] { new Executor(ExecutorType.ThreadPool) };
+            // JSWebWorker is missing here because JS can't resolve promises while blocked
+        }
+
+        public static IEnumerable<object[]> GetSpecificTargetThreads2x()
+        {
+            yield return new object[] { new Executor(ExecutorType.Main), new Executor(ExecutorType.Main) };
             yield break;
         }
 
@@ -82,7 +91,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("ActionsInDifferentThreads1 failed\n" + ex);
+                    WebWorkerTestHelper.Log("ActionsInDifferentThreads1 failed\n" + ex);
                     job1ReadyTCS.SetResult(default);
                     e1Failed = true;
                     throw;
@@ -127,44 +136,79 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 {
                     throw;
                 }
-                Console.WriteLine("ActionsInDifferentThreads failed with: \n" + ex);
                 if (!e1Done || !e2Done)
                 {
-                    Console.WriteLine("ActionsInDifferentThreads canceling!");
+                    WebWorkerTestHelper.Log("ActionsInDifferentThreads canceling because of unexpected fail: \n" + ex);
                     cts.Cancel();
+                }
+                else
+                {
+                    WebWorkerTestHelper.Log("ActionsInDifferentThreads failed with: \n" + ex);
                 }
                 throw;
             }
         }
 
-        public class NamedCall
+        static void LocalCtsIgnoringCall(Action<CancellationToken> action)
         {
-            public string Name { get; set; }
-            public delegate void Method(CancellationToken ct);
-            public Method Call { get; set; }
-
-            override public string ToString() => Name;
+            var cts = new CancellationTokenSource(8);
+            try
+            {
+                action(cts.Token);
+            }
+            catch (OperationCanceledException exception)
+            {
+                if (exception.CancellationToken != cts.Token)
+                {
+                    throw;
+                }
+                /* ignore the local one */
+            }
         }
 
         public static IEnumerable<NamedCall> BlockingCalls = new List<NamedCall>
         {
-                new NamedCall { Name = "Task.Wait", Call = delegate (CancellationToken ct) { Task.Delay(10, ct).Wait(ct); }},
-                new NamedCall { Name = "Task.WaitAll", Call = delegate (CancellationToken ct) { Task.WaitAll(Task.Delay(10, ct)); }},
-                new NamedCall { Name = "Task.WaitAny", Call = delegate (CancellationToken ct) { Task.WaitAny(Task.Delay(10, ct)); }},
-                new NamedCall { Name = "ManualResetEventSlim.Wait", Call = delegate (CancellationToken ct) {
-                    using var mr = new ManualResetEventSlim(false);
-                    using var cts = new CancellationTokenSource(8);
-                    try {
-                        mr.Wait(cts.Token);
-                    } catch (OperationCanceledException) { /* ignore */ }
-                }},
-                new NamedCall { Name = "SemaphoreSlim.Wait", Call = delegate (CancellationToken ct) {
-                    using var sem = new SemaphoreSlim(2);
-                    var cts = new CancellationTokenSource(8);
-                    try {
-                        sem.Wait(cts.Token);
-                    } catch (OperationCanceledException) { /* ignore */ }
-                }},
+            // things that should NOT throw PNSE
+            new NamedCall { IsBlocking = false, Name = "Console.WriteLine", Call = delegate (CancellationToken ct) { Console.WriteLine("Blocking"); }},
+            new NamedCall { IsBlocking = false, Name = "Directory.GetCurrentDirectory", Call = delegate (CancellationToken ct) { Directory.GetCurrentDirectory(); }},
+            new NamedCall { IsBlocking = false, Name = "CancellationTokenSource.ctor", Call = delegate (CancellationToken ct) {
+                using var cts = new CancellationTokenSource(8);
+            }},
+            new NamedCall { IsBlocking = false, Name = "Task.Delay", Call = delegate (CancellationToken ct) {
+                Task.Delay(30, ct);
+            }},
+            new NamedCall { IsBlocking = false, Name = "new Timer", Call = delegate (CancellationToken ct) {
+                new Timer((_) => { }, null, 1, -1);
+            }},
+            new NamedCall { IsBlocking = false, Name = "JSType.DiscardNoWait", Call = delegate (CancellationToken ct) {
+                WebWorkerTestHelper.Log("DiscardNoWait");
+            }},
+
+            // things which should throw PNSE on sync JSExport and JSWebWorker
+            new NamedCall { IsBlocking = true, Name = "Task.Wait", Call = delegate (CancellationToken ct) { Task.Delay(30, ct).Wait(ct); }},
+            new NamedCall { IsBlocking = true, Name = "Task.WaitAll", Call = delegate (CancellationToken ct) { Task.WaitAll(Task.Delay(30, ct)); }},
+            new NamedCall { IsBlocking = true, Name = "Task.WaitAny", Call = delegate (CancellationToken ct) { Task.WaitAny(Task.Delay(30, ct)); }},
+            new NamedCall { IsBlocking = true, Name = "ManualResetEventSlim.Wait", Call = delegate (CancellationToken ct) {
+                using var mr = new ManualResetEventSlim(false);
+                LocalCtsIgnoringCall(mr.Wait);
+            }},
+            new NamedCall { IsBlocking = true, Name = "SemaphoreSlim.Wait", Call = delegate (CancellationToken ct) {
+                using var sem = new SemaphoreSlim(2);
+                LocalCtsIgnoringCall(sem.Wait);
+            }},
+            new NamedCall { IsBlocking = true, Name = "Mutex.WaitOne", Call = delegate (CancellationToken ct) {
+                using var mr = new ManualResetEventSlim(false);
+                var mutex = new Mutex();
+                var thread = new Thread(() => {
+                    mutex.WaitOne();
+                    mr.Set();
+                    Thread.Sleep(50);
+                    mutex.ReleaseMutex();
+                });
+                thread.Start();
+                Thread.ForceBlockingWait(static (b) => ((ManualResetEventSlim)b).Wait(), mr);
+                mutex.WaitOne();
+            }},
         };
 
         public static IEnumerable<object[]> GetTargetThreadsAndBlockingCalls()

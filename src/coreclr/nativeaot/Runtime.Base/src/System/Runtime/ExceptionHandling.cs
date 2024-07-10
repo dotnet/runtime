@@ -68,6 +68,14 @@ namespace System.Runtime
             private IntPtr _dummy; // For alignment
         }
 
+        internal struct MethodRegionInfo
+        {
+            internal byte* _hotStartAddress;
+            internal nuint _hotSize;
+            internal byte* _coldStartAddress;
+            internal nuint _coldSize;
+        }
+
 #pragma warning disable IDE0060
         // This is a fail-fast function used by the runtime as a last resort that will terminate the process with
         // as little effort as possible. No guarantee is made about the semantics of this fail-fast.
@@ -367,6 +375,7 @@ namespace System.Runtime
         // RhExceptionHandling_ functions are used to throw exceptions out of our asm helpers. We tail-call from
         // the asm helpers to these functions, which performs the throw. The tail-call is important: it ensures that
         // the stack is crawlable from within these functions.
+        [StackTraceHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
         public static void ThrowClasslibOverflowException(IntPtr address)
         {
@@ -376,6 +385,7 @@ namespace System.Runtime
             throw GetClasslibException(ExceptionIDs.Overflow, address);
         }
 
+        [StackTraceHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
         public static void ThrowClasslibDivideByZeroException(IntPtr address)
         {
@@ -385,6 +395,7 @@ namespace System.Runtime
             throw GetClasslibException(ExceptionIDs.DivideByZero, address);
         }
 
+        [StackTraceHidden]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
         public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
         {
@@ -397,7 +408,7 @@ namespace System.Runtime
         }
 
 #if !INPLACE_RUNTIME
-        private static OutOfMemoryException s_theOOMException = new OutOfMemoryException();
+        private static readonly OutOfMemoryException s_theOOMException = new OutOfMemoryException();
 
         // MRT exports GetRuntimeException for the few cases where we have a helper that throws an exception
         // and may be called by either MRT or other classlibs and that helper needs to throw an exception.
@@ -450,7 +461,7 @@ namespace System.Runtime
             // the rest of the struct is left unspecified.
         }
 
-        // N.B. -- These values are burned into the throw helper assembly code and are also known the the
+        // N.B. -- These values are burned into the throw helper assembly code and are also known to the
         //         StackFrameIterator code.
         [Flags]
         internal enum ExKind : byte
@@ -763,7 +774,13 @@ namespace System.Runtime
 
                 DebugScanCallFrame(exInfo._passNumber, frameIter.ControlPC, frameIter.SP);
 
-                UpdateStackTrace(exceptionObj, exInfo._frameIter.FramePointer, (IntPtr)frameIter.OriginalControlPC, frameIter.SP, ref isFirstRethrowFrame, ref prevFramePtr, ref isFirstFrame, ref exInfo);
+#if !NATIVEAOT
+                // Don't add frames at collided unwind
+                if (startIdx == MaxTryRegionIdx)
+#endif
+                {
+                    UpdateStackTrace(exceptionObj, exInfo._frameIter.FramePointer, (IntPtr)frameIter.OriginalControlPC, frameIter.SP, ref isFirstRethrowFrame, ref prevFramePtr, ref isFirstFrame, ref exInfo);
+                }
 
                 byte* pHandler;
                 if (FindFirstPassHandler(exceptionObj, startIdx, ref frameIter,
@@ -932,6 +949,20 @@ namespace System.Runtime
                 "Handling frame must have a valid stack frame pointer");
         }
 
+        // Caclulate the code offset from the start of the method as if the hot and cold regions were
+        // stored sequentially in memory.
+        private static uint CalculateCodeOffset(byte* pbControlPC, in MethodRegionInfo methodRegionInfo)
+        {
+            uint codeOffset = (uint)(pbControlPC - methodRegionInfo._hotStartAddress);
+            // If the PC is in the cold region, adjust the offset to be relative to the start of the method.
+            if ((methodRegionInfo._coldSize != 0) && (codeOffset >= methodRegionInfo._hotSize))
+            {
+                codeOffset = (uint)(methodRegionInfo._hotSize + (nuint)(pbControlPC - methodRegionInfo._coldStartAddress));
+            }
+
+            return codeOffset;
+        }
+
         private static void UpdateStackTrace(object exceptionObj, UIntPtr curFramePtr, IntPtr ip, UIntPtr sp,
             ref bool isFirstRethrowFrame, ref UIntPtr prevFramePtr, ref bool isFirstFrame, ref ExInfo exInfo)
         {
@@ -958,13 +989,13 @@ namespace System.Runtime
             tryRegionIdx = MaxTryRegionIdx;
 
             EHEnum ehEnum;
-            byte* pbMethodStartAddress;
-            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref frameIter, &pbMethodStartAddress, &ehEnum))
+            MethodRegionInfo methodRegionInfo;
+            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref frameIter, out methodRegionInfo, &ehEnum))
                 return false;
 
             byte* pbControlPC = frameIter.ControlPC;
 
-            uint codeOffset = (uint)(pbControlPC - pbMethodStartAddress);
+            uint codeOffset = CalculateCodeOffset(pbControlPC, in methodRegionInfo);
 
             uint lastTryStart = 0, lastTryEnd = 0;
 
@@ -1111,13 +1142,14 @@ namespace System.Runtime
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart, uint idxLimit)
         {
             EHEnum ehEnum;
-            byte* pbMethodStartAddress;
-            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref exInfo._frameIter, &pbMethodStartAddress, &ehEnum))
+            MethodRegionInfo methodRegionInfo;
+
+            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref exInfo._frameIter, out methodRegionInfo, &ehEnum))
                 return;
 
             byte* pbControlPC = exInfo._frameIter.ControlPC;
 
-            uint codeOffset = (uint)(pbControlPC - pbMethodStartAddress);
+            uint codeOffset = CalculateCodeOffset(pbControlPC, in methodRegionInfo);
 
             uint lastTryStart = 0, lastTryEnd = 0;
 
@@ -1190,7 +1222,7 @@ namespace System.Runtime
 
 #if NATIVEAOT
 #pragma warning disable IDE0060
-        [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp")]
         public static void RhpFailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)
         {
             FailFastViaClasslib(RhFailFastReason.UnhandledExceptionFromPInvoke, null, PInvokeCallsiteReturnAddr);

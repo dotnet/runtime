@@ -60,10 +60,10 @@ export type ParseResult = ParseResultBinaryCommandOk | ParseResultFail;
 class StatefulParser {
     private state: State = { state: InState.Idle };
 
-    constructor(private readonly emitCommandCallback: (command: BinaryProtocolCommand) => void) { }
+    constructor (private readonly emitCommandCallback: (command: BinaryProtocolCommand) => void) { }
 
     /// process the data in the given buffer and update the state.
-    receiveBuffer(buf: ArrayBuffer): void {
+    receiveBuffer (buf: ArrayBuffer): void {
         if (this.state.state == InState.Error) {
             return;
         }
@@ -74,7 +74,7 @@ class StatefulParser {
             result = this.tryAppendBuffer(new Uint8Array(buf));
         }
         if (result.success) {
-            mono_log_debug("protocol-socket: got result", result);
+            mono_log_debug(() => `protocol-socket: got result ${result}`);
             this.setState(result.newState);
             if (result.command) {
                 const command = result.command;
@@ -87,7 +87,7 @@ class StatefulParser {
         }
     }
 
-    tryParseHeader(buf: Uint8Array): ParseResult {
+    tryParseHeader (buf: Uint8Array): ParseResult {
         const pos = { pos: 0 };
         if (buf.byteLength < Magic.MinimalHeaderSize) {
             // TODO: we need to see the magic and the size to make a partial commmand
@@ -110,14 +110,14 @@ class StatefulParser {
         return this.continueWithBuffer(partialState, buf.subarray(parsedSize));
     }
 
-    tryAppendBuffer(moreBuf: Uint8Array): ParseResult {
+    tryAppendBuffer (moreBuf: Uint8Array): ParseResult {
         if (this.state.state !== InState.PartialCommand) {
             return { success: false, error: "not in partial command state" };
         }
         return this.continueWithBuffer(this.state, moreBuf);
     }
 
-    continueWithBuffer(state: PartialCommandState, moreBuf: Uint8Array): ParseResult {
+    continueWithBuffer (state: PartialCommandState, moreBuf: Uint8Array): ParseResult {
         const buf = state.buf;
         let partialSize = state.size;
         let overflow: Uint8Array | null = null;
@@ -150,7 +150,7 @@ class StatefulParser {
         }
     }
 
-    tryParseCompletedBuffer(buf: Uint8Array, pos: { pos: number }): ParseResult {
+    tryParseCompletedBuffer (buf: Uint8Array, pos: { pos: number }): ParseResult {
         const command = Parser.tryParseCommand(buf, pos);
         if (!command) {
             this.setState({ state: InState.Error });
@@ -159,11 +159,11 @@ class StatefulParser {
         return { success: true, command, newState: { state: InState.Idle } };
     }
 
-    private setState(state: State) {
+    private setState (state: State) {
         this.state = state;
     }
 
-    reset() {
+    reset () {
         this.setState({ state: InState.Idle });
     }
 
@@ -173,50 +173,50 @@ class ProtocolSocketImpl implements ProtocolSocket {
     private readonly statefulParser = new StatefulParser(this.emitCommandCallback.bind(this));
     private protocolListeners = 0;
     private readonly messageListener: (this: CommonSocket, ev: MessageEvent) => void = this.onMessage.bind(this);
-    constructor(private readonly sock: CommonSocket) { }
+    constructor (private readonly sock: CommonSocket) { }
 
-    onMessage(this: ProtocolSocketImpl, ev: MessageEvent<ArrayBuffer | Blob | string>): void {
+    onMessage (this: ProtocolSocketImpl, ev: MessageEvent<ArrayBuffer | Blob | string>): void {
         const data = ev.data;
-        mono_log_debug("protocol socket received message", ev.data);
+        mono_log_debug(() => `protocol socket received message ${ev.data}`);
         if (typeof data === "object" && data instanceof ArrayBuffer) {
             this.onArrayBuffer(data);
         } else if (typeof data === "object" && data instanceof Blob) {
             data.arrayBuffer().then(this.onArrayBuffer.bind(this));
         } else if (typeof data === "string") {
             // otherwise it's string, ignore it.
-            mono_log_debug("protocol socket received string message; ignoring it", ev.data);
+            mono_log_debug(() => `protocol socket received string message; ignoring it ${ev.data}`);
         } else {
             assertNever(data);
         }
     }
 
-    dispatchEvent(evt: Event): boolean {
+    dispatchEvent (evt: Event): boolean {
         return this.sock.dispatchEvent(evt);
     }
 
-    onArrayBuffer(this: ProtocolSocketImpl, buf: ArrayBuffer) {
-        mono_log_debug("protocol-socket: parsing array buffer", buf);
+    onArrayBuffer (this: ProtocolSocketImpl, buf: ArrayBuffer) {
+        mono_log_debug(() => `protocol-socket: parsing array buffer ${buf}`);
         this.statefulParser.receiveBuffer(buf);
     }
 
     // called by the stateful parser when it has a complete command
-    emitCommandCallback(this: this, command: BinaryProtocolCommand): void {
-        mono_log_debug("protocol-socket: queueing command", command);
+    emitCommandCallback (this: this, command: BinaryProtocolCommand): void {
+        mono_log_debug(() => `protocol-socket: queueing command ${command}`);
         queueMicrotask(() => {
-            mono_log_debug("dispatching protocol event with command", command);
+            mono_log_debug(() => `dispatching protocol event with command ${command}`);
             this.dispatchProtocolCommandEvent(command);
         });
     }
 
 
-    dispatchProtocolCommandEvent(cmd: BinaryProtocolCommand): void {
+    dispatchProtocolCommandEvent (cmd: BinaryProtocolCommand): void {
         const ev = new Event(dotnetDiagnosticsServerProtocolCommandEvent);
         (<any>ev).data = cmd; // FIXME: use a proper event subclass
         this.sock.dispatchEvent(ev);
     }
 
     addEventListener<K extends keyof ProtocolSocketEventMap>(type: K, listener: (this: ProtocolSocket, ev: ProtocolSocketEventMap[K]) => any, options?: boolean | AddEventListenerOptions | undefined): void;
-    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions | undefined): void {
+    addEventListener (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions | undefined): void {
         this.sock.addEventListener(type, listener, options);
         if (type === dotnetDiagnosticsServerProtocolCommandEvent) {
             if (this.protocolListeners === 0) {
@@ -228,7 +228,7 @@ class ProtocolSocketImpl implements ProtocolSocket {
     }
 
     removeEventListener<K extends keyof ProtocolSocketEventMap>(type: K, listener: (this: ProtocolSocket, ev: ProtocolSocketEventMap[K]) => any): void;
-    removeEventListener(type: string, listener: EventListenerOrEventListenerObject): void {
+    removeEventListener (type: string, listener: EventListenerOrEventListenerObject): void {
         if (type === dotnetDiagnosticsServerProtocolCommandEvent) {
             mono_log_debug("removing protocol listener and message chaser");
             this.protocolListeners--;
@@ -240,18 +240,18 @@ class ProtocolSocketImpl implements ProtocolSocket {
         this.sock.removeEventListener(type, listener);
     }
 
-    send(buf: Uint8Array) {
+    send (buf: Uint8Array) {
         this.sock.send(buf);
     }
 
-    close() {
+    close () {
         this.sock.close();
         this.statefulParser.reset();
     }
 
 }
 
-export function createProtocolSocket(socket: CommonSocket): ProtocolSocket {
+export function createProtocolSocket (socket: CommonSocket): ProtocolSocket {
     return new ProtocolSocketImpl(socket);
 }
 

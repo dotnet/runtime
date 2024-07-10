@@ -85,6 +85,18 @@ namespace System
         static abstract TSelf BitsToFloat(ulong bits);
 
         static abstract ulong FloatToBits(TSelf value);
+
+        // Maximum number of digits required to guarantee that any given floating point
+        // number can roundtrip. Some numbers may require less, but none will require more.
+        static abstract int MaxRoundTripDigits { get; }
+
+        // SinglePrecisionCustomFormat and DoublePrecisionCustomFormat are used to ensure that
+        // custom format strings return the same string as in previous releases when the format
+        // would return x digits or less (where x is the value of the corresponding constant).
+        // In order to support more digits, we would need to update ParseFormatSpecifier to pre-parse
+        // the format and determine exactly how many digits are being requested and whether they
+        // represent "significant digits" or "digits after the decimal point".
+        static abstract int MaxPrecisionCustomFormat { get; }
     }
 
     internal static partial class Number
@@ -113,7 +125,7 @@ namespace System
                 return false;
             }
 
-            byte* p = number.GetDigitsPointer();
+            byte* p = number.DigitsPtr;
 
             Debug.Assert(p != null);
             TInteger n = TInteger.Zero;
@@ -725,7 +737,7 @@ namespace System
         {
             number.CheckConsistency();
 
-            byte* p = number.GetDigitsPointer();
+            byte* p = number.DigitsPtr;
             int e = number.Scale;
             bool sign = number.IsNegative;
             uint c = *p;
@@ -883,16 +895,16 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                ReadOnlySpan<char> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<char> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(value)), value.Length);
+                ReadOnlySpan<char> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span);
+                ReadOnlySpan<char> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value);
                 return typedSpan.StartsWith(typedValue, comparisonType);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                ReadOnlySpan<byte> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<byte> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(value)), value.Length);
+                ReadOnlySpan<byte> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span);
+                ReadOnlySpan<byte> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
                 return typedSpan.StartsWithUtf8(typedValue, comparisonType);
             }
         }
@@ -903,17 +915,13 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                ReadOnlySpan<char> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<char> result = typedSpan.Trim();
-                return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<char, TChar>(ref MemoryMarshal.GetReference(result)), result.Length);
+                return Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span).Trim());
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                ReadOnlySpan<byte> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<byte> result = typedSpan.TrimUtf8();
-                return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<byte, TChar>(ref MemoryMarshal.GetReference(result)), result.Length);
+                return Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span).TrimUtf8());
             }
         }
 
@@ -923,16 +931,16 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                ReadOnlySpan<char> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<char> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(value)), value.Length);
+                ReadOnlySpan<char> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span);
+                ReadOnlySpan<char> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value);
                 return typedSpan.EqualsOrdinalIgnoreCase(typedValue);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                ReadOnlySpan<byte> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<byte> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(value)), value.Length);
+                ReadOnlySpan<byte> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span);
+                ReadOnlySpan<byte> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
                 return typedSpan.EqualsOrdinalIgnoreCaseUtf8(typedValue);
             }
         }
@@ -1045,7 +1053,7 @@ namespace System
                 // It's possible after we check the bytes for validity that they could be concurrently
                 // mutated, but if that's happening, all bets are off, anyway, and it simply impacts
                 // which exception is thrown.
-                ReadOnlySpan<byte> bytes = MemoryMarshal.Cast<TChar, byte>(value);
+                ReadOnlySpan<byte> bytes = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
                 errorMessage = Utf8.IsValid(bytes) ?
                     SR.Format(SR.Format_InvalidStringWithValue, Encoding.UTF8.GetString(bytes)) :
                     SR.Format_InvalidString;

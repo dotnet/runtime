@@ -2555,6 +2555,7 @@ reflection_setup_internal_class_internal (MonoReflectionTypeBuilderHandle ref_tb
 	klass->inited = 1; /* we lie to the runtime */
 	klass->name = mono_string_to_utf8_image (klass->image, ref_name, error);
 	goto_if_nok (error, leave);
+	klass->name_hash = mono_metadata_str_hash (klass->name);
 	klass->name_space = mono_string_to_utf8_image (klass->image, ref_nspace, error);
 	goto_if_nok (error, leave);
 	klass->type_token = MONO_TOKEN_TYPE_DEF | table_idx;

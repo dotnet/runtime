@@ -1,12 +1,12 @@
 parameters:
   alwaysRun: false
   extraBuildArgs: ''
-  extraHelixArgs: ''
+  extraHelixArguments: ''
   isExtraPlatformsBuild: false
   isWasmOnlyBuild: false
   nameSuffix: ''
   platforms: []
-  scenarios: ['normal']
+  scenarios: ['WasmTestOnV8']
   shouldContinueOnError: false
   shouldRunSmokeOnly: false
 
@@ -34,10 +34,10 @@ jobs:
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true))
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true))
          ]
       # run smoke tests only if:
       # - explicitly requested
@@ -50,23 +50,28 @@ jobs:
               eq('${{ parameters.shouldRunSmokeOnly }}', 'onLibrariesAndIllinkChanges'),
               ne(variables['wasmDarcDependenciesChanged'], true),
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true)
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true)
               ),
-              ne(dependencies.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
-              ne(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true)
+              ne(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
+              ne(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true)
             )
           )
           ]
       - name: _wasmRunSmokeTestsOnlyArg
         value: /p:RunSmokeTestsOnly=$(shouldRunSmokeOnlyVar)
       - name: chromeInstallArg
-        ${{ if containsValue(parameters.scenarios, 'wasmtestonbrowser') }}:
+        ${{ if containsValue(parameters.scenarios, 'WasmTestOnChrome') }}:
           value: /p:InstallChromeForTests=true
         ${{ else }}:
           value: ''
+      - name: firefoxInstallArg
+        ${{ if containsValue(parameters.scenarios, 'WasmTestOnFirefox') }}:
+          value: /p:InstallFirefoxForTests=true
+        ${{ else }}:
+          value: ''
       - name: v8InstallArg
-        ${{ if containsValue(parameters.scenarios, 'normal') }}:
+        ${{ if containsValue(parameters.scenarios, 'WasmTestOnV8') }}:
           value: /p:InstallV8ForTests=true
         ${{ else }}:
           value: ''
@@ -75,7 +80,7 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: LibraryTests${{ parameters.nameSuffix }}
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) $(v8InstallArg) ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:MonoEnableAssertMessages=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) $(firefoxInstallArg) $(v8InstallArg) ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 240
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
@@ -92,5 +97,5 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-            extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArgs }}
+            extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArguments }}
             scenarios: ${{ parameters.scenarios }}

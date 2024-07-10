@@ -30,7 +30,10 @@ namespace ILCompiler
             _rootAdder(methodEntryPoint, reason);
 
             if (exportName != null)
+            {
+                exportName = _factory.NameMangler.NodeMangler.ExternMethod(exportName, method);
                 _factory.NodeAliases.Add(methodEntryPoint, exportName);
+            }
 
             if (canonMethod != method && method.HasInstantiation)
                 _rootAdder(_factory.MethodGenericDictionary(method), reason);
@@ -43,7 +46,14 @@ namespace ILCompiler
 
         public void AddReflectionRoot(TypeDesc type, string reason)
         {
-            _factory.TypeSystemContext.EnsureLoadableType(type);
+            TypeDesc lookedAtType = type;
+            do
+            {
+                _factory.TypeSystemContext.EnsureLoadableType(lookedAtType);
+                lookedAtType = (lookedAtType as MetadataType)?.ContainingType;
+            }
+            while (lookedAtType != null);
+
             _rootAdder(_factory.ReflectedType(type), reason);
         }
 
@@ -61,6 +71,7 @@ namespace ILCompiler
             if (!_factory.MetadataManager.IsReflectionBlocked(field))
             {
                 _factory.TypeSystemContext.EnsureLoadableType(field.OwningType);
+                _factory.TypeSystemContext.EnsureLoadableType(field.FieldType);
                 _rootAdder(_factory.ReflectedField(field), reason);
             }
         }
@@ -133,6 +144,7 @@ namespace ILCompiler
         {
             var blob = _factory.ReadOnlyDataBlob("__readonlydata_" + exportName, data, alignment);
             _rootAdder(blob, reason);
+            exportName = _factory.NameMangler.NodeMangler.ExternVariable(exportName);
             _factory.NodeAliases.Add(blob, exportName);
         }
 

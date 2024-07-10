@@ -40,7 +40,7 @@ namespace System
         /// <remarks>
         /// The value of this constant is 100.
         /// </remarks>
-        public const long NanosecondsPerTick = 100;
+        public const long NanosecondsPerTick = 100;                                                 //             100
 
         /// <summary>
         /// Represents the number of ticks in 1 microsecond. This field is constant.
@@ -48,7 +48,7 @@ namespace System
         /// <remarks>
         /// The value of this constant is 10.
         /// </remarks>
-        public const long TicksPerMicrosecond = 10;
+        public const long TicksPerMicrosecond = 10;                                                 //              10
 
         /// <summary>
         /// Represents the number of ticks in 1 millisecond. This field is constant.
@@ -57,30 +57,158 @@ namespace System
         /// The value of this constant is 10 thousand; that is, 10,000.
         /// </remarks>
         public const long TicksPerMillisecond = TicksPerMicrosecond * 1000;                         //          10,000
+
+        /// <summary>
+        /// Represents the number of ticks in 1 second. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 10 million; that is, 10,000,000.
+        /// </remarks>
         public const long TicksPerSecond = TicksPerMillisecond * 1000;                              //      10,000,000
+
+        /// <summary>
+        /// Represents the number of ticks in 1 minute. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 600 million; that is, 600,000,000.
+        /// </remarks>
         public const long TicksPerMinute = TicksPerSecond * 60;                                     //     600,000,000
+
+        /// <summary>
+        /// Represents the number of ticks in 1 hour. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 36 billion; that is, 36,000,000,000.
+        /// </remarks>
         public const long TicksPerHour = TicksPerMinute * 60;                                       //  36,000,000,000
+
+        /// <summary>
+        /// Represents the number of ticks in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 864 billion; that is, 864,000,000,000.
+        /// </remarks>
         public const long TicksPerDay = TicksPerHour * 24;                                          // 864,000,000,000
 
-        internal const long MicrosecondsPerMillisecond = TicksPerMillisecond / TicksPerMicrosecond; //           1,000
-        internal const long MicrosecondsPerSecond = TicksPerSecond / TicksPerMicrosecond;           //       1,000,000
-        internal const long MicrosecondsPerMinute = TicksPerMinute / TicksPerMicrosecond;           //      60,000,000
-        internal const long MicrosecondsPerHour = TicksPerHour / TicksPerMicrosecond;               //   3,600,000,000
-        internal const long MicrosecondsPerDay = TicksPerDay / TicksPerMicrosecond;                 //  86,400,000,000
+        /// <summary>
+        /// Represents the number of microseconds in 1 millisecond. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 1 thousand; that is, 1,000.
+        /// </remarks>
+        public const long MicrosecondsPerMillisecond = TicksPerMillisecond / TicksPerMicrosecond;   //           1,000
 
-        internal const long MillisecondsPerSecond = TicksPerSecond / TicksPerMillisecond;           //           1,000
-        internal const long MillisecondsPerMinute = TicksPerMinute / TicksPerMillisecond;           //          60,000
-        internal const long MillisecondsPerHour = TicksPerHour / TicksPerMillisecond;               //       3,600,000
-        internal const long MillisecondsPerDay = TicksPerDay / TicksPerMillisecond;                 //      86,400,000
+        /// <summary>
+        /// Represents the number of microseconds in 1 second. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 1 million; that is, 1,000,000.
+        /// </remarks>
+        public const long MicrosecondsPerSecond = TicksPerSecond / TicksPerMicrosecond;             //       1,000,000
 
-        internal const long SecondsPerMinute = TicksPerMinute / TicksPerSecond;                     //              60
-        internal const long SecondsPerHour = TicksPerHour / TicksPerSecond;                         //           3,600
-        internal const long SecondsPerDay = TicksPerDay / TicksPerSecond;                           //          86,400
+        /// <summary>
+        /// Represents the number of microseconds in 1 minute. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 60 million; that is, 60,000,000.
+        /// </remarks>
+        public const long MicrosecondsPerMinute = TicksPerMinute / TicksPerMicrosecond;             //      60,000,000
 
-        internal const long MinutesPerHour = TicksPerHour / TicksPerMinute;                         //              60
-        internal const long MinutesPerDay = TicksPerDay / TicksPerMinute;                           //           1,440
+        /// <summary>
+        /// Represents the number of microseconds in 1 hour. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 3.6 billion; that is, 3,600,000,000.
+        /// </remarks>
+        public const long MicrosecondsPerHour = TicksPerHour / TicksPerMicrosecond;                 //   3,600,000,000
 
-        internal const long HoursPerDay = TicksPerDay / TicksPerHour;                               //              24
+        /// <summary>
+        /// Represents the number of microseconds in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 86.4 billion; that is, 86,400,000,000.
+        /// </remarks>
+        public const long MicrosecondsPerDay = TicksPerDay / TicksPerMicrosecond;                   //  86,400,000,000
+
+        /// <summary>
+        /// Represents the number of milliseconds in 1 second. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 1 thousand; that is, 1,000.
+        /// </remarks>
+        public const long MillisecondsPerSecond = TicksPerSecond / TicksPerMillisecond;             //           1,000
+
+        /// <summary>
+        /// Represents the number of milliseconds in 1 minute. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 60 thousand; that is, 60,000.
+        /// </remarks>
+        public const long MillisecondsPerMinute = TicksPerMinute / TicksPerMillisecond;             //          60,000
+
+        /// <summary>
+        /// Represents the number of milliseconds in 1 hour. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 3.6 million; that is, 3,600,000.
+        /// </remarks>
+        public const long MillisecondsPerHour = TicksPerHour / TicksPerMillisecond;                 //       3,600,000
+
+        /// <summary>
+        /// Represents the number of milliseconds in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 86.4 million; that is, 86,400,000.
+        /// </remarks>
+        public const long MillisecondsPerDay = TicksPerDay / TicksPerMillisecond;                   //      86,400,000
+
+        /// <summary>
+        /// Represents the number of seconds in 1 minute. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 60.
+        /// </remarks>
+        public const long SecondsPerMinute = TicksPerMinute / TicksPerSecond;                       //              60
+
+        /// <summary>
+        /// Represents the number of seconds in 1 hour. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 3.6 thousand; that is, 3,600.
+        /// </remarks>
+        public const long SecondsPerHour = TicksPerHour / TicksPerSecond;                           //           3,600
+
+        /// <summary>
+        /// Represents the number of seconds in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 86.4 thousand; that is, 86,400.
+        /// </remarks>
+        public const long SecondsPerDay = TicksPerDay / TicksPerSecond;                             //          86,400
+
+        /// <summary>
+        /// Represents the number of minutes in 1 hour. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 60.
+        /// </remarks>
+        public const long MinutesPerHour = TicksPerHour / TicksPerMinute;                           //              60
+
+        /// <summary>
+        /// Represents the number of minutes in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 1440.
+        /// </remarks>
+        public const long MinutesPerDay = TicksPerDay / TicksPerMinute;                             //           1,440
+
+        /// <summary>
+        /// Represents the number of hours in 1 day. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 24.
+        /// </remarks>
+        public const int HoursPerDay = (int)(TicksPerDay / TicksPerHour);                           //              24
 
         internal const long MinTicks = long.MinValue;                                               // -9,223,372,036,854,775,808
         internal const long MaxTicks = long.MaxValue;                                               // +9,223,372,036,854,775,807
@@ -308,6 +436,195 @@ namespace System
 
         public override int GetHashCode() => _ticks.GetHashCode();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TimeSpan FromUnits(long units, long ticksPerUnit, long minUnits, long maxUnits)
+        {
+            System.Diagnostics.Debug.Assert(minUnits < 0);
+            System.Diagnostics.Debug.Assert(maxUnits > 0);
+
+            if (units > maxUnits || units < minUnits)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
+            }
+            return TimeSpan.FromTicks(units * ticksPerUnit);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// days.
+        /// </summary>
+        /// <param name="days">Number of days.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of days.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromDays(int days) => FromUnits(days, TicksPerDay, MinDays, MaxDays);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// days, hours, minutes, seconds, milliseconds, and microseconds.
+        /// </summary>
+        /// <param name="days">Number of days.</param>
+        /// <param name="hours">Number of hours.</param>
+        /// <param name="minutes">Number of minutes.</param>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of days, hours, minutes, seconds, milliseconds, and microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+        {
+            Int128 totalMicroseconds = Math.BigMul(days, MicrosecondsPerDay)
+                                     + Math.BigMul(hours, MicrosecondsPerHour)
+                                     + Math.BigMul(minutes, MicrosecondsPerMinute)
+                                     + Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// hours.
+        /// </summary>
+        /// <param name="hours">Number of hours.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of hours.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromHours(int hours) => FromUnits(hours, TicksPerHour, MinHours, MaxHours);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// hours, minutes, seconds, milliseconds, and microseconds.
+        /// </summary>
+        /// <param name="hours">Number of hours.</param>
+        /// <param name="minutes">Number of minutes.</param>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of hours, minutes, seconds, milliseconds, and microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+        {
+            Int128 totalMicroseconds = Math.BigMul(hours, MicrosecondsPerHour)
+                                     + Math.BigMul(minutes, MicrosecondsPerMinute)
+                                     + Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// minutes.
+        /// </summary>
+        /// <param name="minutes">Number of minutes.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of minutes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromMinutes(long minutes) => FromUnits(minutes, TicksPerMinute, MinMinutes, MaxMinutes);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// minutes, seconds, milliseconds, and microseconds.
+        /// </summary>
+        /// <param name="minutes">Number of minutes.</param>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of minutes, seconds, milliseconds, and microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+        {
+            Int128 totalMicroseconds = Math.BigMul(minutes, MicrosecondsPerMinute)
+                                     + Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// seconds.
+        /// </summary>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of seconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromSeconds(long seconds) => FromUnits(seconds, TicksPerSecond, MinSeconds, MaxSeconds);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// seconds, milliseconds, and microseconds.
+        /// </summary>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of seconds, milliseconds, and microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0)
+        {
+            Int128 totalMicroseconds = Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// milliseconds, and microseconds.
+        /// </summary>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of milliseconds, and microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0)
+        {
+            Int128 totalMicroseconds = Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TimeSpan FromMicroseconds(Int128 microseconds)
+        {
+            if ((microseconds > MaxMicroseconds) || (microseconds < MinMicroseconds))
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
+            }
+            long ticks = (long)microseconds * TicksPerMicrosecond;
+            return TimeSpan.FromTicks(ticks);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// microseconds.
+        /// </summary>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromMicroseconds(long microseconds) => FromUnits(microseconds, TicksPerMicrosecond, MinMicroseconds, MaxMicroseconds);
+
         public static TimeSpan FromHours(double value) => Interval(value, TicksPerHour);
 
         private static TimeSpan Interval(double value, double scale)
@@ -353,7 +670,7 @@ namespace System
         /// <exception cref="ArgumentException">
         /// <paramref name="value"/> is equal to <see cref="double.NaN"/>.
         /// </exception>
-        public static TimeSpan FromMicroseconds(double value) => Interval(value, TicksPerMicrosecond); // ISSUE: https://github.com/dotnet/runtime/issues/66815
+        public static TimeSpan FromMicroseconds(double value) => Interval(value, TicksPerMicrosecond);
 
         public static TimeSpan FromMinutes(double value) => Interval(value, TicksPerMinute);
 

@@ -62,7 +62,7 @@ FASTCALL_FUNC Rhp&FunctionName&_FAKE_ENTRY, 0
         mov         ebp, esp
         push eax
         push eax
-ALTERNATE_ENTRY Rhp&FunctionName&@0
+ALTERNATE_ENTRY _Rhp&FunctionName&@0
         push ecx
         push edx
 
@@ -74,7 +74,7 @@ ALTERNATE_ENTRY Rhp&FunctionName&@0
         lea  ecx, [ebp-10h]  ; Get pointer to edx value pushed above
         call eax
 
-ALTERNATE_ENTRY ReturnFrom&FunctionName
+ALTERNATE_ENTRY _ReturnFrom&FunctionName
 
         ; We cannot make the label public as that tricks DIA stackwalker into thinking
         ; it's the beginning of a method. For this reason we export an auxiliary variable

@@ -10,28 +10,44 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal unsafe delegate void ToManagedCallback(JSMarshalerArgument* arguments_buffer);
 
-        public sealed class PromiseHolder
+        public sealed unsafe class PromiseHolder
         {
+            public bool IsDisposed;
             public readonly nint GCHandle; // could be also virtual GCVHandle
             public ToManagedCallback? Callback;
             public JSProxyContext ProxyContext;
-            public bool IsDisposed;
-            public bool IsCanceling;
 #if FEATURE_WASM_MANAGED_THREADS
             public ManualResetEventSlim? CallbackReady;
+            public PromiseHolderState* State;
 #endif
 
             public PromiseHolder(JSProxyContext targetContext)
             {
                 GCHandle = (IntPtr)InteropServices.GCHandle.Alloc(this, GCHandleType.Normal);
                 ProxyContext = targetContext;
+#if FEATURE_WASM_MANAGED_THREADS
+                State = (PromiseHolderState*)Marshal.AllocHGlobal(sizeof(PromiseHolderState));
+                Interlocked.Exchange(ref (*State).IsResolving, 0);
+#endif
             }
 
             public PromiseHolder(JSProxyContext targetContext, nint gcvHandle)
             {
                 GCHandle = gcvHandle;
                 ProxyContext = targetContext;
+#if FEATURE_WASM_MANAGED_THREADS
+                State = (PromiseHolderState*)Marshal.AllocHGlobal(sizeof(PromiseHolderState));
+                Interlocked.Exchange(ref (*State).IsResolving, 0);
+#endif
             }
+        }
+
+        // NOTE: layout has to match PromiseHolderState in marshal-to-cs.ts
+        [StructLayout(LayoutKind.Explicit)]
+        public struct PromiseHolderState
+        {
+            [FieldOffset(0)]
+            public volatile int IsResolving;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -45,6 +61,15 @@ namespace System.Runtime.InteropServices.JavaScript
 
             [FieldOffset(0)]
             internal RuntimeTypeHandle typeHandle;
+        }
+
+        // keep in sync with types\internal.ts
+        public enum JSThreadBlockingMode : int
+        {
+            PreventSynchronousJSExport = 0,
+            ThrowWhenBlockingWait = 1,
+            WarnWhenBlockingWait = 2,
+            DangerousAllowBlockingWait = 100,
         }
     }
 }

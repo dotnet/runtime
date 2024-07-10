@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if DEBUG
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -13,14 +12,11 @@ namespace System.Net.Quic;
 
 internal sealed class MsQuicTlsSecret : IDisposable
 {
-    private static readonly string? s_keyLogFile = Environment.GetEnvironmentVariable("SSLKEYLOGFILE");
-    private static readonly FileStream? s_fileStream = s_keyLogFile != null ? File.Open(s_keyLogFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite) : null;
-
     private unsafe QUIC_TLS_SECRETS* _tlsSecrets;
 
     public static unsafe MsQuicTlsSecret? Create(MsQuicContextSafeHandle handle)
     {
-        if (s_fileStream is null)
+        if (!SslKeyLogger.IsEnabled)
         {
             return null;
         }
@@ -55,40 +51,69 @@ internal sealed class MsQuicTlsSecret : IDisposable
 
     public unsafe void WriteSecret()
     {
-        Debug.Assert(_tlsSecrets is not null);
-        Debug.Assert(s_fileStream is not null);
+        ReadOnlySpan<byte> clientRandom = _tlsSecrets->IsSet.ClientRandom != 0
+            ? new ReadOnlySpan<byte>(_tlsSecrets->ClientRandom, 32)
+            : ReadOnlySpan<byte>.Empty;
 
-        lock (s_fileStream)
+        Span<byte> clientHandshakeTrafficSecret = _tlsSecrets->IsSet.ClientHandshakeTrafficSecret != 0
+            ? new Span<byte>(_tlsSecrets->ClientHandshakeTrafficSecret, _tlsSecrets->SecretLength)
+            : Span<byte>.Empty;
+
+        Span<byte> serverHandshakeTrafficSecret = _tlsSecrets->IsSet.ServerHandshakeTrafficSecret != 0
+            ? new Span<byte>(_tlsSecrets->ServerHandshakeTrafficSecret, _tlsSecrets->SecretLength)
+            : Span<byte>.Empty;
+
+        Span<byte> clientTrafficSecret0 = _tlsSecrets->IsSet.ClientTrafficSecret0 != 0
+            ? new Span<byte>(_tlsSecrets->ClientTrafficSecret0, _tlsSecrets->SecretLength)
+            : Span<byte>.Empty;
+
+        Span<byte> serverTrafficSecret0 = _tlsSecrets->IsSet.ServerTrafficSecret0 != 0
+            ? new Span<byte>(_tlsSecrets->ServerTrafficSecret0, _tlsSecrets->SecretLength)
+            : Span<byte>.Empty;
+
+        Span<byte> clientEarlyTrafficSecret = _tlsSecrets->IsSet.ClientEarlyTrafficSecret != 0
+            ? new Span<byte>(_tlsSecrets->ClientEarlyTrafficSecret, _tlsSecrets->SecretLength)
+            : Span<byte>.Empty;
+
+        SslKeyLogger.WriteSecrets(
+            clientRandom,
+            clientHandshakeTrafficSecret,
+            serverHandshakeTrafficSecret,
+            clientTrafficSecret0,
+            serverTrafficSecret0,
+            clientEarlyTrafficSecret);
+
+        // clear secrets already logged, so they are not logged again on next call,
+        // keep ClientRandom as it is used for all secrets (and is not a secret itself)
+        if (!clientHandshakeTrafficSecret.IsEmpty)
         {
-            string clientRandom = string.Empty;
-            if (_tlsSecrets->IsSet.ClientRandom != 0)
-            {
-                clientRandom = Convert.ToHexString(new ReadOnlySpan<byte>(_tlsSecrets->ClientRandom, 32));
-            }
-            if (_tlsSecrets->IsSet.ClientHandshakeTrafficSecret != 0)
-            {
-                s_fileStream.Write(Encoding.ASCII.GetBytes($"CLIENT_HANDSHAKE_TRAFFIC_SECRET {clientRandom} {Convert.ToHexString(new ReadOnlySpan<byte>(_tlsSecrets->ClientHandshakeTrafficSecret, _tlsSecrets->SecretLength))}\n"));
-            }
-            if (_tlsSecrets->IsSet.ServerHandshakeTrafficSecret != 0)
-            {
-                s_fileStream.Write(Encoding.ASCII.GetBytes($"SERVER_HANDSHAKE_TRAFFIC_SECRET {clientRandom} {Convert.ToHexString(new ReadOnlySpan<byte>(_tlsSecrets->ServerHandshakeTrafficSecret, _tlsSecrets->SecretLength))}\n"));
-            }
-            if (_tlsSecrets->IsSet.ClientTrafficSecret0 != 0)
-            {
-                s_fileStream.Write(Encoding.ASCII.GetBytes($"CLIENT_TRAFFIC_SECRET_0 {clientRandom} {Convert.ToHexString(new ReadOnlySpan<byte>(_tlsSecrets->ClientTrafficSecret0, _tlsSecrets->SecretLength))}\n"));
-            }
-            if (_tlsSecrets->IsSet.ServerTrafficSecret0 != 0)
-            {
-                s_fileStream.Write(Encoding.ASCII.GetBytes($"SERVER_TRAFFIC_SECRET_0 {clientRandom} {Convert.ToHexString(new ReadOnlySpan<byte>(_tlsSecrets->ServerTrafficSecret0, _tlsSecrets->SecretLength))}\n"));
-            }
-            if (_tlsSecrets->IsSet.ClientEarlyTrafficSecret != 0)
-            {
-                s_fileStream.Write(Encoding.ASCII.GetBytes($"CLIENT_EARLY_TRAFFIC_SECRET {clientRandom} {Convert.ToHexString(new ReadOnlySpan<byte>(_tlsSecrets->ClientEarlyTrafficSecret, _tlsSecrets->SecretLength))}\n"));
-            }
-            s_fileStream.Flush();
+            clientHandshakeTrafficSecret.Clear();
+            _tlsSecrets->IsSet.ClientHandshakeTrafficSecret = 0;
         }
 
-        NativeMemory.Clear(_tlsSecrets, (nuint)sizeof(QUIC_TLS_SECRETS));
+        if (!serverHandshakeTrafficSecret.IsEmpty)
+        {
+            serverHandshakeTrafficSecret.Clear();
+            _tlsSecrets->IsSet.ServerHandshakeTrafficSecret = 0;
+        }
+
+        if (!clientTrafficSecret0.IsEmpty)
+        {
+            clientTrafficSecret0.Clear();
+            _tlsSecrets->IsSet.ClientTrafficSecret0 = 0;
+        }
+
+        if (!serverTrafficSecret0.IsEmpty)
+        {
+            serverTrafficSecret0.Clear();
+            _tlsSecrets->IsSet.ServerTrafficSecret0 = 0;
+        }
+
+        if (!clientEarlyTrafficSecret.IsEmpty)
+        {
+            clientEarlyTrafficSecret.Clear();
+            _tlsSecrets->IsSet.ClientEarlyTrafficSecret = 0;
+        }
     }
 
     public unsafe void Dispose()
@@ -110,4 +135,3 @@ internal sealed class MsQuicTlsSecret : IDisposable
         }
     }
 }
-#endif

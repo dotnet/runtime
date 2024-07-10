@@ -11,7 +11,7 @@ import { MonoConfigInternal } from "./types/internal";
 
 export const tablePrefix = "https://dotnet.generated.invalid/interp_pgo";
 
-export async function interp_pgo_save_data() {
+export async function interp_pgo_save_data () {
     if (!loaderHelpers.is_runtime_running()) {
         mono_log_info("Skipped saving interp_pgo table (already exited)");
         return;
@@ -53,7 +53,7 @@ export async function interp_pgo_save_data() {
     }
 }
 
-export async function interp_pgo_load_data() {
+export async function interp_pgo_load_data () {
     const cacheKey = await getCacheKey(tablePrefix);
     if (!cacheKey) {
         mono_log_error("Failed to create cache key for interp_pgo table");
@@ -76,7 +76,7 @@ export async function interp_pgo_load_data() {
     Module._free(pData);
 }
 
-async function openCache(): Promise<Cache | null> {
+async function openCache (): Promise<Cache | null> {
     // cache integrity is compromised if the first request has been served over http (except localhost)
     // in this case, we want to disable caching and integrity validation
     if (ENVIRONMENT_IS_WEB && globalThis.window.isSecureContext === false) {
@@ -113,7 +113,7 @@ async function openCache(): Promise<Cache | null> {
     }
 }
 
-export async function getCacheEntry(cacheKey: string): Promise<ArrayBuffer | undefined> {
+export async function getCacheEntry (cacheKey: string): Promise<ArrayBuffer | undefined> {
     try {
         const cache = await openCache();
         if (!cache) {
@@ -130,7 +130,7 @@ export async function getCacheEntry(cacheKey: string): Promise<ArrayBuffer | und
     }
 }
 
-export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mimeType: string): Promise<boolean> {
+export async function storeCacheEntry (cacheKey: string, memory: ArrayBuffer, mimeType: string): Promise<boolean> {
     try {
         const cache = await openCache();
         if (!cache) {
@@ -157,7 +157,7 @@ export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mim
     }
 }
 
-export async function cleanupCache(prefix: string, protectKey: string) {
+export async function cleanupCache (prefix: string, protectKey: string) {
     try {
         const cache = await openCache();
         if (!cache) {
@@ -175,7 +175,7 @@ export async function cleanupCache(prefix: string, protectKey: string) {
 }
 
 // calculate hash of things which affect config hash
-export async function getCacheKey(prefix: string): Promise<string | null> {
+export async function getCacheKey (prefix: string): Promise<string | null> {
     if (!runtimeHelpers.subtle) {
         return null;
     }
@@ -193,11 +193,11 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.forwardConsoleLogsToWS;
     delete inputs.diagnosticTracing;
     delete inputs.appendElementOnExit;
-    delete inputs.assertAfterExit;
     delete inputs.interopCleanupOnExit;
     delete inputs.dumpThreadsOnNonZeroExit;
     delete inputs.logExitCode;
-    delete inputs.pthreadPoolSize;
+    delete inputs.pthreadPoolInitialSize;
+    delete inputs.pthreadPoolUnusedSize;
     delete inputs.asyncFlushOnExit;
     delete inputs.remoteSources;
     delete inputs.ignorePdbLoadErrors;
@@ -205,6 +205,7 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.enableDownloadRetry;
     delete inputs.extensions;
     delete inputs.runtimeId;
+    delete inputs.jsThreadBlockingMode;
 
     inputs.GitHash = loaderHelpers.gitHash;
     inputs.ProductVersion = ProductVersion;

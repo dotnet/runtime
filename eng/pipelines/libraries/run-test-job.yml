@@ -4,7 +4,6 @@ parameters:
   osSubgroup: ''
   archType: ''
   targetRid: ''
-  framework: 'net9.0'
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
@@ -15,72 +14,65 @@ parameters:
   runtimeVariant: ''
   testScope: ''
   helixQueues: []
-  dependOnEvaluatePaths: false
   condition: true
   shouldContinueOnError: false
   variables: {}
-  # coreclrTestGroup: if empty, then a normal, default test run is created. If set, it indicates a set of
-  # stress modes that each test will be run with. This is the same usage as 'testGroup' in
-  # eng/pipelines/common/templates/runtimes/run-test-job.yml.
-  coreclrTestGroup: ''
+  scenarios: []
   SuperPmiCollect: false
   SuperPmiCollectionType: 'run'
   SuperPmiCollectionName: 'libraries_tests'
   dependsOn: []
+  unifiedArtifactsName: ''
+  helixArtifactsName: ''
+  unifiedBuildNameSuffix: ''
+  unifiedBuildConfigOverride: ''
 
 jobs:
-  - template: /eng/pipelines/libraries/base-job.yml
+  - template: /eng/common/templates/job/job.yml
     parameters:
-      buildConfig: ${{ parameters.buildConfig }}
-      osGroup:  ${{ parameters.osGroup }}
-      osSubgroup:  ${{ parameters.osSubgroup }}
-      archType:  ${{ parameters.archType }}
-      crossBuild: ${{ parameters.crossBuild }}
-      framework:  ${{ parameters.framework }}
-      isOfficialBuild: ${{ parameters.isOfficialBuild }}
-      liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
-      runtimeFlavor: ${{ parameters.runtimeFlavor }}
-      runtimeVariant: ${{ parameters.runtimeVariant }}
+      enablePublishBuildArtifacts: true
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: ${{ parameters.container }}
-      condition: ${{ parameters.condition }}
-      testScope: ${{ parameters.testScope }}
-      SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
-      runTests: true
+      condition: and(succeeded(), ${{ parameters.condition }})
+      helixRepo: dotnet/runtime
       ${{ if eq(parameters.SuperPmiCollect, true) }}:
-        displayName: ${{ format('SuperPMI collection {0} {1} {2}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-        name: ${{ format('spmi_{0}_{1}_{2}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+        displayName: ${{ format('Libraries SuperPMI collection {0} {1} {2} {3}{4} {5} {6}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        name: ${{ format('spmi_{0}_{1}_{2}_{3}{4}_{5}_{6}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       ${{ else }}:
         ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-          name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+          displayName: ${{ format('Libraries Test Run {0} {1} {2}{3} {4} {5}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+          name: ${{ format('libraries_test_run_{0}_{1}_{2}{3}_{4}_{5}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
           displayName: 'Test Run'
           name: test_run
-      ${{ if eq(parameters.interpreter, 'true') }}:
-        testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
       # To run the tests we just send to helix and wait, use ubuntu hosted pools for faster providing and to not back up our build pools
       pool: ${{ parameters.pool }}
 
-      dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+      # Component governance does not work on musl machines
+      ${{ if eq(parameters.osSubGroup, '_musl') }}:
+        disableComponentGovernance: true
+
       dependsOn:
       - ${{ if ne(parameters.dependsOn[0], '') }}:
         - ${{ parameters.dependsOn }}
-      - ${{ if eq(parameters.dependsOn[0], '') }}:
-        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
-      # SuperPMI collection needs to run mcs.exe on the AzDO machine. Assume that's an x64 machine, and download an x64 product build if needed.
-      - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
-          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', 'coreclr', '', parameters.osGroup, parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
+      - ${{ else }}:
+        - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
+
+      workspace:
+        clean: all
 
       variables:
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - group: DotNet-HelixApi-Access
+          - group: AzureDevOps-Artifact-Feeds-Pats
 
-        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
 
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+          - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
           - template: /eng/pipelines/libraries/superpmi-collect-variables.yml
             parameters:
               buildConfig: ${{ parameters.buildConfig }}
@@ -91,172 +83,89 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
+      - checkout: self
+        clean: true
+        fetchDepth: $(checkoutFetchDepth)
 
-        # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe on AzDO machine; see `SuperPmiMcsPath`.
-        - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
-          - template: /eng/pipelines/common/download-artifact-step.yml
-            parameters:
-              unpackFolder: $(_runtimeX64DownloadPath)
-              artifactFileName: 'CoreCLRProduct__${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}$(archiveExtension)'
-              artifactName: 'CoreCLRProduct__${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}'
-              displayName: 'CoreCLR product build (x64)'
+      - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
+          - task: Bash@3
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+              arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
+          - task: PowerShell@2
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+              arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
+        # Run the NuGetAuthenticate task after the internal feeds are added to the nuget.config
+        # This ensures that creds are set appropriately for all feeds in the config, and that the
+        # credential provider is installed.
+        - task: NuGetAuthenticate@1
 
-        - template: /eng/pipelines/common/download-artifact-step.yml
+      - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+        - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+          displayName: Install Build Dependencies
+
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+          artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
+          artifactName: '${{ parameters.unifiedArtifactsName }}'
+          displayName: 'unified artifacts'
+
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          displayName: Test Assets
+          artifactName: ${{ parameters.helixArtifactsName }}
+          artifactFileName: '${{ parameters.helixArtifactsName }}$(archiveExtension)'
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/helix
+
+      - template: /eng/pipelines/libraries/helix.yml
+        parameters:
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          osGroup: ${{ parameters.osGroup }}
+          targetRid: ${{ parameters.targetRid }}
+          archType: ${{ parameters.archType }}
+          buildConfig: ${{ parameters.buildConfig }}
+          helixQueues: ${{ parameters.helixQueues }}
+          testScope: ${{ parameters.testScope }}
+          interpreter: ${{ parameters.interpreter }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+          creator: dotnet-bot
+          ${{ if eq(parameters.interpreter, 'true') }}:
+            testRunNamePrefixSuffix: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
+          ${{ else }}:
+            testRunNamePrefixSuffix: ${{ parameters.runtimeDisplayName }}_${{ parameters.liveRuntimeBuildConfig }}
+          SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+          SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
+          SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
+          ${{ if eq(parameters.SuperPmiCollect, true) }}:
+            extraHelixArguments: /p:RuntimeConfiguration=${{ parameters.liveRuntimeBuildConfig }}
+
+          ${{ if ne(parameters.scenarios[0], '') }}:
+            scenarios: ${{ parameters.scenarios }}
+
+      - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+        - template: /eng/pipelines/libraries/superpmi-postprocess-step.yml
           parameters:
-            displayName: Build Assets
-            cleanUnpackFolder: false
-            artifactName: $(librariesBuildArtifactName)
-            artifactFileName: $(librariesBuildArtifactName)$(archiveExtension)
-            unpackFolder: $(Build.SourcesDirectory)/artifacts
-
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            displayName: Test Assets
-            cleanUnpackFolder: false
-            artifactName: $(librariesTestsArtifactName)
-            artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
-            unpackFolder: $(Build.SourcesDirectory)/artifacts
-
-        - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
-          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
-            displayName: Install Build Dependencies
-
-        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          - script: $(_buildScript)
-                    -subset host.native+libs.pretest
-                    $(_buildArguments)
-                    /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-                    /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
-            displayName: Prepare TestHost with runtime $(runtimeFlavorName)
-
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            runtimeFlavor: ${{ parameters.runtimeFlavor }}
-            osGroup: ${{ parameters.osGroup }}
-            targetRid: ${{ parameters.targetRid }}
-            archType: ${{ parameters.archType }}
             buildConfig: ${{ parameters.buildConfig }}
-            helixQueues: ${{ parameters.helixQueues }}
-            testScope: ${{ parameters.testScope }}
-            interpreter: ${{ parameters.interpreter }}
-            shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
-            SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+            buildConfigUpper: $(buildConfigUpper)
+            osGroup: ${{ parameters.osGroup }}
+            osSubgroup: ${{ parameters.osSubgroup }}
+            archType: ${{ parameters.archType }}
             SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
             SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
-
-            # coreclrTestGroup: The following mappings of 'coreclrTestGroup' to 'scenarios' is copied from
-            # eng/pipelines/common/templates/runtimes/run-test-job.yml (with 'testGroup' replaced by 'coreclrTestGroup'
-            # for clarity), and should remain in sync. This is only a subset; only the testGroups that are
-            # used to test the libraries have been added here. More could be added if we decided to test the
-            # libraries with more stress modes. The scenario tags are interpreted by
-            # src\tests\Common\testenvironment.proj.
-            #
-            # The one difference here compared to eng/pipelines/common/templates/runtimes/run-test-job.yml is
-            # that 'jitstress' contains 'no_tiered_compilation'. The 'normal' (default) test mode
-            # is run in a regular CI job, so there is no need to duplicate it here. So, add 'no_tiered_compilation'
-            # to the 'jitstress' job instead of adding a new job just for 'no_tiered_compilation'.
-
-            # src/libraries/sendtohelix.proj processes one scenario per parallel MSBuild invocation. Each invocation only
-            # creates Helix work items and them waits for their completion on the remote Helix machines, so is not
-            # computationally intensive. We want Helix to be provided with all the possible work items in up front,
-            # so can do as much work in parallel as possible. Thus, increase the amount of allowed MSBuild parallelism
-            # to at least the maximum number of scenarios to be processed in a coreclrTestGroup. If there is no
-            # coreclrTestGroup then there is only one scenario (the default scenario), so don't change the MSBuild argument.
-            ${{ if ne(parameters.coreclrTestGroup, '') }}:
-              extraHelixArguments: $(_extraHelixArguments) /maxcpucount:10
-            ${{ else }}:
-              extraHelixArguments: $(_extraHelixArguments)
-
-            ${{ if in(parameters.coreclrTestGroup, 'superpmi_collection') }}:
-              scenarios:
-              - normal
-            ${{ if in(parameters.coreclrTestGroup, 'superpmi_collection_no_tiered_compilation') }}:
-              scenarios:
-              - no_tiered_compilation
-            ${{ if in(parameters.coreclrTestGroup, 'jitstress') }}:
-              scenarios:
-              - no_tiered_compilation
-              - jitminopts
-              - jitstress1
-              - jitstress1_tiered
-              - jitstress2
-              - jitstress2_tiered
-              - zapdisable
-              - tailcallstress
-            ${{ if in(parameters.coreclrTestGroup, 'jitstress-random') }}:
-              scenarios:
-              - jitstress_random_1
-              - jitstress_random_2
-            ${{ if in(parameters.coreclrTestGroup, 'jitstressregs' ) }}:
-              scenarios:
-              - jitstressregs1
-              - jitstressregs2
-              - jitstressregs3
-              - jitstressregs4
-              - jitstressregs8
-              - jitstressregs0x10
-              - jitstressregs0x80
-              - jitstressregs0x1000
-              - jitstressregs0x2000
-            ${{ if in(parameters.coreclrTestGroup, 'jitstress2-jitstressregs') }}:
-              scenarios:
-              - jitstress2_jitstressregs1
-              - jitstress2_jitstressregs2
-              - jitstress2_jitstressregs3
-              - jitstress2_jitstressregs4
-              - jitstress2_jitstressregs8
-              - jitstress2_jitstressregs0x10
-              - jitstress2_jitstressregs0x80
-              - jitstress2_jitstressregs0x1000
-              - jitstress2_jitstressregs0x2000
-            ${{ if in(parameters.coreclrTestGroup, 'gcstress0x3-gcstress0xc') }}:
-              scenarios:
-              # Disable gcstress0x3 for now; it causes lots of test timeouts. Investigate this after
-              # gcstress0xc runs are clean. Tracking issue: https://github.com/dotnet/runtime/issues/38903.
-              # - gcstress0x3
-              - gcstress0xc
-            ${{ if in(parameters.coreclrTestGroup, 'gcstress-extra') }}:
-              scenarios:
-              - heapverify1
-              - gcstress0xc_zapdisable
-              - gcstress0xc_zapdisable_jitstress2
-              - gcstress0xc_zapdisable_heapverify1
-              - gcstress0xc_jitstress1
-              - gcstress0xc_jitstress2
-              - gcstress0xc_jitminopts_heapverify1
-            ${{ if in(parameters.coreclrTestGroup, 'pgo') }}:
-              ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
-                scenarios:
-                - defaultpgo
-              ${{ else }}:
-                scenarios:
-                - defaultpgo
-                - fullpgo
-                - fullpgo_methodprofiling
-                - fullpgo_random_gdv
-                - fullpgo_random_gdv_methodprofiling_only
-                - fullpgo_random_gdv_edge
-                - jitosr_stress
-                - jitosr_stress_random
-                - syntheticpgo
-                - syntheticpgo_blend
-                - jitcrossblocklocalassertionprop
-
-        - ${{ if eq(parameters.SuperPmiCollect, true) }}:
-          - template: /eng/pipelines/libraries/superpmi-postprocess-step.yml
-            parameters:
-              buildConfig: ${{ parameters.buildConfig }}
-              buildConfigUpper: $(buildConfigUpper)
-              osGroup: ${{ parameters.osGroup }}
-              osSubgroup: ${{ parameters.osSubgroup }}
-              archType: ${{ parameters.archType }}
-              SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
-              SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
-              MergedMchFileLocation: $(MergedMchFileLocation)
-              MchFilesLocation: $(MchFilesLocation)
-              SpmiLogsLocation: $(SpmiLogsLocation)
-              SuperPmiMcsPath: $(SuperPmiMcsPath)
-              PythonScript: $(PythonScript)
-              PipScript: $(PipScript)
+            MergedMchFileLocation: $(MergedMchFileLocation)
+            MchFilesLocation: $(MchFilesLocation)
+            SpmiLogsLocation: $(SpmiLogsLocation)
+            SuperPmiMcsPath: $(SuperPmiMcsPath)
+            PythonSetupScript: $(PythonSetupScript)
+            PythonScript: $(PythonScript)
+            PipScript: $(PipScript)

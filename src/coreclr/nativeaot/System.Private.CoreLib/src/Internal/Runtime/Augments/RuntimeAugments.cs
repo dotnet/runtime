@@ -138,11 +138,11 @@ namespace Internal.Runtime.Augments
         }
 
         //
-        // Helper to extract the artifact that uniquely identifies a method in the runtime mapping tables.
+        // Helper to extract the artifact that identifies a reflectable delegate target in the runtime mapping tables.
         //
-        public static IntPtr GetDelegateLdFtnResult(Delegate d, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver, out bool isInterpreterEntrypoint)
+        public static IntPtr GetDelegateLdFtnResult(Delegate d, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver)
         {
-            return d.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out isOpenResolver, out isInterpreterEntrypoint);
+            return d.GetDelegateLdFtnResult(out typeOfFirstParameterIfInstanceDelegate, out isOpenResolver);
         }
 
         // Low level method that returns the loaded modules as array. ReadOnlySpan returning overload

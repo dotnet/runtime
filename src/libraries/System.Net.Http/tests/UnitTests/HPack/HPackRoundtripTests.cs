@@ -71,19 +71,8 @@ namespace System.Net.Http.Unit.Tests.HPack
                 {
                     // For all other known headers, send them via their pre-encoded name and the associated value.
                     WriteBytes(knownHeader.Http2EncodedName);
-                    string separator = null;
-                    if (headerValuesSpan.Length > 1)
-                    {
-                        HttpHeaderParser parser = header.Key.Parser;
-                        if (parser != null && parser.SupportsMultipleValues)
-                        {
-                            separator = parser.Separator;
-                        }
-                        else
-                        {
-                            separator = HttpHeaderParser.DefaultSeparator;
-                        }
-                    }
+
+                    byte[]? separator = headerValuesSpan.Length > 1 ? header.Key.SeparatorBytes : null;
 
                     WriteLiteralHeaderValues(headerValuesSpan, separator);
                 }
@@ -105,7 +94,7 @@ namespace System.Net.Http.Unit.Tests.HPack
                 buffer.Commit(bytes.Length);
             }
 
-            void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string separator)
+            void WriteLiteralHeaderValues(ReadOnlySpan<string> values, byte[]? separator)
             {
                 int bytesWritten;
                 while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, buffer.AvailableSpan, out bytesWritten))
@@ -120,7 +109,7 @@ namespace System.Net.Http.Unit.Tests.HPack
             void WriteLiteralHeader(string name, ReadOnlySpan<string> values)
             {
                 int bytesWritten;
-                while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, valueEncoding, buffer.AvailableSpan, out bytesWritten))
+                while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparatorBytes, valueEncoding, buffer.AvailableSpan, out bytesWritten))
                 {
                     buffer.Grow();
                     FillAvailableSpaceWithOnes(buffer);

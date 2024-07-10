@@ -46,7 +46,42 @@ struct REGDISPLAY
 
     inline void SetIP(PCODE IP) { this->IP = IP; }
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
+
+#ifdef TARGET_X86
+    TADDR PCTAddr;
+    // SP for use by catch funclet when resuming execution
+    uintptr_t ResumeSP;
+
+    inline unsigned long *GetEaxLocation() { return (unsigned long *)pRax; }
+    inline unsigned long *GetEcxLocation() { return (unsigned long *)pRcx; }
+    inline unsigned long *GetEdxLocation() { return (unsigned long *)pRdx; }
+    inline unsigned long *GetEbpLocation() { return (unsigned long *)pRbp; }
+    inline unsigned long *GetEbxLocation() { return (unsigned long *)pRbx; }
+    inline unsigned long *GetEsiLocation() { return (unsigned long *)pRsi; }
+    inline unsigned long *GetEdiLocation() { return (unsigned long *)pRdi; }
+
+    inline void SetEaxLocation(unsigned long *loc) { pRax = (PTR_uintptr_t)loc; }
+    inline void SetEcxLocation(unsigned long *loc) { pRcx = (PTR_uintptr_t)loc; }
+    inline void SetEdxLocation(unsigned long *loc) { pRdx = (PTR_uintptr_t)loc; }
+    inline void SetEbxLocation(unsigned long *loc) { pRbx = (PTR_uintptr_t)loc; }
+    inline void SetEsiLocation(unsigned long *loc) { pRsi = (PTR_uintptr_t)loc; }
+    inline void SetEdiLocation(unsigned long *loc) { pRdi = (PTR_uintptr_t)loc; }
+    inline void SetEbpLocation(unsigned long *loc) { pRbp = (PTR_uintptr_t)loc; }
+#endif
 };
+
+#ifdef TARGET_X86
+inline TADDR GetRegdisplayFP(REGDISPLAY *display)
+{
+    return (TADDR)*display->GetEbpLocation();
+}
+
+inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
+{
+    display->PCTAddr = addr;
+    display->SetIP(*PTR_PCODE(addr));
+}
+#endif
 
 #elif defined(TARGET_ARM)
 
@@ -134,6 +169,62 @@ struct REGDISPLAY
     inline void SetIP(PCODE IP) { this->IP = IP; }
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
 };
+
+#elif defined(TARGET_LOONGARCH64)
+
+struct REGDISPLAY
+{
+    PTR_uintptr_t pR0;
+    PTR_uintptr_t pRA;
+    PTR_uintptr_t pR2;
+
+    uintptr_t   SP;
+
+    PTR_uintptr_t pR4;
+    PTR_uintptr_t pR5;
+    PTR_uintptr_t pR6;
+    PTR_uintptr_t pR7;
+    PTR_uintptr_t pR8;
+    PTR_uintptr_t pR9;
+    PTR_uintptr_t pR10;
+    PTR_uintptr_t pR11;
+    PTR_uintptr_t pR12;
+    PTR_uintptr_t pR13;
+    PTR_uintptr_t pR14;
+    PTR_uintptr_t pR15;
+    PTR_uintptr_t pR16;
+    PTR_uintptr_t pR17;
+    PTR_uintptr_t pR18;
+    PTR_uintptr_t pR19;
+    PTR_uintptr_t pR20;
+    PTR_uintptr_t pR21;
+    PTR_uintptr_t pFP;
+    PTR_uintptr_t pR23;
+    PTR_uintptr_t pR24;
+    PTR_uintptr_t pR25;
+    PTR_uintptr_t pR26;
+    PTR_uintptr_t pR27;
+    PTR_uintptr_t pR28;
+    PTR_uintptr_t pR29;
+    PTR_uintptr_t pR30;
+    PTR_uintptr_t pR31;
+
+    PCODE        IP;
+
+    uint64_t       F[32-24]; // Only the F registers F24..F31 needs to be preserved
+                             // (F0-F23 are not preserved according to the ABI spec).
+                             // These need to be unwound during a stack walk
+                             // for EH, but not adjusted, so we only need
+                             // their values, not their addresses
+
+    inline PCODE GetIP() { return IP; }
+    inline uintptr_t GetSP() { return SP; }
+    inline uintptr_t GetFP() { return *pFP; }
+
+    inline void SetIP(PCODE IP) { this->IP = IP; }
+    inline void SetSP(uintptr_t SP) { this->SP = SP; }
+};
+
 #elif defined(TARGET_WASM)
 
 struct REGDISPLAY
@@ -150,7 +241,7 @@ struct REGDISPLAY
     inline void SetIP(PCODE IP) { }
     inline void SetSP(uintptr_t SP) { }
 };
-#endif // HOST_X86 || HOST_AMD64 || HOST_ARM || HOST_ARM64 || HOST_WASM
+#endif // HOST_X86 || HOST_AMD64 || HOST_ARM || HOST_ARM64 || HOST_WASM || HOST_LOONGARCH64
 
 typedef REGDISPLAY * PREGDISPLAY;
 

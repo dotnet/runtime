@@ -12,7 +12,8 @@ class SsaRenameState
         StackNode* m_top;
 
     public:
-        Stack() : m_top(nullptr)
+        Stack()
+            : m_top(nullptr)
         {
         }
 
@@ -47,7 +48,9 @@ class SsaRenameState
         unsigned m_ssaNum;
 
         StackNode(Stack* listPrev, BasicBlock* block, unsigned ssaNum)
-            : m_listPrev(listPrev), m_block(block), m_ssaNum(ssaNum)
+            : m_listPrev(listPrev)
+            , m_block(block)
+            , m_ssaNum(ssaNum)
         {
         }
     };

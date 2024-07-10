@@ -15,6 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public partial class JavaScriptTestHelper
     {
         [JSImport("globalThis.console.log")]
+        [return: JSMarshalAs<JSType.DiscardNoWait>]
         public static partial void Log([JSMarshalAs<JSType.String>] string message);
 
         [JSImport("globalThis.window.location.toString")]
@@ -27,10 +28,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static partial string ReboundMemberEcho(string message);
 
         [JSExport]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
         public static void ConsoleWriteLine([JSMarshalAs<JSType.String>] string message)
         {
             Console.WriteLine(message);
         }
+
+        [JSImport("delay", "JavaScriptTestHelper")]
+        public static partial Task Delay(int ms);
+
+        [JSImport("reject", "JavaScriptTestHelper")]
+        public static partial Task Reject([JSMarshalAs<JSType.Any>] object what);
+
+        [JSImport("intentionallyMissingImport", "JavaScriptTestHelper")]
+        public static partial void IntentionallyMissingImport();
+
+        [JSImport("intentionallyMissingImportAsync", "JavaScriptTestHelper")]
+        public static partial Task IntentionallyMissingImportAsync();
 
         [JSImport("catch1toString", "JavaScriptTestHelper")]
         public static partial string catch1toString(string message, string functionName);
@@ -72,6 +86,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
         [JSImport("invoke1V", "JavaScriptTestHelper")]
         public static partial void invoke1V(int a1);
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
+        public static void Optimized1O(int a1)
+        {
+            optimizedReached += a1;
+        }
+        [JSImport("invoke1O", "JavaScriptTestHelper")]
+        public static partial void invoke1O(int a1);
 
         [JSExport]
         public static int Optimized1R(int a1)
@@ -261,6 +284,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("store1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Void>]
         internal static partial void store1_Int32([JSMarshalAs<JSType.Number>] int value);
+
+        [JSImport("store1", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
+        internal static partial void store1DiscardNoWait_Int32([JSMarshalAs<JSType.Number>] int value);
+
         [JSImport("retrieve1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial int retrieve1_Int32();
@@ -468,6 +496,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Number>]
         internal static partial int back3_FunctionIntInt([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>] Func<int, int>? fun, [JSMarshalAs<JSType.Number>] int a);
 
+        [JSImport("back4", "JavaScriptTestHelper")]
+        internal static partial void back4_ActionIntLongDouble([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>] Action<int, long, double>? action, [JSMarshalAs<JSType.Number>] int a, [JSMarshalAs<JSType.Number>] long b, [JSMarshalAs<JSType.Number>] double c);
 
         [JSImport("invoke1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>]
@@ -989,6 +1019,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+        
+        [JSImport("callJavaScriptLibrary", "JavaScriptTestHelper")]
+        public static partial Task<int> callJavaScriptLibrary(int a, int b);
 
         [JSImport("echopromise", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.Object>>]

@@ -42,7 +42,6 @@ namespace System.Net.Http
         private static readonly ulong s_http10Bytes = BitConverter.ToUInt64("HTTP/1.0"u8);
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64("HTTP/1.1"u8);
 
-        private readonly HttpConnectionPool _pool;
         internal readonly Stream _stream;
         private readonly TransportContext? _transportContext;
 
@@ -57,6 +56,7 @@ namespace System.Net.Http
         private const int ReadAheadTask_NotStarted = 0;
         private const int ReadAheadTask_Started = 1;
         private const int ReadAheadTask_CompletionReserved = 2;
+        private const int ReadAheadTask_Completed = 3;
         private int _readAheadTaskStatus;
         private ValueTask<int> _readAheadTask;
         private ArrayBuffer _readBuffer;
@@ -77,10 +77,8 @@ namespace System.Net.Http
             IPEndPoint? remoteEndPoint)
             : base(pool, remoteEndPoint)
         {
-            Debug.Assert(pool != null);
             Debug.Assert(stream != null);
 
-            _pool = pool;
             _stream = stream;
 
             _transportContext = transportContext;
@@ -118,8 +116,11 @@ namespace System.Net.Http
             }
         }
 
+        private bool ReadAheadTaskHasStarted =>
+            _readAheadTaskStatus != ReadAheadTask_NotStarted;
+
         /// <summary>Prepare an idle connection to be used for a new request.
-        /// The caller MUST call SendAsync afterwards if this method returns true.</summary>
+        /// The caller MUST call SendAsync afterwards if this method returns true, or dispose the connection if it returns false.</summary>
         /// <param name="async">Indicates whether the coming request will be sync or async.</param>
         /// <returns>True if connection can be used, false if it is invalid due to a timeout or receiving EOF or unexpected data.</returns>
         public bool PrepareForReuse(bool async)
@@ -133,7 +134,9 @@ namespace System.Net.Http
             // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
             if (ReadAheadTaskHasStarted)
             {
-                return TryOwnReadAheadTaskCompletion();
+                Debug.Assert(_readAheadTaskStatus is ReadAheadTask_Started or ReadAheadTask_Completed);
+
+                return Interlocked.Exchange(ref _readAheadTaskStatus, ReadAheadTask_CompletionReserved) == ReadAheadTask_Started;
             }
 
             // Check to see if we've received anything on the connection; if we have, that's
@@ -166,7 +169,15 @@ namespace System.Net.Http
                     _readAheadTask = _stream.ReadAsync(_readBuffer.AvailableMemory);
 #pragma warning restore CA2012
 
-                    return !_readAheadTask.IsCompleted;
+                    // If the read-ahead task already completed, we can't reuse the connection.
+                    // We're still responsible for observing potential exceptions thrown by the read-ahead task to avoid leaking unobserved exceptions.
+                    if (_readAheadTask.IsCompleted)
+                    {
+                        LogExceptions(_readAheadTask.AsTask());
+                        return false;
+                    }
+
+                    return true;
                 }
                 catch (Exception error)
                 {
@@ -175,6 +186,35 @@ namespace System.Net.Http
                     return false;
                 }
             }
+        }
+
+        /// <summary>Takes ownership of the scavenging task completion if it was started.
+        /// The caller MUST call either SendAsync or return the completion ownership afterwards if this method returns true, or dispose the connection if it returns false.</summary>
+        public bool TryOwnScavengingTaskCompletion()
+        {
+            Debug.Assert(_readAheadTaskStatus != ReadAheadTask_CompletionReserved);
+
+            return !ReadAheadTaskHasStarted
+                || Interlocked.Exchange(ref _readAheadTaskStatus, ReadAheadTask_CompletionReserved) == ReadAheadTask_Started;
+        }
+
+        /// <summary>Returns ownership of the scavenging task completion if it was started.
+        /// The caller MUST Dispose the connection afterwards if this method returns false.</summary>
+        public bool TryReturnScavengingTaskCompletionOwnership()
+        {
+            Debug.Assert(_readAheadTaskStatus != ReadAheadTask_Started);
+
+            if (!ReadAheadTaskHasStarted ||
+                Interlocked.Exchange(ref _readAheadTaskStatus, ReadAheadTask_Started) == ReadAheadTask_CompletionReserved)
+            {
+                return true;
+            }
+
+            // The read-ahead task has started, and we failed to transition back to Started.
+            // This means that the read-ahead task has completed, and we can't reuse the connection. The caller must dispose it.
+            // We're still responsible for observing potential exceptions thrown by the read-ahead task to avoid leaking unobserved exceptions.
+            LogExceptions(_readAheadTask.AsTask());
+            return false;
         }
 
         /// <summary>Check whether a currently idle connection is still usable, or should be scavenged.</summary>
@@ -187,21 +227,7 @@ namespace System.Net.Http
             }
 
             // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
-            EnsureReadAheadTaskHasStarted();
-
-            // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
-            return !_readAheadTask.IsCompleted;
-        }
-
-        private bool ReadAheadTaskHasStarted =>
-            _readAheadTaskStatus != ReadAheadTask_NotStarted;
-
-        private bool TryOwnReadAheadTaskCompletion() =>
-            Interlocked.CompareExchange(ref _readAheadTaskStatus, ReadAheadTask_CompletionReserved, ReadAheadTask_Started) == ReadAheadTask_Started;
-
-        private void EnsureReadAheadTaskHasStarted()
-        {
-            if (_readAheadTaskStatus == ReadAheadTask_NotStarted)
+            if (!ReadAheadTaskHasStarted)
             {
                 Debug.Assert(_readAheadTask == default);
 
@@ -211,6 +237,9 @@ namespace System.Net.Http
                 _readAheadTask = ReadAheadWithZeroByteReadAsync();
 #pragma warning restore CA2012
             }
+
+            // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
+            return !_readAheadTask.IsCompleted;
 
             async ValueTask<int> ReadAheadWithZeroByteReadAsync()
             {
@@ -231,18 +260,25 @@ namespace System.Net.Http
                     // PrepareForReuse will check TryOwnReadAheadTaskCompletion before calling into SendAsync.
                     // If we can own the completion from within the read-ahead task, it means that PrepareForReuse hasn't been called yet.
                     // In that case we've received EOF/erroneous data before we sent the request headers, and the connection can't be reused.
-                    if (TryOwnReadAheadTaskCompletion())
+                    if (TransitionToCompletedAndTryOwnCompletion())
                     {
                         if (NetEventSource.Log.IsEnabled()) Trace("Read-ahead task observed data before the request was sent.");
                     }
 
                     return read;
                 }
-                catch (Exception error) when (TryOwnReadAheadTaskCompletion())
+                catch (Exception error) when (TransitionToCompletedAndTryOwnCompletion())
                 {
                     if (NetEventSource.Log.IsEnabled()) Trace($"Error performing read ahead: {error}");
 
                     return 0;
+                }
+
+                bool TransitionToCompletedAndTryOwnCompletion()
+                {
+                    Debug.Assert(_readAheadTaskStatus is ReadAheadTask_Started or ReadAheadTask_CompletionReserved);
+
+                    return Interlocked.Exchange(ref _readAheadTaskStatus, ReadAheadTask_Completed) == ReadAheadTask_Started;
                 }
             }
         }
@@ -270,17 +306,14 @@ namespace System.Net.Http
             _readBuffer.Discard(bytesToConsume);
         }
 
-        private void WriteHeaders(HttpRequestMessage request, HttpMethod normalizedMethod)
+        private void WriteHeaders(HttpRequestMessage request)
         {
             Debug.Assert(request.RequestUri is not null);
 
             // Write the request line
-            WriteAsciiString(normalizedMethod.Method);
-            _writeBuffer.EnsureAvailableSpace(1);
-            _writeBuffer.AvailableSpan[0] = (byte)' ';
-            _writeBuffer.Commit(1);
+            WriteBytes(request.Method.Http1EncodedBytes);
 
-            if (ReferenceEquals(normalizedMethod, HttpMethod.Connect))
+            if (request.Method.IsConnect)
             {
                 // RFC 7231 #section-4.3.6.
                 // Write only CONNECT foo.com:345 HTTP/1.1
@@ -353,7 +386,7 @@ namespace System.Net.Http
             {
                 // Write out Content-Length: 0 header to indicate no body,
                 // unless this is a method that never has a body.
-                if (normalizedMethod.MustHaveRequestBody)
+                if (request.Method.MustHaveRequestBody)
                 {
                     WriteBytes("Content-Length: 0\r\n"u8);
                 }
@@ -417,16 +450,11 @@ namespace System.Net.Http
                 // Some headers such as User-Agent and Server use space as a separator (see: ProductInfoHeaderParser)
                 if (headerValuesCount > 1)
                 {
-                    HttpHeaderParser? parser = header.Key.Parser;
-                    string separator = HttpHeaderParser.DefaultSeparator;
-                    if (parser != null && parser.SupportsMultipleValues)
-                    {
-                        separator = parser.Separator!;
-                    }
+                    byte[] separator = header.Key.SeparatorBytes;
 
                     for (int i = 1; i < headerValuesCount; i++)
                     {
-                        WriteAsciiString(separator);
+                        WriteBytes(separator);
                         WriteString(headerValues[i], valueEncoding);
                     }
                 }
@@ -460,11 +488,15 @@ namespace System.Net.Http
 
         private void WriteAsciiString(string s)
         {
+            Debug.Assert(Ascii.IsValid(s));
+
             _writeBuffer.EnsureAvailableSpace(s.Length);
-            int length = Encoding.ASCII.GetBytes(s, _writeBuffer.AvailableSpan);
-            Debug.Assert(length == s.Length);
-            Debug.Assert(Encoding.ASCII.GetString(_writeBuffer.AvailableSpan.Slice(0, length)) == s);
-            _writeBuffer.Commit(length);
+
+            OperationStatus status = Ascii.FromUtf16(s, _writeBuffer.AvailableSpan, out int bytesWritten);
+            Debug.Assert(status == OperationStatus.Done);
+            Debug.Assert(bytesWritten == s.Length);
+
+            _writeBuffer.Commit(s.Length);
         }
 
         private void WriteString(string s, Encoding? encoding)
@@ -501,7 +533,8 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             Debug.Assert(_readBuffer.ActiveLength == 0, "Unexpected data in read buffer");
-            Debug.Assert(_readAheadTaskStatus != ReadAheadTask_Started);
+            Debug.Assert(_readAheadTaskStatus != ReadAheadTask_Started,
+                "The caller should have called PrepareForReuse or TryOwnScavengingTaskCompletion if the connection was idle on the pool.");
 
             MarkConnectionAsNotIdle();
 
@@ -509,7 +542,6 @@ namespace System.Net.Http
             Task? sendRequestContentTask = null;
 
             _currentRequest = request;
-            HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
             _canRetry = false;
 
@@ -520,7 +552,7 @@ namespace System.Net.Http
             {
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(Id);
 
-                WriteHeaders(request, normalizedMethod);
+                WriteHeaders(request);
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
 
@@ -575,7 +607,7 @@ namespace System.Net.Http
                     // meaning that PrepareForReuse would have failed, and we wouldn't have called SendAsync.
                     // The task therefore shouldn't be 'default', as it's representing an async operation that had to yield at some point.
                     Debug.Assert(_readAheadTask != default);
-                    Debug.Assert(_readAheadTaskStatus == ReadAheadTask_CompletionReserved);
+                    Debug.Assert(_readAheadTaskStatus is ReadAheadTask_CompletionReserved or ReadAheadTask_Completed);
 
                     // Handle the pre-emptive read.  For the async==false case, hopefully the read has
                     // already completed and this will be a nop, but if it hasn't, the caller will be forced to block
@@ -744,12 +776,12 @@ namespace System.Net.Http
 
                 // Create the response stream.
                 Stream responseStream;
-                if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
+                if (request.Method.IsHead || response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotModified)
                 {
                     responseStream = EmptyReadStream.Instance;
                     CompleteResponse();
                 }
-                else if (ReferenceEquals(normalizedMethod, HttpMethod.Connect) && response.StatusCode == HttpStatusCode.OK)
+                else if (request.Method.IsConnect && response.StatusCode == HttpStatusCode.OK)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
@@ -820,7 +852,7 @@ namespace System.Net.Http
 
                 if (_readAheadTask != default)
                 {
-                    Debug.Assert(_readAheadTaskStatus == ReadAheadTask_CompletionReserved);
+                    Debug.Assert(_readAheadTaskStatus is ReadAheadTask_CompletionReserved or ReadAheadTask_Completed);
 
                     LogExceptions(_readAheadTask.AsTask());
                 }
@@ -1737,22 +1769,30 @@ namespace System.Net.Http
             return count;
         }
 
-        private async ValueTask<int> ReadAsync(Memory<byte> destination)
+        private ValueTask<int> ReadAsync(Memory<byte> destination)
         {
             // This is called when reading the response body.
 
             if (_readBuffer.ActiveLength > 0)
             {
                 // We have data in the read buffer.  Return it to the caller.
-                return ReadFromBuffer(destination.Span);
+                return new ValueTask<int>(ReadFromBuffer(destination.Span));
             }
 
             // No data in read buffer.
             // Do an unbuffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == default, "Read ahead task should have been consumed as part of the headers.");
-            int count = await _stream.ReadAsync(destination).ConfigureAwait(false);
-            if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
-            return count;
+
+            return NetEventSource.Log.IsEnabled()
+                ? ReadAndLogBytesReadAsync(destination)
+                : _stream.ReadAsync(destination);
+
+            async ValueTask<int> ReadAndLogBytesReadAsync(Memory<byte> destination)
+            {
+                int count = await _stream.ReadAsync(destination).ConfigureAwait(false);
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
+                return count;
+            }
         }
 
         private int ReadBuffered(Span<byte> destination)

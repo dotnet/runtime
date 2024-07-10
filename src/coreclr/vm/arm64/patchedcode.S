@@ -42,6 +42,9 @@ LEAF_END JIT_PatchedCodeStart, _TEXT
 //   x15  : trashed
 //   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
+//   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+//         if you add more trashed registers.
+//
 WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
 
     ldr  x15, [x13], 8

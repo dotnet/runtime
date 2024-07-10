@@ -13,9 +13,14 @@ namespace System.Linq
 
         public static IEnumerable<TSource> DefaultIfEmpty<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (source is TSource[] { Length: > 0 })
+            {
+                return source;
             }
 
             return new DefaultIfEmptyIterator<TSource>(source, defaultValue);
@@ -29,12 +34,12 @@ namespace System.Linq
 
             public DefaultIfEmptyIterator(IEnumerable<TSource> source, TSource defaultValue)
             {
-                Debug.Assert(source != null);
+                Debug.Assert(source is not null);
                 _source = source;
                 _default = defaultValue;
             }
 
-            public override Iterator<TSource> Clone() => new DefaultIfEmptyIterator<TSource>(_source, _default);
+            private protected override Iterator<TSource> Clone() => new DefaultIfEmptyIterator<TSource>(_source, _default);
 
             public override bool MoveNext()
             {
@@ -55,7 +60,7 @@ namespace System.Linq
 
                         return true;
                     case 2:
-                        Debug.Assert(_enumerator != null);
+                        Debug.Assert(_enumerator is not null);
                         if (_enumerator.MoveNext())
                         {
                             _current = _enumerator.Current;
@@ -71,7 +76,7 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator != null)
+                if (_enumerator is not null)
                 {
                     _enumerator.Dispose();
                     _enumerator = null;

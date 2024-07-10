@@ -43,6 +43,7 @@ namespace Dynamic
 
             String();
             Date();
+            SpecialCasedValueTypes();
             ComObject();
             Null();
 
@@ -385,6 +386,16 @@ namespace Dynamic
             Variant<DateTime>(val, expected);
         }
 
+        private void SpecialCasedValueTypes()
+        {
+            {
+                var val = Guid.NewGuid();
+                var expected = val;
+                // Pass as variant
+                Variant<Guid>(val, expected);
+            }
+        }
+
         private void ComObject()
         {
             Type t = Type.GetTypeFromCLSID(Guid.Parse(ServerGuids.BasicTest));
@@ -423,6 +434,9 @@ namespace Dynamic
 
             obj.String_Property = null;
             Assert.Equal(string.Empty, obj.String_Property);
+
+            obj.Dispatch_Property = new DispatchWrapper(null);
+            Assert.Null(obj.Dispatch_Property);
         }
 
         private void StringWrapper(string toWrap, string expected)

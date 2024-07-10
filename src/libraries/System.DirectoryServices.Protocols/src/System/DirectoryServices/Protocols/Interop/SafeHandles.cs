@@ -8,7 +8,7 @@ namespace System.DirectoryServices.Protocols
 {
     internal sealed class HGlobalMemHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal static IntPtr _dummyPointer = new IntPtr(1);
+        internal const IntPtr _dummyPointer = 1;
 
         internal HGlobalMemHandle(IntPtr value) : base(true)
         {

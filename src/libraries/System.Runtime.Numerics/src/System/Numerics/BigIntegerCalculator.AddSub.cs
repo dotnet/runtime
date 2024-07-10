@@ -56,7 +56,7 @@ namespace System.Numerics
             Add(left, bits, ref resultPtr, startIndex: i, initialCarry: carry);
         }
 
-        private static void AddSelf(Span<uint> left, ReadOnlySpan<uint> right)
+        public static void AddSelf(Span<uint> left, ReadOnlySpan<uint> right)
         {
             Debug.Assert(left.Length >= right.Length);
 
@@ -129,7 +129,7 @@ namespace System.Numerics
             Subtract(left, bits, ref resultPtr, startIndex: i, initialCarry: carry);
         }
 
-        private static void SubtractSelf(Span<uint> left, ReadOnlySpan<uint> right)
+        public static void SubtractSelf(Span<uint> left, ReadOnlySpan<uint> right)
         {
             Debug.Assert(left.Length >= right.Length);
 

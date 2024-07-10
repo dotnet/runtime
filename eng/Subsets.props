@@ -119,10 +119,20 @@
 
   <PropertyGroup>
     <!-- CLR NativeAot only builds in a subset of the matrix -->
-    <NativeAotSupported Condition="('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'freebsd') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">true</NativeAotSupported>
+    <_NativeAotSupportedOS Condition="'$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'freebsd'">true</_NativeAotSupportedOS>
+    <_NativeAotSupportedArch Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'loongarch64' or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86')">true</_NativeAotSupportedArch>
+    <NativeAotSupported Condition="'$(_NativeAotSupportedOS)' == 'true' and '$(_NativeAotSupportedArch)' == 'true'">true</NativeAotSupported>
+    <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and '$(TargetOS)' == '$(HostOS)' and ('$(TargetOS)' != 'windows' or '$(TargetArchitecture)' != 'x86') and '$(TargetsLinuxBionic)' != 'true' and ('$(TargetsLinuxMusl)' != 'true' or '$(TargetArchitecture)' != 'arm')">true</UseNativeAotForComponents>
 
     <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
-    <UseNativeAotCoreLib Condition="'$(TestNativeAot)' == 'true' or ($(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr.native+')) and !$(_subset.Contains('+clr.runtime+')))">true</UseNativeAotCoreLib>
+    <UseNativeAotCoreLib Condition="'$(TestNativeAot)' == 'true' or ($(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr.native+')) and !$(_subset.Contains('+clr.runtime+')) and !$(_subset.Contains('+clr.corelib+')))">true</UseNativeAotCoreLib>
+  </PropertyGroup>
+
+  <!-- Configure build properties for C++ runtime library references. -->
+  <PropertyGroup>
+    <TargetCxxLibraryProperties Condition="'$(TargetCxxStandardLibrary)' != ''">CxxStandardLibrary=$(TargetCxxStandardLibrary)</TargetCxxLibraryProperties>
+    <TargetCxxLibraryProperties Condition="'$(TargetCxxStandardLibraryStatic)' != ''">$(TargetCxxLibraryProperties);CxxStandardLibraryStatic=$(TargetCxxStandardLibraryStatic)</TargetCxxLibraryProperties>
+    <TargetCxxLibraryProperties Condition="'$(TargetCxxAbiLibrary)' != ''">$(TargetCxxLibraryProperties);CxxAbiLibrary=$(TargetCxxAbiLibrary)</TargetCxxLibraryProperties>
   </PropertyGroup>
 
   <ItemGroup>
@@ -170,6 +180,8 @@
     <SubsetName Include="Tools" Description="Additional runtime tools projects. Equivalent to: $(DefaultToolsSubsets)" />
     <SubsetName Include="Tools.ILLink" Description="The projects that produce illink and analyzer tools for trimming." />
     <SubsetName Include="Tools.ILLinkTests" OnDemand="true" Description="Unit tests for the tools.illink subset." />
+
+    <SubsetName Include="Tools.CdacReaderTests" OnDemand="true" Description="Units tests for the cDAC reader." />
 
     <!-- Host -->
     <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests. Equivalent to: $(DefaultHostSubsets)" />
@@ -255,13 +267,13 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != '' or $(_subset.Contains('+clr.nativeprereqs+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime-prereqs.proj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)runtime-prereqs.proj" Category="clr" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
-      AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets)"
+      AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties)"
       Category="clr" />
   </ItemGroup>
 
@@ -356,6 +368,8 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_inbuild.csproj" Category="clr" />
 
     <ProjectToBuild Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')) or '$(TargetOS)' == 'osx'" Include="$(CoreClrProjectRoot)tools\SuperFileCheck\SuperFileCheck.csproj" Category="clr" />
+
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\cdac-build-tool\cdac-build-tool.csproj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.toolstests+'))">
@@ -365,6 +379,10 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Trimming.Tests\ILCompiler.Trimming.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.cdacreadertests+'))">
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdacreader\tests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.illink+'))">
@@ -445,7 +463,7 @@
   <!-- Host sets -->
   <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
     <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" SignPhase="Binaries" />
-    <ProjectToBuild Include="@(CorehostProjectToBuild)" Pack="true" Category="host" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(TargetCxxLibraryProperties)" Pack="true" Category="host" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
@@ -498,7 +516,7 @@
 
   <!-- Host.pretest subset (consumes live built libraries assets so needs to come after libraries) -->
   <ItemGroup Condition="$(_subset.Contains('+host.pretest+'))">
-    <ProjectToBuild Include="$(InstallerProjectRoot)tests\Assets\Projects\**\*.csproj" Category="host" />
+    <ProjectToBuild Include="$(InstallerProjectRoot)tests\pretest.proj" Category="host" />
   </ItemGroup>
 
   <!-- Host.tests subset (consumes live built libraries assets so needs to come after libraries) -->

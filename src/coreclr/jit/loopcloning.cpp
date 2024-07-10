@@ -853,24 +853,40 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     noway_assert(conds.Size() > 0);
     assert(slowPreheader != nullptr);
 
+    // For now assume high likelihood for the fast path,
+    // uniformly spread across the gating branches.
+    //
+    // For "normal" cloning this is probably ok. For GDV cloning this
+    // may be inaccurate. We should key off the type test likelihood(s).
+    //
+    const weight_t fastLikelihood = fastPathWeightScaleFactor;
+
     // Choose how to generate the conditions
     const bool generateOneConditionPerBlock = true;
 
     if (generateOneConditionPerBlock)
     {
+        // N = conds.Size() branches must all be true to execute the fast loop.
+        // Use the N'th root....
+        //
+        const weight_t fastLikelihoodPerBlock = exp(log(fastLikelihood) / (weight_t)conds.Size());
+
         for (unsigned i = 0; i < conds.Size(); ++i)
         {
-            BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
+            BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
             newBlk->inheritWeight(insertAfter);
 
-            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
-            comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
+            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, slowPreheader->bbNum);
+            FlowEdge* const trueEdge = comp->fgAddRefPred(slowPreheader, newBlk);
+            newBlk->SetTrueEdge(trueEdge);
+            trueEdge->setLikelihood(1 - fastLikelihoodPerBlock);
 
             if (insertAfter->KindIs(BBJ_COND))
             {
                 JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
-                insertAfter->SetFalseTarget(newBlk);
-                comp->fgAddRefPred(newBlk, insertAfter);
+                FlowEdge* const falseEdge = comp->fgAddRefPred(newBlk, insertAfter);
+                insertAfter->SetFalseEdge(falseEdge);
+                falseEdge->setLikelihood(fastLikelihoodPerBlock);
             }
 
             JITDUMP("Adding conditions %u to " FMT_BB "\n", i, newBlk->bbNum);
@@ -894,16 +910,20 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     }
     else
     {
-        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
+        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
         newBlk->inheritWeight(insertAfter);
 
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
-        comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
+        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, slowPreheader->bbNum);
+        FlowEdge* const trueEdge = comp->fgAddRefPred(slowPreheader, newBlk);
+        newBlk->SetTrueEdge(trueEdge);
+        trueEdge->setLikelihood(1.0 - fastLikelihood);
 
-        if (insertAfter->bbFallsThrough())
+        if (insertAfter->KindIs(BBJ_COND))
         {
             JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
-            comp->fgAddRefPred(newBlk, insertAfter);
+            FlowEdge* const falseEdge = comp->fgAddRefPred(newBlk, insertAfter);
+            insertAfter->SetFalseEdge(falseEdge);
+            falseEdge->setLikelihood(fastLikelihood);
         }
 
         JITDUMP("Adding conditions to " FMT_BB "\n", newBlk->bbNum);
@@ -1351,7 +1371,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 LcMdArrayOptInfo* mdArrInfo = optInfo->AsLcMdArrayOptInfo();
                 LC_Array arrLen(LC_Array(LC_Array::MdArray, mdArrInfo->GetArrIndexForDim(getAllocator(CMK_LoopClone)),
                                          mdArrInfo->dim, LC_Array::None));
-                LC_Ident     arrLenIdent = LC_Ident::CreateArrAccess(arrLen);
+                LC_Ident arrLenIdent = LC_Ident::CreateArrAccess(arrLen);
                 LC_Condition cond(opLimitCondition, LC_Expr(ident), LC_Expr(arrLenIdent));
                 context->EnsureConditions(loop->GetIndex())->Push(cond);
 
@@ -1646,7 +1666,7 @@ void Compiler::optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore
 //      performs the optimizations assuming that the path in which the candidates
 //      were collected is the fast path in which the optimizations will be performed.
 //
-void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop* loop,
+void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
                                              LoopCloneContext* context DEBUGARG(bool dynamicPath))
 {
     JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loop->GetIndex());
@@ -1938,13 +1958,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // taking the max with the head block's weight.
     ambientWeight = max(ambientWeight, preheader->bbWeight);
 
-    // We assume that the fast path will run 99% of the time, and thus should get 99% of the block weights.
-    // The slow path will, correspondingly, get only 1% of the block weights. It could be argued that we should
-    // mark the slow path as "run rarely", since it really shouldn't execute (given the currently optimized loop
-    // conditions) except under exceptional circumstances.
-    const weight_t fastPathWeightScaleFactor = 0.99;
-    const weight_t slowPathWeightScaleFactor = 1.0 - fastPathWeightScaleFactor;
-
     // We're going to transform this loop:
     //
     // preheader --> header
@@ -1959,20 +1972,18 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // Make a new pre-header block for the fast loop.
     JITDUMP("Create new preheader block for fast loop\n");
 
-    BasicBlock* fastPreheader =
-        fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true, /*jumpDest*/ loop->GetHeader());
+    BasicBlock* fastPreheader = fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
-    fastPreheader->bbWeight = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-
-    if (fastPreheader->JumpsToNext())
-    {
-        fastPreheader->SetFlags(BBF_NONE_QUIRK);
-    }
+    fastPreheader->bbWeight = preheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    fastPreheader->CopyFlags(preheader, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
 
     assert(preheader->KindIs(BBJ_ALWAYS));
     assert(preheader->TargetIs(loop->GetHeader()));
 
-    fgReplacePred(loop->GetHeader(), preheader, fastPreheader);
+    FlowEdge* const oldEdge = preheader->GetTargetEdge();
+    fgReplacePred(oldEdge, fastPreheader);
+    fastPreheader->SetTargetEdge(oldEdge);
+
     JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", preheader->bbNum,
             loop->GetHeader()->bbNum, fastPreheader->bbNum, loop->GetHeader()->bbNum);
 
@@ -1998,18 +2009,19 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
     slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    slowPreheader->scaleBBWeight(slowPathWeightScaleFactor);
+    slowPreheader->CopyFlags(newPred, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
+    slowPreheader->scaleBBWeight(LoopCloneContext::slowPathWeightScaleFactor);
     newPred = slowPreheader;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
 
-    loop->Duplicate(&newPred, blockMap, slowPathWeightScaleFactor);
+    loop->Duplicate(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
 
     // Scale old blocks to the fast path weight.
     loop->VisitLoopBlocks([=](BasicBlock* block) {
-        block->scaleBBWeight(fastPathWeightScaleFactor);
+        block->scaleBBWeight(LoopCloneContext::fastPathWeightScaleFactor);
         return BasicBlockVisit::Continue;
     });
 
@@ -2039,9 +2051,12 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // We haven't set the jump target yet
     assert(slowPreheader->KindIs(BBJ_ALWAYS));
     assert(!slowPreheader->HasInitializedTarget());
-    slowPreheader->SetTarget(slowHeader);
 
-    fgAddRefPred(slowHeader, slowPreheader);
+    {
+        FlowEdge* const newEdge = fgAddRefPred(slowHeader, slowPreheader);
+        slowPreheader->SetTargetEdge(newEdge);
+    }
+
     JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", slowPreheader->bbNum, slowHeader->bbNum);
 
     BasicBlock* condLast = optInsertLoopChoiceConditions(context, loop, slowPreheader, preheader);
@@ -2049,14 +2064,18 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // Now redirect the old preheader to jump to the first new condition that
     // was inserted by the above function.
     assert(preheader->KindIs(BBJ_ALWAYS));
-    preheader->SetTarget(preheader->Next());
-    fgAddRefPred(preheader->Next(), preheader);
-    preheader->SetFlags(BBF_NONE_QUIRK);
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(preheader->Next(), preheader);
+        preheader->SetTargetEdge(newEdge);
+    }
 
     // And make sure we insert a pred link for the final fallthrough into the fast preheader.
     assert(condLast->NextIs(fastPreheader));
-    condLast->SetFalseTarget(fastPreheader);
-    fgAddRefPred(fastPreheader, condLast);
+    FlowEdge* const falseEdge = fgAddRefPred(fastPreheader, condLast);
+    condLast->SetFalseEdge(falseEdge);
+    FlowEdge* const trueEdge = condLast->GetTrueEdge();
+    falseEdge->setLikelihood(max(0.0, 1.0 - trueEdge->getLikelihood()));
 }
 
 //-------------------------------------------------------------------------
@@ -2955,19 +2974,19 @@ PhaseStatus Compiler::optCloneLoops()
 #endif
 #endif
 
-    assert(optLoopsCloned == 0); // It should be initialized, but not yet changed.
+    assert(Metrics.LoopsCloned == 0); // It should be initialized, but not yet changed.
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         if (context.GetLoopOptInfo(loop->GetIndex()) != nullptr)
         {
-            optLoopsCloned++;
+            Metrics.LoopsCloned++;
             context.OptimizeConditions(loop->GetIndex() DEBUGARG(verbose));
             context.OptimizeBlockConditions(loop->GetIndex() DEBUGARG(verbose));
             optCloneLoop(loop, &context);
         }
     }
 
-    if (optLoopsCloned > 0)
+    if (Metrics.LoopsCloned > 0)
     {
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
@@ -2986,7 +3005,7 @@ PhaseStatus Compiler::optCloneLoops()
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Loops cloned: %d\n", optLoopsCloned);
+        printf("Loops cloned: %d\n", Metrics.LoopsCloned);
         printf("Loops statically optimized: %d\n", optStaticallyOptimizedLoops);
         printf("After loop cloning:\n");
         fgDispBasicBlocks(/*dumpTrees*/ true);

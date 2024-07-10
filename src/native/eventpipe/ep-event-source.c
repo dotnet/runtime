@@ -48,6 +48,8 @@ const ep_char8_t* _ep_arch_info = "s390x";
 const ep_char8_t* _ep_arch_info = "loongarch64";
 #elif defined(TARGET_POWERPC64)
 const ep_char8_t* _ep_arch_info = "ppc64le";
+#elif defined(TARGET_RISCV64)
+const ep_char8_t* _ep_arch_info = "riscv64";
 #else
 const ep_char8_t* _ep_arch_info = "Unknown";
 #endif

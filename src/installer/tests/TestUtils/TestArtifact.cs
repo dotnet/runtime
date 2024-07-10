@@ -14,10 +14,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
     public class TestArtifact : IDisposable
     {
         private static readonly Lazy<bool> _preserveTestRuns = new Lazy<bool>(() =>
-            TestContext.GetTestContextVariableOrNull("PRESERVE_TEST_RUNS") == "1");
+            Environment.GetEnvironmentVariable("PRESERVE_TEST_RUNS") == "1");
 
         public static bool PreserveTestRuns() => _preserveTestRuns.Value;
-        public static string TestArtifactsPath => TestContext.TestArtifactsPath;
 
         public string Location { get; }
         public string Name { get; }
@@ -121,7 +120,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             Exception? lastException = null;
             for (int i = 0; i < 10; i++)
             {
-                var parentPath = Path.Combine(TestArtifactsPath, Path.GetRandomFileName());
+                var parentPath = Path.Combine(TestContext.TestArtifactsPath, Path.GetRandomFileName());
                 // Create a lock file next to the target folder
                 var lockPath = parentPath + ".lock";
                 var artifactPath = Path.Combine(parentPath, artifactName);

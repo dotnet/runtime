@@ -7,7 +7,7 @@
 // See DacEnumerableHash.h for a more detailed description.
 //
 
-#include "clr_std/type_traits"
+#include <type_traits>
 
 // Our implementation embeds entry data supplied by the hash sub-class into a larger entry structure
 // containing DacEnumerableHash metadata. We often end up returning pointers to the inner entry to sub-class code and
@@ -461,11 +461,6 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
 
 namespace HashTableDetail
 {
-    // Use the C++ detection idiom (https://isocpp.org/blog/2017/09/detection-idiom-a-stopgap-for-concepts-simon-brand) to call the
-    // derived table's EnumMemoryRegionsForEntry method if it defines one.
-    template <class... > struct make_void { using type = void; };
-    template <class... T> using void_t = typename make_void<T...>::type;
-
     template<typename B>
     struct negation : std::integral_constant<bool, !bool(B::value)> { };
     template <DAC_ENUM_HASH_PARAMS, typename = void>
@@ -540,7 +535,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseInitIterator(BaseIterator *
     LIMITED_METHOD_DAC_CONTRACT;
 
     pIterator->m_pTable = dac_cast<DPTR(DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>)>(this);
-    pIterator->m_pEntry = NULL;
+    pIterator->m_pEntry = (TADDR)0;
     //+2 to skip "length" and "next" slots
     pIterator->m_dwBucket = SKIP_SPECIAL_SLOTS;
 }
@@ -564,7 +559,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
 
     while (m_dwBucket < cBuckets + SKIP_SPECIAL_SLOTS)
     {
-        if (m_pEntry == NULL)
+        if (m_pEntry == (TADDR)0)
         {
             // This is our first lookup for a particular bucket, return the first
             // entry in that bucket.
@@ -583,7 +578,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
 
         // Otherwise we found the end of a bucket chain. Increment the current bucket and, if there are
         // buckets left to scan go back around again.
-        m_pEntry = NULL;
+        m_pEntry = (TADDR)0;
         m_dwBucket++;
     }
 

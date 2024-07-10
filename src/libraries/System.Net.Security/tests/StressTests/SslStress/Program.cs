@@ -67,6 +67,8 @@ namespace SslStress
                 Console.WriteLine();
 
                 client = new StressClient(config);
+
+                await client.InitializeAsync();
                 client.Start();
             }
 
@@ -74,13 +76,13 @@ namespace SslStress
 
             try
             {
-                if (client != null) 
+                if (client != null)
                 {
                     await client.StopAsync();
                     Console.WriteLine("client stopped");
                 }
 
-                if (server != null) 
+                if (server != null)
                 {
                     await server.StopAsync();
                     Console.WriteLine("server stopped");
@@ -113,7 +115,7 @@ namespace SslStress
             var cmd = new RootCommand();
             cmd.AddOption(new Option(new[] { "--help", "-h" }, "Display this help text."));
             cmd.AddOption(new Option(new[] { "--mode", "-m" }, "Stress suite execution mode. Defaults to 'both'.") { Argument = new Argument<RunMode>("runMode", RunMode.both) });
-            cmd.AddOption(new Option(new[] { "--cancellation-probability", "-p"}, "Cancellation probability 0 <= p <= 1 for a given connection. Defaults to 0.1") { Argument = new Argument<double>("probability", 0.1)});
+            cmd.AddOption(new Option(new[] { "--cancellation-probability", "-p" }, "Cancellation probability 0 <= p <= 1 for a given connection. Defaults to 0.1") { Argument = new Argument<double>("probability", 0.1) });
             cmd.AddOption(new Option(new[] { "--num-connections", "-n" }, "Max number of connections to open concurrently.") { Argument = new Argument<int>("connections", Environment.ProcessorCount) });
             cmd.AddOption(new Option(new[] { "--server-endpoint", "-e" }, "Endpoint to bind to if server, endpoint to listen to if client.") { Argument = new Argument<string>("ipEndpoint", "127.0.0.1:5002") });
             cmd.AddOption(new Option(new[] { "--max-execution-time", "-t" }, "Maximum stress suite execution time, in minutes. Defaults to infinity.") { Argument = new Argument<double?>("minutes", null) });
@@ -181,7 +183,7 @@ namespace SslStress
                     {
                         string hostname = match.Groups[1].Value;
                         int port = int.Parse(match.Groups[2].Value);
-                        switch(hostname)
+                        switch (hostname)
                         {
                             case "+":
                             case "*":

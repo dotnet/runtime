@@ -87,6 +87,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
         CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
         CORINFO_HELP_UNBOX,
+        CORINFO_HELP_UNBOX_TYPETEST,
         CORINFO_HELP_UNBOX_NULLABLE,    // special form of unboxing for Nullable<T>
         CORINFO_HELP_GETREFANY,         // Extract the byref from a TypedReference, checking that it is the expected type
 
@@ -138,7 +139,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP,  // Do the store, and ensure that the target was not in the heap.
 
         CORINFO_HELP_ASSIGN_BYREF,
-        CORINFO_HELP_ASSIGN_STRUCT,
+        CORINFO_HELP_BULK_WRITEBARRIER,
 
 
         /* Accessing fields */
@@ -170,29 +171,31 @@ namespace Internal.JitInterface
         // ICorClassInfo::getSharedStaticsOrCCtorHelper to determine which helper to use
 
         // Helpers for regular statics
-        CORINFO_HELP_GETGENERICS_GCSTATIC_BASE,
-        CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_GCSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,
-        CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,
-        CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS,
-        CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS,
-        // Helper to class initialize shared generic with dynamicclass, but not get static field address
-        CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS,
+        CORINFO_HELP_GET_GCSTATIC_BASE,
+        CORINFO_HELP_GET_NONGCSTATIC_BASE,
+        CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE,
+        CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE,
+        CORINFO_HELP_GETPINNED_GCSTATIC_BASE,
+        CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE,
+        CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR,
 
         // Helpers for thread statics
-        CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE,
-        CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR,
-        CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
-        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS,
-        CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS,
-        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
-        CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
-
+        CORINFO_HELP_GET_GCTHREADSTATIC_BASE,
+        CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE,
+        CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE,
+        CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE,
+        CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+        CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+        CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
         /* Debugger */
 
         CORINFO_HELP_DBG_IS_JUST_MY_CODE,    // Check if this is "JustMyCode" and needs to be stepped through.
@@ -214,7 +217,10 @@ namespace Internal.JitInterface
         CORINFO_HELP_INIT_PINVOKE_FRAME,   // initialize an inlined PInvoke Frame for the JIT-compiler
 
         CORINFO_HELP_MEMSET,                // Init block of memory
+        CORINFO_HELP_MEMZERO,               // Init block of memory with zeroes
         CORINFO_HELP_MEMCPY,                // Copy block of memory
+        CORINFO_HELP_NATIVE_MEMSET,         // Init block of memory using native memset (not safe for pDst being null,
+                                            // not safe for unbounded size, does not trigger GC)
 
         CORINFO_HELP_RUNTIMEHANDLE_METHOD,  // determine a type/field/method handle at run-time
         CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG, // determine a type/field/method handle at run-time, with IBC logging

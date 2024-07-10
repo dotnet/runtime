@@ -34,7 +34,7 @@ unsigned BasicBlock::s_nMaxTrees;
 FlowEdge* ShuffleHelper(unsigned hash, FlowEdge* res)
 {
     FlowEdge* head = res;
-    for (FlowEdge *prev = nullptr; res != nullptr; prev = res, res = res->getNextPredEdge())
+    for (FlowEdge* prev = nullptr; res != nullptr; prev = res, res = res->getNextPredEdge())
     {
         unsigned blkHash = (hash ^ (res->getSourceBlock()->bbNum << 16) ^ res->getSourceBlock()->bbNum);
         if (((blkHash % 1879) & 1) && prev != nullptr)
@@ -69,16 +69,85 @@ unsigned SsaStressHashHelper()
 #endif
 
 //------------------------------------------------------------------------
+// setLikelihood: set the likelihood of a flow edge
+//
+// Arguments:
+//   likelihood -- value in range [0.0, 1.0] indicating how likely
+//     the source block is to transfer control along this edge.
+//
+void FlowEdge::setLikelihood(weight_t likelihood)
+{
+    assert(likelihood >= 0.0);
+    assert(likelihood <= 1.0);
+
+#ifdef DEBUG
+    if (m_likelihoodSet)
+    {
+        JITDUMP("setting likelihood of " FMT_BB " -> " FMT_BB " from " FMT_WT " to " FMT_WT "\n", m_sourceBlock->bbNum,
+                m_destBlock->bbNum, m_likelihood, likelihood);
+    }
+    else
+    {
+        JITDUMP("setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT "\n", m_sourceBlock->bbNum,
+                m_destBlock->bbNum, likelihood);
+    }
+
+    m_likelihoodSet = true;
+#endif // DEBUG
+
+    m_likelihood = likelihood;
+}
+
+//------------------------------------------------------------------------
+// addLikelihood: adjust the likelihood of a flow edge
+//
+// Arguments:
+//   addedLikelihood -- value in range [-likelihood, 1.0 - likelihood]
+//     to add to current likelihood.
+//
+void FlowEdge::addLikelihood(weight_t addedLikelihood)
+{
+    assert(m_likelihoodSet);
+
+    weight_t newLikelihood = m_likelihood + addedLikelihood;
+
+    // Tolerate slight overflow or underflow
+    //
+    const weight_t eps = 0.0001;
+
+    if ((newLikelihood < 0) && (newLikelihood > -eps))
+    {
+        newLikelihood = 0.0;
+    }
+    else if ((newLikelihood > 1) && (newLikelihood < 1 + eps))
+    {
+        newLikelihood = 1.0;
+    }
+
+    assert(newLikelihood >= 0.0);
+    assert(newLikelihood <= 1.0);
+
+    JITDUMP("updating likelihood of " FMT_BB " -> " FMT_BB " from " FMT_WT " to " FMT_WT "\n", m_sourceBlock->bbNum,
+            m_destBlock->bbNum, m_likelihood, newLikelihood);
+
+    m_likelihood = newLikelihood;
+}
+
+//------------------------------------------------------------------------
 //  AllSuccessorEnumerator: Construct an instance of the enumerator.
 //
 //  Arguments:
-//     comp  - Compiler instance
-//     block - The block whose successors are to be iterated
+//     comp       - Compiler instance
+//     block      - The block whose successors are to be iterated
+//     useProfile - If true, determines the order of successors visited using profile data
 //
-AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
+AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile /* = false */)
+    : m_block(block)
 {
     m_numSuccs = 0;
-    block->VisitAllSuccs(comp, [this](BasicBlock* succ) {
+    block->VisitAllSuccs(
+        comp,
+        [this](BasicBlock* succ) {
         if (m_numSuccs < ArrLen(m_successors))
         {
             m_successors[m_numSuccs] = succ;
@@ -86,18 +155,22 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
 
         m_numSuccs++;
         return BasicBlockVisit::Continue;
-    });
+    },
+        useProfile);
 
     if (m_numSuccs > ArrLen(m_successors))
     {
         m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
 
         unsigned numSuccs = 0;
-        block->VisitAllSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
+        block->VisitAllSuccs(
+            comp,
+            [this, &numSuccs](BasicBlock* succ) {
             assert(numSuccs < m_numSuccs);
             m_pSuccessors[numSuccs++] = succ;
             return BasicBlockVisit::Continue;
-        });
+        },
+            useProfile);
 
         assert(numSuccs == m_numSuccs);
     }
@@ -521,7 +594,6 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_ALIGN, "has-align"},
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
-        {BBF_NONE_QUIRK, "q"},
     };
 
     bool first = true;
@@ -626,20 +698,33 @@ void BasicBlock::dspSuccs(Compiler* compiler)
 // things strictly.
 void BasicBlock::dspKind() const
 {
-    auto dspBlockNum = [](const BasicBlock* b) -> const char* {
+    auto dspBlockNum = [](const FlowEdge* e) -> const char* {
         static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
         static int  nextBufferIndex = 0;
 
-        auto& buffer    = buffers[nextBufferIndex];
-        nextBufferIndex = (nextBufferIndex + 1) % ArrLen(buffers);
+        auto& buffer              = buffers[nextBufferIndex];
+        nextBufferIndex           = (nextBufferIndex + 1) % ArrLen(buffers);
+        const size_t sizeOfBuffer = ArrLen(buffer);
+        int          written;
 
+        const BasicBlock* b = e->getDestinationBlock();
         if (b == nullptr)
         {
-            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), "NULL");
+            written = _snprintf_s(buffer, sizeOfBuffer, sizeOfBuffer, "NULL");
         }
         else
         {
-            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), FMT_BB, b->bbNum);
+            written = _snprintf_s(buffer, sizeOfBuffer, sizeOfBuffer, FMT_BB, b->bbNum);
+        }
+
+        const bool printEdgeLikelihoods = true; // TODO: parameterize this?
+        if (printEdgeLikelihoods)
+        {
+            if (e->hasLikelihood())
+            {
+                written = _snprintf_s(buffer + written, sizeOfBuffer - written, sizeOfBuffer - written, "(" FMT_WT ")",
+                                      e->getLikelihood());
+            }
         }
 
         return buffer;
@@ -658,8 +743,8 @@ void BasicBlock::dspKind() const
             }
             else
             {
-                const unsigned     jumpCnt = bbEhfTargets->bbeCount;
-                BasicBlock** const jumpTab = bbEhfTargets->bbeSuccs;
+                const unsigned   jumpCnt = bbEhfTargets->bbeCount;
+                FlowEdge** const jumpTab = bbEhfTargets->bbeSuccs;
 
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
@@ -676,11 +761,11 @@ void BasicBlock::dspKind() const
             break;
 
         case BBJ_EHFILTERRET:
-            printf(" -> %s (fltret)", dspBlockNum(bbTarget));
+            printf(" -> %s (fltret)", dspBlockNum(GetTargetEdge()));
             break;
 
         case BBJ_EHCATCHRET:
-            printf(" -> %s (cret)", dspBlockNum(bbTarget));
+            printf(" -> %s (cret)", dspBlockNum(GetTargetEdge()));
             break;
 
         case BBJ_THROW:
@@ -694,36 +779,36 @@ void BasicBlock::dspKind() const
         case BBJ_ALWAYS:
             if (HasFlag(BBF_KEEP_BBJ_ALWAYS))
             {
-                printf(" -> %s (ALWAYS)", dspBlockNum(bbTarget));
+                printf(" -> %s (ALWAYS)", dspBlockNum(GetTargetEdge()));
             }
             else
             {
-                printf(" -> %s (always)", dspBlockNum(bbTarget));
+                printf(" -> %s (always)", dspBlockNum(GetTargetEdge()));
             }
             break;
 
         case BBJ_LEAVE:
-            printf(" -> %s (leave)", dspBlockNum(bbTarget));
+            printf(" -> %s (leave)", dspBlockNum(GetTargetEdge()));
             break;
 
         case BBJ_CALLFINALLY:
-            printf(" -> %s (callf)", dspBlockNum(bbTarget));
+            printf(" -> %s (callf)", dspBlockNum(GetTargetEdge()));
             break;
 
         case BBJ_CALLFINALLYRET:
-            printf(" -> %s (callfr)", dspBlockNum(bbTarget));
+            printf(" -> %s (callfr)", dspBlockNum(GetTargetEdge()));
             break;
 
         case BBJ_COND:
-            printf(" -> %s,%s (cond)", dspBlockNum(bbTrueTarget), dspBlockNum(bbFalseTarget));
+            printf(" -> %s,%s (cond)", dspBlockNum(GetTrueEdge()), dspBlockNum(GetFalseEdge()));
             break;
 
         case BBJ_SWITCH:
         {
             printf(" ->");
 
-            const unsigned     jumpCnt = bbSwtTargets->bbsCount;
-            BasicBlock** const jumpTab = bbSwtTargets->bbsDstTab;
+            const unsigned   jumpCnt = bbSwtTargets->bbsCount;
+            FlowEdge** const jumpTab = bbSwtTargets->bbsDstTab;
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
@@ -824,7 +909,6 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
     to->bbStkDepth    = from->bbStkDepth;
     to->bbCodeOffs    = from->bbCodeOffs;
     to->bbCodeOffsEnd = from->bbCodeOffsEnd;
-    VarSetOps::AssignAllowUninitRhs(compiler, to->bbScope, from->bbScope);
 #ifdef DEBUG
     to->bbTgtStkDepth = from->bbTgtStkDepth;
 #endif // DEBUG
@@ -857,22 +941,24 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             SetEhf(from->GetEhfTargets());
             from->bbEhfTargets = nullptr; // Make sure nobody uses the descriptor after this.
             break;
+
+        // TransferTarget may be called after setting the source block of `from`'s
+        // successor edges to this block.
+        // This means calling GetTarget/GetTrueTarget/GetFalseTarget would trigger asserts.
+        // Avoid this by accessing the edges directly.
         case BBJ_COND:
-            SetCond(from->GetTrueTarget(), from->GetFalseTarget());
+            SetCond(from->bbTrueEdge, from->bbFalseEdge);
             break;
         case BBJ_ALWAYS:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
-            CopyFlags(from, BBF_NONE_QUIRK);
-            break;
         case BBJ_CALLFINALLY:
         case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
+            SetKindAndTargetEdge(from->GetKind(), from->bbTargetEdge);
             break;
         default:
-            SetKindAndTarget(from->GetKind()); // Clear the target
+            SetKindAndTargetEdge(from->GetKind()); // Clear the target
             break;
     }
     assert(KindIs(from->GetKind()));
@@ -985,7 +1071,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 //
 BasicBlock* BasicBlock::GetUniqueSucc() const
 {
-    return KindIs(BBJ_ALWAYS) ? bbTarget : nullptr;
+    return KindIs(BBJ_ALWAYS) ? GetTarget() : nullptr;
 }
 
 // Static vars.
@@ -1145,7 +1231,7 @@ unsigned BasicBlock::NumSucc() const
             return 1;
 
         case BBJ_COND:
-            if (bbTrueTarget == bbFalseTarget)
+            if (bbTrueEdge == bbFalseEdge)
             {
                 return 1;
             }
@@ -1180,15 +1266,15 @@ unsigned BasicBlock::NumSucc() const
 }
 
 //------------------------------------------------------------------------
-// GetSucc: Returns the requested block successor. See the declaration comment for details.
+// GetSucc: Returns the requested successor edge. See the declaration comment for details.
 //
 // Arguments:
 //    i - index of successor to return. 0 <= i <= NumSucc().
 //
 // Return Value:
-//    Requested successor block
+//    Requested successor edge
 //
-BasicBlock* BasicBlock::GetSucc(unsigned i) const
+FlowEdge* BasicBlock::GetSuccEdge(unsigned i) const
 {
     assert(i < NumSucc()); // Index bounds check.
     switch (bbKind)
@@ -1199,18 +1285,18 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            return bbTarget;
+            return GetTargetEdge();
 
         case BBJ_COND:
             if (i == 0)
             {
-                return bbFalseTarget;
+                return GetFalseEdge();
             }
             else
             {
                 assert(i == 1);
-                assert(bbFalseTarget != bbTrueTarget);
-                return bbTrueTarget;
+                assert(bbTrueEdge != bbFalseEdge);
+                return GetTrueEdge();
             }
 
         case BBJ_EHFINALLYRET:
@@ -1222,6 +1308,20 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// GetSucc: Returns the requested block successor. See the declaration comment for details.
+//
+// Arguments:
+//    i - index of successor to return. 0 <= i <= NumSucc().
+//
+// Return Value:
+//    Requested successor block
+//
+BasicBlock* BasicBlock::GetSucc(unsigned i) const
+{
+    return GetSuccEdge(i)->getDestinationBlock();
 }
 
 //------------------------------------------------------------------------
@@ -1270,7 +1370,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             return 1;
 
         case BBJ_COND:
-            if (bbTrueTarget == bbFalseTarget)
+            if (bbTrueEdge == bbFalseEdge)
             {
                 return 1;
             }
@@ -1291,16 +1391,16 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
 }
 
 //------------------------------------------------------------------------
-// GetSucc: Returns the requested block successor. See the declaration comment for details.
+// GetSucc: Returns the requested successor edge. See the declaration comment for details.
 //
 // Arguments:
 //    i - index of successor to return. 0 <= i <= NumSucc(comp).
 //    comp - Compiler instance
 //
 // Return Value:
-//    Requested successor block
+//    Requested successor edge
 //
-BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
+FlowEdge* BasicBlock::GetSuccEdge(unsigned i, Compiler* comp)
 {
     assert(comp != nullptr);
 
@@ -1309,8 +1409,8 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
     {
         case BBJ_EHFILTERRET:
             // Handler is the (sole) normal successor of the filter.
-            assert(comp->fgFirstBlockOfHandler(this) == bbTarget);
-            return bbTarget;
+            assert(comp->fgFirstBlockOfHandler(this) == GetTarget());
+            return GetTargetEdge();
 
         case BBJ_EHFINALLYRET:
             assert(bbEhfTargets != nullptr);
@@ -1322,18 +1422,18 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_LEAVE:
-            return bbTarget;
+            return GetTargetEdge();
 
         case BBJ_COND:
             if (i == 0)
             {
-                return bbFalseTarget;
+                return GetFalseEdge();
             }
             else
             {
                 assert(i == 1);
-                assert(bbFalseTarget != bbTrueTarget);
-                return bbTrueTarget;
+                assert(bbTrueEdge != bbFalseEdge);
+                return GetTrueEdge();
             }
 
         case BBJ_SWITCH:
@@ -1348,13 +1448,27 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
     }
 }
 
+//------------------------------------------------------------------------
+// GetSucc: Returns the requested block successor. See the declaration comment for details.
+//
+// Arguments:
+//    i - index of successor to return. 0 <= i <= NumSucc(comp).
+//    comp - Compiler instance
+//
+// Return Value:
+//    Requested successor block
+//
+BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
+{
+    return GetSuccEdge(i, comp)->getDestinationBlock();
+}
+
 void BasicBlock::InitVarSets(Compiler* comp)
 {
     VarSetOps::AssignNoCopy(comp, bbVarUse, VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbVarDef, VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbLiveIn, VarSetOps::MakeEmpty(comp));
     VarSetOps::AssignNoCopy(comp, bbLiveOut, VarSetOps::MakeEmpty(comp));
-    VarSetOps::AssignNoCopy(comp, bbScope, VarSetOps::MakeEmpty(comp));
 
     bbMemoryUse     = emptyMemoryKindSet;
     bbMemoryDef     = emptyMemoryKindSet;
@@ -1556,7 +1670,6 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
         VarSetOps::AssignNoCopy(compiler, block->bbVarDef, VarSetOps::MakeEmpty(compiler));
         VarSetOps::AssignNoCopy(compiler, block->bbLiveIn, VarSetOps::MakeEmpty(compiler));
         VarSetOps::AssignNoCopy(compiler, block->bbLiveOut, VarSetOps::MakeEmpty(compiler));
-        VarSetOps::AssignNoCopy(compiler, block->bbScope, VarSetOps::MakeEmpty(compiler));
     }
     else
     {
@@ -1564,7 +1677,6 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
         VarSetOps::AssignNoCopy(compiler, block->bbVarDef, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(compiler, block->bbLiveIn, VarSetOps::UninitVal());
         VarSetOps::AssignNoCopy(compiler, block->bbLiveOut, VarSetOps::UninitVal());
-        VarSetOps::AssignNoCopy(compiler, block->bbScope, VarSetOps::UninitVal());
     }
 
     block->bbMemoryUse     = emptyMemoryKindSet;
@@ -1585,15 +1697,10 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind, BasicBlock* target /* = nullptr */)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind)
 {
     BasicBlock* block = BasicBlock::New(compiler);
-
-    // In some cases, we don't know a block's jump target during initialization, so don't check the jump kind/target
-    // yet.
-    // The checks will be done any time the jump kind/target is read or written to after initialization.
-    block->bbKind   = kind;
-    block->bbTarget = target;
+    block->bbKind     = kind;
 
     if (block->KindIs(BBJ_THROW))
     {
@@ -1708,9 +1815,7 @@ bool BasicBlock::hasEHBoundaryIn() const
     bool returnVal = (bbCatchTyp != BBCT_NONE);
     if (!returnVal)
     {
-#if FEATURE_EH_FUNCLETS
         assert(!HasFlag(BBF_FUNCLET_BEG));
-#endif // FEATURE_EH_FUNCLETS
     }
     return returnVal;
 }
@@ -1729,16 +1834,7 @@ bool BasicBlock::hasEHBoundaryIn() const
 //
 bool BasicBlock::hasEHBoundaryOut() const
 {
-    bool returnVal = KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET);
-
-#if FEATURE_EH_FUNCLETS
-    if (bbKind == BBJ_EHCATCHRET)
-    {
-        returnVal = true;
-    }
-#endif // FEATURE_EH_FUNCLETS
-
-    return returnVal;
+    return KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHCATCHRET);
 }
 
 //------------------------------------------------------------------------
@@ -1774,7 +1870,7 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
 {
     // Allocate and fill in a new dst tab
     //
-    bbsDstTab = new (comp, CMK_BasicBlock) BasicBlock*[bbsCount];
+    bbsDstTab = new (comp, CMK_FlowEdge) FlowEdge*[bbsCount];
     for (unsigned i = 0; i < bbsCount; i++)
     {
         bbsDstTab[i] = other->bbsDstTab[i];
@@ -1788,11 +1884,12 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
 //    comp - compiler instance
 //    other - existing descriptor to copy
 //
-BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other) : bbeCount(other->bbeCount)
+BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other)
+    : bbeCount(other->bbeCount)
 {
     // Allocate and fill in a new dst tab
     //
-    bbeSuccs = new (comp, CMK_BasicBlock) BasicBlock*[bbeCount];
+    bbeSuccs = new (comp, CMK_FlowEdge) FlowEdge*[bbeCount];
     for (unsigned i = 0; i < bbeCount; i++)
     {
         bbeSuccs[i] = other->bbeSuccs[i];

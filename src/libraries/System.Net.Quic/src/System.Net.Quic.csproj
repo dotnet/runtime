@@ -20,15 +20,12 @@
     <UseQuicTransportPackage  Condition="'$(UseQuicTransportPackage)' == ''">false</UseQuicTransportPackage>
   </PropertyGroup>
 
-  <ItemGroup>
-    <AssemblyAttribute Include="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
-  </ItemGroup>
-
   <!-- Source files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\Quic\**\*.cs" Exclude="System\Net\Quic\*.Unsupported.cs"/>
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)System\Net\SafeHandleCache.cs" Link="Common\System\Net\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
@@ -38,6 +35,7 @@
     <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs" Link="Common\System\Net\Security\TlsAlertMessage.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TargetHostNameHelper.cs" Link="Common\System\Net\Security\TargetHostNameHelper.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SslKeyLogger.cs" Link="Common\System\Net\Security\SslKeyLogger.cs" />
     <!-- IP parser -->
     <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs" Link="System\Net\IPv4AddressHelper.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs" Link="System\Net\IPv6AddressHelper.Common.cs" />
@@ -46,10 +44,6 @@
   <!-- Unsupported platforms -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
     <Compile Include="System\Net\Quic\*.Unsupported.cs" />
-    <!-- [ActiveIssue("https://github.com/dotnet/runtime/issues/71559")]: PNSE generator cannot handle required keyword, so excluding affected classes in ExcludeApiList.PNSE.txt and including real code for now. -->
-    <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
-    <Compile Include="System\Net\Quic\QuicConnectionOptions.cs" />
-    <Compile Include="System\Net\Quic\QuicDefaults.cs" />
   </ItemGroup>
 
   <!-- Windows specific files -->
@@ -131,6 +125,7 @@
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
+    <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />
@@ -171,7 +166,7 @@
                       GeneratePathProperty="true" />
 
     <PackageReference Include="Microsoft.Native.Quic.MsQuic.Schannel"
-                      Version="$(MicrosoftNativeQuicMsQuicVersion)"
+                      Version="$(MicrosoftNativeQuicMsQuicSchannelVersion)"
                       PrivateAssets="all"
                       Condition="'$(UseQuicTransportPackage)' != 'true'"
                       GeneratePathProperty="true" />

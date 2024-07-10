@@ -127,6 +127,7 @@ namespace System.Runtime.InteropServices
 
             unsafe
             {
+                // Unsafe.AsPointer calls are safe since object is pinned.
                 if (RuntimeHelpers.ObjectHasComponentSize(target))
                 {
                     if (target.GetType() == typeof(string))

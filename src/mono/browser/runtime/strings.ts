@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import WasmEnableThreads from "consts:wasmEnableThreads";
+
 import { mono_wasm_new_root, mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
 import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16, _zero_region } from "./memory";
-import { NativePointer, CharPtr } from "./types/emscripten";
+import { NativePointer, CharPtr, VoidPtr } from "./types/emscripten";
 
 export const interned_js_string_table = new Map<string, MonoString>();
 export const mono_wasm_empty_string = "";
@@ -21,7 +23,7 @@ let _text_decoder_utf8_relaxed: TextDecoder | undefined = undefined;
 let _text_decoder_utf8_validating: TextDecoder | undefined = undefined;
 let _text_encoder_utf8: TextEncoder | undefined = undefined;
 
-export function strings_init(): void {
+export function strings_init (): void {
     if (!mono_wasm_string_decoder_buffer) {
         if (typeof TextDecoder !== "undefined") {
             _text_decoder_utf16 = new TextDecoder("utf-16le");
@@ -35,37 +37,38 @@ export function strings_init(): void {
         mono_wasm_string_root = mono_wasm_new_root();
 }
 
-export function stringToUTF8(str: string): Uint8Array {
+export function stringToUTF8 (str: string): Uint8Array {
     if (_text_encoder_utf8 === undefined) {
-        const buffer = new Uint8Array(str.length * 2);
-        Module.stringToUTF8Array(str, buffer, 0, str.length * 2);
+        const len = Module.lengthBytesUTF8(str);
+        const buffer = new Uint8Array(len);
+        Module.stringToUTF8Array(str, buffer, 0, len);
         return buffer;
     }
     return _text_encoder_utf8.encode(str);
 }
 
-export function stringToUTF8Ptr(str: string): CharPtr {
-    const bytes = str.length * 2;
-    const ptr = Module._malloc(bytes) as any;
-    _zero_region(ptr, str.length * 2);
-    const buffer = localHeapViewU8().subarray(ptr, ptr + bytes);
-    buffer.set(stringToUTF8(str));
+export function stringToUTF8Ptr (str: string): CharPtr {
+    const size = Module.lengthBytesUTF8(str) + 1;
+    const ptr = Module._malloc(size) as any;
+    const buffer = localHeapViewU8().subarray(ptr, ptr + size);
+    Module.stringToUTF8Array(str, buffer, 0, size);
+    buffer[size - 1] = 0;
     return ptr;
 }
 
-export function utf8ToStringRelaxed(buffer: Uint8Array): string {
+export function utf8ToStringRelaxed (buffer: Uint8Array): string {
     if (_text_decoder_utf8_relaxed === undefined) {
         return Module.UTF8ArrayToString(buffer, 0, buffer.byteLength);
     }
     return _text_decoder_utf8_relaxed.decode(buffer);
 }
 
-export function utf8ToString(ptr: CharPtr): string {
+export function utf8ToString (ptr: CharPtr): string {
     const heapU8 = localHeapViewU8();
     return utf8BufferToString(heapU8, ptr as any, heapU8.length - (ptr as any));
 }
 
-export function utf8BufferToString(heapOrArray: Uint8Array, idx: number, maxBytesToRead: number): string {
+export function utf8BufferToString (heapOrArray: Uint8Array, idx: number, maxBytesToRead: number): string {
     const endIdx = idx + maxBytesToRead;
     let endPtr = idx;
     while (heapOrArray[endPtr] && !(endPtr >= endIdx)) ++endPtr;
@@ -79,7 +82,7 @@ export function utf8BufferToString(heapOrArray: Uint8Array, idx: number, maxByte
     return _text_decoder_utf8_validating.decode(view);
 }
 
-export function utf16ToString(startPtr: number, endPtr: number): string {
+export function utf16ToString (startPtr: number, endPtr: number): string {
     if (_text_decoder_utf16) {
         const subArray = viewOrCopy(localHeapViewU8(), startPtr as any, endPtr as any);
         return _text_decoder_utf16.decode(subArray);
@@ -88,7 +91,7 @@ export function utf16ToString(startPtr: number, endPtr: number): string {
     }
 }
 
-export function utf16ToStringLoop(startPtr: number, endPtr: number): string {
+export function utf16ToStringLoop (startPtr: number, endPtr: number): string {
     let str = "";
     const heapU16 = localHeapViewU16();
     for (let i = startPtr; i < endPtr; i += 2) {
@@ -98,7 +101,7 @@ export function utf16ToStringLoop(startPtr: number, endPtr: number): string {
     return str;
 }
 
-export function stringToUTF16(dstPtr: number, endPtr: number, text: string) {
+export function stringToUTF16 (dstPtr: number, endPtr: number, text: string) {
     const heapI16 = localHeapViewU16();
     const len = text.length;
     for (let i = 0; i < len; i++) {
@@ -108,7 +111,20 @@ export function stringToUTF16(dstPtr: number, endPtr: number, text: string) {
     }
 }
 
-export function monoStringToString(root: WasmRoot<MonoString>): string | null {
+export function stringToUTF16Ptr (str: string): VoidPtr {
+    const bytes = (str.length + 1) * 2;
+    const ptr = Module._malloc(bytes) as any;
+    _zero_region(ptr, str.length * 2);
+    stringToUTF16(ptr, ptr + bytes, str);
+    return ptr;
+
+}
+
+export function monoStringToString (root: WasmRoot<MonoString>): string | null {
+    // TODO https://github.com/dotnet/runtime/issues/100411
+    // after Blazor stops using monoStringToStringUnsafe
+    // mono_assert(!WasmEnableThreads, "Marshaling strings by reference is not supported in multithreaded mode");
+
     if (root.value === MonoStringNull)
         return null;
 
@@ -142,7 +158,8 @@ export function monoStringToString(root: WasmRoot<MonoString>): string | null {
     return result;
 }
 
-export function stringToMonoStringRoot(string: string, result: WasmRoot<MonoString>): void {
+export function stringToMonoStringRoot (string: string, result: WasmRoot<MonoString>): void {
+    if (WasmEnableThreads) return;
     result.clear();
 
     if (string === null)
@@ -171,7 +188,7 @@ export function stringToMonoStringRoot(string: string, result: WasmRoot<MonoStri
     }
 }
 
-export function stringToInternedMonoStringRoot(string: string | symbol, result: WasmRoot<MonoString>): void {
+function stringToInternedMonoStringRoot (string: string | symbol, result: WasmRoot<MonoString>): void {
     let text: string | undefined;
     if (typeof (string) === "symbol") {
         text = string.description;
@@ -204,7 +221,7 @@ export function stringToInternedMonoStringRoot(string: string | symbol, result: 
     storeStringInInternTable(text, result, true);
 }
 
-function storeStringInInternTable(string: string, root: WasmRoot<MonoString>, internIt: boolean): void {
+function storeStringInInternTable (string: string, root: WasmRoot<MonoString>, internIt: boolean): void {
     if (!root.value)
         throw new Error("null pointer passed to _store_string_in_intern_table");
 
@@ -242,8 +259,11 @@ function storeStringInInternTable(string: string, root: WasmRoot<MonoString>, in
     rootBuffer.copy_value_from_address(index, root.address);
 }
 
-function stringToMonoStringNewRoot(string: string, result: WasmRoot<MonoString>): void {
+function stringToMonoStringNewRoot (string: string, result: WasmRoot<MonoString>): void {
     const bufferLen = (string.length + 1) * 2;
+    // TODO this could be stack allocated for small strings
+    // or temp_malloc/alloca for large strings
+    // or skip the scratch buffer entirely, and make a new MonoString of size string.length, pin it, and then call stringToUTF16 to write directly into the MonoString's chars
     const buffer = Module._malloc(bufferLen);
     stringToUTF16(buffer as any, buffer as any + bufferLen, string);
     cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);
@@ -253,7 +273,7 @@ function stringToMonoStringNewRoot(string: string, result: WasmRoot<MonoString>)
 // When threading is enabled, TextDecoder does not accept a view of a
 // SharedArrayBuffer, we must make a copy of the array first.
 // See https://github.com/whatwg/encoding/issues/172
-export function viewOrCopy(view: Uint8Array, start: CharPtr, end: CharPtr): Uint8Array {
+export function viewOrCopy (view: Uint8Array, start: CharPtr, end: CharPtr): Uint8Array {
     // this condition should be eliminated by rollup on non-threading builds
     const needsCopy = isSharedArrayBuffer(view.buffer);
     return needsCopy
@@ -265,7 +285,7 @@ export function viewOrCopy(view: Uint8Array, start: CharPtr, end: CharPtr): Uint
 let mono_wasm_string_root: any;
 
 /* @deprecated not GC safe, use monoStringToString */
-export function monoStringToStringUnsafe(mono_string: MonoString): string | null {
+export function monoStringToStringUnsafe (mono_string: MonoString): string | null {
     if (mono_string === MonoStringNull)
         return null;
 

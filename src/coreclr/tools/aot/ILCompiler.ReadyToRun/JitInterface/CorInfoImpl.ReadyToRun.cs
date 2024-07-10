@@ -96,7 +96,7 @@ namespace Internal.JitInterface
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.GetMangledFieldName(Field));
-            sb.Append("; ");
+            sb.Append("; "u8);
             sb.Append(Token.ToString());
         }
 
@@ -336,19 +336,19 @@ namespace Internal.JitInterface
             sb.Append(nameMangler.GetMangledMethodName(Method));
             if (ConstrainedType != null)
             {
-                sb.Append(" @ ");
+                sb.Append(" @ "u8);
                 sb.Append(nameMangler.GetMangledTypeName(ConstrainedType));
             }
-            sb.Append("; ");
+            sb.Append("; "u8);
             sb.Append(Token.ToString());
             if (OwningTypeNotDerivedFromToken)
             {
-                sb.Append("; OWNINGTYPE");
+                sb.Append("; OWNINGTYPE"u8);
                 sb.Append(nameMangler.GetMangledTypeName(OwningType));
-                sb.Append("; ");
+                sb.Append("; "u8);
             }
             if (Unboxing)
-                sb.Append("; UNBOXING");
+                sb.Append("; UNBOXING"u8);
         }
 
         public override string ToString()
@@ -456,7 +456,7 @@ namespace Internal.JitInterface
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
 
-        private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate::m_functionPointer
+        private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate._methodPtr
 
         private readonly ReadyToRunCodegenCompilation _compilation;
         private MethodWithGCInfo _methodCodeNode;
@@ -827,7 +827,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
+        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
         {
             switch (id)
             {
@@ -913,7 +913,7 @@ namespace Internal.JitInterface
                             helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
                         }
 
-                        GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
+                        var methodContext = new GenericContext(HandleToObject(callerHandle));
                         ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
                             pGenericLookupKind.runtimeLookupKind,
                             helperId,
@@ -928,13 +928,13 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup)
+        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP pLookup)
         {
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
             fixed (CORINFO_LOOKUP* tmp = &pLookup)
-                MemoryHelper.FillMemory((byte*)tmp, 0xcc, sizeof(CORINFO_LOOKUP));
+                NativeMemory.Fill(tmp, (nuint)sizeof(CORINFO_LOOKUP), 0xcc);
 #endif
 
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
@@ -958,6 +958,7 @@ namespace Internal.JitInterface
                 unboxing: false,
                 context: typeOrMethodContext);
 
+            // runtime lookup is not needed, callerHandle is unused
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
         }
@@ -999,6 +1000,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
                     id = ReadyToRunHelper.ByRefWriteBarrier;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
+                    id = ReadyToRunHelper.BulkWriteBarrier;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST:
                     id = ReadyToRunHelper.Stelem_Ref;
@@ -1008,19 +1012,19 @@ namespace Internal.JitInterface
                     break;
 
 
-                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_GET_GCSTATIC_BASE:
                     id = ReadyToRunHelper.GenericGcStaticBase;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_GET_NONGCSTATIC_BASE:
                     id = ReadyToRunHelper.GenericNonGcStaticBase;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
                     id = ReadyToRunHelper.GenericGcTlsBase;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
                     id = ReadyToRunHelper.GenericNonGcTlsBase;
                     break;
 
@@ -1028,8 +1032,14 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_MEMSET:
                     id = ReadyToRunHelper.MemSet;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_MEMZERO:
+                    id = ReadyToRunHelper.MemZero;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_MEMCPY:
                     id = ReadyToRunHelper.MemCpy;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_NATIVE_MEMSET:
+                    id = ReadyToRunHelper.NativeMemSet;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD:
@@ -1653,7 +1663,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            MemoryHelper.FillMemory((byte*)pResult, 0xcc, Marshal.SizeOf<CORINFO_FIELD_INFO>());
+            NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_FIELD_INFO), 0xcc);
 #endif
 
             Debug.Assert(((int)flags & ((int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET |
@@ -1704,14 +1714,14 @@ namespace Internal.JitInterface
                     if (field.IsThreadStatic)
                     {
                         pResult->helper = (field.HasGCStaticBase ?
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE :
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE);
+                            CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE :
+                            CorInfoHelpFunc.CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE);
                     }
                     else
                     {
                         pResult->helper = (field.HasGCStaticBase ?
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE :
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE);
+                            CorInfoHelpFunc.CORINFO_HELP_GET_GCSTATIC_BASE :
+                            CorInfoHelpFunc.CORINFO_HELP_GET_NONGCSTATIC_BASE);
                     }
 
                     if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))
@@ -1837,7 +1847,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            MemoryHelper.FillMemory((byte*)pResult, 0xcc, Marshal.SizeOf<CORINFO_CALL_INFO>());
+            NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_CALL_INFO), 0xcc);
 #endif
             pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
 
@@ -2179,7 +2189,7 @@ namespace Internal.JitInterface
                             useInstantiatingStub = true;
                         }
 
-                        ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, ref pResult->codePointerOrStubLookup);
+                        ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
                     }
                 }
                 else
@@ -2269,7 +2279,7 @@ namespace Internal.JitInterface
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
-                    ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.DispatchStubAddrSlot, ref pResolvedToken, null, originalMethod, ref pResult->codePointerOrStubLookup);
+                    ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.DispatchStubAddrSlot, ref pResolvedToken, null, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
                 }
                 else
                 {
@@ -2552,8 +2562,11 @@ namespace Internal.JitInterface
             ref CORINFO_RESOLVED_TOKEN pResolvedToken,
             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
             MethodDesc templateMethod,
+            MethodDesc callerHandle,
             ref CORINFO_LOOKUP pResultLookup)
         {
+            Debug.Assert(callerHandle != null);
+
             pResultLookup.lookupKind.needsRuntimeLookup = true;
             pResultLookup.lookupKind.runtimeLookupFlags = 0;
 
@@ -2567,15 +2580,7 @@ namespace Internal.JitInterface
             pResult.indirections = CORINFO.USEHELPER;
             pResult.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
 
-            // Runtime lookups in inlined contexts are not supported by the runtime for now
-            if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
-            {
-                pResultLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
-                return;
-            }
-
-            MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-            TypeDesc contextType = typeFromContext(pResolvedToken.tokenContext);
+            MethodDesc contextMethod = callerHandle;
 
             // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
             if (!contextMethod.IsSharedByGenericInstantiations)
@@ -2637,13 +2642,13 @@ namespace Internal.JitInterface
             // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
         }
 
-        private void ceeInfoEmbedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        private void ceeInfoEmbedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
             fixed (CORINFO_GENERICHANDLE_RESULT* tmp = &pResult)
-                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_GENERICHANDLE_RESULT>());
+                NativeMemory.Fill(tmp, (nuint)sizeof(CORINFO_GENERICHANDLE_RESULT), 0xcc);
 #endif
 
             bool runtimeLookup = false;
@@ -2721,7 +2726,7 @@ namespace Internal.JitInterface
                         throw new NotImplementedException(pResult.handleType.ToString());
                 }
 
-                ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken: null, templateMethod, ref pResult.lookup);
+                ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken: null, templateMethod, HandleToObject(callerHandle), ref pResult.lookup);
             }
             else
             {
@@ -2746,9 +2751,9 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
-            ceeInfoEmbedGenericHandle(ref pResolvedToken, fEmbedParent, ref pResult);
+            ceeInfoEmbedGenericHandle(ref pResolvedToken, fEmbedParent, callerHandle, ref pResult);
 
             Debug.Assert(pResult.compileTimeHandle != null);
 
@@ -2951,7 +2956,7 @@ namespace Internal.JitInterface
 
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
         { throw new NotImplementedException("getMethodVTableOffset"); }
-        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         { throw new NotImplementedException("expandRawHandleIntrinsic"); }
 
         private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
@@ -3278,7 +3283,7 @@ namespace Internal.JitInterface
         private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
         {
             // Not implemented for R2R yet
-            return 0;
+            return -1;
         }
 
         private bool getStaticFieldContent(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)

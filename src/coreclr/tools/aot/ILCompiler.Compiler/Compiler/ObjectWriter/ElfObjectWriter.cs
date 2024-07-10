@@ -35,6 +35,7 @@ namespace ILCompiler.ObjectWriter
     {
         private readonly bool _useInlineRelocationAddends;
         private readonly ushort _machine;
+        private readonly bool _useSoftFPAbi;
         private readonly List<ElfSectionDefinition> _sections = new();
         private readonly List<ElfSymbol> _symbols = new();
         private uint _localSymbolCount;
@@ -47,6 +48,7 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection ArmUnwindIndexSection = new ObjectNodeSection(".ARM.exidx", SectionType.UnwindData);
         private static readonly ObjectNodeSection ArmUnwindTableSection = new ObjectNodeSection(".ARM.extab", SectionType.ReadOnly);
         private static readonly ObjectNodeSection ArmAttributesSection = new ObjectNodeSection(".ARM.attributes", SectionType.ReadOnly);
+        private static readonly ObjectNodeSection ArmTextThunkSection = new ObjectNodeSection(".text.thunks", SectionType.Executable);
 
         public ElfObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
@@ -57,9 +59,11 @@ namespace ILCompiler.ObjectWriter
                 TargetArchitecture.X64 => EM_X86_64,
                 TargetArchitecture.ARM => EM_ARM,
                 TargetArchitecture.ARM64 => EM_AARCH64,
+                TargetArchitecture.LoongArch64 => EM_LOONGARCH,
                 _ => throw new NotSupportedException("Unsupported architecture")
             };
             _useInlineRelocationAddends = _machine is EM_386 or EM_ARM;
+            _useSoftFPAbi = _machine is EM_ARM && factory.Target.Abi == TargetAbi.NativeAotArmel;
 
             // By convention the symbol table starts with empty symbol
             _symbols.Add(new ElfSymbol {});
@@ -138,6 +142,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     Type = type,
                     Flags = flags,
+                    Alignment = 1
                 },
                 Name = sectionName,
                 Stream = sectionStream,
@@ -262,6 +267,10 @@ namespace ILCompiler.ObjectWriter
                 });
             }
 
+            bool useArmThunks = _machine is EM_ARM && undefinedSymbols.Count > 0;
+            int thunkSectionIndex = useArmThunks ? GetOrCreateSection(ArmTextThunkSection).SectionIndex : 0;
+            int thunkSymbolsIndex = 0;
+
             foreach (string externSymbol in undefinedSymbols)
             {
                 if (!_symbolNameToIndex.ContainsKey(externSymbol))
@@ -271,6 +280,20 @@ namespace ILCompiler.ObjectWriter
                         Name = externSymbol,
                         Info = (STB_GLOBAL << 4),
                     });
+
+                    if (useArmThunks)
+                    {
+                        sortedSymbols.Add(new ElfSymbol
+                        {
+                            Name = $"{externSymbol}$thunk",
+                            Value = (ulong)((thunkSymbolsIndex * 4) | 1u),
+                            Size = 4u,
+                            Section = _sections[thunkSectionIndex],
+                            Info = (byte)(STT_FUNC | (STB_GLOBAL << 4)),
+                            Other = STV_HIDDEN,
+                        });
+                        thunkSymbolsIndex++;
+                    }
                 }
             }
 
@@ -282,6 +305,35 @@ namespace ILCompiler.ObjectWriter
             {
                 _symbolNameToIndex[definedSymbol.Name] = symbolIndex;
                 symbolIndex++;
+            }
+
+            if (useArmThunks)
+            {
+                // For ARM32 we use MOVW/MOVT for branch relocations. That cannot be done for
+                // external code since the MOVW/MOVT relocations are static only and equivalents
+                // don't exist for the dynamic linker. In order to circumvent this issue we
+                // create thunks in the .text.thunk section that contain BL.W jumps to the external
+                // code. Our MOVW/MOVT relocations are then redirected to point to those thunks.
+                SectionWriter thunkSectionWriter = GetOrCreateSection(ArmTextThunkSection);
+                Span<byte> relocationEntry = stackalloc byte[8];
+                var relocationStream = new MemoryStream(8 * undefinedSymbols.Count);
+                _sections[thunkSectionWriter.SectionIndex].RelocationStream = relocationStream;
+                foreach (string externSymbol in undefinedSymbols)
+                {
+                    if (_symbolNameToIndex.TryGetValue($"{externSymbol}$thunk", out uint thunkSymbolIndex))
+                    {
+                        // Write the relocation to external symbol for the thunk
+                        BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry, (uint)thunkSectionWriter.Position);
+                        BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry.Slice(4), ((uint)_symbolNameToIndex[externSymbol] << 8) | R_ARM_THM_JUMP24);
+                        relocationStream.Write(relocationEntry);
+                        // Write the thunk code:
+                        // B.W <offset>
+                        thunkSectionWriter.WriteLittleEndian<uint>(0xBFFEF7FF);
+                        // Redirect the extern symbol to our thunk to make our relocations point
+                        // to the thunk
+                        _symbolNameToIndex[externSymbol] = thunkSymbolIndex;
+                    }
+                }
             }
 
             // Update group sections links
@@ -306,6 +358,9 @@ namespace ILCompiler.ObjectWriter
                     break;
                 case EM_AARCH64:
                     EmitRelocationsARM64(sectionIndex, relocationList);
+                    break;
+                case EM_LOONGARCH:
+                    EmitRelocationsLoongArch64(sectionIndex, relocationList);
                     break;
                 default:
                     Debug.Fail("Unsupported architecture");
@@ -442,6 +497,42 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private void EmitRelocationsLoongArch64(int sectionIndex, List<SymbolicRelocation> relocationList)
+        {
+            if (relocationList.Count > 0)
+            {
+                Span<byte> relocationEntry = stackalloc byte[24];
+                var relocationStream = new MemoryStream(24 * relocationList.Count);
+                _sections[sectionIndex].RelocationStream = relocationStream;
+                foreach (SymbolicRelocation symbolicRelocation in relocationList)
+                {
+                    uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
+                    uint type = symbolicRelocation.Type switch
+                    {
+                        IMAGE_REL_BASED_DIR64 => R_LARCH_64,
+                        IMAGE_REL_BASED_HIGHLOW => R_LARCH_32,
+                        IMAGE_REL_BASED_RELPTR32 => R_LARCH_32_PCREL,
+                        IMAGE_REL_BASED_LOONGARCH64_PC => R_LARCH_PCALA_HI20,
+                        IMAGE_REL_BASED_LOONGARCH64_JIR => R_LARCH_CALL36,
+                        _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
+                    };
+
+                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset);
+                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
+                    BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
+                    relocationStream.Write(relocationEntry);
+
+                    if (symbolicRelocation.Type is IMAGE_REL_BASED_LOONGARCH64_PC)
+                    {
+                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset + 4);
+                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type + 1);
+                        BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
+                        relocationStream.Write(relocationEntry);
+                    }
+                }
+            }
+        }
+
         private protected override void EmitSectionsAndLayout()
         {
             if (_machine == EM_ARM)
@@ -465,6 +556,7 @@ namespace ILCompiler.ObjectWriter
                 attributesBuilder.WriteAttribute(Tag_ABI_FP_number_model, 3); // IEEE 754
                 attributesBuilder.WriteAttribute(Tag_ABI_align_needed, 1); // 8-byte
                 attributesBuilder.WriteAttribute(Tag_ABI_align_preserved, 1); // 8-byte
+                attributesBuilder.WriteAttribute(Tag_ABI_VFP_args, _useSoftFPAbi ? 0ul : 1ul); // FP parameters passes in VFP registers
                 attributesBuilder.WriteAttribute(Tag_CPU_unaligned_access, 0); // None
                 attributesBuilder.EndSection();
             }
@@ -638,7 +730,7 @@ namespace ILCompiler.ObjectWriter
             {
                 _stringTable.ReserveString(section.Name);
 
-                if (section.SectionHeader.Alignment > 0)
+                if (section.SectionHeader.Alignment > 1)
                 {
                     currentOffset = (ulong)((currentOffset + (ulong)section.SectionHeader.Alignment - 1) & ~(ulong)(section.SectionHeader.Alignment - 1));
                 }
@@ -709,8 +801,12 @@ namespace ILCompiler.ObjectWriter
                 SectionHeaderEntrySize = (ushort)ElfSectionHeader.GetSize<TSize>(),
                 SectionHeaderEntryCount = sectionCount < SHN_LORESERVE ? (ushort)sectionCount : (ushort)0u,
                 StringTableIndex = strTabSectionIndex < SHN_LORESERVE ? (ushort)strTabSectionIndex : (ushort)SHN_XINDEX,
-                // For ARM32 claim conformance with the EABI specification
-                Flags = _machine is EM_ARM ? 0x05000000u : 0u,
+                Flags = _machine switch
+                {
+                    EM_ARM => 0x05000000u, // For ARM32 claim conformance with the EABI specification
+                    EM_LOONGARCH => 0x43u, // For LoongArch ELF psABI specify the ABI version (1) and modifiers (64-bit GPRs, 64-bit FPRs)
+                    _ => 0u
+                },
             };
             elfHeader.Write<TSize>(outputFileStream);
 

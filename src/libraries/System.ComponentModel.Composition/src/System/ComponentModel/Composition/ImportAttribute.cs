@@ -99,7 +99,7 @@ namespace System.ComponentModel.Composition
         ///      A <see cref="string"/> containing the contract name of the export to import. The
         ///      default value is an empty string ("").
         /// </value>
-        public string? ContractName { get; private set; }
+        public string? ContractName { get; }
 
         /// <summary>
         ///     Get the contract type of the export to import.
@@ -110,7 +110,7 @@ namespace System.ComponentModel.Composition
         ///     the member that this import is attached to. If the type is <see cref="object"/> then the
         ///     importer is delaring they can accept any exported type.
         /// </value>
-        public Type? ContractType { get; private set; }
+        public Type? ContractType { get; }
 
         /// <summary>
         ///     Gets or sets a value indicating whether the property, field or parameter will be set

@@ -65,9 +65,15 @@ ValueNumFuncDef(ConvOverflowExc, 2, false, false, false, false)    // Cast conve
                                                             // - (shifted left one bit; low bit encode whether source is unsigned.)
 ValueNumFuncDef(DivideByZeroExc, 1, false, false, false, false)    // Division by zero check.  Args: 0: divisor value, throws when it is zero
 ValueNumFuncDef(IndexOutOfRangeExc, 2, false, false, false, false) // Array bounds check, Args: 0: array length; 1: index value, throws when the bounds check fails.
-ValueNumFuncDef(InvalidCastExc, 2, false, false, false, false)     // CastClass check, Args: 0: ref value being cast; 1: handle of type being cast to, throws when the cast fails.
+ValueNumFuncDef(InvalidCastExc, 2, false, false, false, false)     // CastClass check, Args: 0: ref value being cast; 1: handle of type being cast to
+ValueNumFuncDef(R2RInvalidCastExc, 2, false, false, false, false)  // CastClass check, Args: 0: ref value being cast; 1: entry point of R2R cast helper
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false, false, false)  // Raises Integer overflow when Arg 0 is negative
-ValueNumFuncDef(HelperMultipleExc, 0, false, false, false, false)  // Represents one or more different exceptions that could be thrown by a Jit Helper method
+ValueNumFuncDef(DynamicClassInitExc, 1, false, false, false, false)       // Represents exceptions thrown by static constructor for class. Args: 0: VN of DynamicStaticsInfo
+ValueNumFuncDef(ThreadClassInitExc, 1, false, false, false, false)       // Represents exceptions thrown by static constructor for class. Args: 0: VN of ThreadStaticsInfo
+ValueNumFuncDef(R2RClassInitExc, 1, false, false, false, false)    // Represents exceptions thrown by static constructor for class. Args: 0: VN of R2R entry point
+ValueNumFuncDef(ClassInitGenericExc, 2, false, false, false, false)// Represents exceptions thrown by static constructor for class. Args: 0: VN of class handle
+ValueNumFuncDef(HelperOpaqueExc, 1, false, false, false, false)    // Represents opaque exceptions could be thrown by a JIT helper.
+                                                                   // Args: 0: Input to helper that uniquely determines exceptions thrown.
 
 ValueNumFuncDef(Abs, 1, false, false, false, false)
 ValueNumFuncDef(Acos, 1, false, false, false, false)
@@ -83,7 +89,6 @@ ValueNumFuncDef(Cos, 1, false, false, false, false)
 ValueNumFuncDef(Cosh, 1, false, false, false, false)
 ValueNumFuncDef(Exp, 1, false, false, false, false)
 ValueNumFuncDef(Floor, 1, false, false, false, false)
-ValueNumFuncDef(FMod, 2, false, false, false, false)
 ValueNumFuncDef(ILogB, 1, false, false, false, false)
 ValueNumFuncDef(Log, 1, false, false, false, false)
 ValueNumFuncDef(Log2, 1, false, false, false, false)
@@ -110,32 +115,34 @@ ValueNumFuncDef(Truncate, 1, false, false, false, false)
 ValueNumFuncDef(ManagedThreadId, 0, false, false, false, false)
 
 ValueNumFuncDef(ObjGetType, 1, false, true, false, false)
-ValueNumFuncDef(GetgenericsGcstaticBase, 1, false, true, true, false)
-ValueNumFuncDef(GetgenericsNongcstaticBase, 1, false, true, true, false)
-ValueNumFuncDef(GetsharedGcstaticBase, 2, false, true, true, false)
-ValueNumFuncDef(GetsharedNongcstaticBase, 2, false, true, true, false)
-ValueNumFuncDef(GetsharedGcstaticBaseNoctor, 1, false, true, true, false)
-ValueNumFuncDef(GetsharedNongcstaticBaseNoctor, 1, false, true, true, false)
+ValueNumFuncDef(GetGcstaticBase, 1, false, true, true, false)
+ValueNumFuncDef(GetNongcstaticBase, 1, false, true, true, false)
+ValueNumFuncDef(GetdynamicGcstaticBase, 1, false, true, true, false)
+ValueNumFuncDef(GetdynamicNongcstaticBase, 1, false, true, true, false)
+ValueNumFuncDef(GetdynamicGcstaticBaseNoctor, 1, false, true, true, false)
+ValueNumFuncDef(GetdynamicNongcstaticBaseNoctor, 1, false, true, true, false)
 ValueNumFuncDef(ReadyToRunStaticBaseGC, 1, false, true, true, false)
 ValueNumFuncDef(ReadyToRunStaticBaseNonGC, 1, false, true, true, false)
 ValueNumFuncDef(ReadyToRunStaticBaseThread, 1, false, true, true, false)
 ValueNumFuncDef(ReadyToRunStaticBaseThreadNoctor, 1, false, true, true, false)
 ValueNumFuncDef(ReadyToRunStaticBaseThreadNonGC, 1, false, true, true, false)
 ValueNumFuncDef(ReadyToRunGenericStaticBase, 2, false, true, true, false)
-ValueNumFuncDef(GetsharedGcstaticBaseDynamicclass, 2, false, true, true, false)
-ValueNumFuncDef(GetsharedNongcstaticBaseDynamicclass, 2, false, true, true, false)
-ValueNumFuncDef(GetgenericsGcthreadstaticBase, 1, false, true, true, false)
-ValueNumFuncDef(GetgenericsNongcthreadstaticBase, 1, false, true, true, false)
-ValueNumFuncDef(GetsharedGcthreadstaticBase, 2, false, true, true, false)
-ValueNumFuncDef(GetsharedNongcthreadstaticBase, 2, false, true, true, false)
-ValueNumFuncDef(GetsharedGcthreadstaticBaseNoctor, 2, false, true, true, false)
-ValueNumFuncDef(GetsharedGcthreadstaticBaseNoctorOptimized, 1, false, true, true, false)
-ValueNumFuncDef(GetsharedNongcthreadstaticBaseNoctor, 2, false, true, true, false)
-ValueNumFuncDef(GetsharedNongcthreadstaticBaseNoctorOptimized, 1, false, true, true, false)
-ValueNumFuncDef(GetsharedGcthreadstaticBaseDynamicclass, 2, false, true, true, false)
-ValueNumFuncDef(GetsharedNongcthreadstaticBaseDynamicclass, 2, false, true, true, false)
+ValueNumFuncDef(GetpinnedGcstaticBase, 1, false, true, true, false)
+ValueNumFuncDef(GetpinnedNongcstaticBase, 1, false, true, true, false)
+ValueNumFuncDef(GetpinnedGcstaticBaseNoctor, 1, false, true, true, false)
+ValueNumFuncDef(GetpinnedNongcstaticBaseNoctor, 1, false, true, true, false)
+ValueNumFuncDef(GetGcthreadstaticBase, 1, false, true, true, false)
+ValueNumFuncDef(GetNongcthreadstaticBase, 1, false, true, true, false)
+ValueNumFuncDef(GetGcthreadstaticBaseNoctor, 1, false, true, true, false)
+ValueNumFuncDef(GetNongcthreadstaticBaseNoctor, 1, false, true, true, false)
+ValueNumFuncDef(GetdynamicGcthreadstaticBase, 1, false, true, true, false)
+ValueNumFuncDef(GetdynamicNongcthreadstaticBase, 1, false, true, true, false)
+ValueNumFuncDef(GetdynamicGcthreadstaticBaseNoctor, 1, false, true, true, false)
+ValueNumFuncDef(GetdynamicGcthreadstaticBaseNoctorOptimized, 1, false, true, true, false)
+ValueNumFuncDef(GetdynamicNongcthreadstaticBaseNoctor, 1, false, true, true, false)
+ValueNumFuncDef(GetdynamicNongcthreadstaticBaseNoctorOptimized, 1, false, true, true, false)
+ValueNumFuncDef(GetdynamicNongcthreadstaticBaseNoctorOptimized2, 1, false, true, true, false)
 
-ValueNumFuncDef(ClassinitSharedDynamicclass, 2, false, false, false, false)
 ValueNumFuncDef(RuntimeHandleMethod, 2, false, true, false, false)
 ValueNumFuncDef(RuntimeHandleClass, 2, false, true, false, false)
 ValueNumFuncDef(ReadyToRunGenericHandle, 2, false, true, false, false)
@@ -154,6 +161,7 @@ ValueNumFuncDef(LazyStrCns, 2, false, true, false, false)            // Lazy-ini
 ValueNumFuncDef(InvariantLoad, 1, false, false, false, false)        // Args: 0: (VN of) the address.
 ValueNumFuncDef(InvariantNonNullLoad, 1, false, true, false, false)  // Args: 0: (VN of) the address.
 ValueNumFuncDef(Unbox, 2, false, false, false, false)
+ValueNumFuncDef(Unbox_TypeTest, 2, false, false, false, false)
 
 ValueNumFuncDef(LT_UN, 2, false, false, false, false)      // unsigned or unordered comparisons
 ValueNumFuncDef(LE_UN, 2, false, false, false, false)

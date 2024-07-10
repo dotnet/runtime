@@ -11,8 +11,15 @@ using WasmAppBuilder;
 
 internal static class SignatureMapper
 {
-    private static char? TypeToChar(Type t, LogAdapter log)
+    internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, int depth = 0)
     {
+        isByRefStruct = false;
+
+        if (depth > 5) {
+            log.Warning("WASM0064", $"Unbounded recursion detected through parameter type '{t.Name}'");
+            return null;
+        }
+
         char? c = null;
         if (t.Namespace == "System") {
             c = t.Name switch
@@ -20,6 +27,7 @@ internal static class SignatureMapper
                 nameof(String) => 'I',
                 nameof(Boolean) => 'I',
                 nameof(Char) => 'I',
+                nameof(SByte) => 'I',
                 nameof(Byte) => 'I',
                 nameof(Int16) => 'I',
                 nameof(UInt16) => 'I',
@@ -51,19 +59,23 @@ internal static class SignatureMapper
                 c = 'I';
             else if (t.IsInterface)
                 c = 'I';
-            else if (t.IsEnum)
-                c = TypeToChar(t.GetEnumUnderlyingType(), log);
-            else if (t.IsPointer)
+            else if (t.IsEnum) {
+                Type underlyingType = t.GetEnumUnderlyingType();
+                c = TypeToChar(underlyingType, log, out _, ++depth);
+            } else if (t.IsPointer)
                 c = 'I';
             else if (PInvokeTableGenerator.IsFunctionPointer(t))
                 c = 'I';
             else if (t.IsValueType)
             {
                 var fields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (fields.Length == 1)
-                    return TypeToChar(fields[0].FieldType, log);
-                else if (PInvokeTableGenerator.IsBlittable(t, log))
+                if (fields.Length == 1) {
+                    Type fieldType = fields[0].FieldType;
+                    return TypeToChar(fieldType, log, out isByRefStruct, ++depth);
+                } else if (PInvokeTableGenerator.IsBlittable(t, log))
                     c = 'I';
+
+                isByRefStruct = true;
             }
             else
                 log.Warning("WASM0064", $"Unsupported parameter type '{t.Name}'");
@@ -74,15 +86,20 @@ internal static class SignatureMapper
 
     public static string? MethodToSignature(MethodInfo method, LogAdapter log)
     {
-        string? result = TypeToChar(method.ReturnType, log)?.ToString();
+        string? result = TypeToChar(method.ReturnType, log, out bool resultIsByRef)?.ToString();
         if (result == null)
         {
             return null;
         }
 
+        if (resultIsByRef) {
+            // WASM abi passes a result-pointer in slot 0 instead of returning struct results
+            result = "VI";
+        }
+
         foreach (var parameter in method.GetParameters())
         {
-            char? parameterChar = TypeToChar(parameter.ParameterType, log);
+            char? parameterChar = TypeToChar(parameter.ParameterType, log, out _);
             if (parameterChar == null)
             {
                 return null;

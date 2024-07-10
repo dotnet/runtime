@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -245,6 +244,32 @@ namespace System.Linq.Tests
                     Assert.False(diff.SequenceEqual(arr));
                 }
             }
+        }
+
+        [Fact]
+        public void ICollectionsCompareCorrectly()
+        {
+            Assert.True(new TestCollection<int>([]).SequenceEqual(new TestCollection<int>([])));
+            Assert.True(new TestCollection<int>([1]).SequenceEqual(new TestCollection<int>([1])));
+            Assert.True(new TestCollection<int>([1, 2, 3]).SequenceEqual(new TestCollection<int>([1, 2, 3])));
+
+            Assert.False(new TestCollection<int>([1, 2, 3, 4]).SequenceEqual(new TestCollection<int>([1, 2, 3])));
+            Assert.False(new TestCollection<int>([1, 2, 3]).SequenceEqual(new TestCollection<int>([1, 2, 3, 4])));
+            Assert.False(new TestCollection<int>([1, 2, 3]).SequenceEqual(new TestCollection<int>([1, 2, 4])));
+            Assert.False(new TestCollection<int>([-1, 2, 3]).SequenceEqual(new TestCollection<int>([-2, 2, 3])));
+        }
+
+        [Fact]
+        public void IListsCompareCorrectly()
+        {
+            Assert.True(new ReadOnlyCollection<int>([]).SequenceEqual(new ReadOnlyCollection<int>([])));
+            Assert.True(new ReadOnlyCollection<int>([1]).SequenceEqual(new ReadOnlyCollection<int>([1])));
+            Assert.True(new ReadOnlyCollection<int>([1, 2, 3]).SequenceEqual(new ReadOnlyCollection<int>([1, 2, 3])));
+
+            Assert.False(new ReadOnlyCollection<int>([1, 2, 3, 4]).SequenceEqual(new ReadOnlyCollection<int>([1, 2, 3])));
+            Assert.False(new ReadOnlyCollection<int>([1, 2, 3]).SequenceEqual(new ReadOnlyCollection<int>([1, 2, 3, 4])));
+            Assert.False(new ReadOnlyCollection<int>([1, 2, 3]).SequenceEqual(new ReadOnlyCollection<int>([1, 2, 4])));
+            Assert.False(new ReadOnlyCollection<int>([-1, 2, 3]).SequenceEqual(new ReadOnlyCollection<int>([-2, 2, 3])));
         }
     }
 }

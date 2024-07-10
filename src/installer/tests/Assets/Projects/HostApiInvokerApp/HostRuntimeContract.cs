@@ -46,8 +46,9 @@ namespace HostApiInvokerApp
 
             static string GetProperty(string name, host_runtime_contract contract)
             {
-                Span<byte> nameSpan = stackalloc byte[Encoding.UTF8.GetMaxByteCount(name.Length)];
-                byte* namePtr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(nameSpan));
+                int nameSize = Encoding.UTF8.GetMaxByteCount(name.Length);
+                byte* namePtr = stackalloc byte[nameSize];
+                Span<byte> nameSpan = new Span<byte>(namePtr, nameSize);
                 int nameLen = Encoding.UTF8.GetBytes(name, nameSpan);
                 nameSpan[nameLen] = 0;
 
@@ -86,8 +87,9 @@ namespace HostApiInvokerApp
 
             unsafe static void Probe(host_runtime_contract contract, string path)
             {
-                Span<byte> pathSpan = stackalloc byte[Encoding.UTF8.GetMaxByteCount(path.Length)];
-                byte* pathPtr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(pathSpan));
+                int pathSize = Encoding.UTF8.GetMaxByteCount(path.Length);
+                byte* pathPtr = stackalloc byte[pathSize];
+                Span<byte> pathSpan = new Span<byte>(pathPtr, pathSize);
                 int pathLen = Encoding.UTF8.GetBytes(path, pathSpan);
                 pathSpan[pathLen] = 0;
 
@@ -111,10 +113,10 @@ namespace HostApiInvokerApp
             switch (apiToTest)
             {
                 case $"{nameof(host_runtime_contract)}.{nameof(host_runtime_contract.get_runtime_property)}":
-                    Test_get_runtime_property(args[1..]);
+                    Test_get_runtime_property(args);
                     break;
                 case $"{nameof(host_runtime_contract)}.{nameof(host_runtime_contract.bundle_probe)}":
-                    Test_bundle_probe(args[1..]);
+                    Test_bundle_probe(args);
                     break;
                 default:
                     return false;

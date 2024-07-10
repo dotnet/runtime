@@ -883,7 +883,16 @@ namespace System.Net.Security
 
             if (_framer.ReadHeader.MessageId == FrameHeader.HandshakeDoneId)
             {
-                _remoteOk = true;
+                if (HandshakeComplete && message.Length > 0)
+                {
+                    Debug.Assert(_context != null);
+                    _context.GetOutgoingBlob(message, out NegotiateAuthenticationStatusCode statusCode);
+                    _remoteOk = statusCode is NegotiateAuthenticationStatusCode.Completed;
+                }
+                else
+                {
+                    _remoteOk = true;
+                }
             }
             else if (_framer.ReadHeader.MessageId != FrameHeader.HandshakeId)
             {

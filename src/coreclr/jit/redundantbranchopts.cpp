@@ -24,7 +24,9 @@ PhaseStatus Compiler::optRedundantBranches()
     public:
         bool madeChanges;
 
-        OptRedundantBranchesDomTreeVisitor(Compiler* compiler) : DomTreeVisitor(compiler), madeChanges(false)
+        OptRedundantBranchesDomTreeVisitor(Compiler* compiler)
+            : DomTreeVisitor(compiler)
+            , madeChanges(false)
         {
         }
 
@@ -114,30 +116,6 @@ static const ValueNumStore::VN_RELATION_KIND s_vnRelations[] = {ValueNumStore::V
                                                                 ValueNumStore::VN_RELATION_KIND::VRK_Reverse,
                                                                 ValueNumStore::VN_RELATION_KIND::VRK_Swap,
                                                                 ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse};
-
-//------------------------------------------------------------------------
-// RelopImplicationInfo
-//
-// Describes information needed to check for and describe the
-// inferences between two relops.
-//
-struct RelopImplicationInfo
-{
-    // Dominating relop, whose value may be determined by control flow
-    ValueNum domCmpNormVN = ValueNumStore::NoVN;
-    // Dominated relop, whose value we would like to determine
-    ValueNum treeNormVN = ValueNumStore::NoVN;
-    // Relationship between the two relops, if any
-    ValueNumStore::VN_RELATION_KIND vnRelation = ValueNumStore::VN_RELATION_KIND::VRK_Same;
-    // Can we draw an inference?
-    bool canInfer = false;
-    // If canInfer and dominating relop is true, can we infer value of dominated relop?
-    bool canInferFromTrue = true;
-    // If canInfer and dominating relop is false, can we infer value of dominated relop?
-    bool canInferFromFalse = true;
-    // Reverse the sense of the inference
-    bool reverseSense = false;
-};
 
 //------------------------------------------------------------------------
 // RelopImplicationRule
@@ -507,66 +485,11 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
             }
         }
 
-        // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
-        // We assume cns1 and cns2 are always on the RHS of the compare.
-        if ((treeApp.m_args[0] == domApp.m_args[0]) && vnStore->IsVNConstant(treeApp.m_args[1]) &&
-            vnStore->IsVNConstant(domApp.m_args[1]) && varTypeIsIntOrI(vnStore->TypeOfVN(treeApp.m_args[1])) &&
-            vnStore->TypeOfVN(domApp.m_args[0]) == vnStore->TypeOfVN(treeApp.m_args[1]) &&
-            vnStore->TypeOfVN(domApp.m_args[1]) == vnStore->TypeOfVN(treeApp.m_args[1]))
+        if (((treeApp.m_args[0] == domApp.m_args[0]) || (treeApp.m_args[0] == domApp.m_args[1]) ||
+             (treeApp.m_args[1] == domApp.m_args[0]) || (treeApp.m_args[1] == domApp.m_args[1])) &&
+            optRelopTryInferWithOneEqualOperand(domApp, treeApp, rii))
         {
-            // We currently don't handle VNF_relop_UN funcs here
-            if (ValueNumStore::VNFuncIsSignedComparison(domApp.m_func) &&
-                ValueNumStore::VNFuncIsSignedComparison(treeApp.m_func))
-            {
-                // Dominating "X relop CNS"
-                const genTreeOps     domOper = static_cast<genTreeOps>(domApp.m_func);
-                const target_ssize_t domCns  = vnStore->CoercedConstantValue<target_ssize_t>(domApp.m_args[1]);
-
-                // Dominated "X relop CNS"
-                const genTreeOps     treeOper = static_cast<genTreeOps>(treeApp.m_func);
-                const target_ssize_t treeCns  = vnStore->CoercedConstantValue<target_ssize_t>(treeApp.m_args[1]);
-
-                // Example:
-                //
-                // void Test(int x)
-                // {
-                //     if (x > 100)
-                //         if (x > 10)
-                //             Console.WriteLine("Taken!");
-                // }
-                //
-
-                // Corresponding BB layout:
-                //
-                // BB1:
-                //   if (x <= 100)
-                //       goto BB4
-                //
-                // BB2:
-                //   // x is known to be > 100 here
-                //   if (x <= 10) // never true
-                //       goto BB4
-                //
-                // BB3:
-                //   Console.WriteLine("Taken!");
-                //
-                // BB4:
-                //   return;
-
-                // Check whether the dominating compare being "false" implies the dominated compare is known
-                // to be either "true" or "false".
-                RelopResult treeOperStatus =
-                    IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
-                if (treeOperStatus != RelopResult::Unknown)
-                {
-                    rii->canInfer          = true;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    rii->canInferFromTrue  = false;
-                    rii->canInferFromFalse = true;
-                    rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue;
-                    return;
-                }
-            }
+            return;
         }
     }
 
@@ -642,6 +565,115 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
             }
         }
     }
+}
+
+//------------------------------------------------------------------------
+// optRelopTryInferWithOneEqualOperand: Given a domnating relop R(x, y) and
+// another relop R*(a, b) that share an operand, try to see if we can infer
+// something about R*(a, b).
+//
+// Arguments:
+//   domApp  - The dominating relop R*(x, y)
+//   treeApp - The dominated relop R*(a, b)
+//   rii     - [out] struct with relop implication information
+//
+// Returns:
+//   True if something was inferred; otherwise false.
+//
+bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
+                                                   const VNFuncApp&      treeApp,
+                                                   RelopImplicationInfo* rii)
+{
+    // Canonicalize constants to be on the right.
+    VNFunc   domFunc = domApp.m_func;
+    ValueNum domOp1  = domApp.m_args[0];
+    ValueNum domOp2  = domApp.m_args[1];
+
+    VNFunc   treeFunc = treeApp.m_func;
+    ValueNum treeOp1  = treeApp.m_args[0];
+    ValueNum treeOp2  = treeApp.m_args[1];
+
+    if (vnStore->IsVNConstant(domOp1))
+    {
+        std::swap(domOp1, domOp2);
+        domFunc = ValueNumStore::SwapRelop(domFunc);
+    }
+
+    if (vnStore->IsVNConstant(treeOp1))
+    {
+        std::swap(treeOp1, treeOp2);
+        treeFunc = ValueNumStore::SwapRelop(treeFunc);
+    }
+
+    // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
+    if ((treeOp1 != domOp1) || !vnStore->IsVNConstant(treeOp2) || !vnStore->IsVNConstant(domOp2))
+    {
+        return false;
+    }
+
+    var_types treeOp1Type = vnStore->TypeOfVN(treeOp1);
+    var_types treeOp2Type = vnStore->TypeOfVN(treeOp2);
+    var_types domOp1Type  = vnStore->TypeOfVN(domOp1);
+    var_types domOp2Type  = vnStore->TypeOfVN(domOp2);
+    if (!varTypeIsIntOrI(treeOp1Type) || (domOp1Type != treeOp2Type) || (domOp2Type != treeOp2Type))
+    {
+        return false;
+    }
+    // We currently don't handle VNF_relop_UN funcs here
+    if (!ValueNumStore::VNFuncIsSignedComparison(domFunc) || !ValueNumStore::VNFuncIsSignedComparison(treeFunc))
+    {
+        return false;
+    }
+
+    // Dominating "X relop CNS"
+    const genTreeOps     domOper = static_cast<genTreeOps>(domFunc);
+    const target_ssize_t domCns  = vnStore->CoercedConstantValue<target_ssize_t>(domOp2);
+
+    // Dominated "X relop CNS"
+    const genTreeOps     treeOper = static_cast<genTreeOps>(treeFunc);
+    const target_ssize_t treeCns  = vnStore->CoercedConstantValue<target_ssize_t>(treeOp2);
+
+    // Example:
+    //
+    // void Test(int x)
+    // {
+    //     if (x > 100)
+    //         if (x > 10)
+    //             Console.WriteLine("Taken!");
+    // }
+    //
+
+    // Corresponding BB layout:
+    //
+    // BB1:
+    //   if (x <= 100)
+    //       goto BB4
+    //
+    // BB2:
+    //   // x is known to be > 100 here
+    //   if (x <= 10) // never true
+    //       goto BB4
+    //
+    // BB3:
+    //   Console.WriteLine("Taken!");
+    //
+    // BB4:
+    //   return;
+
+    // Check whether the dominating compare being "false" implies the dominated compare is known
+    // to be either "true" or "false".
+    RelopResult treeOperStatus = IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+    if (treeOperStatus == RelopResult::Unknown)
+    {
+        return false;
+    }
+
+    rii->canInfer          = true;
+    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
+    rii->canInferFromTrue  = false;
+    rii->canInferFromFalse = true;
+    rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue;
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -927,6 +959,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
     fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
+    Metrics.RedundantBranchesEliminated++;
     return true;
 }
 
@@ -1025,8 +1058,8 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.
     //
-    // For non-PHI RBO, we neglect PHI assignments. This can leave SSA
-    // in an incorrect state but so far it has not yet caused problems.
+    // For non-PHI RBO, we neglect PHI stores. This can leave SSA in
+    // an incorrect state but so far it has not yet caused problems.
     //
     // For PHI-based RBO we need to be more cautious and insist that
     // any PHI is locally consumed, so that if we bypass the block we
@@ -1599,7 +1632,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     // If this pred is in the set that will reuse block, do nothing.
     // Else revise pred to branch directly to the appropriate successor of block.
     //
-    for (BasicBlock* const predBlock : jti.m_block->PredBlocks())
+    for (BasicBlock* const predBlock : jti.m_block->PredBlocksEditing())
     {
         // If this was an ambiguous pred, skip.
         //
@@ -1683,6 +1716,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 
     // We optimized.
     //
+    Metrics.JumpThreadingsPerformed++;
     fgModified = true;
     return true;
 }
@@ -1890,12 +1924,12 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
-        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
+        GenTree* const prevTreeValue = prevTree->AsLclVar()->Data();
 
         // If prevTree has side effects, bail, unless it is in the immediately preceding statement.
         // We'll handle exceptional side effects with VNs below.
         //
-        if (((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0) || ((prevTreeData->gtFlags & GTF_ASG) != 0))
+        if (((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0) || ((prevTreeValue->gtFlags & GTF_ASG) != 0))
         {
             if (prevStmt->GetNextStmt() != stmt)
             {
@@ -1909,13 +1943,13 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         // If we are seeing PHIs we have run out of interesting stmts.
         //
-        if (prevTreeData->OperIs(GT_PHI))
+        if (prevTreeValue->OperIs(GT_PHI))
         {
             JITDUMP(" -- prev tree is a phi\n");
             break;
         }
 
-        // Figure out what local is assigned here.
+        // Figure out what local is defined here.
         //
         const unsigned   prevTreeLclNum = prevTree->AsLclVarCommon()->GetLclNum();
         LclVarDsc* const prevTreeLclDsc = lvaGetDesc(prevTreeLclNum);
@@ -1942,7 +1976,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         // If the normal liberal VN of RHS is the normal liberal VN of the current tree, or is "related",
         // consider forward sub.
         //
-        const ValueNum                  domCmpVN        = vnStore->VNNormalValue(prevTreeData->GetVN(VNK_Liberal));
+        const ValueNum                  domCmpVN        = vnStore->VNNormalValue(prevTreeValue->GetVN(VNK_Liberal));
         bool                            matched         = false;
         ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
 
@@ -1965,11 +1999,11 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         JITDUMP("  -- prev tree has relop with %s liberal VN\n", ValueNumStore::VNRelationString(vnRelationMatch));
 
-        // If the jump tree VN has exceptions, verify that the RHS tree has a superset.
+        // If the jump tree VN has exceptions, verify that the value tree has a superset.
         //
         if (treeExcVN != vnStore->VNForEmptyExcSet())
         {
-            const ValueNum prevTreeExcVN = vnStore->VNExceptionSet(prevTreeData->GetVN(VNK_Liberal));
+            const ValueNum prevTreeExcVN = vnStore->VNExceptionSet(prevTreeValue->GetVN(VNK_Liberal));
 
             if (!vnStore->VNExcIsSubset(prevTreeExcVN, treeExcVN))
             {
@@ -1978,14 +2012,14 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             }
         }
 
-        // See if we can safely move a copy of prevTreeRHS later, to replace tree.
+        // See if we can safely move a copy of prevTreeValue later, to replace tree.
         // We can, if none of its lcls are killed.
         //
         bool interferes = false;
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
-            if (gtTreeHasLocalRead(prevTreeData, definedLocals[i]))
+            if (gtTreeHasLocalRead(prevTreeValue, definedLocals[i]))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
                 interferes = true;
@@ -1998,7 +2032,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
-        if (gtMayHaveStoreInterference(prevTreeData, tree))
+        if (gtMayHaveStoreInterference(prevTreeValue, tree))
         {
             JITDUMP(" -- prev tree has an embedded store that interferes with [%06u]\n", dspTreeID(tree));
             break;
@@ -2006,7 +2040,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         // Heuristic: only forward sub a relop
         //
-        if (!prevTreeData->OperIsCompare())
+        if (!prevTreeValue->OperIsCompare())
         {
             JITDUMP(" -- prev tree is not relop\n");
             continue;
@@ -2022,7 +2056,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
-        if ((prevTreeData->gtFlags & GTF_GLOB_REF) != 0)
+        if ((prevTreeValue->gtFlags & GTF_GLOB_REF) != 0)
         {
             bool hasExtraUses = false;
 
@@ -2049,7 +2083,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         }
 
         JITDUMP(" -- prev tree is viable candidate for relop fwd sub!\n");
-        candidateTree       = prevTreeData;
+        candidateTree       = prevTreeValue;
         candidateStmt       = prevStmt;
         candidateVnRelation = vnRelationMatch;
     }

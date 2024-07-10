@@ -15,6 +15,37 @@
 #define USE_REDIRECT_FOR_GCSTRESS
 #endif // TARGET_UNIX
 
+#define ENUM_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(Fp) \
+    CALLEE_SAVED_REGISTER(Ra) \
+    CALLEE_SAVED_REGISTER(S1) \
+    CALLEE_SAVED_REGISTER(S2) \
+    CALLEE_SAVED_REGISTER(S3) \
+    CALLEE_SAVED_REGISTER(S4) \
+    CALLEE_SAVED_REGISTER(S5) \
+    CALLEE_SAVED_REGISTER(S6) \
+    CALLEE_SAVED_REGISTER(S7) \
+    CALLEE_SAVED_REGISTER(S8) \
+    CALLEE_SAVED_REGISTER(S9) \
+    CALLEE_SAVED_REGISTER(S10) \
+    CALLEE_SAVED_REGISTER(S11) \
+    CALLEE_SAVED_REGISTER(Tp) \
+    CALLEE_SAVED_REGISTER(Gp)
+
+#define ENUM_FP_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(F[8]) \
+    CALLEE_SAVED_REGISTER(F[9]) \
+    CALLEE_SAVED_REGISTER(F[18]) \
+    CALLEE_SAVED_REGISTER(F[19]) \
+    CALLEE_SAVED_REGISTER(F[20]) \
+    CALLEE_SAVED_REGISTER(F[21]) \
+    CALLEE_SAVED_REGISTER(F[22]) \
+    CALLEE_SAVED_REGISTER(F[23]) \
+    CALLEE_SAVED_REGISTER(F[24]) \
+    CALLEE_SAVED_REGISTER(F[25]) \
+    CALLEE_SAVED_REGISTER(F[26]) \
+    CALLEE_SAVED_REGISTER(F[27])
+
 EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
 EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 
@@ -35,8 +66,6 @@ extern PCODE GetPreStubEntryPoint();
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         40  // # bytes to allocate for a back to back jump instruction
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
-
-#define USE_INDIRECT_CODEHEADER
 
 #define HAS_FIXUP_PRECODE                       1
 
@@ -75,10 +104,6 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -423,6 +448,13 @@ struct DECLSPEC_ALIGN(16) UMEntryThunkCode
 
 struct HijackArgs
 {
+    DWORD64 Fp; // frame pointer
+    union
+    {
+        DWORD64 Ra;
+        size_t ReturnAddress;
+    };
+    DWORD64 S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, Gp, Tp;
     union
     {
         struct {
@@ -439,14 +471,7 @@ struct HijackArgs
          };
         size_t FPReturnValue[2];
     };
-    DWORD64 Fp; // frame pointer
-    DWORD64 Gp, Tp, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11;
-    union
-    {
-        DWORD64 Ra;
-        size_t ReturnAddress;
-    };
- };
+};
 
 // Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
 struct ThisPtrRetBufPrecode {

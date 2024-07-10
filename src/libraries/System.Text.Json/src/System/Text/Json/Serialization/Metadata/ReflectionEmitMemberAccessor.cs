@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if NETFRAMEWORK || NETCOREAPP
+#if NETFRAMEWORK || NET
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -10,12 +10,17 @@ using System.Reflection.Emit;
 
 namespace System.Text.Json.Serialization.Metadata
 {
-    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
-        public override Func<object>? CreateParameterlessConstructor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
-            ConstructorInfo? constructorInfo)
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        public ReflectionEmitMemberAccessor()
+        {
+        }
+
+        [SuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+            Justification = "The constructor has been marked RequiresDynamicCode")]
+        public override Func<object>? CreateParameterlessConstructor(Type type, ConstructorInfo? constructorInfo)
         {
             Debug.Assert(type != null);
             Debug.Assert(constructorInfo is null || constructorInfo.GetParameters().Length == 0);
@@ -68,6 +73,8 @@ namespace System.Text.Json.Serialization.Metadata
         public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
             CreateDelegate<Func<object[], T>>(CreateParameterizedConstructor(constructor));
 
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+            Justification = "The constructor has been marked RequiresDynamicCode")]
         private static DynamicMethod CreateParameterizedConstructor(ConstructorInfo constructor)
         {
             Type? type = constructor.DeclaringType;
@@ -109,6 +116,8 @@ namespace System.Text.Json.Serialization.Metadata
             CreateDelegate<JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>>(
                 CreateParameterizedConstructor(constructor, typeof(TArg0), typeof(TArg1), typeof(TArg2), typeof(TArg3)));
 
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+            Justification = "The constructor has been marked RequiresDynamicCode")]
         private static DynamicMethod? CreateParameterizedConstructor(ConstructorInfo constructor, Type parameterType1, Type parameterType2, Type parameterType3, Type parameterType4)
         {
             Type? type = constructor.DeclaringType;
@@ -153,6 +162,8 @@ namespace System.Text.Json.Serialization.Metadata
         public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>() =>
             CreateDelegate<Action<TCollection, object?>>(CreateAddMethodDelegate(typeof(TCollection)));
 
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+            Justification = "The constructor has been marked RequiresDynamicCode")]
         private static DynamicMethod CreateAddMethodDelegate(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type collectionType)
         {
@@ -176,13 +187,14 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>() =>
             CreateDelegate<Func<IEnumerable<TElement>, TCollection>>(
                 CreateImmutableEnumerableCreateRangeDelegate(typeof(TCollection), typeof(TElement), typeof(IEnumerable<TElement>)));
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+            Justification = "The constructor has been marked RequiresDynamicCode")]
+        [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
+            Justification = "The constructor has been marked RequiresUnreferencedCode")]
         private static DynamicMethod CreateImmutableEnumerableCreateRangeDelegate(Type collectionType, Type elementType, Type enumerableType)
         {
             MethodInfo realMethod = collectionType.GetImmutableEnumerableCreateRangeMethod(elementType);
@@ -203,13 +215,14 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>() =>
             CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>>(
                 CreateImmutableDictionaryCreateRangeDelegate(typeof(TCollection), typeof(TKey), typeof(TValue), typeof(IEnumerable<KeyValuePair<TKey, TValue>>)));
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+            Justification = "The constructor has been marked RequiresDynamicCode")]
+        [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
+            Justification = "The constructor has been marked RequiresUnreferencedCode")]
         private static DynamicMethod CreateImmutableDictionaryCreateRangeDelegate(Type collectionType, Type keyType, Type valueType, Type enumerableType)
         {
             MethodInfo realMethod = collectionType.GetImmutableDictionaryCreateRangeMethod(keyType, valueType);
@@ -379,6 +392,8 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+            Justification = "The constructor has been marked RequiresDynamicCode")]
         private static DynamicMethod CreateGetterMethod(string memberName, Type memberType) =>
             new DynamicMethod(
                 memberName + "Getter",
@@ -387,6 +402,8 @@ namespace System.Text.Json.Serialization.Metadata
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+            Justification = "The constructor has been marked RequiresDynamicCode")]
         private static DynamicMethod CreateSetterMethod(string memberName, Type memberType) =>
             new DynamicMethod(
                 memberName + "Setter",

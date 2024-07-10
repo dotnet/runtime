@@ -783,7 +783,6 @@ void SsaBuilder::AddDefToEHSuccessorPhis(BasicBlock* block, unsigned lclNum, uns
         assert(phiFound);
 
         return BasicBlockVisit::Continue;
-
     });
 }
 
@@ -966,8 +965,8 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
         // Walk the statements for phi nodes.
         for (Statement* const stmt : succ->Statements())
         {
-            // A prefix of the statements of the block are phi definition nodes. If we complete processing
-            // that prefix, exit.
+            // A prefix of the statements of the block are phi definition nodes. If we complete
+            // processing that prefix, exit.
             if (!stmt->IsPhiDefnStmt())
             {
                 break;
@@ -989,8 +988,9 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
             {
                 if ((memoryKind == GcHeap) && m_pCompiler->byrefStatesMatchGcHeapStates)
                 {
-                    // We've already propagated the "out" number to the phi shared with ByrefExposed,
-                    // but still need to update bbMemorySsaPhiFunc to be in sync between GcHeap and ByrefExposed.
+                    // We've already propagated the "out" number to the phi shared with
+                    // ByrefExposed, but still need to update bbMemorySsaPhiFunc to be in sync
+                    // between GcHeap and ByrefExposed.
                     assert(memoryKind > ByrefExposed);
                     assert(block->bbMemorySsaNumOut[memoryKind] == block->bbMemorySsaNumOut[ByrefExposed]);
                     assert((succ->bbMemorySsaPhiFunc[ByrefExposed] == succMemoryPhi) ||
@@ -1010,8 +1010,9 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                     BasicBlock::MemoryPhiArg* curArg = succMemoryPhi;
                     unsigned                  ssaNum = block->bbMemorySsaNumOut[memoryKind];
                     bool                      found  = false;
-                    // This is a quadratic algorithm.  We might need to consider some switch over to a hash table
-                    // representation for the arguments of a phi node, to make this linear.
+                    // This is a quadratic algorithm.  We might need to consider some switch over
+                    // to a hash table representation for the arguments of a phi node, to make this
+                    // linear.
                     while (curArg != nullptr)
                     {
                         if (curArg->m_ssaNum == ssaNum)
@@ -1181,6 +1182,7 @@ void SsaBuilder::RenameVariables()
 {
     JITDUMP("*************** In SsaBuilder::RenameVariables()\n");
 
+    m_pCompiler->Metrics.VarsInSsa = 0;
     // The first thing we do is treat parameters and must-init variables as if they have a
     // virtual definition before entry -- they start out at SSA name 1.
     for (unsigned lclNum = 0; lclNum < m_pCompiler->lvaCount; lclNum++)
@@ -1190,10 +1192,13 @@ void SsaBuilder::RenameVariables()
             continue;
         }
 
+        m_pCompiler->Metrics.VarsInSsa++;
+
         LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
         assert(varDsc->lvTracked);
 
         if (varDsc->lvIsParam || m_pCompiler->info.compInitMem || varDsc->lvMustInit ||
+            (varTypeIsGC(varDsc) && !varDsc->lvHasExplicitInit) ||
             VarSetOps::IsMember(m_pCompiler, m_pCompiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
             unsigned ssaNum = varDsc->lvPerSsaData.AllocSsaNum(m_allocator);
@@ -1240,7 +1245,9 @@ void SsaBuilder::RenameVariables()
 
     public:
         SsaRenameDomTreeVisitor(Compiler* compiler, SsaBuilder* builder, SsaRenameState* renameStack)
-            : DomTreeVisitor(compiler), m_builder(builder), m_renameStack(renameStack)
+            : DomTreeVisitor(compiler)
+            , m_builder(builder)
+            , m_renameStack(renameStack)
         {
         }
 

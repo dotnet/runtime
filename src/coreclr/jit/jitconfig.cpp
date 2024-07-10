@@ -16,7 +16,7 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
     assert(m_names == nullptr);
 
     // Convert the input list to UTF-8
-    int utf8ListLen = WszWideCharToMultiByte(CP_UTF8, 0, list, -1, nullptr, 0, nullptr, nullptr);
+    int utf8ListLen = WideCharToMultiByte(CP_UTF8, 0, list, -1, nullptr, 0, nullptr, nullptr);
     if (utf8ListLen == 0)
     {
         return;
@@ -26,8 +26,7 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
         // char* m_list;
         //
         m_list = static_cast<char*>(host->allocateMemory(utf8ListLen));
-        if (WszWideCharToMultiByte(CP_UTF8, 0, list, -1, static_cast<LPSTR>(m_list), utf8ListLen, nullptr, nullptr) ==
-            0)
+        if (WideCharToMultiByte(CP_UTF8, 0, list, -1, static_cast<LPSTR>(m_list), utf8ListLen, nullptr, nullptr) == 0)
         {
             // Failed to convert the list. Free the memory and ignore the list.
             host->freeMemory(static_cast<void*>(m_list));
@@ -192,9 +191,9 @@ void JitConfigValues::initialize(ICorJitHost* host)
 {
     assert(!m_isInitialized);
 
-#define CONFIG_INTEGER(name, key, defaultValue) m_##name = host->getIntConfigValue(key, defaultValue);
-#define CONFIG_STRING(name, key) m_##name = host->getStringConfigValue(key);
-#define CONFIG_METHODSET(name, key)                                                                                    \
+#define RELEASE_CONFIG_INTEGER(name, key, defaultValue) m_##name = host->getIntConfigValue(key, defaultValue);
+#define RELEASE_CONFIG_STRING(name, key)                m_##name = host->getStringConfigValue(key);
+#define RELEASE_CONFIG_METHODSET(name, key)                                                                            \
     const WCHAR* name##value = host->getStringConfigValue(key);                                                        \
     m_##name.initialize(name##value, host);                                                                            \
     host->freeStringConfigValue(name##value);
@@ -211,9 +210,9 @@ void JitConfigValues::destroy(ICorJitHost* host)
         return;
     }
 
-#define CONFIG_INTEGER(name, key, defaultValue)
-#define CONFIG_STRING(name, key) host->freeStringConfigValue(m_##name);
-#define CONFIG_METHODSET(name, key) m_##name.destroy(host);
+#define RELEASE_CONFIG_INTEGER(name, key, defaultValue)
+#define RELEASE_CONFIG_STRING(name, key)    host->freeStringConfigValue(m_##name);
+#define RELEASE_CONFIG_METHODSET(name, key) m_##name.destroy(host);
 
 #include "jitconfigvalues.h"
 

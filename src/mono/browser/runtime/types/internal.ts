@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI, SingleAssetBehaviors } from ".";
-import type { PThreadLibrary } from "../pthreads/shared/emscripten-internals";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -13,6 +12,9 @@ export type JSHandle = {
 }
 export type JSFnHandle = {
     __brand: "JSFnHandle"
+}
+export type PThreadPtr = {
+    __brand: "PThreadPtr" // like pthread_t in C
 }
 export interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject"
@@ -60,8 +62,9 @@ export const GCHandleInvalid: GCHandle = <GCHandle><any>-1;
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
+export const PThreadPtrNull: PThreadPtr = <PThreadPtr><any>0;
 
-export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
+export function coerceNull<T extends ManagedPointer | NativePointer> (ptr: T | null | undefined): T {
     if ((ptr === null) || (ptr === undefined))
         return (0 as any) as T;
     else
@@ -77,7 +80,6 @@ export type MonoConfigInternal = MonoConfig & {
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
-    assertAfterExit?: boolean // default true for shell/nodeJS
     interopCleanupOnExit?: boolean
     dumpThreadsOnNonZeroExit?: boolean
     logExitCode?: boolean
@@ -92,6 +94,8 @@ export type MonoConfigInternal = MonoConfig & {
     resourcesHash?: string,
     GitHash?: string,
     ProductVersion?: string,
+
+    jsThreadBlockingMode?: JSThreadBlockingMode,
 };
 
 export type RunArguments = {
@@ -107,6 +111,7 @@ export interface AssetEntryInternal extends AssetEntry {
     pendingDownloadInternal?: LoadingResource
     noCache?: boolean
     useCredentials?: boolean
+    isCore?: boolean
 }
 
 export type LoaderHelpers = {
@@ -116,7 +121,6 @@ export type LoaderHelpers = {
 
     maxParallelDownloads: number;
     enableDownloadRetry: boolean;
-    assertAfterExit: boolean;
 
     exitCode: number | undefined;
     exitReason: any;
@@ -128,6 +132,7 @@ export type LoaderHelpers = {
     scriptUrl: string
     modulesUniqueQuery?: string
     preferredIcuAsset?: string | null,
+    workerNextNumber: number,
 
     actual_downloaded_assets_count: number,
     actual_instantiated_assets_count: number,
@@ -136,8 +141,10 @@ export type LoaderHelpers = {
 
     afterConfigLoaded: PromiseAndController<MonoConfig>,
     allDownloadsQueued: PromiseAndController<void>,
+    allDownloadsFinished: PromiseAndController<void>,
     wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
+    loadingWorkers: PromiseAndController<PThreadWorker[]>,
 
     is_exited: () => boolean,
     is_runtime_running: () => boolean,
@@ -199,9 +206,18 @@ export type RuntimeHelpers = {
     getMemory(): WebAssembly.Memory,
     getWasmIndirectFunctionTable(): WebAssembly.Table,
     runtimeReady: boolean,
+    disableManagedTransition: boolean,
+    monoThreadInfo: PThreadInfo,
     proxyGCHandle: GCHandle | undefined,
+    managedThreadTID: PThreadPtr,
+    ioThreadTID: PThreadPtr,
+    deputyWorker: PThreadWorker,
+    currentThreadTID: PThreadPtr,
+    isManagedRunningOnCurrentThread: boolean,
+    isPendingSynchronousCall: boolean, // true when we are in the middle of a synchronous call from managed code from same thread
     cspPolicy: boolean,
 
+    coreAssetsInMemory: PromiseAndController<void>,
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     afterInstantiateWasm: PromiseAndController<void>,
@@ -209,7 +225,9 @@ export type RuntimeHelpers = {
     afterPreInit: PromiseAndController<void>,
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
-    afterMonoStarted: PromiseAndController<GCHandle | undefined>,
+    afterMonoStarted: PromiseAndController<void>,
+    afterDeputyReady: PromiseAndController<GCHandle | undefined>,
+    afterIOStarted: PromiseAndController<void>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
 
@@ -221,9 +239,31 @@ export type RuntimeHelpers = {
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     instantiate_segmentation_rules_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
-    jiterpreter_dump_stats?: (x: boolean) => string,
+    jiterpreter_dump_stats?: (concise?: boolean) => void,
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
+    mono_wasm_print_thread_dump: () => void,
+
+    stringToUTF16: (dstPtr: number, endPtr: number, text: string) => void,
+    stringToUTF16Ptr: (str: string) => VoidPtr,
+    utf16ToString: (startPtr: number, endPtr: number) => string,
+    utf16ToStringLoop: (startPtr: number, endPtr: number) => string,
+    localHeapViewU16: () => Uint16Array,
+    setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
+    setI32: (offset: MemOffset, value: number) => void,
+}
+export type GlobalizationHelpers = {
+
+    mono_wasm_change_case: (culture: number, cultureLength: number, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) => VoidPtr;
+    mono_wasm_compare_string: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_starts_with: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_ends_with: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_index_of: (culture: number, cultureLength: number, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_get_calendar_info: (culture: number, cultureLength: number, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
+    mono_wasm_get_culture_info: (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
+    mono_wasm_get_first_day_of_week: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_get_first_week_of_year: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
+    setSegmentationRulesFromJson: (json: string) => void;
 }
 
 export type AOTProfilerOptions = {
@@ -240,7 +280,7 @@ export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & Emscr
 
 // Evaluates whether a value is nullish (same definition used as the ?? operator,
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
-export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
+export function is_nullish<T> (value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
 }
 
@@ -270,6 +310,7 @@ export type GlobalObjects = {
     module: DotnetModuleInternal,
     loaderHelpers: LoaderHelpers,
     runtimeHelpers: RuntimeHelpers,
+    globalizationHelpers: GlobalizationHelpers,
     api: RuntimeAPI,
 };
 export type EmscriptenReplacements = {
@@ -285,14 +326,14 @@ export interface ExitStatusError {
 
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable
 /// to 'never' after you handle all the cases it knows about.
-export function assertNever(x: never): never {
+export function assertNever (x: never): never {
     throw new Error("Unexpected value: " + x);
 }
 
 /// returns true if the given value is not Thenable
 ///
 /// Useful if some function returns a value or a promise of a value.
-export function notThenable<T>(x: T | PromiseLike<T>): x is T {
+export function notThenable<T> (x: T | PromiseLike<T>): x is T {
     return typeof x !== "object" || typeof ((<PromiseLike<T>>x).then) !== "function";
 }
 
@@ -305,7 +346,7 @@ export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, element_type?
 export type BoundMarshalerToJs = (args: JSMarshalerArguments) => any;
 export type BoundMarshalerToCs = (args: JSMarshalerArguments, value: any) => void;
 // please keep in sync with src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs
-export enum MarshalerType {
+export const enum MarshalerType {
     None = 0,
     Void = 1,
     Discard,
@@ -333,6 +374,7 @@ export enum MarshalerType {
     Span,
     Action,
     Function,
+    DiscardNoWait,
 
     // only on runtime
     JSException,
@@ -416,6 +458,11 @@ export declare interface EmscriptenModuleInternal {
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
     maybeExit(): void;
+    __emscripten_thread_init(pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number): void;
+    print(message: string): void;
+    printErr(message: string): void;
+    abort(reason: any): void;
+    _emscripten_force_exit(exit_code: number): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.
@@ -443,8 +490,9 @@ export type passEmscriptenInternalsType = (internals: EmscriptenInternals, emscr
 export type setGlobalObjectsType = (globalObjects: GlobalObjects) => void;
 export type initializeExportsType = (globalObjects: GlobalObjects) => RuntimeAPI;
 export type initializeReplacementsType = (replacements: EmscriptenReplacements) => void;
+export type afterInitializeType = (module: EmscriptenModuleInternal) => void;
 export type configureEmscriptenStartupType = (module: DotnetModuleInternal) => void;
-export type configureRuntimeStartupType = () => Promise<void>;
+export type configureRuntimeStartupType = (module: DotnetModuleInternal) => Promise<void>;
 export type configureWorkerStartupType = (module: DotnetModuleInternal) => Promise<void>
 
 
@@ -462,6 +510,10 @@ export type NativeModuleExportsInternal = {
     default: (unificator: Function) => EmscriptenModuleInternal
 }
 
+export type HybridGlobalizationModuleExportsInternal = {
+    initHybrid: (gh: GlobalizationHelpers, rh: RuntimeHelpers) => void;
+}
+
 export type WeakRefInternal<T extends object> = WeakRef<T> & {
     dispose?: () => void
 }
@@ -477,9 +529,115 @@ export const enum WorkerToMainMessageType {
     enabledInterop = "notify_enabled_interop",
     monoUnRegistered = "monoUnRegistered",
     pthreadCreated = "pthreadCreated",
+    deputyCreated = "createdDeputy",
+    deputyFailed = "deputyFailed",
+    deputyStarted = "monoStarted",
+    deputyReady = "deputyReady",
+    ioStarted = "ioStarted",
     preload = "preload",
 }
 
 export const enum MainToWorkerMessageType {
-    applyConfig = "apply_mono_config",
+    applyConfig = "applyConfig",
+    allAssetsLoaded = "allAssetsLoaded",
+}
+
+export interface PThreadWorker extends Worker {
+    pthread_ptr: PThreadPtr;
+    loaded: boolean;
+    // this info is updated via async messages from the worker, it could be stale
+    info: PThreadInfo;
+    thread?: Thread;
+}
+
+export interface PThreadInfo {
+    pthreadId: PThreadPtr;
+
+    workerNumber: number,
+    reuseCount: number,
+    updateCount: number,
+
+    threadName: string,
+    threadPrefix: string,
+
+    isLoaded?: boolean,
+    isRegistered?: boolean,
+    isRunning?: boolean,
+    isAttached?: boolean,
+    isDeputy?: boolean,
+    isIo?: boolean,
+    isExternalEventLoop?: boolean,
+    isUI?: boolean;
+    isBackground?: boolean,
+    isDebugger?: boolean,
+    isThreadPoolWorker?: boolean,
+    isTimer?: boolean,
+    isLongRunning?: boolean,
+    isThreadPoolGate?: boolean,
+    isFinalizer?: boolean,
+    isDirtyBecauseOfInterop?: boolean,
+}
+
+export interface PThreadLibrary {
+    unusedWorkers: PThreadWorker[];
+    runningWorkers: PThreadWorker[];
+    pthreads: PThreadInfoMap;
+    allocateUnusedWorker: () => void;
+    loadWasmModuleToWorker: (worker: PThreadWorker) => Promise<PThreadWorker>;
+    threadInitTLS: () => void,
+    getNewWorker: () => PThreadWorker,
+    returnWorkerToPool: (worker: PThreadWorker) => void,
+    terminateAllThreads: () => void,
+}
+
+export interface PThreadInfoMap {
+    [key: number]: PThreadWorker;
+}
+
+export interface Thread {
+    readonly pthreadPtr: PThreadPtr;
+    readonly port: MessagePort;
+    postMessageToWorker<T extends MonoThreadMessage>(message: T): void;
+}
+
+export interface MonoThreadMessage {
+    // Type of message.  Generally a subsystem like "diagnostic_server", or "event_pipe", "debugger", etc.
+    type: string;
+    // A particular kind of message. For example, "started", "stopped", "stopped_with_error", etc.
+    cmd: string;
+}
+
+// keep in sync with JSHostImplementation.Types.cs
+export const enum JSThreadBlockingMode {
+    /**
+     * Prevents synchronous JSExport from being called from JavaScript code in UI thread.
+     * On JSWebWorker synchronous JSExport always works.
+     * On JSWebWorker blocking .Wait always warns.
+     * This is the default mode.
+     */
+    PreventSynchronousJSExport = "PreventSynchronousJSExport",
+    /**
+     * Allows synchronous JSExport to be called from JavaScript code also in UI thread.
+     * Inside of that call blocking .Wait throws PNSE.
+     * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases).
+     * On JSWebWorker synchronous JSExport always works.
+     * On JSWebWorker blocking .Wait always throws PNSE.
+     */
+    ThrowWhenBlockingWait = "ThrowWhenBlockingWait",
+    /**
+     * Allows synchronous JSExport to be called from JavaScript code also in UI thread.
+     * Inside of that call blocking .Wait warns.
+     * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases).
+     * On JSWebWorker synchronous JSExport always works.
+     * On JSWebWorker blocking .Wait always warns.
+     */
+    WarnWhenBlockingWait = "WarnWhenBlockingWait",
+    /**
+     * Allows synchronous JSExport to be called from JavaScript code, and allows managed code to use blocking .Wait
+     * .Wait on Promise/Task chains could lead to deadlock because JS event loop is not processed and it can't resolve JS promises.
+     * This mode is dangerous and not supported.
+     * Allows synchronous JSExport to be called from JavaScript code also in Main thread.
+     * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases).
+     */
+    DangerousAllowBlockingWait = "DangerousAllowBlockingWait",
 }

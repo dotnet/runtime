@@ -984,7 +984,7 @@ StgStringPool::AddStringW(
     }
 
     // How many bytes will be required in the heap?
-    iLen = ::WszWideCharToMultiByte(
+    iLen = ::WideCharToMultiByte(
         CP_UTF8,
         0,
         szString,
@@ -1004,7 +1004,7 @@ StgStringPool::AddStringW(
     pData = reinterpret_cast<LPSTR>(GetNextLocation());
 
     // Convert the data in place to the correct location.
-    iLen = ::WszWideCharToMultiByte(
+    iLen = ::WideCharToMultiByte(
         CP_UTF8,
         0,
         szString,
@@ -1938,7 +1938,7 @@ CInMemoryStream::CopyTo(
 
     _ASSERTE(cb.QuadPart <= UINT32_MAX);
     ULONG       cbTotal = min(static_cast<ULONG>(cb.QuadPart), m_cbSize - m_cbCurrent);
-    ULONG       cbRead=min(1024, cbTotal);
+    ULONG       cbRead=min((ULONG)1024, cbTotal);
     CQuickBytes rBuf;
     void        *pBuf = rBuf.AllocNoThrow(cbRead);
     if (pBuf == 0)
@@ -2061,7 +2061,7 @@ CGrowableStream::CGrowableStream(float multiplicativeGrowthRate, DWORD additiveG
     m_multiplicativeGrowthRate = min(max(1.0F, multiplicativeGrowthRate), 2.0F);
 
     _ASSERTE(additiveGrowthRate >= 1);
-    m_additiveGrowthRate = max(1, additiveGrowthRate);
+    m_additiveGrowthRate = max((DWORD)1, additiveGrowthRate);
 } // CGrowableStream::CGrowableStream
 
 #ifndef DACCESS_COMPILE
@@ -2115,7 +2115,7 @@ HRESULT CGrowableStream::EnsureCapacity(DWORD newLogicalSize)
             multSize = (DWORD)multSizeF;
         }
 
-        DWORD newBufferSize = max(max(newLogicalSize, multSize), addSize.Value());
+        DWORD newBufferSize = max(max(newLogicalSize, multSize), (DWORD)addSize.Value());
 
         char *tmp = new (nothrow) char[newBufferSize];
         if(tmp == NULL)

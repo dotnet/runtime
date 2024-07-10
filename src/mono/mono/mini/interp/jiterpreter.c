@@ -617,16 +617,17 @@ jiterp_get_opcode_value (InterpInst *ins, gboolean *inside_branch_block)
 		initialize_opcode_value_table ();
 
 	guint16 opcode = ins->opcode;
-	g_assert(opcode < MINT_LASTOP);
+	g_assert (opcode < MINT_LASTOP);
 	int table_value = opcode_value_table[opcode];
 
-	if (table_value == VALUE_ABORT_OUTSIDE_BRANCH_BLOCK) {
-		return *inside_branch_block ? VALUE_LOW : VALUE_ABORT;
-	} else if (table_value == VALUE_ABORT_OUTSIDE_BRANCH_BLOCK) {
-		return *inside_branch_block ? VALUE_NONE : VALUE_ABORT;
-	} else if (table_value == VALUE_BEGIN_BRANCH_BLOCK) {
-		*inside_branch_block = TRUE;
-		return VALUE_NORMAL;
+	switch (table_value) {
+		case VALUE_ABORT_OUTSIDE_BRANCH_BLOCK:
+			return *inside_branch_block ? VALUE_LOW : VALUE_ABORT;
+		case VALUE_ABORT_OUTSIDE_BRANCH_BLOCK_NONE:
+			return *inside_branch_block ? VALUE_NONE : VALUE_ABORT;
+		case VALUE_BEGIN_BRANCH_BLOCK:
+			*inside_branch_block = TRUE;
+			return VALUE_NORMAL;
 	}
 
 	switch (opcode) {
@@ -884,7 +885,10 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 		// Increase the instruction counter. If we inserted an entry point at the top of this bb,
 		//  the new instruction counter will be the number of instructions in the block, so if
 		//  it's big enough we'll be able to insert another entry point right away.
-		instruction_count += bb->in_count;
+		for (InterpInst * ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			if (!MINT_IS_EMIT_NOP (ins->opcode))
+				instruction_count++;
+		}
 
 		build_address_taken_bitset (td, bb, bitset_size);
 	}
@@ -999,7 +1003,7 @@ mono_jiterp_parse_option (const char *option)
 
 	const char *arr[2] = { option, NULL };
 	int temp;
-	mono_options_parse_options (arr, 1, &temp, NULL);
+	mono_options_parse_options (arr, 1, &temp, NULL, NULL);
 	return TRUE;
 }
 
@@ -1017,8 +1021,28 @@ mono_jiterp_get_options_as_json ()
 	return mono_options_get_as_json ();
 }
 
+EMSCRIPTEN_KEEPALIVE gint32
+mono_jiterp_get_option_as_int (const char *name)
+{
+	MonoOptionType type;
+	void *value_address;
+
+	if (!mono_options_get (name, &type, &value_address))
+		return INT32_MIN;
+
+	switch (type) {
+		case MONO_OPTION_BOOL:
+		case MONO_OPTION_BOOL_READONLY:
+			return (*(guint8 *)value_address) != 0;
+		case MONO_OPTION_INT:
+			return *(gint32 *)value_address;
+		default:
+			return INT32_MIN;
+	}
+}
+
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_object_has_component_size (MonoObject ** ppObj)
+mono_jiterp_object_has_component_size (MonoObject **ppObj)
 {
 	MonoObject *obj = *ppObj;
 	if (!obj)
@@ -1165,7 +1189,9 @@ enum {
 	JITERP_MEMBER_SPAN_LENGTH,
 	JITERP_MEMBER_SPAN_DATA,
 	JITERP_MEMBER_ARRAY_LENGTH,
+	// Kept as-is but no longer implemented
 	JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS,
+	// Ditto
 	JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT,
 	JITERP_MEMBER_CLAUSE_DATA_OFFSETS,
 	JITERP_MEMBER_PARAMS_COUNT,
@@ -1173,7 +1199,9 @@ enum {
 	JITERP_MEMBER_VTABLE_KLASS,
 	JITERP_MEMBER_CLASS_RANK,
 	JITERP_MEMBER_CLASS_ELEMENT_CLASS,
-	JITERP_MEMBER_BOXED_VALUE_DATA
+	JITERP_MEMBER_BOXED_VALUE_DATA,
+	JITERP_MEMBER_BACKWARD_BRANCH_TAKEN,
+	JITERP_MEMBER_BAILOUT_OPCODE_COUNT,
 };
 
 
@@ -1195,10 +1223,6 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (InterpFrame, imethod);
 		case JITERP_MEMBER_DATA_ITEMS:
 			return offsetof (InterpMethod, data_items);
-		case JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS:
-			return offsetof (InterpMethod, backward_branch_offsets);
-		case JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT:
-			return offsetof (InterpMethod, backward_branch_offsets_count);
 		case JITERP_MEMBER_CLAUSE_DATA_OFFSETS:
 			return offsetof (InterpMethod, clause_data_offsets);
 		case JITERP_MEMBER_RMETHOD:
@@ -1220,6 +1244,10 @@ mono_jiterp_get_member_offset (int member) {
 		// see mono_object_get_data
 		case JITERP_MEMBER_BOXED_VALUE_DATA:
 			return MONO_ABI_SIZEOF (MonoObject);
+		case JITERP_MEMBER_BACKWARD_BRANCH_TAKEN:
+			return offsetof (JiterpreterCallInfo, backward_branch_taken);
+		case JITERP_MEMBER_BAILOUT_OPCODE_COUNT:
+			return offsetof (JiterpreterCallInfo, bailout_opcode_count);
 		default:
 			g_assert_not_reached();
 	}
@@ -1675,7 +1703,20 @@ mono_jiterp_tlqueue_clear (int queue) {
 
 // HACK: fix C4206
 EMSCRIPTEN_KEEPALIVE
+#else
+int
+mono_jiterp_is_enabled (void);
 #endif // HOST_BROWSER
 
-void jiterp_preserve_module (void) {
+int
+mono_jiterp_is_enabled (void) {
+#if HOST_BROWSER
+	return mono_opt_jiterpreter_traces_enabled;
+#else
+	return 0;
+#endif
+}
+
+void
+jiterp_preserve_module (void) {
 }

@@ -12,8 +12,9 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
-    [Collection(nameof(DisableParallelization))]
+    [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class QuicStreamTests : QuicTestBase
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
@@ -49,6 +50,27 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(s_data, buffer);
                 }
             );
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        public async Task Abort_InvalidCode_Throws(long errorCode)
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    await using var stream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    Assert.Throws<ArgumentOutOfRangeException>(() => stream.Abort(QuicAbortDirection.Both, errorCode));
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                });
         }
 
         [Fact]
@@ -1211,16 +1233,16 @@ namespace System.Net.Quic.Tests
 
         private const int SmallestPayload = 1;
         private const int SmallPayload = 1024;
-        private const int BufferPayload = 64*1024;
-        private const int BufferPlusPayload = 64*1024+1;
-        private const int BigPayload = 1024*1024*1024;
+        private const int BufferPayload = 64 * 1024;
+        private const int BufferPlusPayload = 64 * 1024 + 1;
+        private const int BigPayload = 1024 * 1024 * 1024;
 
         public static IEnumerable<object[]> PayloadSizeAndTwoBools()
         {
-            var boolValues = new [] { true, false };
+            var boolValues = new[] { true, false };
             var payloadValues = !PlatformDetection.IsInHelix ?
-                                    new [] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload, BigPayload } :
-                                    new [] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload };
+                                    new[] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload, BigPayload } :
+                                    new[] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload };
             return
                 from payload in payloadValues
                 from bool1 in boolValues
@@ -1248,6 +1270,9 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WritesClosed;
                     }
+
+                    var _ = await stream.ReadAsync(new byte[0]);
+
                     serverSem.Release();
                     await clientSem.WaitAsync();
 
@@ -1278,6 +1303,9 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WritesClosed;
                     }
+
+                    var _ = await stream.ReadAsync(new byte[0]);
+
                     clientSem.Release();
                     await serverSem.WaitAsync();
 
@@ -1424,7 +1452,7 @@ namespace System.Net.Quic.Tests
                     }
                     else
                     {
-                        await WaitingSide(stream, tcs.Task, DefaultStreamErrorCodeClient);
+                        await WaitingSide(stream, tcs.Task, true);
                     }
                 },
                 clientFunction: async connection =>
@@ -1437,7 +1465,7 @@ namespace System.Net.Quic.Tests
 
                     if (disposeServer)
                     {
-                        await WaitingSide(stream, tcs.Task, DefaultStreamErrorCodeServer);
+                        await WaitingSide(stream, tcs.Task, false);
                     }
                     else
                     {
@@ -1465,10 +1493,6 @@ namespace System.Net.Quic.Tests
 
                 await stream.DisposeAsync();
 
-                // Reads should be aborted as we didn't consume the data.
-                var readEx = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.ReadsClosed);
-                Assert.Null(readEx.ApplicationErrorCode);
-
                 // Writes should be aborted as we aborted them.
                 if (abortCode.HasValue)
                 {
@@ -1481,29 +1505,21 @@ namespace System.Net.Quic.Tests
                     Assert.True(stream.WritesClosed.IsCompletedSuccessfully);
                 }
 
+                // Reads should be aborted as we didn't consume the data.
+                var readEx = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.ReadsClosed);
+                Assert.Null(readEx.ApplicationErrorCode);
+
                 tcs.SetResult(abortCode);
             }
-            async ValueTask WaitingSide(QuicStream stream, Task<long?> task, long errorCode)
+            async ValueTask WaitingSide(QuicStream stream, Task<long?> task, bool server)
             {
                 long? abortCode = await task;
-
-                // Reads will be aborted by the peer as we didn't consume them all.
-                if (abortCode.HasValue)
-                {
-                    var readEx = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => stream.ReadsClosed);
-                    Assert.Equal(abortCode.Value, readEx.ApplicationErrorCode);
-                }
-                // Reads should be still open as the peer closed gracefully and we are keeping the data in buffer.
-                else
-                {
-                    Assert.False(stream.ReadsClosed.IsCompleted);
-                }
 
                 if (!completeWrites)
                 {
                     // Writes must be aborted by the peer as we didn't complete them.
                     var writeEx = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => stream.WritesClosed);
-                    Assert.Equal(errorCode, writeEx.ApplicationErrorCode);
+                    Assert.Equal(server ? DefaultStreamErrorCodeClient : DefaultStreamErrorCodeServer, writeEx.ApplicationErrorCode);
                 }
                 else
                 {
@@ -1517,8 +1533,24 @@ namespace System.Net.Quic.Tests
                     {
                         QuicException qe = Assert.IsType<QuicException>(ex);
                         Assert.Equal(QuicError.StreamAborted, qe.QuicError);
-                        Assert.Equal(errorCode, qe.ApplicationErrorCode);
+                        Assert.Equal(server ? DefaultStreamErrorCodeClient : DefaultStreamErrorCodeServer, qe.ApplicationErrorCode);
                     }
+                }
+
+                // Reads will be aborted by the peer as we didn't consume them all.
+                if (abortCode.HasValue)
+                {
+                    var readEx = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => stream.ReadsClosed);
+                    Assert.Equal(abortCode.Value, readEx.ApplicationErrorCode);
+                }
+                // Reads should be still open as the peer closed gracefully and we are keeping the data in buffer.
+                else
+                {
+                    Assert.False(stream.ReadsClosed.IsCompleted);
+
+                    // Dispose will abort reading from this side.
+                    await stream.DisposeAsync();
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.ReadsClosed);
                 }
             }
         }

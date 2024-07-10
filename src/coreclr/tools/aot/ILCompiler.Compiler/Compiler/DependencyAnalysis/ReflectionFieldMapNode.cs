@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__field_to_offset_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__field_to_offset_map"u8);
         }
 
         public int Offset => 0;
@@ -57,10 +57,6 @@ namespace ILCompiler.DependencyAnalysis
                 FieldDesc field = fieldMapping.Entity;
 
                 if (field.IsLiteral || field.HasRva)
-                    continue;
-
-                // CppCodegen: implement thread statics
-                if (factory.Target.Abi == TargetAbi.CppCodegen && field.IsThreadStatic)
                     continue;
 
                 FieldTableFlags flags;

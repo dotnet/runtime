@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -157,8 +158,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			}
 
 			[ExpectedWarning ("IL2026", "--UsedMethod--", CompilerGeneratedCode = true)]
-			// https://github.com/dotnet/linker/issues/3087
-			[ExpectedWarning ("IL2026", "--RemovedMethod--", CompilerGeneratedCode = true)]
+			[UnexpectedWarning ("IL2026", "--RemovedMethod--", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3087", CompilerGeneratedCode = true)]
 			static IEnumerable<int> TestBranchWithYieldBefore ()
 			{
 				if (AlwaysFalse) {
@@ -174,7 +174,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 			public static void Test ()
 			{
-				TestBranchWithNormalCall ();
+				// Use the IEnumerable to mark the IEnumerable methods
+				foreach (var _ in TestBranchWithNormalCall ()) ;
 				TestBranchWithYieldAfter ();
 				TestBranchWithYieldBefore ();
 			}
@@ -195,8 +196,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			}
 
 			[ExpectedWarning ("IL2026", "--UsedMethod--", CompilerGeneratedCode = true)]
-			// https://github.com/dotnet/linker/issues/3087
-			[ExpectedWarning ("IL2026", "--RemovedMethod--", CompilerGeneratedCode = true)]
+			[UnexpectedWarning ("IL2026", "--RemovedMethod--", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3087", CompilerGeneratedCode = true)]
 			static async Task TestBranchWithNormalCallAfterWAwait ()
 			{
 				if (AlwaysFalse) {

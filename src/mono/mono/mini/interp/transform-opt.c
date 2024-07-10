@@ -4,6 +4,7 @@
 
 #include "mintops.h"
 #include "transform.h"
+#include "interp-intrins.h"
 
 /*
  * VAR OFFSET ALLOCATOR
@@ -31,7 +32,9 @@ alloc_var_offset (TransformData *td, int local, gint32 *ptos)
 int
 interp_alloc_global_var_offset (TransformData *td, int var)
 {
-	return alloc_var_offset (td, var, &td->total_locals_size);
+	int offset = alloc_var_offset (td, var, &td->total_locals_size);
+	interp_mark_ref_slots_for_var (td, var);
+	return offset;
 }
 
 static void
@@ -463,6 +466,8 @@ interp_alloc_offsets (TransformData *td)
 					add_active_call (td, &ac, td->vars [var].call);
 				} else if (!td->vars [var].global && td->vars [var].offset == -1) {
 					alloc_var_offset (td, var, &current_offset);
+					interp_mark_ref_slots_for_var (td, var);
+
 					if (current_offset > final_total_locals_size)
 						final_total_locals_size = current_offset;
 
@@ -491,6 +496,7 @@ interp_alloc_offsets (TransformData *td)
 		// These are allocated separately at the end of the stack
 		if (td->vars [i].call_args) {
 			td->vars [i].offset += td->param_area_offset;
+			interp_mark_ref_slots_for_var (td, i);
 			final_total_locals_size = MAX (td->vars [i].offset + td->vars [i].size, final_total_locals_size);
 		}
 	}
@@ -1624,6 +1630,14 @@ interp_merge_bblocks (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 		}
 	}
 
+#if defined(TARGET_WASM)
+	// Copy jiterpreter data
+	if (bbadd->backwards_branch_target)
+		bb->backwards_branch_target = TRUE;
+	if (bbadd->contains_call_instruction)
+		bb->contains_call_instruction = TRUE;
+#endif
+
 	mark_bb_as_dead (td, bbadd, bb);
 }
 
@@ -1681,6 +1695,16 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 	mark_bb_as_dead (td, bb, bb->next_bb);
 }
 
+static int
+get_bb_links_capacity (int links)
+{
+	if (links <= 2)
+		return links;
+	// Return the next power of 2 bigger or equal to links
+	int leading_zero = interp_intrins_clz_i4 (links - 1);
+	return 1 << (32 - leading_zero);
+}
+
 void
 interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock *to)
 {
@@ -1694,12 +1718,15 @@ interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock
 		}
 	}
 	if (!found) {
-		InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, sizeof (InterpBasicBlock*) * (from->out_count + 1));
-		for (i = 0; i < from->out_count; ++i)
-			newa [i] = from->out_bb [i];
-		newa [i] = to;
+		int prev_capacity = get_bb_links_capacity (from->out_count);
+		int new_capacity = get_bb_links_capacity (from->out_count + 1);
+		if (new_capacity > prev_capacity) {
+			InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, new_capacity * sizeof (InterpBasicBlock*));
+			memcpy (newa, from->out_bb, from->out_count * sizeof (InterpBasicBlock*));
+			from->out_bb = newa;
+		}
+		from->out_bb [from->out_count] = to;
 		from->out_count++;
-		from->out_bb = newa;
 	}
 
 	found = FALSE;
@@ -1710,12 +1737,15 @@ interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock
 		}
 	}
 	if (!found) {
-		InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, sizeof (InterpBasicBlock*) * (to->in_count + 1));
-		for (i = 0; i < to->in_count; ++i)
-			newa [i] = to->in_bb [i];
-		newa [i] = from;
+		int prev_capacity = get_bb_links_capacity (to->in_count);
+		int new_capacity = get_bb_links_capacity (to->in_count + 1);
+		if (new_capacity > prev_capacity) {
+			InterpBasicBlock **newa = (InterpBasicBlock**)mono_mempool_alloc (td->mempool, new_capacity * sizeof (InterpBasicBlock*));
+			memcpy (newa, to->in_bb, to->in_count * sizeof (InterpBasicBlock*));
+			to->in_bb = newa;
+		}
+		to->in_bb [to->in_count] = from;
 		to->in_count++;
-		to->in_bb = newa;
 	}
 }
 
@@ -1942,7 +1972,8 @@ interp_reorder_bblocks (TransformData *td)
 				InterpInst *last_ins = interp_last_ins (in_bb);
 				if (last_ins && (MINT_IS_CONDITIONAL_BRANCH (last_ins->opcode) ||
 						MINT_IS_UNCONDITIONAL_BRANCH (last_ins->opcode)) &&
-						last_ins->info.target_bb == bb) {
+						last_ins->info.target_bb == bb &&
+						in_bb != bb) {
 					InterpBasicBlock *target_bb = first->info.target_bb;
 					last_ins->info.target_bb = target_bb;
 					interp_unlink_bblocks (in_bb, bb);
@@ -2210,6 +2241,7 @@ interp_fold_unop (TransformData *td, InterpInst *ins)
 	td->var_values [sreg].ref_count--;
 	result.def = ins;
 	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
+	result.liveness = td->var_values [dreg].liveness;
 	td->var_values [dreg] = result;
 
 	return ins;
@@ -2314,6 +2346,51 @@ interp_fold_binop (TransformData *td, InterpInst *ins, gboolean *folded)
 
 	if (!val1 || !val2)
 		return ins;
+
+	if ((val1->type == VAR_VALUE_I4 || val1->type == VAR_VALUE_I8) && val2->type == VAR_VALUE_NON_NULL) {
+		gint64 imm = (val1->type == VAR_VALUE_I4) ? (gint64)val1->i : val1->l;
+		if (imm == 0) {
+			result.type = VAR_VALUE_NONE;
+			switch (ins->opcode) {
+				case MINT_CEQ_I4:
+				case MINT_CEQ_I8:
+				case MINT_CGT_UN_I4:
+				case MINT_CGT_UN_I8:
+					result.type = VAR_VALUE_I4;
+					result.i = 0;
+					goto fold_ok;
+				case MINT_CNE_I4:
+				case MINT_CNE_I8:
+				case MINT_CLT_UN_I4:
+				case MINT_CLT_UN_I8:
+					result.type = VAR_VALUE_I4;
+					result.i = 1;
+					goto fold_ok;
+			}
+		}
+	} else if (val1->type == VAR_VALUE_NON_NULL && (val2->type == VAR_VALUE_I4 || val2->type == VAR_VALUE_I8)) {
+		gint64 imm = (val2->type == VAR_VALUE_I4) ? (gint64)val2->i : val2->l;
+		if (imm == 0) {
+			result.type = VAR_VALUE_NONE;
+			switch (ins->opcode) {
+				case MINT_CNE_I4:
+				case MINT_CNE_I8:
+				case MINT_CGT_UN_I4:
+				case MINT_CGT_UN_I8:
+					result.type = VAR_VALUE_I4;
+					result.i = 1;
+					goto fold_ok;
+				case MINT_CEQ_I4:
+				case MINT_CEQ_I8:
+				case MINT_CLT_UN_I4:
+				case MINT_CLT_UN_I8:
+					result.type = VAR_VALUE_I4;
+					result.i = 0;
+					goto fold_ok;
+			}
+		}
+	}
+
 	if (val1->type != VAR_VALUE_I4 && val1->type != VAR_VALUE_I8)
 		return ins;
 	if (val2->type != VAR_VALUE_I4 && val2->type != VAR_VALUE_I8)
@@ -2381,6 +2458,7 @@ interp_fold_binop (TransformData *td, InterpInst *ins, gboolean *folded)
 			return ins;
 	}
 
+fold_ok:
 	// We were able to compute the result of the ins instruction. We replace the binop
 	// with a LDC of the constant. We leave alone the sregs of this instruction, for
 	// deadce to kill the instructions initializing them.
@@ -2401,6 +2479,7 @@ interp_fold_binop (TransformData *td, InterpInst *ins, gboolean *folded)
 	td->var_values [sreg2].ref_count--;
 	result.def = ins;
 	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
+	result.liveness = td->var_values [dreg].liveness;
 	td->var_values [dreg] = result;
 
 	return ins;
@@ -3004,12 +3083,12 @@ retry_instruction:
 						interp_dump_ins (ins, td->data_items);
 					}
 				}
-			} else if (opcode == MINT_INITOBJ) {
+			} else if (opcode == MINT_ZEROBLK_IMM) {
 				InterpInst *ldloca = get_var_value_def (td, sregs [0]);
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
 					int size = ins->data [0];
 					int local = ldloca->sregs [0];
-					// Replace LDLOCA + INITOBJ with or LDC
+					// Replace LDLOCA + ZEROBLK_IMM with or LDC
 					if (size <= 4)
 						ins->opcode = MINT_LDC_I4_0;
 					else if (size <= 8)
@@ -3020,7 +3099,7 @@ retry_instruction:
 					ins->dreg = local;
 
 					if (td->verbose_level) {
-						g_print ("Replace ldloca/initobj pair :\n\t");
+						g_print ("Replace ldloca/zeroblk pair :\n\t");
 						interp_dump_ins (ins, td->data_items);
 					}
 				}
@@ -3156,7 +3235,7 @@ retry_instruction:
 					td->var_values [ins->sregs [0]].ref_count--;
 					goto retry_instruction;
 				}
-			} else if (opcode == MINT_BOX) {
+			} else if (MINT_IS_BOX (opcode)) {
 				// TODO Add more relevant opcodes
 				td->var_values [dreg].type = VAR_VALUE_NON_NULL;
 			}
@@ -3170,8 +3249,10 @@ mono_test_interp_cprop (TransformData *td)
 	interp_cprop (td);
 }
 
+// If sreg is constant, it returns the value in `imm` and the smallest
+// containing type for it in `imm_mt`.
 static gboolean
-get_sreg_imm (TransformData *td, int sreg, gint16 *imm, int result_mt)
+get_sreg_imm (TransformData *td, int sreg, gint32 *imm, int *imm_mt)
 {
 	if (var_has_indirects (td, sreg))
 		return FALSE;
@@ -3187,32 +3268,15 @@ get_sreg_imm (TransformData *td, int sreg, gint16 *imm, int result_mt)
 			ct = interp_get_const_from_ldc_i8 (def);
 		else
 			return FALSE;
-		gint64 min_val, max_val;
-		// We only propagate the immediate only if it fits into the desired type,
-		// so we don't accidentaly handle conversions wrong
-		switch (result_mt) {
-			case MINT_TYPE_I1:
-				min_val = G_MININT8;
-				max_val = G_MAXINT8;
-				break;
-			case MINT_TYPE_I2:
-				min_val = G_MININT16;
-				max_val = G_MAXINT16;
-				break;
-			case MINT_TYPE_U1:
-				min_val = 0;
-				max_val = G_MAXUINT8;
-				break;
-			case MINT_TYPE_U2:
-				min_val = 0;
-				max_val = G_MAXINT16;
-				break;
-			default:
-				g_assert_not_reached ();
-
-		}
-		if (ct >= min_val && ct <= max_val) {
+		if (ct >= G_MININT16 && ct <= G_MAXINT16) {
 			*imm = (gint16)ct;
+			if (imm_mt)
+				*imm_mt = MINT_TYPE_I2;
+			return TRUE;
+		} else if (ct >= G_MININT32 && ct <= G_MAXINT32) {
+			*imm = (gint32)ct;
+			if (imm_mt)
+				*imm_mt = MINT_TYPE_I4;
 			return TRUE;
 		}
 	}
@@ -3323,7 +3387,7 @@ can_propagate_var_def (TransformData *td, int var, InterpLivenessPosition cur_li
 static void
 interp_super_instructions (TransformData *td)
 {
-	interp_compute_native_offset_estimates (td);
+	interp_compute_native_offset_estimates (td, FALSE);
 
 	// Add some actual super instructions
 	for (int bb_dfs_index = 0; bb_dfs_index < td->bblocks_count_eh; bb_dfs_index++) {
@@ -3351,45 +3415,67 @@ interp_super_instructions (TransformData *td)
 			if (opcode == MINT_RET || (opcode >= MINT_RET_I1 && opcode <= MINT_RET_U2)) {
 				// ldc + ret -> ret.imm
 				int sreg = ins->sregs [0];
-				gint16 imm;
-				if (get_sreg_imm (td, sreg, &imm, (opcode == MINT_RET) ? MINT_TYPE_I2 : opcode - MINT_RET_I1)) {
-					InterpInst *def = td->var_values [sreg].def;
-					int ret_op = MINT_IS_LDC_I4 (def->opcode) ? MINT_RET_I4_IMM : MINT_RET_I8_IMM;
-					InterpInst *new_inst = interp_insert_ins (td, ins, ret_op);
-					new_inst->data [0] = imm;
-					interp_clear_ins (def);
-					interp_clear_ins (ins);
-					td->var_values [sreg].ref_count--; // 0
-					if (td->verbose_level) {
-						g_print ("superins: ");
-						interp_dump_ins (new_inst, td->data_items);
+				gint32 imm;
+				if (get_sreg_imm (td, sreg, &imm, NULL)) {
+					// compute the casting as done by the ret opcode
+					int ret_mt = (opcode == MINT_RET) ? MINT_TYPE_I8 : opcode - MINT_RET_I1;
+					if (ret_mt == MINT_TYPE_I1)
+						imm = (gint8)imm;
+					else if (ret_mt == MINT_TYPE_U1)
+						imm = (guint8)imm;
+					else if (ret_mt == MINT_TYPE_I2)
+						imm = (gint16)imm;
+					else if (ret_mt == MINT_TYPE_U2)
+						imm = (guint16)imm;
+
+					if (imm >= G_MININT16 && imm <= G_MAXINT16) {
+						InterpInst *def = td->var_values [sreg].def;
+						int ret_op = MINT_IS_LDC_I4 (def->opcode) ? MINT_RET_I4_IMM : MINT_RET_I8_IMM;
+						InterpInst *new_inst = interp_insert_ins (td, ins, ret_op);
+						new_inst->data [0] = (gint16)imm;
+						interp_clear_ins (def);
+						interp_clear_ins (ins);
+						td->var_values [sreg].ref_count--; // 0
+						if (td->verbose_level) {
+							g_print ("superins: ");
+							interp_dump_ins (new_inst, td->data_items);
+						}
 					}
 				}
 			} else if (opcode == MINT_ADD_I4 || opcode == MINT_ADD_I8 ||
-					opcode == MINT_MUL_I4 || opcode == MINT_MUL_I8) {
+					opcode == MINT_MUL_I4 || opcode == MINT_MUL_I8 ||
+					opcode == MINT_OR_I4 || opcode == MINT_AND_I4) {
 				int sreg = -1;
 				int sreg_imm = -1;
-				gint16 imm;
-				if (get_sreg_imm (td, ins->sregs [0], &imm, MINT_TYPE_I2)) {
+				int imm_mt;
+				gint32 imm;
+				if (get_sreg_imm (td, ins->sregs [0], &imm, &imm_mt)) {
 					sreg = ins->sregs [1];
 					sreg_imm = ins->sregs [0];
-				} else if (get_sreg_imm (td, ins->sregs [1], &imm, MINT_TYPE_I2)) {
+				} else if (get_sreg_imm (td, ins->sregs [1], &imm, &imm_mt)) {
 					sreg = ins->sregs [0];
 					sreg_imm = ins->sregs [1];
 				}
 				if (sreg != -1) {
 					int binop;
 					switch (opcode) {
-						case MINT_ADD_I4: binop = MINT_ADD_I4_IMM; break;
-						case MINT_ADD_I8: binop = MINT_ADD_I8_IMM; break;
-						case MINT_MUL_I4: binop = MINT_MUL_I4_IMM; break;
-						case MINT_MUL_I8: binop = MINT_MUL_I8_IMM; break;
+						case MINT_ADD_I4: binop = (imm_mt == MINT_TYPE_I2) ? MINT_ADD_I4_IMM : MINT_ADD_I4_IMM2; break;
+						case MINT_ADD_I8: binop = (imm_mt == MINT_TYPE_I2) ? MINT_ADD_I8_IMM : MINT_ADD_I8_IMM2; break;
+						case MINT_MUL_I4: binop = (imm_mt == MINT_TYPE_I2) ? MINT_MUL_I4_IMM : MINT_MUL_I4_IMM2; break;
+						case MINT_MUL_I8: binop = (imm_mt == MINT_TYPE_I2) ? MINT_MUL_I8_IMM : MINT_MUL_I8_IMM2; break;
+						case MINT_OR_I4: binop = (imm_mt == MINT_TYPE_I2) ? MINT_OR_I4_IMM : MINT_OR_I4_IMM2; break;
+						case MINT_AND_I4: binop = (imm_mt == MINT_TYPE_I2) ? MINT_AND_I4_IMM : MINT_AND_I4_IMM2; break;
 						default: g_assert_not_reached ();
 					}
 					InterpInst *new_inst = interp_insert_ins (td, ins, binop);
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = sreg;
-					new_inst->data [0] = imm;
+					if (imm_mt == MINT_TYPE_I2)
+						new_inst->data [0] = (gint16)imm;
+					else if (imm_mt == MINT_TYPE_I4)
+						WRITE32_INS (new_inst, 0, &imm);
+					else
+						g_assert_not_reached ();
 					interp_clear_ins (td->var_values [sreg_imm].def);
 					interp_clear_ins (ins);
 					td->var_values [sreg_imm].ref_count--; // 0
@@ -3401,14 +3487,15 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (opcode == MINT_SUB_I4 || opcode == MINT_SUB_I8) {
 				// ldc + sub -> add.-imm
-				gint16 imm;
+				gint32 imm;
+				int imm_mt;
 				int sreg_imm = ins->sregs [1];
-				if (get_sreg_imm (td, sreg_imm, &imm, MINT_TYPE_I2) && imm != G_MININT16) {
+				if (get_sreg_imm (td, sreg_imm, &imm, &imm_mt) && imm_mt == MINT_TYPE_I2 && imm != G_MININT16) {
 					int add_op = opcode == MINT_SUB_I4 ? MINT_ADD_I4_IMM : MINT_ADD_I8_IMM;
 					InterpInst *new_inst = interp_insert_ins (td, ins, add_op);
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = ins->sregs [0];
-					new_inst->data [0] = -imm;
+					new_inst->data [0] = (gint16)-imm;
 					interp_clear_ins (td->var_values [sreg_imm].def);
 					interp_clear_ins (ins);
 					td->var_values [sreg_imm].ref_count--; // 0
@@ -3441,15 +3528,16 @@ interp_super_instructions (TransformData *td)
 					}
 				}
 			} else if (MINT_IS_BINOP_SHIFT (opcode)) {
-				gint16 imm;
+				gint32 imm;
+				int imm_mt;
 				int sreg_imm = ins->sregs [1];
-				if (get_sreg_imm (td, sreg_imm, &imm, MINT_TYPE_I2)) {
+				if (get_sreg_imm (td, sreg_imm, &imm, &imm_mt) && imm_mt == MINT_TYPE_I2) {
 					// ldc + sh -> sh.imm
 					int shift_op = MINT_SHR_UN_I4_IMM + (opcode - MINT_SHR_UN_I4);
 					InterpInst *new_inst = interp_insert_ins (td, ins, shift_op);
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = ins->sregs [0];
-					new_inst->data [0] = imm;
+					new_inst->data [0] = (gint16)imm;
 					interp_clear_ins (td->var_values [sreg_imm].def);
 					interp_clear_ins (ins);
 					td->var_values [sreg_imm].ref_count--; // 0
@@ -3461,33 +3549,28 @@ interp_super_instructions (TransformData *td)
 				} else if (opcode == MINT_SHL_I4 || opcode == MINT_SHL_I8) {
 					int amount_var = ins->sregs [1];
 					InterpInst *amount_def = get_var_value_def (td, amount_var);
-					if (amount_def != NULL && td->var_values [amount_var].ref_count == 1 && amount_def->opcode == MINT_AND_I4) {
-						int mask_var = amount_def->sregs [1];
-						if (get_sreg_imm (td, mask_var, &imm, MINT_TYPE_I2)) {
-							// ldc + and + shl -> shl_and_imm
-							int new_opcode = -1;
-							if (opcode == MINT_SHL_I4 && imm == 31)
-								new_opcode = MINT_SHL_AND_I4;
-							else if (opcode == MINT_SHL_I8 && imm == 63)
-								new_opcode = MINT_SHL_AND_I8;
+					if (amount_def != NULL && td->var_values [amount_var].ref_count == 1 && amount_def->opcode == MINT_AND_I4_IMM) {
+						// and_imm + shl -> shl_and_imm
+						int new_opcode = -1;
+						if (opcode == MINT_SHL_I4 && amount_def->data [0] == 31)
+							new_opcode = MINT_SHL_AND_I4;
+						else if (opcode == MINT_SHL_I8 && amount_def->data [0] == 63)
+							new_opcode = MINT_SHL_AND_I8;
 
-							if (new_opcode != -1) {
-								InterpInst *new_inst = interp_insert_ins (td, ins, new_opcode);
-								new_inst->dreg = ins->dreg;
-								new_inst->sregs [0] = ins->sregs [0];
-								new_inst->sregs [1] = amount_def->sregs [0];
+						if (new_opcode != -1) {
+							InterpInst *new_inst = interp_insert_ins (td, ins, new_opcode);
+							new_inst->dreg = ins->dreg;
+							new_inst->sregs [0] = ins->sregs [0];
+							new_inst->sregs [1] = amount_def->sregs [0];
 
-								td->var_values [amount_var].ref_count--; // 0
-								td->var_values [mask_var].ref_count--; // 0
-								td->var_values [new_inst->dreg].def = new_inst;
+							td->var_values [amount_var].ref_count--; // 0
+							td->var_values [new_inst->dreg].def = new_inst;
 
-								interp_clear_ins (td->var_values [mask_var].def);
-								interp_clear_ins (amount_def);
-								interp_clear_ins (ins);
-								if (td->verbose_level) {
-									g_print ("superins: ");
-									interp_dump_ins (new_inst, td->data_items);
-								}
+							interp_clear_ins (amount_def);
+							interp_clear_ins (ins);
+							if (td->verbose_level) {
+								g_print ("superins: ");
+								interp_dump_ins (new_inst, td->data_items);
 							}
 						}
 					}
@@ -3638,9 +3721,10 @@ interp_super_instructions (TransformData *td)
 					td->var_values [obj_sreg].ref_count--;
 				}
 			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode) && interp_is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
-				gint16 imm;
+				gint32 imm;
+				int imm_mt;
 				int sreg_imm = ins->sregs [1];
-				if (get_sreg_imm (td, sreg_imm, &imm, MINT_TYPE_I2)) {
+				if (get_sreg_imm (td, sreg_imm, &imm, &imm_mt) && imm_mt == MINT_TYPE_I2) {
 					int condbr_op = get_binop_condbr_imm_sp (opcode);
 					if (condbr_op != MINT_NOP) {
 						InterpInst *prev_ins = interp_prev_ins (ins);
@@ -3649,7 +3733,7 @@ interp_super_instructions (TransformData *td)
 							interp_clear_ins (prev_ins);
 						InterpInst *new_ins = interp_insert_ins (td, ins, condbr_op);
 						new_ins->sregs [0] = ins->sregs [0];
-						new_ins->data [0] = imm;
+						new_ins->data [0] = (gint16)imm;
 						new_ins->info.target_bb = ins->info.target_bb;
 						interp_clear_ins (td->var_values [sreg_imm].def);
 						interp_clear_ins (ins);
@@ -3887,8 +3971,15 @@ optimization_retry:
 
 	// We run this after var deadce to detect more single use vars. This pass will clear
 	// unnecessary instruction on the fly so deadce is no longer needed to run.
-	if (mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS)
-		MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
+	if (mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS) {
+		// This pass is enough to be called only once, after all cprop and other optimizations
+		// are done. The problem is that currently it needs to run over code in SSA form, so we
+		// can't just run it at the very end of optimization cycles. Also bblock optimization can
+		// lead to another optimization iteration, so we can still end up running it multiple times.
+		// Basic block optimization currently needs to run after we exited SSA.
+		if (!ssa_enabled_retry && !td->need_optimization_retry)
+			MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
+	}
 
 	if (!td->disable_ssa)
 		interp_exit_ssa (td);

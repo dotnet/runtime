@@ -632,7 +632,57 @@ namespace System.IO
         public static void WriteAllText(string path, string? contents)
             => WriteAllText(path, contents, UTF8NoBOM);
 
+        /// <summary>
+        /// Creates a new file, writes the specified string to the file, and then closes the file.
+        /// If the target file already exists, it is truncated and overwritten.
+        /// </summary>
+        /// <param name="path">The file to write to.</param>
+        /// <param name="contents">The characters to write to the file.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">An I/O error occurred while opening the file.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is read-only.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is hidden.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a directory.</exception>
+        /// <exception cref="UnauthorizedAccessException">This operation is not supported on the current platform.</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="path"/> is in an invalid format.</exception>
+        /// <remarks>
+        /// This method uses UTF-8 encoding without a Byte-Order Mark (BOM), so using the GetPreamble method will return an empty byte array. If it is necessary to
+        /// include a UTF-8 identifier, such as a byte order mark, at the beginning of a file, use the <see cref="WriteAllText(string, ReadOnlySpan{char}, Encoding)"/> method.
+        /// </remarks>
+        public static void WriteAllText(string path, ReadOnlySpan<char> contents)
+            => WriteAllText(path, contents, UTF8NoBOM);
+
         public static void WriteAllText(string path, string? contents, Encoding encoding)
+        {
+            Validate(path, encoding);
+
+            WriteToFile(path, FileMode.Create, contents, encoding);
+        }
+
+        /// <summary>
+        /// Creates a new file, writes the specified string to the file using the specified encoding, and then closes the file.
+        /// If the target file already exists, it is truncated and overwritten.
+        /// </summary>
+        /// <param name="path">The file to write to.</param>
+        /// <param name="contents">The characters to write to the file.</param>
+        /// <param name="encoding">The encoding to apply to the string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="encoding"/> is <see langword="null"/>.</exception>
+        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">An I/O error occurred while opening the file.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is read-only.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is hidden.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a directory.</exception>
+        /// <exception cref="UnauthorizedAccessException">This operation is not supported on the current platform.</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="path"/> is in an invalid format.</exception>
+        public static void WriteAllText(string path, ReadOnlySpan<char> contents, Encoding encoding)
         {
             Validate(path, encoding);
 
@@ -682,8 +732,30 @@ namespace System.IO
 
         public static void WriteAllBytes(string path, byte[] bytes)
         {
-            ArgumentException.ThrowIfNullOrEmpty(path);
             ArgumentNullException.ThrowIfNull(bytes);
+
+            WriteAllBytes(path, new ReadOnlySpan<byte>(bytes));
+        }
+
+        /// <summary>
+        /// Creates a new file, writes the specified byte array to the file, and then closes the file. If the target file already exists, it is truncated and overwritten.
+        /// </summary>
+        /// <param name="path">The file to write to.</param>
+        /// <param name="bytes">The bytes to write to the file.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">An I/O error occurred while opening the file.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is read-only.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is hidden.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a directory.</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="UnauthorizedAccessException">This operation is not supported on the current platform.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="path"/> is in an invalid format.</exception>
+        public static void WriteAllBytes(string path, ReadOnlySpan<byte> bytes)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read);
             RandomAccess.WriteAtOffset(sfh, bytes, 0);
@@ -695,16 +767,45 @@ namespace System.IO
         /// </summary>
         /// <param name="path">The file to append to.</param>
         /// <param name="bytes">The bytes to append to the file.</param>
-        /// <exception cref="System.ArgumentException">
-        /// <paramref name="path"/> is a zero-length string, contains only white space, or contains one more invalid characters defined by the <see cref="System.IO.Path.GetInvalidPathChars"/> method.
-        /// </exception>
-        /// <exception cref="System.ArgumentNullException">
-        /// Either <paramref name="path"/> or <paramref name="bytes"/> is null.
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="bytes"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">An I/O error occurred while opening the file.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is read-only.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is hidden.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a directory.</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="UnauthorizedAccessException">This operation is not supported on the current platform.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="path"/> is in an invalid format.</exception>
         public static void AppendAllBytes(string path, byte[] bytes)
         {
-            ArgumentException.ThrowIfNullOrEmpty(path);
             ArgumentNullException.ThrowIfNull(bytes);
+
+            AppendAllBytes(path, new ReadOnlySpan<byte>(bytes));
+        }
+
+        /// <summary>
+        /// Appends the specified byte array to the end of the file at the given path.
+        /// If the file doesn't exist, this method creates a new file.
+        /// </summary>
+        /// <param name="path">The file to append to.</param>
+        /// <param name="bytes">The bytes to append to the file.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">An I/O error occurred while opening the file.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is read-only.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is hidden.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a directory.</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="UnauthorizedAccessException">This operation is not supported on the current platform.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="path"/> is in an invalid format.</exception>
+        public static void AppendAllBytes(string path, ReadOnlySpan<byte> bytes)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Append, FileAccess.Write, FileShare.Read);
             long fileOffset = RandomAccess.GetLength(fileHandle);
@@ -717,27 +818,37 @@ namespace System.IO
         /// </summary>
         /// <param name="path">The file to append to.</param>
         /// <param name="bytes">The bytes to append to the file.</param>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None"/>.</param>
-        /// <returns>A task that represents the asynchronous append operation.</returns>
-        /// <exception cref="System.ArgumentException">
-        /// <paramref name="path"/> is a zero-length string, contains only white space, or contains one more invalid characters defined by the <see cref="System.IO.Path.GetInvalidPathChars"/> method.
-        /// </exception>
-        /// <exception cref="System.ArgumentNullException">
-        /// Either <paramref name="path"/> or <paramref name="bytes"/> is null.
-        /// </exception>
-        /// <exception cref="T:System.OperationCanceledException">
-        /// The cancellation token was canceled. This exception is stored into the returned task.
-        /// </exception>
-        public static Task AppendAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="bytes"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
+        public static Task AppendAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            return AppendAllBytesAsync(path, new ReadOnlyMemory<byte>(bytes), cancellationToken);
+        }
+
+        /// <summary>
+        /// Asynchronously appends the specified byte array to the end of the file at the given path.
+        /// If the file doesn't exist, this method creates a new file. If the operation is canceled, the task will return in a canceled state.
+        /// </summary>
+        /// <param name="path">The file to append to.</param>
+        /// <param name="bytes">The bytes to append to the file.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
+        public static Task AppendAllBytesAsync(string path, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentNullException.ThrowIfNull(bytes);
 
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
                 : Core(path, bytes, cancellationToken);
 
-            static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
+            static async Task Core(string path, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken)
             {
                 using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Append, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous);
                 long fileOffset = RandomAccess.GetLength(fileHandle);
@@ -831,7 +942,61 @@ namespace System.IO
         public static void AppendAllText(string path, string? contents)
             => AppendAllText(path, contents, UTF8NoBOM);
 
+        /// <summary>
+        /// Appends the specified string to the file, creating the file if it does not already exist.
+        /// </summary>
+        /// <param name="path">The file to append to.</param>
+        /// <param name="contents">The characters to write to the file.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">An I/O error occurred while opening the file.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is read-only.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is hidden.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a directory.</exception>
+        /// <exception cref="UnauthorizedAccessException">This operation is not supported on the current platform.</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="path"/> is in an invalid format.</exception>
+        /// <remarks>
+        /// Given a string and a file path, this method opens the specified file, appends the string to the end of the file using the specified encoding,
+        /// and then closes the file. The file handle is guaranteed to be closed by this method, even if exceptions are raised. The method creates the file
+        /// if it doesn't exist, but it doesn't create new directories. Therefore, the value of the path parameter must contain existing directories.
+        /// </remarks>
+        public static void AppendAllText(string path, ReadOnlySpan<char> contents)
+            => AppendAllText(path, contents, UTF8NoBOM);
+
         public static void AppendAllText(string path, string? contents, Encoding encoding)
+        {
+            Validate(path, encoding);
+
+            WriteToFile(path, FileMode.Append, contents, encoding);
+        }
+
+        /// <summary>
+        /// Appends the specified string to the file, creating the file if it does not already exist.
+        /// </summary>
+        /// <param name="path">The file to append to.</param>
+        /// <param name="contents">The characters to write to the file.</param>
+        /// <param name="encoding">The encoding to apply to the string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="encoding"/> is <see langword="null"/>.</exception>
+        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">An I/O error occurred while opening the file.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is read-only.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a file that is hidden.</exception>
+        /// <exception cref="UnauthorizedAccessException"><paramref name="path"/> specified a directory.</exception>
+        /// <exception cref="UnauthorizedAccessException">This operation is not supported on the current platform.</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="path"/> is in an invalid format.</exception>
+        /// <remarks>
+        /// Given a string and a file path, this method opens the specified file, appends the string to the end of the file using the specified encoding,
+        /// and then closes the file. The file handle is guaranteed to be closed by this method, even if exceptions are raised. The method creates the file
+        /// if it doesn't exist, but it doesn't create new directories. Therefore, the value of the path parameter must contain existing directories.
+        /// </remarks>
+        public static void AppendAllText(string path, ReadOnlySpan<char> contents, Encoding encoding)
         {
             Validate(path, encoding);
 
@@ -911,15 +1076,10 @@ namespace System.IO
                 new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan),
                 encoding, detectEncodingFromByteOrderMarks: true);
 
-        private static StreamWriter AsyncStreamWriter(string path, Encoding encoding, bool append)
-            => new StreamWriter(
-                new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous),
-                encoding);
-
-        public static Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default)
             => ReadAllTextAsync(path, Encoding.UTF8, cancellationToken);
 
-        public static Task<string> ReadAllTextAsync(string path, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task<string> ReadAllTextAsync(string path, Encoding encoding, CancellationToken cancellationToken = default)
         {
             Validate(path, encoding);
 
@@ -961,10 +1121,35 @@ namespace System.IO
             }
         }
 
-        public static Task WriteAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task WriteAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default)
             => WriteAllTextAsync(path, contents, UTF8NoBOM, cancellationToken);
 
-        public static Task WriteAllTextAsync(string path, string? contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        /// <summary>
+        /// Asynchronously creates a new file, writes the specified string to the file, and then closes the file.
+        /// If the target file already exists, it is truncated and overwritten.
+        /// </summary>
+        /// <param name="path">The file to write to.</param>
+        /// <param name="contents">The characters to write to the file.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
+        public static Task WriteAllTextAsync(string path, ReadOnlyMemory<char> contents, CancellationToken cancellationToken = default)
+            => WriteAllTextAsync(path, contents, UTF8NoBOM, cancellationToken);
+
+        public static Task WriteAllTextAsync(string path, string? contents, Encoding encoding, CancellationToken cancellationToken = default)
+            => WriteAllTextAsync(path, contents.AsMemory(), encoding, cancellationToken);
+
+        /// <summary>
+        /// Asynchronously creates a new file, writes the specified string to the file using the specified encoding, and then closes the file.
+        /// If the target file already exists, it is truncated and overwritten.
+        /// </summary>
+        /// <param name="path">The file to write to.</param>
+        /// <param name="contents">The characters to write to the file.</param>
+        /// <param name="encoding">The encoding to apply to the string.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
+        public static Task WriteAllTextAsync(string path, ReadOnlyMemory<char> contents, Encoding encoding, CancellationToken cancellationToken = default)
         {
             Validate(path, encoding);
 
@@ -976,7 +1161,7 @@ namespace System.IO
             return WriteToFileAsync(path, FileMode.Create, contents, encoding, cancellationToken);
         }
 
-        public static Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -1065,26 +1250,42 @@ namespace System.IO
             }
         }
 
-        public static Task WriteAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task WriteAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            return WriteAllBytesAsync(path, new ReadOnlyMemory<byte>(bytes), cancellationToken);
+        }
+
+        /// <summary>
+        /// Asynchronously creates a new file, writes the specified byte array to the file, and then closes the file. If the target file already exists, it is truncated and overwritten.
+        /// </summary>
+        /// <param name="path">The file to write to.</param>
+        /// <param name="bytes">The bytes to write to the file.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
+        public static Task WriteAllBytesAsync(string path, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentNullException.ThrowIfNull(bytes);
 
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
                 : Core(path, bytes, cancellationToken);
 
-            static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
+            static async Task Core(string path, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken)
             {
                 using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous);
                 await RandomAccess.WriteAtOffsetAsync(sfh, bytes, 0, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        public static Task<string[]> ReadAllLinesAsync(string path, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task<string[]> ReadAllLinesAsync(string path, CancellationToken cancellationToken = default)
             => ReadAllLinesAsync(path, Encoding.UTF8, cancellationToken);
 
-        public static Task<string[]> ReadAllLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task<string[]> ReadAllLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken = default)
         {
             Validate(path, encoding);
 
@@ -1113,16 +1314,34 @@ namespace System.IO
             }
         }
 
-        public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, CancellationToken cancellationToken = default)
             => WriteAllLinesAsync(path, contents, UTF8NoBOM, cancellationToken);
 
-        public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default) =>
+            WriteAllLinesAsync(path, contents, encoding, append: false, cancellationToken);
+
+        private static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, bool append, CancellationToken cancellationToken)
         {
             Validate(path, encoding);
             ArgumentNullException.ThrowIfNull(contents);
-            return cancellationToken.IsCancellationRequested
-                ? Task.FromCanceled(cancellationToken)
-                : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            StreamWriter writer;
+            try
+            {
+                writer = new StreamWriter(
+                    new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous),
+                    encoding);
+            }
+            catch (Exception e)
+            {
+                return Task.FromException(e);
+            }
+
+            return InternalWriteAllLinesAsync(writer, contents, cancellationToken);
         }
 
         private static async Task InternalWriteAllLinesAsync(StreamWriter writer, IEnumerable<string> contents, CancellationToken cancellationToken)
@@ -1141,10 +1360,33 @@ namespace System.IO
             }
         }
 
-        public static Task AppendAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task AppendAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default)
             => AppendAllTextAsync(path, contents, UTF8NoBOM, cancellationToken);
 
-        public static Task AppendAllTextAsync(string path, string? contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        /// <summary>
+        /// Asynchronously opens a file or creates a file if it does not already exist, appends the specified string to the file, and then closes the file.
+        /// </summary>
+        /// <param name="path">The file to append the specified string to.</param>
+        /// <param name="contents">The characters to append to the file.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous append operation.</returns>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
+        public static Task AppendAllTextAsync(string path, ReadOnlyMemory<char> contents, CancellationToken cancellationToken = default)
+            => AppendAllTextAsync(path, contents, UTF8NoBOM, cancellationToken);
+
+        public static Task AppendAllTextAsync(string path, string? contents, Encoding encoding, CancellationToken cancellationToken = default)
+            => AppendAllTextAsync(path, contents.AsMemory(), encoding, cancellationToken);
+
+        /// <summary>
+        /// Asynchronously opens a file or creates the file if it does not already exist, appends the specified string to the file using the specified encoding, and then closes the file.
+        /// </summary>
+        /// <param name="path">The file to append the specified string to.</param>
+        /// <param name="contents">The characters to append to the file.</param>
+        /// <param name="encoding">The character encoding to use.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous append operation.</returns>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
+        public static Task AppendAllTextAsync(string path, ReadOnlyMemory<char> contents, Encoding encoding, CancellationToken cancellationToken = default)
         {
             Validate(path, encoding);
 
@@ -1156,17 +1398,11 @@ namespace System.IO
             return WriteToFileAsync(path, FileMode.Append, contents, encoding, cancellationToken);
         }
 
-        public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, CancellationToken cancellationToken = default)
             => AppendAllLinesAsync(path, contents, UTF8NoBOM, cancellationToken);
 
-        public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Validate(path, encoding);
-            ArgumentNullException.ThrowIfNull(contents);
-            return cancellationToken.IsCancellationRequested
-                ? Task.FromCanceled(cancellationToken)
-                : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: true), contents, cancellationToken);
-        }
+        public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default) =>
+            WriteAllLinesAsync(path, contents, encoding, append: true, cancellationToken);
 
         /// <summary>
         /// Creates a file symbolic link identified by <paramref name="path"/> that points to <paramref name="pathToTarget"/>.
@@ -1259,7 +1495,7 @@ namespace System.IO
             }
         }
 
-        private static void WriteToFile(string path, FileMode mode, string? contents, Encoding encoding)
+        private static void WriteToFile(string path, FileMode mode, ReadOnlySpan<char> contents, Encoding encoding)
         {
             ReadOnlySpan<byte> preamble = encoding.GetPreamble();
             int preambleSize = preamble.Length;
@@ -1267,7 +1503,7 @@ namespace System.IO
             using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.None, GetPreallocationSize(mode, contents, encoding, preambleSize));
             long fileOffset = mode == FileMode.Append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
 
-            if (string.IsNullOrEmpty(contents))
+            if (contents.IsEmpty)
             {
                 if (preambleSize > 0 // even if the content is empty, we want to store the preamble
                     && fileOffset == 0) // if we're appending to a file that already has data, don't write the preamble.
@@ -1293,12 +1529,11 @@ namespace System.IO
                 }
 
                 Encoder encoder = encoding.GetEncoder();
-                ReadOnlySpan<char> remaining = contents;
-                while (!remaining.IsEmpty)
+                while (!contents.IsEmpty)
                 {
-                    ReadOnlySpan<char> toEncode = remaining.Slice(0, Math.Min(remaining.Length, ChunkSize));
-                    remaining = remaining.Slice(toEncode.Length);
-                    int encoded = encoder.GetBytes(toEncode, bytes.Slice(preambleSize), flush: remaining.IsEmpty);
+                    ReadOnlySpan<char> toEncode = contents.Slice(0, Math.Min(contents.Length, ChunkSize));
+                    contents = contents.Slice(toEncode.Length);
+                    int encoded = encoder.GetBytes(toEncode, bytes.Slice(preambleSize), flush: contents.IsEmpty);
                     Span<byte> toStore = bytes.Slice(0, preambleSize + encoded);
 
                     RandomAccess.WriteAtOffset(fileHandle, toStore, fileOffset);
@@ -1316,15 +1551,15 @@ namespace System.IO
             }
         }
 
-        private static async Task WriteToFileAsync(string path, FileMode mode, string? contents, Encoding encoding, CancellationToken cancellationToken)
+        private static async Task WriteToFileAsync(string path, FileMode mode, ReadOnlyMemory<char> contents, Encoding encoding, CancellationToken cancellationToken)
         {
             ReadOnlyMemory<byte> preamble = encoding.GetPreamble();
             int preambleSize = preamble.Length;
 
-            using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, GetPreallocationSize(mode, contents, encoding, preambleSize));
+            using SafeFileHandle fileHandle = OpenHandle(path, mode, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, GetPreallocationSize(mode, contents.Span, encoding, preambleSize));
             long fileOffset = mode == FileMode.Append && fileHandle.CanSeek ? RandomAccess.GetLength(fileHandle) : 0;
 
-            if (string.IsNullOrEmpty(contents))
+            if (contents.IsEmpty)
             {
                 if (preambleSize > 0 // even if the content is empty, we want to store the preamble
                     && fileOffset == 0) // if we're appending to a file that already has data, don't write the preamble.
@@ -1348,12 +1583,11 @@ namespace System.IO
                 }
 
                 Encoder encoder = encoding.GetEncoder();
-                ReadOnlyMemory<char> remaining = contents.AsMemory();
-                while (!remaining.IsEmpty)
+                while (!contents.IsEmpty)
                 {
-                    ReadOnlyMemory<char> toEncode = remaining.Slice(0, Math.Min(remaining.Length, ChunkSize));
-                    remaining = remaining.Slice(toEncode.Length);
-                    int encoded = encoder.GetBytes(toEncode.Span, bytes.AsSpan(preambleSize), flush: remaining.IsEmpty);
+                    ReadOnlyMemory<char> toEncode = contents.Slice(0, Math.Min(contents.Length, ChunkSize));
+                    contents = contents.Slice(toEncode.Length);
+                    int encoded = encoder.GetBytes(toEncode.Span, bytes.AsSpan(preambleSize), flush: contents.IsEmpty);
                     ReadOnlyMemory<byte> toStore = new ReadOnlyMemory<byte>(bytes, 0, preambleSize + encoded);
 
                     await RandomAccess.WriteAtOffsetAsync(fileHandle, toStore, fileOffset, cancellationToken).ConfigureAwait(false);
@@ -1368,10 +1602,10 @@ namespace System.IO
             }
         }
 
-        private static long GetPreallocationSize(FileMode mode, string? contents, Encoding encoding, int preambleSize)
+        private static long GetPreallocationSize(FileMode mode, ReadOnlySpan<char> contents, Encoding encoding, int preambleSize)
         {
             // for a single write operation, setting preallocationSize has no perf benefit, as it requires an additional sys-call
-            if (contents is null || contents.Length < ChunkSize)
+            if (contents.Length < ChunkSize)
             {
                 return 0;
             }

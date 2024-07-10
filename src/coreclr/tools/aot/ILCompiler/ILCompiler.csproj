@@ -10,28 +10,17 @@
   <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
-    <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
-    <NativeAotSupported Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</NativeAotSupported>
-    <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
-    <NativeAotSupported Condition="$(OutputRID.EndsWith('-arm')) == 'true'">false</NativeAotSupported>
-    <!-- Disable native AOT on FreeBSD when cross building from Linux. -->
-    <NativeAotSupported Condition="'$(TargetOS)' == 'freebsd' and '$(CrossBuild)' == 'true'">false</NativeAotSupported>
-    <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
-    <SysRoot Condition="'$(NativeAotSupported)' == 'true' and '$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
-    <PublishReadyToRun Condition="'$(NativeAotSupported)' != 'true'">true</PublishReadyToRun>
-    <PublishSingleFile Condition="'$(NativeAotSupported)' != 'true'">true</PublishSingleFile>
-    <PublishTrimmed Condition="'$(NativeAotSupported)' != 'true'">true</PublishTrimmed>
+    <PublishAot Condition="'$(UseNativeAotForComponents)' == 'true'">true</PublishAot>
+    <SysRoot Condition="'$(UseNativeAotForComponents)' == 'true' and '$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
+    <PublishReadyToRun Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishReadyToRun>
+    <PublishSingleFile Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishSingleFile>
+    <PublishTrimmed Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishTrimmed>
     <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
-    <!-- Compute host package name (taken from Microsoft.DotNet.ILCompiler.SingleEntry.targets) -->
-    <_hostOS>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_hostOS>
-    <_hostArchitecture Condition="'$(OS)' != 'Windows_NT'">$(NETCoreSdkPortableRuntimeIdentifier.SubString($([MSBuild]::Add($(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-')), 1))))</_hostArchitecture>
-    <_hostArchitecture Condition="'$(OS)' == 'Windows_NT'">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostArchitecture>
-    <_hostPackageName>runtime.$(_hostOS)-$(_hostArchitecture).Microsoft.DotNet.ILCompiler</_hostPackageName>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
+  <ItemGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
-    <PackageReference Include="$(_hostPackageName)" Version="$(MicrosoftDotNetILCompilerVersion)" />
+    <PackageReference Include="runtime.$(ToolsRID).Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
   </ItemGroup>
 
   <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->
@@ -59,7 +48,7 @@
   </Target>
 
   <Target Name="LocateNativeCompiler"
-          Condition="'$(NativeAotSupported)' == 'true' and '$(HostOS)' != 'windows'"
+          Condition="'$(UseNativeAotForComponents)' == 'true' and '$(HostOS)' != 'windows'"
           BeforeTargets="SetupOSSpecificProps">
     <PropertyGroup>
       <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
@@ -72,6 +61,19 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
     </Exec>
 
+    <Exec Command="clang --version" Condition="'$(_IsApplePlatform)' == 'true'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
+    </Exec>
+
+    <PropertyGroup Condition="('$(_XcodeVersionStringExitCode)' == '0' or '$(_XcodeVersionStringExitCode)' == '1') and '$(_XcodeVersionString)' != ''">
+      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '[1-9]\d*'))</_XcodeVersion>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(UseNativeAotForComponents)' == 'true' and '$(_IsApplePlatform)' == 'true'">
+      <CustomLinkerArg Condition="'$(_XcodeVersion)' &gt;= '15'" Include="-ld_classic" />
+    </ItemGroup>
+
     <PropertyGroup>
       <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
       <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
@@ -79,8 +81,8 @@
     </PropertyGroup>
   </Target>
 
-  <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows' and '$(_IsApplePlatform)' != 'true'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+  <ItemGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(BuildArchitecture)' == '$(_targetArchitecture)' and '$(HostOS)' != 'windows' and '$(_IsApplePlatform)' != 'true'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
   </ItemGroup>
 
   <Target Name="PublishCompiler"

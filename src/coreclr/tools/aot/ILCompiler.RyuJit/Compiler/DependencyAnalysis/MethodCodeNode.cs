@@ -26,7 +26,6 @@ namespace ILCompiler.DependencyAnalysis
         private DebugVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
         private DependencyList _nonRelocationDependencies;
-        private bool _isFoldable;
         private MethodDebugInformation _debugInfo;
         private TypeDesc[] _localTypes;
 
@@ -38,11 +37,10 @@ namespace ILCompiler.DependencyAnalysis
             _method = method;
         }
 
-        public void SetCode(ObjectData data, bool isFoldable)
+        public void SetCode(ObjectData data)
         {
             Debug.Assert(_methodCode == null);
             _methodCode = data;
-            _isFoldable = isFoldable;
         }
 
         public MethodDesc Method =>  _method;
@@ -52,11 +50,12 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
             return factory.Target.IsWindows ?
-                (_isFoldable ? ObjectNodeSection.FoldableManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeWindowsContentSection) :
-                (_isFoldable ? ObjectNodeSection.FoldableManagedCodeUnixContentSection : ObjectNodeSection.ManagedCodeUnixContentSection);
+                ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;
         }
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;
+
+        public override bool InterestingForDynamicDependencyAnalysis => _method.HasInstantiation || _method.OwningType.HasInstantiation;
 
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

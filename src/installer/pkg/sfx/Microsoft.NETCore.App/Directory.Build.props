@@ -128,6 +128,7 @@
     <PlatformManifestFileEntry Include="msquic.dll" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" />
     <PlatformManifestFileEntry Include="libmsquic.dylib" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" Condition="'$(Configuration)' == 'Debug' or '$(LibrariesConfiguration)' == 'Debug'"/>
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="System.Globalization.Native.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclrtraceptprovider.so" IsNative="true" />
@@ -144,6 +145,8 @@
     <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.ServerGC.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.WorkstationGC.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.VxSortDisabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.VxSortEnabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstandalonegc-disabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstandalonegc-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
@@ -231,6 +234,7 @@
     <PlatformManifestFileEntry Include="dotnet.runtime.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.globalization.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
@@ -273,6 +277,9 @@
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicuuc.a" IsNative="true" />
+    <!-- zlib-specific files -->
+    <PlatformManifestFileEntry Include="libz.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="zlibstatic.lib" IsNative="true" />
   </ItemGroup>
 
  <ItemGroup>

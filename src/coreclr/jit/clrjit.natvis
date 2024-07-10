@@ -8,9 +8,8 @@ The .NET Foundation licenses this file to you under the MIT license.
 <!--
 Visual Studio debugger visualizers for RyuJIT.
 
-Documentation for VS natvis format: https://docs.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects?view=vs-2019
-
-Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-us/visualstudio/debugger/format-specifiers-in-cpp?view=vs-2019
+Documentation for VS natvis format: https://learn.microsoft.com/visualstudio/debugger/create-custom-views-of-native-objects?view=vs-2022
+Documentation for VS debugger format specifiers: https://learn.microsoft.com/visualstudio/debugger/format-specifiers-in-cpp?view=vs-2022
 -->
 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
@@ -21,10 +20,15 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   </Type>
 
   <Type Name="BasicBlock">
-    <DisplayString Condition="bbKind==BBJ_COND || bbKind==BBJ_ALWAYS || bbKind==BBJ_LEAVE || bbKind==BBJ_EHCATCHRET || bbKind==BBJ_CALLFINALLY || bbKind==BBJ_CALLFINALLYRET || bbKind==BBJ_EHFILTERRET">BB{bbNum,d}->BB{bbTarget->bbNum,d}; {bbKind,en}</DisplayString>
+    <DisplayString Condition="bbKind==BBJ_COND || bbKind==BBJ_ALWAYS || bbKind==BBJ_LEAVE || bbKind==BBJ_EHCATCHRET || bbKind==BBJ_CALLFINALLY || bbKind==BBJ_CALLFINALLYRET || bbKind==BBJ_EHFILTERRET">BB{bbNum,d}->BB{bbTargetEdge->m_destBlock->bbNum,d}; {bbKind,en}</DisplayString>
     <DisplayString Condition="bbKind==BBJ_SWITCH">BB{bbNum,d}; {bbKind,en}; {bbSwtTargets->bbsCount} cases</DisplayString>
     <DisplayString Condition="bbKind==BBJ_EHFINALLYRET">BB{bbNum,d}; {bbKind,en}; {bbEhfTargets->bbeCount} succs</DisplayString>
     <DisplayString>BB{bbNum,d}; {bbKind,en}</DisplayString>
+  </Type>
+
+  <Type Name="FlowEdge">
+    <DisplayString Condition="m_dupCount!=1">BB{m_sourceBlock->bbNum,d}->BB{m_destBlock->bbNum,d} ({m_likelihood,g}) (dup {m_dupCount,d})</DisplayString>
+    <DisplayString>BB{m_sourceBlock->bbNum,d}->BB{m_destBlock->bbNum,d} ({m_likelihood,g})</DisplayString>
   </Type>
 
   <Type Name="Compiler::LoopDsc">
@@ -84,6 +88,11 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
 
   <Type Name="GenTreeLclFld" Inheritable="false">
     <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en} V{((GenTreeLclFld*)this)-&gt;_gtLclNum,u}[+{((GenTreeLclFld*)this)-&gt;m_lclOffs,u}]]</DisplayString>
+  </Type>
+
+  <!-- Scalar evolution -->
+  <Type Name="Scev">
+    <DisplayString>[{Oper,en}, {Type,en}]</DisplayString>
   </Type>
 
   <!-- Register allocation -->
@@ -169,6 +178,7 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   </Type>
 
   <Type Name="Interval">
+    <DisplayString Condition="this->isUpperVector">[U{this->relatedInterval->varNum,d}, #{this->intervalIndex, d}, reg={(regNumber)physReg, en}]</DisplayString>
     <DisplayString Condition="this->isLocalVar">[V{this->varNum,d}, #{this->intervalIndex, d}, reg={(regNumber)physReg, en}]</DisplayString>
     <DisplayString Condition="this->isConstant">[C{this->intervalIndex, d}, reg={(regNumber)physReg, en}]</DisplayString>
     <DisplayString>[I{this->intervalIndex, d}, reg={(regNumber)physReg, en}]</DisplayString>

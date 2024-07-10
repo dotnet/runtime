@@ -46,6 +46,8 @@ public:
         {
             return false;
         }
+
+        result = (DWORD)rawResult;
         bool fSuccess = endPtr != _value;
         return fSuccess;
     }

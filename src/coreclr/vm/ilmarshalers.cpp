@@ -3394,6 +3394,7 @@ ILCriticalHandleMarshaler::ReturnOverride(
     return OVERRIDDEN;
 } // ILCriticalHandleMarshaler::ReturnOverride
 
+#if defined(FEATURE_IJW)
 MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOverride(NDirectStubLinker* psl,
                                                 BOOL               byref,
                                                 BOOL               fin,
@@ -3459,6 +3460,36 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
 #ifdef TARGET_X86
         pslIL->SetStubTargetArgType(&locDesc);              // native type is the value type
         pslILDispatch->EmitLDLOC(dwNewValueTypeLocal);      // we load the local directly
+
+        // Record this argument's stack slot in the copy constructor chain so we can correctly invoke the copy constructor.
+        DWORD ctorCookie = pslIL->NewLocal(CoreLibBinder::GetClass(CLASS__COPY_CONSTRUCTOR_COOKIE));
+        pslIL->EmitLDLOCA(ctorCookie);
+        pslIL->EmitINITOBJ(pslIL->GetToken(CoreLibBinder::GetClass(CLASS__COPY_CONSTRUCTOR_COOKIE)));
+        pslIL->EmitLDLOCA(ctorCookie);
+        pslIL->EmitLDLOCA(dwNewValueTypeLocal);
+        pslIL->EmitSTFLD(pslIL->GetToken(CoreLibBinder::GetField(FIELD__COPY_CONSTRUCTOR_COOKIE__SOURCE)));
+        pslIL->EmitLDLOCA(ctorCookie);
+        pslIL->EmitLDC(nativeStackOffset);
+        pslIL->EmitSTFLD(pslIL->GetToken(CoreLibBinder::GetField(FIELD__COPY_CONSTRUCTOR_COOKIE__DESTINATION_OFFSET)));
+
+        if (pargs->mm.m_pCopyCtor)
+        {
+            pslIL->EmitLDLOCA(ctorCookie);
+            pslIL->EmitLDFTN(pslIL->GetToken(pargs->mm.m_pCopyCtor));
+            pslIL->EmitSTFLD(pslIL->GetToken(CoreLibBinder::GetField(FIELD__COPY_CONSTRUCTOR_COOKIE__COPY_CONSTRUCTOR)));
+        }
+
+        if (pargs->mm.m_pDtor)
+        {
+            pslIL->EmitLDLOCA(ctorCookie);
+            pslIL->EmitLDFTN(pslIL->GetToken(pargs->mm.m_pDtor));
+            pslIL->EmitSTFLD(pslIL->GetToken(CoreLibBinder::GetField(FIELD__COPY_CONSTRUCTOR_COOKIE__DESTRUCTOR)));
+        }
+
+        pslIL->EmitLDLOCA(psl->GetCopyCtorChainLocalNum());
+        pslIL->EmitLDLOCA(ctorCookie);
+        pslIL->EmitCALL(METHOD__COPY_CONSTRUCTOR_CHAIN__ADD, 2, 0);
+
 #else
         pslIL->SetStubTargetArgType(ELEMENT_TYPE_I);        // native type is a pointer
         EmitLoadNativeLocalAddrForByRefDispatch(pslILDispatch, dwNewValueTypeLocal);
@@ -3477,9 +3508,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
 
         DWORD       dwNewValueTypeLocal;
         dwNewValueTypeLocal = pslIL->NewLocal(locDesc);
-        pslILDispatch->EmitLDARG(argidx);
-        pslILDispatch->EmitSTLOC(dwNewValueTypeLocal);
-        pslILDispatch->EmitLDLOCA(dwNewValueTypeLocal);
+        pslILDispatch->EmitLDARGA(argidx);
 #else
         LocalDesc   locDesc(pargs->mm.m_pMT);
         locDesc.MakePointer();
@@ -3491,6 +3520,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
         return OVERRIDDEN;
     }
 }
+#endif // defined(FEATURE_IJW)
 
 LocalDesc ILArgIteratorMarshaler::GetNativeType()
 {
@@ -4353,7 +4383,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToNative(MngdN
             if ( (!ClrSafeInt<SIZE_T>::multiply(cElements, OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT), cElements)) || cElements > MAX_SIZE_FOR_INTEROP)
                 COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
 
-            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsPointers());
+            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
             memcpyNoGCRefs(*pNativeHome, arrayRef->GetDataPtr(), cElements);
         }
         else
@@ -4422,7 +4452,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(Mngd
                 COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
 
                 // If we are copying variants, strings, etc, we need to use write barrier
-            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsPointers());
+            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
             memcpyNoGCRefs(arrayRef->GetDataPtr(), *pNativeHome, cElements);
         }
         else
@@ -4537,7 +4567,7 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFi
             SIZE_T cElements = arrayRef->GetNumComponents();
             if (pMarshaler == NULL || pMarshaler->ComToOleArray == NULL)
             {
-                _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsPointers());
+                _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
                 memcpyNoGCRefs(pNativeHome, arrayRef->GetDataPtr(), nativeSize);
             }
             else
@@ -4611,7 +4641,7 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdF
         if (pMarshaler == NULL || pMarshaler->OleToComArray == NULL)
         {
             // If we are copying variants, strings, etc, we need to use write barrier
-            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsPointers());
+            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
             memcpyNoGCRefs(arrayRef->GetDataPtr(), pNativeHome, nativeSize);
         }
         else

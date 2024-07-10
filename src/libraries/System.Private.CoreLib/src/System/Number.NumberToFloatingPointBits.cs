@@ -700,7 +700,7 @@ namespace System
         {
             BigInteger.SetZero(out result);
 
-            byte* src = number.GetDigitsPointer() + firstIndex;
+            byte* src = number.DigitsPtr + firstIndex;
             uint remaining = lastIndex - firstIndex;
 
             while (remaining != 0)
@@ -974,7 +974,7 @@ namespace System
         {
             Debug.Assert(TFloat.DenormalMantissaBits <= FloatingPointMaxDenormalMantissaBits);
 
-            Debug.Assert(number.GetDigitsPointer()[0] != '0');
+            Debug.Assert(number.DigitsPtr[0] != '0');
 
             Debug.Assert(number.Scale <= FloatingPointMaxExponent);
             Debug.Assert(number.Scale >= FloatingPointMinExponent);
@@ -998,7 +998,7 @@ namespace System
             // Above 19 digits, we rely on slow path
             if (totalDigits <= 19)
             {
-                byte* src = number.GetDigitsPointer();
+                byte* src = number.DigitsPtr;
 
                 ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
 

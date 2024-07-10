@@ -46,7 +46,7 @@
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessTestsTimeout)' != ''" >$(_XHarnessArgs) &quot;--timeout=$(WasmXHarnessTestsTimeout)&quot;</_XHarnessArgs>
-    <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--max-wasm-stack=134217728</_XHarnessArgs>
+    <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=-W --engine-arg=max-wasm-stack=134217728</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <_InvariantGlobalization Condition="'$(InvariantGlobalization)' == 'true'">--env=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true</_InvariantGlobalization>
@@ -94,16 +94,6 @@
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
 
       <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
-      <!--
-        Do this *after* importing BrowserWasmApp.targets. tests.wasm.targets sets this to `reset-to-zero` to indicate
-        that we want to force this value to zero.
-
-        BrowserWasmApp.targets *overrides* `WasmDebugLevel` when `DebuggerSupport=true`, but for the library tests
-        we explicitly want to:
-        1. build with DebuggerSupport=true so the debugger attributes are preserved by the linker;
-        2. *debugging* is disabled at run time so the interpreter optimizations don't get disabled.
-      -->
-      <WasmDebugLevel Condition="'$(WasmDebugLevel)' == 'reset-to-zero'">0</WasmDebugLevel>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
@@ -147,6 +137,13 @@
   </Target>
 
   <Target Name="_WasiAddToRunScript" BeforeTargets="GenerateRunScript">
+    <PropertyGroup>
+      <Scenario Condition="'$(Scenario)' == ''">WasmTestOnWasmtime</Scenario>
+    </PropertyGroup>
+    <Error Condition="'$(Scenario)' != 'WasmTestOnWasmtime' and 
+                      '$(Scenario)' != 'BuildWasmApps'"
+                      Text="Only supported scenarios are WasmTestOnWasmtime and BuildWasmApps at the moment. It was $(Scenario)." />
+
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
       <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="export PREPEND_PATH=$(WasmtimeDir)" />
       <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="export RuntimeIdentifier=wasi-wasm" />

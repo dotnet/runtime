@@ -14,6 +14,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public class JSExportAsyncTest : JSInteropTestBase, IAsyncLifetime
     {
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        public void SyncJsImportJsExportThrows()
+        {
+            var ex = Assert.Throws<JSException>(()=>JavaScriptTestHelper.invoke1_Boolean(true, nameof(JavaScriptTestHelper.EchoBoolean)));
+            Assert.Contains("Cannot call synchronous C# method", ex.Message);
+        }
+
         [Theory]
         [MemberData(nameof(MarshalBooleanCases))]
         public async Task JsExportBooleanAsync(bool value)
@@ -22,6 +29,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 JavaScriptTestHelper.invoke1_BooleanAsync,
                 nameof(JavaScriptTestHelper.EchoBoolean),
                 "boolean");
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalInt32Cases))]
+        public async Task JsExportInt32DiscardNoWait(int value)
+        {
+            JavaScriptTestHelper.optimizedReached=0;
+            JavaScriptTestHelper.invoke1O(value);
+            await JavaScriptTestHelper.Delay(50);
+            Assert.Equal(value, JavaScriptTestHelper.optimizedReached);
         }
 
         private async Task JsExportTestAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(T value
@@ -33,7 +50,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
     }
 
-    //TODO [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
     public class JSExportTest : JSInteropTestBase, IAsyncLifetime
     {
         [Theory]
@@ -373,7 +390,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             //GC.Collect();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsExportCallback_FunctionIntInt()
         {
             int called = -1;
@@ -389,7 +406,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, called);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsExportCallback_FunctionIntIntThrow()
         {
             int called = -1;
@@ -412,6 +429,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             T res;
             res = invoke(value, echoName);
             Assert.Equal<T>(value, res);
+        }
+
+        [Fact]
+        public async Task InternalsVisibleToDoesntBreak()
+        {
+            Assert.Equal(JavaScriptLibrary.JavaScriptInterop.ValidationMethod(5, 6), await JavaScriptTestHelper.callJavaScriptLibrary(5, 6));
         }
     }
 }

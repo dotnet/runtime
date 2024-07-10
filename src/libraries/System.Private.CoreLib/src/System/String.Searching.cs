@@ -84,10 +84,10 @@ namespace System
 
             if (char.IsAsciiLetter(value))
             {
-                char valueUc = (char)(value | 0x20);
-                char valueLc = (char)(value & ~0x20);
+                char valueLc = (char)(value | 0x20);
+                char valueUc = (char)(value & ~0x20);
                 return PackedSpanHelpers.PackedIndexOfIsSupported
-                    ? PackedSpanHelpers.IndexOfAny(ref _firstChar, valueLc, valueUc, Length)
+                    ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref _firstChar, valueLc, Length)
                     : SpanHelpers.IndexOfAnyChar(ref _firstChar, valueLc, valueUc, Length);
             }
 

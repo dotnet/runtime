@@ -222,6 +222,7 @@ The top-level function of interest is `Compiler::compCompile`. It invokes the fo
 | [Common Subexpression Elimination (CSE)](#cse) | Elimination of redundant subexressions based on value numbers. |
 | [Assertion Propagation](#assertion-propagation) | Utilizes value numbers to propagate and transform based on properties such as non-nullness. |
 | [Range analysis](#range-analysis) | Eliminate array index range checks based on value numbers and assertions |
+| [Induction variable optimization](#iv-opts) | Optimize induction variables used inside natural loops based on scalar evolution analysis |
 | [VN-based dead store elimination](#vn-based-dead-store-elimination) | Eliminate stores that do not change the value of a local. |
 | [If conversion](#if-conversion) | Transform conditional definitions into `GT_SELECT` operators. |
 | [Rationalization](#rationalization) | Flowgraph order changes from `FGOrderTree` to `FGOrderLinear`. All `GT_COMMA` nodes are transformed. |
@@ -346,6 +347,11 @@ reused.
 ### <a name="assertion-propagation"></a>Assertion Propagation
 
 Utilizes value numbers to propagate and transform based on properties such as non-nullness.
+
+### <a name="iv-opts"></a>Induction variable optimization
+
+Performs scalar evolution analysis and utilized it to optimize induction variables inside loops.
+Currently this entails IV widening which is done on x64 only.
 
 ### <a name="range-analysis"></a>Range analysis
 

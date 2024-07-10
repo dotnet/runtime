@@ -103,7 +103,7 @@ namespace System.StubHelpers
                     // + 1 for the null character from the user.  + 1 for the null character we put in.
                     pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb + 2);
 
-                    Buffer.Memmove(ref *pbNativeBuffer, ref MemoryMarshal.GetArrayDataReference(bytes), (nuint)nb);
+                    SpanHelpers.Memmove(ref *pbNativeBuffer, ref MemoryMarshal.GetArrayDataReference(bytes), (nuint)nb);
                 }
             }
 
@@ -360,7 +360,7 @@ namespace System.StubHelpers
 
                 Debug.Assert(nbytesused >= 0 && nbytesused < nbytes, "Insufficient buffer allocated in VBByValStrMarshaler.ConvertToNative");
 
-                Buffer.Memmove(ref *pNative, ref MemoryMarshal.GetArrayDataReference(bytes), (nuint)nbytesused);
+                SpanHelpers.Memmove(ref *pNative, ref MemoryMarshal.GetArrayDataReference(bytes), (nuint)nbytesused);
 
                 pNative[nbytesused] = 0;
                 *pLength = nbytesused;
@@ -409,7 +409,7 @@ namespace System.StubHelpers
             IntPtr bstr = Marshal.AllocBSTRByteLen(length);
             if (bytes != null)
             {
-                Buffer.Memmove(ref *(byte*)bstr, ref MemoryMarshal.GetArrayDataReference(bytes), length);
+                SpanHelpers.Memmove(ref *(byte*)bstr, ref MemoryMarshal.GetArrayDataReference(bytes), length);
             }
 
             return bstr;
@@ -1315,6 +1315,75 @@ namespace System.StubHelpers
         }
     }  // class CleanupWorkListElement
 
+    internal unsafe struct CopyConstructorCookie
+    {
+        private void* m_source;
+
+        private nuint m_destinationOffset;
+
+        public delegate*<void*, void*, void> m_copyConstructor;
+
+        public delegate*<void*, void> m_destructor;
+
+        public CopyConstructorCookie* m_next;
+
+        [StackTraceHidden]
+        public void ExecuteCopy(void* destinationBase)
+        {
+            if (m_copyConstructor != null)
+            {
+                m_copyConstructor((byte*)destinationBase + m_destinationOffset, m_source);
+            }
+
+            if (m_destructor != null)
+            {
+                m_destructor(m_source);
+            }
+        }
+    }
+
+    internal unsafe struct CopyConstructorChain
+    {
+        public void* m_realTarget;
+        public CopyConstructorCookie* m_head;
+
+        public void Add(CopyConstructorCookie* cookie)
+        {
+            cookie->m_next = m_head;
+            m_head = cookie;
+        }
+
+        [ThreadStatic]
+        private static CopyConstructorChain s_copyConstructorChain;
+
+        public void Install(void* realTarget)
+        {
+            m_realTarget = realTarget;
+            s_copyConstructorChain = this;
+        }
+
+        [StackTraceHidden]
+        private void ExecuteCopies(void* destinationBase)
+        {
+            for (CopyConstructorCookie* current = m_head; current != null; current = current->m_next)
+            {
+                current->ExecuteCopy(destinationBase);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        public static void* ExecuteCurrentCopiesAndGetTarget(void* destinationBase)
+        {
+            void* target = s_copyConstructorChain.m_realTarget;
+            s_copyConstructorChain.ExecuteCopies(destinationBase);
+            // Reset this instance to ensure we don't accidentally execute the copies again.
+            // All of the pointers point to the stack, so we don't need to free any memory.
+            s_copyConstructorChain = default;
+            return target;
+        }
+    }
+
     internal static partial class StubHelpers
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1484,7 +1553,7 @@ namespace System.StubHelpers
             }
             else
             {
-                Buffer.Memmove(ref *pNative, ref obj.GetRawData(), size);
+                SpanHelpers.Memmove(ref *pNative, ref obj.GetRawData(), size);
             }
         }
 
@@ -1503,7 +1572,7 @@ namespace System.StubHelpers
             }
             else
             {
-                Buffer.Memmove(ref obj.GetRawData(), ref *pNative, size);
+                SpanHelpers.Memmove(ref obj.GetRawData(), ref *pNative, size);
             }
         }
 
@@ -1547,15 +1616,8 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStubContext();
 
-#if FEATURE_ARRAYSTUB_AS_IL
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ArrayTypeCheck(object o, object[] arr);
-#endif
-
-#if FEATURE_MULTICASTSTUB_AS_IL
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void MulticastDebuggerTraceHelper(object o, int count);
-#endif
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]

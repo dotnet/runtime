@@ -656,7 +656,7 @@ void CordbThread::RefreshHandle(HANDLE * phThread)
                                    hThread,
                                    GetCurrentProcess(),
                                    &m_hCachedThread,
-                                   NULL,
+                                   0,
                                    FALSE,
                                    DUPLICATE_SAME_ACCESS);
         *phThread = m_hCachedThread;
@@ -1503,7 +1503,11 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
     for (i = 0; i <= floatStackTop; i++)
     {
         double td = 0.0;
+#ifdef _MSC_VER
         __asm fstp td // copy out the double
+#else
+        __asm("fstpl %0" : "=m" (td));
+#endif
         m_floatValues[i] = td;
     }
 
@@ -5122,7 +5126,7 @@ HRESULT CordbValueEnum::Next(ULONG celt, ICorDebugValue *values[], ULONG *pceltF
 
     HRESULT hr = S_OK;
 
-    int iMax = min( m_iMax, m_iCurrent+celt);
+    int iMax = (int)min( (ULONG)m_iMax, m_iCurrent+celt);
     int i;
     for (i = m_iCurrent; i< iMax;i++)
     {
@@ -5335,11 +5339,11 @@ HRESULT CordbInternalFrame::GetStackRange(CORDB_ADDRESS *pStart,
     {
         if (pStart != NULL)
         {
-            *pStart = NULL;
+            *pStart = (CORDB_ADDRESS)NULL;
         }
         if (pEnd != NULL)
         {
-            *pEnd = NULL;
+            *pEnd = (CORDB_ADDRESS)NULL;
         }
         return E_NOTIMPL;
     }
@@ -5899,7 +5903,7 @@ CORDB_ADDRESS CordbNativeFrame::GetLSStackAddress(
         // we should definitely have an ambient-sp. If this is null, then the jit
         // likely gave us an inconsistent data.
         TADDR taAmbient = this->GetAmbientESP();
-        _ASSERTE(taAmbient != NULL);
+        _ASSERTE(taAmbient != (TADDR)NULL);
 
         pRemoteValue = PTR_TO_CORDB_ADDRESS(taAmbient + offset);
     }
@@ -5956,11 +5960,11 @@ HRESULT CordbNativeFrame::GetStackRange(CORDB_ADDRESS *pStart,
     {
         if (pStart != NULL)
         {
-            *pStart = NULL;
+            *pStart = (CORDB_ADDRESS)NULL;
         }
         if (pEnd != NULL)
         {
-            *pEnd = NULL;
+            *pEnd = (CORDB_ADDRESS)NULL;
         }
         return E_NOTIMPL;
     }
@@ -7304,7 +7308,7 @@ SIZE_T CordbNativeFrame::GetInspectionIP()
 bool CordbNativeFrame::IsFunclet()
 {
 #ifdef FEATURE_EH_FUNCLETS
-    return (m_misc.parentIP != NULL);
+    return (m_misc.parentIP != (SIZE_T)NULL);
 #else
     return false;
 #endif // FEATURE_EH_FUNCLETS
@@ -7396,7 +7400,8 @@ CordbJITILFrame::CordbJITILFrame(CordbNativeFrame *    pNativeFrame,
                                  GENERICS_TYPE_TOKEN   exactGenericArgsToken,
                                  DWORD                 dwExactGenericArgsTokenIndex,
                                  bool                  fVarArgFnx,
-                                 CordbReJitILCode *    pRejitCode)
+                                 CordbReJitILCode *    pRejitCode,
+                                 bool                  fAdjustedIP)
   : CordbBase(pNativeFrame->GetProcess(), 0, enumCordbJITILFrame),
     m_nativeFrame(pNativeFrame),
     m_ilCode(pCode),
@@ -7405,13 +7410,14 @@ CordbJITILFrame::CordbJITILFrame(CordbNativeFrame *    pNativeFrame,
     m_fVarArgFnx(fVarArgFnx),
     m_allArgsCount(0),
     m_rgbSigParserBuf(NULL),
-    m_FirstArgAddr(NULL),
+    m_FirstArgAddr((CORDB_ADDRESS)NULL),
     m_rgNVI(NULL),
     m_genericArgs(),
     m_genericArgsLoaded(false),
     m_frameParamsToken(exactGenericArgsToken),
     m_dwFrameParamsTokenIndex(dwExactGenericArgsTokenIndex),
-    m_pReJitCode(pRejitCode)
+    m_pReJitCode(pRejitCode),
+    m_adjustedIP(fAdjustedIP)
 {
     // We'll initialize the SigParser in CordbJITILFrame::Init().
     m_sigParserCached = SigParser(NULL, 0);
@@ -7531,7 +7537,7 @@ HRESULT CordbJITILFrame::Init()
         // The stackwalking code can't always successfully retrieve the generics type token.
         // For example, on 64-bit, the JIT only encodes the generics type token location if
         // a method has catch clause for a generic exception (e.g. "catch(MyException<string> e)").
-        if ((m_dwFrameParamsTokenIndex != (DWORD)ICorDebugInfo::MAX_ILNUM) && (m_frameParamsToken == NULL))
+        if ((m_dwFrameParamsTokenIndex != (DWORD)ICorDebugInfo::MAX_ILNUM) && (m_frameParamsToken == (GENERICS_TYPE_TOKEN)NULL))
         {
             // All variables are unavailable in the prolog and the epilog.
             // This includes the generics type token.  Failing to get the token just means that
@@ -8184,7 +8190,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
             // first argument, but thereafter we have to decrement it
             // before getting the variable's location from it.  So increment
             // it here to be consistent later.
-            rpCur += max(cbType, cbArchitectureMin);
+            rpCur += max((ULONG)cbType, cbArchitectureMin);
 #endif
 
             // Grab the IL code's function's method signature so we can see if it's static.
@@ -8217,7 +8223,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
                 IfFailThrow(pArgType->GetUnboxedObjectSize(&cbType));
 
 #if defined(TARGET_X86) // STACK_GROWS_DOWN_ON_ARGS_WALK
-                rpCur -= max(cbType, cbArchitectureMin);
+                rpCur -= max((ULONG)cbType, cbArchitectureMin);
                 m_rgNVI[i].loc.vlFixedVarArg.vlfvOffset =
                     (unsigned)(m_FirstArgAddr - rpCur);
 
@@ -8227,7 +8233,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
 #else // STACK_GROWS_UP_ON_ARGS_WALK
                 m_rgNVI[i].loc.vlFixedVarArg.vlfvOffset =
                     (unsigned)(rpCur - m_FirstArgAddr);
-                rpCur += max(cbType, cbArchitectureMin);
+                rpCur += max((ULONG)cbType, cbArchitectureMin);
                 AlignAddressForType(pArgType, rpCur);
 #endif
 
@@ -9027,6 +9033,21 @@ CordbReJitILCode* CordbJITILFrame::GetReJitILCode()
     return m_pReJitCode;
 }
 
+void CordbJITILFrame::AdjustIPAfterException()
+{
+    CordbNativeFrame* nativeFrameToAdjustIP = m_nativeFrame;
+    if (!m_adjustedIP)
+    {
+        DWORD nativeOffsetToMap = (DWORD)nativeFrameToAdjustIP->m_ip - STACKWALK_CONTROLPC_ADJUST_OFFSET;
+        CorDebugMappingResult mappingType;
+        ULONG uILOffset = nativeFrameToAdjustIP->m_nativeCode->GetSequencePoints()->MapNativeOffsetToIL(
+                nativeOffsetToMap,
+                &mappingType);
+        m_ip= uILOffset;
+        m_adjustedIP = true;
+    }
+}
+
 /* ------------------------------------------------------------------------- *
  * Eval class
  * ------------------------------------------------------------------------- */
@@ -9297,7 +9318,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
             argData->fullArgType = buffer;
             argData->fullArgTypeNodeCount = fullArgTypeNodeCount;
             // Is it enregistered?
-            if ((addr == NULL) && (pVCObjVal->GetValueHome() != NULL))
+            if ((addr == (CORDB_ADDRESS)NULL) && (pVCObjVal->GetValueHome() != NULL))
             {
                 pVCObjVal->GetValueHome()->CopyToIPCEType(&(argData->argHome));
             }
@@ -9315,7 +9336,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
         CordbGenericValue *gv = (CordbGenericValue*)pValue;
         argData->argIsLiteral = gv->CopyLiteralData(argData->argLiteralData);
         // Is it enregistered?
-        if ((addr == NULL) && (gv->GetValueHome() != NULL))
+        if ((addr == (CORDB_ADDRESS)NULL) && (gv->GetValueHome() != NULL))
         {
             gv->GetValueHome()->CopyToIPCEType(&(argData->argHome));
         }
@@ -10860,7 +10881,7 @@ HRESULT CordbCodeEnum::Next(ULONG celt, ICorDebugCode *values[], ULONG *pceltFet
 
     HRESULT hr = S_OK;
 
-    int iMax = min( m_iMax, m_iCurrent+celt);
+    int iMax = (int)min( (ULONG)m_iMax, m_iCurrent+celt);
     int i;
 
     for (i = m_iCurrent; i < iMax; i++)

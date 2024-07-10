@@ -14,7 +14,6 @@ try {
         .withExitOnUnhandledError()
         .withExitCodeLogging()
         .withElementOnExit()
-        .withAssertAfterExit()
         .withOnConfigLoaded(() => {
             // you can test abort of the startup by opening http://localhost:8000/?throwError=true
             const params = new URLSearchParams(location.search);

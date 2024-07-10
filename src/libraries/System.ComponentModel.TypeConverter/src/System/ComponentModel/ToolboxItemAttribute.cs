@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
@@ -16,10 +17,12 @@ namespace System.ComponentModel
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         private readonly string? _toolboxItemTypeName;
 
+        private const string DefaultToolboxItemTypeName = "System.Drawing.Design.ToolboxItem, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
+
         /// <summary>
         /// Initializes a new instance of ToolboxItemAttribute and sets the type to
         /// </summary>
-        public static readonly ToolboxItemAttribute Default = new ToolboxItemAttribute("System.Drawing.Design.ToolboxItem, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
+        public static readonly ToolboxItemAttribute Default = new ToolboxItemAttribute(DefaultToolboxItemTypeName);
 
         /// <summary>
         /// Initializes a new instance of ToolboxItemAttribute and sets the type to
@@ -30,7 +33,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets whether the attribute is the default attribute.
         /// </summary>
-        public override bool IsDefaultAttribute() => Equals(Default);
+        public override bool IsDefaultAttribute() => _toolboxItemTypeName == DefaultToolboxItemTypeName;
 
         /// <summary>
         /// Initializes a new instance of ToolboxItemAttribute and specifies if default values should be used.
@@ -39,7 +42,12 @@ namespace System.ComponentModel
         {
             if (defaultType)
             {
-                _toolboxItemTypeName = "System.Drawing.Design.ToolboxItem, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
+                if (!IDesignerHost.IsSupported)
+                {
+                    throw new NotSupportedException(SR.IDesignerHostNotSupported);
+                }
+
+                _toolboxItemTypeName = DefaultToolboxItemTypeName;
             }
         }
 

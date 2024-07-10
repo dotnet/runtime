@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -403,7 +404,6 @@ namespace System.Threading
             }
         }
 
-#if !CORECLR
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread()
         {
@@ -415,7 +415,6 @@ namespace System.Threading
                 ResetThreadPoolThreadSlow();
             }
         }
-#endif
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ResetThreadPoolThreadSlow()
@@ -542,41 +541,93 @@ namespace System.Threading
         public static void MemoryBarrier() => Interlocked.MemoryBarrier();
         public static void Sleep(TimeSpan timeout) => Sleep(WaitHandle.ToTimeoutMilliseconds(timeout));
 
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static byte VolatileRead(ref byte address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static double VolatileRead(ref double address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static short VolatileRead(ref short address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static int VolatileRead(ref int address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [return: NotNullIfNotNull(nameof(address))]
         public static object? VolatileRead([NotNullIfNotNull(nameof(address))] ref object? address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
         public static sbyte VolatileRead(ref sbyte address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static float VolatileRead(ref float address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
         public static ushort VolatileRead(ref ushort address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
         public static uint VolatileRead(ref uint address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
         public static ulong VolatileRead(ref ulong address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
         public static UIntPtr VolatileRead(ref UIntPtr address) => Volatile.Read(ref address);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite(ref byte address, byte value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite(ref double address, double value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite(ref short address, short value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite(ref int address, int value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite(ref long address, long value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite(ref IntPtr address, IntPtr value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite([NotNullIfNotNull(nameof(value))] ref object? address, object? value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
         public static void VolatileWrite(ref sbyte address, sbyte value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite(ref float address, float value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
         public static void VolatileWrite(ref ushort address, ushort value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
         public static void VolatileWrite(ref uint address, uint value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
         public static void VolatileWrite(ref ulong address, ulong value) => Volatile.Write(ref address, value);
+        [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
         public static void VolatileWrite(ref UIntPtr address, UIntPtr value) => Volatile.Write(ref address, value);
 
@@ -676,26 +727,46 @@ namespace System.Threading
         [ThreadStatic]
         public static bool ThrowOnBlockingWaitOnJSInteropThread;
 
-        public static void AssureBlockingPossible()
+        [ThreadStatic]
+        public static bool WarnOnBlockingWaitOnJSInteropThread;
+
+#pragma warning disable CS3001
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern unsafe void WarnAboutBlockingWait(char* stack, int length);
+
+        public static unsafe void AssureBlockingPossible()
         {
             if (ThrowOnBlockingWaitOnJSInteropThread)
             {
                 throw new PlatformNotSupportedException(SR.WasmThreads_BlockingWaitNotSupportedOnJSInterop);
             }
+            else if (WarnOnBlockingWaitOnJSInteropThread)
+            {
+                var st = $"Blocking the thread with JS interop is dangerous and could lead to deadlock. ManagedThreadId: {Environment.CurrentManagedThreadId}\n{Environment.StackTrace}";
+                fixed (char* stack = st)
+                {
+                    WarnAboutBlockingWait(stack, st.Length);
+                }
+            }
         }
+
+#pragma warning restore CS3001
 
         public static void ForceBlockingWait(Action<object?> action, object? state = null)
         {
             var flag = ThrowOnBlockingWaitOnJSInteropThread;
+            var wflag = WarnOnBlockingWaitOnJSInteropThread;
             try
             {
                 ThrowOnBlockingWaitOnJSInteropThread = false;
+                WarnOnBlockingWaitOnJSInteropThread = false;
 
                 action(state);
             }
             finally
             {
                 ThrowOnBlockingWaitOnJSInteropThread = flag;
+                WarnOnBlockingWaitOnJSInteropThread = wflag;
             }
         }
 #endif

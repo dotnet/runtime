@@ -263,6 +263,7 @@ class Object
     }
 
     static DWORD ComputeHashCode();
+    static DWORD GetGlobalNewHashCode();
 
 #ifndef DACCESS_COMPILE
     INT32 GetHashCodeEx();
@@ -382,10 +383,10 @@ class Object
         return * PTR_BYTE(GetData() + dwOffset);
     }
 
-    __int64 GetOffset64(DWORD dwOffset)
+    int64_t GetOffset64(DWORD dwOffset)
     {
         WRAPPER_NO_CONTRACT;
-        return (__int64) * PTR_ULONG64(GetData() + dwOffset);
+        return (int64_t) * PTR_ULONG64(GetData() + dwOffset);
     }
 
     void *GetPtrOffset(DWORD dwOffset)
@@ -422,10 +423,10 @@ class Object
         *(BYTE *) &GetData()[dwOffset] = (BYTE) dwValue;
     }
 
-    void SetOffset64(DWORD dwOffset, __int64 qwValue)
+    void SetOffset64(DWORD dwOffset, int64_t qwValue)
     {
         WRAPPER_NO_CONTRACT;
-        *(__int64 *) &GetData()[dwOffset] = qwValue;
+        *(int64_t *) &GetData()[dwOffset] = qwValue;
     }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -731,9 +732,7 @@ public:
     }
 
     friend class StubLinkerCPU;
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     friend class ArrayOpLinker;
-#endif
 public:
     OBJECTREF    m_Array[1];
 };
@@ -1194,15 +1193,7 @@ class ReflectModuleBaseObject : public Object
 NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pModule, OBJECTREF keepAlive);
 #define FC_RETURN_MODULE_OBJECT(pModule, refKeepAlive) FC_INNER_RETURN(ReflectModuleBaseObject*, GetRuntimeModuleHelper(__me, pModule, refKeepAlive))
 
-class SafeHandle;
 
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<SafeHandle> SAFEHANDLE;
-typedef REF<SafeHandle> SAFEHANDLEREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef SafeHandle * SAFEHANDLE;
-typedef SafeHandle * SAFEHANDLEREF;
-#endif // USE_CHECKED_OBJECTREFS
 
 
 
@@ -1242,19 +1233,6 @@ typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
 
-// Note that the name must always be "" or "en-US".  Other cases and nulls
-// aren't allowed (we already checked.)
-__inline bool IsCultureEnglishOrInvariant(LPCWSTR localeName)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (localeName != NULL &&
-        (localeName[0] == W('\0') ||
-         u16_strcmp(localeName, W("en-US")) == 0))
-    {
-        return true;
-    }
-    return false;
-    }
 
 class CultureInfoBaseObject : public Object
 {
@@ -1364,12 +1342,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT
         m_StartHelper = NULL;
-    }
-
-    void ResetName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Name = NULL;
     }
 
     void SetPriority(INT32 priority)
@@ -1866,110 +1838,6 @@ typedef BStrWrapper*     BSTRWRAPPEROBJECTREF;
 
 #endif // FEATURE_COMINTEROP
 
-class SafeHandle : public Object
-{
-    friend class CoreLibBinder;
-
-  private:
-    // READ ME:
-    //   Modifying the order or fields of this object may require
-    //   other changes to the classlib class definition of this
-    //   object or special handling when loading this system class.
-#if DEBUG
-    STRINGREF m_ctorStackTrace; // Debug-only stack trace captured when the SafeHandle was constructed
-#endif
-    Volatile<LPVOID> m_handle;
-    Volatile<INT32> m_state;        // Combined ref count and closed/disposed state (for atomicity)
-    Volatile<CLR_BOOL> m_ownsHandle;
-    Volatile<CLR_BOOL> m_fullyInitialized;  // Did constructor finish?
-
-    // Describe the bits in the m_state field above.
-    enum StateBits
-    {
-        SH_State_Closed     = 0x00000001,
-        SH_State_Disposed   = 0x00000002,
-        SH_State_RefCount   = 0xfffffffc,
-        SH_RefCountOne      = 4,            // Amount to increment state field to yield a ref count increment of 1
-    };
-
-    static WORD s_IsInvalidHandleMethodSlot;
-    static WORD s_ReleaseHandleMethodSlot;
-
-    static void RunReleaseMethod(SafeHandle* psh);
-    BOOL IsFullyInitialized() const { LIMITED_METHOD_CONTRACT; return m_fullyInitialized; }
-
-  public:
-    static void Init();
-
-    // To use the SafeHandle from native, look at the SafeHandleHolder, which
-    // will do the AddRef & Release for you.
-    LPVOID GetHandle() const {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(((unsigned int) m_state) >= SH_RefCountOne);
-        return m_handle;
-    }
-
-    void AddRef();
-    void Release(bool fDispose = false);
-    void SetHandle(LPVOID handle);
-};
-
-void AcquireSafeHandle(SAFEHANDLEREF* s);
-void ReleaseSafeHandle(SAFEHANDLEREF* s);
-
-typedef Holder<SAFEHANDLEREF*, AcquireSafeHandle, ReleaseSafeHandle> SafeHandleHolder;
-
-class CriticalHandle : public Object
-{
-    friend class CoreLibBinder;
-
-  private:
-    // READ ME:
-    //   Modifying the order or fields of this object may require
-    //   other changes to the classlib class definition of this
-    //   object or special handling when loading this system class.
-    Volatile<LPVOID> m_handle;
-    Volatile<CLR_BOOL> m_isClosed;
-
-  public:
-    LPVOID GetHandle() const { LIMITED_METHOD_CONTRACT; return m_handle; }
-    static size_t GetHandleOffset() { LIMITED_METHOD_CONTRACT; return offsetof(CriticalHandle, m_handle); }
-
-    void SetHandle(LPVOID handle) { LIMITED_METHOD_CONTRACT; m_handle = handle; }
-};
-
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<CriticalHandle> CRITICALHANDLE;
-typedef REF<CriticalHandle> CRITICALHANDLEREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef CriticalHandle * CRITICALHANDLE;
-typedef CriticalHandle * CRITICALHANDLEREF;
-#endif // USE_CHECKED_OBJECTREFS
-
-// WaitHandleBase
-// Base class for WaitHandle
-class WaitHandleBase :public MarshalByRefObjectBaseObject
-{
-    friend class CoreLibBinder;
-
-public:
-    __inline LPVOID GetWaitHandle() {
-        LIMITED_METHOD_CONTRACT;
-        SAFEHANDLEREF safeHandle = (SAFEHANDLEREF)m_safeHandle.LoadWithoutBarrier();
-        return safeHandle != NULL ? safeHandle->GetHandle() : INVALID_HANDLE_VALUE;
-    }
-    __inline SAFEHANDLEREF GetSafeHandle() {LIMITED_METHOD_CONTRACT; return (SAFEHANDLEREF)m_safeHandle.LoadWithoutBarrier();}
-
-private:
-    Volatile<SafeHandle*> m_safeHandle;
-};
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<WaitHandleBase> WAITHANDLEREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef WaitHandleBase* WAITHANDLEREF;
-#endif // USE_CHECKED_OBJECTREFS
 
 // This class corresponds to System.MulticastDelegate on the managed side.
 class DelegateObject : public Object
@@ -1978,7 +1846,7 @@ class DelegateObject : public Object
     friend class CoreLibBinder;
 
 public:
-    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == NULL; }
+    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == 0; }
 
     OBJECTREF GetTarget() { LIMITED_METHOD_CONTRACT; return _target; }
     void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
@@ -2037,7 +1905,8 @@ class StackTraceArray
 {
     struct ArrayHeader
     {
-        size_t m_size;
+        uint32_t m_size;
+        uint32_t m_keepAliveItemsCount;
         Thread * m_thread;
     };
 
@@ -2056,7 +1925,7 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-    void Swap(StackTraceArray & rhs)
+    void Set(I1ARRAYREF array)
     {
         CONTRACTL
         {
@@ -2066,12 +1935,10 @@ public:
         }
         CONTRACTL_END;
         SUPPORTS_DAC;
-        I1ARRAYREF t = m_array;
-        m_array = rhs.m_array;
-        rhs.m_array = t;
+        m_array = array;
     }
 
-    size_t Size() const
+    uint32_t Size() const
     {
         WRAPPER_NO_CONTRACT;
         if (!m_array)
@@ -2083,7 +1950,9 @@ public:
     StackTraceElement const & operator[](size_t index) const;
     StackTraceElement & operator[](size_t index);
 
-    void Append(StackTraceElement const * begin, StackTraceElement const * end);
+    size_t Capacity() const;
+    void Append(StackTraceElement const * element);
+    void Allocate(size_t size);
 
     I1ARRAYREF Get() const
     {
@@ -2091,42 +1960,60 @@ public:
         return m_array;
     }
 
-    // Deep copies the array
-    void CopyFrom(StackTraceArray const & src);
+    uint32_t CopyDataFrom(StackTraceArray const & src);
+
+    Thread * GetObjectThread() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetHeader()->m_thread;
+    }
+
+    void SetSize(uint32_t size)
+    {
+        WRAPPER_NO_CONTRACT;
+        VolatileStore(&GetHeader()->m_size, size);
+    }
+
+    void SetKeepAliveItemsCount(uint32_t count)
+    {
+        WRAPPER_NO_CONTRACT;
+        VolatileStore(&GetHeader()->m_keepAliveItemsCount, count);
+    }
+
+    uint32_t GetKeepAliveItemsCount() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return VolatileLoad(&GetHeader()->m_keepAliveItemsCount);
+    }
+
+    // Compute the number of methods in the stack trace that can be collected. We need to store keepAlive
+    // objects (Resolver / LoaderAllocator) for these methods.
+    uint32_t ComputeKeepAliveItemsCount();
+
+    void MarkAsFrozen()
+    {
+        if (m_array != NULL)
+        {
+            GetHeader()->m_thread = (Thread *)(size_t)1;
+        }
+    }
+
+    bool IsFrozen() const
+    {
+        return GetHeader()->m_thread == (Thread *)(size_t)1;
+    }
 
 private:
     StackTraceArray(StackTraceArray const & rhs) = delete;
 
     StackTraceArray & operator=(StackTraceArray const & rhs) = delete;
 
-    void Grow(size_t size);
-    void EnsureThreadAffinity();
     void CheckState() const;
 
-    size_t Capacity() const
+    uint32_t GetSize() const
     {
         WRAPPER_NO_CONTRACT;
-        assert(!!m_array);
-
-        return m_array->GetNumComponents();
-    }
-
-    size_t GetSize() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->m_size;
-    }
-
-    void SetSize(size_t size)
-    {
-        WRAPPER_NO_CONTRACT;
-        GetHeader()->m_size = size;
-    }
-
-    Thread * GetObjectThread() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->m_thread;
+        return VolatileLoad(&GetHeader()->m_size);
     }
 
     void SetObjectThread()
@@ -2152,7 +2039,7 @@ private:
     CLR_I1 const * GetRaw() const
     {
         WRAPPER_NO_CONTRACT;
-        assert(!!m_array);
+        _ASSERTE(!!m_array);
 
         return const_cast<I1ARRAYREF &>(m_array)->GetDirectPointerToNonObjectElements();
     }
@@ -2161,7 +2048,7 @@ private:
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        assert(!!m_array);
+        _ASSERTE(!!m_array);
 
         return dac_cast<PTR_INT8>(m_array->GetDirectPointerToNonObjectElements());
     }
@@ -2213,30 +2100,22 @@ class LoaderAllocatorObject : public Object
     friend class CoreLibBinder;
 
 public:
-    PTRARRAYREF GetHandleTable()
+    // All uses of this api must be safe lock-free reads used only for reading from the handle table
+    // The normal GetHandleTable can only be called while holding the handle table lock, but
+    // this is for use in lock-free scenarios
+    PTRARRAYREF DangerousGetHandleTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (PTRARRAYREF)m_pSlots;
+        return (PTRARRAYREF)ObjectToOBJECTREF(VolatileLoadWithoutBarrier((Object**)&m_pSlots));
     }
 
-    void SetHandleTable(PTRARRAYREF handleTable)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetObjectReference(&m_pSlots, (OBJECTREF)handleTable);
-    }
-
-    INT32 GetSlotsUsed()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_slotsUsed;
-    }
-
-    void SetSlotsUsed(INT32 newSlotsUsed)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_slotsUsed = newSlotsUsed;
-    }
-
+#ifndef DACCESS_COMPILE
+    PTRARRAYREF GetHandleTable();
+    void SetHandleTable(PTRARRAYREF handleTable);
+    INT32 GetSlotsUsed();
+    void SetSlotsUsed(INT32 newSlotsUsed);
+#endif // DACCESS_COMPILE
+    
     void SetNativeLoaderAllocator(LoaderAllocator * pLoaderAllocator)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2261,11 +2140,6 @@ typedef PTR_LoaderAllocatorObject LOADERALLOCATORREF;
 #endif // USE_CHECKED_OBJECTREFS
 
 #endif // FEATURE_COLLECTIBLE_TYPES
-
-#if !defined(DACCESS_COMPILE)
-// Define the lock used to access stacktrace from an exception object
-EXTERN_C SpinLock g_StackTraceArrayLock;
-#endif // !defined(DACCESS_COMPILE)
 
 // This class corresponds to Exception on the managed side.
 typedef DPTR(class ExceptionObject) PTR_ExceptionObject;
@@ -2311,11 +2185,13 @@ public:
         return _xptrs;
     }
 
-    void SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMethodArray);
+    void SetStackTrace(OBJECTREF stackTrace);
 
-    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outDynamicMethodArray = NULL) const;
+    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray = NULL) const;
 
-    I1ARRAYREF GetStackTraceArrayObject() const
+    static void GetStackTraceParts(OBJECTREF stackTraceObj, StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray);
+
+    OBJECTREF GetStackTraceArrayObject() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return _stackTrace;
@@ -2449,7 +2325,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (_ipForWatsonBuckets != NULL);
+        return (_ipForWatsonBuckets != 0);
     }
 
     // This method returns the IP for Watson Buckets.
@@ -2469,11 +2345,10 @@ private:
     OBJECTREF   _data;
     OBJECTREF   _innerException;
     STRINGREF   _helpURL;
-    I1ARRAYREF  _stackTrace;
+    OBJECTREF   _stackTrace;
     U1ARRAYREF  _watsonBuckets;
     STRINGREF   _stackTraceString; //Needed for serialization.
     STRINGREF   _remoteStackTraceString;
-    PTRARRAYREF _dynamicMethods;
     STRINGREF   _source;         // Mainly used by VB.
 
     UINT_PTR    _ipForWatsonBuckets; // Contains the IP of exception for watson bucketing
@@ -2580,7 +2455,7 @@ public:
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
-    static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return 0; }
+    static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return NULL; }
 
     // if 'Obj' is a true boxed nullable, return the form we want (either null or a boxed T)
     static OBJECTREF NormalizeBox(OBJECTREF obj);
@@ -2596,6 +2471,8 @@ public:
         Nullable *nullable = (Nullable *)src;
         return nullable->ValueAddr(nullableMT);
     }
+
+    static int32_t GetValueAddrOffset(MethodTable* nullableMT);
 
 private:
     static BOOL IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* paramMT);

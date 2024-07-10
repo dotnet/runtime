@@ -75,4 +75,7 @@ mono_debugger_agent_receive_and_process_command (void);
 
 bool
 mono_begin_breakpoint_processing (void *the_tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal);
+
+void 
+mono_dbg_assembly_load (MonoProfiler *prof, MonoAssembly *assembly);
 #endif

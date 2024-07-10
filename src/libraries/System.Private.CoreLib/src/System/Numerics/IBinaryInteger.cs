@@ -37,7 +37,7 @@ namespace System.Numerics
                 return TSelf.CreateChecked(bitCount);
             }
 
-            return (bitCount - TSelf.One) ^ TSelf.Log2(value);
+            return TSelf.IsNegative(value) ? TSelf.Zero : ((bitCount - TSelf.One) ^ TSelf.Log2(value));
         }
 
         /// <summary>Computes the number of bits that are set in a value.</summary>

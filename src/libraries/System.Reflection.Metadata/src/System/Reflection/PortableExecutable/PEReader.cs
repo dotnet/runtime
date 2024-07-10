@@ -201,7 +201,11 @@ namespace System.Reflection.PortableExecutable
                     {
                         // The peImage is left null, but the lazyMetadataBlock is initialized up front.
                         _lazyPEHeaders = new PEHeaders(peStream, actualSize, IsLoadedImage);
-                        _lazyMetadataBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, _lazyPEHeaders.MetadataStartOffset, _lazyPEHeaders.MetadataSize);
+
+                        if (_lazyPEHeaders.MetadataStartOffset != -1)
+                        {
+                            _lazyMetadataBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, _lazyPEHeaders.MetadataStartOffset, _lazyPEHeaders.MetadataSize);
+                        }
                     }
                     // We read all we need, the stream is going to be closed.
                 }

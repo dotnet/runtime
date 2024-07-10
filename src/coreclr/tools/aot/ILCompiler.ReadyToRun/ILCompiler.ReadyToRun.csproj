@@ -33,9 +33,6 @@
   <Import Project="..\..\Common\Compiler\GenericCycleDetection\GenericCycleDetection.projitems" />
 
   <ItemGroup>
-    <Compile Include="..\..\Common\Compiler\ImpliedRepeatedFieldDesc.cs" Link="Compiler\ImpliedRepeatedFieldDesc.cs" />
-    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFields.cs" Link="Compiler\TypeWithRepeatedFields.cs" />
-    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" Link="Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSet.cs" Link="Common\ReadyToRunInstructionSet.cs" />
@@ -138,6 +135,7 @@
     <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs" Link="JitInterface\SystemVStructClassificator.cs" />
     <Compile Include="..\..\Common\JitInterface\LoongArch64PassStructInRegister.cs" Link="JitInterface\LoongArch64PassStructInRegister.cs" />
     <Compile Include="..\..\Common\JitInterface\RISCV64PassStructInRegister.cs" Link="JitInterface\RISCV64PassStructInRegister.cs" />
+    <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs" Link="JitInterface\SwiftPhysicalLowering.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\UnmanagedCallingConventions.cs" Link="Interop\UnmanagedCallingConventions.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
@@ -333,9 +331,6 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\JitInterface\MemoryHelper.cs">
-      <Link>JitInterface\MemoryHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\UnboxingMethodDesc.cs">
       <Link>JitInterface\UnboxingMethodDesc.cs</Link>

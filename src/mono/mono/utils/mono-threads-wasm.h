@@ -27,21 +27,33 @@ MonoNativeThreadId
 mono_threads_wasm_ui_thread_tid (void);
 
 #ifndef DISABLE_THREADS
-/**
- * Runs the given function asynchronously on the main thread.
- * See emscripten/threading.h emscripten_async_run_in_main_runtime_thread
- */
-void
-mono_threads_wasm_async_run_in_ui_thread (void (*func) (void));
 
-/*
- * Variant that takes an argument. Add more variants as needed.
- */
-void
-mono_threads_wasm_async_run_in_ui_thread_vi (void (*func)(gpointer), gpointer user_data);
+void 
+mono_wasm_dump_threads_async (void);
+
+gboolean
+mono_threads_wasm_is_deputy_thread (void);
+
+gboolean
+mono_threads_wasm_is_io_thread (void);
+
+MonoNativeThreadId
+mono_threads_wasm_deputy_thread_tid (void);
+
+MonoNativeThreadId
+mono_threads_wasm_io_thread_tid (void);
+
+MonoNativeThreadId
+mono_wasm_create_deputy_thread (void);
+
+MonoNativeThreadId
+mono_wasm_create_io_thread (void);
 
 void
-mono_threads_wasm_async_run_in_ui_thread_vii (void (*func)(gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+mono_wasm_register_ui_thread (void);
+
+void
+mono_wasm_register_io_thread (void);
 
 void
 mono_threads_wasm_async_run_in_target_thread (pthread_t target_thread, void (*func) (void));
@@ -53,7 +65,10 @@ void
 mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 
 void
-mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args);
+
+void 
+mono_threads_wasm_sync_run_in_target_thread_done (MonoCoopSem *sem);
 
 static inline
 int32_t
@@ -72,9 +87,9 @@ mono_wasm_atomic_wait_i32 (volatile int32_t *addr, int32_t expected, int32_t tim
 	return __builtin_wasm_memory_atomic_wait32((int32_t*)addr, expected, timeout_ns);
 }
 
-extern MonoNativeTlsKey jobs_key;
 #else /* DISABLE_THREADS */
 extern GSList *jobs;
+void mono_background_exec (void);
 #endif /* DISABLE_THREADS */
 
 void

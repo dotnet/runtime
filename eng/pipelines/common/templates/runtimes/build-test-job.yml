@@ -12,20 +12,14 @@ parameters:
   runtimeFlavor: 'coreclr'
   runtimeVariant: ''
   dependsOn: []
-  dependOnEvaluatePaths: false
   crossBuild: false
+  isOfficialBuild: false
 
 ### Build managed test components (native components are getting built as part
 ### of the product build job).
 
-### TODO: As of today, build of managed test components requires the product build
-### as a prerequisite due to dependency on System.Private.Corelib. After switching
-### over to its reference assembly we should be able to remove this dependency and
-### run managed test builds in parallel with the product build job.
-
-
 jobs:
-- template: /eng/pipelines/${{ parameters.runtimeFlavor }}/templates/xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -36,8 +30,6 @@ jobs:
     runtimeVariant: ${{ parameters.runtimeVariant }}
     testGroup: ${{ parameters.testGroup }}
     pool: ${{ parameters.pool }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    compilerArg: ''
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -52,7 +44,7 @@ jobs:
       displayName: '${{ parameters.runtimeFlavor }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
-    # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
+    # See https://learn.microsoft.com/azure/devops/pipelines/process/conditions
     condition: and(succeeded(), ${{ parameters.condition }})
 
     ${{ if ne(parameters.dependsOn[0], '') }}:
@@ -64,13 +56,16 @@ jobs:
     ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       timeoutInMinutes: 160
 
+    artifacts:
+      publish:
+        logs:
+          name: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
+
     variables:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
       - name: liveRuntimeBuildParams
         value: 'libs+clr.iltools -c Release -ci'
-      - name: compilerArg
-        value: ''
 
       - name: runtimeFlavorArgs
         value: ''
@@ -91,6 +86,12 @@ jobs:
           - name: testTreeFilterArg
             value: 'tree GC/Scenarios/GCSimulator'
 
+      - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+        parameters:
+          runtimeFlavor: coreclr
+          testGroup: ${{ parameters.testGroup }}
+          liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+
     steps:
 
     # Install test build dependencies
@@ -99,7 +100,7 @@ jobs:
         displayName: Install native dependencies
 
     # Build core/libraries dependencies of test build
-    - script: $(Build.SourcesDirectory)/build$(scriptExt) $(liveRuntimeBuildParams) $(crossArg) $(compilerArg)
+    - script: $(Build.SourcesDirectory)/build$(scriptExt) $(liveRuntimeBuildParams) $(crossArg)
       displayName: Build coreclr/libs components needed by test build
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
@@ -141,13 +142,3 @@ jobs:
         archiveExtension: '.tar.gz'
         artifactName: $(microsoftNetSdkIlArtifactName)
         displayName: 'Microsoft.NET.Sdk.IL package'
-
-
-    # Publish Logs
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
-      continueOnError: true
-      condition: always()

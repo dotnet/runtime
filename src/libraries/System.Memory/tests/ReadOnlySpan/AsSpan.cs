@@ -91,6 +91,7 @@ namespace System.SpanTests
                 Assert.Equal(length, span.Length);
                 fixed (char* pText = text)
                 {
+                    // Unsafe.AsPointer is safe here since it's pinned (since text and span should be the same string)
                     char* expected = pText + start;
                     void* actual = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
                     Assert.Equal((IntPtr)expected, (IntPtr)actual);

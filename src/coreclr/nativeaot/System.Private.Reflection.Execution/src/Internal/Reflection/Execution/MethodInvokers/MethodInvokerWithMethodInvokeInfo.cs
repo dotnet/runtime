@@ -62,6 +62,6 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 return new InstanceMethodInvoker(methodInvokeInfo, declaringTypeHandle);
         }
 
-        internal MethodInvokeInfo MethodInvokeInfo { get; private set; }
+        internal MethodInvokeInfo MethodInvokeInfo { get; }
     }
 }

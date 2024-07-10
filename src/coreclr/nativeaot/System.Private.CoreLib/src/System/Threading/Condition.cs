@@ -32,6 +32,8 @@ namespace System.Threading
         private Waiter? _waitersHead;
         private Waiter? _waitersTail;
 
+        internal Lock AssociatedLock => _lock;
+
         private unsafe void AssertIsInList(Waiter waiter)
         {
             Debug.Assert(_waitersHead != null && _waitersTail != null);
@@ -89,7 +91,9 @@ namespace System.Threading
 
         public Condition(Lock @lock)
         {
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
             ArgumentNullException.ThrowIfNull(@lock);
+#pragma warning restore CS9216
             _lock = @lock;
         }
 
@@ -103,6 +107,8 @@ namespace System.Threading
 
             if (!_lock.IsHeldByCurrentThread)
                 throw new SynchronizationLockException();
+
+            using ThreadBlockingInfo.Scope threadBlockingScope = new(this, millisecondsTimeout);
 
             Waiter waiter = GetWaiterForCurrentThread();
             AddWaiter(waiter);

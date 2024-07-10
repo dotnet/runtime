@@ -1,6 +1,11 @@
+parameters:
+  - name: templatePath
+    type: string
+    default: 'templates'
+
 variables:
 
-# These values enable longer delays, configurable number of retries, and special understanding of TCP hang-up 
+# These values enable longer delays, configurable number of retries, and special understanding of TCP hang-up
 # See https://github.com/NuGet/Home/issues/11027 for details
 - name: NUGET_ENABLE_EXPERIMENTAL_HTTP_RETRY
   value: true
@@ -40,10 +45,6 @@ variables:
 - name: isNotSpecificPlatformOnlyBuild
   value: ${{ notin(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic') }}
 
-# We only run evaluate paths on runtime and runtime-community pipelines on PRs
-# keep in sync with /eng/pipelines/common/xplat-setup.yml
-- name: dependOnEvaluatePaths
-  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic', 'dotnet-linker-tests', 'runtime-dev-innerloop', 'runtime-coreclr superpmi-replay', 'runtime-coreclr superpmi-diffs')) }}
 - name: debugOnPrReleaseOnRolling
   ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     value: Release
@@ -58,3 +59,5 @@ variables:
                 eq(variables['isRollingBuild'], true))) ]
 
 - template: /eng/pipelines/common/perf-variables.yml
+
+- template: /eng/common/${{ parameters.templatePath }}/variables/pool-providers.yml

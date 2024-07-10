@@ -64,7 +64,9 @@ namespace System.Runtime.InteropServices.JavaScript
             throw new InvalidOperationException();
         }
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static void ThrowException(ref JSMarshalerArgument arg)
         {
             arg.ToManaged(out Exception? ex);
@@ -85,7 +87,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 ConfigureAwaitOptions.ForceYielding); // this helps to finish the import before we bind the module in [JSImport]
         }
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static async Task<JSObject> CancellationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
         {
             if (jsTask.IsCompletedSuccessfully)
@@ -97,7 +101,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 CancelablePromise.CancelPromise((Task<JSObject>)s!);
             }, jsTask))
             {
-                return await jsTask.ConfigureAwait(true);
+                return await jsTask.ConfigureAwait(false);
             }
         }
 
@@ -153,6 +157,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var type = signature.Sigs[i] = types[i + 1]._signatureType;
             }
             signature.IsAsync = types[0]._signatureType.Type == MarshalerType.Task;
+            signature.IsDiscardNoWait = types[0]._signatureType.Type == MarshalerType.DiscardNoWait;
 
             signature.Header[0].ImportHandle = signature.ImportHandle;
             signature.Header[0].FunctionNameLength = functionNameBytes;
@@ -224,6 +229,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (method.ReturnType == typeof(void))
                 {
                     method.Invoke(null, argsToPass);
+#if FEATURE_WASM_MANAGED_THREADS
+                    result = Task.FromResult(0);
+#endif
                 }
                 else if (method.ReturnType == typeof(int))
                 {
@@ -274,15 +282,21 @@ namespace System.Runtime.InteropServices.JavaScript
         public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
         {
             var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
-            var wrapper_name = $"__Wrapper_{methodName}_{signatureHash}";
+
             var dllName = assemblyName + ".dll";
 
             IntPtr monoMethod;
             Interop.Runtime.GetAssemblyExport(
+                // FIXME: Pass UTF-16 through directly so C can work with it, doing the conversion
+                //  in C# pulls in a bunch of dependencies we don't need this early in startup.
+                // I tested removing the UTF8 conversion from this specific call, but other parts
+                //  of startup I can't identify still pull in UTF16->UTF8 conversion, so it's not
+                //  worth it to do that yet.
                 Marshal.StringToCoTaskMemUTF8(dllName),
                 Marshal.StringToCoTaskMemUTF8(nameSpace),
                 Marshal.StringToCoTaskMemUTF8(shortClassName),
-                Marshal.StringToCoTaskMemUTF8(wrapper_name),
+                Marshal.StringToCoTaskMemUTF8(methodName),
+                signatureHash,
                 &monoMethod);
 
             if (monoMethod == IntPtr.Zero)
@@ -292,6 +306,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var signature = GetMethodSignature(signatures, null, null);
 
+            // this will hit JS side possibly on another thread, depending on JSProxyContext.CurrentThreadContext
             JavaScriptImports.BindCSFunction(monoMethod, assemblyName, nameSpace, shortClassName, methodName, signatureHash, (IntPtr)signature.Header);
 
             FreeMethodSignatureBuffer(signature);
@@ -309,23 +324,65 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 #endif
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
         {
             var temp = new IntPtrAndHandle { ptr = ptr };
             return temp.methodHandle;
         }
 
+        // The BCL implementations of IndexOf/LastIndexOf/Trim are vectorized & fast,
+        //  but they pull in a bunch of code that is otherwise not necessarily
+        //  useful during early app startup, so we use simple scalar implementations
+        private static int SmallIndexOf (string s, char ch, int direction = 1) {
+            if (s.Length < 1)
+                return -1;
+            int start_index = (direction > 0) ? 0 : s.Length - 1,
+                end_index = (direction > 0) ? s.Length - 1 : 0;
+            for (int i = start_index; i != end_index; i += direction) {
+                if (s[i] == ch)
+                    return i;
+            }
+            return -1;
+        }
+
+        private static string SmallTrim (string s) {
+            if (s.Length < 1)
+                return s;
+            int head = 0, tail = s.Length - 1;
+            while (head < s.Length) {
+                if (s[head] == ' ')
+                    head++;
+                else
+                    break;
+            }
+            while (tail >= 0) {
+                if (s[tail] == ' ')
+                    tail--;
+                else
+                    break;
+            }
+            if ((head > 0) || (tail < s.Length - 1))
+                return s.Substring(head, tail - head + 1);
+            else
+                return s;
+        }
+
         public static (string assemblyName, string nameSpace, string shortClassName, string methodName) ParseFQN(string fqn)
         {
-            var assembly = fqn.Substring(fqn.IndexOf('[') + 1, fqn.IndexOf(']') - 1).Trim();
-            fqn = fqn.Substring(fqn.IndexOf(']') + 1).Trim();
-            var methodName = fqn.Substring(fqn.IndexOf(':') + 1);
-            var className = fqn.Substring(0, fqn.IndexOf(':')).Trim();
+            var assembly = fqn.Substring(SmallIndexOf(fqn, '[') + 1, SmallIndexOf(fqn, ']') - 1);
+            fqn = SmallTrim(fqn);
+            fqn = fqn.Substring(SmallIndexOf(fqn, ']') + 1);
+            fqn = SmallTrim(fqn);
+            var methodName = fqn.Substring(SmallIndexOf(fqn, ':') + 1);
+            var className = fqn.Substring(0, SmallIndexOf(fqn, ':'));
+            className = SmallTrim(className);
 
             var nameSpace = "";
             var shortClassName = className;
-            var idx = fqn.LastIndexOf(".");
+            var idx = SmallIndexOf(fqn, '.', -1);
             if (idx != -1)
             {
                 nameSpace = fqn.Substring(0, idx);

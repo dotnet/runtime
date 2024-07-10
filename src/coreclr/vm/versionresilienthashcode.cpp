@@ -396,7 +396,7 @@ bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned*
     }
     else
     {
-        COR_ILMETHOD_DECODER header(pMD->GetILHeader(TRUE), pMD->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(pMD->GetILHeader(), pMD->GetMDImport(), NULL);
 
         pILCode = header.Code;
         cbILCode = header.GetCodeSize();
