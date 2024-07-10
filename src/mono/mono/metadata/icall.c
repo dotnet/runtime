@@ -868,8 +868,8 @@ ves_icall_System_Array_FastCopy (MonoObjectHandleOnStack source_handle, int sour
 		 	m_class_is_valuetype (src_class) || m_class_is_valuetype (src_class))
 			return FALSE;
 		
-		if (mono_class_is_pointer (dest_class) && mono_class_is_pointer (src_class)) {
-			/* if we're copying between two arrays of pointers, only allow it if both dest_class is assignable from src_class (checked above, and src_class is assignable from dest_class).  This should only be true if both src_class and dest_class have a common cast_class. (for example: int*[] and uint*[] are ok, but void*[] and int*[] are not)). */
+		if (mono_class_is_pointer (dest_class) || mono_class_is_pointer (src_class)) {
+			/* if we're copying between at least one array of pointers, only allow it if both dest_class is assignable from src_class (checked above, and src_class is assignable from dest_class).  This should only be true if both src_class and dest_class have a common cast_class. (for example: int*[] and uint*[] are ok, but void*[] and int*[] are not)). */
 			if (!mono_class_is_assignable_from_internal (dest_class, src_class))
 				return FALSE;
 		} else {
