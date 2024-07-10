@@ -31,12 +31,19 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | UseNativeHttpHandler | System.Net.Http.UseNativeHttpHandler | HttpClient uses by default platform native implementation of HttpMessageHandler if set to true. |
 | UseSystemResourceKeys | System.Resources.UseSystemResourceKeys |  Any localizable resources for system assemblies is trimmed when set to true |
 | VerifyDependencyInjectionOpenGenericServiceTrimmability | Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability | When set to true, DependencyInjection will verify trimming annotations applied to open generic services are correct |
+| _ActiveXImplSupport | System.Windows.Forms.ActiveXImpl.IsSupported | WinForms ActiveX support is trimmed when set to false. |
 | _AggressiveAttributeTrimming | System.AggressiveAttributeTrimming | When set to true, aggressively trims attributes to allow for the most size savings possible, even if it could result in runtime behavior changes |
 | _ComObjectDescriptorSupport | System.ComponentModel.TypeDescriptor.IsComObjectDescriptorSupported | When set to true, supports creating a TypeDescriptor based view of COM objects. |
 | _DefaultValueAttributeSupport | System.ComponentModel.DefaultValueAttribute.IsSupported | When set to true, supports creating a DefaultValueAttribute at runtime. |
 | _DesignerHostSupport | System.ComponentModel.Design.IDesignerHost.IsSupported | When set to true, supports creating design components at runtime. |
 | _EnableConsumingManagedCodeFromNativeHosting | System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting | Getting a managed function from native hosting is disabled when set to false and related functionality can be trimmed. |
+| _MdiWindowDialogSupport | System.Windows.Forms.MdiWindowDialog.IsSupported | WinForms MdiWindowDialog support is trimmed when set to false. |
+| _UseComponentModelRegisteredTypes | System.Windows.Forms.Control.UseComponentModelRegisteredTypes | Uses ComponentModel type registration feature when set to true. |
 | _UseManagedNtlm | System.Net.Security.UseManagedNtlm | When set to true, uses built-in managed implementation of NTLM and SPNEGO algorithm for HTTP, SMTP authentication, and NegotiateAuthentication API instead of system provided GSSAPI implementation. |
+| _WinFormsBindingSupport | System.Windows.Forms.Binding.IsSupported | WinForms binding support is trimmed when set to false. |
+| _WinFormsDesignTimeFeaturesSupport | System.Windows.Forms.Control.AreDesignTimeFeaturesSupported | WinForms design time support is trimmed when set to false. |
+| _WinFormsImageIndexConverterSupport | System.Windows.Forms.ImageIndexConverter.IsSupported | WinForms ImageIndexConverter support is trimmed when set to false. |
+| _WinFormsUITypeEditorSupport | System.Drawing.Design.UITypeEditor.IsSupported | WinForms UITypeEditor support is trimmed when set to false. |
 
 Any feature-switch which defines property can be set in csproj file or
 on the command line as any other MSBuild property. Those without predefined property name
