@@ -18,25 +18,25 @@ namespace System.Buffers
         public struct AsciiState(Vector128<byte> bitmap, BitVector256 lookup)
         {
             public Vector256<byte> Bitmap = Vector256.Create(bitmap);
-            public BitVector256 Lookup = lookup;
+            public readonly BitVector256 Lookup = lookup;
 
             public readonly AsciiState CreateInverse() =>
                 new AsciiState(~Bitmap._lower, Lookup.CreateInverse());
         }
 
-        public struct AsciiWithSecondSetState(Vector128<byte> asciiBitmap, ushort offset, Vector128<byte> secondBitmap, ProbabilisticMapState lookup)
+        public readonly struct AsciiWithSecondSetState(Vector128<byte> asciiBitmap, ushort offset, Vector128<byte> secondBitmap, ProbabilisticMapState lookup)
         {
-            public ushort Offset = offset;
-            public Vector256<byte> AsciiBitmap = Vector256.Create(asciiBitmap, asciiBitmap);
-            public Vector256<byte> SecondBitmap = Vector256.Create(secondBitmap, secondBitmap);
-            public ProbabilisticMapState Lookup = lookup; // Only used for single-character checks.
+            public readonly ushort Offset = offset;
+            public readonly Vector256<byte> AsciiBitmap = Vector256.Create(asciiBitmap, asciiBitmap);
+            public readonly Vector256<byte> SecondBitmap = Vector256.Create(secondBitmap, secondBitmap);
+            public readonly ProbabilisticMapState Lookup = lookup; // Only used for single-character checks.
         }
 
-        public struct AnyByteState(Vector128<byte> bitmap0, Vector128<byte> bitmap1, BitVector256 lookup)
+        public readonly struct AnyByteState(Vector128<byte> bitmap0, Vector128<byte> bitmap1, BitVector256 lookup)
         {
-            public Vector256<byte> Bitmap0 = Vector256.Create(bitmap0);
-            public Vector256<byte> Bitmap1 = Vector256.Create(bitmap1);
-            public BitVector256 Lookup = lookup;
+            public readonly Vector256<byte> Bitmap0 = Vector256.Create(bitmap0);
+            public readonly Vector256<byte> Bitmap1 = Vector256.Create(bitmap1);
+            public readonly BitVector256 Lookup = lookup;
         }
 
         internal static bool IsVectorizationSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
