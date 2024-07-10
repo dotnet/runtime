@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -111,6 +112,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "x" : 1, "y" : 2 }""", """{ "x" : 1, "y" : 2 }""")]
         [InlineData("""{ "x" : 1, "y" : 2 }""", """{ "y" : 2, "x" : 1 }""")]
         [InlineData("""{ "x" : 1, "x" : 2 }""", """{ "x" : 1, "x" : 2 }""")]
+        [InlineData("""{ "x" : 1, "y" : null, "x" : 2 }""", """{ "y" : null, "x" : 1, "x" : 2 }""")]
+        [InlineData("""{ "x" : 1, "y" : null, "x" : 2 }""", """{ "x" : 1, "x" : 2, "y" : null }""")]
         [InlineData("""[]""", """ [ ]""")]
         [InlineData("""[1, 2, 3]""", """ [1,  2,  3  ]""")]
         [InlineData("""[null, false, 3.14, "ABC", { "x" : 1, "y" : 2 }, []]""",
@@ -198,7 +201,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "Prop1" : 1, "Prop2": {} }""", """{ "Prop1" : 1, "Prop2" : 2 }""")]
         [InlineData("""{ "Prop1" : 1, "Prop2": {}, "Prop3": false }""", """{ "Prop1" : 1, "Prop2" : { "c" : null }, "Prop3" : false }""")]
         [InlineData("""{ "Prop1" : 1, "Prop2": {}, "Prop3": false }""", """{ "Prop1" : 1, "Prop3" : true, "Prop2" : {} }""")]
-        [InlineData("""{ "Prop3" : null, "Prop1" : 1, "Prop1" : 2 }""", """{ "Prop1" : 1, "Prop1" : 2, "Prop3" : null }""")]
+        [InlineData("""{ "Prop3" : null, "Prop1" : 1, "Prop1" : 2 }""", """{ "Prop1" : 2, "Prop1" : 1, "Prop3" : null }""")]
         public static void DeepEquals_NotEqualValuesReturnFalse(string value1, string value2)
         {
             JsonElement element1 = JsonDocument.Parse(value1).RootElement;
@@ -213,6 +216,51 @@ namespace System.Text.Json.Serialization.Tests
 
             // Symmetry
             Assert.False(JsonElement.DeepEquals(element2, element1));
+        }
+
+        [Theory]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public static void DeepEquals_DeepJsonDocument(int depth)
+        {
+            ArrayBufferWriter<byte> bufferWriter = new();
+            using Utf8JsonWriter writer = new(bufferWriter);
+
+            for (int i = 0; i < depth; i++)
+            {
+                if (i % 2 == 0)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("prop");
+                }
+                else
+                {
+                    writer.WriteStartArray();
+                }
+            }
+
+            writer.WriteNumberValue(42);
+
+            for (int i = depth - 1; i >= 0; i--)
+            {
+                if (i % 2 == 0)
+                {
+                    writer.WriteEndObject();
+                }
+                else
+                {
+                    writer.WriteEndArray();
+                }
+            }
+
+            writer.Flush();
+
+            JsonDocumentOptions options = new JsonDocumentOptions { MaxDepth = depth };
+            using JsonDocument jDoc = JsonDocument.Parse(bufferWriter.WrittenSpan.ToArray(), options);
+            JsonElement element = jDoc.RootElement;
+
+            Assert.True(JsonElement.DeepEquals(element, element));
         }
     }
 }

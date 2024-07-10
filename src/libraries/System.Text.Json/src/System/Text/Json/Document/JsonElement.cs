@@ -1235,6 +1235,21 @@ namespace System.Text.Json
         /// <param name="element1">The <see cref="JsonElement"/> to compare.</param>
         /// <param name="element2">The <see cref="JsonElement"/> to compare.</param>
         /// <returns><see langword="true"/> if the two values are equal; otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Deep equality of two JSON values is defined as follows:
+        /// <list type="bullet">
+        /// <item>JSON values of different kind are not equal.</item>
+        /// <item>JSON constants <see langword="null"/>, <see langword="false"/> and <see langword="true"/> only equal themselves.</item>
+        /// <item>JSON numbers are equal if and only if they have they have equivalent decimal representations, with no rounding being used.</item>
+        /// <item>JSON strings are equal if and only if they are equal using ordinal string comparison.</item>
+        /// <item>JSON arrays are equal if and only if they are of equal length and each of their elements are pairwise equal.</item>
+        /// <item>
+        ///     JSON objects are equal if and only if they have the same number of properties and each property in the first object
+        ///     has a corresponding property in the second object with the same name and equal value. The order of properties is not
+        ///     significant, with the exception of repeated properties that must be specified in the same order (with interleaving allowed).
+        /// </item>
+        /// </list>
+        /// </remarks>
         public static bool DeepEquals(JsonElement element1, JsonElement element2)
         {
             element1.CheckValidInstance();
@@ -1278,13 +1293,15 @@ namespace System.Text.Json
                     ArrayEnumerator arrayEnumerator2 = element2.EnumerateArray();
                     foreach (JsonElement e1 in element1.EnumerateArray())
                     {
-                        if (!arrayEnumerator2.MoveNext() || !DeepEquals(e1, arrayEnumerator2.Current))
+                        bool success = arrayEnumerator2.MoveNext();
+                        Debug.Assert(success, "enumerators must have matching length");
+
+                        if (!DeepEquals(e1, arrayEnumerator2.Current))
                         {
                             return false;
                         }
                     }
 
-                    Debug.Assert(!arrayEnumerator2.MoveNext());
                     return true;
 
                 default:
@@ -1300,15 +1317,13 @@ namespace System.Text.Json
                     ObjectEnumerator objectEnumerator2 = element2.EnumerateObject();
 
                     // Two JSON objects are considered equal if they define the same set of properties.
-                    // Start optimistically with sequential comparison, but fall back to unordered
+                    // Start optimistically with pairwise comparison, but fall back to unordered
                     // comparison as soon as a mismatch is encountered.
 
                     while (objectEnumerator1.MoveNext())
                     {
-                        if (!objectEnumerator2.MoveNext())
-                        {
-                            return false;
-                        }
+                        bool success = objectEnumerator2.MoveNext();
+                        Debug.Assert(success, "enumerators should have matching lengths");
 
                         JsonProperty prop1 = objectEnumerator1.Current;
                         JsonProperty prop2 = objectEnumerator2.Current;
@@ -1327,26 +1342,48 @@ namespace System.Text.Json
                         count--;
                     }
 
-                    Debug.Assert(!objectEnumerator2.MoveNext());
                     return true;
 
                     static bool UnorderedObjectDeepEquals(ObjectEnumerator objectEnumerator1, ObjectEnumerator objectEnumerator2, int remainingProps)
                     {
-                        Dictionary<string, JsonElement> properties2 = new(capacity: remainingProps, StringComparer.Ordinal);
+                        // JsonElement objects allow duplicate property names, which is optional per the JSON RFC.
+                        // Even though this implementation of equality does not take property ordering into account,
+                        // repeated property names must be specified in the same order (although they may be interleaved).
+                        // This is to preserve a degree of coherence with JSON serialization, where either the first
+                        // or last occurrence of a repeated property name is used. It also simplifies the implementation
+                        // and keeps it at O(n + m) complexity.
+
+                        Dictionary<string, ValueQueue<JsonElement>> properties2 = new(capacity: remainingProps, StringComparer.Ordinal);
                         do
                         {
                             JsonProperty prop2 = objectEnumerator2.Current;
-                            properties2.TryAdd(prop2.Name, prop2.Value); // first occurrence wins
+#if NET
+                            ref ValueQueue<JsonElement> values = ref CollectionsMarshal.GetValueRefOrAddDefault(properties2, prop2.Name, out bool _);
+#else
+                            properties2.TryGetValue(prop2.Name, out ValueQueue<JsonElement> values);
+#endif
+                            values.Enqueue(prop2.Value);
+#if !NET
+                            properties2[prop2.Name] = values;
+#endif
                         }
                         while (objectEnumerator2.MoveNext());
 
                         do
                         {
                             JsonProperty prop = objectEnumerator1.Current;
-                            if (!properties2.TryGetValue(prop.Name, out JsonElement rightElement) || !DeepEquals(prop.Value, rightElement))
+#if NET
+                            ref ValueQueue<JsonElement> values = ref CollectionsMarshal.GetValueRefOrAddDefault(properties2, prop.Name, out bool exists);
+#else
+                            bool exists = properties2.TryGetValue(prop.Name, out ValueQueue<JsonElement> values);
+#endif
+                            if (!exists || !values.TryDequeue(out JsonElement value) || !DeepEquals(prop.Value, value))
                             {
                                 return false;
                             }
+#if !NET
+                            properties2[prop.Name] = values;
+#endif
                         }
                         while (objectEnumerator1.MoveNext());
 
