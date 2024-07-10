@@ -7,20 +7,21 @@ using System.Threading;
 
 namespace System.Net.Http
 {
+    // Implements distributed tracing logic for managing the "HTTP connection_setup" and "HTTP wait_for_connection" Activities.
     internal static class ConnectionSetupDiagnostics
     {
-        private static readonly ActivitySource s_connectionActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionNamespace);
+        private static readonly ActivitySource s_connectionSetupActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionNamespace);
         private static readonly ActivitySource s_waitForConnectionActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.WaitForConnectionNamespace);
 
         public static Activity? StartConnectionSetupActivity(bool isSecure, HttpAuthority authority)
         {
             Activity? activity = null;
-            if (s_connectionActivitySource.HasListeners())
+            if (s_connectionSetupActivitySource.HasListeners())
             {
                 // Connection activities should be new roots and not parented under whatever
                 // request happens to be in progress when the connection is started.
                 Activity.Current = null;
-                activity = s_connectionActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ConnectionSetupActivityName, ActivityKind.Client);
+                activity = s_connectionSetupActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ConnectionSetupActivityName);
             }
 
             if (activity is not null)

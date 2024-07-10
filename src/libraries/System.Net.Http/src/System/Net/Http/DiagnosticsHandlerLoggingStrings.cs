@@ -17,9 +17,9 @@ namespace System.Net.Http
         public const string RequestActivityStartName       = RequestActivityName + ".Start";
         public const string RequestActivityStopName        = RequestActivityName + ".Stop";
 
-        public const string ConnectionNamespace            = "System.Net.Http.Connections";
+        public const string ConnectionNamespace            = "Experimental.System.Net.Http.Connections";
         public const string ConnectionSetupActivityName    = ConnectionNamespace + ".ConnectionSetup";
-        public const string WaitForConnectionNamespace     = "System.Net.Http.ConnectionLink";
+        public const string WaitForConnectionNamespace     = ConnectionNamespace;
         public const string WaitForConnectionActivityName  = WaitForConnectionNamespace + ".WaitForConnection";
     }
 }

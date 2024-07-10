@@ -593,18 +593,17 @@ namespace System.Net.Http.Functional.Tests
                 {
                     ExpectedParent = parentActivity
                 };
-                using ActivityRecorder waitForConnectionRecorder = new("System.Net.Http.ConnectionLink", "System.Net.Http.ConnectionLink.WaitForConnection")
+                using ActivityRecorder waitForConnectionRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.WaitForConnection")
                 {
                     VerifyParent = false
                 };
 
-                using ActivityRecorder connectionSetupRecorder = new("System.Net.Http.Connections", "System.Net.Http.Connections.ConnectionSetup");
-                using ActivityRecorder dnsRecorder = new("System.Net.NameResolution", "System.Net.NameResolution.DnsLookup") { VerifyParent = false };
-                using ActivityRecorder socketRecorder = new("System.Net.Sockets", "System.Net.Sockets.Connect") { VerifyParent = false };
-                using ActivityRecorder tlsRecorder = new("System.Net.Security", "System.Net.Security.TlsHandshake")
+                using ActivityRecorder connectionSetupRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.ConnectionSetup");
+                using ActivityRecorder dnsRecorder = new("Experimental.System.Net.NameResolution", "Experimental.System.Net.NameResolution.DnsLookup") { VerifyParent = false };
+                using ActivityRecorder socketRecorder = new("Experimental.System.Net.Sockets", "Experimental.System.Net.Sockets.Connect") { VerifyParent = false };
+                using ActivityRecorder tlsRecorder = new("Experimental.System.Net.Security", "Experimental.System.Net.Security.TlsHandshake")
                 {
-                    VerifyParent = false,
-                    Filter = a => a.Kind == ActivityKind.Client // do not capture the server handshake
+                    VerifyParent = false
                 };
 
                 await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
@@ -624,7 +623,7 @@ namespace System.Net.Http.Functional.Tests
                         Activity? tls = null;
                         if (useTls)
                         {
-                            tls = tlsRecorder.VerifyActivityRecordedOnce();
+                            tls = tlsRecorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS client"));
                         }
                         else
                         {
@@ -664,6 +663,8 @@ namespace System.Net.Http.Functional.Tests
                         }
 
                         // Verify display names and attributes:
+                        Assert.Equal(ActivityKind.Internal, wait1.Kind);
+                        Assert.Equal(ActivityKind.Internal, conn.Kind);
                         Assert.Equal($"HTTP wait_for_connection localhost:{uri.Port}", wait1.DisplayName);
                         Assert.Equal($"HTTP connection_setup localhost:{uri.Port}", conn.DisplayName);
                         ActivityAssert.HasTag(conn, "network.peer.address",
@@ -720,13 +721,13 @@ namespace System.Net.Http.Functional.Tests
                 {
                     ExpectedParent = parentActivity
                 };
-                using ActivityRecorder waitForConnectionRecorder = new("System.Net.Http.ConnectionLink", "System.Net.Http.ConnectionLink.WaitForConnection")
+                using ActivityRecorder waitForConnectionRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.WaitForConnection")
                 {
                     VerifyParent = false
                 };
-                using ActivityRecorder connectionSetupRecorder = new("System.Net.Http.Connections", "System.Net.Http.Connections.ConnectionSetup");
-                using ActivityRecorder dnsRecorder = new("System.Net.NameResolution", "System.Net.NameResolution.DnsLookup") { VerifyParent = false };
-                using ActivityRecorder socketRecorder = new("System.Net.Sockets", "System.Net.Sockets.Connect") { VerifyParent = false };
+                using ActivityRecorder connectionSetupRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.ConnectionSetup");
+                using ActivityRecorder dnsRecorder = new("Experimental.System.Net.NameResolution", "Experimental.System.Net.NameResolution.DnsLookup") { VerifyParent = false };
+                using ActivityRecorder socketRecorder = new("Experimental.System.Net.Sockets", "Experimental.System.Net.Sockets.Connect") { VerifyParent = false };
 
                 Uri uri;
                 using Socket? notListening = failureType is "socket" ? new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) : null;
