@@ -1244,6 +1244,7 @@ class StrengthReductionContext
     bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
     bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, int derivedLevel, ScevAddRec** nextIV);
+    bool        StaysWithinManagedObject(ScevAddRec* addRec);
     bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
     BasicBlock* FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors);
 
@@ -1361,13 +1362,11 @@ bool StrengthReductionContext::TryStrengthReduce()
             }
             assert(nextIV != nullptr);
 
-            // We need more sanity checks to allow materializing GC-typed add
-            // recs. Otherwise we may eagerly form a GC pointer that was only
-            // lazily formed under some conditions before, which can be
-            // illegal. For now we just bail.
-            if (varTypeIsGC(nextIV->Type))
+            if (varTypeIsGC(nextIV->Type) && !StaysWithinManagedObject(nextIV))
             {
-                JITDUMP("    Next IV has type %s. Bailing.\n", varTypeName(nextIV->Type));
+                JITDUMP(
+                    "    Next IV computes a GC pointer that we cannot prove to be inside a managed object. Bailing.\n",
+                    varTypeName(nextIV->Type));
                 break;
             }
 
@@ -1709,6 +1708,102 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
     }
 
     return *nextIV != nullptr;
+}
+
+//------------------------------------------------------------------------
+// StaysWithinManagedObject: Check whether the specified GC-pointer add-rec can
+// be guaranteed to be inside the same managed object for the whole loop.
+//
+// Parameters:
+//   addRec - The add recurrence
+//
+// Returns:
+//   True if we were able to prove so.
+//
+bool StrengthReductionContext::StaysWithinManagedObject(ScevAddRec* addRec)
+{
+    int64_t offset;
+    Scev*   baseScev = addRec->Start->PeelAdditions(&offset);
+    offset           = static_cast<target_ssize_t>(offset);
+
+    // We only support arrays here. To strength reduce Span<T> accesses we need
+    // additional properies on the range designated by a Span<T> that we
+    // currently do not specify, or we need to prove that the byref we may form
+    // in the IV update would have been formed anyway by the loop.
+    if (!baseScev->OperIs(ScevOper::Local) || !baseScev->TypeIs(TYP_REF))
+    {
+        return false;
+    }
+
+    ScevLocal* local = (ScevLocal*)baseScev;
+    LclVarDsc* dsc   = m_comp->lvaGetDesc(local->LclNum);
+    if ((dsc->lvClassHnd == NO_CLASS_HANDLE) || !m_comp->info.compCompHnd->isSDArray(dsc->lvClassHnd))
+    {
+        return false;
+    }
+
+    ValueNum vn = m_scevContext.MaterializeVN(baseScev);
+    if (vn == ValueNumStore::NoVN)
+    {
+        return false;
+    }
+
+    BasicBlock* preheader = m_loop->EntryEdge(0)->getSourceBlock();
+    if (!m_comp->optAssertionVNIsNonNull(vn, preheader->bbAssertionOut))
+    {
+        return false;
+    }
+
+    // We have a non-null array. Check that the 'start' offset looks fine.
+    // TODO: We could also use assertions on the length of the array. E.g. if
+    // we know the length of the array is > 3, then we can allow the add rec to
+    // have a later start. Maybe range check can be used?
+    if ((offset < 0) || (offset > OFFSETOF__CORINFO_Array__data))
+    {
+        return false;
+    }
+
+    // Now see if we have a bound that guarantees that we iterate less than the
+    // array length's times.
+    for (int i = 0; i < m_backEdgeBounds.Height(); i++)
+    {
+        // TODO: EvaluateRelop ought to be powerful enough to prove something
+        // like bound < ARR_LENGTH(vn), but it is not able to prove that
+        // currently, even for bound = ARR_LENGTH(vn) - 1 (common case).
+        Scev* bound = m_backEdgeBounds.Bottom(i);
+
+        int64_t boundOffset;
+        Scev*   boundBase = bound->PeelAdditions(&boundOffset);
+
+        if (bound->TypeIs(TYP_INT))
+        {
+            boundOffset = static_cast<int32_t>(boundOffset);
+        }
+
+        if (boundOffset >= 0)
+        {
+            // If we take the backedge >= the array length times, then we would
+            // advance the addrec past the end.
+            continue;
+        }
+
+        ValueNum boundBaseVN = m_scevContext.MaterializeVN(boundBase);
+
+        VNFuncApp vnf;
+        if (!m_comp->vnStore->GetVNFunc(boundBaseVN, &vnf))
+        {
+            continue;
+        }
+
+        if ((vnf.m_func != VNF_ARR_LENGTH) || (vnf.m_args[0] != vn))
+        {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
