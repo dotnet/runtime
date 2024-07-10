@@ -2653,36 +2653,25 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, RegexOptions.Multiline, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}$", "date 10/12/1966\nand 10/12/66\nare the same", new (int, int)[] { (5, 10), (20, 8) } };
             }
         }
-#if NET
+
         [Fact]
         public async Task MatchNonBacktrackingOver255Minterms()
         {
-            // This is a test for the rare over 255 unique minterms case in MintermClassifier
-            StringBuilder pattern = new();
-            StringBuilder input = new();
-            for (int i = 128; i <= 400; i++)
-            {
-                char c = (char)i;
-                pattern.Append(c);
-                // adding an optional char as well just so it's not a string literal
-                pattern.Append(c);
-                pattern.Append('?');
-                // input is the pattern itself
-                input.Append(c);
-            }
+            // While valid on all engines, this test in particular is designed to exercise the rare case
+            // of more than 255 unique minterms case in the non-backtracking engine's minterm classifier.
 
-            string patternString = pattern.ToString();
-            string inputString = input.ToString();
+            IEnumerable<char> chars = Enumerable.Range(128, 400 - 128).Select(i => (char)i);
+            string patternString = string.Concat(chars.Select(c => $"{c}{c}?")); // adding an optional char as well just so it's not a string literal
+            string inputString = string.Concat(chars);
 
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                Regex r = await RegexHelpers.GetRegexAsync(engine, patternString, RegexOptions.None);
+                Regex r = await RegexHelpers.GetRegexAsync(engine, patternString);
                 MatchCollection ms = r.Matches(inputString);
                 Assert.Equal(1, ms.Count);
                 Assert.Equal(0, ms[0].Index);
-                Assert.Equal(273, ms[0].Length);
+                Assert.Equal(272, ms[0].Length);
             }
         }
-#endif
     }
 }

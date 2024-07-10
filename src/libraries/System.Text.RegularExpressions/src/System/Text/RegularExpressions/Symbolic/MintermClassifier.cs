@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions.Symbolic
@@ -20,12 +22,12 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </remarks>
     internal sealed class MintermClassifier
     {
-        /// <summary>An array used to map characters to minterms</summary>
+        /// <summary>Mapping for characters to minterms, used in the vast majority case when there are less than 256 minterms.</summary>
+        /// <remarks>_lookup[char] provides the minterm ID. If char &gt;= _lookup.Length, its minterm is 0.</remarks>
         private readonly byte[]? _lookup;
 
-        /// <summary>
-        /// Fallback lookup if over 255 minterms. This is rarely used.
-        /// </summary>
+        /// <summary>Mapping for characters to minterms, used when there are at least 256 minterms. This is rarely used.</summary>
+        /// <remarks>_intLookup[char] provides the minterm ID. If char &gt;= _intLookup.Length, its minterm is 0.</remarks>
         private readonly int[]? _intLookup;
 
         /// <summary>Create a classifier that maps a character to the ID of its associated minterm.</summary>
@@ -37,51 +39,54 @@ namespace System.Text.RegularExpressions.Symbolic
             if (minterms.Length == 1)
             {
                 // With only a single minterm, the mapping is trivial: everything maps to it (ID 0).
-                _lookup = Array.Empty<byte>();
+                _lookup = [];
                 return;
             }
 
-            int _maxChar = -1;
-            // attempt to save memory in common cases by allocating only up to the highest char code
+            // Compute all minterm ranges. We do this here in order to determine the maximum character value
+            // in order to size the lookup array to minimize steady-state memory consumption of the potentially
+            // large lookup array. We prefer to use the byte[] _lookup when possible, in order to keep memory
+            // consumption to a minimum; doing so accomodates up to 255 minterms, which is the vast majority case.
+            // However, when there are more than 255 minterms, we need to use int[] _intLookup.
+            (uint, uint)[][] charRangesPerMinterm = ArrayPool<(uint, uint)[]>.Shared.Rent(minterms.Length);
+
+            int maxChar = -1;
             for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
             {
-                _maxChar = Math.Max(_maxChar, (int)BDDRangeConverter.ToRanges(minterms[mintermId])[^1].Item2);
+                (uint, uint)[] ranges = BDDRangeConverter.ToRanges(minterms[mintermId]);
+                charRangesPerMinterm[mintermId] = ranges;
+                maxChar = Math.Max(maxChar, (int)ranges[^1].Item2);
             }
 
-            // It's incredibly rare for a regex to use more than a hundred or two minterms,
-            // but we need a fallback just in case.
+            // It's incredibly rare for a regex to use more than a couple hundred minterms,
+            // but we need a fallback just in case. (Over 128 unique sets also means it's never ASCII only.)
             if (minterms.Length > 255)
             {
-                // over 255 unique sets also means it's never ascii only
-                int[] lookup = new int[_maxChar + 1];
-                for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
-                {
-                    // precompute all assigned minterm categories
-                    (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
-                    foreach ((uint start, uint end) in mintermRanges)
-                    {
-                        // assign character ranges in bulk
-                        Span<int> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
-                        slice.Fill(mintermId);
-                    }
-                }
-                _intLookup = lookup;
+                _intLookup = CreateLookup<int>(minterms, charRangesPerMinterm, maxChar);
             }
             else
             {
-                byte[] lookup = new byte[_maxChar + 1];
+                _lookup = CreateLookup<byte>(minterms, charRangesPerMinterm, maxChar);
+            }
+
+            // Return the rented array. We clear it before returning it in order to avoid all the ranges arrays being kept alive.
+            Array.Clear(charRangesPerMinterm, 0, minterms.Length);
+            ArrayPool<(uint, uint)[]>.Shared.Return(charRangesPerMinterm);
+
+            // Creates the lookup array.
+            static T[] CreateLookup<T>(BDD[] minterms, ReadOnlySpan<(uint, uint)[]> charRangesPerMinterm, int _maxChar) where T : IBinaryInteger<T>
+            {
+                T[] lookup = new T[_maxChar + 1];
                 for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
                 {
-                    // precompute all assigned minterm categories
-                    (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
-                    foreach ((uint start, uint end) in mintermRanges)
+                    // Each minterm maps to a range of characters. Set each of the characters in those ranges to the corresponding minterm.
+                    foreach ((uint start, uint end) in charRangesPerMinterm[mintermId])
                     {
-                        // assign character ranges in bulk
-                        Span<byte> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
-                        slice.Fill((byte)mintermId);
+                        lookup.AsSpan((int)start, (int)(end + 1 - start)).Fill(T.CreateTruncating(mintermId));
                     }
                 }
-                _lookup = lookup;
+
+                return lookup;
             }
         }
 
@@ -89,9 +94,9 @@ namespace System.Text.RegularExpressions.Symbolic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetMintermID(int c)
         {
-            if (_intLookup is null)
+            if (_lookup is not null)
             {
-                byte[] lookup = _lookup!;
+                byte[] lookup = _lookup;
                 return (uint)c < (uint)lookup.Length ? lookup[c] : 0;
             }
             else
@@ -104,20 +109,17 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Gets a quick mapping from char to minterm for the common case when there are &lt;= 255 minterms.
         /// Null if there are greater than 255 minterms.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte[]? ByteLookup() => _lookup;
+        public byte[]? ByteLookup => _lookup;
 
         /// <summary>
         /// Gets a mapping from char to minterm for the rare case when there are &gt;= 255 minterms.
         /// Null in the common case where there are fewer than 255 minterms.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int[]? IntLookup() => _intLookup;
+        public int[]? IntLookup => _intLookup;
 
         /// <summary>
         /// Maximum ordinal character for a non-0 minterm, used to conserve memory
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int MaxChar() => (_lookup?.Length ?? _intLookup!.Length) - 1;
+        public int MaxChar => (_lookup?.Length ?? _intLookup!.Length) - 1;
     }
 }

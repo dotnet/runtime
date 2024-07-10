@@ -17,8 +17,6 @@ namespace System.Text.RegularExpressions.Symbolic
             NullabilityInfo = BuildNullabilityInfo();
         }
 
-        internal int NullabilityInfo { get; }
-
         /// <summary>The regular expression that labels this state and gives it its semantics.</summary>
         internal SymbolicRegexNode<TSet> Node { get; }
 
@@ -98,14 +96,30 @@ namespace System.Text.RegularExpressions.Symbolic
             return Node.CreateNfaDerivativeWithEffects(builder, minterm, context);
         }
 
-        /// <summary>
-        /// Cached nullability check with encoded bits
-        /// </summary>
+        /// <summary>Determines whether the node is nullable for the given context.</summary>
+        /// <remarks>
+        /// This is functionally equivalent to <see cref="SymbolicRegexNode{TSet}.IsNullableFor(uint)"/>, but using cached
+        /// answers stored in <see cref="NullabilityInfo"/>.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullableFor(uint nextCharKind)
         {
-            return ((1 << (int)nextCharKind) & NullabilityInfo) != 0;
+            Debug.Assert(nextCharKind is >= 0 and < CharKind.CharKindCount);
+            return (NullabilityInfo & (1 << (int)nextCharKind)) != 0;
         }
+
+        /// <summary>Gets the nullability info for the matching state.</summary>
+        /// <remarks>
+        /// <list>
+        /// <item>00000 -> node cannot be nullable</item>
+        /// <item>00001 -> nullable for General</item>
+        /// <item>00010 -> nullable for BeginningEnd</item>
+        /// <item>00100 -> nullable for NewLine</item>
+        /// <item>01000 -> nullable for NewLineS</item>
+        /// <item>10000 -> nullable for WordLetter</item>
+        /// </list>
+        /// </remarks>
+        internal int NullabilityInfo { get; }
 
         /// <summary>
         /// Builds a <see cref="StateFlags"/> with the relevant flags set.
@@ -138,24 +152,16 @@ namespace System.Text.RegularExpressions.Symbolic
             return info;
         }
 
-        /// <summary>
-        /// Builds the nullability information for the matching state.
-        /// Nullability for each context is encoded in a bit
-        /// 0 means node cannot be nullable
-        /// 00001 -> nullable for General
-        /// 00010 -> nullable for BeginningEnd
-        /// 00100 -> nullable for NewLine
-        /// 01000 -> nullable for NewLineS
-        /// 10000 -> nullable for WordLetter
-        /// </summary>
-        internal byte BuildNullabilityInfo()
+        /// <summary>Builds the nullability information for the matching state.</summary>
+        /// <remarks>Nullability for each context is encoded in a bit. See <see cref="NullabilityInfo"/>.</remarks>
+        private byte BuildNullabilityInfo()
         {
             byte nullabilityInfo = 0;
             if (Node.CanBeNullable)
             {
-                for (uint ck = 0; ck < CharKind.CharKindCount; ck++)
+                for (uint charKind = 0; charKind < CharKind.CharKindCount; charKind++)
                 {
-                    nullabilityInfo |= (byte)(Node.IsNullableFor(CharKind.Context(PrevCharKind, ck)) ? 1 << (int)ck : 0);
+                    nullabilityInfo |= (byte)(Node.IsNullableFor(CharKind.Context(PrevCharKind, charKind)) ? 1 << (int)charKind : 0);
                 }
             }
 

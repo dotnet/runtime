@@ -17,11 +17,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// an NFA. As an NFA, we instead track all of the states we're in at any given point.
         /// </remarks>
         /// <remarks>
-        /// This limit is chosen due to memory usage constraints, the largest possible memory allocation for a regex instance
-        /// is currently approx. 50 MB.
-        /// There is some motivation to make this configurable, as it can exchange upfront costs with potentially
-        /// significant search-time performance gains. Worst case memory consumption for the regex instance
-        /// can be approximated to about (NfaNodeCountThreshold * (sizeof(MatchingState) + sizeof(SymbolicRegexNode))
+        /// This limit is chosen due to memory usage constraints, the largest possible memory allocation for a regex instance is currently ~50 MB.
+        /// Worst case memory consumption for the regex instance can be approximated to ~(NfaNodeCountThreshold * (sizeof(MatchingState) + sizeof(SymbolicRegexNode))
         /// while it most cases the MatchingState part can be ignored, as only a subset of nodes have their own state.
         /// </remarks>
         internal const int NfaNodeCountThreshold = 125_000;
@@ -34,8 +31,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// This default value may be overridden with the AppContext data
         /// whose name is given by  <see cref="SymbolicRegexSafeSizeThreshold_ConfigKeyName"/>.
         /// </remarks>
-        /// This limit is chosen due to worst case NFA speed constraints, which is about 150kb/s,
-        /// although it could be safely raised higher at the expense of worst-case NFA performance
+        /// This limit is chosen due to worst case NFA speed constraints,
+        /// although it could be safely raised higher at the expense of worst-case NFA performance.
         /// </summary>
         internal const int DefaultSymbolicRegexSafeSizeThreshold = 10_000;
 

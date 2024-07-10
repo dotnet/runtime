@@ -26,7 +26,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Cache for the states that have been created. Each state is uniquely identified by its associated
         /// <see cref="SymbolicRegexNode{TSet}"/> and the kind of the previous character.
         /// </summary>
-        private readonly Dictionary<(SymbolicRegexNode<TSet> Node, uint PrevCharKind), MatchingState<TSet>> _stateCache = new();
+        private readonly Dictionary<(SymbolicRegexNode<TSet> Node, uint PrevCharKind), MatchingState<TSet>> _stateCache = [];
 
         /// <summary>
         /// Maps state ids to states, initial capacity is given by <see cref="InitialDfaStateCapacity"/>.
@@ -41,19 +41,13 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private StateFlags[] _stateFlagsArray;
 
-        /// <summary>
-        /// important: the pattern must not contain endZ for this to be valid.
-        /// Used to short-circuit nullability in the hot loop
-        /// nullability for each context is encoded in a bit
-        /// 0 means node cannot be nullable
-        /// 00001 -> nullable for General
-        /// 00010 -> nullable for BeginningEnd
-        /// 00100 -> nullable for NewLine
-        /// 01000 -> nullable for NewLineS
-        /// 10000 -> nullable for WordLetter
-        /// </summary>
+        /// <summary>Cached nullability info for each state ID.</summary>
+        /// <remarks>
+        /// _nullabilityArray[stateId] == the <see cref="MatchingState{TSet}.NullabilityInfo"/> for that state.
+        /// Used to short-circuit nullability in the hot loop.
+        /// Important: the pattern must not contain endZ for this to be valid.
+        /// </remarks>
         private byte[] _nullabilityArray;
-
 
         /// <summary>
         /// The transition function for DFA mode.
@@ -84,7 +78,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// It is the inverse of used entries in _nfaStateArray.
         /// The range of this map is 0 to its size - 1.
         /// </summary>
-        private readonly Dictionary<int, int> _nfaIdByCoreId = new();
+        private readonly Dictionary<int, int> _nfaIdByCoreId = [];
 
         /// <summary>
         /// Transition function for NFA transitions in NFA mode.
@@ -127,7 +121,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool IsNullableWithContext(int stateId, int mintermId) =>
-            ((1 << (int)GetPositionKind(mintermId)) & _nullabilityArray[stateId]) > 0;
+            (_nullabilityArray[stateId] & (1 << (int)GetPositionKind(mintermId))) > 0;
 
         /// <summary>Returns the span from <see cref="_dfaDelta"/> that may contain transitions for the given state</summary>
         private Span<int> GetDeltasFor(MatchingState<TSet> state)
@@ -175,98 +169,75 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Optimized reversal state computation during construction which
-        /// skips the fixed length parts of reversal
-        /// e.g. for the pattern abc.*def
+        /// Analyze the specified reversed pattern to gather details that help to optimize the reverse matching process
+        /// for when finding the beginning of a match.
+        /// </summary>
+        /// <remarks>
+        /// Optimized reversal state computation during construction which skips the fixed length suffix, e.g. for the pattern abc.*def
         /// 1) the end is found at abc.*def|
         /// 2) the reversal starts at abc.*|
-        /// </summary>
-        /// <param name="node">reversed initial pattern</param>
-        /// <returns>returns num of chars to skip and adjusted reversal start state</returns>
-        private MatchReversal<TSet> CreateOptimizedReversal(SymbolicRegexNode<TSet> node)
+        /// </remarks>
+        /// <param name="node">Reversed initial pattern</param>
+        /// <returns>The match reversal details.</returns>
+        private MatchReversalInfo<TSet> CreateOptimizedReversal(SymbolicRegexNode<TSet> node)
         {
             int pos = 0;
-            SymbolicRegexNode<TSet> current = node;
-            bool canLoop = true;
-
-            while (canLoop)
+            while (true)
             {
-                (bool loop, SymbolicRegexNode<TSet> next) = current switch
+                if (node._info.ContainsSomeAnchor)
                 {
-                    // Bail if it contains any anchors. (This could potentially be a very good future optimization for
-                    // anchors but there's too many edge cases to guarantee it works.
-                    // one example which fails currently: pattern: @"\By\b", input: "xy")
-                    { _info.ContainsSomeAnchor: true } => Bail(),
+                    // Bail if it contains any anchors as it invalidates the optimization.
+                    // (This could potentially be a very good future optimization for anchors but there's too many edge cases to guarantee it works.
+                    // One example which fails currently: pattern: @"\By\b", input: "xy")
+                    pos = 0;
+                    break;
+                }
 
-                    // if this is reached then entire match is fixed length
-                    { _kind: SymbolicRegexNodeKind.CaptureStart} => (false, _builder.Epsilon),
+                if (node._kind is not SymbolicRegexNodeKind.Concat)
+                {
+                    if (node._kind is SymbolicRegexNodeKind.CaptureStart)
+                    {
+                        node = _builder.Epsilon; // The entire match is fixed length.
+                    }
+                    break;
+                }
 
-                    { _kind:SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.CaptureEnd } => (true, current._right!),
+                SymbolicRegexNode<TSet>? left = node._left;
+                Debug.Assert(left is not null);
 
-                    {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.BoundaryAnchor } => (true, current._right!),
+                if (left._kind is SymbolicRegexNodeKind.CaptureEnd or SymbolicRegexNodeKind.BoundaryAnchor or SymbolicRegexNodeKind.Singleton)
+                {
+                    node = node._right!;
+                    if (left._kind is SymbolicRegexNodeKind.Singleton)
+                    {
+                        pos++;
+                    }
+                }
+                else if (left._kind is SymbolicRegexNodeKind.Loop)
+                {
+                    if (left._lower <= 0 || left._left!.Kind is not SymbolicRegexNodeKind.Singleton)
+                    {
+                        break;
+                    }
 
-                    {_kind:SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Singleton} => AddSingleton(current),
-
-                    {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Loop } =>
-                        AddFixedLengthLoop(current),
-
-                    _ => (false, current)
-                };
-                canLoop = loop;
-                current = next;
+                    node = left._lower == left._upper ?
+                        node._right! : // The entire loop is fixed
+                        _builder.CreateConcat( // Subtract the fixed part of the loop.
+                            _builder.CreateLoop(left._left, left.IsLazy, 0, left._upper - left._lower),
+                            node._right!);
+                    pos += left._lower;
+                }
+                else
+                {
+                    break;
+                }
             }
 
-
+            Debug.Assert(pos >= 0);
             return
-                pos <= 0 ? new MatchReversal<TSet>(MatchReversalKind.MatchStart, 0) :
-                current == _builder.Epsilon ? new MatchReversal<TSet>(MatchReversalKind.FixedLength, pos) :
-                new MatchReversal<TSet>(MatchReversalKind.PartialFixedLength, pos, GetOrCreateState_NoLock(_builder.CreateDisableBacktrackingSimulation(current), 0));
-
-            // finding anchors inside pattern invalidates this optimization
-            (bool, SymbolicRegexNode<TSet>) Bail()
-            {
-                pos = 0;
-                // return original node
-                return (false, node);
-            }
-
-            (bool, SymbolicRegexNode<TSet>) AddSingleton(SymbolicRegexNode<TSet> concatNode)
-            {
-                pos += 1;
-                // continue with next concat
-                return (true, concatNode._right!);
-            }
-
-            (bool, SymbolicRegexNode<TSet>) AddFixedLengthLoop(SymbolicRegexNode<TSet> concatNode)
-            {
-                SymbolicRegexNode<TSet>? loopNode = concatNode._left;
-                if (loopNode is { _lower: <= 0 })
-                {
-                    return (false, concatNode);
-                }
-
-                switch (loopNode!._left!.Kind)
-                {
-                    case SymbolicRegexNodeKind.Singleton:
-
-                        if (loopNode._lower == loopNode._upper)
-                        {
-                            pos += loopNode._lower;
-                            // the entire loop is fixed, continue
-                            return (true, concatNode._right!);
-                        }
-
-                        // subtract the fixed part of the loop
-                        int loopRemainder = loopNode._upper - loopNode._lower;
-                        SymbolicRegexNode<TSet> newLeft =
-                            _builder.CreateLoop(loopNode._left, loopNode.IsLazy, 0, loopRemainder);
-                        SymbolicRegexNode<TSet> newNode = _builder.CreateConcat(newLeft, concatNode._right!);
-                        pos += loopNode._lower;
-                        return (true, newNode);
-                    default:
-                        return (false, concatNode);
-                }
-            }
+                pos == 0 ? new MatchReversalInfo<TSet>(MatchReversalKind.MatchStart, 0) :
+                node == _builder.Epsilon ? new MatchReversalInfo<TSet>(MatchReversalKind.FixedLength, pos) :
+                new MatchReversalInfo<TSet>(MatchReversalKind.PartialFixedLength, pos, GetOrCreateState_NoLock(_builder.CreateDisableBacktrackingSimulation(node), 0));
         }
 
         /// <summary>
@@ -299,7 +270,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
                 _stateArray[state.Id] = state;
                 _stateFlagsArray[state.Id] = state.BuildStateFlags(isInitialState);
-                _nullabilityArray[state.Id] = state.BuildNullabilityInfo();
+                _nullabilityArray[state.Id] = (byte)state.NullabilityInfo;
             }
 
             return state;
@@ -395,11 +366,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 MatchingState<TSet>? targetState = _stateArray[_dfaDelta[offset]];
                 if (targetState is null)
                 {
-                    if (// check if there is an active timer
-                        (timeoutOccursAt != 0 && Environment.TickCount64 > timeoutOccursAt) ||
-                        // check if amount of nodes exceeds the NFA threshold
-                        (checkThreshold && _builder._nodeCache.Count >= SymbolicRegexThresholds.NfaNodeCountThreshold)
-                    )
+                    if ((timeoutOccursAt != 0 && Environment.TickCount64 > timeoutOccursAt) || // if there's an active timer
+                        (checkThreshold && _builder._nodeCache.Count >= SymbolicRegexThresholds.NfaNodeCountThreshold)) // if # of nodes exceeds the NFA threshold
                     {
                         nextState = null;
                         return false;
@@ -438,7 +406,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     SymbolicRegexNode<TSet> targetNode = coreTargetId > 0 ?
                         GetState(coreTargetId).Node : coreState.Next(_builder, minterm, nextCharKind);
 
-                    List<int> targetsList = new();
+                    List<int> targetsList = [];
                     ForEachNfaState(targetNode, nextCharKind, targetsList, static (int nfaId, List<int> targetsList) =>
                         targetsList.Add(nfaId));
 
@@ -465,8 +433,9 @@ namespace System.Text.RegularExpressions.Symbolic
                     TSet minterm = GetMintermFromId(mintermId);
                     uint nextCharKind = GetPositionKind(mintermId);
                     List<(SymbolicRegexNode<TSet> Node, DerivativeEffect[] Effects)>? transition = coreState.NfaNextWithEffects(_builder, minterm, nextCharKind);
+
                     // Build the new state and store it into the array.
-                    List<(int, DerivativeEffect[])> targetsList = new();
+                    List<(int, DerivativeEffect[])> targetsList = [];
                     foreach ((SymbolicRegexNode<TSet> Node, DerivativeEffect[] Effects) entry in transition)
                     {
                         ForEachNfaState(entry.Node, nextCharKind, (targetsList, entry.Effects),
