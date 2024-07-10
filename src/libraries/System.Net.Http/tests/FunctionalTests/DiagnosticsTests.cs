@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -237,6 +238,12 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task SendAsync_ExpectedDiagnosticCancelledLogging()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/104699")]
+                throw new SkipTestException("SendAsync_ExpectedDiagnosticCancelledLogging is broken on HTTP/3.");
+            }
+
             await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 TaskCompletionSource responseLoggedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
