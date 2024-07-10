@@ -88,7 +88,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [InlineData(true)]
+        [InlineData(true, Skip = "Reenable when AppContext switch is added to opt into multiple items in NotifyCollectionChangedEventArgs")]
         [InlineData(false)]
         public static void AddRange_NotifyCollectionChanged_EventArgs_Test(bool batchCollectionChanged)
         {
@@ -113,7 +113,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [InlineData(true)]
+        [InlineData(true, Skip = "Reenable when AppContext switch is added to opt into multiple items in NotifyCollectionChangedEventArgs")]
         [InlineData(false)]
         public static void InsertRange_NotifyCollectionChanged_EventArgs_Test(bool batchCollectionChanged)
         {
@@ -138,7 +138,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [InlineData(true)]
+        [InlineData(true, Skip = "Reenable when AppContext switch is added to opt into multiple items in NotifyCollectionChangedEventArgs")]
         [InlineData(false)]
         public static void InsertRange_NotifyCollectionChanged_EventArgs_Middle_Test(bool batchCollectionChanged)
         {
@@ -168,7 +168,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [InlineData(true)]
+        [InlineData(true, Skip = "Reenable when AppContext switch is added to opt into multiple items in NotifyCollectionChangedEventArgs")]
         [InlineData(false)]
         public static void InsertRange_NotifyCollectionChanged_EventArgs_End_Test(bool batchCollectionChanged)
         {
@@ -260,7 +260,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [InlineData(true)]
+        [InlineData(true, Skip = "Reenable when AppContext switch is added to opt into multiple items in NotifyCollectionChangedEventArgs")]
         [InlineData(false)]
         public static void RemoveRange_NotifyCollectionChanged_EventArgs_IndexOfZero_Test(bool batchCollectionChanged)
         {
@@ -288,7 +288,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [InlineData(true)]
+        [InlineData(true, Skip = "Reenable when AppContext switch is added to opt into multiple items in NotifyCollectionChangedEventArgs")]
         [InlineData(false)]
         public static void RemoveRange_NotifyCollectionChanged_EventArgs_IndexMiddle_Test(bool batchCollectionChanged)
         {
@@ -318,7 +318,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
-        [InlineData(true)]
+        [InlineData(true, Skip = "Reenable when AppContext switch is added to opt into multiple items in NotifyCollectionChangedEventArgs")]
         [InlineData(false)]
         public static void ReplaceRange_NotifyCollectionChanged_Test(bool batchCollectionChanged)
         {

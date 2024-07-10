@@ -33,7 +33,7 @@ namespace System.Collections.ObjectModel
         /// <c>true</c> to opt into raising <see cref="NotifyCollectionChangedEventArgs"/> with list
         /// of items when a range is inserted, removed or replaced. Instead of resets
         /// </summary>
-        private static bool RaiseRangeCollectionChangedEvents => true;
+        private static bool RaiseBatchCollectionChangedEvents => false;
 
         /// <summary>
         /// Initializes a new instance of ObservableCollection that is empty and has default initial capacity.
@@ -138,7 +138,7 @@ namespace System.Collections.ObjectModel
             {
                 _skipRaisingEvents = true;
 
-                if (RaiseRangeCollectionChangedEvents && count > 0 && CollectionChanged is not null)
+                if (RaiseBatchCollectionChangedEvents && count > 0 && CollectionChanged is not null)
                 {
                     T[] removedItems = new T[count];
                     for (int i = 0; i < count; i++)
@@ -187,12 +187,12 @@ namespace System.Collections.ObjectModel
             }
 
             NotifyCollectionChangedEventArgs collectionChangedEventArgs = EventArgsCache.ResetCollectionChanged;
-            if (RaiseRangeCollectionChangedEvents && !skipEvents && CollectionChanged is not null)
+            if (!skipEvents && RaiseBatchCollectionChangedEvents && CollectionChanged is not null)
             {
-                T[] itemsToReplace = new T[count - index];
-                for (int i = index; i < count; i++)
+                T[] itemsToReplace = new T[count];
+                for (int i = 0; i < count; i++)
                 {
-                    itemsToReplace[i] = this[i];
+                    itemsToReplace[i] = this[i + index];
                 }
 
                 IList newItems = collection as IList ?? new List<T>(collection);
@@ -276,7 +276,7 @@ namespace System.Collections.ObjectModel
             if (!_skipRaisingEvents)
             {
                 NotifyCollectionChangedEventArgs collectionChangedEventArgs = EventArgsCache.ResetCollectionChanged;
-                if (RaiseRangeCollectionChangedEvents && CollectionChanged is not null)
+                if (RaiseBatchCollectionChangedEvents && CollectionChanged is not null)
                 {
                     IList newItems = collection as IList ?? new List<T>(collection);
                     collectionChangedEventArgs = new(NotifyCollectionChangedAction.Add, newItems, index);
