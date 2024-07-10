@@ -113,8 +113,8 @@ int main(int argc, char * argv[]) {
 	}
 	ret = ret < 0 ? -ret : ret;
 
-	char* wasi_mono_print_exit_code = monoeg_g_getenv ("WASI_MONO_PRINT_EXIT_CODE");
-	if (ret != 0 && wasi_mono_print_exit_code && strcmp(wasi_mono_print_exit_code, "1") == 0)
+	char* dotnet_wasi_print_exit_code = monoeg_g_getenv ("DOTNET_WASI_PRINT_EXIT_CODE");
+	if (ret != 0 && dotnet_wasi_print_exit_code && strcmp(dotnet_wasi_print_exit_code, "1") == 0)
 	{
 		fprintf(stderr, "WASM EXIT %d\n", ret);
 	}
