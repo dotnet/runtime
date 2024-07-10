@@ -2782,7 +2782,7 @@ namespace System.Net.Sockets
 
                 WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
 
-                e._connectActivity = SocketsTelemetry.Log.ConnectStart(e._socketAddress!, endPointSnapshot, keepActivityCurrent: true);
+                e.ConnectActivity = SocketsTelemetry.Log.ConnectStart(e._socketAddress!, endPointSnapshot, keepActivityCurrent: true);
 
                 // Prepare for the native call.
                 try
@@ -2792,8 +2792,8 @@ namespace System.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, e._connectActivity, ex.Message);
-                    e._connectActivity = null;
+                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, e.ConnectActivity, ex.Message);
+                    e.ConnectActivity = null;
                     throw;
                 }
 
@@ -2809,8 +2809,8 @@ namespace System.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, e._connectActivity, ex.Message);
-                    e._connectActivity = null;
+                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, e.ConnectActivity, ex.Message);
+                    e.ConnectActivity = null;
 
                     _localEndPoint = null;
 
