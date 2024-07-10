@@ -821,17 +821,9 @@ void CallArg::Dump(Compiler* comp)
     {
         printf(", isSplit");
     }
-    if (m_needTmp)
-    {
-        printf(", tmpNum=V%02u", m_tmpNum);
-    }
     if (m_needPlace)
     {
         printf(", needPlace");
-    }
-    if (m_isTmp)
-    {
-        printf(", isTmp");
     }
     if (m_processed)
     {
@@ -850,15 +842,6 @@ void CallArg::Dump(Compiler* comp)
 #endif
 
 //------------------------------------------------------------------------
-// SetTemp: Set that the specified argument was evaluated into a temp.
-//
-void CallArgs::SetTemp(CallArg* arg, unsigned tmpNum)
-{
-    arg->m_tmpNum = tmpNum;
-    arg->m_isTmp  = true;
-}
-
-//------------------------------------------------------------------------
 // ArgsComplete: Make final decisions on which arguments to evaluate into temporaries.
 //
 void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
@@ -874,13 +857,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
     for (CallArg& arg : Args())
     {
         GenTree* argx = arg.GetEarlyNode();
-
-        if (argx == nullptr)
-        {
-            // Should only happen if remorphing in which case we do not need to
-            // make a decision about temps.
-            continue;
-        }
+        assert(argx != nullptr);
 
         bool canEvalToTemp = true;
         if (arg.AbiInfo.GetRegNum() == REG_STK)
@@ -909,19 +886,16 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         //
         if ((argx->gtFlags & GTF_ASG) != 0)
         {
-            // If this is not the only argument, or it's a copyblk, or it
-            // already evaluates the expression to a tmp then we need a temp in
-            // the late arg list.
-            // In the latter case this might not even be a value;
-            // fgMakeOutgoingStructArgCopy will leave the copying nodes here
-            // for FEATURE_FIXED_OUT_ARGS.
-            if (canEvalToTemp && ((argCount > 1) || argx->OperIsCopyBlkOp() || (FEATURE_FIXED_OUT_ARGS && arg.m_isTmp)))
+            // fgMakeOutgoingStructArgCopy can have introduced a temp already,
+            // in which case it will have created a setup node in the early
+            // node.
+            if (!argx->IsValue())
+            {
+                assert(arg.m_needTmp);
+            }
+            else if (canEvalToTemp && (argCount > 1))
             {
                 SetNeedsTemp(&arg);
-            }
-            else
-            {
-                assert(argx->IsValue());
             }
 
             // For all previous arguments that may interfere with the store we
@@ -1318,8 +1292,6 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
             regCount++;
         }
 
-        assert(arg->GetLateNode() == nullptr);
-
         // Skip any already processed args
         //
         if (!arg->m_processed)
@@ -1556,9 +1528,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
 // Return Value:
 //    the newly created temp var tree.
 //
-GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
+GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg, unsigned lclNum)
 {
-    unsigned   lclNum  = arg->m_tmpNum;
     LclVarDsc* varDsc  = comp->lvaGetDesc(lclNum);
     var_types  argType = varDsc->TypeGet();
     assert(genActualType(argType) == genActualType(arg->GetSignatureType()));
@@ -1633,7 +1604,16 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
     for (size_t i = 0; i < numArgs; i++)
     {
         CallArg& arg = *(sortedArgs[i]);
-        assert(arg.GetLateNode() == nullptr);
+
+        if (arg.GetLateNode() != nullptr)
+        {
+            // We may already have created the temp as part of
+            // fgMakeOutgoingStructArgCopy. In that case there is no work to be
+            // done.
+            *lateTail = &arg;
+            lateTail  = &arg.LateNextRef();
+            continue;
+        }
 
         GenTree* argx = arg.GetEarlyNode();
         assert(argx != nullptr);
@@ -1655,82 +1635,60 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 
         if (arg.m_needTmp)
         {
-            if (arg.m_isTmp)
-            {
-                // Create a copy of the temp to go into the late argument list
-                defArg = MakeTmpArgNode(comp, &arg);
-            }
-            else
-            {
-                // Create a temp store for the argument
-                // Put the temp in the late arg list
+            // Create a temp store for the argument
+            // Put the temp in the late arg list
 
 #ifdef DEBUG
-                if (comp->verbose)
-                {
-                    printf("Argument with 'side effect'...\n");
-                    comp->gtDispTree(argx);
-                }
+            if (comp->verbose)
+            {
+                printf("Argument with 'side effect'...\n");
+                comp->gtDispTree(argx);
+            }
 #endif
 
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
-                noway_assert(argx->gtType != TYP_STRUCT);
+            noway_assert(argx->gtType != TYP_STRUCT);
 #endif
 
-                unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
+            unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
 
-                if (setupArg != nullptr)
-                {
-                    // Now keep the mkrefany for the late argument list
-                    defArg = argx;
+            setupArg = comp->gtNewTempStore(tmpVarNum, argx);
 
-                    // Clear the side-effect flags because now both op1 and op2 have no side-effects
-                    defArg->gtFlags &= ~GTF_ALL_EFFECT;
-                }
-                else
-                {
-                    setupArg = comp->gtNewTempStore(tmpVarNum, argx);
+            LclVarDsc* varDsc     = comp->lvaGetDesc(tmpVarNum);
+            var_types  lclVarType = genActualType(argx->gtType);
+            var_types  scalarType = TYP_UNKNOWN;
 
-                    LclVarDsc* varDsc     = comp->lvaGetDesc(tmpVarNum);
-                    var_types  lclVarType = genActualType(argx->gtType);
-                    var_types  scalarType = TYP_UNKNOWN;
-
-                    if (setupArg->OperIsCopyBlkOp())
-                    {
-                        setupArg = comp->fgMorphCopyBlock(setupArg);
+            if (setupArg->OperIsCopyBlkOp())
+            {
+                setupArg = comp->fgMorphCopyBlock(setupArg);
 #if defined(TARGET_ARMARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                        if ((lclVarType == TYP_STRUCT) && (arg.AbiInfo.ArgType != TYP_STRUCT))
-                        {
-                            scalarType = arg.AbiInfo.ArgType;
-                        }
-#endif // TARGET_ARMARCH || defined (UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    }
-
-                    // scalarType can be set to a wider type for ARM or unix amd64 architectures: (3 => 4)  or (5,6,7 =>
-                    // 8)
-                    if ((scalarType != TYP_UNKNOWN) && (scalarType != lclVarType))
-                    {
-                        // Create a GT_LCL_FLD using the wider type to go to the late argument list
-                        defArg = comp->gtNewLclFldNode(tmpVarNum, scalarType, 0);
-                    }
-                    else
-                    {
-                        // Create a copy of the temp to go to the late argument list
-                        defArg = comp->gtNewLclvNode(tmpVarNum, lclVarType);
-                    }
-
-                    arg.m_isTmp  = true;
-                    arg.m_tmpNum = tmpVarNum;
+                if ((lclVarType == TYP_STRUCT) && (arg.AbiInfo.ArgType != TYP_STRUCT))
+                {
+                    scalarType = arg.AbiInfo.ArgType;
                 }
+#endif // TARGET_ARMARCH || defined (UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            }
+
+            // scalarType can be set to a wider type for ARM or unix amd64 architectures: (3 => 4)  or (5,6,7 =>
+            // 8)
+            if ((scalarType != TYP_UNKNOWN) && (scalarType != lclVarType))
+            {
+                // Create a GT_LCL_FLD using the wider type to go to the late argument list
+                defArg = comp->gtNewLclFldNode(tmpVarNum, scalarType, 0);
+            }
+            else
+            {
+                // Create a copy of the temp to go to the late argument list
+                defArg = comp->gtNewLclvNode(tmpVarNum, lclVarType);
+            }
 
 #ifdef DEBUG
-                if (comp->verbose)
-                {
-                    printf("\n  Evaluate to a temp:\n");
-                    comp->gtDispTree(setupArg);
-                }
-#endif
+            if (comp->verbose)
+            {
+                printf("\n  Evaluate to a temp:\n");
+                comp->gtDispTree(setupArg);
             }
+#endif
         }
         else // curArgTabEntry->needTmp == false
         {
@@ -3157,13 +3115,15 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
     {
         GenTree*             implicitByRefLclAddr;
+        target_ssize_t       implicitByRefLclOffs;
         GenTreeLclVarCommon* implicitByRefLcl =
-            argx->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr);
+            argx->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr, &implicitByRefLclOffs);
 
         GenTreeLclVarCommon* lcl = implicitByRefLcl;
         if ((lcl == nullptr) && argx->OperIsLocal())
         {
-            lcl = argx->AsLclVarCommon();
+            lcl                  = argx->AsLclVarCommon();
+            implicitByRefLclOffs = lcl->GetLclOffs();
         }
 
         if (lcl != nullptr)
@@ -3189,6 +3149,28 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             {
                 omitCopy = (varDsc->lvIsLastUseCopyOmissionCandidate || (implicitByRefLcl != nullptr)) &&
                            !varDsc->lvPromoted && !varDsc->lvIsStructField && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
+            }
+
+            // Disallow the argument from potentially aliasing the return
+            // buffer.
+            if (omitCopy)
+            {
+                GenTreeLclVarCommon* retBuffer = gtCallGetDefinedRetBufLclAddr(call);
+                if ((retBuffer != nullptr) && (retBuffer->GetLclNum() == varNum))
+                {
+                    unsigned       retBufferSize  = typGetObjLayout(call->gtRetClsHnd)->GetSize();
+                    target_ssize_t retBufferStart = retBuffer->GetLclOffs();
+                    target_ssize_t retBufferEnd   = retBufferStart + static_cast<target_ssize_t>(retBufferSize);
+
+                    unsigned       argSize        = arg->GetSignatureType() == TYP_STRUCT
+                                                        ? typGetObjLayout(arg->GetSignatureClassHandle())->GetSize()
+                                                        : genTypeSize(arg->GetSignatureType());
+                    target_ssize_t implByrefStart = implicitByRefLclOffs;
+                    target_ssize_t implByrefEnd   = implByrefStart + static_cast<target_ssize_t>(argSize);
+
+                    bool disjoint = (retBufferEnd <= implByrefStart) || (implByrefEnd <= retBufferStart);
+                    omitCopy      = disjoint;
+                }
             }
 
             if (omitCopy)
@@ -3218,6 +3200,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 #endif
 
     JITDUMP("making an outgoing copy for struct arg\n");
+    assert(!call->IsTailCall() || !arg->AbiInfo.PassedByRef);
 
     CORINFO_CLASS_HANDLE copyBlkClass = arg->GetSignatureClassHandle();
     unsigned             tmp          = 0;
@@ -3264,29 +3247,31 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
         assert(!fgGlobalMorph);
     }
 
+    call->gtArgs.SetNeedsTemp(arg);
+
     // Copy the valuetype to the temp
     GenTree* copyBlk = gtNewStoreLclVarNode(tmp, argx);
     copyBlk          = fgMorphCopyBlock(copyBlk);
 
-    call->gtArgs.SetTemp(arg, tmp);
 #if FEATURE_FIXED_OUT_ARGS
 
-    // Do the copy early, and evaluate the temp later (see EvalArgsToTemps)
-    // When on Unix create LCL_FLD for structs passed in more than one registers. See fgMakeTmpArgNode
-    GenTree* argNode = copyBlk;
+    // For fixed out args we create the setup node here; EvalArgsToTemps knows
+    // to handle the case of "already have a setup node" properly.
+    arg->SetEarlyNode(copyBlk);
+    arg->SetLateNode(call->gtArgs.MakeTmpArgNode(this, arg, tmp));
 
 #else // !FEATURE_FIXED_OUT_ARGS
 
     // Structs are always on the stack, and thus never need temps
     // so we have to put the copy and temp all into one expression.
-    GenTree* argNode = call->gtArgs.MakeTmpArgNode(this, arg);
+    GenTree* argNode = call->gtArgs.MakeTmpArgNode(this, arg, tmp);
 
     // Change the expression to "(tmp=val),tmp"
     argNode = gtNewOperNode(GT_COMMA, argNode->TypeGet(), copyBlk, argNode);
 
-#endif // !FEATURE_FIXED_OUT_ARGS
-
     arg->SetEarlyNode(argNode);
+
+#endif // !FEATURE_FIXED_OUT_ARGS
 }
 
 /*****************************************************************************
@@ -6747,12 +6732,12 @@ Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*         arg,
     // TODO-CQ: enable calls with struct arguments passed in registers.
     noway_assert(!varTypeIsStruct(arg->TypeGet()));
 
-    if (callArg->IsTemp() || arg->IsCnsIntOrI() || arg->IsCnsFltOrDbl())
+    if (arg->IsCnsIntOrI() || arg->IsCnsFltOrDbl())
     {
         // The argument is already assigned to a temp or is a const.
         argInTemp = arg;
     }
-    else if (arg->OperGet() == GT_LCL_VAR)
+    else if (arg->OperIs(GT_LCL_VAR))
     {
         unsigned   lclNum = arg->AsLclVar()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
