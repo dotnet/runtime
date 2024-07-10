@@ -363,11 +363,8 @@ if %__BuildNative% EQU 1 (
     REM Set the environment for the native build
     set __VCTargetArch=amd64
     if /i "%__HostArch%" == "x86" ( set __VCTargetArch=x86 )
-    if /i "%__HostArch%" == "arm" (
-        set __VCTargetArch=x86_arm
-    )
     if /i "%__HostArch%" == "arm64" (
-        set __VCTargetArch=x86_arm64
+        set __VCTargetArch=arm64
     )
 
     if NOT DEFINED SkipVCEnvInit (
