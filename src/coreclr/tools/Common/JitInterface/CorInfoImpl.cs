@@ -2613,7 +2613,12 @@ namespace Internal.JitInterface
             }
 
             // Instantiate StackAllocatedBox<T> helper type with the type we're boxing
-            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices", "StackAllocatedBox`1");
+            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System.Runtime.CompilerServices", "StackAllocatedBox`1", throwIfNotFound: false);
+            if (placeholderType == null)
+            {
+                // Give up if corelib does not have support for stackallocation
+                return null;
+            }
             return ObjectToHandle(placeholderType.MakeInstantiatedType(clsTypeDesc));
         }
 
