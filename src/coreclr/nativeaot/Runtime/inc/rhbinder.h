@@ -462,7 +462,7 @@ struct PInvokeTransitionFrame
 struct PInvokeTransitionFrame
 {
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
-    // On arm32/arm64, the FP and LR registers are pushed in that order when setting up frames
+    // The FP and LR registers are pushed in different order when setting up frames
     TgtPTR_Void     m_FramePointer;
     TgtPTR_Void     m_RIP;
 #else
