@@ -207,12 +207,14 @@ namespace Mono.Linker.Dataflow
 			Debug.Assert (annotation != DynamicallyAccessedMemberTypes.None);
 
 			// We need to apply annotations to this type, and its base/interface types (recursively)
-			// But the annotations on base/interfaces are already applied so we don't need to apply those
+			// But the annotations on base will be applied so we don't need to apply those
 			// again (and should avoid doing so as it would produce extra warnings).
 			var baseType = _context.TryResolve (type.BaseType);
 			if (baseType != null) {
 				var baseAnnotation = GetCachedInfoForTypeInHierarchy (baseType);
-				var annotationToApplyToBase = baseAnnotation.applied ? Annotations.GetMissingMemberTypes (annotation, baseAnnotation.annotation) : annotation;
+				if (!baseAnnotation.applied && baseAnnotation.annotation != DynamicallyAccessedMemberTypes.None)
+					ApplyDynamicallyAccessedMembersToType (baseType, baseAnnotation.annotation);
+				var annotationToApplyToBase = Annotations.GetMissingMemberTypes (annotation, baseAnnotation.annotation);
 
 				// Apply any annotations that didn't exist on the base type to the base type.
 				// This may produce redundant warnings when the annotation is DAMT.All or DAMT.PublicConstructors and the base already has a
@@ -230,12 +232,14 @@ namespace Mono.Linker.Dataflow
 						continue;
 
 					var interfaceAnnotation = GetCachedInfoForTypeInHierarchy (interfaceType);
-					if (interfaceAnnotation.applied && interfaceAnnotation.annotation.HasFlag (annotationToApplyToInterfaces))
-						continue;
-
-					// Apply All or Interfaces to the interface type.
-					// DAMT.All may produce redundant warnings from implementing types, when the interface type already had some annotations.
-					_reflectionMarker.MarkTypeForDynamicallyAccessedMembers (origin, interfaceType, annotationToApplyToInterfaces, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: false);
+					if (interfaceAnnotation.annotation.HasFlag (annotationToApplyToInterfaces)) {
+						if (!interfaceAnnotation.applied)
+							ApplyDynamicallyAccessedMembersToType (interfaceType, interfaceAnnotation.annotation);
+					} else {
+						// Apply All or Interfaces to the interface type.
+						// DAMT.All may produce redundant warnings from implementing types, when the interface type already had some annotations.
+						_reflectionMarker.MarkTypeForDynamicallyAccessedMembers (origin, interfaceType, annotationToApplyToInterfaces, DependencyKind.DynamicallyAccessedMemberOnType, declaredOnly: false);
+					}
 				}
 			}
 
