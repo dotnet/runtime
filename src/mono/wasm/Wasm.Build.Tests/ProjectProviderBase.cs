@@ -38,18 +38,22 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     protected BuildEnvironment _buildEnv = BuildTestBase.s_buildEnv;
     public string BundleDirName { get; set; } = "wwwroot";
 
+    public bool IsFingerprintingSupported { get; protected set; }
+
     // Returns the actual files on disk
     public IReadOnlyDictionary<string, DotNetFileName> AssertBasicBundle(AssertBundleOptionsBase assertOptions)
     {
         EnsureProjectDirIsSet();
         var dotnetFiles = FindAndAssertDotnetFiles(assertOptions);
 
+        Console.WriteLine($"MF: IsFingerprintingSupported: {IsFingerprintingSupported}, UseWebcil: {BuildTestBase.UseWebcil}");
+
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.dll" },
-                                   expectToExist: false);
+                                   expectToExist: IsFingerprintingSupported ? false : !BuildTestBase.UseWebcil);
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.wasm" },
-                                   expectToExist: false);
+                                   expectToExist: IsFingerprintingSupported ? false : BuildTestBase.UseWebcil);
 
         var bootJson = AssertBootJson(assertOptions);
 
@@ -381,17 +385,22 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
             actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules.json"));
 
-        var expectedFingerprinted = new List<string>(expected.Count);
-        foreach (var expectedItem in expected)
+        if (IsFingerprintingSupported)
         {
-            var expectedFingerprintedItem = bootJson.resources.fingerprinting.Where(kv => kv.Value == expectedItem).SingleOrDefault().Key;
-            if (string.IsNullOrEmpty(expectedFingerprintedItem))
-                throw new XunitException($"Could not find ICU asset {expectedItem} in fingerprinting in boot config");
+            var expectedFingerprinted = new List<string>(expected.Count);
+            foreach (var expectedItem in expected)
+            {
+                var expectedFingerprintedItem = bootJson.resources.fingerprinting.Where(kv => kv.Value == expectedItem).SingleOrDefault().Key;
+                if (string.IsNullOrEmpty(expectedFingerprintedItem))
+                    throw new XunitException($"Could not find ICU asset {expectedItem} in fingerprinting in boot config");
 
-            expectedFingerprinted.Add(expectedFingerprintedItem);
+                expectedFingerprinted.Add(expectedFingerprintedItem);
+            }
+
+            expected = expectedFingerprinted;
         }
 
-        AssertFileNames(expectedFingerprinted, actual);
+        AssertFileNames(expected, actual);
         if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
         {
             string srcPath = assertOptions.PredefinedIcudt!;
@@ -413,9 +422,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         BootJsonData bootJson = ParseBootData(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
-        spcExpectedFilename = bootJson.resources.fingerprinting.Where(kv => kv.Value == spcExpectedFilename).SingleOrDefault().Key;
-        if (string.IsNullOrEmpty(spcExpectedFilename))
-            throw new XunitException($"Could not find an assembly System.Private.CoreLib in fingerprinting in {bootJsonPath}");
+        if (IsFingerprintingSupported)
+        {
+            spcExpectedFilename = bootJson.resources.fingerprinting.Where(kv => kv.Value == spcExpectedFilename).SingleOrDefault().Key;
+            if (string.IsNullOrEmpty(spcExpectedFilename))
+                throw new XunitException($"Could not find an assembly System.Private.CoreLib in fingerprinting in {bootJsonPath}");
+        }
 
         string? spcActualFilename = bootJson.resources.coreAssembly.Keys
                                         .Where(a => a == spcExpectedFilename)

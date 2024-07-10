@@ -17,7 +17,9 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 {
     public WasmSdkBasedProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
             : base(_testOutput, _projectDir)
-    {}
+    {
+        IsFingerprintingSupported = true;
+    }
 
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptionsBase assertOptions)
         => new SortedDictionary<string, bool>()
