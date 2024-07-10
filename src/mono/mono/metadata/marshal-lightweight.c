@@ -2722,14 +2722,14 @@ emit_swift_lowered_struct_load (MonoMethodBuilder *mb, MonoMethodSignature *csig
 	uint32_t offset = 0;
 
 	for (uint32_t idx_lowered = 0; idx_lowered < swift_lowering.num_lowered_elements; idx_lowered++) {
-        offset = swift_lowering.offsets [idx_lowered];
-        mono_mb_emit_ldloc_addr (mb, tmp_local);
-        mono_mb_emit_icon (mb, offset);
-        mono_mb_emit_byte (mb, CEE_ADD);
+		offset = swift_lowering.offsets [idx_lowered];
+		mono_mb_emit_ldloc_addr (mb, tmp_local);
+		mono_mb_emit_icon (mb, offset);
+		mono_mb_emit_byte (mb, CEE_ADD);
 
-        mono_mb_emit_ldarg (mb, csig_argnum + idx_lowered);
-        stind_op = mono_type_to_stind (csig->params [csig_argnum + idx_lowered]);
-        mono_mb_emit_byte (mb, stind_op);
+		mono_mb_emit_ldarg (mb, csig_argnum + idx_lowered);
+		stind_op = mono_type_to_stind (csig->params [csig_argnum + idx_lowered]);
+		mono_mb_emit_byte (mb, stind_op);
     }
 }
 
