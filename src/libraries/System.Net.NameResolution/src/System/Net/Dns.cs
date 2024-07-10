@@ -704,7 +704,7 @@ namespace System.Net
                         {
                             ((ICollection<KeyValuePair<object, Task>>)s_tasks).Remove(new KeyValuePair<object, Task>(key!, task));
                             // Since it was canceled, func(..) had not executed and call AfterResolution it needs to be called here.
-                            NameResolutionTelemetry.Log.AfterResolution(key!, startingTimestamp, new OperationCanceledException());
+                            NameResolutionTelemetry.Log.AfterResolution(key!, activity, new OperationCanceledException());
                         }
                     }, key, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 }
