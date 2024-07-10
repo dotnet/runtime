@@ -695,10 +695,9 @@ namespace Wasm.Build.Tests
 
         protected CommandResult RunWithoutBuild(string config, string id)
         {
-            string runArgs = $"run --no-build -c {config}";
+            string runArgs = $"run --no-build -c {config} --forward-exit-code";
             runArgs += " x y z";
-            // ActiveIssue: https://github.com/dotnet/runtime/issues/82515
-            int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 42;
+            int expectedExitCode = 42;
             CommandResult res = new RunCommand(s_buildEnv, _testOutput, label: id)
                             .WithWorkingDirectory(_projectDir!)
                             .ExecuteWithCapturedOutput(runArgs)
