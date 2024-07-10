@@ -62,11 +62,15 @@ public class Validate
     struct S<T> {}
     struct S_I1 : I1 {}
     struct S_I1<T> : I1 {}
+    struct S_DI1 : InvalidCSharp.DefaultInterface {}
+    struct S_DI2 : InvalidCSharp.DefaultInterface { public int Method() => 1; }
 
     ref struct RS { }
     ref struct RS<T> { }
     ref struct RS_I1 : I1 { }
     ref struct RS_I1<T> : I1 { }
+    // ref struct RS_DI1 - See InvalidCSharp.il
+    // ref struct RS_DI2 - See InvalidCSharp.il
 
     sealed class Ignored { }
 
@@ -104,6 +108,15 @@ public class Validate
         Assert.True(Exec.BoxIsinstBranch<S_I1, I1>(default));
         Assert.True(Exec.BoxIsinstBranch<S_I1<int>, I1>(default));
         Assert.True(Exec.BoxIsinstBranch<S_I1<object>, I1>(default));
+
+        Assert.Equal($"{nameof(Validate)}+{nameof(S)}", Exec.ConstrainedCallVirtToString<S>(new S()));
+        Assert.Equal(0, Exec.ConstrainedCallVirtMethod<S_DI1>(new S_DI1()));
+        Assert.Equal(1, Exec.ConstrainedCallVirtMethod<S_DI2>(new S_DI2()));
+        Assert.Equal(1, Exec.ConstrainedCallVirtMethod<RS_DI2>(new RS_DI2()));
+
+        Assert.Equal(-1, Exec.ConstrainedCallVirtMethod<S_DI1>(new S_DI1(), skipCall: true));
+        Assert.Equal(-1, Exec.ConstrainedCallVirtMethod<S_DI2>(new S_DI2(), skipCall: true));
+        Assert.Equal(-1, Exec.ConstrainedCallVirtMethod<RS_DI2>(new RS_DI2(), skipCall: true));
     }
 
     [Fact]
@@ -130,7 +143,12 @@ public class Validate
 
         // Test that explicitly tries to box a ByRefLike type.
         Assert.Throws<InvalidProgramException>(() => { Exec.BoxAsObject<RS>(new RS()); });
-        Assert.Throws<InvalidProgramException>(() => { Exec.CallStringOnObject<RS>(new RS()); });
+
+        // Test that implicitly tries to box a ByRefLike type.
+        Assert.Throws<InvalidProgramException>(() => { Exec.ConstrainedCallVirtToString<RS>(new RS()); });
+        Assert.Throws<InvalidProgramException>(() => { Exec.ConstrainedCallVirtMethod<RS_DI1>(new RS_DI1()); });
+        Assert.Throws<InvalidProgramException>(() => { Exec.ConstrainedCallVirtMethod<RS_DI1>(new RS_DI1(), skipCall: false); });
+        Assert.Throws<InvalidProgramException>(() => { Exec.ConstrainedCallVirtMethod<RS_DI1>(new RS_DI1(), skipCall: true); });
     }
 
     [Fact]

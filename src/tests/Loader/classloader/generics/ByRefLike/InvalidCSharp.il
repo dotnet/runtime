@@ -483,12 +483,47 @@
     }
 }
 
+.class interface public auto ansi abstract InvalidCSharp.DefaultInterface
+{
+    .method public hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.0
+        ret
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit RS_DI1
+    extends [System.Runtime]System.ValueType
+    implements InvalidCSharp.DefaultInterface
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+}
+
+.class public sequential ansi sealed beforefieldinit RS_DI2
+    extends [System.Runtime]System.ValueType
+    implements InvalidCSharp.DefaultInterface
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+
+    .method public hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.1
+        ret
+    }
+}
+
 .class public sequential ansi sealed beforefieldinit RegularValueType
     extends [System.Runtime]System.ValueType
 {
 }
 
-.class public auto ansi beforefieldinit InvalidCSharp.ClassWithInterface
+.class public auto ansi beforefieldinit ClassWithInterface
     extends [System.Runtime]System.Object
     implements InvalidCSharp.SimpleInterface
 {
@@ -878,9 +913,9 @@
 
     NEXT_3:
         ldloca.s 0
-        newobj instance void InvalidCSharp.ClassWithInterface::.ctor()
+        newobj instance void ClassWithInterface::.ctor()
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::
-            BoxIsinstBranch_CheckForSimpleInterface<class InvalidCSharp.ClassWithInterface>(!!0)
+            BoxIsinstBranch_CheckForSimpleInterface<class ClassWithInterface>(!!0)
         brfalse.s NEXT_4
 
         ldstr "The above is expected to be false since ClassWithInterface's interface implementation return 0."
@@ -940,11 +975,35 @@
     }
 
     .method public hidebysig static
-        string CallStringOnObject<byreflike T>(!!T t) cil managed noinlining
+        string ConstrainedCallVirtToString<byreflike T>(!!T t) cil managed noinlining
     {
         ldarga.s 0
         constrained. !!T
         callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        int32 ConstrainedCallVirtMethod<byreflike (InvalidCSharp.DefaultInterface) T>(!!T t) cil managed noinlining
+    {
+        ldarga.s 0
+        constrained. !!T
+        callvirt instance int32 InvalidCSharp.DefaultInterface::Method()
+        ret
+    }
+
+    .method public hidebysig static
+        int32 ConstrainedCallVirtMethod<byreflike (InvalidCSharp.DefaultInterface) T>(!!T t, bool skipCall) cil managed noinlining
+    {
+        ldarg.1
+        brfalse.s CALL
+        ldc.i4.m1
+        ret
+
+        CALL:
+        ldarga.s 0
+        constrained. !!T
+        callvirt instance int32 InvalidCSharp.DefaultInterface::Method()
         ret
     }
 
