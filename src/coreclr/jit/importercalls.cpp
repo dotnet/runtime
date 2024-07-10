@@ -3262,6 +3262,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Threading_Interlocked_CompareExchange:
             case NI_System_Threading_Interlocked_Exchange:
             case NI_System_Threading_Interlocked_ExchangeAdd:
+            case NI_System_Threading_Interlocked_ExchangeObject:
             case NI_System_Threading_Interlocked_MemoryBarrier:
             case NI_System_Threading_Interlocked_ReadMemoryBarrier:
             case NI_System_Threading_Volatile_Read:
@@ -4023,6 +4024,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 retNode      = gtNewAtomicNode(GT_CMPXCHG, callType, op1, op2, op3);
                 break;
             }
+
+            case NI_System_Threading_Interlocked_ExchangeObject:
+            case NI_System_Threading_Interlocked_CompareExchangeObject:
+                isSpecial = true;
+                break;
 
             case NI_System_Threading_Interlocked_Exchange:
             case NI_System_Threading_Interlocked_ExchangeAdd:
@@ -10509,6 +10515,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_Threading_Interlocked_CompareExchange;
                         }
+                        else if (strcmp(methodName, "CompareExchangeObject") == 0)
+                        {
+                            result = NI_System_Threading_Interlocked_CompareExchangeObject;
+                        }
                         else if (strcmp(methodName, "Exchange") == 0)
                         {
                             result = NI_System_Threading_Interlocked_Exchange;
@@ -10516,6 +10526,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "ExchangeAdd") == 0)
                         {
                             result = NI_System_Threading_Interlocked_ExchangeAdd;
+                        }
+                        else if (strcmp(methodName, "ExchangeObject") == 0)
+                        {
+                            result = NI_System_Threading_Interlocked_ExchangeObject;
                         }
                         else if (strcmp(methodName, "MemoryBarrier") == 0)
                         {

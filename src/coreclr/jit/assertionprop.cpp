@@ -2629,6 +2629,30 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //
 GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call)
 {
+    // Fold Interlocked.CompareExchangeObject and Interlocked_ExchangeObject into atomic nodes
+    // if the value is 'null' (hence, no need to worry about write barriers).
+    //
+    if (call->IsSpecialIntrinsic(this, NI_System_Threading_Interlocked_CompareExchangeObject))
+    {
+        GenTree* val = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+        if (val->IsIntegralConst(0))
+        {
+            GenTree* dst = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* cmp = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+            // it's fine to reorder val with cmp since val is just 'null'
+            return gtNewAtomicNode(GT_CMPXCHG, call->TypeGet(), dst, val, cmp);
+        }
+    }
+    else if (call->IsSpecialIntrinsic(this, NI_System_Threading_Interlocked_ExchangeObject))
+    {
+        GenTree* val = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        if (val->IsIntegralConst(0))
+        {
+            GenTree* dst = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            return gtNewAtomicNode(GT_XCHG, call->TypeGet(), dst, val);
+        }
+    }
+
     switch (call->GetHelperNum())
     {
         case CORINFO_HELP_CHKCASTARRAY:
@@ -6407,7 +6431,7 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
             break;
 
         case GT_CALL:
-            if (!tree->AsCall()->IsPure(this))
+            if (!tree->AsCall()->IsPure(this) && !tree->AsCall()->IsSpecialIntrinsic())
             {
                 return WALK_CONTINUE;
             }

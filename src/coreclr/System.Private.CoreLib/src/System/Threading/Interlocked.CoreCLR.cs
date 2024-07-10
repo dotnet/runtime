@@ -99,6 +99,7 @@ namespace System.Threading
             return ExchangeObject(ref location1, value);
         }
 
+        [Intrinsic] // Expanded for value being null
         [return: NotNullIfNotNull(nameof(location1))]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object? ExchangeObject([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
@@ -180,6 +181,7 @@ namespace System.Threading
             return CompareExchangeObject(ref location1, value, comparand);
         }
 
+        [Intrinsic] // Expanded for value being null
         [MethodImpl(MethodImplOptions.InternalCall)]
         [return: NotNullIfNotNull(nameof(location1))]
         private static extern object? CompareExchangeObject(ref object? location1, object? value, object? comparand);
