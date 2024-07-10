@@ -6,45 +6,81 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO.Compression;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using Microsoft.Win32;
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
 namespace System.Net.Http
 {
     internal sealed class HttpWindowsProxy : IMultiWebProxy, IDisposable
     {
-        private readonly MultiProxy _insecureProxy;    // URI of the http system proxy if set
-        private readonly MultiProxy _secureProxy;      // URI of the https system proxy if set
-        private readonly FailedProxyCache _failedProxies = new FailedProxyCache();
-        private readonly List<string>? _bypass;         // list of domains not to proxy
-        private readonly bool _bypassLocal;    // we should bypass domain considered local
-        private readonly List<IPAddress>? _localIp;
+        private readonly RegistryKey? _internetSettingsRegistry = Registry.CurrentUser?.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+        private MultiProxy _insecureProxy;      // URI of the http system proxy if set
+        private MultiProxy _secureProxy;       // URI of the https system proxy if set
+        private FailedProxyCache _failedProxies = new FailedProxyCache();
+        private List<string>? _bypass;          // list of domains not to proxy
+        private List<IPAddress>? _localIp;
         private ICredentials? _credentials;
-        private readonly WinInetProxyHelper _proxyHelper;
+        private WinInetProxyHelper _proxyHelper;
         private SafeWinHttpHandle? _sessionHandle;
         private bool _disposed;
+        private EventWaitHandle _waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
+        private const int RegistrationFlags = Interop.Advapi32.REG_NOTIFY_CHANGE_NAME | Interop.Advapi32.REG_NOTIFY_CHANGE_LAST_SET | Interop.Advapi32.REG_NOTIFY_CHANGE_ATTRIBUTES | Interop.Advapi32.REG_NOTIFY_THREAD_AGNOSTIC;
+        private RegisteredWaitHandle? _registeredWaitHandle;
 
-        public static bool TryCreate([NotNullWhen(true)] out IWebProxy? proxy)
+        // 'proxy' used from tests via Reflection
+        public HttpWindowsProxy(WinInetProxyHelper? proxy = null)
         {
-            // This will get basic proxy setting from system using existing
-            // WinInetProxyHelper functions. If no proxy is enabled, it will return null.
-            SafeWinHttpHandle? sessionHandle = null;
-            proxy = null;
 
-            WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
-            if (!proxyHelper.ManualSettingsOnly && !proxyHelper.AutoSettingsUsed)
+            if (_internetSettingsRegistry != null && proxy == null)
             {
-                return false;
+                // we register for change notifications so we can react to changes during lifetime.
+                if (Interop.Advapi32.RegNotifyChangeKeyValue(_internetSettingsRegistry.Handle, true, RegistrationFlags, _waitHandle.SafeWaitHandle, true) == 0)
+                {
+                    _registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(_waitHandle, RegistryChangeNotificationCallback, this, -1, false);
+                }
             }
+
+            UpdateConfiguration(proxy);
+        }
+
+        private static void RegistryChangeNotificationCallback(object? state, bool timedOut)
+        {
+            HttpWindowsProxy proxy = (HttpWindowsProxy)state!;
+            if (!proxy._disposed)
+            {
+
+                // This is executed from threadpool. we should not ever throw here.
+                try
+                {
+                    // We need to register for notification every time. We regisrerand lock before we process configuration
+                    // so if there is update it would be serialized to ensure consistency.
+                    Interop.Advapi32.RegNotifyChangeKeyValue(proxy._internetSettingsRegistry!.Handle, true, RegistrationFlags, proxy._waitHandle.SafeWaitHandle, true);
+                    lock (proxy)
+                    {
+                        proxy.UpdateConfiguration();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(proxy, $"Failed to refresh proxy configuration: {ex.Message}");
+                }
+            }
+        }
+
+        [MemberNotNull(nameof(_proxyHelper))]
+        private void UpdateConfiguration(WinInetProxyHelper? proxyHelper = null)
+        {
+
+            proxyHelper ??= new WinInetProxyHelper();
 
             if (proxyHelper.AutoSettingsUsed)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(proxyHelper, $"AutoSettingsUsed, calling {nameof(Interop.WinHttp.WinHttpOpen)}");
-                sessionHandle = Interop.WinHttp.WinHttpOpen(
+                SafeWinHttpHandle? sessionHandle = Interop.WinHttp.WinHttpOpen(
                     IntPtr.Zero,
                     Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY,
                     Interop.WinHttp.WINHTTP_NO_PROXY_NAME,
@@ -56,18 +92,10 @@ namespace System.Net.Http
                     // Proxy failures are currently ignored by managed handler.
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(proxyHelper, $"{nameof(Interop.WinHttp.WinHttpOpen)} returned invalid handle");
                     sessionHandle.Dispose();
-                    return false;
                 }
+
+                _sessionHandle = sessionHandle;
             }
-
-            proxy = new HttpWindowsProxy(proxyHelper, sessionHandle);
-            return true;
-        }
-
-        private HttpWindowsProxy(WinInetProxyHelper proxyHelper, SafeWinHttpHandle? sessionHandle)
-        {
-            _proxyHelper = proxyHelper;
-            _sessionHandle = sessionHandle;
 
             if (proxyHelper.ManualSettingsUsed)
             {
@@ -80,10 +108,12 @@ namespace System.Net.Http
                 {
                     int idx = 0;
                     string? tmp;
+                    bool bypassLocal = false;
+                    List<IPAddress>? localIp = null;
 
                     // Process bypass list for manual setting.
                     // Initial list size is best guess based on string length assuming each entry is at least 5 characters on average.
-                    _bypass = new List<string>(proxyHelper.ProxyBypass.Length / 5);
+                    List<string>? bypass = new List<string>(proxyHelper.ProxyBypass.Length / 5);
 
                     while (idx < proxyHelper.ProxyBypass.Length)
                     {
@@ -114,7 +144,7 @@ namespace System.Net.Http
                         }
                         else if (string.Compare(proxyHelper.ProxyBypass, start, "<local>", 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
                         {
-                            _bypassLocal = true;
+                            bypassLocal = true;
                             tmp = null;
                         }
                         else
@@ -137,28 +167,29 @@ namespace System.Net.Http
                             continue;
                         }
 
-                        _bypass.Add(tmp);
+                        bypass.Add(tmp);
                     }
-                    if (_bypass.Count == 0)
-                    {
-                        // Bypass string only had garbage we did not parse.
-                        _bypass = null;
-                    }
-                }
 
-                if (_bypassLocal)
-                {
-                    _localIp = new List<IPAddress>();
-                    foreach (NetworkInterface netInterface in NetworkInterface.GetAllNetworkInterfaces())
+                    _bypass = bypass.Count > 0 ? bypass : null;
+
+                    if (bypassLocal)
                     {
-                        IPInterfaceProperties ipProps = netInterface.GetIPProperties();
-                        foreach (UnicastIPAddressInformation addr in ipProps.UnicastAddresses)
+                        localIp = new List<IPAddress>();
+                        foreach (NetworkInterface netInterface in NetworkInterface.GetAllNetworkInterfaces())
                         {
-                            _localIp.Add(addr.Address);
+                            IPInterfaceProperties ipProps = netInterface.GetIPProperties();
+                            foreach (UnicastIPAddressInformation addr in ipProps.UnicastAddresses)
+                            {
+                                localIp.Add(addr.Address);
+                            }
                         }
                     }
+
+                    _localIp = localIp?.Count > 0 ? localIp : null;
                 }
             }
+
+            _proxyHelper = proxyHelper;
         }
 
         public void Dispose()
@@ -171,6 +202,10 @@ namespace System.Net.Http
                 {
                     SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
                 }
+
+                _waitHandle?.Dispose();
+                _internetSettingsRegistry?.Dispose();
+                _registeredWaitHandle?.Unregister(null);
             }
         }
 
@@ -179,6 +214,11 @@ namespace System.Net.Http
         /// </summary>
         public Uri? GetProxy(Uri uri)
         {
+            if (!_proxyHelper.AutoSettingsUsed && !_proxyHelper.ManualSettingsOnly)
+            {
+                return null;
+            }
+
             GetMultiProxy(uri).ReadNext(out Uri? proxyUri, out _);
             return proxyUri;
         }
@@ -240,7 +280,7 @@ namespace System.Net.Http
             // Fallback to manual settings if present.
             if (_proxyHelper.ManualSettingsUsed)
             {
-                if (_bypassLocal)
+                if (_localIp != null)
                 {
                     IPAddress? address;
 
@@ -261,7 +301,7 @@ namespace System.Net.Http
                         {
                             // Host is valid IP address.
                             // Check if it belongs to local system.
-                            foreach (IPAddress a in _localIp!)
+                            foreach (IPAddress a in _localIp)
                             {
                                 if (a.Equals(address))
                                 {
