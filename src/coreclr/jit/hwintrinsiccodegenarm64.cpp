@@ -308,17 +308,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         emitSize = emitActualTypeSize(intrin.baseType);
         opt      = INS_OPTS_NONE;
     }
+    else if (HWIntrinsicInfo::IsScalable(intrin.id))
+    {
+        emitSize = EA_SCALABLE;
+        opt      = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
+    }
     else if (intrin.category == HW_Category_Special)
     {
         assert(intrin.id == NI_ArmBase_Yield);
 
         emitSize = EA_UNKNOWN;
         opt      = INS_OPTS_NONE;
-    }
-    else if (HWIntrinsicInfo::IsScalable(intrin.id))
-    {
-        emitSize = EA_SCALABLE;
-        opt      = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
     }
     else
     {
@@ -586,7 +586,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 case 2:
                 {
-                    assert(instrIsRMW);
+                    if (!instrIsRMW)
+                    {
+                        // Perform the actual "predicated" operation so that `embMaskOp1Reg` is the first operand
+                        // and `embMaskOp2Reg` is the second operand.
+                        GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                      embMaskOp2Reg, opt);
+                        break;
+                    }
 
                     insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
                     bool            hasShift = false;
@@ -1654,6 +1661,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector128_GetElement:
             {
                 assert(intrin.numOperands == 2);
+                assert(!intrin.op1->isContained());
+
+                assert(intrin.op2->OperIsConst());
+                assert(intrin.op2->isContained());
 
                 var_types simdType = Compiler::getSIMDTypeForSize(node->GetSimdSize());
 
@@ -1663,109 +1674,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     simdType = TYP_SIMD16;
                 }
 
-                if (!intrin.op2->OperIsConst())
-                {
-                    assert(!intrin.op2->isContained());
+                ssize_t ival = intrin.op2->AsIntCon()->IconValue();
 
-                    emitAttr baseTypeSize  = emitTypeSize(intrin.baseType);
-                    unsigned baseTypeScale = genLog2(EA_SIZE_IN_BYTES(baseTypeSize));
-
-                    regNumber baseReg;
-                    regNumber indexReg = op2Reg;
-
-                    // Optimize the case of op1 is in memory and trying to access i'th element.
-                    if (!intrin.op1->isUsedFromReg())
-                    {
-                        assert(intrin.op1->isContained());
-
-                        if (intrin.op1->OperIsLocal())
-                        {
-                            unsigned varNum = intrin.op1->AsLclVarCommon()->GetLclNum();
-                            baseReg         = internalRegisters.Extract(node);
-
-                            // Load the address of varNum
-                            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, varNum, 0);
-                        }
-                        else
-                        {
-                            // Require GT_IND addr to be not contained.
-                            assert(intrin.op1->OperIs(GT_IND));
-
-                            GenTree* addr = intrin.op1->AsIndir()->Addr();
-                            assert(!addr->isContained());
-                            baseReg = addr->GetRegNum();
-                        }
-                    }
-                    else
-                    {
-                        unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
-                        noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
-
-                        baseReg = internalRegisters.Extract(node);
-
-                        // Load the address of simdInitTempVarNum
-                        GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, simdInitTempVarNum, 0);
-
-                        // Store the vector to simdInitTempVarNum
-                        GetEmitter()->emitIns_R_R(INS_str, emitTypeSize(simdType), op1Reg, baseReg);
-                    }
-
-                    assert(genIsValidIntReg(indexReg));
-                    assert(genIsValidIntReg(baseReg));
-                    assert(baseReg != indexReg);
-
-                    // Load item at baseReg[index]
-                    GetEmitter()->emitIns_R_R_R_Ext(ins_Load(intrin.baseType), baseTypeSize, targetReg, baseReg,
-                                                    indexReg, INS_OPTS_LSL, baseTypeScale);
-                }
-                else if (!GetEmitter()->isValidVectorIndex(emitTypeSize(simdType), emitTypeSize(intrin.baseType),
-                                                           intrin.op2->AsIntCon()->IconValue()))
+                if (!GetEmitter()->isValidVectorIndex(emitTypeSize(simdType), emitTypeSize(intrin.baseType), ival))
                 {
                     // We only need to generate code for the get if the index is valid
                     // If the index is invalid, previously generated for the range check will throw
+                    break;
                 }
-                else if (!intrin.op1->isUsedFromReg())
+
+                if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg) && (ival == 0)))
                 {
-                    assert(intrin.op1->isContained());
-                    assert(intrin.op2->IsCnsIntOrI());
-
-                    int         offset = (int)intrin.op2->AsIntCon()->IconValue() * genTypeSize(intrin.baseType);
-                    instruction ins    = ins_Load(intrin.baseType);
-
-                    assert(!intrin.op1->isUsedFromReg());
-
-                    if (intrin.op1->OperIsLocal())
-                    {
-                        unsigned varNum = intrin.op1->AsLclVarCommon()->GetLclNum();
-                        GetEmitter()->emitIns_R_S(ins, emitActualTypeSize(intrin.baseType), targetReg, varNum, offset);
-                    }
-                    else
-                    {
-                        assert(intrin.op1->OperIs(GT_IND));
-
-                        GenTree* addr = intrin.op1->AsIndir()->Addr();
-                        assert(!addr->isContained());
-                        regNumber baseReg = addr->GetRegNum();
-
-                        // ldr targetReg, [baseReg, #offset]
-                        GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(intrin.baseType), targetReg, baseReg,
-                                                    offset);
-                    }
-                }
-                else
-                {
-                    assert(intrin.op2->IsCnsIntOrI());
-                    ssize_t indexValue = intrin.op2->AsIntCon()->IconValue();
-
                     // no-op if vector is float/double, targetReg == op1Reg and fetching for 0th index.
-                    if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg) && (indexValue == 0)))
-                    {
-                        break;
-                    }
-
-                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, indexValue,
-                                                INS_OPTS_NONE);
+                    break;
                 }
+
+                GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, ival, INS_OPTS_NONE);
                 break;
             }
 
@@ -2128,6 +2052,39 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                 break;
 
+            case NI_Sve_Scatter:
+            {
+                if (!varTypeIsSIMD(intrin.op2->gtType))
+                {
+                    // Scatter(Vector<T1> mask, T1* address, Vector<T2> indicies, Vector<T> data)
+                    assert(intrin.numOperands == 4);
+                    emitAttr baseSize = emitActualTypeSize(intrin.baseType);
+
+                    if (baseSize == EA_8BYTE)
+                    {
+                        // Index is multiplied by 8
+                        GetEmitter()->emitIns_R_R_R_R(ins, emitSize, op4Reg, op1Reg, op2Reg, op3Reg, opt,
+                                                      INS_SCALABLE_OPTS_LSL_N);
+                    }
+                    else
+                    {
+                        // Index is sign or zero extended to 64bits, then multiplied by 4
+                        assert(baseSize == EA_4BYTE);
+                        opt = varTypeIsUnsigned(node->GetAuxiliaryType()) ? INS_OPTS_SCALABLE_S_UXTW
+                                                                          : INS_OPTS_SCALABLE_S_SXTW;
+                        GetEmitter()->emitIns_R_R_R_R(ins, emitSize, op4Reg, op1Reg, op2Reg, op3Reg, opt,
+                                                      INS_SCALABLE_OPTS_MOD_N);
+                    }
+                }
+                else
+                {
+                    // Scatter(Vector<T> mask, Vector<T> addresses, Vector<T> data)
+                    assert(intrin.numOperands == 3);
+                    GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
+                }
+                break;
+            }
+
             case NI_Sve_StoreNarrowing:
                 opt = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
@@ -2325,6 +2282,51 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, INS_OPTS_SCALABLE_B);
+                break;
+            }
+
+            case NI_Sve_ConditionalExtractAfterLastActiveElementScalar:
+            case NI_Sve_ConditionalExtractLastActiveElementScalar:
+            {
+                opt = emitter::optGetSveInsOpt(emitTypeSize(node->GetSimdBaseType()));
+
+                if (emitter::isGeneralRegisterOrZR(targetReg))
+                {
+                    assert(varTypeIsIntegralOrI(intrin.baseType));
+
+                    emitSize = emitTypeSize(node);
+
+                    if (targetReg != op2Reg)
+                    {
+                        assert(targetReg != op1Reg);
+                        assert(targetReg != op3Reg);
+                        GetEmitter()->emitIns_Mov(INS_mov, emitSize, targetReg, op2Reg,
+                                                  /* canSkip */ true);
+                    }
+
+                    GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op3Reg, opt,
+                                                   INS_SCALABLE_OPTS_NONE);
+                    break;
+                }
+
+                // FP scalars are processed by the INS_SCALABLE_OPTS_WITH_SIMD_SCALAR variant of the instructions
+                FALLTHROUGH;
+            }
+            case NI_Sve_ConditionalExtractAfterLastActiveElement:
+            case NI_Sve_ConditionalExtractLastActiveElement:
+            {
+                assert(emitter::isFloatReg(targetReg));
+                assert(varTypeIsFloating(node->gtType) || varTypeIsSIMD(node->gtType));
+
+                if (targetReg != op2Reg)
+                {
+                    assert(targetReg != op1Reg);
+                    assert(targetReg != op3Reg);
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg,
+                                              /* canSkip */ true);
+                }
+                GetEmitter()->emitInsSve_R_R_R(ins, EA_SCALABLE, targetReg, op1Reg, op3Reg, opt,
+                                               INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
                 break;
             }
 

@@ -1672,6 +1672,21 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                     use.SetNode(comp->gtNewLclvNode(tmpVarNum, genActualType(use.GetNode())));
                     fieldList->AddAllEffectsFlags(use.GetNode());
                 }
+#endif // TARGET_ARMARCH || defined (UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            }
+
+            // scalarType can be set to a wider type for ARM or unix amd64 architectures: (3 => 4)  or (5,6,7 =>
+            // 8)
+            if ((scalarType != TYP_UNKNOWN) && (scalarType != lclVarType))
+            {
+                // Create a GT_LCL_FLD using the wider type to go to the late argument list
+                defArg = comp->gtNewLclFldNode(tmpVarNum, scalarType, 0);
+            }
+            else
+            {
+                // Create a copy of the temp to go to the late argument list
+                defArg = comp->gtNewLclvNode(tmpVarNum, lclVarType);
+            }
 
                 // Keep the field list in the late list
                 defArg = fieldList;
@@ -3191,13 +3206,15 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
     {
         GenTree*             implicitByRefLclAddr;
+        target_ssize_t       implicitByRefLclOffs;
         GenTreeLclVarCommon* implicitByRefLcl =
-            argx->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr);
+            argx->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr, &implicitByRefLclOffs);
 
         GenTreeLclVarCommon* lcl = implicitByRefLcl;
         if ((lcl == nullptr) && argx->OperIsLocal())
         {
-            lcl = argx->AsLclVarCommon();
+            lcl                  = argx->AsLclVarCommon();
+            implicitByRefLclOffs = lcl->GetLclOffs();
         }
 
         if (lcl != nullptr)
@@ -3223,6 +3240,28 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             {
                 omitCopy = (varDsc->lvIsLastUseCopyOmissionCandidate || (implicitByRefLcl != nullptr)) &&
                            !varDsc->lvPromoted && !varDsc->lvIsStructField && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
+            }
+
+            // Disallow the argument from potentially aliasing the return
+            // buffer.
+            if (omitCopy)
+            {
+                GenTreeLclVarCommon* retBuffer = gtCallGetDefinedRetBufLclAddr(call);
+                if ((retBuffer != nullptr) && (retBuffer->GetLclNum() == varNum))
+                {
+                    unsigned       retBufferSize  = typGetObjLayout(call->gtRetClsHnd)->GetSize();
+                    target_ssize_t retBufferStart = retBuffer->GetLclOffs();
+                    target_ssize_t retBufferEnd   = retBufferStart + static_cast<target_ssize_t>(retBufferSize);
+
+                    unsigned       argSize        = arg->GetSignatureType() == TYP_STRUCT
+                                                        ? typGetObjLayout(arg->GetSignatureClassHandle())->GetSize()
+                                                        : genTypeSize(arg->GetSignatureType());
+                    target_ssize_t implByrefStart = implicitByRefLclOffs;
+                    target_ssize_t implByrefEnd   = implByrefStart + static_cast<target_ssize_t>(argSize);
+
+                    bool disjoint = (retBufferEnd <= implByrefStart) || (implByrefEnd <= retBufferStart);
+                    omitCopy      = disjoint;
+                }
             }
 
             if (omitCopy)
@@ -3252,6 +3291,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 #endif
 
     JITDUMP("making an outgoing copy for struct arg\n");
+    assert(!call->IsTailCall() || !arg->AbiInfo.PassedByRef);
 
     CORINFO_CLASS_HANDLE copyBlkClass = arg->GetSignatureClassHandle();
     unsigned             tmp          = 0;
@@ -10004,7 +10044,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         default:
         {
             bool       isScalar   = false;
-            genTreeOps actualOper = node->HWOperGet(&isScalar);
+            genTreeOps actualOper = node->GetOperForHWIntrinsicId(&isScalar);
             genTreeOps oper       = actualOper;
 
             if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
@@ -10161,7 +10201,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     bool       isScalar = false;
-    genTreeOps oper     = node->HWOperGet(&isScalar);
+    genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar);
 
     if (isScalar)
     {
@@ -10184,7 +10224,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 // Try handle: ~op1 & op2
                 GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
 
                 if (isScalar)
                 {
@@ -10210,7 +10250,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 // Try handle: op1 & ~op2
                 GenTreeHWIntrinsic* hw     = op2->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
 
                 if (isScalar)
                 {
@@ -10265,7 +10305,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             if (op1->OperIsHWIntrinsic())
             {
                 GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
 
                 if (isScalar)
                 {
@@ -10302,7 +10342,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             if (op1->OperIsHWIntrinsic())
             {
                 GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
 
                 if (isScalar)
                 {
@@ -10344,7 +10384,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (op2->OperIsHWIntrinsic())
                 {
                     GenTreeHWIntrinsic* hw             = op2->AsHWIntrinsic();
-                    genTreeOps          hwOper         = hw->HWOperGet(&isScalar);
+                    genTreeOps          hwOper         = hw->GetOperForHWIntrinsicId(&isScalar);
                     var_types           hwSimdBaseType = hw->GetSimdBaseType();
 
                     if (isScalar)
@@ -10450,7 +10490,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
     }
 
     bool       isScalar              = false;
-    genTreeOps oper                  = tree->HWOperGet(&isScalar);
+    genTreeOps oper                  = tree->GetOperForHWIntrinsicId(&isScalar);
     bool       needsMatchingBaseType = false;
 
     switch (oper)
@@ -10493,7 +10533,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
     GenTreeHWIntrinsic* intrinOp1 = effectiveOp1->AsHWIntrinsic();
 
     bool       op1IsScalar = false;
-    genTreeOps op1Oper     = intrinOp1->HWOperGet(&op1IsScalar);
+    genTreeOps op1Oper     = intrinOp1->GetOperForHWIntrinsicId(&op1IsScalar);
 
     if ((op1Oper != oper) || (op1IsScalar != isScalar))
     {
@@ -14764,12 +14804,11 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 }
 
                 // Copy the struct promotion annotations to the new temp.
-                LclVarDsc* newVarDsc               = lvaGetDesc(newLclNum);
-                newVarDsc->lvPromoted              = true;
-                newVarDsc->lvFieldLclStart         = varDsc->lvFieldLclStart;
-                newVarDsc->lvFieldCnt              = varDsc->lvFieldCnt;
-                newVarDsc->lvContainsHoles         = varDsc->lvContainsHoles;
-                newVarDsc->lvAnySignificantPadding = varDsc->lvAnySignificantPadding;
+                LclVarDsc* newVarDsc       = lvaGetDesc(newLclNum);
+                newVarDsc->lvPromoted      = true;
+                newVarDsc->lvFieldLclStart = varDsc->lvFieldLclStart;
+                newVarDsc->lvFieldCnt      = varDsc->lvFieldCnt;
+                newVarDsc->lvContainsHoles = varDsc->lvContainsHoles;
 #ifdef DEBUG
                 newVarDsc->lvKeepType = true;
 #endif // DEBUG
