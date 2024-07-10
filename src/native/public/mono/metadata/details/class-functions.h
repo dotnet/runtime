@@ -131,8 +131,6 @@ MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY mono_bool, mono_class_is_delegate, (Mono
 
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY mono_bool, mono_class_implements_interface, (MonoClass* klass, MonoClass* iface))
 
-MONO_API_FUNCTION(void, mono_class_get_variance_search_table, (MonoClass *klass, MonoClass ***table, int *table_size));
-
 /* MonoClassField accessors */
 MONO_API_FUNCTION(const char*, mono_field_get_name, (MonoClassField *field))
 

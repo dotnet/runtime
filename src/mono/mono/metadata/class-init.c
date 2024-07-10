@@ -4255,9 +4255,9 @@ build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_si
 static void
 build_variance_search_table (MonoClass *klass) {
 	// FIXME: Is there a way to deterministically compute the right capacity?
-	int buf_size = 512, buf_count = 0;
-	MonoClass **buf = g_alloca (buf_size * sizeof(MonoClass *)),
-		**result = NULL;
+	int buf_size = m_class_get_interface_offsets_count (klass), buf_count = 0;
+	MonoClass **buf = g_alloca (buf_size * sizeof(MonoClass *));
+	MonoClass **result = NULL;
 	memset (buf, 0, buf_size * sizeof(MonoClass *));
 	build_variance_search_table_inner (klass, buf, buf_size, &buf_count, klass);
 
