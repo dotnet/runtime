@@ -14,6 +14,11 @@ function testOutput(msg) {
     console.log(`TestOutput -> ${msg}`);
 }
 
+function joinStringArray(stringArr) {
+    testOutput(`JS received array: ${JSON.stringify(stringArr)}`);
+    return stringArr.join("");
+}
+
 // Prepare base runtime parameters
 dotnet
     .withElementOnExit()
@@ -166,6 +171,13 @@ try {
             break;
         case "DownloadThenInit":
         case "MaxParallelDownloads":
+            exit(0);
+            break;
+        case "AllocateLargeHeapThenInterop":
+            setModuleImports('main.js', {
+                joinStringArray
+            });
+            exports.MemoryTest.Run();
             exit(0);
             break;
         default:
