@@ -39,10 +39,10 @@ namespace System.Net.Security.Tests
             // 1 byte reads
             ByteByByte,
 
-            // Receive at most 257 B in one read, targets specifically receiving
+            // Receive data at chunks, not necessarily respecting frame boundaries
             Chunked,
 
-            // coalesce reads to biggest chunks possible
+            // Coalesce reads to biggest chunks possible
             Coalescing
         }
 
@@ -78,7 +78,6 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(HandshakeScenarioData))]
-        // [InlineData(FramingType.Prime257, SslProtocols.Tls12, ClientCertScenario.None)]
         public async Task Handshake_Success(FramingType framingType, SslProtocols sslProtocol, ClientCertScenario clientCertScenario)
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
