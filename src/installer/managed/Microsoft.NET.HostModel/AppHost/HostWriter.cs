@@ -3,7 +3,6 @@
 
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -24,6 +23,29 @@ namespace Microsoft.NET.HostModel.AppHost
         private static readonly byte[] AppBinaryPathPlaceholderSearchValue = Encoding.UTF8.GetBytes(AppBinaryPathPlaceholder);
 
         /// <summary>
+        /// Value embedded in default apphost executable for configuration of how it will search for the .NET install
+        /// </summary>
+        private const string DotNetSearchPlaceholder = "\0\019ff3e9c3602ae8e841925bb461a0adb064a1f1903667a5e0d87e8f608f425ac";
+        private static readonly byte[] DotNetSearchPlaceholderValue = Encoding.UTF8.GetBytes(DotNetSearchPlaceholder);
+
+        public class DotNetSearchOptions
+        {
+            // Keep in sync with fxr_resolver::search_location in fxr_resolver.h
+            [Flags]
+            public enum SearchLocation : byte
+            {
+                Default,
+                AppLocal = 1 << 0,
+                AppRelative = 1 << 1,
+                EnvironmentVariable = 1 << 2,
+                Global = 1 << 3,
+            }
+
+            public SearchLocation Location { get; set; } = SearchLocation.Default;
+            public string AppRelativeDotNet { get; set; }
+        }
+
+        /// <summary>
         /// Create an AppHost with embedded configuration of app binary location
         /// </summary>
         /// <param name="appHostSourceFilePath">The path of Apphost template, which has the place holder</param>
@@ -33,6 +55,7 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <param name="assemblyToCopyResourcesFrom">Path to the intermediate assembly, used for copying resources to PE apphosts.</param>
         /// <param name="enableMacOSCodeSign">Sign the app binary using codesign with an anonymous certificate.</param>
         /// <param name="disableCetCompat">Remove CET Shadow Stack compatibility flag if set</param>
+        /// <param name="dotNetSearchOptions">Options for how the created apphost should look for the .NET install</param>
         public static void CreateAppHost(
             string appHostSourceFilePath,
             string appHostDestinationFilePath,
@@ -40,12 +63,28 @@ namespace Microsoft.NET.HostModel.AppHost
             bool windowsGraphicalUserInterface = false,
             string assemblyToCopyResourcesFrom = null,
             bool enableMacOSCodeSign = false,
-            bool disableCetCompat = false)
+            bool disableCetCompat = false,
+            DotNetSearchOptions dotNetSearchOptions = null)
         {
-            var bytesToWrite = Encoding.UTF8.GetBytes(appBinaryFilePath);
-            if (bytesToWrite.Length > 1024)
+            byte[] appPathBytes = Encoding.UTF8.GetBytes(appBinaryFilePath);
+            if (appPathBytes.Length > 1024)
             {
                 throw new AppNameTooLongException(appBinaryFilePath);
+            }
+
+            byte[] searchOptionsBytes = null;
+            if (dotNetSearchOptions != null)
+            {
+                byte[] bytes = dotNetSearchOptions.AppRelativeDotNet != null
+                    ? Encoding.UTF8.GetBytes(dotNetSearchOptions.AppRelativeDotNet)
+                    : [];
+
+                // <search_location> 0 <app_relative_dotnet_root>
+                searchOptionsBytes = new byte[bytes.Length + 2];
+                searchOptionsBytes[0] = (byte)dotNetSearchOptions.Location;
+                searchOptionsBytes[1] = 0;
+                if (bytes.Length > 0)
+                    bytes.CopyTo(searchOptionsBytes, 2);
             }
 
             bool appHostIsPEImage = false;
@@ -53,7 +92,13 @@ namespace Microsoft.NET.HostModel.AppHost
             void RewriteAppHost(MemoryMappedFile mappedFile, MemoryMappedViewAccessor accessor)
             {
                 // Re-write the destination apphost with the proper contents.
-                BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, bytesToWrite);
+                BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, appPathBytes);
+
+                // Update the .NET search configuration
+                if (searchOptionsBytes != null)
+                {
+                    BinaryUtils.SearchAndReplace(accessor, DotNetSearchPlaceholderValue, searchOptionsBytes);
+                }
 
                 appHostIsPEImage = PEUtils.IsPEImage(accessor);
 
