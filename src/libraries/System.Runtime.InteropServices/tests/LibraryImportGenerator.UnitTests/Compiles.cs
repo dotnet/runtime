@@ -42,6 +42,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.DefaultParameters };
             yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
             yield return new[] { ID(), CodeSnippets.LibraryImportInRefStruct };
+            yield return new[] { ID(), CodeSnippets.ExplicitThis };
 
             // Parameter / return types
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
@@ -520,9 +521,46 @@ namespace LibraryImportGenerator.UnitTests
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
             }
 
-            // Confirm that if support is missing for any type (like arrays), we fall back to a forwarder even if other types are supported.
+            // Confirm that if support is missing for a type with an ITypeBasedMarshallingInfoProvider (like arrays and SafeHandles), we fall back to a forwarder even if other types are supported.
             {
-                string code = CodeSnippets.BasicReturnAndParameterByValue("System.Runtime.InteropServices.SafeHandle", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "System.Runtime.InteropServices.SafeHandle", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("System.Runtime.InteropServices.SafeHandle", "int", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("int", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+
+            // Confirm that if support is missing for a type without an ITypeBasedMarshallingInfoProvider (like StringBuilder), we fall back to a forwarder even if other types are supported.
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "System.Text.StringBuilder", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("int", "System.Text.StringBuilder", CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Core, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
@@ -706,22 +744,34 @@ namespace LibraryImportGenerator.UnitTests
             return sourceWithoutMarkup;
         }
 
-        public static IEnumerable<object[]> CodeSnippetsToVerifyNoTreesProduced()
+        [Fact]
+        public async Task ValidateNoGeneratedOutputForNoImport()
         {
             string source = """
                 using System.Runtime.InteropServices;
                 public class Basic { }
                 """;
-            yield return new object[] { ID(), source, TestTargetFramework.Standard };
-            yield return new object[] { ID(), source, TestTargetFramework.Framework };
-            yield return new object[] { ID(), source, TestTargetFramework.Net };
+
+            var test = new NoChangeTest(TestTargetFramework.Net)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+
+            await test.RunAsync();
         }
 
+        [OuterLoop("Uses the network for downlevel ref packs")]
+        [InlineData(TestTargetFramework.Standard)]
+        [InlineData(TestTargetFramework.Framework)]
         [Theory]
-        [MemberData(nameof(CodeSnippetsToVerifyNoTreesProduced))]
-        public async Task ValidateNoGeneratedOuptutForNoImport(string id, string source, TestTargetFramework framework)
+        public async Task ValidateNoGeneratedOutputForNoImportDownlevel(TestTargetFramework framework)
         {
-            TestUtils.Use(id);
+            string source = """
+                using System.Runtime.InteropServices;
+                public class Basic { }
+                """;
+
             var test = new NoChangeTest(framework)
             {
                 TestCode = source,

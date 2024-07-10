@@ -44,7 +44,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     m_eventType = type;
 
-    HMODULE hModule = WszGetModuleHandle(NULL);
+    HMODULE hModule = GetModuleHandle(NULL);
     PathString appPath;
     DWORD ret = WszGetModuleFileName(hModule, appPath);
 

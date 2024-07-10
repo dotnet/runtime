@@ -426,6 +426,11 @@ namespace Microsoft.Interop
                 }
             }
 
+            if (typeInfo.IsExplicitThis)
+            {
+                tokens = tokens.Add(Token(SyntaxKind.ThisKeyword));
+            }
+
             return tokens;
         }
 

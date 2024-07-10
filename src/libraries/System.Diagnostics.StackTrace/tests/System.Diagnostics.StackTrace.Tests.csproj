@@ -9,6 +9,7 @@
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DiagnosticMethodInfoTests.cs" />
     <Compile Include="StackFrameExtensionsTests.cs" />
     <Compile Include="StackFrameTests.cs" />
     <Compile Include="StackTraceSymbolsTests.cs" />

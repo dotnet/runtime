@@ -1227,7 +1227,7 @@ namespace System
 
                         // If the code page could be Unicode, we should use ReadConsole instead, e.g.
                         // Note that WriteConsoleW has a max limit on num of chars to write (64K)
-                        // [https://docs.microsoft.com/en-us/windows/console/writeconsole]
+                        // [https://learn.microsoft.com/windows/console/writeconsole]
                         // However, we do not need to worry about that because the StreamWriter in Console has
                         // a much shorter buffer size anyway.
                         int charsWritten;

@@ -14,7 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Branch Include="Main" Abbr="8.0.X" />
+      <Branch Include="Main" Abbr="9.0.X" />
 
       <Platform Include="Windows (x64)" Abbr="win-x64" />
       <Platform Include="Windows (x86)" Abbr="win-x86" />
@@ -28,8 +28,8 @@
       <Platform Include="Linux-musl (arm)" Abbr="linux-musl-arm" />
       <Platform Include="Linux-musl (arm64)" Abbr="linux-musl-arm64" />
       <Platform Include="Dpkg Based Systems (x64)" Abbr="deb" />
-      <Platform Include="CentOS 7 (x64)" Abbr="centos-7" />
-      <Platform Include="RHEL 7.2 (x64)" Abbr="rhel7" />
+      <Platform Include="CentOS 9 (x64)" Abbr="centos-9" />
+      <Platform Include="RHEL 8 (x64)" Abbr="rhel8" />
       <Platform Include="Fedora 27 (x64)" Abbr="fedora-27" />
       <Platform Include="SLES 12 (x64)" Abbr="sles-12" />
       <Platform Include="OpenSUSE 42 (x64)" Abbr="OpenSUSE-42" />

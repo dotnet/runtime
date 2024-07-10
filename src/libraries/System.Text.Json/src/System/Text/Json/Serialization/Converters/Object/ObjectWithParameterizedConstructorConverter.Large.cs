@@ -56,12 +56,10 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            Debug.Assert(typeInfo.ParameterCache != null);
-
-            object?[] arguments = ArrayPool<object>.Shared.Rent(typeInfo.ParameterCache.Count);
+            object?[] arguments = ArrayPool<object>.Shared.Rent(typeInfo.ParameterCache.Length);
             foreach (JsonParameterInfo parameterInfo in typeInfo.ParameterCache)
             {
-                arguments[parameterInfo.Position] = parameterInfo.DefaultValue;
+                arguments[parameterInfo.Position] = parameterInfo.EffectiveDefaultValue;
             }
 
             state.Current.CtorArgumentState!.Arguments = arguments;

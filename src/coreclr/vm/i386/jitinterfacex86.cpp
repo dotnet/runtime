@@ -230,15 +230,15 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
                  && "EAX should contain size for allocation and it doesnt!!!");
 
         // Fetch current thread into EDX, preserving EAX and ECX
-        psl->X86EmitCurrentThreadFetch(kEDX, (1 << kEAX) | (1 << kECX));
+        psl->X86EmitCurrentThreadAllocContextFetch(kEDX, (1 << kEAX) | (1 << kECX));
 
         // Try the allocation.
 
 
         if (flags & (ALIGN8 | SIZE_IN_EAX | ALIGN8OBJ))
         {
-            // MOV EBX, [edx]Thread.m_alloc_context.alloc_ptr
-            psl->X86EmitOffsetModRM(0x8B, kEBX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
+            // MOV EBX, [edx]gc_alloc_context.alloc_ptr
+            psl->X86EmitOffsetModRM(0x8B, kEBX, kEDX, offsetof(gc_alloc_context, alloc_ptr));
             // add EAX, EBX
             psl->Emit16(0xC303);
             if (flags & ALIGN8)
@@ -246,20 +246,20 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
         }
         else
         {
-            // add             eax, [edx]Thread.m_alloc_context.alloc_ptr
-            psl->X86EmitOffsetModRM(0x03, kEAX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
+            // add             eax, [edx]gc_alloc_context.alloc_ptr
+            psl->X86EmitOffsetModRM(0x03, kEAX, kEDX, offsetof(gc_alloc_context, alloc_ptr));
         }
 
-        // cmp             eax, [edx]Thread.m_alloc_context.alloc_limit
-        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
+        // cmp             eax, [edx]gc_alloc_context.alloc_limit
+        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, offsetof(gc_alloc_context, alloc_limit));
 
         // ja              noAlloc
         psl->X86EmitCondJump(noAlloc, X86CondCode::kJA);
 
         // Fill in the allocation and get out.
 
-        // mov             [edx]Thread.m_alloc_context.alloc_ptr, eax
-        psl->X86EmitIndexRegStore(kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr), kEAX);
+        // mov             [edx]gc_alloc_context.alloc_ptr, eax
+        psl->X86EmitIndexRegStore(kEDX, offsetof(gc_alloc_context, alloc_ptr), kEAX);
 
         if (flags & (ALIGN8 | SIZE_IN_EAX | ALIGN8OBJ))
         {
@@ -421,9 +421,9 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
     // Here we are at the end of the success case
 
     // Check whether the object contains pointers
-    // test [ecx]MethodTable.m_dwFlags,MethodTable::enum_flag_ContainsPointers
+    // test [ecx]MethodTable.m_dwFlags,MethodTable::enum_flag_ContainsGCPointers
     sl.X86EmitOffsetModRM(0xf7, (X86Reg)0x0, kECX, offsetof(MethodTable, m_dwFlags));
-    sl.Emit32(MethodTable::enum_flag_ContainsPointers);
+    sl.Emit32(MethodTable::enum_flag_ContainsGCPointers);
 
     CodeLabel *pointerLabel = sl.NewCodeLabel();
 
@@ -770,113 +770,6 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
 
     return (void *)pStub->GetEntryPoint();
 }
-// For this helper,
-// If bCCtorCheck == true
-//          ECX contains the domain neutral module ID
-//          EDX contains the class domain ID, and the
-// else
-//          ECX contains the domain neutral module ID
-//          EDX is junk
-// shared static base is returned in EAX.
-
-// "init" should be the address of a routine which takes an argument of
-// the module domain ID, the class domain ID, and returns the static base pointer
-void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCtorCheck, bool bGCStatic)
-{
-    STANDARD_VM_CONTRACT;
-
-    CodeLabel *DoInit = 0;
-    if (bCCtorCheck)
-    {
-        DoInit = psl->NewCodeLabel();
-    }
-
-    // mov eax, ecx
-    psl->Emit8(0x89);
-    psl->Emit8(0xc8);
-
-    if (bCCtorCheck)
-    {
-        // test [eax + edx + offsetof(DomainLocalModule, m_pDataBlob], ClassInitFlags::INITIALIZED_FLAG       // Is class inited
-        _ASSERTE(FitsInI1(ClassInitFlags::INITIALIZED_FLAG));
-        _ASSERTE(FitsInI1(DomainLocalModule::GetOffsetOfDataBlob()));
-
-        BYTE testClassInit[] = { 0xF6, 0x44, 0x10,
-            (BYTE) DomainLocalModule::GetOffsetOfDataBlob(), (BYTE)ClassInitFlags::INITIALIZED_FLAG };
-
-        psl->EmitBytes(testClassInit, sizeof(testClassInit));
-
-        // jz  init                                    // no, init it
-        psl->X86EmitCondJump(DoInit, X86CondCode::kJZ);
-    }
-
-    if (bGCStatic)
-    {
-        // Indirect to get the pointer to the first GC Static
-        psl->X86EmitIndexRegLoad(kEAX, kEAX, (int32_t) DomainLocalModule::GetOffsetOfGCStaticPointer());
-    }
-
-    // ret
-    psl->X86EmitReturn(0);
-
-    if (bCCtorCheck)
-    {
-        // DoInit:
-        psl->EmitLabel(DoInit);
-
-        psl->X86EmitPushEBPframe();
-
-#ifdef UNIX_X86_ABI
-#define STACK_ALIGN_PADDING 4
-        // sub esp, STACK_ALIGN_PADDING; to align the stack
-        psl->X86EmitSubEsp(STACK_ALIGN_PADDING);
-#endif // UNIX_X86_ABI
-
-        // push edx (must be preserved)
-        psl->X86EmitPushReg(kEDX);
-
-        // call init
-        psl->X86EmitCall(init, 0);
-
-        // pop edx
-        psl->X86EmitPopReg(kEDX);
-
-#ifdef UNIX_X86_ABI
-        // add esp, STACK_ALIGN_PADDING
-        psl->X86EmitAddEsp(STACK_ALIGN_PADDING);
-#undef STACK_ALIGN_PADDING
-#endif // UNIX_X86_ABI
-
-        psl->X86EmitPopReg(kEBP);
-
-        // ret
-        psl->X86EmitReturn(0);
-    }
-
-}
-
-void *GenFastGetSharedStaticBase(bool bCheckCCtor, bool bGCStatic)
-{
-    STANDARD_VM_CONTRACT;
-
-    CPUSTUBLINKER sl;
-
-    CodeLabel *init;
-    if (bGCStatic)
-    {
-        init = sl.NewExternalCodeLabel((LPVOID)JIT_GetSharedGCStaticBase);
-    }
-    else
-    {
-        init = sl.NewExternalCodeLabel((LPVOID)JIT_GetSharedNonGCStaticBase);
-    }
-
-    EmitFastGetSharedStaticBase(&sl, init, bCheckCCtor, bGCStatic);
-
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-
-    return (void*) pStub->GetEntryPoint();
-}
 
 #define NUM_WRITE_BARRIERS 6
 
@@ -968,16 +861,6 @@ void InitJITHelpers1()
         // generated method. Find this workaround in Ecall::Init() in ecall.cpp.
         ECall::DynamicallyAssignFCallImpl((PCODE) JIT_TrialAlloc::GenAllocString(flags), ECall::FastAllocateString);
     }
-
-    // Replace static helpers with faster assembly versions
-    pMethodAddresses[6] = GenFastGetSharedStaticBase(true, true);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE, pMethodAddresses[6]);
-    pMethodAddresses[7] = GenFastGetSharedStaticBase(true, false);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE, pMethodAddresses[7]);
-    pMethodAddresses[8] = GenFastGetSharedStaticBase(false, true);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR, pMethodAddresses[8]);
-    pMethodAddresses[9] = GenFastGetSharedStaticBase(false, false);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR, pMethodAddresses[9]);
 
     ETW::MethodLog::StubsInitialized(pMethodAddresses, (PVOID *)pHelperNames, ETW_NUM_JIT_HELPERS);
 

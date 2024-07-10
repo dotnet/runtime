@@ -135,7 +135,7 @@ g_get_current_dir (void)
 
 	if (retval != 0) {
 		// the size might be larger than MAX_PATH
-		// https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=cmd
+		// https://learn.microsoft.com/windows/win32/fileio/maximum-file-path-limitation?tabs=cmd
 		if (retval > buffer_size) {
 			buffer_size = retval;
 			buffer = g_realloc (buffer, buffer_size*sizeof(gunichar2));

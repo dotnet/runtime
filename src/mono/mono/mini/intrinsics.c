@@ -992,7 +992,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			else if (cfg->gshared && (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && !mini_type_var_is_vt (t))
 				EMIT_NEW_ICONST (cfg, ins, 1);
 			else if (!cfg->gshared || !mini_class_check_context_used (cfg, klass))
-				EMIT_NEW_ICONST (cfg, ins, m_class_has_references (klass) ? 1 : 0);
+				EMIT_NEW_ICONST (cfg, ins, m_class_has_references (klass) || m_class_has_ref_fields (klass) ? 1 : 0);
 			else {
 				g_assert (cfg->gshared);
 
@@ -1066,7 +1066,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			const int element_size = mono_type_size (t, &alignment);
 			const int num_elements = mono_type_size (field->type, &alignment) / element_size;
 			const int obj_size = MONO_ABI_SIZEOF (MonoObject);
-			
+
 			MonoInst* span = mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
 			MonoInst* span_addr;
 			EMIT_NEW_TEMPLOADA (cfg, span_addr, span->inst_c0);
@@ -1082,7 +1082,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				const int swizzle = element_size;
 #endif
 				gpointer data_ptr = (gpointer)mono_field_get_rva (field, swizzle);
-				EMIT_NEW_PCONST (cfg, ptr_inst, data_ptr); 
+				EMIT_NEW_PCONST (cfg, ptr_inst, data_ptr);
 			}
 
 			MonoClassField* field_ref = mono_class_get_field_from_name_full (span->klass, "_reference", NULL);
@@ -2135,8 +2135,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return ins;
 
 	/* Fallback if SIMD is disabled */
-	if (in_corlib && 
-		((!strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) || 
+	if (in_corlib &&
+		((!strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) ||
 		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
 		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
@@ -2146,7 +2146,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 
 	// On FullAOT, return false for RuntimeFeature:
-	// - IsDynamicCodeCompiled 
+	// - IsDynamicCodeCompiled
 	// - IsDynamicCodeSupported and no interpreter
 	// otherwise use the C# code in System.Private.CoreLib
 	if (in_corlib &&

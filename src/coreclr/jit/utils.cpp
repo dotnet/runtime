@@ -284,14 +284,14 @@ const char* getRegNameFloat(regNumber reg, var_types type)
  */
 const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
            ((regFirst == REG_MASK_FIRST) && (regLast == REG_MASK_LAST)));
 #else
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)));
-#endif
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     if (strlen(sep) > 0)
     {
@@ -308,7 +308,7 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
     {
         regMaskTP regBit = genRegMask(regNum);
 
-        if ((regMask & regBit) != 0)
+        if ((regMask & regBit).IsNonEmpty())
         {
             // We have a register to display. It gets displayed now if:
             // 1. This is the first register to display of a new range of registers (possibly because
@@ -436,10 +436,9 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
 
     sep = dspRegRange(regMask, minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
     sep = dspRegRange(regMask, minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
-
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     sep = dspRegRange(regMask, minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     printf("]");
 
@@ -1217,8 +1216,8 @@ void NodeCounts::record(genTreeOps oper)
 
 struct DumpOnShutdownEntry
 {
-    const char* Name;
-    Dumpable*   Dumpable;
+    const char*     Name;
+    class Dumpable* Dumpable;
 };
 
 static DumpOnShutdownEntry s_dumpOnShutdown[16];
@@ -1520,6 +1519,7 @@ void HelperCallProperties::init()
         bool isAllocator   = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
         bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
+        bool isNoEscape    = false; // true if none of the GC ref arguments can escape
 
         switch (helper)
         {
@@ -1660,6 +1660,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHKCASTANY:
             case CORINFO_HELP_CHKCASTCLASS_SPECIAL:
             case CORINFO_HELP_READYTORUN_CHKCAST:
+            case CORINFO_HELP_UNBOX_TYPETEST:
 
                 // These throw for a failing cast
                 // But if given a null input arg will return null
@@ -1668,8 +1669,11 @@ void HelperCallProperties::init()
 
             // helpers returning addresses, these can also throw
             case CORINFO_HELP_UNBOX:
-            case CORINFO_HELP_LDELEMA_REF:
+                isNoEscape = true;
+                isPure     = true;
+                break;
 
+            case CORINFO_HELP_LDELEMA_REF:
                 isPure = true;
                 break;
 
@@ -1692,20 +1696,17 @@ void HelperCallProperties::init()
             // Helpers that load the base address for static variables.
             // We divide these between those that may and may not invoke
             // static class constructors.
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
+            case CORINFO_HELP_GET_GCSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
-            case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
@@ -1720,12 +1721,25 @@ void HelperCallProperties::init()
                 mayRunCctor   = true;
                 break;
 
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_INITCLASS:
+            case CORINFO_HELP_INITINSTCLASS:
+                isPure      = true;
+                mayRunCctor = true;
+                break;
+
+            case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
             case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
 
                 // These do not invoke static class constructors
@@ -1821,6 +1835,7 @@ void HelperCallProperties::init()
         m_isAllocator[helper]   = isAllocator;
         m_mutatesHeap[helper]   = mutatesHeap;
         m_mayRunCctor[helper]   = mayRunCctor;
+        m_isNoEscape[helper]    = isNoEscape;
     }
 }
 
@@ -1858,11 +1873,11 @@ AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc)
 
                 // How much space do we need?
                 int convertedNameLenBytes =
-                    WszWideCharToMultiByte(CP_UTF8, 0, nameStart, -1, nullptr, 0, nullptr, nullptr);
+                    WideCharToMultiByte(CP_UTF8, 0, nameStart, -1, nullptr, 0, nullptr, nullptr);
                 newName->m_assemblyName = new (m_alloc) char[convertedNameLenBytes]; // convertedNameLenBytes includes
                                                                                      // the trailing null character
-                if (WszWideCharToMultiByte(CP_UTF8, 0, nameStart, -1, newName->m_assemblyName, convertedNameLenBytes,
-                                           nullptr, nullptr) != 0)
+                if (WideCharToMultiByte(CP_UTF8, 0, nameStart, -1, newName->m_assemblyName, convertedNameLenBytes,
+                                        nullptr, nullptr) != 0)
                 {
                     *ppPrevLink = newName;
                     ppPrevLink  = &newName->m_next;

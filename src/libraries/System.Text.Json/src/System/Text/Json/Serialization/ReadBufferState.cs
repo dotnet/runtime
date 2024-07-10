@@ -105,7 +105,6 @@ namespace System.Text.Json.Serialization
         public void AdvanceBuffer(int bytesConsumed)
         {
             Debug.Assert(bytesConsumed <= _count);
-            Debug.Assert(!_isFinalBlock || _count == bytesConsumed, "The reader should have thrown if we have remaining bytes.");
 
             _count -= bytesConsumed;
 
