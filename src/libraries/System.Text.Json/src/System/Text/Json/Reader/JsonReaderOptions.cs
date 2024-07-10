@@ -70,5 +70,14 @@ namespace System.Text.Json
         /// By default, it's set to false, and <exception cref="JsonException"/> is thrown if a trailing comma is encountered.
         /// </remarks>
         public bool AllowTrailingCommas { get; set; }
+
+        /// <summary>
+        /// Defines whether the <see cref="Utf8JsonReader"/> should tolerate
+        /// zero or more top-level JSON values that are whitespace separated.
+        /// </summary>
+        /// <remarks>
+        /// By default, it's set to false, and <exception cref="JsonException"/> is thrown if trailing content is encountered after the first top-level JSON value.
+        /// </remarks>
+        public bool AllowMultipleValues { get; set; }
     }
 }
