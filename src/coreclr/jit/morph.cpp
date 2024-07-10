@@ -1672,21 +1672,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                     use.SetNode(comp->gtNewLclvNode(tmpVarNum, genActualType(use.GetNode())));
                     fieldList->AddAllEffectsFlags(use.GetNode());
                 }
-#endif // TARGET_ARMARCH || defined (UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            }
-
-            // scalarType can be set to a wider type for ARM or unix amd64 architectures: (3 => 4)  or (5,6,7 =>
-            // 8)
-            if ((scalarType != TYP_UNKNOWN) && (scalarType != lclVarType))
-            {
-                // Create a GT_LCL_FLD using the wider type to go to the late argument list
-                defArg = comp->gtNewLclFldNode(tmpVarNum, scalarType, 0);
-            }
-            else
-            {
-                // Create a copy of the temp to go to the late argument list
-                defArg = comp->gtNewLclvNode(tmpVarNum, lclVarType);
-            }
 
                 // Keep the field list in the late list
                 defArg = fieldList;
