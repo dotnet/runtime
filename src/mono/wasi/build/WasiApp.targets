@@ -159,6 +159,8 @@
        <!--TODOWASI this needs similar AOT logic as EMCC in https://github.com/dotnet/runtime/pull/80507-->
       <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">52428800</WasmInitialHeapSize>
       <WasmClang>$(WasiClang)</WasmClang>
+      <_WasiAfterRuntimeLoadedDeclarations>@(WasiAfterRuntimeLoadedDeclarations, ' ')</_WasiAfterRuntimeLoadedDeclarations>
+      <_WasiAfterRuntimeLoadedCalls>@(WasiAfterRuntimeLoadedCalls, ' ')</_WasiAfterRuntimeLoadedCalls>
     </PropertyGroup>
 
     <ItemGroup>
@@ -204,10 +206,10 @@
 
       <_WasiClangCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
 
-      <_WasiClangCFlags Condition="'@(WasiAfterRuntimeLoadedDeclarations)' != ''"
-                         Include="-D WASI_AFTER_RUNTIME_LOADED_DECLARATIONS=&quot;@(WasiAfterRuntimeLoadedDeclarations, ' ')&quot;" />
-      <_WasiClangCFlags Condition="'@(WasiAfterRuntimeLoadedCalls)' != ''"
-                         Include="-D WASI_AFTER_RUNTIME_LOADED_CALLS=&quot;@(WasiAfterRuntimeLoadedCalls, ' ')&quot;" />
+      <_WasiClangCFlags Condition="'$(_WasiAfterRuntimeLoadedDeclarations)' != ''"
+                         Include="-D WASI_AFTER_RUNTIME_LOADED_DECLARATIONS=&quot;$(_WasiAfterRuntimeLoadedDeclarations)&quot;" />
+      <_WasiClangCFlags Condition="'$(_WasiAfterRuntimeLoadedCalls)' != ''"
+                         Include="-D WASI_AFTER_RUNTIME_LOADED_CALLS=&quot;$(_WasiAfterRuntimeLoadedCalls)&quot;" />
 
       <_WasiClangLDFlags Include="$(WasiClangLinkOptimizationFlag)" />
       <_WasiClangLDFlags Include="@(_WasiClangCommonFlags)" />

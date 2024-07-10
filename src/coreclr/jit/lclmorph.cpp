@@ -340,6 +340,7 @@ public:
     //
     void OnExposed(unsigned lclNum)
     {
+        JITDUMP("On exposed: V%02u\n", lclNum);
         BitVecTraits localsTraits(m_comp->lvaCount, m_comp);
         BitVecOps::AddElemD(&localsTraits, m_localsToExpose, lclNum);
     }
@@ -513,6 +514,13 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         {
             assert(IsAddress());
             return m_offset;
+        }
+
+        bool IsSameAddress(const Value& other) const
+        {
+            assert(IsAddress() && other.IsAddress());
+
+            return ((LclNum() == other.LclNum()) && (Offset() == other.Offset()));
         }
 
         //------------------------------------------------------------------------
@@ -806,7 +814,6 @@ public:
         }
 
         PushValue(use);
-
         return Compiler::WALK_CONTINUE;
     }
 
@@ -1028,6 +1035,77 @@ public:
                 SequenceCall(node->AsCall());
                 break;
 
+            case GT_EQ:
+            case GT_NE:
+            {
+                // If we see &lcl EQ/NE null, rewrite to 0/1 comparison
+                // to reduce overall address exposure.
+                //
+                assert(TopValue(2).Node() == node);
+                assert(TopValue(1).Node() == node->AsOp()->gtOp1);
+                assert(TopValue(0).Node() == node->AsOp()->gtOp2);
+
+                Value& lhs = TopValue(1);
+                Value& rhs = TopValue(0);
+
+                if ((lhs.IsAddress() && rhs.Node()->IsIntegralConst(0)) ||
+                    (rhs.IsAddress() && lhs.Node()->IsIntegralConst(0)))
+                {
+                    JITDUMP("Rewriting known address vs null comparison [%06u]\n", m_compiler->dspTreeID(node));
+                    *lhs.Use()     = m_compiler->gtNewIconNode(0);
+                    *rhs.Use()     = m_compiler->gtNewIconNode(1);
+                    m_stmtModified = true;
+
+                    INDEBUG(TopValue(0).Consume());
+                    INDEBUG(TopValue(1).Consume());
+                    PopValue();
+                    PopValue();
+                }
+                else if (lhs.IsAddress() && rhs.IsAddress())
+                {
+                    JITDUMP("Rewriting known address vs address comparison [%06u]\n", m_compiler->dspTreeID(node));
+                    bool isSameAddress = lhs.IsSameAddress(rhs);
+                    *lhs.Use()         = m_compiler->gtNewIconNode(0);
+                    *rhs.Use()         = m_compiler->gtNewIconNode(isSameAddress ? 0 : 1);
+                    m_stmtModified     = true;
+
+                    INDEBUG(TopValue(0).Consume());
+                    INDEBUG(TopValue(1).Consume());
+                    PopValue();
+                    PopValue();
+                }
+                else
+                {
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
+                }
+
+                break;
+            }
+
+            case GT_NULLCHECK:
+            {
+                assert(TopValue(1).Node() == node);
+                assert(TopValue(0).Node() == node->AsOp()->gtOp1);
+                Value& op = TopValue(0);
+                if (op.IsAddress())
+                {
+                    JITDUMP("Bashing nullcheck of local [%06u] to NOP\n", m_compiler->dspTreeID(node));
+                    node->gtBashToNOP();
+                    INDEBUG(TopValue(0).Consume());
+                    PopValue();
+                    m_stmtModified = true;
+                }
+                else
+                {
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
+                }
+                break;
+            }
+
             default:
                 while (TopValue(0).Node() != node)
                 {
@@ -1172,12 +1250,9 @@ private:
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
             m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
-            // We will only attempt this optimization for locals that are:
-            // a) Not susceptible to liveness bugs (see "lvaSetHiddenBufferStructArg").
-            // b) Do not later turn into indirections.
-            //
-            bool isSuitableLocal =
-                varTypeIsStruct(varDsc) && varDsc->lvIsTemp && !m_compiler->lvaIsImplicitByRefLocal(lclNum);
+            // We will only attempt this optimization for locals that do not
+            // later turn into indirections.
+            bool isSuitableLocal = varTypeIsStruct(varDsc) && !m_compiler->lvaIsImplicitByRefLocal(lclNum);
 #ifdef TARGET_X86
             if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
             {

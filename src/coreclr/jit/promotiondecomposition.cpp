@@ -238,7 +238,7 @@ private:
     {
         ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
 
-        StructSegments segments = m_promotion->SignificantSegments(dstLayout);
+        StructSegments segments = m_compiler->GetSignificantSegments(dstLayout);
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
