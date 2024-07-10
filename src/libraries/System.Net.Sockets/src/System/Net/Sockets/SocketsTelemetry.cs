@@ -10,7 +10,7 @@ namespace System.Net.Sockets
     [EventSource(Name = "System.Net.Sockets")]
     internal sealed class SocketsTelemetry : EventSource
     {
-        private const string ActivitySourceName = "System.Net.Sockets";
+        private const string ActivitySourceName = "Experimental.System.Net.Sockets";
         private const string ConnectActivityName = ActivitySourceName + ".Connect";
         private static readonly ActivitySource s_connectActivitySource = new(ActivitySourceName);
 
@@ -81,7 +81,7 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public Activity? ConnectStart(SocketAddress address, EndPoint endPoint,  bool keepActivityCurrent)
+        public Activity? ConnectStart(SocketAddress address, EndPoint endPoint, bool keepActivityCurrent)
         {
             Interlocked.Increment(ref _currentOutgoingConnectAttempts);
 
