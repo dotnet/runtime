@@ -109,7 +109,6 @@ namespace System.Data.ProviderBase
             DataColumn collectionNameColumn = metaDataCollectionsTable.Columns[_collectionName]!;
 
             DataTable? resultTable = null;
-            DbCommand? command;
             DataTable? schemaTable;
 
             Debug.Assert(requestedCollectionRow != null);
@@ -122,7 +121,7 @@ namespace System.Data.ProviderBase
                 throw ADP.TooManyRestrictions(collectionName);
             }
 
-            command = connection.CreateCommand();
+            using DbCommand? command = connection.CreateCommand();
             command.CommandText = sqlCommand;
             command.CommandTimeout = Math.Max(command.CommandTimeout, 180);
 
