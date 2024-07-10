@@ -358,6 +358,16 @@ JS_ENGINES = [NODE_JS]
     </PropertyGroup>
     <Error Text="Expected version: %(_ExpectedVersionLines.Identity) and actual version: %(_ActualVersionLines.Identity) of WASI SDK does not match. Please delete $(WASI_SDK22_PATH) folder to provision a new version."
       Condition="'$(ActualWasiSdkVersion)' != '$(ExpectedWasiSdkVersion)'" />
+
+    <!-- LLVM in WASI SDK 22 will call wasm-opt when found on the PATH. But it will fail because wasm-opt can't read the WASM components.
+    After we upgrade to WASI SDK 23, we could use no-wasm-opt LLVM option to avoid this issue.
+    See https://github.com/llvm/llvm-project/pull/95208#issuecomment-2220400454
+    -->
+    <Exec Command="wasm-opt --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
+      <Output TaskParameter="ExitCode" PropertyName="_WasmOptExitCode"/>
+    </Exec>
+    <Error Text="Found wasm-opt tool on the PATH. Please remove it to avoid failures during compilation into wasm32-wasip2 target as WASM components, which is not supported by wasm-opt tool. See https://github.com/llvm/llvm-project/pull/95208#issuecomment-2220400454"
+      Condition="'$(_WasmOptExitCode)' == '0'" />
   </Target>
 
   <!-- Copy Mono runtime bits to $(Destination) -->
