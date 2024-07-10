@@ -7132,6 +7132,11 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
         (index <= REGISTER_ARM_D31)))
         return E_INVALIDARG;
     index -= REGISTER_ARM_D0;
+#elif defined(TARGET_RISCV64)
+    if (!((index >= REGISTER_RISCV64_F0) &&
+        (index <= REGISTER_RISCV64_F31)))
+        return E_INVALIDARG;
+    index -= REGISTER_RISCV64_F0;
 #else
     if (!((index >= REGISTER_X86_FPSTACK_0) &&
           (index <= REGISTER_X86_FPSTACK_7)))
