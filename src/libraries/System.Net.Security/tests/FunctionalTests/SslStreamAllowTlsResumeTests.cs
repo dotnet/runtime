@@ -160,16 +160,9 @@ namespace System.Net.Security.Tests
         {
             var data = new TheoryData<SslProtocols>();
 
-            data.Add(SslProtocols.None);
-
-            if (PlatformDetection.SupportsTls12)
+            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, true))
             {
-                data.Add(SslProtocols.Tls12);
-            }
-
-            if (PlatformDetection.SupportsTls13)
-            {
-                data.Add(SslProtocols.Tls13);
+                data.Add(protocol);
             }
 
             return data;
@@ -186,7 +179,7 @@ namespace System.Net.Security.Tests
         {
             var data = new TheoryData<SslProtocols, bool, ClientCertSource>();
 
-            foreach (SslProtocols protocol in SslProtocolsData().Select(x => x[0]))
+            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, true))
             foreach (bool certRequired in new[] { true, false })
             foreach (ClientCertSource source in Enum.GetValues(typeof(ClientCertSource)))
             {

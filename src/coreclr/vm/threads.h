@@ -1180,6 +1180,8 @@ public:
     void            BaseWinRTUninitialize();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
+    void        CooperativeCleanup();
+
     void        OnThreadTerminate(BOOL holdingLock);
 
     static void CleanupDetachedThreads();
@@ -3339,12 +3341,6 @@ public:
     SpinLock m_TlsSpinLock;
     PTR_ThreadLocalData GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return m_ThreadLocalDataPtr; }
 
-public:
-
-    // Called during Thread death to clean up all structures
-    // associated with thread statics
-    void DeleteThreadStaticData();
-
 private:
     TailCallTls m_tailCallTls;
 
@@ -3361,6 +3357,13 @@ public:
 
         return *retAddrSlot;
     }
+
+#ifdef FEATURE_HIJACK
+    void* GetHijackedReturnAddress()
+    {
+        return m_pvHJRetAddr;
+    }
+#endif
 
 #ifdef _DEBUG
 private:

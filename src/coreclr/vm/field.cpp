@@ -260,7 +260,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         Module* pModule = GetModule();
         PTR_VOID ret = pModule->GetRvaField(GetOffset());
 
-        _ASSERTE(pModule->GetPEAssembly()->IsDynamic() || !pModule->IsRvaFieldTls(GetOffset()));
+        _ASSERTE(pModule->IsReflectionEmit() || !pModule->IsRvaFieldTls(GetOffset()));
 
         return(ret);
     }

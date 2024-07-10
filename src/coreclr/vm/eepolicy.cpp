@@ -265,7 +265,7 @@ public:
         if (m_largestCommonStartLength != 0)
         {
             SmallStackSString repeatStr;
-            repeatStr.AppendPrintf("Repeat %d times:\n", m_largestCommonStartRepeat);
+            repeatStr.AppendPrintf("Repeated %d times:\n", m_largestCommonStartRepeat);
 
             PrintToStdErrW(repeatStr.GetUnicode());
             PrintToStdErrA("--------------------------------\n");
