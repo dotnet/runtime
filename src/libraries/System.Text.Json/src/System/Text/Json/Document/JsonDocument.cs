@@ -140,7 +140,7 @@ namespace System.Text.Json
             return row.SizeOrLength;
         }
 
-        internal int GetObjectCount(int index)
+        internal int GetPropertyCount(int index)
         {
             CheckNotDisposed();
 

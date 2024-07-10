@@ -97,11 +97,11 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        internal int GetObjectCount()
+        internal int GetPropertyCount()
         {
             CheckValidInstance();
 
-            return _parent.GetObjectCount(_idx);
+            return _parent.GetPropertyCount(_idx);
         }
 
         /// <summary>
@@ -1318,8 +1318,8 @@ namespace System.Text.Json
                 default:
                     Debug.Assert(kind is JsonValueKind.Object);
 
-                    int count = element1.GetObjectCount();
-                    if (count != element2.GetObjectCount())
+                    int count = element1.GetPropertyCount();
+                    if (count != element2.GetPropertyCount())
                     {
                         return false;
                     }
