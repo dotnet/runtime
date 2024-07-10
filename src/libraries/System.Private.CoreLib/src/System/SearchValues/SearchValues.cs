@@ -165,13 +165,13 @@ namespace System.Buffers
                 {
                     // All of the non-ASCII values fit within a range of 128 characters.
                     // Use an implementation that checks against two 128-bit bitmaps, with the second one at a variable offset to the start of the non-ASCII set.
-                    return (Ssse3.IsSupported || PackedSimd.IsSupported) && values.Contains('\0')
+                    return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
                         ? new AsciiWithSecondSetCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(state)
                         : new AsciiWithSecondSetCharSearchValues<IndexOfAnyAsciiSearcher.Default>(state);
                 }
 
                 // Use an implementation that does an optimistic ASCII fast-path and then falls back to the ProbabilisticMap.
-                return (Ssse3.IsSupported || PackedSimd.IsSupported) && values.Contains('\0')
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
                     ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values, maxInclusive)
                     : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values, maxInclusive);
             }
