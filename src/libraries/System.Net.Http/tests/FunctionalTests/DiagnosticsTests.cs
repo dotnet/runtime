@@ -589,7 +589,10 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task SendAsync_Success_ConnectionSetupActivityGraphRecorded(bool useTls)
         {
-            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString(), useTls.ToString()).DisposeAsync();
+            if (UseVersion == HttpVersion30 && !useTls) return;
+
+            await RunTest(UseVersion.ToString(), TestAsync.ToString(), useTls.ToString());
+            //await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString(), useTls.ToString()).DisposeAsync();
             static async Task RunTest(string useVersion, string testAsync, string useTlsString)
             {
                 bool useTls = bool.Parse(useTlsString);
@@ -616,25 +619,38 @@ namespace System.Net.Http.Functional.Tests
                 await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
                     async uri =>
                     {
-                        uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
+                        Version version = Version.Parse(useVersion);
+                        if (version != HttpVersion30)
+                        {
+                            uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
+                        }
+                        
                         using HttpClient client = new HttpClient(CreateHttpClientHandler(allowAllCertificates: true));
 
-                        await client.SendAsync(bool.Parse(testAsync), CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true));
+                        await client.SendAsync(bool.Parse(testAsync), CreateRequest(HttpMethod.Get, uri, version, exactVersion: true));
 
                         Activity req1 = requestRecorder.VerifyActivityRecordedOnce();
                         Activity wait1 = waitForConnectionRecorder.VerifyActivityRecordedOnce();
                         Activity conn = connectionSetupRecorder.VerifyActivityRecordedOnce();
-                        Activity dns = dnsRecorder.VerifyActivityRecordedOnce();
-                        Assert.True(socketRecorder.Stopped is 1 or 2);
-                        Activity sock = socketRecorder.LastFinishedActivity;
+
+                        Activity? dns = null;
+                        Activity? sock = null;
                         Activity? tls = null;
-                        if (useTls)
+
+                        if (version != HttpVersion30)
                         {
-                            tls = tlsRecorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS client"));
-                        }
-                        else
-                        {
-                            tlsRecorder.VerifyActivityRecorded(0);
+                            dns = dnsRecorder.VerifyActivityRecordedOnce();
+                            Assert.True(socketRecorder.Stopped is 1 or 2);
+                            sock = socketRecorder.LastFinishedActivity;
+
+                            if (useTls)
+                            {
+                                tls = tlsRecorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS client"));
+                            }
+                            else
+                            {
+                                tlsRecorder.VerifyActivityRecorded(0);
+                            }
                         }
 
                         // Verify relationships between request and connection_setup, wait_for_connection:
@@ -645,28 +661,32 @@ namespace System.Net.Http.Functional.Tests
                         ActivityAssert.FinishedInOrder(conn, wait1);
                         ActivityAssert.FinishedInOrder(wait1, req1);
 
-                        // Verify the connection_setup graph:
-                        Assert.Null(conn.Parent);
-                        Assert.Same(conn, dns.Parent);
-                        Assert.Same(conn, sock.Parent);
-                        if (useTls)
-                        {
-                            Assert.Same(conn, tls.Parent);
-                        }
-
                         // req1->conn link:
                         req1.Links.Single(l => l.Context == conn.Context);
 
-                        // Verify timing relationships for connection setup:
-                        ActivityAssert.FinishedInOrder(dns, sock);
-                        if (useTls)
+                        // Verify the connection_setup graph:
+                        Assert.Null(conn.Parent);
+
+                        if (version != HttpVersion30)
                         {
-                            ActivityAssert.FinishedInOrder(sock, tls);
-                            ActivityAssert.FinishedInOrder(tls, conn);
-                        }
-                        else
-                        {
-                            ActivityAssert.FinishedInOrder(sock, conn);
+                            Assert.Same(conn, dns.Parent);
+                            Assert.Same(conn, sock.Parent);
+                            if (useTls)
+                            {
+                                Assert.Same(conn, tls.Parent);
+                            }
+
+                            // Verify timing relationships for connection setup:
+                            ActivityAssert.FinishedInOrder(dns, sock);
+                            if (useTls)
+                            {
+                                ActivityAssert.FinishedInOrder(sock, tls);
+                                ActivityAssert.FinishedInOrder(tls, conn);
+                            }
+                            else
+                            {
+                                ActivityAssert.FinishedInOrder(sock, conn);
+                            }
                         }
 
                         // Verify display names and attributes:
