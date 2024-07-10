@@ -86,11 +86,22 @@ namespace System.Text.Json
             return _parent.GetArrayLength(_idx);
         }
 
-        internal int GetObjectSize()
+        /// <summary>
+        ///   Get the number of properties contained within the current object value.
+        /// </summary>
+        /// <returns></returns>
+        /// <returns>The number of properties contained within the current object value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.Array"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        internal int GetObjectCount()
         {
             CheckValidInstance();
 
-            return _parent.GetObjectSize(_idx);
+            return _parent.GetObjectCount(_idx);
         }
 
         /// <summary>
@@ -1307,8 +1318,8 @@ namespace System.Text.Json
                 default:
                     Debug.Assert(kind is JsonValueKind.Object);
 
-                    int count = element1.GetObjectSize();
-                    if (count != element2.GetObjectSize())
+                    int count = element1.GetObjectCount();
+                    if (count != element2.GetObjectCount())
                     {
                         return false;
                     }
