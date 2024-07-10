@@ -153,7 +153,7 @@ namespace System.Net.NameResolution.Tests
 
         static void VerifyForwardActivityInfo(Activity activity, string question)
         {
-            Assert.Equal(ActivityKind.Client, activity.Kind);
+            Assert.Equal(ActivityKind.Internal, activity.Kind);
             Assert.Equal(ActivityName, activity.OperationName);
             Assert.Equal($"DNS lookup {question}", activity.DisplayName);
             ActivityAssert.HasTag(activity, "dns.question.name", question);
@@ -161,7 +161,7 @@ namespace System.Net.NameResolution.Tests
 
         static void VerifyReverseActivityInfo(Activity activity, IPAddress question)
         {
-            Assert.Equal(ActivityKind.Client, activity.Kind);
+            Assert.Equal(ActivityKind.Internal, activity.Kind);
             Assert.Equal(ActivityName, activity.OperationName);
             Assert.Equal($"DNS reverse lookup {question}", activity.DisplayName);
             ActivityAssert.HasTag(activity, "dns.question.name", question.ToString());

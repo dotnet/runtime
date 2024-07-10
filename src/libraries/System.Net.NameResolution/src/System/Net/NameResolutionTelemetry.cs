@@ -167,7 +167,7 @@ namespace System.Net
         public NameResolutionActivity(object hostNameOrAddress, long startingTimestamp)
         {
             _startingTimestamp = startingTimestamp;
-            _activity = s_activitySource.StartActivity(ActivityName, ActivityKind.Client);
+            _activity = s_activitySource.StartActivity(ActivityName);
             if (_activity is not null)
             {
                 string host = NameResolutionTelemetry.GetHostnameFromStateObject(hostNameOrAddress);

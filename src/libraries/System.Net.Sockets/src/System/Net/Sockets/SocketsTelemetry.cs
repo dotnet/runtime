@@ -94,7 +94,7 @@ namespace System.Net.Sockets
             if (s_connectActivitySource.HasListeners())
             {
                 Activity? activityToReset = keepActivityCurrent ? Activity.Current : null;
-                activity = s_connectActivitySource.StartActivity(ConnectActivityName, ActivityKind.Client);
+                activity = s_connectActivitySource.StartActivity(ConnectActivityName);
                 if (keepActivityCurrent)
                 {
                     // Do not overwrite Activity.Current in the caller's ExecutionContext.

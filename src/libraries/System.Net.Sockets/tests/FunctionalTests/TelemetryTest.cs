@@ -148,7 +148,7 @@ namespace System.Net.Sockets.Tests
         {
             string address = remoteEndPoint.Address.ToString();
             int port = remoteEndPoint.Port;
-            Assert.Equal(ActivityKind.Client, activity.Kind);
+            Assert.Equal(ActivityKind.Internal, activity.Kind);
             Assert.Equal(ActivityName, activity.OperationName);
             Assert.Equal($"socket connect {address}:{port}", activity.DisplayName);
             ActivityAssert.HasTag(activity, "network.peer.address", address);
@@ -221,6 +221,7 @@ namespace System.Net.Sockets.Tests
 
                 recorder.VerifyActivityRecorded(1);
                 Activity activity = recorder.LastFinishedActivity;
+                Assert.Equal(ActivityKind.Internal, activity.Kind);
                 Assert.Equal(ActivityName, activity.OperationName);
                 Assert.Equal($"socket connect {endPoint}", activity.DisplayName);
                 ActivityAssert.HasTag(activity, "network.peer.address", endPoint.ToString());
