@@ -1212,7 +1212,9 @@ namespace System.Buffers
             public static bool NegateIfNeeded(bool result) => result;
             public static Vector128<byte> NegateIfNeeded(Vector128<byte> result) => result;
             public static Vector256<byte> NegateIfNeeded(Vector256<byte> result) => result;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static uint ExtractMask(Vector128<byte> result) => ~Vector128.Equals(result, Vector128<byte>.Zero).ExtractMostSignificantBits();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static uint ExtractMask(Vector256<byte> result) => ~Vector256.Equals(result, Vector256<byte>.Zero).ExtractMostSignificantBits();
         }
 
@@ -1221,9 +1223,13 @@ namespace System.Buffers
             public static bool NegateIfNeeded(bool result) => !result;
             // This is intentionally testing for equality with 0 instead of "~result".
             // We want to know if any character didn't match, as that means it should be treated as a match for the -Except method.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<byte> NegateIfNeeded(Vector128<byte> result) => Vector128.Equals(result, Vector128<byte>.Zero);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<byte> NegateIfNeeded(Vector256<byte> result) => Vector256.Equals(result, Vector256<byte>.Zero);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static uint ExtractMask(Vector128<byte> result) => result.ExtractMostSignificantBits();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static uint ExtractMask(Vector256<byte> result) => result.ExtractMostSignificantBits();
         }
 
