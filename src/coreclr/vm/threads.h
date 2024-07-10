@@ -972,7 +972,13 @@ public:
     inline void InitRuntimeThreadLocals() { LIMITED_METHOD_CONTRACT; m_pRuntimeThreadLocals = PTR_RuntimeThreadLocals(&t_runtime_thread_locals); }
 
     inline ee_alloc_context *GetEEAllocContext() { LIMITED_METHOD_CONTRACT; return &m_pRuntimeThreadLocals->alloc_context; }
-    inline PTR_gc_alloc_context GetAllocContext() { LIMITED_METHOD_CONTRACT; return PTR_gc_alloc_context(&m_pRuntimeThreadLocals->alloc_context.gc_allocation_context); }
+    inline PTR_gc_alloc_context GetAllocContext()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_pRuntimeThreadLocals == nullptr)
+            ? nullptr
+            : PTR_gc_alloc_context(&m_pRuntimeThreadLocals->alloc_context.gc_allocation_context);
+    }
 
     // This is the type handle of the first object in the alloc context at the time
     // we fire the AllocationTick event. It's only for tooling purpose.

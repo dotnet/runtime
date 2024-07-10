@@ -934,10 +934,10 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
 
     for (Thread *pThread = ThreadStore::GetThreadList(NULL); pThread; pThread = ThreadStore::GetThreadList(pThread))
     {
-        gc_alloc_context* ac = pThread->GetAllocContext();
-        if (ac != nullptr)
+        ee_alloc_context* eeContext = pThread->GetEEAllocContext();
+        if (eeContext != nullptr)
         {
-            allocated -= ac->alloc_limit - ac->alloc_ptr;
+            allocated -= eeContext->gc_allocation_context.alloc_limit - eeContext->gc_allocation_context.alloc_ptr;
         }
     }
 
