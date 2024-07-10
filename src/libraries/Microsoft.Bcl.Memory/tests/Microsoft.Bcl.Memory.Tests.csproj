@@ -39,7 +39,7 @@
     </Compile>
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+  <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.Bcl.Memory.csproj" />
   </ItemGroup>
 
