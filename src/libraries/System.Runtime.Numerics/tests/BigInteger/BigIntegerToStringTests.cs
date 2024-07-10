@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Tests;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -497,7 +496,7 @@ namespace System.Numerics.Tests
         {
             Assert.Throws<OverflowException>(() => BigInteger.Parse(testingValue, NumberStyles.AllowExponent));
         }
-        
+
         [Fact]
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
@@ -540,7 +539,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void RunPowerOf1E9ToStringTests()
+        public static void RunPowerOf1E9ToStringTests()
         {
             foreach (var test in new[]
             {
@@ -2093,6 +2092,39 @@ namespace System.Numerics.Tests
             nfi.PositiveSign = ">>";
 
             return nfi;
+        }
+    }
+
+
+    [Collection(nameof(DisableParallelization))]
+    public class ToStringTestThreshold
+    {
+        [Fact]
+        public static void RunSimpleToStringTests()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(Number.ToStringNaiveThreshold, 4, () =>
+            {
+                ToStringTest.RunSimpleToStringTests();
+            });
+        }
+
+        [Fact]
+        public void RunPowerOf1E9ToStringTests()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(Number.ToStringNaiveThreshold, 4, () =>
+            {
+                ToStringTest.RunPowerOf1E9ToStringTests();
+            });
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void RunRepeatedCharsToStringTests()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(Number.ToStringNaiveThreshold, 4, () =>
+            {
+                ToStringTest.RunRepeatedCharsToStringTests();
+            });
         }
     }
 }
