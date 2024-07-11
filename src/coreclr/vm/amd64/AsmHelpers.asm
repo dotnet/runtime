@@ -565,9 +565,6 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT
         ret
 NESTED_END ProfileTailcallNaked, _TEXT
 
-
-extern JIT_InternalThrowFromHelper:proc
-
 LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
 
         test    rcx, rcx
