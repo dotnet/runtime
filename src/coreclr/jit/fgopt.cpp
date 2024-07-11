@@ -162,111 +162,6 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
     return changed;
 }
 
-//------------------------------------------------------------------------
-// fgRemoveDeadBlocks: Identify all the unreachable blocks and remove them.
-//
-bool Compiler::fgRemoveDeadBlocks()
-{
-    JITDUMP("\n*************** In fgRemoveDeadBlocks()");
-
-    unsigned prevFgCurBBEpoch = fgCurBBEpoch;
-    EnsureBasicBlockEpoch();
-
-    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
-
-    jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
-    worklist.push_back(fgFirstBB);
-
-    // Visit all the reachable blocks, everything else can be removed
-    while (!worklist.empty())
-    {
-        BasicBlock* block = *(worklist.begin());
-        worklist.pop_front();
-
-        if (BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
-        {
-            continue;
-        }
-
-        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
-
-        for (BasicBlock* succ : block->Succs(this))
-        {
-            worklist.push_back(succ);
-        }
-
-        // Add all the "EH" successors. For every `try`, add its handler (including filter) to the worklist.
-        if (bbIsTryBeg(block))
-        {
-            // Due to EH normalization, a block can only be the start of a single `try` region, with the exception
-            // of mutually-protect regions.
-            assert(block->hasTryIndex());
-            unsigned  tryIndex = block->getTryIndex();
-            EHblkDsc* ehDsc    = ehGetDsc(tryIndex);
-            for (;;)
-            {
-                worklist.push_back(ehDsc->ebdHndBeg);
-                if (ehDsc->HasFilter())
-                {
-                    worklist.push_back(ehDsc->ebdFilter);
-                }
-                tryIndex = ehDsc->ebdEnclosingTryIndex;
-                if (tryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-                {
-                    break;
-                }
-                ehDsc = ehGetDsc(tryIndex);
-                if (ehDsc->ebdTryBeg != block)
-                {
-                    break;
-                }
-            }
-        }
-    }
-
-    // Track if there is any unreachable block. Even if it is marked with
-    // BBF_DONT_REMOVE, fgRemoveUnreachableBlocks() still removes the code
-    // inside the block. So this variable tracks if we ever found such blocks
-    // or not.
-    bool hasUnreachableBlock = false;
-
-    auto isBlockRemovable = [&](BasicBlock* block) -> bool {
-        const bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
-        const bool isRemovable = !isVisited || (block->bbRefs == 0);
-
-        hasUnreachableBlock |= isRemovable;
-        return isRemovable;
-    };
-
-    bool     changed        = false;
-    unsigned iterationCount = 1;
-    do
-    {
-        JITDUMP("\nRemoving unreachable blocks for fgRemoveDeadBlocks iteration #%u\n", iterationCount);
-
-        // Just to be paranoid, avoid infinite loops; fall back to minopts.
-        if (iterationCount++ > 10)
-        {
-            noway_assert(!"Too many unreachable block removal loops");
-        }
-        changed = fgRemoveUnreachableBlocks(isBlockRemovable);
-    } while (changed);
-
-#ifdef DEBUG
-    if (verbose && hasUnreachableBlock)
-    {
-        printf("\nAfter dead block removal:\n");
-        fgDispBasicBlocks(verboseTrees);
-        printf("\n");
-    }
-
-    fgVerifyHandlerTab();
-    fgDebugCheckBBlist(false);
-#endif // DEBUG
-
-    return hasUnreachableBlock;
-}
-
 //-------------------------------------------------------------
 // fgComputeDominators: Compute dominators
 //
@@ -537,15 +432,15 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 //
                 BasicBlock* const oldTryEntry  = HBtab->ebdTryBeg;
                 BasicBlock*       tryEntryPrev = oldTryEntry->Prev();
-                while ((tryEntryPrev != nullptr) && tryEntryPrev->HasFlag(BBF_REMOVED))
+                assert(tryEntryPrev != nullptr);
+                while (tryEntryPrev->HasFlag(BBF_REMOVED))
                 {
                     tryEntryPrev = tryEntryPrev->Prev();
+                    // Because we've added an unremovable scratch block as
+                    // fgFirstBB, this backwards walk should always find
+                    // some block.
+                    assert(tryEntryPrev != nullptr);
                 }
-
-                // Because we've added an unremovable scratch block as
-                // fgFirstBB, this backwards walk should always find
-                // some block.
-                assert(tryEntryPrev != nullptr);
 
                 // If there is a next block of this prev block, and that block is
                 // contained in the current try, we'd like to make that block
@@ -886,64 +781,81 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 }
 
 //-------------------------------------------------------------
-// fgCanCompactBlocks: Determine if a block and its bbNext successor can be compacted.
+// fgCanCompactBlock: Determine if a BBJ_ALWAYS block and its target can be compacted.
 //
 // Arguments:
-//    block - block to check. If nullptr, return false.
-//    bNext - bbNext of `block`. If nullptr, return false.
+//    block - BBJ_ALWAYS block to check
 //
 // Returns:
 //    true if compaction is allowed
 //
-bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
+bool Compiler::fgCanCompactBlock(BasicBlock* block)
 {
     assert(block != nullptr);
-    assert(block->NextIs(bNext));
 
-    if (!block->KindIs(BBJ_ALWAYS) || !block->TargetIs(bNext) || block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
+    if (!block->KindIs(BBJ_ALWAYS) || block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
     {
         return false;
     }
 
-    // If the next block has multiple incoming edges, we can still compact if the first block is empty.
+    BasicBlock* const target = block->GetTarget();
+
+    if (block == target)
+    {
+        return false;
+    }
+
+    if (target->IsFirst() || (target == fgEntryBB) || (target == fgOSREntryBB))
+    {
+        return false;
+    }
+
+    // Don't bother compacting a call-finally pair if it doesn't succeed block
+    //
+    if (target->isBBCallFinallyPair() && !block->NextIs(target))
+    {
+        return false;
+    }
+
+    // If target has multiple incoming edges, we can still compact if block is empty.
     // However, not if it is the beginning of a handler.
-    if (bNext->countOfInEdges() != 1 &&
+    //
+    if (target->countOfInEdges() != 1 &&
         (!block->isEmpty() || block->HasFlag(BBF_FUNCLET_BEG) || (block->bbCatchTyp != BBCT_NONE)))
     {
         return false;
     }
 
-    if (bNext->HasFlag(BBF_DONT_REMOVE))
+    if (target->HasFlag(BBF_DONT_REMOVE))
     {
         return false;
     }
 
     // Don't compact the first block if it was specially created as a scratch block.
+    //
     if (fgBBisScratch(block))
     {
         return false;
     }
 
-    // We don't want to compact blocks that are in different Hot/Cold regions
+    // We don't want to compact blocks that are in different hot/cold regions
     //
-    if (fgInDifferentRegions(block, bNext))
+    if (fgInDifferentRegions(block, target))
     {
         return false;
     }
 
     // We cannot compact two blocks in different EH regions.
     //
-    if (fgCanRelocateEHRegions)
+    if (!BasicBlock::sameEHRegion(block, target))
     {
-        if (!BasicBlock::sameEHRegion(block, bNext))
-        {
-            return false;
-        }
+        return false;
     }
 
     // If there is a switch predecessor don't bother because we'd have to update the uniquesuccs as well
     // (if they are valid).
-    for (BasicBlock* const predBlock : bNext->PredBlocks())
+    //
+    for (BasicBlock* const predBlock : target->PredBlocks())
     {
         if (predBlock->KindIs(BBJ_SWITCH))
         {
@@ -955,177 +867,126 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 }
 
 //-------------------------------------------------------------
-// fgCompactBlocks: Compact two blocks into one.
+// fgCompactBlock: Compact BBJ_ALWAYS block and its target into one.
 //
-// Assumes that all necessary checks have been performed, i.e. fgCanCompactBlocks returns true.
+// Requires that all necessary checks have been performed, i.e. fgCanCompactBlock returns true.
 //
 // Uses for this function - whenever we change links, insert blocks, ...
 // It will keep the flowgraph data in synch - bbNum, bbRefs, bbPreds
 //
 // Arguments:
-//    block - move all code into this block.
-//    bNext - bbNext of `block`. This block will be removed.
+//    block - move all code into this block from its target.
 //
-void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
+void Compiler::fgCompactBlock(BasicBlock* block)
 {
-    noway_assert(block != nullptr);
-    noway_assert(bNext != nullptr);
-    noway_assert(!block->HasFlag(BBF_REMOVED));
-    noway_assert(!bNext->HasFlag(BBF_REMOVED));
-    noway_assert(block->NextIs(bNext));
-    noway_assert(bNext->countOfInEdges() == 1 || block->isEmpty());
-    noway_assert(bNext->bbPreds != nullptr);
+    assert(fgCanCompactBlock(block));
+    BasicBlock* const target = block->GetTarget();
 
-    assert(block->KindIs(BBJ_ALWAYS));
-    assert(block->TargetIs(bNext));
-    assert(!fgInDifferentRegions(block, bNext));
-
-    // Make sure the second block is not the start of a TRY block or an exception handler
-
-    noway_assert(!bbIsTryBeg(bNext));
-    noway_assert(bNext->bbCatchTyp == BBCT_NONE);
-    noway_assert(!bNext->HasFlag(BBF_DONT_REMOVE));
-
-    /* both or none must have an exception handler */
-    noway_assert(block->hasTryIndex() == bNext->hasTryIndex());
-
-    JITDUMP("\nCompacting " FMT_BB " into " FMT_BB ":\n", bNext->bbNum, block->bbNum);
+    JITDUMP("\nCompacting " FMT_BB " into " FMT_BB ":\n", target->bbNum, block->bbNum);
     fgRemoveRefPred(block->GetTargetEdge());
 
-    if (bNext->countOfInEdges() > 0)
+    if (target->countOfInEdges() > 0)
     {
-        JITDUMP("Second block has %u other incoming edges\n", bNext->countOfInEdges());
+        JITDUMP("Second block has %u other incoming edges\n", target->countOfInEdges());
         assert(block->isEmpty());
 
-        // Retarget all the other edges incident on bNext. Do this
-        // in two passes as we can't both walk and modify the pred list.
-        //
-        ArrayStack<BasicBlock*> preds(getAllocator(CMK_BasicBlock), bNext->countOfInEdges());
-        for (BasicBlock* const predBlock : bNext->PredBlocks())
+        // Retarget all the other edges incident on target
+        for (BasicBlock* const predBlock : target->PredBlocksEditing())
         {
-            preds.Push(predBlock);
-        }
-        while (preds.Height() > 0)
-        {
-            BasicBlock* const predBlock = preds.Pop();
-            fgReplaceJumpTarget(predBlock, bNext, block);
+            fgReplaceJumpTarget(predBlock, target, block);
         }
     }
 
-    assert(bNext->countOfInEdges() == 0);
-    assert(bNext->bbPreds == nullptr);
+    assert(target->countOfInEdges() == 0);
+    assert(target->bbPreds == nullptr);
 
     /* Start compacting - move all the statements in the second block to the first block */
 
     // First move any phi definitions of the second block after the phi defs of the first.
-    // TODO-CQ: This may be the wrong thing to do.  If we're compacting blocks, it's because a
-    // control-flow choice was constant-folded away.  So probably phi's need to go away,
-    // as well, in favor of one of the incoming branches.  Or at least be modified.
+    // TODO-CQ: This may be the wrong thing to do. If we're compacting blocks, it's because a
+    // control-flow choice was constant-folded away. So probably phi's need to go away,
+    // as well, in favor of one of the incoming branches. Or at least be modified.
 
-    assert(block->IsLIR() == bNext->IsLIR());
+    assert(block->IsLIR() == target->IsLIR());
     if (block->IsLIR())
     {
-        LIR::Range& blockRange = LIR::AsRange(block);
-        LIR::Range& nextRange  = LIR::AsRange(bNext);
+        LIR::Range& blockRange  = LIR::AsRange(block);
+        LIR::Range& targetRange = LIR::AsRange(target);
 
-        // Does the next block have any phis?
-        GenTree* nextNode = nextRange.FirstNode();
+        // Does target have any phis?
+        GenTree* targetNode = targetRange.FirstNode();
 
         // Does the block have any code?
-        if (nextNode != nullptr)
+        if (targetNode != nullptr)
         {
-            LIR::Range nextNodes = nextRange.Remove(nextNode, nextRange.LastNode());
-            blockRange.InsertAtEnd(std::move(nextNodes));
+            LIR::Range targetNodes = targetRange.Remove(targetNode, targetRange.LastNode());
+            blockRange.InsertAtEnd(std::move(targetNodes));
         }
     }
     else
     {
-        Statement* blkNonPhi1   = block->FirstNonPhiDef();
-        Statement* bNextNonPhi1 = bNext->FirstNonPhiDef();
-        Statement* blkFirst     = block->firstStmt();
-        Statement* bNextFirst   = bNext->firstStmt();
+        Statement* blkNonPhi1    = block->FirstNonPhiDef();
+        Statement* targetNonPhi1 = target->FirstNonPhiDef();
+        Statement* blkFirst      = block->firstStmt();
+        Statement* targetFirst   = target->firstStmt();
 
         // Does the second have any phis?
-        if (bNextFirst != nullptr && bNextFirst != bNextNonPhi1)
+        if ((targetFirst != nullptr) && (targetFirst != targetNonPhi1))
         {
-            Statement* bNextLast = bNextFirst->GetPrevStmt();
-            assert(bNextLast->GetNextStmt() == nullptr);
+            Statement* targetLast = targetFirst->GetPrevStmt();
+            assert(targetLast->GetNextStmt() == nullptr);
 
             // Does "blk" have phis?
             if (blkNonPhi1 != blkFirst)
             {
                 // Yes, has phis.
                 // Insert after the last phi of "block."
-                // First, bNextPhis after last phi of block.
-                Statement* blkLastPhi;
+                // First, targetPhis after last phi of block.
+                Statement* blkLastPhi = (blkNonPhi1 != nullptr) ? blkNonPhi1->GetPrevStmt() : blkFirst->GetPrevStmt();
+                blkLastPhi->SetNextStmt(targetFirst);
+                targetFirst->SetPrevStmt(blkLastPhi);
+
+                // Now, rest of "block" after last phi of "target".
+                Statement* targetLastPhi =
+                    (targetNonPhi1 != nullptr) ? targetNonPhi1->GetPrevStmt() : targetFirst->GetPrevStmt();
+                targetLastPhi->SetNextStmt(blkNonPhi1);
+
                 if (blkNonPhi1 != nullptr)
                 {
-                    blkLastPhi = blkNonPhi1->GetPrevStmt();
-                }
-                else
-                {
-                    blkLastPhi = blkFirst->GetPrevStmt();
-                }
-
-                blkLastPhi->SetNextStmt(bNextFirst);
-                bNextFirst->SetPrevStmt(blkLastPhi);
-
-                // Now, rest of "block" after last phi of "bNext".
-                Statement* bNextLastPhi = nullptr;
-                if (bNextNonPhi1 != nullptr)
-                {
-                    bNextLastPhi = bNextNonPhi1->GetPrevStmt();
-                }
-                else
-                {
-                    bNextLastPhi = bNextFirst->GetPrevStmt();
-                }
-
-                bNextLastPhi->SetNextStmt(blkNonPhi1);
-                if (blkNonPhi1 != nullptr)
-                {
-                    blkNonPhi1->SetPrevStmt(bNextLastPhi);
+                    blkNonPhi1->SetPrevStmt(targetLastPhi);
                 }
                 else
                 {
                     // block has no non phis, so make the last statement be the last added phi.
-                    blkFirst->SetPrevStmt(bNextLastPhi);
+                    blkFirst->SetPrevStmt(targetLastPhi);
                 }
 
-                // Now update the bbStmtList of "bNext".
-                bNext->bbStmtList = bNextNonPhi1;
-                if (bNextNonPhi1 != nullptr)
+                // Now update the bbStmtList of "target".
+                target->bbStmtList = targetNonPhi1;
+                if (targetNonPhi1 != nullptr)
                 {
-                    bNextNonPhi1->SetPrevStmt(bNextLast);
+                    targetNonPhi1->SetPrevStmt(targetLast);
                 }
             }
             else
             {
                 if (blkFirst != nullptr) // If "block" has no statements, fusion will work fine...
                 {
-                    // First, bNextPhis at start of block.
+                    // First, targetPhis at start of block.
                     Statement* blkLast = blkFirst->GetPrevStmt();
-                    block->bbStmtList  = bNextFirst;
-                    // Now, rest of "block" (if it exists) after last phi of "bNext".
-                    Statement* bNextLastPhi = nullptr;
-                    if (bNextNonPhi1 != nullptr)
+                    block->bbStmtList  = targetFirst;
+                    // Now, rest of "block" (if it exists) after last phi of "target".
+                    Statement* targetLastPhi =
+                        (targetNonPhi1 != nullptr) ? targetNonPhi1->GetPrevStmt() : targetFirst->GetPrevStmt();
+
+                    targetFirst->SetPrevStmt(blkLast);
+                    targetLastPhi->SetNextStmt(blkFirst);
+                    blkFirst->SetPrevStmt(targetLastPhi);
+                    // Now update the bbStmtList of "target"
+                    target->bbStmtList = targetNonPhi1;
+                    if (targetNonPhi1 != nullptr)
                     {
-                        // There is a first non phi, so the last phi is before it.
-                        bNextLastPhi = bNextNonPhi1->GetPrevStmt();
-                    }
-                    else
-                    {
-                        // All the statements are phi defns, so the last one is the prev of the first.
-                        bNextLastPhi = bNextFirst->GetPrevStmt();
-                    }
-                    bNextFirst->SetPrevStmt(blkLast);
-                    bNextLastPhi->SetNextStmt(blkFirst);
-                    blkFirst->SetPrevStmt(bNextLastPhi);
-                    // Now update the bbStmtList of "bNext"
-                    bNext->bbStmtList = bNextNonPhi1;
-                    if (bNextNonPhi1 != nullptr)
-                    {
-                        bNextNonPhi1->SetPrevStmt(bNextLast);
+                        targetNonPhi1->SetPrevStmt(targetLast);
                     }
                 }
             }
@@ -1133,7 +994,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
         // Now proceed with the updated bbTreeLists.
         Statement* stmtList1 = block->firstStmt();
-        Statement* stmtList2 = bNext->firstStmt();
+        Statement* stmtList2 = target->firstStmt();
 
         /* the block may have an empty list */
 
@@ -1144,7 +1005,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             /* The second block may be a GOTO statement or something with an empty bbStmtList */
             if (stmtList2 != nullptr)
             {
-                Statement* stmtLast2 = bNext->lastStmt();
+                Statement* stmtLast2 = target->lastStmt();
 
                 /* append list2 to list 1 */
 
@@ -1155,50 +1016,23 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
         else
         {
-            /* block was formerly empty and now has bNext's statements */
+            /* block was formerly empty and now has target's statements */
             block->bbStmtList = stmtList2;
         }
     }
 
-    // If bNext is BBJ_THROW, block will become run rarely.
-    //
-    // Otherwise, if either block or bNext has a profile weight
-    // or if both block and bNext have non-zero weights
-    // then we will use the max weight for the block.
-    //
-    if (bNext->KindIs(BBJ_THROW))
-    {
-        block->bbSetRunRarely();
-    }
-    else
-    {
-        const bool hasProfileWeight = block->hasProfileWeight() || bNext->hasProfileWeight();
-        const bool hasNonZeroWeight = (block->bbWeight > BB_ZERO_WEIGHT) || (bNext->bbWeight > BB_ZERO_WEIGHT);
+    // Transfer target's weight to block
+    // (target's weight should include block's weight,
+    // plus the weights of target's preds, which now flow into block)
+    const bool hasProfileWeight = block->hasProfileWeight();
+    block->inheritWeight(target);
 
-        if (hasProfileWeight || hasNonZeroWeight)
-        {
-            weight_t const newWeight = max(block->bbWeight, bNext->bbWeight);
-
-            if (hasProfileWeight)
-            {
-                block->setBBProfileWeight(newWeight);
-            }
-            else
-            {
-                assert(newWeight != BB_ZERO_WEIGHT);
-                block->bbWeight = newWeight;
-                block->RemoveFlags(BBF_RUN_RARELY);
-            }
-        }
-        // otherwise if either block has a zero weight we select the zero weight
-        else
-        {
-            noway_assert((block->bbWeight == BB_ZERO_WEIGHT) || (bNext->bbWeight == BB_ZERO_WEIGHT));
-            block->bbSetRunRarely();
-        }
+    if (hasProfileWeight)
+    {
+        block->SetFlags(BBF_PROF_WEIGHT);
     }
 
-    VarSetOps::AssignAllowUninitRhs(this, block->bbLiveOut, bNext->bbLiveOut);
+    VarSetOps::AssignAllowUninitRhs(this, block->bbLiveOut, target->bbLiveOut);
 
     // Update the beginning and ending IL offsets (bbCodeOffs and bbCodeOffsEnd).
     // Set the beginning IL offset to the minimum, and the ending offset to the maximum, of the respective blocks.
@@ -1208,62 +1042,62 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     if (block->bbCodeOffs == BAD_IL_OFFSET)
     {
-        block->bbCodeOffs = bNext->bbCodeOffs; // If they are both BAD_IL_OFFSET, this doesn't change anything.
+        block->bbCodeOffs = target->bbCodeOffs; // If they are both BAD_IL_OFFSET, this doesn't change anything.
     }
-    else if (bNext->bbCodeOffs != BAD_IL_OFFSET)
+    else if (target->bbCodeOffs != BAD_IL_OFFSET)
     {
         // The are both valid offsets; compare them.
-        if (block->bbCodeOffs > bNext->bbCodeOffs)
+        if (block->bbCodeOffs > target->bbCodeOffs)
         {
-            block->bbCodeOffs = bNext->bbCodeOffs;
+            block->bbCodeOffs = target->bbCodeOffs;
         }
     }
 
     if (block->bbCodeOffsEnd == BAD_IL_OFFSET)
     {
-        block->bbCodeOffsEnd = bNext->bbCodeOffsEnd; // If they are both BAD_IL_OFFSET, this doesn't change anything.
+        block->bbCodeOffsEnd = target->bbCodeOffsEnd; // If they are both BAD_IL_OFFSET, this doesn't change anything.
     }
-    else if (bNext->bbCodeOffsEnd != BAD_IL_OFFSET)
+    else if (target->bbCodeOffsEnd != BAD_IL_OFFSET)
     {
         // The are both valid offsets; compare them.
-        if (block->bbCodeOffsEnd < bNext->bbCodeOffsEnd)
+        if (block->bbCodeOffsEnd < target->bbCodeOffsEnd)
         {
-            block->bbCodeOffsEnd = bNext->bbCodeOffsEnd;
+            block->bbCodeOffsEnd = target->bbCodeOffsEnd;
         }
     }
 
-    if (block->HasFlag(BBF_INTERNAL) && !bNext->HasFlag(BBF_INTERNAL))
+    if (block->HasFlag(BBF_INTERNAL) && !target->HasFlag(BBF_INTERNAL))
     {
-        // If 'block' is an internal block and 'bNext' isn't, then adjust the flags set on 'block'.
+        // If 'block' is an internal block and 'target' isn't, then adjust the flags set on 'block'.
         block->RemoveFlags(BBF_INTERNAL); // Clear the BBF_INTERNAL flag
         block->SetFlags(BBF_IMPORTED);    // Set the BBF_IMPORTED flag
     }
 
-    /* Update the flags for block with those found in bNext */
+    /* Update the flags for block with those found in target */
 
-    block->CopyFlags(bNext, BBF_COMPACT_UPD);
+    block->CopyFlags(target, BBF_COMPACT_UPD);
 
-    /* mark bNext as removed */
+    /* mark target as removed */
 
-    bNext->SetFlags(BBF_REMOVED);
+    target->SetFlags(BBF_REMOVED);
 
-    /* Unlink bNext and update all the marker pointers if necessary */
+    /* Unlink target and update all the marker pointers if necessary */
 
-    fgUnlinkRange(bNext, bNext);
+    fgUnlinkRange(target, target);
 
     fgBBcount--;
 
-    // If bNext was the last block of a try or handler, update the EH table.
+    // If target was the last block of a try or handler, update the EH table.
 
-    ehUpdateForDeletedBlock(bNext);
+    ehUpdateForDeletedBlock(target);
 
     /* Set the jump targets */
 
-    switch (bNext->GetKind())
+    switch (target->GetKind())
     {
         case BBJ_CALLFINALLY:
             // Propagate RETLESS property
-            block->CopyFlags(bNext, BBF_RETLESS_CALL);
+            block->CopyFlags(target, BBF_RETLESS_CALL);
 
             FALLTHROUGH;
 
@@ -1271,22 +1105,22 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         {
-            /* Update the predecessor list for bNext's target */
-            FlowEdge* const targetEdge = bNext->GetTargetEdge();
+            /* Update the predecessor list for target's target */
+            FlowEdge* const targetEdge = target->GetTargetEdge();
             fgReplacePred(targetEdge, block);
 
-            block->SetKindAndTargetEdge(bNext->GetKind(), targetEdge);
+            block->SetKindAndTargetEdge(target->GetKind(), targetEdge);
             break;
         }
 
         case BBJ_COND:
         {
-            /* Update the predecessor list for bNext's true target */
-            FlowEdge* const trueEdge  = bNext->GetTrueEdge();
-            FlowEdge* const falseEdge = bNext->GetFalseEdge();
+            /* Update the predecessor list for target's true target */
+            FlowEdge* const trueEdge  = target->GetTrueEdge();
+            FlowEdge* const falseEdge = target->GetFalseEdge();
             fgReplacePred(trueEdge, block);
 
-            /* Update the predecessor list for bNext's false target if it is different from the true target */
+            /* Update the predecessor list for target's false target if it is different from the true target */
             if (trueEdge != falseEdge)
             {
                 fgReplacePred(falseEdge, block);
@@ -1297,22 +1131,22 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
 
         case BBJ_EHFINALLYRET:
-            block->SetEhf(bNext->GetEhfTargets());
-            fgChangeEhfBlock(bNext, block);
+            block->SetEhf(target->GetEhfTargets());
+            fgChangeEhfBlock(target, block);
             break;
 
         case BBJ_EHFAULTRET:
         case BBJ_THROW:
         case BBJ_RETURN:
             /* no jumps or fall through blocks to set here */
-            block->SetKind(bNext->GetKind());
+            block->SetKind(target->GetKind());
             break;
 
         case BBJ_SWITCH:
-            block->SetSwitch(bNext->GetSwitchTargets());
-            // We are moving the switch jump from bNext to block.  Examine the jump targets
-            // of the BBJ_SWITCH at bNext and replace the predecessor to 'bNext' with ones to 'block'
-            fgChangeSwitchBlock(bNext, block);
+            block->SetSwitch(target->GetSwitchTargets());
+            // We are moving the switch jump from target to block. Examine the jump targets
+            // of the BBJ_SWITCH at target and replace the predecessor to 'target' with ones to 'block'
+            fgChangeSwitchBlock(target, block);
             break;
 
         default:
@@ -1320,7 +1154,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
     }
 
-    assert(block->KindIs(bNext->GetKind()));
+    assert(block->KindIs(target->GetKind()));
 
 #if DEBUG
     if (verbose && 0)
@@ -1328,9 +1162,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         printf("\nAfter compacting:\n");
         fgDispBasicBlocks(false);
     }
-#endif
 
-#if DEBUG
     if (JitConfig.JitSlowDebugChecksEnabled() != 0)
     {
         // Make sure that the predecessor lists are accurate
@@ -3293,9 +3125,9 @@ bool Compiler::fgExpandRarelyRunBlocks()
         }
 
         /* COMPACT blocks if possible */
-        if (fgCanCompactBlocks(bPrev, block))
+        if (fgCanCompactBlock(bPrev))
         {
-            fgCompactBlocks(bPrev, block);
+            fgCompactBlock(bPrev);
 
             block = bPrev;
             continue;
@@ -3412,9 +3244,22 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         }
     }
 
-    // If we will be reordering blocks, ensure the false target of a BBJ_COND block is its next block
     if (useProfile)
     {
+        if (JitConfig.JitDoReversePostOrderLayout())
+        {
+            fgDoReversePostOrderLayout();
+            fgMoveColdBlocks();
+
+            // Renumber blocks to facilitate LSRA's order of block visitation
+            // TODO: Consider removing this, and using traversal order in lSRA
+            //
+            fgRenumberBlocks();
+
+            return true;
+        }
+
+        // We will be reordering blocks, so ensure the false target of a BBJ_COND block is its next block
         for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
         {
             if (block->KindIs(BBJ_COND) && !block->NextIs(block->GetFalseTarget()))
@@ -4522,6 +4367,696 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #pragma warning(pop)
 #endif
 
+//-----------------------------------------------------------------------------
+// fgMoveHotJumps: Try to move jumps to fall into their successors, if the jump is sufficiently hot.
+//
+// Template parameters:
+//    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
+//
+template <bool hasEH>
+void Compiler::fgMoveHotJumps()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgMoveHotJumps()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    EnsureBasicBlockEpoch();
+    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
+    BlockSetOps::AddElemD(this, visitedBlocks, fgFirstBB->bbNum);
+
+    // If we have a funclet region, don't bother reordering anything in it.
+    //
+    BasicBlock* next;
+    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = next)
+    {
+        next = block->Next();
+        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+
+        // Don't bother trying to move cold blocks
+        //
+        if (block->isBBWeightCold(this))
+        {
+            continue;
+        }
+
+        FlowEdge* targetEdge;
+        FlowEdge* unlikelyEdge;
+
+        if (block->KindIs(BBJ_ALWAYS))
+        {
+            targetEdge   = block->GetTargetEdge();
+            unlikelyEdge = nullptr;
+        }
+        else if (block->KindIs(BBJ_COND))
+        {
+            // Consider conditional block's most likely branch for moving
+            //
+            if (block->GetTrueEdge()->getLikelihood() > 0.5)
+            {
+                targetEdge   = block->GetTrueEdge();
+                unlikelyEdge = block->GetFalseEdge();
+            }
+            else
+            {
+                targetEdge   = block->GetFalseEdge();
+                unlikelyEdge = block->GetTrueEdge();
+            }
+        }
+        else
+        {
+            // Don't consider other block kinds
+            //
+            continue;
+        }
+
+        BasicBlock* target         = targetEdge->getDestinationBlock();
+        bool        isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+
+        if (isBackwardJump)
+        {
+            // We don't want to change the first block, so if block is a backward jump to the first block,
+            // don't try moving block before it.
+            //
+            if (target->IsFirst())
+            {
+                continue;
+            }
+
+            if (block->KindIs(BBJ_COND))
+            {
+                // This could be a loop exit, so don't bother moving this block up.
+                // Instead, try moving the unlikely target up to create fallthrough.
+                //
+                targetEdge     = unlikelyEdge;
+                target         = targetEdge->getDestinationBlock();
+                isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+
+                if (isBackwardJump)
+                {
+                    continue;
+                }
+            }
+            // Check for single-block loop case
+            //
+            else if (block == target)
+            {
+                continue;
+            }
+        }
+
+        // Check if block already falls into target
+        //
+        if (block->NextIs(target))
+        {
+            continue;
+        }
+
+        if (target->isBBWeightCold(this))
+        {
+            // If target is block's most-likely successor, and block is not rarely-run,
+            // perhaps the profile data is misleading, and we need to run profile repair?
+            //
+            continue;
+        }
+
+        if (hasEH)
+        {
+            // Don't move blocks in different EH regions
+            //
+            if (!BasicBlock::sameEHRegion(block, target))
+            {
+                continue;
+            }
+
+            if (isBackwardJump)
+            {
+                // block and target are in the same try/handler regions, and target is behind block,
+                // so block cannot possibly be the start of the region.
+                //
+                assert(!bbIsTryBeg(block) && !bbIsHandlerBeg(block));
+
+                // Don't change the entry block of an EH region
+                //
+                if (bbIsTryBeg(target) || bbIsHandlerBeg(target))
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                // block and target are in the same try/handler regions, and block is behind target,
+                // so target cannot possibly be the start of the region.
+                //
+                assert(!bbIsTryBeg(target) && !bbIsHandlerBeg(target));
+            }
+        }
+
+        // If moving block will break up existing fallthrough behavior into target, make sure it's worth it
+        //
+        FlowEdge* const fallthroughEdge = fgGetPredForBlock(target, target->Prev());
+        if ((fallthroughEdge != nullptr) && (fallthroughEdge->getLikelyWeight() >= targetEdge->getLikelyWeight()))
+        {
+            continue;
+        }
+
+        if (isBackwardJump)
+        {
+            // Move block to before target
+            //
+            fgUnlinkBlock(block);
+            fgInsertBBbefore(target, block);
+        }
+        else if (hasEH && target->isBBCallFinallyPair())
+        {
+            // target is a call-finally pair, so move the pair up to block
+            //
+            fgUnlinkRange(target, target->Next());
+            fgMoveBlocksAfter(target, target->Next(), block);
+            next = target->Next();
+        }
+        else
+        {
+            // Move target up to block
+            //
+            fgUnlinkBlock(target);
+            fgInsertBBafter(block, target);
+            next = target;
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal.
+//
+void Compiler::fgDoReversePostOrderLayout()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgDoReversePostOrderLayout()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    // Compute DFS of all blocks in the method, using profile data to determine the order successors are visited in
+    //
+    FlowGraphDfsTree* const dfsTree = fgComputeDfs</* useProfile */ true>();
+
+    // Fast path: We don't have any EH regions, so just reorder the blocks
+    //
+    if (compHndBBtabCount == 0)
+    {
+        for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+        {
+            BasicBlock* const block       = dfsTree->GetPostOrder(i);
+            BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
+            fgUnlinkBlock(blockToMove);
+            fgInsertBBafter(block, blockToMove);
+        }
+
+        fgMoveHotJumps</* hasEH */ false>();
+
+        return;
+    }
+
+    // The RPO will scramble the EH regions, requiring us to correct their state.
+    // To do so, we will need to determine the new end blocks of each region.
+    //
+    struct EHLayoutInfo
+    {
+        BasicBlock* tryRegionEnd;
+        BasicBlock* hndRegionEnd;
+        bool        tryRegionInMainBody;
+
+        // Default constructor provided so we can call ArrayStack::Emplace
+        //
+        EHLayoutInfo() = default;
+    };
+
+    ArrayStack<EHLayoutInfo> regions(getAllocator(CMK_ArrayStack), compHndBBtabCount);
+
+    // The RPO will break up call-finally pairs, so save them before re-ordering
+    //
+    struct CallFinallyPair
+    {
+        BasicBlock* callFinally;
+        BasicBlock* callFinallyRet;
+
+        // Constructor provided so we can call ArrayStack::Emplace
+        //
+        CallFinallyPair(BasicBlock* first, BasicBlock* second)
+            : callFinally(first)
+            , callFinallyRet(second)
+        {
+        }
+    };
+
+    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
+
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        // Default-initialize a EHLayoutInfo for each EH clause
+        regions.Emplace();
+
+        if (HBtab->HasFinallyHandler())
+        {
+            for (BasicBlock* const pred : HBtab->ebdHndBeg->PredBlocks())
+            {
+                assert(pred->KindIs(BBJ_CALLFINALLY));
+                if (pred->isBBCallFinallyPair())
+                {
+                    callFinallyPairs.Emplace(pred, pred->Next());
+                }
+            }
+        }
+    }
+
+    // Reorder blocks
+    //
+    for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+    {
+        BasicBlock* const block       = dfsTree->GetPostOrder(i);
+        BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
+
+        // Only reorder blocks within the same EH region -- we don't want to make them non-contiguous
+        //
+        if (BasicBlock::sameEHRegion(block, blockToMove))
+        {
+            // Don't reorder EH regions with filter handlers -- we want the filter to come first
+            //
+            if (block->hasHndIndex() && ehGetDsc(block->getHndIndex())->HasFilter())
+            {
+                continue;
+            }
+
+            fgUnlinkBlock(blockToMove);
+            fgInsertBBafter(block, blockToMove);
+        }
+    }
+
+    // Fix up call-finally pairs
+    //
+    for (int i = 0; i < callFinallyPairs.Height(); i++)
+    {
+        const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
+        fgUnlinkBlock(pair.callFinallyRet);
+        fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
+    }
+
+    fgMoveHotJumps</* hasEH */ true>();
+
+    // The RPO won't change the entry blocks of any EH regions, but reordering can change the last block in a region
+    // (for example, by pushing throw blocks unreachable via normal flow to the end of the region).
+    // First, determine the new EH region ends.
+    //
+
+    for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
+    {
+        if (block->hasTryIndex())
+        {
+            EHLayoutInfo& layoutInfo       = regions.BottomRef(block->getTryIndex());
+            layoutInfo.tryRegionEnd        = block;
+            layoutInfo.tryRegionInMainBody = true;
+        }
+
+        if (block->hasHndIndex())
+        {
+            regions.BottomRef(block->getHndIndex()).hndRegionEnd = block;
+        }
+    }
+
+    for (BasicBlock* const block : Blocks(fgFirstFuncletBB))
+    {
+        if (block->hasHndIndex())
+        {
+            regions.BottomRef(block->getHndIndex()).hndRegionEnd = block;
+        }
+
+        if (block->hasTryIndex())
+        {
+            EHLayoutInfo& layoutInfo = regions.BottomRef(block->getTryIndex());
+
+            if (!layoutInfo.tryRegionInMainBody)
+            {
+                layoutInfo.tryRegionEnd = block;
+            }
+        }
+    }
+
+    // Now, update the EH descriptors, starting with the try regions
+    //
+    auto getTryLast = [&regions](const unsigned index) -> BasicBlock* {
+        return regions.BottomRef(index).tryRegionEnd;
+    };
+
+    auto setTryLast = [&regions](const unsigned index, BasicBlock* const block) {
+        regions.BottomRef(index).tryRegionEnd = block;
+    };
+
+    ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
+
+    // Now, do the handler regions
+    //
+    unsigned XTnum = 0;
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        // The end of each handler region should have been visited by iterating the blocklist above
+        //
+        BasicBlock* const hndEnd = regions.BottomRef(XTnum++).hndRegionEnd;
+        assert(hndEnd != nullptr);
+
+        // Update the end pointer of this handler region to the new last block
+        //
+        HBtab->ebdHndLast                = hndEnd;
+        const unsigned enclosingHndIndex = HBtab->ebdEnclosingHndIndex;
+
+        // If this handler region is nested in another one, we might need to update its enclosing region's end block
+        //
+        if (enclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            BasicBlock* const enclosingHndEnd = regions.BottomRef(enclosingHndIndex).hndRegionEnd;
+            assert(enclosingHndEnd != nullptr);
+
+            // If the enclosing region ends right before the nested region begins,
+            // extend the enclosing region's last block to the end of the nested region.
+            //
+            BasicBlock* const hndBeg = HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg;
+            if (enclosingHndEnd->NextIs(hndBeg))
+            {
+                regions.BottomRef(enclosingHndIndex).hndRegionEnd = hndEnd;
+            }
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// fgMoveColdBlocks: Move rarely-run blocks to the end of their respective regions.
+//
+// Notes:
+//    Exception handlers are assumed to be cold, so we won't move blocks within them.
+//
+void Compiler::fgMoveColdBlocks()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgMoveColdBlocks()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    auto moveColdMainBlocks = [this]() {
+        // Find the last block in the main body that isn't part of an EH region
+        //
+        BasicBlock* lastMainBB;
+        for (lastMainBB = this->fgLastBBInMainFunction(); lastMainBB != nullptr; lastMainBB = lastMainBB->Prev())
+        {
+            if (!lastMainBB->hasTryIndex() && !lastMainBB->hasHndIndex())
+            {
+                break;
+            }
+        }
+
+        // Nothing to do if there are two or fewer non-EH blocks
+        //
+        if ((lastMainBB == nullptr) || lastMainBB->IsFirst() || lastMainBB->PrevIs(fgFirstBB))
+        {
+            return;
+        }
+
+        // Search the main method body for rarely-run blocks to move
+        //
+        BasicBlock* prev;
+        for (BasicBlock* block = lastMainBB->Prev(); block != fgFirstBB; block = prev)
+        {
+            prev = block->Prev();
+
+            // We only want to move cold blocks.
+            // Also, don't consider blocks in EH regions for now; only move blocks in the main method body.
+            // Finally, don't move block if it is the beginning of a call-finally pair,
+            // as we want to keep these pairs contiguous
+            // (if we encounter the end of a pair below, we'll move the whole pair).
+            //
+            if (!block->isBBWeightCold(this) || block->hasTryIndex() || block->hasHndIndex() ||
+                block->isBBCallFinallyPair())
+            {
+                continue;
+            }
+
+            this->fgUnlinkBlock(block);
+            this->fgInsertBBafter(lastMainBB, block);
+
+            // If block is the end of a call-finally pair, prev is the beginning of the pair.
+            // Move prev to before block to keep the pair contiguous.
+            //
+            if (block->KindIs(BBJ_CALLFINALLYRET))
+            {
+                BasicBlock* const callFinally = prev;
+                prev                          = prev->Prev();
+                assert(callFinally->KindIs(BBJ_CALLFINALLY));
+                assert(!callFinally->HasFlag(BBF_RETLESS_CALL));
+                this->fgUnlinkBlock(callFinally);
+                this->fgInsertBBafter(lastMainBB, callFinally);
+            }
+        }
+
+        // We have moved all cold main blocks before lastMainBB to after lastMainBB.
+        // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
+        //
+        if (lastMainBB->isBBWeightCold(this))
+        {
+            BasicBlock* const newLastMainBB = this->fgLastBBInMainFunction();
+            if (lastMainBB != newLastMainBB)
+            {
+                BasicBlock* const prev = lastMainBB->Prev();
+                this->fgUnlinkBlock(lastMainBB);
+                this->fgInsertBBafter(newLastMainBB, lastMainBB);
+
+                // Call-finally check
+                //
+                if (lastMainBB->KindIs(BBJ_CALLFINALLYRET))
+                {
+                    assert(prev->KindIs(BBJ_CALLFINALLY));
+                    assert(!prev->HasFlag(BBF_RETLESS_CALL));
+                    assert(prev != newLastMainBB);
+                    this->fgUnlinkBlock(prev);
+                    this->fgInsertBBafter(newLastMainBB, prev);
+                }
+            }
+        }
+    };
+
+    moveColdMainBlocks();
+
+    // No EH regions
+    //
+    if (compHndBBtabCount == 0)
+    {
+        return;
+    }
+
+    // We assume exception handlers are cold, so we won't bother moving blocks within them.
+    // We will move blocks only within try regions.
+    // First, determine where each try region ends, without considering nested regions.
+    // We will use these end blocks as insertion points.
+    //
+    BasicBlock** const tryRegionEnds = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
+
+    for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
+    {
+        if (block->hasTryIndex())
+        {
+            tryRegionEnds[block->getTryIndex()] = block;
+        }
+    }
+
+    // Search all try regions in the main method body for cold blocks to move
+    //
+    BasicBlock* prev;
+    for (BasicBlock* block = fgLastBBInMainFunction(); block != fgFirstBB; block = prev)
+    {
+        prev = block->Prev();
+
+        // Only consider cold blocks in try regions.
+        // If we have such a block that is also part of an exception handler, don't bother moving it.
+        // Finally, don't move block if it is the beginning of a call-finally pair,
+        // as we want to keep these pairs contiguous
+        // (if we encounter the end of a pair below, we'll move the whole pair).
+        //
+        if (!block->isBBWeightCold(this) || !block->hasTryIndex() || block->hasHndIndex() ||
+            block->isBBCallFinallyPair())
+        {
+            continue;
+        }
+
+        const unsigned  tryIndex = block->getTryIndex();
+        EHblkDsc* const HBtab    = ehGetDsc(tryIndex);
+
+        // Don't move the beginning of a try region.
+        // Also, if this try region's entry is cold, don't bother moving its blocks.
+        //
+        if ((HBtab->ebdTryBeg == block) || HBtab->ebdTryBeg->isBBWeightCold(this))
+        {
+            continue;
+        }
+
+        BasicBlock* const insertionPoint = tryRegionEnds[tryIndex];
+        assert(insertionPoint != nullptr);
+
+        // Don't move the end of this try region
+        //
+        if (block == insertionPoint)
+        {
+            continue;
+        }
+
+        fgUnlinkBlock(block);
+        fgInsertBBafter(insertionPoint, block);
+
+        // Keep call-finally pairs contiguous
+        //
+        if (block->KindIs(BBJ_CALLFINALLYRET))
+        {
+            BasicBlock* const callFinally = prev;
+            prev                          = prev->Prev();
+            assert(callFinally->KindIs(BBJ_CALLFINALLY));
+            assert(!callFinally->HasFlag(BBF_RETLESS_CALL));
+            fgUnlinkBlock(callFinally);
+            fgInsertBBafter(insertionPoint, callFinally);
+        }
+    }
+
+    // Before updating EH descriptors, find the new try region ends
+    //
+    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    {
+        BasicBlock* const tryEnd = tryRegionEnds[XTnum];
+
+        // This try region isn't in the main method body
+        //
+        if (tryEnd == nullptr)
+        {
+            continue;
+        }
+
+        // If we moved cold blocks to the end of this try region,
+        // search for the new end block
+        //
+        BasicBlock* newTryEnd = tryEnd;
+        for (BasicBlock* const block : Blocks(tryEnd, fgLastBBInMainFunction()))
+        {
+            if (!BasicBlock::sameTryRegion(tryEnd, block))
+            {
+                break;
+            }
+
+            newTryEnd = block;
+        }
+
+        // We moved cold blocks to the end of this try region, but the old end block is cold, too.
+        // Move the old end block to the end of the region to preserve its relative ordering.
+        //
+        if ((tryEnd != newTryEnd) && !tryEnd->hasHndIndex() && tryEnd->isBBWeightCold(this))
+        {
+            BasicBlock* const prev = tryEnd->Prev();
+            fgUnlinkBlock(tryEnd);
+            fgInsertBBafter(newTryEnd, tryEnd);
+
+            // Keep call-finally pairs contiguous
+            //
+            if (tryEnd->KindIs(BBJ_CALLFINALLYRET))
+            {
+                assert(prev->KindIs(BBJ_CALLFINALLY));
+                assert(!prev->HasFlag(BBF_RETLESS_CALL));
+                fgUnlinkBlock(prev);
+                fgInsertBBafter(newTryEnd, prev);
+            }
+        }
+        else
+        {
+            // Otherwise, just update the try region end
+            //
+            tryRegionEnds[XTnum] = newTryEnd;
+        }
+    }
+
+    // Now, update EH descriptors
+    //
+    auto getTryLast = [tryRegionEnds](const unsigned index) -> BasicBlock* {
+        return tryRegionEnds[index];
+    };
+
+    auto setTryLast = [tryRegionEnds](const unsigned index, BasicBlock* const block) {
+        tryRegionEnds[index] = block;
+    };
+
+    ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
+}
+
+//-------------------------------------------------------------
+// ehUpdateTryLasts: Iterates EH descriptors, updating each try region's
+// end block as determined by getTryLast.
+//
+// Type parameters:
+//    GetTryLast - Functor type that takes an EH index,
+//    and returns the corresponding region's new try end block
+//    SetTryLast - Functor type that takes an EH index and a BasicBlock*,
+//    and updates some internal state tracking the new try end block of each EH region
+//
+// Parameters:
+//    getTryLast - Functor to get new try end block for an EH region
+//    setTryLast - Functor to update the new try end block for an EH region
+//
+template <typename GetTryLast, typename SetTryLast>
+void Compiler::ehUpdateTryLasts(GetTryLast getTryLast, SetTryLast setTryLast)
+{
+    unsigned XTnum = 0;
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        BasicBlock* const tryEnd = getTryLast(XTnum++);
+
+        if (tryEnd == nullptr)
+        {
+            continue;
+        }
+
+        // Update the end pointer of this try region to the new last block
+        //
+        HBtab->ebdTryLast                = tryEnd;
+        const unsigned enclosingTryIndex = HBtab->ebdEnclosingTryIndex;
+
+        // If this try region is nested in another one, we might need to update its enclosing region's end block
+        //
+        if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            BasicBlock* const enclosingTryEnd = getTryLast(enclosingTryIndex);
+
+            // If multiple EH descriptors map to the same try region,
+            // then the enclosing region's last block might be null in the table, so set it here.
+            // Similarly, if the enclosing region ends right before the nested region begins,
+            // extend the enclosing region's last block to the end of the nested region.
+            //
+            if ((enclosingTryEnd == nullptr) || enclosingTryEnd->NextIs(HBtab->ebdTryBeg))
+            {
+                setTryLast(enclosingTryIndex, tryEnd);
+            }
+        }
+    }
+}
+
 //-------------------------------------------------------------
 // fgUpdateFlowGraphPhase: run flow graph optimization as a
 //   phase, with no tail duplication
@@ -4546,6 +5081,8 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 // Arguments:
 //    doTailDuplication - true to attempt tail duplication optimization
 //    isPhase - true if being run as the only thing in a phase
+//    doAggressiveCompaction - if false, only compact blocks that jump to the next block
+//    to prevent modifying the flowgraph; else, compact as much as possible
 //
 // Returns: true if the flowgraph has been modified
 //
@@ -4553,7 +5090,9 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 //    Debuggable code and Min Optimization JIT also introduces basic blocks
 //    but we do not optimize those!
 //
-bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPhase /* = false */)
+bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
+                                 bool isPhase /* = false */,
+                                 bool doAggressiveCompaction /* = true */)
 {
 #ifdef DEBUG
     if (verbose && !isPhase)
@@ -4913,13 +5452,14 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
             /* COMPACT blocks if possible */
 
-            if (fgCanCompactBlocks(block, bNext))
+            if (fgCanCompactBlock(block) && (doAggressiveCompaction || block->JumpsToNext()))
             {
-                fgCompactBlocks(block, bNext);
+                fgCompactBlock(block);
 
                 /* we compacted two blocks - goto REPEAT to catch similar cases */
                 change   = true;
                 modified = true;
+                bPrev    = block->Prev();
                 goto REPEAT;
             }
 
@@ -5046,7 +5586,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
         fgVerifyHandlerTab();
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
-        fgDebugCheckUpdate();
+        fgDebugCheckUpdate(doAggressiveCompaction);
     }
 #endif // DEBUG
 

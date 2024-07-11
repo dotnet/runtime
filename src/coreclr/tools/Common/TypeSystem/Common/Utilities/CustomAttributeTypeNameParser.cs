@@ -2,16 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
-
-#nullable disable
 
 namespace Internal.TypeSystem
 {
     public static class CustomAttributeTypeNameParser
     {
+        private static readonly TypeNameParseOptions s_typeNameParseOptions = new() { MaxNodes = int.MaxValue };
+
         /// <summary>
         /// Parses the string '<paramref name="name"/>' and returns the type corresponding to the parsed type name.
         /// The type name string should be in the 'SerString' format as defined by the ECMA-335 standard.
@@ -20,102 +23,169 @@ namespace Internal.TypeSystem
         public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true,
             Func<ModuleDesc, string, MetadataType> canonResolver = null)
         {
-            return System.Reflection.TypeNameParser.ResolveType(module, name, throwIfNotFound, canonResolver);
-        }
-    }
-}
-
-namespace System.Reflection
-{
-    internal partial struct TypeNameParser
-    {
-        private ModuleDesc _module;
-        private bool _throwIfNotFound;
-        private Func<ModuleDesc, string, MetadataType> _canonResolver;
-
-        public static TypeDesc ResolveType(ModuleDesc module, string name, bool throwIfNotFound,
-            Func<ModuleDesc, string, MetadataType> canonResolver)
-        {
-            if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed))
-            {
+            if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions))
                 ThrowHelper.ThrowTypeLoadException(name, module);
-            }
 
-            return new TypeNameParser()
+            return new TypeNameResolver()
             {
+                _context = module.Context,
                 _module = module,
                 _throwIfNotFound = throwIfNotFound,
                 _canonResolver = canonResolver
-            }.Resolve(parsed)?.Value;
+            }.Resolve(parsed);
         }
 
-        private sealed class Type
+        public static TypeDesc GetTypeByCustomAttributeTypeNameForDataFlow(string name, ModuleDesc callingModule,
+            TypeSystemContext context, List<ModuleDesc> referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary)
         {
-            public Type(TypeDesc type) => Value = type;
-            public TypeDesc Value { get; }
+            typeWasNotFoundInAssemblyNorBaseLibrary = false;
 
-            public Type MakeArrayType() => new Type(Value.MakeArrayType());
-            public Type MakeArrayType(int rank) => new Type(Value.MakeArrayType(rank));
-            public Type MakePointerType() => new Type(Value.MakePointerType());
-            public Type MakeByRefType() => new Type(Value.MakeByRefType());
-
-            public Type MakeGenericType(Type[] typeArguments)
-            {
-                TypeDesc[] instantiation = new TypeDesc[typeArguments.Length];
-                for (int i = 0; i < typeArguments.Length; i++)
-                    instantiation[i] = typeArguments[i].Value;
-                return new Type(((MetadataType)Value).MakeInstantiatedType(instantiation));
-            }
-        }
-
-        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, TypeName parsedName)
-        {
-            ModuleDesc module = (parsedName.AssemblyName == null) ? _module :
-                _module.Context.ResolveAssembly(parsedName.AssemblyName.ToAssemblyName(), throwIfNotFound: _throwIfNotFound);
-
-            if (_canonResolver != null && nestedTypeNames.IsEmpty)
-            {
-                MetadataType canonType = _canonResolver(module, typeName);
-                if (canonType != null)
-                    return new Type(canonType);
-            }
-
-            if (module != null)
-            {
-                Type type = GetTypeCore(module, typeName, nestedTypeNames);
-                if (type != null)
-                    return type;
-            }
-
-            // If it didn't resolve and wasn't assembly-qualified, we also try core library
-            if (parsedName.AssemblyName == null)
-            {
-                Type type = GetTypeCore(module.Context.SystemModule, typeName, nestedTypeNames);
-                if (type != null)
-                    return type;
-            }
-
-            if (_throwIfNotFound)
-                ThrowHelper.ThrowTypeLoadException(parsedName.FullName, module);
-            return null;
-        }
-
-        private static Type GetTypeCore(ModuleDesc module, string typeName, ReadOnlySpan<string> nestedTypeNames)
-        {
-            (string typeNamespace, string name) = SplitFullTypeName(typeName);
-
-            MetadataType type = module.GetType(typeNamespace, name, throwIfNotFound: false);
-            if (type == null)
+            if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions))
                 return null;
 
-            for (int i = 0; i < nestedTypeNames.Length; i++)
+            TypeNameResolver resolver = new()
             {
-                type = type.GetNestedType(nestedTypeNames[i]);
-                if (type == null)
-                    return null;
+                _context = context,
+                _module = callingModule,
+                _referencedModules = referencedModules
+            };
+
+            TypeDesc type = resolver.Resolve(parsed);
+
+            typeWasNotFoundInAssemblyNorBaseLibrary = resolver._typeWasNotFoundInAssemblyNorBaseLibrary;
+            return type;
+        }
+
+        private struct TypeNameResolver
+        {
+            internal TypeSystemContext _context;
+            internal ModuleDesc _module;
+            internal bool _throwIfNotFound;
+            internal Func<ModuleDesc, string, MetadataType> _canonResolver;
+
+            internal List<ModuleDesc> _referencedModules;
+            internal bool _typeWasNotFoundInAssemblyNorBaseLibrary;
+
+            internal TypeDesc Resolve(TypeName typeName)
+            {
+                if (typeName.IsSimple)
+                {
+                    return GetSimpleType(typeName);
+                }
+
+                if (typeName.IsConstructedGenericType)
+                {
+                    return GetGenericType(typeName);
+                }
+
+                if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
+                {
+                    TypeDesc type = Resolve(typeName.GetElementType());
+                    if (type == null)
+                        return null;
+
+                    if (typeName.IsArray)
+                        return typeName.IsSZArray ? type.MakeArrayType() : type.MakeArrayType(rank: typeName.GetArrayRank());
+
+                    if (typeName.IsPointer)
+                        return type.MakePointerType();
+
+                    if (typeName.IsByRef)
+                        return type.MakeByRefType();
+                }
+
+                Debug.Fail("Expected to be unreachable");
+                return null;
             }
 
-            return new Type(type);
+            private TypeDesc GetSimpleType(TypeName typeName)
+            {
+                TypeName topLevelTypeName = typeName;
+                while (topLevelTypeName.IsNested)
+                {
+                    topLevelTypeName = topLevelTypeName.DeclaringType;
+                }
+
+                ModuleDesc module = _module;
+                if (topLevelTypeName.AssemblyName != null)
+                {
+                    module = _context.ResolveAssembly(typeName.AssemblyName, throwIfNotFound: _throwIfNotFound);
+                    if (module == null)
+                        return null;
+                }
+
+                if (module != null)
+                {
+                    TypeDesc type = GetSimpleTypeFromModule(typeName, module);
+                    if (type != null)
+                    {
+                        _referencedModules?.Add(module);
+                        return type;
+                    }
+                }
+
+                // If it didn't resolve and wasn't assembly-qualified, we also try core library
+                if (topLevelTypeName.AssemblyName == null)
+                {
+                    if (module != _context.SystemModule)
+                    {
+                        TypeDesc type = GetSimpleTypeFromModule(typeName, _context.SystemModule);
+                        if (type != null)
+                        {
+                            _referencedModules?.Add(_context.SystemModule);
+                            return type;
+                        }
+                    }
+
+                    _typeWasNotFoundInAssemblyNorBaseLibrary = true;
+                }
+
+                if (_throwIfNotFound)
+                    ThrowHelper.ThrowTypeLoadException(typeName.FullName, module);
+                return null;
+            }
+
+            private TypeDesc GetSimpleTypeFromModule(TypeName typeName, ModuleDesc module)
+            {
+                if (typeName.IsNested)
+                {
+                    TypeDesc type = GetSimpleTypeFromModule(typeName.DeclaringType, module);
+                    if (type == null)
+                        return null;
+                    return ((MetadataType)type).GetNestedType(TypeNameHelpers.Unescape(typeName.Name));
+                }
+
+                string fullName = TypeNameHelpers.Unescape(typeName.FullName);
+
+                if (_canonResolver != null)
+                {
+                    MetadataType canonType = _canonResolver(module, fullName);
+                    if (canonType != null)
+                        return canonType;
+                }
+
+                (string typeNamespace, string name) = TypeNameHelpers.Split(fullName);
+
+                return module.GetType(typeNamespace, name, throwIfNotFound: false);
+            }
+
+            private TypeDesc GetGenericType(TypeName typeName)
+            {
+                TypeDesc typeDefinition = Resolve(typeName.GetGenericTypeDefinition());
+                if (typeDefinition == null)
+                    return null;
+
+                ImmutableArray<TypeName> typeArguments = typeName.GetGenericArguments();
+                TypeDesc[] instantiation = new TypeDesc[typeArguments.Length];
+                for (int i = 0; i < typeArguments.Length; i++)
+                {
+                    TypeDesc type = Resolve(typeArguments[i]);
+                    if (type == null)
+                        return null;
+                    instantiation[i] = type;
+                }
+                return ((MetadataType)typeDefinition).MakeInstantiatedType(instantiation);
+            }
         }
     }
 }

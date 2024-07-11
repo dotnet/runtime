@@ -64,6 +64,7 @@
 #endif
 #if HAVE_LINUX_ERRQUEUE_H
 #include <linux/errqueue.h>
+#include <linux/icmp.h>
 #endif
 
 
@@ -1406,8 +1407,17 @@ int32_t SystemNative_ReceiveSocketError(intptr_t socket, MessageHeader* messageH
     messageHeader->ControlBuffer = (void*)buffer;
 
     struct msghdr header;
+    struct icmphdr icmph;
+    struct iovec iov;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
 
+    if (header.msg_iovlen == 0 || !header.msg_iov)
+    {
+        iov.iov_base = &icmph;
+        iov.iov_len = sizeof(icmph);
+        header.msg_iov = &iov;
+        header.msg_iovlen = 1;
+    }
     while ((res = recvmsg(fd, &header, SocketFlags_MSG_DONTWAIT | SocketFlags_MSG_ERRQUEUE)) < 0 && errno == EINTR);
 
     struct cmsghdr *cmsg;
@@ -1645,6 +1655,53 @@ int32_t SystemNative_Connect(intptr_t socket, uint8_t* socketAddress, int32_t so
     int err;
     while ((err = connect(fd, (struct sockaddr*)socketAddress, (socklen_t)socketAddressLen)) < 0 && errno == EINTR);
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+int32_t SystemNative_Connectx(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* data, int32_t dataLen, int32_t tfo, int* sent)
+{
+    if (socketAddress == NULL || socketAddressLen < 0 || sent == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+#if HAVE_CONNECTX
+    struct sa_endpoints eps;
+    struct iovec iovec;
+    int flags = 0;
+    iovec.iov_base = data;
+    iovec.iov_len = (size_t)dataLen;
+    memset(&eps, 0, sizeof(eps));
+    eps.sae_dstaddr = (struct sockaddr *)socketAddress;
+    eps.sae_dstaddrlen = (socklen_t)socketAddressLen;
+
+    size_t length = 0;
+    int err;
+    while ((err = connectx(fd, &eps, SAE_ASSOCID_ANY, tfo != 0 ? CONNECT_DATA_IDEMPOTENT : 0, dataLen > 0 ? &iovec : NULL, dataLen > 0 ? 1 : 0, &length, NULL)) < 0 && errno == EINTR);
+    *sent = (int)length;
+
+    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+#else
+#ifdef TCP_FASTOPEN_CONNECT
+    int enabled = 1;
+    socklen_t len = sizeof(enabled);
+
+    // To make it consistent across platform we check if TCP_FASTOPEN and if so we also enabled it for
+    // TCP_FASTOPEN_CONNECT to avoid platform specific code at Socket layer.
+    if (getsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &enabled, &len) == 0 && enabled != 0)
+    {
+        // This will either success and connect will finish without sending SYN until we write to so the socket.
+        // If this is not available we simply connect and write provided data afterwards.
+        setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, &enabled, len);
+    }
+#endif
+    // avoid possible warning about unused parameters
+    (void*)data;
+    (void)dataLen;
+    (void)tfo;
+    sent = 0;
+    return SystemNative_Connect(socket, socketAddress, socketAddressLen);
+#endif
 }
 
 int32_t SystemNative_GetPeerName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen)
@@ -1958,6 +2015,12 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socket
                     *optName = TCP_KEEPINTVL;
                     return true;
 
+#ifdef TCP_FASTOPEN
+                case SocketOptionName_SO_TCP_FASTOPEN:
+                    *optName = TCP_FASTOPEN;
+                    return true;
+#endif
+
                 default:
                     return false;
             }
@@ -2076,7 +2139,7 @@ int32_t SystemNative_GetSockOpt(
             }
 
             struct socket_fdinfo fdi;
-            if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+            if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < (int)sizeof(fdi))
             {
                 return SystemNative_ConvertErrorPlatformToPal(errno);
             }
@@ -2589,7 +2652,7 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
 
 #if HAVE_SYS_PROCINFO_H
     struct socket_fdinfo fdi;
-    if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+    if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < (int)sizeof(fdi))
     {
         return Error_EFAULT;
     }
@@ -3143,6 +3206,11 @@ int32_t SystemNative_Disconnect(intptr_t socket)
 #elif HAVE_DISCONNECTX
     // disconnectx causes a FIN close on OSX. It's the best we can do.
     err = disconnectx(fd, SAE_ASSOCID_ANY, SAE_CONNID_ANY);
+    if (err != 0)
+    {
+        // This happens on Unix Domain Sockets as disconnectx is only supported on AF_INET and AF_INET6
+        err = shutdown(fd, SHUT_RDWR);
+    }
 #else
     // best-effort, this may cause a FIN close.
     err = shutdown(fd, SHUT_RDWR);
@@ -3218,8 +3286,8 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     char* buffer = NULL;
 
     // Save the original input file position and seek to the offset position
-    off_t inputFileOrigOffset = lseek(in_fd, 0, SEEK_CUR);
-    if (inputFileOrigOffset == -1 || lseek(in_fd, offtOffset, SEEK_SET) == -1)
+    off_t inputFileOrigOffset = lseek(infd, 0, SEEK_CUR);
+    if (inputFileOrigOffset == -1 || lseek(infd, offtOffset, SEEK_SET) == -1)
     {
         goto error;
     }
@@ -3239,7 +3307,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
 
         // Read up to what will fit in our buffer.  We're done if we get back 0 bytes or read 'count' bytes
         ssize_t bytesRead;
-        while ((bytesRead = read(in_fd, buffer, numBytesToRead)) < 0 && errno == EINTR);
+        while ((bytesRead = read(infd, buffer, numBytesToRead)) < 0 && errno == EINTR);
         if (bytesRead == -1)
         {
             goto error;
@@ -3255,7 +3323,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
         while (bytesRead > 0)
         {
             ssize_t bytesWritten;
-            while ((bytesWritten = write(out_fd, buffer + writeOffset, (size_t)bytesRead)) < 0 && errno == EINTR);
+            while ((bytesWritten = write(outfd, buffer + writeOffset, (size_t)bytesRead)) < 0 && errno == EINTR);
             if (bytesWritten == -1)
             {
                 goto error;
@@ -3269,7 +3337,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     }
 
     // Restore the original input file position
-    if (lseek(in_fd, inputFileOrigOffset, SEEK_SET) == -1)
+    if (lseek(infd, inputFileOrigOffset, SEEK_SET) == -1)
     {
         goto error;
     }

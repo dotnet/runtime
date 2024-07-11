@@ -800,7 +800,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
         // fallback to IL image if the debugger doesn't have the image loaded already.
         // Its possible that the debugger would still load the NGEN image sometime in the future and we will miss a sharing
         // opportunity. Its an acceptable loss from an imperfect heuristic.
-        if (NULL == WszGetModuleHandle(szFullPathName))
+        if (NULL == GetModuleHandle(szFullPathName))
 #endif
         {
             szFullPathName = NULL;
@@ -926,7 +926,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         _ASSERTE(dwFileHigh == 0);
 
-        HandleHolder hMap = WszCreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL);
+        HandleHolder hMap = CreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL);
         if (hMap == NULL)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't create mapping of file \"%s\" (GLE=%x)\n", pszFullPathName, GetLastError()));
@@ -5238,7 +5238,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
                                                         CORDB_ADDRESS startAddress)
 {
     INTERNAL_SYNC_API_ENTRY(GetProcess());
-    _ASSERTE(startAddress != NULL);
+    _ASSERTE(startAddress != (CORDB_ADDRESS)NULL);
     _ASSERTE(methodDesc != VMPTR_MethodDesc::NullPtr());
 
     CordbNativeCode * pNativeCode = NULL;

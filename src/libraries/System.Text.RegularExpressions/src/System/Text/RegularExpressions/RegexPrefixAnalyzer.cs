@@ -59,9 +59,11 @@ namespace System.Text.RegularExpressions
                 // If we're too deep to analyze further, we can't trust what we've already computed, so stop iterating.
                 // Also bail if any of our results is already hitting the threshold, or if this node is RTL, which is
                 // not worth the complexity of handling.
+                // Or if we've already discovered more than the allowed number of prefixes.
                 if (!StackHelper.TryEnsureSufficientExecutionStack() ||
                     !results.TrueForAll(sb => sb.Length < MaxPrefixLength) ||
-                    (node.Options & RegexOptions.RightToLeft) != 0)
+                    (node.Options & RegexOptions.RightToLeft) != 0 ||
+                    results.Count > MaxPrefixes)
                 {
                     return false;
                 }
@@ -162,23 +164,30 @@ namespace System.Text.RegularExpressions
                                 int reps = node.Kind is RegexNodeKind.Set ? 1 : Math.Min(node.M, MaxPrefixLength);
                                 if (!ignoreCase)
                                 {
-                                    int existingCount = results.Count;
-
-                                    // Duplicate all of the existing strings for all of the new suffixes, other than the first.
-                                    foreach (char suffix in setChars.Slice(1, charCount - 1))
+                                    for (int rep = 0; rep < reps; rep++)
                                     {
+                                        int existingCount = results.Count;
+                                        if (existingCount * charCount > MaxPrefixes)
+                                        {
+                                            return false;
+                                        }
+
+                                        // Duplicate all of the existing strings for all of the new suffixes, other than the first.
+                                        foreach (char suffix in setChars.Slice(1, charCount - 1))
+                                        {
+                                            for (int existing = 0; existing < existingCount; existing++)
+                                            {
+                                                StringBuilder newSb = new StringBuilder().Append(results[existing]);
+                                                newSb.Append(suffix);
+                                                results.Add(newSb);
+                                            }
+                                        }
+
+                                        // Then append the first suffix to all of the existing strings.
                                         for (int existing = 0; existing < existingCount; existing++)
                                         {
-                                            StringBuilder newSb = new StringBuilder().Append(results[existing]);
-                                            newSb.Append(suffix, reps);
-                                            results.Add(newSb);
+                                            results[existing].Append(setChars[0]);
                                         }
-                                    }
-
-                                    // Then append the first suffix to all of the existing strings.
-                                    for (int existing = 0; existing < existingCount; existing++)
-                                    {
-                                        results[existing].Append(setChars[0], reps);
                                     }
                                 }
                                 else
@@ -247,6 +256,12 @@ namespace System.Text.RegularExpressions
                                 for (int i = 0; i < childCount; i++)
                                 {
                                     _ = FindPrefixesCore(node.Child(i), alternateBranchResults, ignoreCase);
+
+                                    // If we now have too many results, bail.
+                                    if ((allBranchResults?.Count ?? 0) + alternateBranchResults.Count > MaxPrefixes)
+                                    {
+                                        return false;
+                                    }
 
                                     Debug.Assert(alternateBranchResults.Count > 0);
                                     foreach (StringBuilder sb in alternateBranchResults)

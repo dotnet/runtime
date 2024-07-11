@@ -7,8 +7,7 @@ RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
     gem install fpm
-RUN git clone --recursive https://github.com/microsoft/msquic
-RUN cd msquic && git checkout  131cacef9ebcd4e8def54126ad3e6907fb92bfc1
+RUN git clone --depth 1 --single-branch --branch v2.3.5 --recursive https://github.com/microsoft/msquic
 RUN cd msquic/ && \
     mkdir build && \
     cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off -DQUIC_TLS=openssl3 && \

@@ -58,7 +58,7 @@ namespace System
         /// at 'start' index and ending at 'end' index (exclusive).
         /// </summary>
         /// <param name="array">The target array.</param>
-        /// <param name="start">The index at which to begin the span.</param>
+        /// <param name="start">The zero-based index at which to begin the span.</param>
         /// <param name="length">The number of items in the span.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
@@ -139,7 +139,7 @@ namespace System
         /// <summary>
         /// Returns a reference to specified element of the Span.
         /// </summary>
-        /// <param name="index"></param>
+        /// <param name="index">The zero-based index.</param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to Length
@@ -376,7 +376,7 @@ namespace System
         /// <summary>
         /// Forms a slice out of the given span, beginning at 'start'.
         /// </summary>
-        /// <param name="start">The index at which to begin this slice.</param>
+        /// <param name="start">The zero-based index at which to begin this slice.</param>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
         /// </exception>
@@ -392,7 +392,7 @@ namespace System
         /// <summary>
         /// Forms a slice out of the given span, beginning at 'start', of given length
         /// </summary>
-        /// <param name="start">The index at which to begin this slice.</param>
+        /// <param name="start">The zero-based index at which to begin this slice.</param>
         /// <param name="length">The desired length for the slice (exclusive).</param>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;Length).

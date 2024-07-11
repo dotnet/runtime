@@ -71,6 +71,9 @@ function deep_merge_resources (target: ResourceGroups, source: ResourceGroups): 
     if (providedResources.jsModuleNative !== undefined) {
         providedResources.jsModuleNative = { ...(target.jsModuleNative || {}), ...(providedResources.jsModuleNative || {}) };
     }
+    if (providedResources.jsModuleGlobalization !== undefined) {
+        providedResources.jsModuleGlobalization = { ...(target.jsModuleGlobalization || {}), ...(providedResources.jsModuleGlobalization || {}) };
+    }
     if (providedResources.jsModuleRuntime !== undefined) {
         providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
     }
@@ -121,6 +124,7 @@ export function normalizeConfig () {
     config.resources = config.resources || {
         assembly: {},
         jsModuleNative: {},
+        jsModuleGlobalization: {},
         jsModuleWorker: {},
         jsModuleRuntime: {},
         wasmNative: {},
@@ -160,6 +164,9 @@ export function normalizeConfig () {
                     break;
                 case "js-module-threads":
                     toMerge.jsModuleWorker = resource;
+                    break;
+                case "js-module-globalization":
+                    toMerge.jsModuleGlobalization = resource;
                     break;
                 case "js-module-runtime":
                     toMerge.jsModuleRuntime = resource;
@@ -226,12 +233,19 @@ export function normalizeConfig () {
 
 let configLoaded = false;
 export async function mono_wasm_load_config (module: DotnetModuleInternal): Promise<void> {
-    const configFilePath = module.configSrc;
     if (configLoaded) {
         await loaderHelpers.afterConfigLoaded.promise;
         return;
     }
+    let configFilePath;
     try {
+        if (!module.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
+            // if config file location nor assets are provided
+            module.configSrc = "./blazor.boot.json";
+        }
+
+        configFilePath = module.configSrc;
+
         configLoaded = true;
         if (configFilePath) {
             mono_log_debug("mono_wasm_load_config");
@@ -255,6 +269,7 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         }
 
         normalizeConfig();
+        loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
         loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, { message: errMessage, error: err, isError: true });

@@ -403,7 +403,7 @@ namespace System.Reflection
         {
             ArgumentException.ThrowIfNullOrEmpty(className);
 
-            return TypeNameParser.GetType(className, topLevelAssembly: Assembly,
+            return TypeNameResolver.GetType(className, topLevelAssembly: Assembly,
                 throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 

@@ -36,6 +36,7 @@ unsigned Compiler::s_lvaDoubleAlignedProcsCount = 0;
 void Compiler::lvaInit()
 {
     lvaParameterPassingInfo = nullptr;
+    lvaParameterStackSize   = 0;
 
     /* We haven't allocated stack variables yet */
     lvaRefCountState = RCS_INVALID;
@@ -72,8 +73,9 @@ void Compiler::lvaInit()
     lvaRetAddrVar       = BAD_VAR_NUM;
 
 #ifdef SWIFT_SUPPORT
-    lvaSwiftSelfArg  = BAD_VAR_NUM;
-    lvaSwiftErrorArg = BAD_VAR_NUM;
+    lvaSwiftSelfArg           = BAD_VAR_NUM;
+    lvaSwiftIndirectResultArg = BAD_VAR_NUM;
+    lvaSwiftErrorArg          = BAD_VAR_NUM;
 #endif
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
@@ -473,15 +475,15 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     codeGen->intRegState.rsCalleeRegArgCount   = varDscInfo->intRegArgNum;
     codeGen->floatRegState.rsCalleeRegArgCount = varDscInfo->floatRegArgNum;
 
-    // Now we have parameters created in the right order. Figure out how they're passed.
-    lvaClassifyParameterABI();
-
 #if FEATURE_FASTTAILCALL
     // Save the stack usage information
     // We can get register usage information using codeGen->intRegState and
     // codeGen->floatRegState
     info.compArgStackSize = varDscInfo->stackArgSize;
 #endif // FEATURE_FASTTAILCALL
+
+    // Now we have parameters created in the right order. Figure out how they're passed.
+    lvaClassifyParameterABI();
 
     // The total argument size must be aligned.
     noway_assert((compArgSize % TARGET_POINTER_SIZE) == 0);
@@ -1442,6 +1444,34 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         return true;
     }
 
+    if ((strcmp(className, "SwiftIndirectResult") == 0) &&
+        (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+    {
+        if (argIsByrefOrPtr)
+        {
+            BADCODE("Expected SwiftIndirectResult struct, got pointer/reference");
+        }
+
+        if (info.compRetType != TYP_VOID)
+        {
+            BADCODE("Functions with SwiftIndirectResult parameters must return void");
+        }
+
+        if (lvaSwiftIndirectResultArg != BAD_VAR_NUM)
+        {
+            BADCODE("Duplicate SwiftIndirectResult parameter");
+        }
+
+        LclVarDsc* const varDsc = varDscInfo->varDsc;
+        varDsc->SetArgReg(theFixedRetBuffReg(CorInfoCallConvExtension::Swift));
+        varDsc->lvIsRegArg = true;
+
+        compArgSize += TARGET_POINTER_SIZE;
+
+        lvaSwiftIndirectResultArg = varDscInfo->varNum;
+        return true;
+    }
+
     if ((strcmp(className, "SwiftError") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
     {
         if (!argIsByrefOrPtr)
@@ -1691,7 +1721,8 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
 template <typename Classifier>
 void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 {
-    lvaParameterPassingInfo = new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
+    lvaParameterPassingInfo =
+        info.compArgsCount == 0 ? nullptr : new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
 
     for (unsigned i = 0; i < info.compArgsCount; i++)
     {
@@ -1707,6 +1738,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         else if (i == lvaSwiftSelfArg)
         {
             wellKnownArg = WellKnownArg::SwiftSelf;
+        }
+        else if (i == lvaSwiftIndirectResultArg)
+        {
+            wellKnownArg = WellKnownArg::RetBuffer;
         }
         else if (i == lvaSwiftErrorArg)
         {
@@ -1724,6 +1759,8 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         }
 #endif
     }
+
+    lvaParameterStackSize = classifier.StackSize();
 }
 
 //-----------------------------------------------------------------------------
@@ -1732,11 +1769,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 //
 void Compiler::lvaClassifyParameterABI()
 {
-    if (info.compArgsCount == 0)
-    {
-        return;
-    }
-
     ClassifierInfo cInfo;
     cInfo.CallConv   = info.compCallConv;
     cInfo.IsVarArgs  = info.compIsVarArgs;
@@ -1773,10 +1805,10 @@ void Compiler::lvaClassifyParameterABI()
             else
             {
                 assert(abiInfo.NumSegments == 1);
-                if (abiInfo.Segments[0].IsPassedInRegister())
+                if (abiInfo.Segment(0).IsPassedInRegister())
                 {
                     dsc->lvIsRegArg = true;
-                    dsc->SetArgReg(abiInfo.Segments[0].GetRegister());
+                    dsc->SetArgReg(abiInfo.Segment(0).GetRegister());
                     dsc->SetOtherArgReg(REG_NA);
                 }
                 else
@@ -1784,13 +1816,13 @@ void Compiler::lvaClassifyParameterABI()
                     dsc->lvIsRegArg = false;
                     dsc->SetArgReg(REG_STK);
                     dsc->SetOtherArgReg(REG_NA);
-                    dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
+                    dsc->SetStackOffset(abiInfo.Segment(0).GetStackOffset());
                 }
             }
 
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 if (segment.IsPassedInRegister())
                 {
                     argRegs |= segment.GetRegisterMask();
@@ -1851,7 +1883,7 @@ void Compiler::lvaClassifyParameterABI()
 
         for (unsigned i = 0; i < numSegmentsToCompare; i++)
         {
-            const ABIPassingSegment& expected = abiInfo.Segments[i];
+            const ABIPassingSegment& expected = abiInfo.Segment(i);
             regNumber                reg      = REG_NA;
             if (i == 0)
             {
@@ -1870,12 +1902,18 @@ void Compiler::lvaClassifyParameterABI()
                 {
                     assert(reg == REG_STK);
 
+                    unsigned dscStackOffset = (unsigned)dsc->GetStackOffset();
+#ifdef WINDOWS_AMD64_ABI
+                    // The LclVarDsc value does not account for the 4 shadow slots allocated by the caller.
+                    dscStackOffset += 32;
+#endif
+
 // On x86, varargs methods access stack args off of a base pointer, and the
 // first stack arg is not considered to be at offset 0.
 // TODO-Cleanup: Unify things so that x86 is consistent with other platforms
 // here and change fgMorphExpandStackArgForVarArgs to account for that.
 #ifndef TARGET_X86
-                    assert((unsigned)dsc->GetStackOffset() == expected.GetStackOffset());
+                    assert(dscStackOffset == expected.GetStackOffset());
 #endif
                 }
             }
@@ -1885,6 +1923,59 @@ void Compiler::lvaClassifyParameterABI()
             }
         }
     }
+
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+
+        if (lvaIsImplicitByRefLocal(lclNum))
+        {
+            assert((abiInfo.NumSegments == 1) && (abiInfo.Segment(0).Size == TARGET_POINTER_SIZE));
+        }
+        else
+        {
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& segment = abiInfo.Segment(i);
+                assert(segment.Size > 0);
+                assert(segment.Offset + segment.Size <= lvaLclExactSize(lclNum));
+
+                if (i > 0)
+                {
+                    assert(segment.Offset > abiInfo.Segment(i - 1).Offset);
+                }
+
+                for (unsigned j = 0; j < abiInfo.NumSegments; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+
+                    const ABIPassingSegment& otherSegment = abiInfo.Segment(j);
+                    assert((segment.Offset + segment.Size <= otherSegment.Offset) ||
+                           (segment.Offset >= otherSegment.Offset + otherSegment.Size));
+                }
+            }
+        }
+    }
+
+#if FEATURE_FASTTAILCALL
+    // Swift doesn't have correct ABI info computed by the old classification,
+    // so skip this validation there.
+    if (info.compCallConv != CorInfoCallConvExtension::Swift)
+    {
+        unsigned oldStackSize = info.compArgStackSize;
+
+#ifdef WINDOWS_AMD64_ABI
+        // Old info does not take 4 shadow slots on win-x64 into account.
+        oldStackSize += 32;
+#endif
+
+        assert(lvaParameterStackSize == roundUp(oldStackSize, TARGET_POINTER_SIZE));
+    }
+#endif
+
 #endif // DEBUG
 }
 
@@ -2280,9 +2371,15 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     if (fieldsSize != treeNodes[0].size)
     {
         structPromotionInfo.containsHoles = true;
-    }
 
-    structPromotionInfo.anySignificantPadding = treeNodes[0].hasSignificantPadding && structPromotionInfo.containsHoles;
+        if (treeNodes[0].hasSignificantPadding)
+        {
+            // Struct has significant data not covered by fields we would promote;
+            // this would typically result in dependent promotion, so leave this
+            // struct to physical promotion.
+            return false;
+        }
+    }
 
     // Cool, this struct is promotable.
 
@@ -2473,14 +2570,23 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-    if (varDsc->IsAddressExposed())
+    if (varDsc->lvDoNotEnregister)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it has already been marked address exposed\n", lclNum);
+        // Promoting structs that are marked DNER will result in dependent
+        // promotion. Allow physical promotion to handle these.
+        JITDUMP("  struct promotion of V%02u is disabled because it has already been marked DNER\n", lclNum);
         return false;
     }
 
     if (varDsc->GetLayout()->IsBlockLayout())
     {
+        JITDUMP("  struct promotion of V%02u is disabled because it has block layout\n", lclNum);
+        return false;
+    }
+
+    if (varDsc->lvStackAllocatedBox)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it is a stack allocated box\n", lclNum);
         return false;
     }
 
@@ -2618,11 +2724,6 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                 structPromotionInfo.fieldCnt, varDsc->lvFieldAccessed);
         shouldPromote = false;
     }
-    else if (varDsc->lvIsMultiRegRet && structPromotionInfo.anySignificantPadding)
-    {
-        JITDUMP("Not promoting multi-reg returned struct local V%02u with significant padding.\n", lclNum);
-        shouldPromote = false;
-    }
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     else if ((structPromotionInfo.fieldCnt == 2) && (varTypeIsFloating(structPromotionInfo.fields[0].fldType) ||
                                                      varTypeIsFloating(structPromotionInfo.fields[1].fldType)))
@@ -2641,13 +2742,8 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         // multiple registers?
         if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
         {
-            if (structPromotionInfo.anySignificantPadding)
-            {
-                JITDUMP("Not promoting multi-reg struct local V%02u with significant padding.\n", lclNum);
-                shouldPromote = false;
-            }
-            else if ((structPromotionInfo.fieldCnt != 2) &&
-                     !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
+            if ((structPromotionInfo.fieldCnt != 2) &&
+                !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
             {
                 JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true, #fields != 2 and it's "
                         "not a single SIMD.\n",
@@ -2736,11 +2832,10 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     assert(varDsc->GetLayout()->GetClassHandle() == structPromotionInfo.typeHnd);
     assert(structPromotionInfo.canPromote);
 
-    varDsc->lvFieldCnt              = structPromotionInfo.fieldCnt;
-    varDsc->lvFieldLclStart         = compiler->lvaCount;
-    varDsc->lvPromoted              = true;
-    varDsc->lvContainsHoles         = structPromotionInfo.containsHoles;
-    varDsc->lvAnySignificantPadding = structPromotionInfo.anySignificantPadding;
+    varDsc->lvFieldCnt      = structPromotionInfo.fieldCnt;
+    varDsc->lvFieldLclStart = compiler->lvaCount;
+    varDsc->lvPromoted      = true;
+    varDsc->lvContainsHoles = structPromotionInfo.containsHoles;
 
 #ifdef DEBUG
     // Don't stress this in LCL_FLD stress.
@@ -2973,12 +3068,6 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
 //    *do not* mark the local address-exposed and treat the call much like a local store node throughout
 //    the compilation.
 //
-//    TODO-ADDR-Bug: currently, we rely on these locals not being present in call argument lists,
-//    outside of the buffer address argument itself, as liveness - currently - treats the location node
-//    associated with the address itself as the definition point, and call arguments can be reordered
-//    rather arbitrarily. We should fix liveness to treat the call as the definition point instead and
-//    enable this optimization for "!lvIsTemp" locals.
-//
 void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
@@ -3080,7 +3169,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             break;
         case DoNotEnregisterReason::HiddenBufferStructArg:
             JITDUMP("it is hidden buffer struct arg\n");
-            assert(varDsc->IsHiddenBufferStructArg());
             break;
         case DoNotEnregisterReason::DontEnregStructs:
             JITDUMP("struct enregistration is disabled\n");
@@ -3120,10 +3208,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
         case DoNotEnregisterReason::NoRegVars:
             JITDUMP("opts.compFlags & CLFLG_REGVAR is not set\n");
             assert(!compEnregLocals());
-            break;
-        case DoNotEnregisterReason::MinOptsGC:
-            JITDUMP("it is a GC Ref and we are compiling MinOpts\n");
-            assert(!JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()));
             break;
 #if !defined(TARGET_64BIT)
         case DoNotEnregisterReason::LongParamField:
@@ -3271,6 +3355,8 @@ bool Compiler::lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const
 // TODO-Throughput: This does a lookup on the class handle, and in the outgoing arg context
 // this information is already available on the CallArgABIInformation, and shouldn't need to be
 // recomputed.
+//
+// Also seems like this info could be cached in the layout.
 //
 bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
 {
@@ -4056,11 +4142,6 @@ void Compiler::lvaSortByRefCount()
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
 #endif
         }
-        if (opts.MinOpts() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
-        {
-            varDsc->lvTracked = 0;
-            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::MinOptsGC));
-        }
         if (!compEnregLocals())
         {
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
@@ -4098,11 +4179,13 @@ void Compiler::lvaSortByRefCount()
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
-#if defined(TARGET_XARCH)
+#ifdef TARGET_XARCH
                 case TYP_SIMD32:
                 case TYP_SIMD64:
-                case TYP_MASK:
 #endif // TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+                case TYP_MASK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
                 case TYP_STRUCT:
                     break;
@@ -5509,7 +5592,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *  Doing this all in one pass is 'hard'.  So instead we do it in 2 basic passes:
  *    1. Assign all the offsets relative to the Virtual '0'. Offsets above (the
  *      incoming arguments) are positive. Offsets below (everything else) are
- *      negative.  This pass also calcuates the total frame size (between Caller's
+ *      negative.  This pass also calculates the total frame size (between Caller's
  *      SP/return address and the Ambient SP).
  *    2. Figure out where to place the frame pointer, and then adjust the offsets
  *      as needed for the final stack size and whether the offset is frame pointer
@@ -5876,642 +5959,154 @@ void Compiler::lvaUpdateArgsWithInitialReg()
     }
 }
 
-/*****************************************************************************
- *  lvaAssignVirtualFrameOffsetsToArgs() : Assign virtual stack offsets to the
- *  arguments, and implicit arguments (this ptr, return buffer, generics,
- *  and varargs).
- */
+//-----------------------------------------------------------------------------
+// lvaAssignVirtualFrameOffsetsToArgs:
+//   Assign virtual frame offsets to the incoming parameters.
+//
 void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 {
-    unsigned lclNum  = 0;
-    int      argOffs = 0;
-#ifdef UNIX_AMD64_ABI
-    int callerArgOffset = 0;
-#endif // UNIX_AMD64_ABI
-
-    /*
-        Assign stack offsets to arguments (in reverse order of passing).
-
-        This means that if we pass arguments left->right, we start at
-        the end of the list and work backwards, for right->left we start
-        with the first argument and move forward.
-
-        This is all relative to our Virtual '0'
-     */
-
-    if (info.compArgOrder == Target::ARG_ORDER_L2R)
-    {
-        argOffs = compArgSize;
-    }
-
-    /* Update the argOffs to reflect arguments that are passed in registers */
-
-    noway_assert(codeGen->intRegState.rsCalleeRegArgCount <= MAX_REG_ARG);
-    noway_assert(compAppleArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
-
-    if (info.compArgOrder == Target::ARG_ORDER_L2R)
-    {
-        argOffs -= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
-    }
-
-    // Update the arg initial register locations.
-    lvaUpdateArgsWithInitialReg();
-
-#ifdef SWIFT_SUPPORT
-    if (info.compCallConv == CorInfoCallConvExtension::Swift)
-    {
-        // We already assigned argument offsets in lvaClassifyParameterABI.
-        // Just get them from there.
-        // TODO-Cleanup: We can use similar logic for all backends once we have
-        // the new ABI info for all targets.
-        for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
-        {
-            LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
-            const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
-
-            if (abiInfo.HasExactlyOneStackSegment())
-            {
-                dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
-            }
-        }
-        return;
-    }
-#endif
-
-    /* Is there a "this" argument? */
-
-    if (!info.compIsStatic)
-    {
-        noway_assert(lclNum == info.compThisArg);
-#ifndef TARGET_X86
-        argOffs =
-            lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
-#endif // TARGET_X86
-        lclNum++;
-    }
-
-    unsigned userArgsToSkip = 0;
-#if !defined(TARGET_ARM)
-    // In the native instance method calling convention on Windows,
-    // the this parameter comes before the hidden return buffer parameter.
-    // So, we want to process the native "this" parameter before we process
-    // the native return buffer parameter.
-    if (TargetOS::IsWindows && callConvIsInstanceMethodCallConv(info.compCallConv))
-    {
-#ifdef TARGET_X86
-        if (!lvaTable[lclNum].lvIsRegArg)
-        {
-            argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
-        }
-#elif !defined(UNIX_AMD64_ABI)
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
-#endif // TARGET_X86
-        lclNum++;
-        userArgsToSkip++;
-    }
-#endif
-
-    /* if we have a hidden buffer parameter, that comes here */
-
-    if (info.compRetBuffArg != BAD_VAR_NUM)
-    {
-        noway_assert(lclNum == info.compRetBuffArg);
-        argOffs =
-            lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
-        lclNum++;
-    }
-
-#if USER_ARGS_COME_LAST
-
-    //@GENERICS: extra argument for instantiation info
-    if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
-    {
-        noway_assert(lclNum == info.compTypeCtxtArg);
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
-                                                   argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
-    }
-
-    if (info.compIsVarArgs)
-    {
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
-                                                   argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
-    }
-
-#endif // USER_ARGS_COME_LAST
-
-    CORINFO_ARG_LIST_HANDLE argLst    = info.compMethodInfo->args.args;
-    unsigned                argSigLen = info.compMethodInfo->args.numArgs;
-    // Skip any user args that we've already processed.
-    assert(userArgsToSkip <= argSigLen);
-    argSigLen -= userArgsToSkip;
-    for (unsigned i = 0; i < userArgsToSkip; i++, argLst = info.compCompHnd->getArgNext(argLst))
-    {
-        ;
-    }
-
+    int relativeZero = 0;
 #ifdef TARGET_ARM
-    //
-    // struct_n { int; int; ... n times };
-    //
-    // Consider signature:
-    //
-    // Foo (float a,double b,float c,double d,float e,double f,float g,double h,
-    //      float i,double j,float k,double l,struct_3 m) { }
-    //
-    // Basically the signature is: (all float regs full, 1 double, struct_3);
-    //
-    // The double argument occurs before pre spill in the argument iteration and
-    // computes an argOffset of 0. struct_3 offset becomes 8. This is wrong.
-    // Because struct_3 is prespilled and double occurs after prespill.
-    // The correct offsets are double = 16 (aligned stk), struct_3 = 0..12,
-    // Offset 12 will be skipped for double alignment of double.
-    //
-    // Another example is (struct_2, all float regs full, double, struct_2);
-    // Here, notice the order is similarly messed up because of 2 pre-spilled
-    // struct_2.
-    //
-    // Succinctly,
-    // ARG_INDEX(i) > ARG_INDEX(j) DOES NOT IMPLY |ARG_OFFSET(i)| > |ARG_OFFSET(j)|
-    //
-    // Therefore, we'll do a two pass offset calculation, one that considers pre-spill
-    // and the next, stack args.
-    //
-
-    unsigned argLcls = 0;
-
-    // Take care of pre spill registers first.
-    regMaskTP preSpillMask = codeGen->regSet.rsMaskPreSpillRegs(false);
-    regMaskTP tempMask     = RBM_NONE;
-    for (unsigned i = 0, preSpillLclNum = lclNum; i < argSigLen; ++i, ++preSpillLclNum)
-    {
-        if (lvaIsPreSpilled(preSpillLclNum, preSpillMask))
-        {
-            CORINFO_CLASS_HANDLE argClass = NO_CLASS_HANDLE;
-            CorInfoType argTypeJit = strip(info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &argClass));
-            unsigned    argSize    = eeGetArgSize(argTypeJit, argClass);
-            argOffs                = lvaAssignVirtualFrameOffsetToArg(preSpillLclNum, argSize, argOffs);
-            argLcls++;
-
-            // Early out if we can. If size is 8 and base reg is 2, then the mask is 0x1100
-            tempMask |= ((((1 << (roundUp(argSize, TARGET_POINTER_SIZE) / REGSIZE_BYTES))) - 1)
-                         << lvaTable[preSpillLclNum].GetArgReg());
-            if (tempMask == preSpillMask)
-            {
-                // We won't encounter more pre-spilled registers,
-                // so don't bother iterating further.
-                break;
-            }
-        }
-        argLst = info.compCompHnd->getArgNext(argLst);
-    }
-
-    // Take care of non pre-spilled stack arguments.
-    argLst = info.compMethodInfo->args.args;
-    for (unsigned i = 0, stkLclNum = lclNum; i < argSigLen; ++i, ++stkLclNum)
-    {
-        if (!lvaIsPreSpilled(stkLclNum, preSpillMask))
-        {
-            CORINFO_CLASS_HANDLE argClass = NO_CLASS_HANDLE;
-            CorInfoType argTypeJit = strip(info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &argClass));
-            const unsigned argSize = eeGetArgSize(argTypeJit, argClass);
-            argOffs                = lvaAssignVirtualFrameOffsetToArg(stkLclNum, argSize, argOffs);
-            argLcls++;
-        }
-        argLst = info.compCompHnd->getArgNext(argLst);
-    }
-
-    lclNum += argLcls;
-#else  // !TARGET_ARM
-    for (unsigned i = 0; i < argSigLen; i++)
-    {
-        CORINFO_CLASS_HANDLE argClass = NO_CLASS_HANDLE;
-        CorInfoType argTypeJit   = strip(info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &argClass));
-        unsigned    argumentSize = eeGetArgSize(argTypeJit, argClass);
-
-        assert(compAppleArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
-
-        argOffs =
-            lvaAssignVirtualFrameOffsetToArg(lclNum++, argumentSize, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
-        argLst = info.compCompHnd->getArgNext(argLst);
-    }
-#endif // !TARGET_ARM
-
-#if !USER_ARGS_COME_LAST
-
-    //@GENERICS: extra argument for instantiation info
-    if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
-    {
-        noway_assert(lclNum == info.compTypeCtxtArg);
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
-                                                   argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
-    }
-
-    if (info.compIsVarArgs)
-    {
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
-                                                   argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
-    }
-
-#endif // USER_ARGS_COME_LAST
-}
-
-#ifdef UNIX_AMD64_ABI
-//
-//  lvaAssignVirtualFrameOffsetToArg() : Assign virtual stack offsets to an
-//  individual argument, and return the offset for the next argument.
-//  Note: This method only calculates the initial offset of the stack passed/spilled arguments
-//  (if any - the RA might decide to spill(home on the stack) register passed arguments, if rarely used.)
-//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existence,
-//        ret address slot, stack frame padding, alloca instructions, etc.
-//  Note: This is the implementation for UNIX_AMD64 System V platforms.
-//
-int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned    lclNum,
-                                               unsigned    argSize,
-                                               int argOffs UNIX_AMD64_ABI_ONLY_ARG(int* callerArgOffset))
-{
-    noway_assert(lclNum < info.compArgsCount);
-    noway_assert(argSize);
-
-    if (info.compArgOrder == Target::ARG_ORDER_L2R)
-    {
-        argOffs -= argSize;
-    }
-
-    unsigned fieldVarNum = BAD_VAR_NUM;
-
-    LclVarDsc* varDsc = lvaGetDesc(lclNum);
-
-    noway_assert(varDsc->lvIsParam);
-
-    if (varDsc->lvIsRegArg)
-    {
-        // Argument is passed in a register, don't count it
-        // when updating the current offset on the stack.
-
-        if (varDsc->lvOnFrame)
-        {
-            // The offset for args needs to be set only for the stack homed arguments for System V.
-            varDsc->SetStackOffset(argOffs);
-        }
-        else
-        {
-            varDsc->SetStackOffset(0);
-        }
-    }
-    else
-    {
-        // For Windows AMD64 there are 4 slots for the register passed arguments on the top of the caller's stack.
-        // This is where they are always homed. So, they can be accessed with positive offset.
-        // On System V platforms, if the RA decides to home a register passed arg on the stack, it creates a stack
-        // location on the callee stack (like any other local var.) In such a case, the register passed, stack homed
-        // arguments are accessed using negative offsets and the stack passed arguments are accessed using positive
-        // offset (from the caller's stack.)
-        // For  System V platforms if there is no frame pointer the caller stack parameter offset should include the
-        // callee allocated space. If frame register is used, the callee allocated space should not be included for
-        // accessing the caller stack parameters. The last two requirements are met in lvaFixVirtualFrameOffsets
-        // method, which fixes the offsets, based on frame pointer existence, existence of alloca instructions, ret
-        // address pushed, ets.
-
-        varDsc->SetStackOffset(*callerArgOffset);
-        // Structs passed on stack could be of size less than TARGET_POINTER_SIZE.
-        // Make sure they get at least TARGET_POINTER_SIZE on the stack - this is required for alignment.
-        if (argSize > TARGET_POINTER_SIZE)
-        {
-            *callerArgOffset += (int)roundUp(argSize, TARGET_POINTER_SIZE);
-        }
-        else
-        {
-            *callerArgOffset += TARGET_POINTER_SIZE;
-        }
-    }
-
-    // For struct promoted parameters we need to set the offsets for the field lclVars.
-    //
-    // For a promoted struct we also assign the struct fields stack offset
-    if (varDsc->lvPromoted)
-    {
-        unsigned firstFieldNum = varDsc->lvFieldLclStart;
-        int      offset        = varDsc->GetStackOffset();
-        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldVarDsc = lvaGetDesc(firstFieldNum + i);
-            fieldVarDsc->SetStackOffset(offset + fieldVarDsc->lvFldOffset);
-        }
-    }
-
-    if (info.compArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
-    {
-        argOffs += argSize;
-    }
-
-    return argOffs;
-}
-
-#else // !UNIX_AMD64_ABI
-
-//
-//  lvaAssignVirtualFrameOffsetToArg() : Assign virtual stack offsets to an
-//  individual argument, and return the offset for the next argument.
-//  Note: This method only calculates the initial offset of the stack passed/spilled arguments
-//  (if any - the RA might decide to spill(home on the stack) register passed arguments, if rarely used.)
-//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existence,
-//        ret address slot, stack frame padding, alloca instructions, etc.
-//  Note: This implementation for all the platforms but UNIX_AMD64 OSs (System V 64 bit.)
-int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned    lclNum,
-                                               unsigned    argSize,
-                                               int argOffs UNIX_AMD64_ABI_ONLY_ARG(int* callerArgOffset))
-{
-    noway_assert(lclNum < info.compArgsCount);
-    noway_assert(argSize);
-
-    if (info.compArgOrder == Target::ARG_ORDER_L2R)
-    {
-        argOffs -= argSize;
-    }
-
-    unsigned fieldVarNum = BAD_VAR_NUM;
-
-    LclVarDsc* varDsc = lvaGetDesc(lclNum);
-
-    noway_assert(varDsc->lvIsParam);
-
-    if (varDsc->lvIsRegArg)
-    {
-        /* Argument is passed in a register, don't count it
-         * when updating the current offset on the stack */
-
-#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-#if DEBUG
-        // TODO: Remove this noway_assert and replace occurrences of TARGET_POINTER_SIZE with argSize
-        // Also investigate why we are incrementing argOffs for X86 as this seems incorrect
-        //
-        noway_assert(argSize == TARGET_POINTER_SIZE);
-#endif // DEBUG
+    // arm32 is special and has the concept of "prespill" where we generate
+    // code in the callee to spill the argument registers as the very first
+    // thing, and consider those to be actually passed by the caller. The
+    // virtual 0 is actually below these prespills.
+    // TODO-Cleanup: Unify arm32 with arm64. arm64 also needs a similar
+    // mechanism for split parameters in varargs, but it does not consider the
+    // "virtual 0" to be below the prespills, which simplifies things
+    // considerably.
+    regMaskTP prespilled = codeGen->regSet.rsMaskPreSpillRegs(true);
+    JITDUMP("Prespill regs is ");
+    DBEXEC(VERBOSE, dspRegMask(prespilled));
+    JITDUMP("\n");
+    relativeZero = genCountBits(prespilled) * TARGET_POINTER_SIZE;
 #endif
 
-#if defined(TARGET_X86)
-        argOffs += TARGET_POINTER_SIZE;
-#elif defined(TARGET_AMD64)
-        // Register arguments on AMD64 also takes stack space. (in the backing store)
-        varDsc->SetStackOffset(argOffs);
-        argOffs += TARGET_POINTER_SIZE;
-#elif defined(TARGET_ARM64)
-        // Register arguments on ARM64 only take stack space when they have a frame home.
-        // Unless on windows and in a vararg method.
-        if (compFeatureArgSplit() && this->info.compIsVarArgs)
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        LclVarDsc* dsc = lvaGetDesc(lclNum);
+
+        int startOffset;
+        if (lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(lclNum, &startOffset))
         {
-            if (varDsc->lvType == TYP_STRUCT && varDsc->GetOtherArgReg() >= MAX_REG_ARG &&
-                varDsc->GetOtherArgReg() != REG_NA)
+            dsc->SetStackOffset(startOffset + relativeZero);
+            JITDUMP("Set V%02u to offset %d\n", lclNum, startOffset);
+
+            if (dsc->lvPromoted)
             {
-                // This is a split struct. It will account for an extra (8 bytes)
-                // of alignment.
-                varDsc->SetStackOffset(varDsc->GetStackOffset() + TARGET_POINTER_SIZE);
-                argOffs += TARGET_POINTER_SIZE;
+                for (unsigned fld = 0; fld < dsc->lvFieldCnt; fld++)
+                {
+                    unsigned   fieldLclNum = dsc->lvFieldLclStart + fld;
+                    LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
+                    fieldVarDsc->SetStackOffset(dsc->GetStackOffset() + fieldVarDsc->lvFldOffset);
+                    JITDUMP("  Set field V%02u to offset %d\n", fieldLclNum, fieldVarDsc->GetStackOffset());
+                }
             }
         }
+    }
+}
 
+//-----------------------------------------------------------------------------
+// lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter:
+//   Return offset to use for a parameter local when the caller allocated space
+//   for (parts of) it. The offset returned is relative to the bottom of the
+//   space allocated by the caller (our "virtual 0", see lvaAssignFrameOffsets
+//   documentation).
+//
+// Parameters:
+//   lclNum - Parameter local
+//   offset - [out] Offset to use for the parameter local. Only valid when the
+//   function returns true.
+//
+// Returns:
+//   true if the caller allocated space that the JIT should reuse for the
+//   parameter's home.
+//
+// Remarks:
+//   The most common situation is for stack parameters, but there are other
+//   cases where we have usable space allocated by the caller:
+//   - On win-x64 the caller allocates stack space even for args passed in
+//   registers
+//   - On multiple ABIs (see below) structs can be passed split across stack
+//   and registers, where this function may then return an offset that only
+//   partially reaches into caller allocated space (i.e. negative)
+//  - On arm32 we sometimes prespill argument registers and consider it to be
+//  caller allocated, making this function also return a negative offset for
+//  some register parameters in that case.
+//
+bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned lclNum, int* offset)
+{
+    const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+
+    for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+    {
+        const ABIPassingSegment& segment = abiInfo.Segment(i);
+        if (!segment.IsPassedOnStack())
+        {
+#if defined(WINDOWS_AMD64_ABI)
+            if (ABIPassingInformation::GetShadowSpaceCallerOffsetForReg(segment.GetRegister(), offset))
+            {
+                return true;
+            }
 #elif defined(TARGET_ARM)
-        // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
-        // in the prolog, so we have to do SetStackOffset() here
-        //
-        regMaskTP regMask = genRegMask(varDsc->GetArgReg());
-        if (codeGen->regSet.rsMaskPreSpillRegArg & regMask)
-        {
-            // Signature: void foo(struct_8, int, struct_4)
-            // ------- CALLER SP -------
-            // r3 struct_4
-            // r2 int - not prespilled, but added for alignment. argOffs should skip this.
-            // r1 struct_8
-            // r0 struct_8
-            // -------------------------
-            // If we added alignment we need to fix argOffs for all registers above alignment.
-            if (codeGen->regSet.rsMaskPreSpillAlign != RBM_NONE)
+            regMaskTP prespills = codeGen->regSet.rsMaskPreSpillRegs(true);
+            if ((prespills & genRegMask(segment.GetRegister())) != RBM_NONE)
             {
-                assert(genCountBits(codeGen->regSet.rsMaskPreSpillAlign) == 1);
-                // Is register beyond the alignment pos?
-                if (regMask > codeGen->regSet.rsMaskPreSpillAlign)
-                {
-                    // Increment argOffs just once for the _first_ register after alignment pos
-                    // in the prespill mask.
-                    if (!BitsBetween(codeGen->regSet.rsMaskPreSpillRegArg, regMask,
-                                     codeGen->regSet.rsMaskPreSpillAlign))
-                    {
-                        argOffs += TARGET_POINTER_SIZE;
-                    }
-                }
+                // Construct a mask with all prespills that includes the
+                // segment's register and all registers after it. For example:
+                // prespills:       1101 (i.e. prolog starts with push {r0, r2, r3}
+                // reg:             0100 (i.e. r2 which is at offset -8)
+                // higherPrespills: 1100 (=> r2, r3)
+                regMaskTP higherPrespills = prespills & (regMaskTP)(~((1ULL << (int)segment.GetRegister()) - 1));
+                *offset                   = -(int)genCountBits(higherPrespills) * TARGET_POINTER_SIZE;
+
+                // Adjust for a potential split (we currently always expect all
+                // split structs to be fully prespilled, but this makes the
+                // logic general and matches the logic below).
+                *offset -= segment.Offset;
+                return true;
             }
-
-            switch (varDsc->lvType)
-            {
-                case TYP_STRUCT:
-                    if (!varDsc->lvStructDoubleAlign)
-                    {
-                        break;
-                    }
-                    FALLTHROUGH;
-
-                case TYP_DOUBLE:
-                case TYP_LONG:
-                {
-                    //
-                    // Let's assign offsets to arg1, a double in r2. argOffs has to be 4 not 8.
-                    //
-                    // ------- CALLER SP -------
-                    // r3
-                    // r2 double   -- argOffs = 4, but it doesn't need to be skipped, because there is no skipping.
-                    // r1 VACookie -- argOffs = 0
-                    // -------------------------
-                    //
-                    // Consider argOffs as if it accounts for number of prespilled registers before the current
-                    // register. In the above example, for r2, it is r1 that is prespilled, but since r1 is
-                    // accounted for by argOffs being 4, there should have been no skipping. Instead, if we didn't
-                    // assign r1 to any variable, then argOffs would still be 0 which implies it is not accounting
-                    // for r1, equivalently r1 is skipped.
-                    //
-                    // If prevRegsSize is unaccounted for by a corresponding argOffs, we must have skipped a register.
-                    int prevRegsSize =
-                        genCountBits(codeGen->regSet.rsMaskPreSpillRegArg & (regMask - 1)) * TARGET_POINTER_SIZE;
-                    if (argOffs < prevRegsSize)
-                    {
-                        // We must align up the argOffset to a multiple of 8 to account for skipped registers.
-                        argOffs = roundUp((unsigned)argOffs, 2 * TARGET_POINTER_SIZE);
-                    }
-                    // We should've skipped only a single register.
-                    assert(argOffs == prevRegsSize);
-                }
-                break;
-
-                default:
-                    // No alignment of argOffs required
-                    break;
-            }
-            varDsc->SetStackOffset(argOffs);
-            argOffs += argSize;
-        }
-
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-        if (varDsc->lvIsSplit)
-        {
-            assert((varDsc->lvType == TYP_STRUCT) && (varDsc->GetOtherArgReg() == REG_STK));
-            // This is a split struct. It will account for an extra (8 bytes) for the whole struct.
-            varDsc->SetStackOffset(varDsc->GetStackOffset() + TARGET_POINTER_SIZE);
-            argOffs += TARGET_POINTER_SIZE;
-        }
-
-#else // TARGET*
-#error Unsupported or unset target architecture
-#endif // TARGET*
-    }
-    else
-    {
-#if defined(TARGET_ARM)
-        // Dev11 Bug 42817: incorrect codegen for DrawFlatCheckBox causes A/V in WinForms
-        //
-        // Here we have method with a signature (int a1, struct a2, struct a3, int a4, int a5).
-        // Struct parameter 'a2' is 16-bytes with no alignment requirements;
-        //  it uses r1,r2,r3 and [OutArg+0] when passed.
-        // Struct parameter 'a3' is 16-bytes that is required to be double aligned;
-        //  the caller skips [OutArg+4] and starts the argument at [OutArg+8].
-        // Thus the caller generates the correct code to pass the arguments.
-        // When generating code to receive the arguments we set codeGen->regSet.rsMaskPreSpillRegArg to [r1,r2,r3]
-        //  and spill these three registers as the first instruction in the prolog.
-        // Then when we layout the arguments' stack offsets we have an argOffs 0 which
-        //  points at the location that we spilled r1 into the stack.  For this first
-        //  struct we take the lvIsRegArg path above with "codeGen->regSet.rsMaskPreSpillRegArg &" matching.
-        // Next when we calculate the argOffs for the second 16-byte struct we have an argOffs
-        //  of 16, which appears to be aligned properly so we don't skip a stack slot.
-        //
-        // To fix this we must recover the actual OutArg offset by subtracting off the
-        //  sizeof of the PreSpill register args.
-        // Then we align this offset to a multiple of 8 and add back the sizeof
-        //  of the PreSpill register args.
-        //
-        // Dev11 Bug 71767: failure of assert(sizeofPreSpillRegArgs <= argOffs)
-        //
-        // We have a method with 'this' passed in r0, RetBuf arg in r1, VarArgs cookie
-        // in r2. The first user arg is a 144 byte struct with double alignment required,
-        // r3 is skipped, and the struct is passed on the stack. However, 'r3' is added
-        // to the codeGen->regSet.rsMaskPreSpillRegArg mask by the VarArgs cookie code, since we need to
-        // home all the potential varargs arguments in registers, even if we don't have
-        // signature type information for the variadic arguments. However, due to alignment,
-        // we have skipped a register that doesn't have a corresponding symbol. Make up
-        // for that by increasing argOffs here.
-        //
-
-        int sizeofPreSpillRegArgs = genCountBits(codeGen->regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
-
-        if (argOffs < sizeofPreSpillRegArgs)
-        {
-            // This can only happen if we skipped the last register spot because current stk arg
-            // is a struct requiring alignment or a pre-spill alignment was required because the
-            // first reg arg needed alignment.
-            //
-            // Example 1: First Stk Argument requiring alignment in vararg case (same as above comment.)
-            //            Signature (int a0, int a1, int a2, struct {long} a3, ...)
-            //
-            // stk arg    a3             --> argOffs here will be 12 (r0-r2) but pre-spill will be 16.
-            // ---- Caller SP ----
-            // r3                        --> Stack slot is skipped in this case.
-            // r2    int  a2
-            // r1    int  a1
-            // r0    int  a0
-            //
-            // Example 2: First Reg Argument requiring alignment in no-vararg case.
-            //            Signature (struct {long} a0, struct {int} a1, int a2, int a3)
-            //
-            // stk arg                  --> argOffs here will be 12 {r0-r2} but pre-spill will be 16.
-            // ---- Caller SP ----
-            // r3    int             a2 --> pushed (not pre-spilled) for alignment of a0 by lvaInitUserArgs.
-            // r2    struct { int }  a1
-            // r0-r1 struct { long } a0
-
-#ifdef PROFILING_SUPPORTED
-            // On Arm under profiler, r0-r3 are always prespilled on stack.
-            // It is possible to have methods that accept only HFAs as parameters e.g. Signature(struct hfa1, struct
-            // hfa2), in which case hfa1 and hfa2 will be en-registered in co-processor registers and will have an
-            // argument offset less than size of preSpill.
-            //
-            // For this reason the following conditions are asserted when not under profiler.
-            if (!compIsProfilerHookNeeded())
 #endif
-            {
-                bool cond = ((info.compIsVarArgs || opts.compUseSoftFP) &&
-                             // Does cur stk arg require double alignment?
-                             ((varDsc->lvType == TYP_STRUCT && varDsc->lvStructDoubleAlign) ||
-                              (varDsc->lvType == TYP_DOUBLE) || (varDsc->lvType == TYP_LONG))) ||
-                            // Did first reg arg require alignment?
-                            (codeGen->regSet.rsMaskPreSpillAlign & genRegMask(REG_ARG_LAST));
 
-                noway_assert(cond);
-                noway_assert(sizeofPreSpillRegArgs <= argOffs + TARGET_POINTER_SIZE); // at most one register of
-                                                                                      // alignment
-            }
-            argOffs = sizeofPreSpillRegArgs;
+            continue;
         }
 
-        noway_assert(argOffs >= sizeofPreSpillRegArgs);
-        int argOffsWithoutPreSpillRegArgs = argOffs - sizeofPreSpillRegArgs;
-
-        switch (varDsc->lvType)
+        if (info.compArgOrder == Target::ARG_ORDER_L2R)
         {
-            case TYP_STRUCT:
-                if (!varDsc->lvStructDoubleAlign)
-                    break;
-
-                FALLTHROUGH;
-
-            case TYP_DOUBLE:
-            case TYP_LONG:
-                // We must align up the argOffset to a multiple of 8
-                argOffs =
-                    roundUp((unsigned)argOffsWithoutPreSpillRegArgs, 2 * TARGET_POINTER_SIZE) + sizeofPreSpillRegArgs;
-                break;
-
-            default:
-                // No alignment of argOffs required
-                break;
+            // This is the managed x86 ABI. Stack offsets saved in ABI
+            // information is relative to the top of the stack frame here.
+            assert(segment.Offset == 0);
+            *offset = (int)(lvaParameterStackSize - segment.GetStackOffset());
         }
-#endif // TARGET_ARM
-        const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
-        const unsigned argAlignment = eeGetArgSizeAlignment(varDsc->lvType, isFloatHfa);
-        if (compAppleArm64Abi())
+        else
         {
-            argOffs = roundUp(argOffs, argAlignment);
+            // Some ABIs may split parameters across registers and stack:
+            //
+            // - On Windows, the Arm64 varargs ABI can split a 16 byte struct across x7 and stack
+            // - Arm32 generally allows structs to be split
+            // - LA64/RISCV64 both allow splitting of 16-byte structs across 1 register and stack
+            // - The Swift ABI can split parameters across multiple register and multiple stack segments
+            //
+            // Of these, Swift and RISCV64/LA64 are handled separately, by
+            // reassembling the split structs entirely on the local stack
+            // frame. Thus the offsets returned here and assigned inside
+            // lvaAssignVirtualFrameOffsetsToArgs are overwritten later.
+            //
+            // For ARM64 and ARM32 we use a different strategy to reassemble
+            // the struct on the stack frame: we consider the local itself to
+            // start right before the "virtual 0", such that spilling the
+            // register parts will end up with the local fully reassembled and
+            // contiguous, without having to move any of the stack segments.
+            // The subtraction of the segment offset accomplishes that here.
+            //
+            *offset = (int)segment.GetStackOffset() - (int)segment.Offset;
         }
 
-        assert((argSize % argAlignment) == 0);
-        assert((argOffs % argAlignment) == 0);
-        varDsc->SetStackOffset(argOffs);
+        return true;
     }
 
-    // For struct promoted parameters we need to set the offsets for both LclVars.
-    //
-    // For a dependent promoted struct we also assign the struct fields stack offset
-
-    if (varDsc->lvPromoted)
-    {
-        unsigned firstFieldNum = varDsc->lvFieldLclStart;
-        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldVarDsc = lvaGetDesc(firstFieldNum + i);
-
-            JITDUMP("Adjusting offset of dependent V%02u of arg V%02u: parent %u field %u net %u\n", lclNum,
-                    firstFieldNum + i, varDsc->GetStackOffset(), fieldVarDsc->lvFldOffset,
-                    varDsc->GetStackOffset() + fieldVarDsc->lvFldOffset);
-
-            fieldVarDsc->SetStackOffset(varDsc->GetStackOffset() + fieldVarDsc->lvFldOffset);
-        }
-    }
-
-    if (info.compArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
-    {
-        argOffs += argSize;
-    }
-
-    return argOffs;
+    return false;
 }
-#endif // !UNIX_AMD64_ABI
 
 //-----------------------------------------------------------------------------
 // lvaAssignVirtualFrameOffsetsToLocals: compute the virtual stack offsets for
@@ -7101,22 +6696,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            // This should be low on the stack. Hence, it will be assigned later.
-            if (lclNum == lvaStubArgumentVar)
-            {
-#ifdef JIT32_GCENCODER
-                noway_assert(codeGen->isFramePointerUsed());
-#endif
-                continue;
-            }
-
-            // This should be low on the stack. Hence, it will be assigned later.
-            if (lclNum == lvaInlinedPInvokeFrameVar)
-            {
-                noway_assert(codeGen->isFramePointerUsed());
-                continue;
-            }
-
             if (varDsc->lvIsParam)
             {
 #ifdef TARGET_ARM64
@@ -7258,25 +6837,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
      *
      *-------------------------------------------------------------------------
      */
-
-    // lvaInlinedPInvokeFrameVar and lvaStubArgumentVar need to be assigned last
-    // Important: The stack walker depends on lvaStubArgumentVar immediately
-    // following lvaInlinedPInvokeFrameVar in the frame.
-
-    if (lvaStubArgumentVar != BAD_VAR_NUM)
-    {
-#ifdef JIT32_GCENCODER
-        noway_assert(codeGen->isFramePointerUsed());
-#endif
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaStubArgumentVar, lvaLclSize(lvaStubArgumentVar), stkOffs);
-    }
-
-    if (lvaInlinedPInvokeFrameVar != BAD_VAR_NUM)
-    {
-        noway_assert(codeGen->isFramePointerUsed());
-        stkOffs =
-            lvaAllocLocalAndSetVirtualOffset(lvaInlinedPInvokeFrameVar, lvaLclSize(lvaInlinedPInvokeFrameVar), stkOffs);
-    }
 
 #ifdef JIT32_GCENCODER
     // JIT32 encoder cannot handle GS cookie at fp+0 since NO_GS_COOKIE == 0.

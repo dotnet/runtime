@@ -26,12 +26,12 @@ static TypeHandle GetTypeHelper(LPCWSTR szTypeName, Assembly* pRequestingAssembl
 
     if (pRequestingAssembly != NULL)
     {
-        objRequestingAssembly = pRequestingAssembly->GetDomainAssembly()->GetExposedAssemblyObject();
+        objRequestingAssembly = pRequestingAssembly->GetExposedObject();
     }
 
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__TYPE_NAME_PARSER__GET_TYPE_HELPER);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__TYPE_NAME_RESOLVER__GET_TYPE_HELPER);
     DECLARE_ARGHOLDER_ARRAY(args, 4);
     args[ARGNUM_0] = PTR_TO_ARGHOLDER(szTypeName);
     args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(objRequestingAssembly);

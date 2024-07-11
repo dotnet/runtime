@@ -795,11 +795,6 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         printf("Const_Loop_Bnd_Un");
         vnStore->vnDump(this, curAssertion->op1.vn);
     }
-    else if (curAssertion->op1.kind == O1K_VALUE_NUMBER)
-    {
-        printf("Value_Number");
-        vnStore->vnDump(this, curAssertion->op1.vn);
-    }
     else
     {
         printf("?op1.kind?");
@@ -897,18 +892,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 }
                 else
                 {
-                    var_types op1Type;
-
-                    if (curAssertion->op1.kind == O1K_VALUE_NUMBER)
-                    {
-                        op1Type = vnStore->TypeOfVN(curAssertion->op1.vn);
-                    }
-                    else
-                    {
-                        unsigned lclNum = curAssertion->op1.lcl.lclNum;
-                        op1Type         = lvaGetDesc(lclNum)->lvType;
-                    }
-
+                    var_types op1Type = lvaGetDesc(curAssertion->op1.lcl.lclNum)->lvType;
                     if (op1Type == TYP_REF)
                     {
                         if (curAssertion->op2.u1.iconVal == 0)
@@ -939,7 +923,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 break;
 
             case O2K_CONST_DOUBLE:
-                if (*((__int64*)&curAssertion->op2.dconVal) == (__int64)I64(0x8000000000000000))
+                if (FloatingPointUtils::isNegativeZero(curAssertion->op2.dconVal))
                 {
                     printf("-0.00000");
                 }
@@ -1175,63 +1159,22 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
         ValueNum vn;
 
-        //
-        // We only perform null-checks on GC refs
-        // so only make non-null assertions about GC refs or byrefs if we can't determine
-        // the corresponding ref.
-        //
-        if (lclVar->TypeGet() != TYP_REF)
+        // We only perform null-checks on byrefs and GC refs
+        if (!varTypeIsGC(lclVar->TypeGet()))
         {
-            if (optLocalAssertionProp || (lclVar->TypeGet() != TYP_BYREF))
-            {
-                goto DONE_ASSERTION; // Don't make an assertion
-            }
-
-            vn = optConservativeNormalVN(op1);
-            VNFuncApp funcAttr;
-
-            // Try to get value number corresponding to the GC ref of the indirection
-            while (vnStore->GetVNFunc(vn, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD) &&
-                   (vnStore->TypeOfVN(vn) == TYP_BYREF))
-            {
-                if (vnStore->IsVNConstant(funcAttr.m_args[1]) &&
-                    varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
-                {
-                    offset += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[1]);
-                    vn = funcAttr.m_args[0];
-                }
-                else if (vnStore->IsVNConstant(funcAttr.m_args[0]) &&
-                         varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
-                {
-                    offset += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[0]);
-                    vn = funcAttr.m_args[1];
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            if (fgIsBigOffset(offset))
-            {
-                goto DONE_ASSERTION; // Don't make an assertion
-            }
-
-            assertion.op1.kind = O1K_VALUE_NUMBER;
+            goto DONE_ASSERTION; // Don't make an assertion
         }
-        else
+
+        //  If the local variable has its address exposed then bail
+        if (lclVar->IsAddressExposed())
         {
-            //  If the local variable has its address exposed then bail
-            if (lclVar->IsAddressExposed())
-            {
-                goto DONE_ASSERTION; // Don't make an assertion
-            }
-
-            assertion.op1.kind       = O1K_LCLVAR;
-            assertion.op1.lcl.lclNum = lclNum;
-            assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
-            vn                       = optConservativeNormalVN(op1);
+            goto DONE_ASSERTION; // Don't make an assertion
         }
+
+        assertion.op1.kind       = O1K_LCLVAR;
+        assertion.op1.lcl.lclNum = lclNum;
+        assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
+        vn                       = optConservativeNormalVN(op1);
 
         assertion.op1.vn         = vn;
         assertion.assertionKind  = assertionKind;
@@ -1597,7 +1540,7 @@ AssertionIndex Compiler::optFinalizeCreatingAssertion(AssertionDsc* assertion)
         }
 
         // TODO: only copy assertions rely on valid SSA number so we could generate more assertions here
-        if ((assertion->op1.kind != O1K_VALUE_NUMBER) && (assertion->op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM))
+        if (assertion->op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM)
         {
             return NO_ASSERTION_INDEX;
         }
@@ -1866,7 +1809,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
         case O1K_BOUND_LOOP_BND:
         case O1K_CONSTANT_LOOP_BND:
         case O1K_CONSTANT_LOOP_BND_UN:
-        case O1K_VALUE_NUMBER:
             assert(!optLocalAssertionProp);
             break;
         default:
@@ -1886,9 +1828,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                 case O1K_LCLVAR:
                     assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
                            (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenObjects());
-                    break;
-                case O1K_VALUE_NUMBER:
-                    assert((vnStore->TypeOfVN(assertion->op1.vn) != TYP_REF) || (assertion->op2.u1.iconVal == 0));
                     break;
                 default:
                     break;
@@ -2827,6 +2766,16 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
     // Check if node evaluates to a constant
     if (!vnStore->IsVNConstant(vnCns))
     {
+        // Last chance - propagate VNF_PtrToLoc(lcl, offset) as GT_LCL_ADDR node
+        VNFuncApp funcApp;
+        if (((tree->gtFlags & GTF_SIDE_EFFECT) == 0) && vnStore->GetVNFunc(vnCns, &funcApp) &&
+            (funcApp.m_func == VNF_PtrToLoc))
+        {
+            unsigned lcl  = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[0]);
+            unsigned offs = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]);
+            return gtNewLclAddrNode(lcl, offs, tree->TypeGet());
+        }
+
         return nullptr;
     }
 
@@ -3048,6 +2997,9 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         }
         break;
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             simdmask_t value = vnStore->ConstantValue<simdmask_t>(vnCns);
@@ -3059,7 +3011,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
             break;
         }
         break;
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
         case TYP_BYREF:
@@ -3168,110 +3120,19 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
 
         if (inspectIntrinsic)
         {
-            GenTreeHWIntrinsic* parent = destParent->AsHWIntrinsic();
-            GenTreeVecCon*      vecCon = value->AsVecCon();
-
-            NamedIntrinsic intrinsicId  = parent->GetHWIntrinsicId();
-            var_types      simdBaseType = parent->GetSimdBaseType();
+            GenTreeHWIntrinsic* parent      = destParent->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = parent->GetHWIntrinsicId();
 
             if (!HWIntrinsicInfo::CanBenefitFromConstantProp(intrinsicId))
             {
                 return false;
             }
 
-            switch (intrinsicId)
-            {
-#if defined(TARGET_ARM64)
-                case NI_Vector64_op_Equality:
-                case NI_Vector64_op_Inequality:
-#endif // TARGET_ARM64
-                case NI_Vector128_op_Equality:
-                case NI_Vector128_op_Inequality:
-#if defined(TARGET_XARCH)
-                case NI_Vector256_op_Equality:
-                case NI_Vector256_op_Inequality:
-                case NI_Vector512_op_Equality:
-                case NI_Vector512_op_Inequality:
-#endif // TARGET_XARCH
-                {
-                    // We can optimize when the constant is zero, but only
-                    // for non floating-point since +0.0 == -0.0
+            // For several of the scenarios we may skip the costing logic
+            // since we know that the operand is always containable and therefore
+            // is always cost effective to propagate.
 
-                    if (!vecCon->IsZero() || varTypeIsFloating(simdBaseType))
-                    {
-                        return false;
-                    }
-                    break;
-                }
-
-#if defined(TARGET_ARM64)
-                case NI_AdvSimd_CompareEqual:
-                case NI_AdvSimd_Arm64_CompareEqual:
-                case NI_AdvSimd_Arm64_CompareEqualScalar:
-                {
-                    // We can optimize when the constant is zero due to a
-                    // specialized encoding for the instruction
-
-                    if (!vecCon->IsZero())
-                    {
-                        return false;
-                    }
-                    break;
-                }
-
-                case NI_AdvSimd_CompareGreaterThan:
-                case NI_AdvSimd_CompareGreaterThanOrEqual:
-                case NI_AdvSimd_Arm64_CompareGreaterThan:
-                case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
-                case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
-                case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
-                {
-                    // We can optimize when the constant is zero, but only
-                    // for signed types, due to a specialized encoding for
-                    // the instruction
-
-                    if (!vecCon->IsZero() || varTypeIsUnsigned(simdBaseType))
-                    {
-                        return false;
-                    }
-                    break;
-                }
-#endif // TARGET_ARM64
-
-#if defined(TARGET_XARCH)
-                case NI_SSE2_Insert:
-                case NI_SSE41_Insert:
-                case NI_SSE41_X64_Insert:
-                {
-                    // We can optimize for float when the constant is zero
-                    // due to a specialized encoding for the instruction
-
-                    if ((simdBaseType != TYP_FLOAT) || !vecCon->IsZero())
-                    {
-                        return false;
-                    }
-                    break;
-                }
-
-                case NI_AVX512F_CompareEqualMask:
-                case NI_AVX512F_CompareNotEqualMask:
-                {
-                    // We can optimize when the constant is zero, but only
-                    // for non floating-point since +0.0 == -0.0
-
-                    if (!vecCon->IsZero() || varTypeIsFloating(simdBaseType))
-                    {
-                        return false;
-                    }
-                    break;
-                }
-#endif // TARGET_XARCH
-
-                default:
-                {
-                    break;
-                }
-            }
+            return parent->ShouldConstantProp(dest, value->AsVecCon());
         }
 #endif // FEATURE_HW_INTRINSICS
     }
@@ -3990,6 +3851,18 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     while (iter.NextElem(&index))
     {
         AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+
+        // if treeVN has a bound-check assertion where it's an index, then
+        // it means it's not negative, example:
+        //
+        //   array[idx] = 42; // creates 'BoundsCheckNoThrow' assertion
+        //   return idx % 8;  // idx is known to be never negative here, hence, MOD->UMOD
+        //
+        if (curAssertion->IsBoundsCheckNoThrow() && (curAssertion->op1.bnd.vnIdx == treeVN))
+        {
+            *isKnownNonNegative = true;
+            continue;
+        }
 
         // First, analyze possible X ==/!= CNS assertions.
         if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == treeVN))
@@ -5680,8 +5553,7 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
             }
 
             // impAssertion must be a Non Null assertion on lclNum
-            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) ||
-                ((impAssertion->op1.kind != O1K_LCLVAR) && (impAssertion->op1.kind != O1K_VALUE_NUMBER)) ||
+            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || (impAssertion->op1.kind != O1K_LCLVAR) ||
                 (impAssertion->op2.kind != O2K_CONST_INT) || (impAssertion->op1.vn != chkAssertion->op1.vn))
             {
                 continue;

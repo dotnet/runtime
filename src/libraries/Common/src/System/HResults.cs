@@ -109,7 +109,10 @@ namespace System
         internal const int COR_E_VERIFICATION = unchecked((int)0x8013150D);
         internal const int COR_E_WAITHANDLECANNOTBEOPENED = unchecked((int)0x8013152C);
         internal const int CO_E_NOTINITIALIZED = unchecked((int)0x800401F0);
+        internal const int DISP_E_TYPEMISMATCH = unchecked((int)0x80020005);
+        internal const int DISP_E_BADVARTYPE = unchecked((int)0x80020008);
         internal const int DISP_E_OVERFLOW = unchecked((int)0x8002000A);
+        internal const int DISP_E_DIVBYZERO = unchecked((int)0x80020012);
         internal const int E_BOUNDS = unchecked((int)0x8000000B);
         internal const int E_CHANGED_STATE = unchecked((int)0x8000000C);
         internal const int E_FILENOTFOUND = unchecked((int)0x80070002);

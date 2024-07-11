@@ -20,7 +20,7 @@ public class FieldModelJsonConverter : JsonConverter<DataDescriptorModel.FieldMo
 
     public override void Write(Utf8JsonWriter writer, DataDescriptorModel.FieldModel value, JsonSerializerOptions options)
     {
-        if (value.Type is null)
+        if (string.IsNullOrEmpty(value.Type))
         {
             writer.WriteNumberValue(value.Offset);
         }

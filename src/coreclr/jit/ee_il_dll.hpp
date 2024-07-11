@@ -54,6 +54,12 @@ bool Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 FORCEINLINE
+bool Compiler::eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd)
+{
+    return (info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_BYREF_LIKE) != 0;
+}
+
+FORCEINLINE
 bool Compiler::eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
     return info.compCompHnd->isIntrinsic(ftn);

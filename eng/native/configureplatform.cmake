@@ -429,7 +429,6 @@ endif(CLR_CMAKE_TARGET_OS STREQUAL haiku)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL emscripten)
     set(CLR_CMAKE_TARGET_UNIX 1)
-    set(CLR_CMAKE_TARGET_LINUX 1)
     set(CLR_CMAKE_TARGET_BROWSER 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL emscripten)
 
@@ -500,4 +499,11 @@ if(LOWERCASE_CMAKE_BUILD_TYPE STREQUAL debug)
     # Clear _FORTIFY_SOURCE=2, if set
     string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+endif()
+
+if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_HOST_ARCH_ARMV6)
+    # Some platforms are opted-out from using the in-tree zlib-ng by default:
+    # - Android and iOS-like platforms: concerns about extra binary size
+    # - Armv6: zlib-ng has build breaks
+    set(CLR_CMAKE_USE_SYSTEM_ZLIB 1)
 endif()

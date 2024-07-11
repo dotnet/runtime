@@ -661,7 +661,7 @@ namespace System.IO.Pipelines.Tests
                 throw new OperationCanceledException();
             }
 
-#if NETCOREAPP
+#if NET
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 throw new OperationCanceledException();

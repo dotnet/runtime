@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tests
         public void Ctor_Default()
         {
             var stackTrace = new StackTrace();
-            VerifyFrames(stackTrace, false);
+            VerifyFrames(stackTrace, false, 0);
         }
 
         [Theory]
@@ -57,7 +57,7 @@ namespace System.Diagnostics.Tests
         public void Ctor_FNeedFileInfo(bool fNeedFileInfo)
         {
             var stackTrace = new StackTrace(fNeedFileInfo);
-            VerifyFrames(stackTrace, fNeedFileInfo);
+            VerifyFrames(stackTrace, fNeedFileInfo, 0);
         }
 
         [Theory]
@@ -73,7 +73,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(emptyStackTrace.FrameCount - skipFrames, stackTrace.FrameCount);
             Assert.Equal(expectedMethods, stackTrace.GetFrames().Select(f => f.GetMethod()));
 
-            VerifyFrames(stackTrace, false);
+            VerifyFrames(stackTrace, false, skipFrames);
         }
 
         [Fact]
@@ -99,7 +99,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(emptyStackTrace.FrameCount - skipFrames, stackTrace.FrameCount);
             Assert.Equal(expectedMethods, stackTrace.GetFrames().Select(f => f.GetMethod()));
 
-            VerifyFrames(stackTrace, fNeedFileInfo);
+            VerifyFrames(stackTrace, fNeedFileInfo, skipFrames);
         }
 
         [Theory]
@@ -117,7 +117,7 @@ namespace System.Diagnostics.Tests
         public void Ctor_ThrownException_GetFramesReturnsExpected()
         {
             var stackTrace = new StackTrace(InvokeException());
-            VerifyFrames(stackTrace, false);
+            VerifyFrames(stackTrace, false, 0);
         }
 
         [Fact]
@@ -137,7 +137,7 @@ namespace System.Diagnostics.Tests
         public void Ctor_Bool_ThrownException_GetFramesReturnsExpected(bool fNeedFileInfo)
         {
             var stackTrace = new StackTrace(InvokeException(), fNeedFileInfo);
-            VerifyFrames(stackTrace, fNeedFileInfo);
+            VerifyFrames(stackTrace, fNeedFileInfo, 0);
         }
 
         [Theory]
@@ -171,7 +171,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(expectedMethods, frames.Select(f => f.GetMethod()));
             if (frames != null)
             {
-                VerifyFrames(stackTrace, false);
+                VerifyFrames(stackTrace, false, skipFrames);
             }
         }
 
@@ -211,7 +211,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(expectedMethods, frames.Select(f => f.GetMethod()));
             if (frames != null)
             {
-                VerifyFrames(stackTrace, fNeedFileInfo);
+                VerifyFrames(stackTrace, fNeedFileInfo, skipFrames);
             }
         }
 
@@ -450,7 +450,7 @@ namespace System.Diagnostics.Tests
             public ClassWithConstructor() => StackTrace = new StackTrace();
         }
 
-        private static void VerifyFrames(StackTrace stackTrace, bool hasFileInfo)
+        private static void VerifyFrames(StackTrace stackTrace, bool hasFileInfo, int skippedFrames)
         {
             Assert.True(stackTrace.FrameCount > 0);
 
@@ -467,7 +467,11 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(0, stackFrame.GetFileLineNumber());
                     Assert.Equal(0, stackFrame.GetFileColumnNumber());
                 }
-                Assert.NotNull(stackFrame.GetMethod());
+
+                // On native AOT, the reflection invoke infrastructure uses compiler-generated code
+                // that doesn't have a reflection method associated. Limit the checks.
+                if (!PlatformDetection.IsNativeAot || (i + skippedFrames) == 0)
+                    Assert.NotNull(stackFrame.GetMethod());
             }
         }
     }

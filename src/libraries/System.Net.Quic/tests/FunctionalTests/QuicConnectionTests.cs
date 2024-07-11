@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
+using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -94,6 +96,27 @@ namespace System.Net.Quic.Tests
                 });
         }
 
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        public async Task CloseAsync_InvalidCode_Throws(long errorCode)
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                clientConnection =>
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => clientConnection.CloseAsync(errorCode));
+                    sync.Release();
+                    return Task.CompletedTask;
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                });
+        }
+
         [Fact]
         public async Task Dispose_WithPendingAcceptAndConnect_PendingAndSubsequentThrowOperationAbortedException()
         {
@@ -165,6 +188,252 @@ namespace System.Net.Quic.Tests
                     await sync.WaitAsync();
                     await serverConnection.DisposeAsync();
                 });
+        }
+
+        [Fact]
+        public async Task GetStreamCapacity_OpenCloseStream_CountsCorrectly()
+        {
+            SemaphoreSlim streamsAvailableFired = new SemaphoreSlim(0);
+            int bidiIncrement = -1, unidiIncrement = -1;
+
+            var clientOptions = CreateQuicClientOptions(new IPEndPoint(0, 0));
+            clientOptions.StreamCapacityCallback = (connection, args) =>
+            {
+                bidiIncrement = args.BidirectionalIncrement;
+                unidiIncrement = args.UnidirectionalIncrement;
+                streamsAvailableFired.Release();
+            };
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions);
+            await streamsAvailableFired.WaitAsync();
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiIncrement);
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiIncrement);
+
+            var clientStreamBidi = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+            await clientStreamBidi.DisposeAsync();
+            var serverStreamBidi = await serverConnection.AcceptInboundStreamAsync();
+            await serverStreamBidi.DisposeAsync();
+
+            // STREAMS_AVAILABLE event comes asynchronously, give it a chance to propagate
+            await streamsAvailableFired.WaitAsync();
+            Assert.Equal(1, bidiIncrement);
+            Assert.Equal(0, unidiIncrement);
+
+            var clientStreamUnidi = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
+            await clientStreamUnidi.DisposeAsync();
+            var serverStreamUnidi = await serverConnection.AcceptInboundStreamAsync();
+            await serverStreamUnidi.DisposeAsync();
+
+            // STREAMS_AVAILABLE event comes asynchronously, give it a chance to propagate
+            await streamsAvailableFired.WaitAsync();
+            Assert.Equal(0, bidiIncrement);
+            Assert.Equal(1, unidiIncrement);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GetStreamCapacity_OpenCloseStreamIntoNegative_CountsCorrectly(bool unidirectional)
+        {
+            SemaphoreSlim streamsAvailableFired = new SemaphoreSlim(0);
+            int bidiIncrement = -1, unidiIncrement = -1;
+            int bidiTotal = 0;
+            int unidiTotal = 0;
+
+            var clientOptions = CreateQuicClientOptions(new IPEndPoint(0, 0));
+            clientOptions.StreamCapacityCallback = (connection, args) =>
+            {
+                Interlocked.Exchange(ref bidiIncrement, args.BidirectionalIncrement);
+                Interlocked.Exchange(ref unidiIncrement, args.UnidirectionalIncrement);
+                Interlocked.Add(ref bidiTotal, args.BidirectionalIncrement);
+                Interlocked.Add(ref unidiTotal, args.UnidirectionalIncrement);
+                streamsAvailableFired.Release();
+            };
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions);
+            await streamsAvailableFired.WaitAsync();
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiIncrement);
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiIncrement);
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiTotal);
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiTotal);
+
+            // Open # of streams up to the capacity.
+            List<QuicStream> clientStreams = (await Task.WhenAll(Enumerable.Range(0, unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams)
+                                                                           .Select(i => clientConnection.OpenOutboundStreamAsync(unidirectional ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional).AsTask())))
+                                                                           .ToList();
+            // Open another # of streams up to 2x capacity all together.
+            CancellationTokenSource cts = new CancellationTokenSource();
+            List<Task<QuicStream>> pendingClientStreams = Enumerable.Range(0, unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams)
+                                                                    .Select(i => clientConnection.OpenOutboundStreamAsync(unidirectional ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional, cts.Token).AsTask())
+                                                                    .ToList();
+            foreach (var task in pendingClientStreams)
+            {
+                Assert.False(task.IsCompleted);
+            }
+            Assert.False(streamsAvailableFired.CurrentCount > 0);
+
+            // Dispose streams to release capacity up to 0 (nothing gets reported yet).
+            foreach (var clientStream in clientStreams)
+            {
+                await clientStream.DisposeAsync();
+                await (await serverConnection.AcceptInboundStreamAsync()).DisposeAsync();
+            }
+            clientStreams.Clear();
+            Assert.False(streamsAvailableFired.CurrentCount > 0);
+
+            // All the pending streams should get accepted now.
+            clientStreams.AddRange(await Task.WhenAll(pendingClientStreams));
+
+            // Disposing the pending streams now should lead to stream capacity increments.
+            bool first = true; // The stream capacity is cumulatively reported only after the STREAMS_AVAILABLE reached over 0.
+            foreach (var clientStream in clientStreams)
+            {
+                await clientStream.DisposeAsync();
+                await (await serverConnection.AcceptInboundStreamAsync()).DisposeAsync();
+                await streamsAvailableFired.WaitAsync();
+                Assert.Equal(unidirectional ? 0 : (first ? QuicDefaults.DefaultServerMaxInboundBidirectionalStreams + 1 : 1), bidiIncrement);
+                Assert.Equal(unidirectional ? (first ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams + 1 : 1) : 0, unidiIncrement);
+                first = false;
+            }
+            Assert.False(streamsAvailableFired.CurrentCount > 0);
+            Assert.Equal(unidirectional ? QuicDefaults.DefaultServerMaxInboundBidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams * 3, bidiTotal);
+            Assert.Equal(unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams * 3 : QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiTotal);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GetStreamCapacity_OpenCloseStreamCanceledIntoNegative_CountsCorrectly(bool unidirectional)
+        {
+            SemaphoreSlim streamsAvailableFired = new SemaphoreSlim(0);
+            int bidiIncrement = -1, unidiIncrement = -1;
+            int bidiTotal = 0;
+            int unidiTotal = 0;
+
+            var clientOptions = CreateQuicClientOptions(new IPEndPoint(0, 0));
+            clientOptions.StreamCapacityCallback = (connection, args) =>
+            {
+                Interlocked.Exchange(ref bidiIncrement, args.BidirectionalIncrement);
+                Interlocked.Exchange(ref unidiIncrement, args.UnidirectionalIncrement);
+                Interlocked.Add(ref bidiTotal, args.BidirectionalIncrement);
+                Interlocked.Add(ref unidiTotal, args.UnidirectionalIncrement);
+                streamsAvailableFired.Release();
+            };
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions);
+            await streamsAvailableFired.WaitAsync();
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiIncrement);
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiIncrement);
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiTotal);
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiTotal);
+
+            // Open # of streams up to the capacity.
+            List<QuicStream> clientStreams = (await Task.WhenAll(Enumerable.Range(0, unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams)
+                                                                           .Select(i => clientConnection.OpenOutboundStreamAsync(unidirectional ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional).AsTask())))
+                                                                           .ToList();
+            // Open another # of streams up to 2x capacity all together.
+            CancellationTokenSource cts = new CancellationTokenSource();
+            List<Task<QuicStream>> pendingClientStreams = Enumerable.Range(0, unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams)
+                                                                    .Select(i => clientConnection.OpenOutboundStreamAsync(unidirectional ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional, cts.Token).AsTask())
+                                                                    .ToList();
+            foreach (var task in pendingClientStreams)
+            {
+                Assert.False(task.IsCompleted);
+            }
+            Assert.False(streamsAvailableFired.CurrentCount > 0);
+
+            // Cancel pending streams if requested.
+            cts.Cancel();
+
+            // Dispose streams to release capacity up to 0 (nothing gets reported yet).
+            foreach (var clientStream in clientStreams)
+            {
+                await clientStream.DisposeAsync();
+                await (await serverConnection.AcceptInboundStreamAsync()).DisposeAsync();
+            }
+            clientStreams.Clear();
+            Assert.False(streamsAvailableFired.CurrentCount > 0);
+
+            // Pending streams should get cancelled and disposing the streams now should lead to stream capacity increments.
+            bool first = true; // The stream capacity is cumulatively reported only after the STREAMS_AVAILABLE reached over 0.
+            foreach (var cancelledStream in pendingClientStreams)
+            {
+                Assert.True(cancelledStream.IsCanceled);
+                await (await serverConnection.AcceptInboundStreamAsync()).DisposeAsync();
+                await streamsAvailableFired.WaitAsync();
+                Assert.Equal(unidirectional ? 0 : (first ? QuicDefaults.DefaultServerMaxInboundBidirectionalStreams + 1 : 1), bidiIncrement);
+                Assert.Equal(unidirectional ? (first ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams + 1 : 1) : 0, unidiIncrement);
+                first = false;
+            }
+            Assert.False(streamsAvailableFired.CurrentCount > 0);
+            Assert.Equal(unidirectional ? QuicDefaults.DefaultServerMaxInboundBidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams * 3, bidiTotal);
+            Assert.Equal(unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams * 3 : QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiTotal);
+        }
+
+        [Fact]
+        public async Task GetStreamCapacity_SumInvariant()
+        {
+            int maxStreamIndex = 0;
+            const int Limit = 5;
+
+            var clientOptions = CreateQuicClientOptions(new IPEndPoint(0, 0));
+            clientOptions.StreamCapacityCallback = (connection, args) =>
+            {
+                Interlocked.Add(ref maxStreamIndex, args.BidirectionalIncrement);
+            };
+
+            var listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ConnectionOptionsCallback = (_, _, _) =>
+            {
+                var options = CreateQuicServerOptions();
+                options.MaxInboundBidirectionalStreams = Limit;
+                return ValueTask.FromResult(options);
+            };
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
+
+            Assert.Equal(Limit, maxStreamIndex);
+
+            Queue<(QuicStream client, QuicStream server)> streams = new();
+
+            for (int i = 0; i < Limit; i++)
+            {
+                QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                await clientStream.WriteAsync(new byte[1]);
+                QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
+                streams.Enqueue((clientStream, serverStream));
+            }
+
+            Queue<Task<QuicStream>> tasks = new();
+            // enqueue more stream creations
+            for (int i = 0; i < Limit; i++)
+            {
+                var newClientStreamTask = clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                Assert.False(newClientStreamTask.IsCompleted, "Stream creation should not be completed synchronously");
+                tasks.Enqueue(newClientStreamTask.AsTask());
+            }
+
+            // dispose streams
+            while (streams.Count > 0)
+            {
+                var (clientStream, serverStream) = streams.Dequeue();
+                await clientStream.DisposeAsync();
+                await serverStream.DisposeAsync();
+
+                if (tasks.TryDequeue(out var task))
+                {
+                    clientStream = await task;
+                    await clientStream.WriteAsync(new byte[1]);
+                    serverStream = await serverConnection.AcceptInboundStreamAsync();
+                    streams.Enqueue((clientStream, serverStream));
+                }
+            }
+
+            // give time to update the count
+            await Task.Delay(1000);
+
+            // by now, we opened and closed 2 * Limit, and expect a budget of 'Limit' more
+            Assert.Equal(3 * Limit, maxStreamIndex);
         }
 
         [Fact]

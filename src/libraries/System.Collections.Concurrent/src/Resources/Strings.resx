@@ -153,4 +153,7 @@
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
+  <data name="InvalidOperation_IncompatibleComparer" xml:space="preserve">
+    <value>The collection's comparer does not support the requested operation.</value>
+  </data>
 </root>

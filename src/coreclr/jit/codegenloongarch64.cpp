@@ -181,324 +181,6 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
 }
 
 //------------------------------------------------------------------------
-// genPrologSaveRegPair: Save a pair of general-purpose or floating-point/SIMD registers in a function or funclet
-// prolog. If possible, we use pre-indexed addressing to adjust SP and store the registers with a single instruction.
-// The caller must ensure that we can use the STP instruction, and that spOffset will be in the legal range for that
-// instruction.
-//
-// Arguments:
-//    reg1                     - First register of pair to save.
-//    reg2                     - Second register of pair to save.
-//    spOffset                 - The offset from SP to store reg1 (must be positive or zero).
-//    spDelta                  - Always zero for LoongArch64 now.
-//    useSaveNextPair          - True if the last prolog instruction was to save the previous register pair. This
-//                               allows us to emit the "save_next" unwind code.
-//    tmpReg                   - An available temporary register. Needed for the case of large frames.
-//    pTmpRegIsZero            - If we use tmpReg, and pTmpRegIsZero is non-null, we set *pTmpRegIsZero to 'false'.
-//                               Otherwise, we don't touch it.
-//
-// Return Value:
-//    None.
-
-void CodeGen::genPrologSaveRegPair(regNumber reg1,
-                                   regNumber reg2,
-                                   int       spOffset,
-                                   int       spDelta,
-                                   bool      useSaveNextPair,
-                                   regNumber tmpReg,
-                                   bool*     pTmpRegIsZero)
-{
-    assert(spOffset >= 0);
-    assert(spDelta == 0);
-    assert(genIsValidFloatReg(reg1) == genIsValidFloatReg(reg2)); // registers must be both general-purpose, or both
-                                                                  // FP/SIMD
-
-    instruction ins = INS_st_d;
-    if (genIsValidFloatReg(reg1))
-    {
-        ins = INS_fst_d;
-    }
-
-    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-    compiler->unwindSaveReg(reg1, spOffset);
-
-    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, reg2, REG_SPBASE, spOffset + 8);
-    compiler->unwindSaveReg(reg2, spOffset + 8);
-}
-
-//------------------------------------------------------------------------
-// genPrologSaveReg: Like genPrologSaveRegPair, but for a single register. Save a single general-purpose or
-// floating-point/SIMD register in a function or funclet prolog. Note that if we wish to change SP (i.e., spDelta != 0),
-// then spOffset must be 8. This is because otherwise we would create an alignment hole above the saved register, not
-// below it, which we currently don't support. This restriction could be loosened if the callers change to handle it
-// (and this function changes to support using pre-indexed SD addressing). The caller must ensure that we can use the
-// SD instruction, and that spOffset will be in the legal range for that instruction.
-//
-// Arguments:
-//    reg1                     - Register to save.
-//    spOffset                 - The offset from SP to store reg1 (must be positive or zero).
-//    spDelta                  - Always zero for LoongArch64 now.
-//    tmpReg                   - An available temporary register. Needed for the case of large frames.
-//    pTmpRegIsZero            - If we use tmpReg, and pTmpRegIsZero is non-null, we set *pTmpRegIsZero to 'false'.
-//                               Otherwise, we don't touch it.
-//
-// Return Value:
-//    None.
-
-void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
-{
-    assert(spOffset >= 0);
-    assert(spDelta == 0);
-
-    instruction ins = INS_st_d;
-    if (genIsValidFloatReg(reg1))
-    {
-        ins = INS_fst_d;
-    }
-
-    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-    compiler->unwindSaveReg(reg1, spOffset);
-}
-
-//------------------------------------------------------------------------
-// genEpilogRestoreRegPair: This is the opposite of genPrologSaveRegPair(), run in the epilog instead of the prolog.
-// The stack pointer adjustment, if requested, is done after the register restore, using post-index addressing.
-// The caller must ensure that we can use the LDP instruction, and that spOffset will be in the legal range for that
-// instruction.
-//
-// Arguments:
-//    reg1                     - First register of pair to restore.
-//    reg2                     - Second register of pair to restore.
-//    spOffset                 - The offset from SP to load reg1 (must be positive or zero).
-//    spDelta                  - Always zero for LoongArch64 now.
-//    useSaveNextPair          - True if the last prolog instruction was to save the previous register pair. This
-//                               allows us to emit the "save_next" unwind code.
-//    tmpReg                   - An available temporary register. Needed for the case of large frames.
-//    pTmpRegIsZero            - If we use tmpReg, and pTmpRegIsZero is non-null, we set *pTmpRegIsZero to 'false'.
-//                               Otherwise, we don't touch it.
-//
-// Return Value:
-//    None.
-
-void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
-                                      regNumber reg2,
-                                      int       spOffset,
-                                      int       spDelta,
-                                      bool      useSaveNextPair,
-                                      regNumber tmpReg,
-                                      bool*     pTmpRegIsZero)
-{
-    assert(spOffset >= 0);
-    assert(spDelta == 0);
-    assert(genIsValidFloatReg(reg1) == genIsValidFloatReg(reg2)); // registers must be both general-purpose, or both
-                                                                  // FP/SIMD
-
-    instruction ins = INS_ld_d;
-    if (genIsValidFloatReg(reg1))
-    {
-        ins = INS_fld_d;
-    }
-
-    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, reg2, REG_SPBASE, spOffset + 8);
-    compiler->unwindSaveReg(reg2, spOffset + 8);
-
-    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-    compiler->unwindSaveReg(reg1, spOffset);
-}
-
-//------------------------------------------------------------------------
-// genEpilogRestoreReg: The opposite of genPrologSaveReg(), run in the epilog instead of the prolog.
-//
-// Arguments:
-//    reg1                     - Register to restore.
-//    spOffset                 - The offset from SP to restore reg1 (must be positive or zero).
-//    spDelta                  - Always zero for LoongArch64 now.
-//    tmpReg                   - An available temporary register. Needed for the case of large frames.
-//    pTmpRegIsZero            - If we use tmpReg, and pTmpRegIsZero is non-null, we set *pTmpRegIsZero to 'false'.
-//                               Otherwise, we don't touch it.
-//
-// Return Value:
-//    None.
-
-void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
-{
-    assert(spOffset >= 0);
-    assert(spDelta == 0);
-
-    instruction ins = INS_ld_d;
-    if (genIsValidFloatReg(reg1))
-    {
-        ins = INS_fld_d;
-    }
-
-    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-    compiler->unwindSaveReg(reg1, spOffset);
-}
-
-//------------------------------------------------------------------------
-// genBuildRegPairsStack: Build a stack of register pairs for prolog/epilog save/restore for the given mask.
-// The first register pair will contain the lowest register. Register pairs will combine neighbor
-// registers in pairs. If it can't be done (for example if we have a hole or this is the last reg in a mask with
-// odd number of regs) then the second element of that RegPair will be REG_NA.
-//
-// Arguments:
-//   regsMask - a mask of registers for prolog/epilog generation;
-//   regStack - a regStack instance to build the stack in, used to save temp copyings.
-//
-// Return value:
-//   no return value; the regStack argument is modified.
-//
-// static
-void CodeGen::genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* regStack)
-{
-    assert(regStack != nullptr);
-    assert(regStack->Height() == 0);
-
-    unsigned regsCount = genCountBits(regsMask);
-
-    while (regsMask != RBM_NONE)
-    {
-        regMaskTP reg1Mask = genFindLowestBit(regsMask);
-        regNumber reg1     = genRegNumFromMask(reg1Mask);
-        regsMask &= ~reg1Mask;
-        regsCount -= 1;
-
-        bool isPairSave = false;
-        if (regsCount > 0)
-        {
-            regMaskTP reg2Mask = genFindLowestBit(regsMask);
-            regNumber reg2     = genRegNumFromMask(reg2Mask);
-            if (reg2 == REG_NEXT(reg1))
-            {
-                // The JIT doesn't allow saving pair (S7,FP), even though the
-                // save_regp register pair unwind code specification allows it.
-                // The JIT always saves (FP,RA) as a pair, and uses the save_fpra
-                // unwind code. This only comes up in stress mode scenarios
-                // where callee-saved registers are not allocated completely
-                // from lowest-to-highest, without gaps.
-                if (reg1 != REG_FP)
-                {
-                    // Both registers must have the same type to be saved as pair.
-                    if (genIsValidFloatReg(reg1) == genIsValidFloatReg(reg2))
-                    {
-                        isPairSave = true;
-
-                        regsMask &= ~reg2Mask;
-                        regsCount -= 1;
-
-                        regStack->Push(RegPair(reg1, reg2));
-                    }
-                }
-            }
-        }
-
-        if (!isPairSave)
-        {
-            regStack->Push(RegPair(reg1));
-        }
-    }
-    assert(regsCount == 0 && regsMask == RBM_NONE);
-
-    genSetUseSaveNextPairs(regStack);
-}
-
-//------------------------------------------------------------------------
-// genSetUseSaveNextPairs: Set useSaveNextPair for each RegPair on the stack which unwind info can be encoded as
-// save_next code.
-//
-// Arguments:
-//   regStack - a regStack instance to set useSaveNextPair.
-//
-// Notes:
-// We can use save_next for RegPair(N, N+1) only when we have sequence like (N-2, N-1), (N, N+1).
-// In this case in the prolog save_next for (N, N+1) refers to save_pair(N-2, N-1);
-// in the epilog the unwinder will search for the first save_pair (N-2, N-1)
-// and then go back to the first save_next (N, N+1) to restore it first.
-//
-// static
-void CodeGen::genSetUseSaveNextPairs(ArrayStack<RegPair>* regStack)
-{
-    for (int i = 1; i < regStack->Height(); ++i)
-    {
-        RegPair& curr = regStack->BottomRef(i);
-        RegPair  prev = regStack->Bottom(i - 1);
-
-        if (prev.reg2 == REG_NA || curr.reg2 == REG_NA)
-        {
-            continue;
-        }
-
-        if (REG_NEXT(prev.reg2) != curr.reg1)
-        {
-            continue;
-        }
-
-        if (genIsValidFloatReg(prev.reg2) != genIsValidFloatReg(curr.reg1))
-        {
-            // It is possible to support changing of the last int pair with the first float pair,
-            // but it is very rare case and it would require superfluous changes in the unwinder.
-            continue;
-        }
-        curr.useSaveNextPair = true;
-    }
-}
-
-//------------------------------------------------------------------------
-// genGetSlotSizeForRegsInMask: Get the stack slot size appropriate for the register type from the mask.
-//
-// Arguments:
-//   regsMask - a mask of registers for prolog/epilog generation.
-//
-// Return value:
-//   stack slot size in bytes.
-//
-// Note: Because int and float register type sizes match we can call this function with a mask that includes both.
-//
-// static
-int CodeGen::genGetSlotSizeForRegsInMask(regMaskTP regsMask)
-{
-    assert((regsMask & (RBM_CALLEE_SAVED | RBM_FP | RBM_RA)) == regsMask); // Do not expect anything else.
-
-    static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
-    return REGSIZE_BYTES;
-}
-
-//------------------------------------------------------------------------
-// genSaveCalleeSavedRegisterGroup: Saves the group of registers described by the mask.
-//
-// Arguments:
-//   regsMask  - a mask of registers for prolog generation;
-//   spDelta   - Always zero for LoongArch64 now.
-//   spOffset  - the offset from SP that is the beginning of the callee-saved register area;
-//
-void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset)
-{
-    assert(spDelta == 0);
-    const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
-
-    ArrayStack<RegPair> regStack(compiler->getAllocator(CMK_Codegen));
-    genBuildRegPairsStack(regsMask, &regStack);
-
-    for (int i = 0; i < regStack.Height(); ++i)
-    {
-        RegPair regPair = regStack.Bottom(i);
-        if (regPair.reg2 != REG_NA)
-        {
-            // We can use two SD instructions.
-            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, 0, regPair.useSaveNextPair, REG_R21, nullptr);
-
-            spOffset += 2 * slotSize;
-        }
-        else
-        {
-            // No register pair; we use a SD instruction.
-            genPrologSaveReg(regPair.reg1, spOffset, 0, REG_R21, nullptr);
-            spOffset += slotSize;
-        }
-    }
-}
-
-//------------------------------------------------------------------------
 // genSaveCalleeSavedRegistersHelp: Save the callee-saved registers in 'regsToSaveMask' to the stack frame
 // in the function or funclet prolog. Registers are saved in register number order from low addresses
 // to high addresses. This means that integer registers are saved at lower addresses than floatint-point/SIMD
@@ -521,73 +203,50 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 // Arguments:
 //    regsToSaveMask          - The mask of callee-saved registers to save. If empty, this function does nothing.
 //    lowestCalleeSavedOffset - The offset from SP that is the beginning of the callee-saved register area.
-//    spDelta                 - Always zero for LoongArch64 now.
 //
 // Notes:
 //    The save set can not contain FP/RA in which case FP/RA is saved along with the other callee-saved registers.
 //
-void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset)
 {
-    assert(spDelta == 0);
-
     if (regsToSaveMask == 0)
     {
         return;
     }
+    // The FP and RA are not in RBM_CALLEE_SAVED.
+    assert(!(regsToSaveMask & (~RBM_CALLEE_SAVED)));
+    assert(lowestCalleeSavedOffset >= 0);
 
-    assert(genCountBits(regsToSaveMask) <= genCountBits(RBM_CALLEE_SAVED));
-
-    // Save integer registers at higher addresses than floating-point registers.
-
-    regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
-
-    if (maskSaveRegsFloat != RBM_NONE)
+    emitter*  emit         = GetEmitter();
+    int       regNum       = FIRST_INT_CALLEE_SAVED;
+    regMaskTP regsMask     = regsToSaveMask & RBM_INT_CALLEE_SAVED;
+    int64_t   maskSaveRegs = (int64_t)regsMask.getLow() >> FIRST_INT_CALLEE_SAVED;
+    do
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, 0, lowestCalleeSavedOffset);
-        lowestCalleeSavedOffset += genCountBits(maskSaveRegsFloat) * FPSAVE_REGSIZE_BYTES;
-    }
-
-    if (maskSaveRegsInt != RBM_NONE)
-    {
-        // No need to update spDelta.
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, 0, lowestCalleeSavedOffset);
-    }
-}
-
-//------------------------------------------------------------------------
-// genRestoreCalleeSavedRegisterGroup: Restores the group of registers described by the mask.
-//
-// Arguments:
-//   regsMask             - a mask of registers for epilog generation;
-//   spDelta              - Always zero for LoongArch64 now.
-//   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
-//
-void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset)
-{
-    assert(spDelta == 0);
-    const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
-
-    ArrayStack<RegPair> regStack(compiler->getAllocator(CMK_Codegen));
-    genBuildRegPairsStack(regsMask, &regStack);
-
-    int stackDelta = 0;
-    for (int i = 0; i < regStack.Height(); ++i)
-    {
-        RegPair regPair = regStack.Top(i);
-        if (regPair.reg2 != REG_NA)
+        if (maskSaveRegs & 1)
         {
-            spOffset -= 2 * slotSize;
+            emit->emitIns_R_R_I(INS_st_d, EA_8BYTE, (regNumber)regNum, REG_SP, lowestCalleeSavedOffset);
+            compiler->unwindSaveReg((regNumber)regNum, lowestCalleeSavedOffset);
+            lowestCalleeSavedOffset += REGSIZE_BYTES;
+        }
+        maskSaveRegs >>= 1;
+        regNum += 1;
+    } while (maskSaveRegs != 0);
 
-            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair, REG_R21,
-                                    nullptr);
-        }
-        else
+    regsMask     = regsToSaveMask & RBM_FLT_CALLEE_SAVED;
+    maskSaveRegs = (int64_t)regsMask.getLow() >> FIRST_FLT_CALLEE_SAVED;
+    regNum       = FIRST_FLT_CALLEE_SAVED;
+    do
+    {
+        if (maskSaveRegs & 1)
         {
-            spOffset -= slotSize;
-            genEpilogRestoreReg(regPair.reg1, spOffset, stackDelta, REG_R21, nullptr);
+            emit->emitIns_R_R_I(INS_fst_d, EA_8BYTE, (regNumber)regNum, REG_SP, lowestCalleeSavedOffset);
+            compiler->unwindSaveReg((regNumber)regNum, lowestCalleeSavedOffset);
+            lowestCalleeSavedOffset += REGSIZE_BYTES;
         }
-    }
+        maskSaveRegs >>= 1;
+        regNum += 1;
+    } while (maskSaveRegs != 0);
 }
 
 //------------------------------------------------------------------------
@@ -597,7 +256,6 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
 // Arguments:
 //   regsToRestoreMask       - The mask of callee-saved registers to restore. If empty, this function does nothing.
 //   lowestCalleeSavedOffset - The offset from SP that is the beginning of the callee-saved register area.
-//   spDelta                 - Always zero for LoongArch64 now.
 //
 // Here's an example restore sequence:
 //      ld.d    s8,sp,#xxx
@@ -610,46 +268,53 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
 //      ld.d    s1,sp,#xxx
 //      ld.d    s0,sp,#xxx
 //
-// Note you call the unwind functions specifying the prolog operation that is being un-done. So, for example, when
-// generating a post-indexed load, you call the unwind function for specifying the corresponding preindexed store.
-//
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset)
 {
-    assert(spDelta == 0);
+    // The FP and RA are not in RBM_CALLEE_SAVED.
+    assert(!(regsToRestoreMask & (~RBM_CALLEE_SAVED)));
     if (regsToRestoreMask == 0)
     {
         return;
     }
+    int highestCalleeSavedOffset = (genCountBits(regsToRestoreMask) << 3) + lowestCalleeSavedOffset;
+    assert((highestCalleeSavedOffset & 7) == 0);
+    assert(highestCalleeSavedOffset >= 16);
 
-    unsigned regsToRestoreCount = genCountBits(regsToRestoreMask);
-    // The FP and RA are not in RBM_CALLEE_SAVED.
-    assert(regsToRestoreCount <= genCountBits(RBM_CALLEE_SAVED));
-
-    // Point past the end, to start. We predecrement to find the offset to load from.
-    static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
-    int spOffset = lowestCalleeSavedOffset + regsToRestoreCount * REGSIZE_BYTES;
-
-    // Save integer registers at higher addresses than floating-point registers.
-
-    regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
-    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
-
-    // Restore in the opposite order of saving.
-
-    if (maskRestoreRegsInt != RBM_NONE)
+    emitter*  emit         = GetEmitter();
+    regMaskTP regsMask     = regsToRestoreMask & RBM_FLT_CALLEE_SAVED;
+    int64_t   maskSaveRegs = (int64_t)regsMask.getLow() << (63 - LAST_FLT_CALLEE_SAVED);
+    int       regNum       = LAST_FLT_CALLEE_SAVED;
+    do
     {
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, 0, spOffset);
-        spOffset -= genCountBits(maskRestoreRegsInt) * REGSIZE_BYTES;
-    }
+        if (maskSaveRegs < 0)
+        {
+            highestCalleeSavedOffset -= REGSIZE_BYTES;
+            emit->emitIns_R_R_I(INS_fld_d, EA_8BYTE, (regNumber)regNum, REG_SP, highestCalleeSavedOffset);
+            compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
+        }
+        maskSaveRegs <<= 1;
+        regNum -= 1;
+    } while (maskSaveRegs != 0);
 
-    if (maskRestoreRegsFloat != RBM_NONE)
+    regsMask     = regsToRestoreMask & RBM_INT_CALLEE_SAVED;
+    maskSaveRegs = (int64_t)regsMask.getLow() << (63 - LAST_INT_CALLEE_SAVED);
+    regNum       = LAST_INT_CALLEE_SAVED;
+    do
     {
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, 0, spOffset);
-        // No need to update spOffset since it's not used after this.
-    }
+        if (maskSaveRegs < 0)
+        {
+            highestCalleeSavedOffset -= REGSIZE_BYTES;
+            emit->emitIns_R_R_I(INS_ld_d, EA_8BYTE, (regNumber)regNum, REG_SP, highestCalleeSavedOffset);
+            compiler->unwindSaveReg((regNumber)regNum, highestCalleeSavedOffset);
+        }
+        maskSaveRegs <<= 1;
+        regNum -= 1;
+    } while (maskSaveRegs != 0);
+
+    assert(highestCalleeSavedOffset >= 16); // the callee-saved regs always above ra/fp.
 }
 
 // clang-format off
@@ -821,7 +486,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
         compiler->unwindSaveReg(REG_RA, FP_offset + 8);
 
-        genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16, 0);
+        genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16);
     }
     else
     {
@@ -838,7 +503,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
         compiler->unwindSaveReg(REG_RA, FP_offset + 8);
 
-        genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16, 0);
+        genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16);
 
         genStackPointerAdjustment(frameSize, REG_R21, nullptr, true);
     }
@@ -920,7 +585,7 @@ void CodeGen::genFuncletEpilog()
         FP_offset = FP_offset & 0xf;
     }
 
-    genRestoreCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16, 0);
+    genRestoreCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16);
 
     GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
     compiler->unwindSaveReg(REG_RA, FP_offset + 8);
@@ -1368,6 +1033,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
+    BasicBlock* const nextBlock = block->Next();
+
     // Generate a call to the finally, like this:
     //      mov  a0,qword ptr [fp + 10H] / sp    // Load a0 with PSPSym, or sp if PSPSym is not used
     //      bl  finally-funclet
@@ -1382,12 +1049,11 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_A0, REG_SPBASE, 0);
     }
-    GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
-
-    BasicBlock* const nextBlock = block->Next();
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
+        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
+
         // We have a retless call, and the last instruction generated was a call.
         // If the next block is in a different EH region (or is the end of the code
         // block), then we need to generate a breakpoint here (since it will never
@@ -1404,12 +1070,12 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         // Because of the way the flowgraph is connected, the liveness info for this one instruction
         // after the call is not (can not be) correct in cases where a variable has a last use in the
-        // handler.  So turn off GC reporting for this single instruction.
+        // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
         GetEmitter()->emitDisableGC();
-
-        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
 
         // Now go to where the finally funclet needs to return to.
+        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
         if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
             // Fall-through.
@@ -1504,7 +1170,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             // Make sure we use "addi.d reg, zero, 0x00"  only for positive zero (0.0)
             // and not for negative zero (-0.0)
-            if (*(__int64*)&constValue == 0)
+            if (*(int64_t*)&constValue == 0)
             {
                 // A faster/smaller way to generate 0.0
                 // We will just zero out the entire vector register for both float and double
@@ -1513,7 +1179,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             else
             {
                 // Get a temp integer register to compute long address.
-                // regNumber addrReg = tree->GetSingleTempReg();
+                // regNumber addrReg = internalRegisters.GetSingle(tree);
 
                 // We must load the FP constant from the constant pool
                 // Emit a data section constant for the float or double constant.
@@ -1962,12 +1628,12 @@ void CodeGen::genLclHeap(GenTree* tree)
         // since we don't need any internal registers.
         if (compiler->info.compInitMem)
         {
-            assert(tree->AvailableTempRegCount() == 0);
+            assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
         }
         else
         {
-            regCnt = tree->ExtractTempReg();
+            regCnt = internalRegisters.Extract(tree);
             if (regCnt != targetReg)
             {
                 emit->emitIns_R_R_I(INS_ori, easz, regCnt, targetReg, 0);
@@ -2064,12 +1730,12 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(regCnt == REG_NA);
         if (compiler->info.compInitMem)
         {
-            assert(tree->AvailableTempRegCount() == 0);
+            assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
         }
         else
         {
-            regCnt = tree->ExtractTempReg();
+            regCnt = internalRegisters.Extract(tree);
         }
         instGen_Set_Reg_To_Imm(((unsigned int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
@@ -2134,7 +1800,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         //
 
         // Setup the regTmp
-        regNumber regTmp = tree->GetSingleTempReg();
+        regNumber regTmp = internalRegisters.GetSingle(tree);
 
         assert(regCnt != REG_R21);
         emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, REG_R21, REG_SPBASE, regCnt);
@@ -2565,7 +2231,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
+    bool dstOnStack =
+        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -2585,7 +2252,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     unsigned     slots  = layout->GetSlotCount();
 
     // Temp register(s) used to perform the sequence of loads and stores.
-    regNumber tmpReg  = cpObjNode->ExtractTempReg();
+    regNumber tmpReg  = internalRegisters.Extract(cpObjNode);
     regNumber tmpReg2 = REG_NA;
 
     assert(genIsValidIntReg(tmpReg));
@@ -2594,7 +2261,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     if (slots > 1)
     {
-        tmpReg2 = cpObjNode->GetSingleTempReg();
+        tmpReg2 = internalRegisters.GetSingle(cpObjNode);
         assert(tmpReg2 != tmpReg);
         assert(genIsValidIntReg(tmpReg2));
         assert(tmpReg2 != REG_WRITE_BARRIER_DST_BYREF);
@@ -2729,7 +2396,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber idxReg  = treeNode->AsOp()->gtOp1->GetRegNum();
     regNumber baseReg = treeNode->AsOp()->gtOp2->GetRegNum();
 
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     // load the ip-relative offset (which is relative to start of fgFirstBB)
     GetEmitter()->emitIns_R_R_I(INS_slli_d, EA_8BYTE, REG_R21, idxReg, 2);
@@ -3591,7 +3258,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     emitAttr attr = emitActualTypeSize(treeNode);
 
     // Extract exponent into a register.
-    regNumber intReg = treeNode->GetSingleTempReg();
+    regNumber intReg = internalRegisters.GetSingle(treeNode);
     regNumber fpReg  = genConsumeReg(op1);
 
     emit->emitIns_R_R(attr == EA_8BYTE ? INS_movfr2gr_d : INS_movfr2gr_s, attr, intReg, fpReg);
@@ -4006,7 +3673,24 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
                     unreached();
             }
 
-            emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+            GenTreeIntCon* con = op2->AsIntCon();
+
+            emitAttr attr = emitActualTypeSize(op2Type);
+            // TODO-CQ: Currently we cannot do this for all handles because of
+            // https://github.com/dotnet/runtime/issues/60712
+            if (con->ImmedValNeedsReloc(compiler))
+            {
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
+            }
+
+            if (op2Type == TYP_BYREF)
+            {
+                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+            }
+
+            instGen_Set_Reg_To_Imm(attr, REG_RA, imm,
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+            regSet.verifyRegUsed(REG_RA);
             regs = (int)REG_RA << 5;
         }
         else
@@ -4655,7 +4339,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_JMP:
-            genJmpMethod(treeNode);
+            genJmpPlaceArgs(treeNode);
             break;
 
         case GT_CKFINITE:
@@ -5101,7 +4785,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             // Setup loReg from the internal registers that we reserved in lower.
             //
-            regNumber loReg   = treeNode->ExtractTempReg();
+            regNumber loReg   = internalRegisters.Extract(treeNode);
             regNumber addrReg = REG_NA;
 
             GenTreeLclVarCommon* varNode  = nullptr;
@@ -5382,7 +5066,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         assert(source->OperGet() == GT_BLK);
         assert(varTypeIsStruct(targetType));
 
-        regNumber baseReg = treeNode->ExtractTempReg();
+        regNumber baseReg = internalRegisters.Extract(treeNode);
         regNumber addrReg = REG_NA;
 
         GenTreeLclVarCommon* varNode  = nullptr;
@@ -6019,7 +5703,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     assert(srcOffset < INT32_MAX - static_cast<int>(size));
     assert(dstOffset < INT32_MAX - static_cast<int>(size));
 
-    regNumber tempReg = cpBlkNode->ExtractTempReg(RBM_ALLINT);
+    regNumber tempReg = internalRegisters.Extract(cpBlkNode, RBM_ALLINT);
 
     if (size >= 2 * REGSIZE_BYTES)
     {
@@ -6148,7 +5832,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         // Extend liveness of dstReg in case if it gets killed by the store.
         gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
 
-        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
+        const regNumber offsetReg = internalRegisters.GetSingle(initBlkNode);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
 
         // loop begin:
@@ -6168,57 +5852,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCall(GenTreeCall* call)
 {
-    // Consume all the arg regs
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        CallArgABIInformation& abiInfo = arg.AbiInfo;
-        GenTree*               argNode = arg.GetLateNode();
-
-        // GT_RELOAD/GT_COPY use the child node
-        argNode = argNode->gtSkipReloadOrCopy();
-
-        if (abiInfo.GetRegNum() == REG_STK)
-        {
-            continue;
-        }
-
-        // Deal with multi register passed struct args.
-        if (argNode->OperGet() == GT_FIELD_LIST)
-        {
-            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
-            {
-                GenTree* putArgRegNode = use.GetNode();
-                assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-
-                genConsumeReg(putArgRegNode);
-            }
-        }
-        else if (abiInfo.IsSplit())
-        {
-            assert(compFeatureArgSplit());
-
-            GenTreePutArgSplit* splitNode = argNode->AsPutArgSplit();
-            genConsumeArgSplitStruct(splitNode);
-
-            regNumber argReg   = abiInfo.GetRegNum();
-            regNumber allocReg = splitNode->GetRegNumByIdx(0);
-            var_types regType  = splitNode->GetRegType(0);
-
-            // For LA64's ABI, the split is only using the A7 and stack for passing arg.
-            assert(argReg == REG_A7);
-            assert(emitter::isGeneralRegister(allocReg));
-            assert(abiInfo.NumRegs == 1);
-
-            inst_Mov(regType, argReg, allocReg, /* canSkip */ true);
-        }
-        else
-        {
-            regNumber argReg = abiInfo.GetRegNum();
-            genConsumeReg(argNode);
-            var_types dstType = emitter::isFloatReg(argReg) ? TYP_DOUBLE : argNode->TypeGet();
-            inst_Mov(dstType, argReg, argNode->GetRegNum(), /* canSkip */ true);
-        }
-    }
+    genCallPlaceRegArgs(call);
 
     // Insert a null check on "this" pointer if asked.
     if (call->NeedsNullCheck())
@@ -6247,7 +5881,7 @@ void CodeGen::genCall(GenTreeCall* call)
                    (call->IsVirtualStubRelativeIndir() && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
 
-            regNumber tmpReg = call->GetSingleTempReg();
+            regNumber tmpReg = internalRegisters.GetSingle(call);
             // Register where we save call address in should not be overridden by epilog.
             assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(tmpReg));
 
@@ -6255,7 +5889,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
             GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg, 0);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
-            call->gtRsvdRegs |= genRegMask(tmpReg);
+            internalRegisters.Add(call, genRegMask(tmpReg));
         }
 #endif
 
@@ -6356,22 +5990,26 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     emitAttr              retSize       = EA_PTRSIZE;
     emitAttr              secondRetSize = EA_UNKNOWN;
 
-    if (call->HasMultiRegRetVal())
+    // unused values are of no interest to GC.
+    if (!call->IsUnusedValue())
     {
-        retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
-        secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
-    }
-    else
-    {
-        assert(call->gtType != TYP_STRUCT);
-
-        if (call->gtType == TYP_REF)
+        if (call->HasMultiRegRetVal())
         {
-            retSize = EA_GCREF;
+            retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
+            secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
         }
-        else if (call->gtType == TYP_BYREF)
+        else
         {
-            retSize = EA_BYREF;
+            assert(call->gtType != TYP_STRUCT);
+
+            if (call->gtType == TYP_REF)
+            {
+                retSize = EA_GCREF;
+            }
+            else if (call->gtType == TYP_BYREF)
+            {
+                retSize = EA_BYREF;
+            }
         }
     }
 
@@ -6408,14 +6046,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (unsigned j = 0; j < arg.AbiInfo.NumRegs; j++)
+            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
             {
-                regNumber reg = arg.AbiInfo.GetRegNum(j);
-                if ((trashedByEpilog & genRegMask(reg)) != 0)
+                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
                 {
                     JITDUMP("Tail call node:\n");
                     DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(reg));
+                    JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
                     assert(!"Argument to tailcall may be trashed by epilog");
                 }
             }
@@ -6473,7 +6111,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         if (callThroughIndirReg != REG_NA)
         {
             assert(call->IsR2ROrVirtualStubRelativeIndir());
-            regNumber targetAddrReg = call->GetSingleTempReg();
+            regNumber targetAddrReg = internalRegisters.GetSingle(call);
             // For fast tailcalls we have already loaded the call target when processing the call node.
             if (!call->IsFastTailCall())
             {
@@ -6549,186 +6187,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
 }
 
-// Produce code for a GT_JMP node.
-// The arguments of the caller needs to be transferred to the callee before exiting caller.
-// The actual jump to callee is generated as part of caller epilog sequence.
-// Therefore the codegen of GT_JMP is to ensure that the callee arguments are correctly setup.
-void CodeGen::genJmpMethod(GenTree* jmp)
+//------------------------------------------------------------------------
+// genJmpPlaceVarArgs:
+//   Generate code to place all varargs correctly for a JMP.
+//
+void CodeGen::genJmpPlaceVarArgs()
 {
-    assert(jmp->OperGet() == GT_JMP);
-    assert(compiler->compJmpOpUsed);
-
-    // If no arguments, nothing to do
-    if (compiler->info.compArgsCount == 0)
-    {
-        return;
-    }
-
-    // Make sure register arguments are in their initial registers
-    // and stack arguments are put back as well.
-    unsigned   varNum;
-    LclVarDsc* varDsc;
-
-    // First move any en-registered stack arguments back to the stack.
-    // At the same time any reg arg not in correct reg is moved back to its stack location.
-    //
-    // We are not strictly required to spill reg args that are not in the desired reg for a jmp call
-    // But that would require us to deal with circularity while moving values around.  Spilling
-    // to stack makes the implementation simple, which is not a bad trade off given Jmp calls
-    // are not frequent.
-    for (varNum = 0; (varNum < compiler->info.compArgsCount); varNum++)
-    {
-        varDsc = compiler->lvaTable + varNum;
-
-        if (varDsc->lvPromoted)
-        {
-            noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
-
-            unsigned fieldVarNum = varDsc->lvFieldLclStart;
-            varDsc               = compiler->lvaTable + fieldVarNum;
-        }
-        noway_assert(varDsc->lvIsParam);
-
-        if (varDsc->lvIsRegArg && (varDsc->GetRegNum() != REG_STK))
-        {
-            // Skip reg args which are already in its right register for jmp call.
-            // If not, we will spill such args to their stack locations.
-            //
-            // If we need to generate a tail call profiler hook, then spill all
-            // arg regs to free them up for the callback.
-            if (!compiler->compIsProfilerHookNeeded() && (varDsc->GetRegNum() == varDsc->GetArgReg()))
-            {
-                continue;
-            }
-        }
-        else if (varDsc->GetRegNum() == REG_STK)
-        {
-            // Skip args which are currently living in stack.
-            continue;
-        }
-
-        // If we came here it means either a reg argument not in the right register or
-        // a stack argument currently living in a register.  In either case the following
-        // assert should hold.
-        assert(varDsc->GetRegNum() != REG_STK);
-        assert(varDsc->TypeGet() != TYP_STRUCT);
-        var_types storeType = varDsc->GetStackSlotHomeType();
-        emitAttr  storeSize = emitActualTypeSize(storeType);
-
-        GetEmitter()->emitIns_S_R(ins_Store(storeType), storeSize, varDsc->GetRegNum(), varNum, 0);
-        // Update GetRegNum() life and GC info to indicate GetRegNum() is dead and varDsc stack slot is going live.
-        // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
-        // Therefore manually update life of varDsc->GetRegNum().
-        regMaskTP tempMask = genRegMask(varDsc->GetRegNum());
-        regSet.RemoveMaskVars(tempMask);
-        gcInfo.gcMarkRegSetNpt(tempMask);
-        if (compiler->lvaIsGCTracked(varDsc))
-        {
-            VarSetOps::AddElemD(compiler, gcInfo.gcVarPtrSetCur, varNum);
-        }
-    }
-
-#ifdef PROFILING_SUPPORTED
-    // At this point all arg regs are free.
-    // Emit tail call profiler callback.
-    genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_TAILCALL);
-#endif
-
-    // Next move any un-enregistered register arguments back to their register.
-    unsigned firstArgVarNum = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
-    for (varNum = 0; (varNum < compiler->info.compArgsCount); varNum++)
-    {
-        varDsc = compiler->lvaTable + varNum;
-        if (varDsc->lvPromoted)
-        {
-            noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
-
-            unsigned fieldVarNum = varDsc->lvFieldLclStart;
-            varDsc               = compiler->lvaTable + fieldVarNum;
-        }
-        noway_assert(varDsc->lvIsParam);
-
-        // Skip if arg not passed in a register.
-        if (!varDsc->lvIsRegArg)
-        {
-            continue;
-        }
-
-        // Register argument
-        noway_assert(isRegParamType(genActualType(varDsc->TypeGet())));
-
-        // Is register argument already in the right register?
-        // If not load it from its stack location.
-        regNumber argReg     = varDsc->GetArgReg(); // incoming arg register
-        regNumber argRegNext = REG_NA;
-
-        if (varDsc->GetRegNum() != argReg)
-        {
-            var_types loadType = TYP_UNDEF;
-
-            // NOTE for LOONGARCH: not supports the HFA.
-            assert(!varDsc->lvIsHfaRegArg());
-            {
-                if (varTypeIsStruct(varDsc))
-                {
-                    // Must be <= 16 bytes or else it wouldn't be passed in registers,
-                    // which can be bigger (and is handled above).
-                    noway_assert(EA_SIZE_IN_BYTES(varDsc->lvSize()) <= 16);
-                    if (emitter::isFloatReg(argReg))
-                    {
-                        loadType = varDsc->lvIs4Field1 ? TYP_FLOAT : TYP_DOUBLE;
-                    }
-                    else
-                        loadType = varDsc->GetLayout()->GetGCPtrType(0);
-                }
-                else
-                {
-                    loadType = compiler->mangleVarArgsType(genActualType(varDsc->TypeGet()));
-                }
-
-                emitAttr loadSize = emitActualTypeSize(loadType);
-                GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argReg, varNum, 0);
-
-                // Update argReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
-                // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting
-                // it.
-                // Therefore manually update life of argReg.  Note that GT_JMP marks the end of the basic block
-                // and after which reg life and gc info will be recomputed for the new block in genCodeForBBList().
-                regSet.AddMaskVars(genRegMask(argReg));
-                gcInfo.gcMarkRegPtrVal(argReg, loadType);
-
-                if (varDsc->GetOtherArgReg() < REG_STK)
-                {
-                    // Restore the second register.
-                    argRegNext = varDsc->GetOtherArgReg();
-
-                    if (emitter::isFloatReg(argRegNext))
-                    {
-                        loadType = varDsc->lvIs4Field2 ? TYP_FLOAT : TYP_DOUBLE;
-                    }
-                    else
-                        loadType = varDsc->GetLayout()->GetGCPtrType(1);
-
-                    loadSize = emitActualTypeSize(loadType);
-                    int offs = loadSize == EA_4BYTE ? 4 : 8;
-                    GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argRegNext, varNum, offs);
-
-                    regSet.AddMaskVars(genRegMask(argRegNext));
-                    gcInfo.gcMarkRegPtrVal(argRegNext, loadType);
-                }
-
-                if (compiler->lvaIsGCTracked(varDsc))
-                {
-                    VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
-                }
-            }
-        }
-
-        if (compiler->info.compIsVarArgs)
-        {
-            NYI_LOONGARCH64("genJmpMethod unsupports compIsVarArgs");
-        }
-    }
+    NYI_LOONGARCH64("Varargs not supported");
 }
 
 //------------------------------------------------------------------------
@@ -7131,7 +6596,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             }
             else
             {
-                regNumber tmpReg = lea->GetSingleTempReg();
+                regNumber tmpReg = internalRegisters.GetSingle(lea);
 
                 noway_assert(tmpReg != index->GetRegNum());
                 noway_assert(tmpReg != memBase->GetRegNum());
@@ -7168,7 +6633,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         else
         {
             // We require a tmpReg to hold the offset
-            regNumber tmpReg = lea->GetSingleTempReg();
+            regNumber tmpReg = internalRegisters.GetSingle(lea);
 
             // First load tmpReg with the large offset constant
             emit->emitIns_I_la(EA_PTRSIZE, tmpReg, offset);
@@ -7690,7 +7155,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
     compiler->unwindSaveReg(REG_RA, FP_offset + 8);
 
-    genSaveCalleeSavedRegistersHelp(rsPushRegs, FP_offset + 16, 0);
+    genSaveCalleeSavedRegistersHelp(rsPushRegs, FP_offset + 16);
 
     JITDUMP("    offsetSpToSavedFp=%d\n", FP_offset);
     genEstablishFramePointer(FP_offset, /* reportUnwindData */ true);
@@ -7774,7 +7239,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     }
 
     JITDUMP("    calleeSaveSPOffset=%d\n", FP_offset + 16);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, FP_offset + 16, 0);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, FP_offset + 16);
 
     emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
     compiler->unwindSaveReg(REG_RA, FP_offset + 8);

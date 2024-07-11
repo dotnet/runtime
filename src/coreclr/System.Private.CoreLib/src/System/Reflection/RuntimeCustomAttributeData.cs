@@ -543,7 +543,7 @@ namespace System.Reflection
         }
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
         {
-            RuntimeType type = TypeNameParser.GetTypeReferencedByCustomAttribute(typeName, scope);
+            RuntimeType type = TypeNameResolver.GetTypeReferencedByCustomAttribute(typeName, scope);
             Debug.Assert(type is not null);
             return type;
         }
@@ -899,7 +899,7 @@ namespace System.Reflection
                     throw new BadImageFormatException();
                 }
 
-                enumType = TypeNameParser.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
+                enumType = TypeNameResolver.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
                 if (!enumType.IsEnum)
                 {
                     throw new BadImageFormatException();
@@ -1544,11 +1544,13 @@ namespace System.Reflection
                     else
                     {
                         int data = Unsafe.ReadUnaligned<int>((void*)blobStart);
-#if BIGENDIAN
-                        // Metadata is always written in little-endian format. Must account for this on
-                        // big-endian platforms.
-                        data = BinaryPrimitives.ReverseEndianness(data);
-#endif
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            // Metadata is always written in little-endian format. Must account for this on
+                            // big-endian platforms.
+                            data = BinaryPrimitives.ReverseEndianness(data);
+                        }
+
                         const int CustomAttributeVersion = 0x0001;
                         if ((data & 0xffff) != CustomAttributeVersion)
                         {

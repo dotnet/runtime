@@ -93,6 +93,13 @@ FCIMPL1(ReflectMethodObject*, SystemNative::GetMethodFromStackTrace, ArrayBase* 
 {
     FCALL_CONTRACT;
 
+    // The pStackTraceUNSAFE can be either I1Array or Object[]. In the latter case, the first entry is the actual stack trace I1Array,
+    // the rest are pointers to the method info objects. We only care about the first entry here.
+    if (pStackTraceUNSAFE->GetArrayElementType() != ELEMENT_TYPE_I1)
+    {
+        PtrArray *combinedArray = (PtrArray*)pStackTraceUNSAFE;
+        pStackTraceUNSAFE = (ArrayBase*)OBJECTREFToObject(combinedArray->GetAt(0));
+    }
     I1ARRAYREF pArray(static_cast<I1Array *>(pStackTraceUNSAFE));
     StackTraceArray stackArray(pArray);
 
@@ -180,13 +187,13 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 
     if (message == NULL || message[0] == W('\0'))
     {
-        WszOutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
+        OutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
     }
     else
     {
-        WszOutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
-        WszOutputDebugString(message);
-        WszOutputDebugString(W("\r\n"));
+        OutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
+        OutputDebugString(message);
+        OutputDebugString(W("\r\n"));
     }
 
     LPCWSTR argExceptionString = NULL;

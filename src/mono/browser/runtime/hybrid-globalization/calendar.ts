@@ -2,20 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-inner-declarations */
-import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../strings";
 import { VoidPtrNull } from "../types/internal";
+import { runtimeHelpers } from "./module-exports";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
-import { INNER_SEPARATOR, OUTER_SEPARATOR, normalizeSpaces } from "./helpers";
-import { setI32 } from "../memory";
+import { INNER_SEPARATOR, OUTER_SEPARATOR } from "./helpers";
 
 const MONTH_CODE = "MMMM";
 const YEAR_CODE = "yyyy";
 const DAY_CODE = "d";
+const WEEKDAY_CODE = "dddd";
+const keyWords = [MONTH_CODE, YEAR_CODE, DAY_CODE, WEEKDAY_CODE];
 
 // this function joins all calendar info with OUTER_SEPARATOR into one string and returns it back to managed code
 export function mono_wasm_get_calendar_info (culture: number, cultureLength: number, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
-        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
+        const cultureName = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const locale = cultureName ? cultureName : undefined;
         const calendarInfo = {
             EnglishName: "",
@@ -56,11 +57,11 @@ export function mono_wasm_get_calendar_info (culture: number, cultureLength: num
         if (result.length > dstMaxLength) {
             throw new Error(`Calendar info exceeds length of ${dstMaxLength}.`);
         }
-        stringToUTF16(dst, dst + 2 * result.length, result);
-        setI32(dstLength, result.length);
+        runtimeHelpers.stringToUTF16(dst, dst + 2 * result.length, result);
+        runtimeHelpers.setI32(dstLength, result.length);
         return VoidPtrNull;
     } catch (ex: any) {
-        return stringToUTF16Ptr(ex.toString());
+        return runtimeHelpers.stringToUTF16Ptr(ex.toString());
     }
 }
 
@@ -97,7 +98,6 @@ function getMonthYearPattern (locale: string | undefined, date: Date): string {
     pattern = pattern.replace("999", YEAR_CODE);
     // sometimes the number is localized and the above does not have an effect
     const yearStr = date.toLocaleDateString(locale, { year: "numeric" });
-    pattern = normalizeSpaces(pattern);
     return pattern.replace(yearStr, YEAR_CODE);
 }
 
@@ -166,7 +166,7 @@ function getShortDatePattern (locale: string | undefined): string {
         const localizedDayCode = dayStr.length == 1 ? "d" : "dd";
         pattern = pattern.replace(dayStr, localizedDayCode);
     }
-    return normalizeSpaces(pattern);
+    return pattern;
 }
 
 function getLongDatePattern (locale: string | undefined, date: Date): string {
@@ -194,11 +194,11 @@ function getLongDatePattern (locale: string | undefined, date: Date): string {
     pattern = pattern.replace(yearStr, YEAR_CODE);
     const weekday = date.toLocaleDateString(locale, { weekday: "long" }).toLowerCase();
     const replacedWeekday = getGenitiveForName(date, pattern, weekday, new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }));
-    pattern = pattern.replace(replacedWeekday, "dddd");
+    pattern = pattern.replace(replacedWeekday, WEEKDAY_CODE);
     pattern = pattern.replace("22", DAY_CODE);
     const dayStr = date.toLocaleDateString(locale, { day: "numeric" }); // should we replace it for localized digits?
-    pattern = normalizeSpaces(pattern);
-    return pattern.replace(dayStr, DAY_CODE);
+    pattern = pattern.replace(dayStr, DAY_CODE);
+    return wrapSubstrings(pattern, locale);
 }
 
 function getGenitiveForName (date: Date, pattern: string, name: string, formatWithoutName: Intl.DateTimeFormat) {
@@ -328,4 +328,37 @@ function getEraNames (date: Date, locale: string | undefined, calendarId: number
             ignoredPart: dayStr,
         };
     }
+}
+
+// wraps all substrings in the format in quotes, except for key words
+// transform e.g. "dddd, d MMMM yyyy г." into "dddd, d MMMM yyyy 'г'."
+function wrapSubstrings (str: string, locale: string | undefined) {
+    const words = str.split(/\s+/);
+    // locales that write date nearly without spaces should not have format parts quoted - "ja", "zh"
+    // "ko" format parts should not be quoted but processing it would overcomplicate the logic
+    if (words.length <= 2 || locale?.startsWith("ko")) {
+        return str;
+    }
+
+    for (let i = 0; i < words.length; i++) {
+        if (!keyWords.includes(words[i].replace(",", "")) &&
+            !keyWords.includes(words[i].replace(".", "")) &&
+            !keyWords.includes(words[i].replace("\u060c", "")) &&
+            !keyWords.includes(words[i].replace("\u05d1", ""))) {
+            if (words[i].endsWith(".,")) {
+                // if the "word" appears twice, then the occurence with punctuation is not a code but fixed part of the format
+                // see: "hu-HU" vs "lt-LT" format
+                const wordNoPuctuation = words[i].slice(0, -2);
+                if (words.filter(x => x == wordNoPuctuation).length == 1)
+                    words[i] = `'${words[i].slice(0, -2)}'.,`;
+            } else if (words[i].endsWith(".")) {
+                words[i] = `'${words[i].slice(0, -1)}'.`;
+            } else if (words[i].endsWith(",")) {
+                words[i] = `'${words[i].slice(0, -1)}',`;
+            } else {
+                words[i] = `'${words[i]}'`;
+            }
+        }
+    }
+    return words.join(" ");
 }

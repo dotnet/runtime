@@ -78,11 +78,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append($@"DelegateCtor(");
             sb.Append(nameMangler.GetMangledTypeName(_delegateType));
-            sb.Append(" -> ");
+            sb.Append(" -> "u8);
             _targetMethod.AppendMangledName(nameMangler, sb);
-            sb.Append("; ");
+            sb.Append("; "u8);
             sb.Append(_methodToken.ToString());
-            sb.Append(")");
+            sb.Append(")"u8);
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

@@ -273,6 +273,17 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
+        public static void GetCredential_LongerUriButShorterMatch()
+        {
+            CredentialCache cc = new CredentialCache();
+            cc.Add(new Uri("http://microsoft:80/common/unique/something"), authenticationType1, credential2);
+            cc.Add(new Uri("http://microsoft:80/common/veryloooooongprefix"), authenticationType1, credential1);
+
+            NetworkCredential nc = cc.GetCredential(new Uri("http://microsoft:80/common/unique/a"), authenticationType1);
+            Assert.Equal(nc, credential2);
+        }
+
+        [Fact]
         public static void GetCredential_UriAuthenticationType_Invalid()
         {
             CredentialCache cc = new CredentialCache();

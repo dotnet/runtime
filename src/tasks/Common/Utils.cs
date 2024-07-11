@@ -326,7 +326,7 @@ internal static class Utils
         return "sha256-" + Convert.ToBase64String(hash);
     }
 
-#if NETCOREAPP
+#if NET
     public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool>? predicate=null)
     {
         if (!Directory.Exists(destDir))
@@ -350,7 +350,7 @@ internal static class Utils
 
     public static bool IsWindows()
     {
-#if NETCOREAPP
+#if NET
         return OperatingSystem.IsWindows();
 #else
         return true;
@@ -359,7 +359,7 @@ internal static class Utils
 
     public static bool IsMacOS()
     {
-#if NETCOREAPP
+#if NET
         return OperatingSystem.IsMacOS();
 #else
         return false;
@@ -368,7 +368,7 @@ internal static class Utils
 
     public static bool IsLinux()
     {
-#if NETCOREAPP
+#if NET
         return OperatingSystem.IsLinux();
 #else
         return false;

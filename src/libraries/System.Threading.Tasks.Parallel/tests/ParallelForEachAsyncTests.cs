@@ -459,7 +459,6 @@ namespace System.Threading.Tasks.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/101380", typeof(PlatformDetection), nameof(PlatformDetection.IsS390xProcess))]
         public async Task AllItemsEnumeratedOnce_For(bool yield)
         {
             await Test<int>(yield);

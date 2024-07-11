@@ -411,42 +411,6 @@ inline WORD PEDecoder::GetCharacteristics() const
     return VAL16(FindNTHeaders()->FileHeader.Characteristics);
 }
 
-inline SIZE_T PEDecoder::GetSizeOfStackReserve() const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (Has32BitNTHeaders())
-        return (SIZE_T) VAL32(GetNTHeaders32()->OptionalHeader.SizeOfStackReserve);
-    else
-        return (SIZE_T) VAL64(GetNTHeaders64()->OptionalHeader.SizeOfStackReserve);
-}
-
-
-inline SIZE_T PEDecoder::GetSizeOfStackCommit() const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (Has32BitNTHeaders())
-        return (SIZE_T) VAL32(GetNTHeaders32()->OptionalHeader.SizeOfStackCommit);
-    else
-        return (SIZE_T) VAL64(GetNTHeaders64()->OptionalHeader.SizeOfStackCommit);
-}
-
-
 inline SIZE_T PEDecoder::GetSizeOfHeapReserve() const
 {
     CONTRACTL

@@ -41,6 +41,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/metadata-update.h>
+#include <mono/metadata/method-builder-ilgen.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -49,6 +50,8 @@
 #include <mono/utils/unlocked.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/checked-build.h>
+// for dn_simdhash_ght_t
+#include "../native/containers/dn-simdhash-specializations.h"
 
 MonoStats mono_stats;
 
@@ -1168,7 +1171,7 @@ MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error)
 {
 	MonoMethod *result;
-	MonoMethodInflated *iresult, *cached;
+	MonoMethodInflated *iresult, *cached = NULL;
 	MonoMethodSignature *sig;
 	MonoGenericContext tmp_context;
 
@@ -1223,8 +1226,8 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	// check cache
 	mono_mem_manager_lock (mm);
 	if (!mm->gmethod_cache)
-		mm->gmethod_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
+		mm->gmethod_cache = dn_simdhash_ght_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method, 0, NULL);
+	dn_simdhash_ght_try_get_value (mm->gmethod_cache, iresult, (void **)&cached);
 	mono_mem_manager_unlock (mm);
 
 	if (cached) {
@@ -1263,6 +1266,17 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 		resw->method_data = (void **)g_malloc (sizeof (gpointer) * (len + 1));
 		memcpy (resw->method_data, mw->method_data, sizeof (gpointer) * (len + 1));
+		if (mw->inflate_wrapper_data) {
+			mono_mb_inflate_generic_wrapper_data (context, (gpointer*)resw->method_data, error);
+			if (!is_ok (error)) {
+				g_free (resw->method_data);
+				goto fail;
+			}
+			// we can't set inflate_wrapper_data to 0 on the result, it's possible it
+			// will need to be inflated again (for example in the method_inst ==
+			// generic_container->context.method_inst case, below)
+			resw->inflate_wrapper_data = 1;
+		}
 	}
 
 	if (iresult->context.method_inst) {
@@ -1319,9 +1333,10 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	// check cache
 	mono_mem_manager_lock (mm);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
+	cached = NULL;
+	dn_simdhash_ght_try_get_value (mm->gmethod_cache, iresult, (void **)&cached);
 	if (!cached) {
-		g_hash_table_insert (mm->gmethod_cache, iresult, iresult);
+		dn_simdhash_ght_insert (mm->gmethod_cache, iresult, iresult);
 		iresult->owner = mm;
 		cached = iresult;
 	}
@@ -3567,6 +3582,7 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 				    gboolean check_interfaces)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+
 	/* FIXME test for interfaces with variant generic arguments */
 	if (check_interfaces) {
 		mono_class_init_internal (klass);
@@ -4269,13 +4285,9 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 
 		MonoClass *eclass;
 		MonoClass *eoclass;
-		if (signature_assignment) {
-			eclass = composite_type_to_reduced_element_type (klass);
-			eoclass = composite_type_to_reduced_element_type (oklass);
-		} else {
-			eclass = m_class_get_cast_class (klass);
-			eoclass = m_class_get_cast_class (oklass);
-		}
+
+		eclass = composite_type_to_reduced_element_type (klass);
+		eoclass = composite_type_to_reduced_element_type (oklass);
 
 		*result = (eclass == eoclass);
 		return;
@@ -5264,7 +5276,7 @@ mono_class_get_fields_internal (MonoClass *klass, gpointer *iter)
  * mono_class_get_methods:
  * \param klass the \c MonoClass to act on
  *
- * This routine is an iterator routine for retrieving the fields in a class.
+ * This routine is an iterator routine for retrieving the methods in a class.
  *
  * You must pass a \c gpointer that points to zero and is treated as an opaque handle to
  * iterate over all of the elements.  When no more values are

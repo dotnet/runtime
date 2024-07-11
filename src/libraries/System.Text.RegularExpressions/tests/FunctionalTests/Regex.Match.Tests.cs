@@ -870,6 +870,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"\s+\d+", " asdf12 ", RegexOptions.RightToLeft, 0, 6, false, string.Empty);
                 yield return ("aaa", "aaabbb", RegexOptions.None, 3, 3, false, string.Empty);
                 yield return ("abc|def", "123def456", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, true, "def");
+                yield return (@"^says?$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^says?$", "say", RegexOptions.RightToLeft, 0, 3, true, "say");
+                yield return (@"^say(s?)$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^(say)s?$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^(.+?) (says?),\s'(.+)'$", "User says, 'adventure'", RegexOptions.RightToLeft, 0, 22, true, "User says, 'adventure'");
 
                 // .* : RTL, Case-sensitive
                 yield return (@".*\nfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "");
@@ -1172,6 +1177,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Match_DeepNesting_MemberData()
         {
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.IgnoreCase })
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 if (RegexHelpers.IsNonBacktracking(engine))
@@ -1180,15 +1186,15 @@ namespace System.Text.RegularExpressions.Tests
                     continue;
                 }
 
-                yield return new object[] { engine, 1 };
-                yield return new object[] { engine, 10 };
-                yield return new object[] { engine, 100 };
+                yield return new object[] { engine, options, 1 };
+                yield return new object[] { engine, options, 10 };
+                yield return new object[] { engine, options, 100 };
             }
         }
 
         [Theory]
         [MemberData(nameof(Match_DeepNesting_MemberData))]
-        public async Task Match_DeepNesting(RegexEngine engine, int count)
+        public async Task Match_DeepNesting(RegexEngine engine, RegexOptions options, int count)
         {
             const string Start = @"((?>abc|(?:def[ghi]", End = @")))";
             const string Match = "defg";
@@ -1196,7 +1202,7 @@ namespace System.Text.RegularExpressions.Tests
             string pattern = string.Concat(Enumerable.Repeat(Start, count)) + string.Concat(Enumerable.Repeat(End, count));
             string input = string.Concat(Enumerable.Repeat(Match, count));
 
-            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
             Match m = r.Match(input);
 
             Assert.True(m.Success);
@@ -1326,7 +1332,7 @@ namespace System.Text.RegularExpressions.Tests
             }, ((int)engine).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Match_InstanceMethods_DefaultTimeout_SourceGenerated_Throws()
         {
@@ -1884,7 +1890,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
-#if NET7_0_OR_GREATER
+#if NET
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input.AsSpan(), startat));
 #endif
 
@@ -2068,7 +2074,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex r1 = await RegexHelpers.GetRegexAsync(engine, "[\u012F-\u0130]", RegexOptions.IgnoreCase);
             Regex r2 = await RegexHelpers.GetRegexAsync(engine, "[\u012F\u0130]", RegexOptions.IgnoreCase);
             Assert.Equal(r1.IsMatch("\u0130"), r2.IsMatch("\u0130"));
-#if NET7_0_OR_GREATER
+#if NET
             Assert.Equal(r1.IsMatch("\u0130".AsSpan()), r2.IsMatch("\u0130".AsSpan()));
 #endif
 
@@ -2490,14 +2496,14 @@ namespace System.Text.RegularExpressions.Tests
             if (r == null)
             {
                 Assert.Throws<T>(() => timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input, pattern, options) : Regex.IsMatch(input, pattern, options, timeout));
-#if NET7_0_OR_GREATER
+#if NET
                 Assert.Throws<T>(() => timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input.AsSpan(), pattern, options) : Regex.IsMatch(input.AsSpan(), pattern, options, timeout));
 #endif
             }
             else
             {
                 Assert.Throws<T>(() => r.IsMatch(input));
-#if NET7_0_OR_GREATER
+#if NET
                 Assert.Throws<T>(() => r.IsMatch(input.AsSpan()));
 #endif
             }
@@ -2512,7 +2518,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     Assert.Equal(expected, Regex.IsMatch(input, pattern));
                 }
-#if NET7_0_OR_GREATER
+#if NET
                 Assert.Equal(expected, timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input.AsSpan(), pattern, options) : Regex.IsMatch(input.AsSpan(), pattern, options, timeout));
                 if (options == RegexOptions.None)
                 {
@@ -2523,7 +2529,7 @@ namespace System.Text.RegularExpressions.Tests
             else
             {
                 Assert.Equal(expected, r.IsMatch(input));
-#if NET7_0_OR_GREATER
+#if NET
                 Assert.Equal(expected, r.IsMatch(input.AsSpan()));
 #endif
             }

@@ -81,7 +81,7 @@ namespace System.Reflection.Metadata.Tests
 
             if (PlatformDetection.IsNotMonoRuntime) // https://github.com/dotnet/runtime/issues/45033
             {
-#if NETCOREAPP
+#if NET
                 Assert.Throws<TypeLoadException>(() => Type.GetType(input));
 #endif
             }
@@ -631,7 +631,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
                 // now load load the type from name
                 Verify(type, parsed, ignoreCase: false);
-#if NETCOREAPP  // something weird is going on here
+#if NET  // something weird is going on here
                 // load using lowercase name
                 Verify(type, TypeName.Parse(type.AssemblyQualifiedName.ToLower().AsSpan()), ignoreCase: true);
                 // load using uppercase name

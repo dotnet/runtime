@@ -29,7 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(EnableDiaSymReaderUse)' == 'true'" Include="Microsoft.DiaSymReader" Version="$(MicrosoftDiaSymReaderVersion)" />
+    <PackageReference Include="Microsoft.DiaSymReader" Version="$(MicrosoftDiaSymReaderVersion)" Condition="'$(EnableDiaSymReaderUse)' == 'true'" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -198,38 +199,11 @@
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\HexConverter.cs">
-      <Link>Utilities\HexConverter.cs</Link>
-    </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\AssemblyNameFormatter.cs">
-      <Link>Utilities\AssemblyNameFormatter.cs</Link>
-    </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\AssemblyNameParser.cs">
-      <Link>Utilities\AssemblyNameParser.cs</Link>
-    </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\AssemblyNameInfo.cs">
-      <Link>Utilities\AssemblyNameInfo.cs</Link>
-    </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeName.cs">
-      <Link>Utilities\TypeName.cs</Link>
-    </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameParser.cs">
-      <Link>Utilities\TypeNameParser.cs</Link>
-    </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameParserHelpers.cs">
-      <Link>Utilities\TypeNameParserHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameParserOptions.cs">
-      <Link>Utilities\TypeNameParserOptions.cs</Link>
-    </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.Helpers.cs">
-      <Link>Utilities\CustomAttributeTypeNameParser.Helpers</Link>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs">
+      <Link>Utilities\TypeNameHelpers.cs</Link>
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
       <Link>Utilities\ValueStringBuilder.cs</Link>
-    </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.AppendSpanFormattable.cs">
-      <Link>Utilities\ValueStringBuilder.AppendSpanFormattable.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\GCPointerMap.Algorithm.cs">
       <Link>Utilities\GCPointerMap.Algorithm.cs</Link>

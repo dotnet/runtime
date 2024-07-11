@@ -9,32 +9,32 @@ namespace System.Collections.Generic
     // Keys can be any non-null object.  Values can be any object.
     // You can look up a value in an IDictionary via the default indexed
     // property, Items.
-    public interface IDictionary<TKey, TValue> : ICollection<KeyValuePair<TKey, TValue>>, IReadOnlyDictionary<TKey, TValue>
+    public interface IDictionary<TKey, TValue> : ICollection<KeyValuePair<TKey, TValue>>
     {
         // Interfaces are not serializable
         // The Item property provides methods to read and edit entries
         // in the Dictionary.
-        new TValue this[TKey key]
+        TValue this[TKey key]
         {
             get;
             set;
         }
 
         // Returns a collections of the keys in this dictionary.
-        new ICollection<TKey> Keys
+        ICollection<TKey> Keys
         {
             get;
         }
 
         // Returns a collections of the values in this dictionary.
-        new ICollection<TValue> Values
+        ICollection<TValue> Values
         {
             get;
         }
 
         // Returns whether this dictionary contains a particular key.
         //
-        new bool ContainsKey(TKey key);
+        bool ContainsKey(TKey key);
 
         // Adds a key-value pair to the dictionary.
         //
@@ -44,16 +44,6 @@ namespace System.Collections.Generic
         //
         bool Remove(TKey key);
 
-        new bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value);
-
-        TValue IReadOnlyDictionary<TKey, TValue>.this[TKey key] => this[key];
-
-        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
-
-        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
-
-        bool IReadOnlyDictionary<TKey, TValue>.ContainsKey(TKey key) => ContainsKey(key);
-
-        bool IReadOnlyDictionary<TKey, TValue>.TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => TryGetValue(key, out value);
+        bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value);
     }
 }

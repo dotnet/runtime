@@ -167,6 +167,7 @@ set( JIT_SOURCES
   redundantbranchopts.cpp
   regalloc.cpp
   registerargconvention.cpp
+  regMaskTPOps.cpp
   regset.cpp
   scev.cpp
   scopeinfo.cpp
@@ -177,6 +178,7 @@ set( JIT_SOURCES
   ssabuilder.cpp
   ssarenamestate.cpp
   stacklevelsetter.cpp
+  structsegments.cpp
   switchrecognition.cpp
   treelifeupdater.cpp
   unwind.cpp
@@ -378,6 +380,7 @@ set( JIT_HEADERS
   ssaconfig.h
   ssarenamestate.h
   stacklevelsetter.h
+  structsegments.h
   target.h
   targetx86.h
   targetamd64.h

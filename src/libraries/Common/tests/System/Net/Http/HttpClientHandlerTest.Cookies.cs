@@ -148,6 +148,18 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework allows empty value of cookie header while net7+ behaves by the specs and prohibit it")]
+        public void AddCookieHeader_MissingValue_Throws(string? cookieValue)
+        {
+            var requestMessage = new HttpRequestMessage(HttpMethod.Get, "http://foo/bar") { Version = UseVersion };
+            Assert.Throws<FormatException>(
+                () => requestMessage.Headers.Add("Cookie", cookieValue)
+            );
+        }
+
         [Fact]
         public async Task GetAsync_AddMultipleCookieHeaders_CookiesSent()
         {
@@ -216,15 +228,10 @@ namespace System.Net.Http.Functional.Tests
             return cookieHeaderValue;
         }
 
-        [ConditionalFact]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task GetAsync_SetCookieContainerAndCookieHeader_BothCookiesSent()
         {
-            if (UseVersion == HttpVersion30)
-            {
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/101377");
-            }
-
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();

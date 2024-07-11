@@ -56,6 +56,7 @@ class Generics
         TestRecursionInFields.Run();
         TestGvmLookupDependency.Run();
         Test99198Regression.Run();
+        Test102259Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
@@ -3555,6 +3556,26 @@ class Generics
         }
     }
 
+    class Test102259Regression
+    {
+        class Gen<T>
+        {
+            static Func<T, object> _theval;
+
+            public static object TheFunc(object obj) => obj;
+
+            static Gen()
+            {
+                _theval = typeof(Gen<T>).GetMethod(nameof(TheFunc), BindingFlags.Public | BindingFlags.Static).CreateDelegate<Func<T, object>>().WithObjectTResult();
+            }
+        }
+
+        public static void Run()
+        {
+            new Gen<object>();
+        }
+    }
+
     class TestInvokeMemberCornerCaseInGenerics
     {
         class Generic<T>
@@ -3599,5 +3620,18 @@ class Generics
             if (TestAll(ref structValue, typeof(int)) != structValue)
                 throw new Exception();
         }
+    }
+}
+
+static class Ext
+{
+    public static Func<T, object> WithObjectTResult<T, TResult>(this Func<T, TResult> function)
+    {
+        return function.InvokeWithObjectTResult;
+    }
+
+    private static object InvokeWithObjectTResult<T, TResult>(this Func<T, TResult> func, T arg)
+    {
+        return func(arg);
     }
 }

@@ -9,7 +9,7 @@
 #include "assert.h"
 #include "utilcode.h"
 
-bool CycleTimer::GetThreadCyclesS(unsigned __int64* cycles)
+bool CycleTimer::GetThreadCyclesS(uint64_t* cycles)
 {
     BOOL res = FALSE;
     res = QueryThreadCycleTime(GetCurrentThread(), cycles);
@@ -30,7 +30,7 @@ double CycleTimer::CyclesPerSecond()
     if (!QueryPerformanceFrequency(&lpFrequency)) return 0.0;
     // Otherwise...
     LARGE_INTEGER qpcStart;
-    unsigned __int64 cycleStart;
+    uint64_t cycleStart;
     if (!QueryPerformanceCounter(&qpcStart)) return 0.0;
     if (!GetThreadCyclesS(&cycleStart)) return 0.0;
     volatile int sum = 0;
@@ -40,7 +40,7 @@ double CycleTimer::CyclesPerSecond()
     }
     LARGE_INTEGER qpcEnd;
     if (!QueryPerformanceCounter(&qpcEnd)) return 0.0;
-    unsigned __int64 cycleEnd;
+    uint64_t cycleEnd;
     if (!GetThreadCyclesS(&cycleEnd)) return 0.0;
 
     double qpcTicks = ((double)qpcEnd.QuadPart) - ((double)qpcStart.QuadPart);
@@ -50,11 +50,11 @@ double CycleTimer::CyclesPerSecond()
 }
 
 // static
-unsigned __int64 CycleTimer::QueryOverhead()
+uint64_t CycleTimer::QueryOverhead()
 {
-    unsigned __int64 tot = 0;
-    unsigned __int64 startCycles;
-    unsigned __int64 endCycles;
+    uint64_t tot = 0;
+    uint64_t startCycles;
+    uint64_t endCycles;
     const int N = 1000;
     bool b = GetThreadCyclesS(&startCycles); assert(b);
     for (int i = 0; i < N; i++)
@@ -67,18 +67,18 @@ unsigned __int64 CycleTimer::QueryOverhead()
 }
 
 // static
-void CycleTimer::InterlockedAddU64(unsigned __int64* loc, unsigned __int64 amount)
+void CycleTimer::InterlockedAddU64(uint64_t* loc, uint64_t amount)
 {
-    volatile __int64* vloc = (volatile __int64*)loc;
-    unsigned __int64 prev = *vloc;
+    volatile int64_t* vloc = (volatile int64_t*)loc;
+    uint64_t prev = *vloc;
     for (;;)
     {
-        unsigned __int64 next = prev + amount;
-        __int64 snext = (__int64)next;
-        __int64 sprev = (__int64)prev;
-        __int64 res = InterlockedCompareExchange64(vloc, snext, sprev);
+        uint64_t next = prev + amount;
+        int64_t snext = (int64_t)next;
+        int64_t sprev = (int64_t)prev;
+        int64_t res = InterlockedCompareExchange64(vloc, snext, sprev);
         if (res == sprev) return;
-        else prev = (unsigned __int64)res;
+        else prev = (uint64_t)res;
     }
 }
 

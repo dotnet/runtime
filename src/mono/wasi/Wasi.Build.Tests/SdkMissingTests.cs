@@ -31,8 +31,8 @@ public class SdkMissingTests : BuildTestBase
             };
 
     [Theory]
-    [MemberData(nameof(TestDataForNativeBuildFails), "<WasmSingleFileBundle>true</WasmSingleFileBundle>")]
-    [MemberData(nameof(TestDataForNativeBuildFails), "<InvariantGlobalization>true</InvariantGlobalization>")]
+    [MemberData(nameof(TestDataForNativeBuildFails), "<WasmSingleFileBundle>true</WasmSingleFileBundle><WasmBuildNative>true</WasmBuildNative>")]
+    [MemberData(nameof(TestDataForNativeBuildFails), "<InvariantGlobalization>true</InvariantGlobalization><WasmBuildNative>true</WasmBuildNative>")]
     public void NativeBuildOrPublishFails(string config, string extraProperties, bool publish)
     {
         string output = BuildWithInvalidSdkPath(config, extraProperties, publish, expectSuccess: false);
@@ -74,7 +74,7 @@ public class SdkMissingTests : BuildTestBase
                                     CreateProject: false,
                                     Publish: publish,
                                     TargetFramework: BuildTestBase.DefaultTargetFramework,
-                                    ExtraBuildEnvironmentVariables: new Dictionary<string, string> { { "WASI_SDK_PATH", "x" } },
+                                    ExtraBuildEnvironmentVariables: new Dictionary<string, string> { { "WASI_SDK22_PATH", "x" } },
                                     ExpectSuccess: expectSuccess));
 
         return output;

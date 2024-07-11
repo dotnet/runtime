@@ -386,9 +386,15 @@ int relative_index_power2_free_space (size_t power2)
     return ((index < MIN_INDEX_POWER2) ? -1 : (index - MIN_INDEX_POWER2));
 }
 
+inline
+float mb (size_t num)
+{
+    return (float)((float)num / 1000.0 / 1000.0);
+}
+
 #ifdef BACKGROUND_GC
 uint32_t bgc_alloc_spin_count = 140;
-uint32_t bgc_alloc_spin_count_loh = 16;
+uint32_t bgc_alloc_spin_count_uoh = 16;
 uint32_t bgc_alloc_spin = 2;
 
 inline
@@ -2322,7 +2328,9 @@ uint64_t    gc_heap::gc_last_ephemeral_decommit_time = 0;
 
 CLRCriticalSection gc_heap::check_commit_cs;
 
+#ifdef COMMITTED_BYTES_SHADOW
 CLRCriticalSection gc_heap::decommit_lock;
+#endif //COMMITTED_BYTES_SHADOW
 
 size_t      gc_heap::current_total_committed = 0;
 
@@ -2657,13 +2665,10 @@ size_t      gc_heap::end_loh_size = 0;
 size_t      gc_heap::bgc_begin_poh_size = 0;
 size_t      gc_heap::end_poh_size = 0;
 
+size_t      gc_heap::uoh_a_no_bgc[uoh_generation_count] = {};
+size_t      gc_heap::uoh_a_bgc_marking[uoh_generation_count] = {};
+size_t      gc_heap::uoh_a_bgc_planning[uoh_generation_count] = {};
 #ifdef BGC_SERVO_TUNING
-uint64_t    gc_heap::loh_a_no_bgc = 0;
-
-uint64_t    gc_heap::loh_a_bgc_marking = 0;
-
-uint64_t    gc_heap::loh_a_bgc_planning = 0;
-
 size_t      gc_heap::bgc_maxgen_end_fl_size = 0;
 #endif //BGC_SERVO_TUNING
 
@@ -2794,9 +2799,9 @@ FinalizerWorkItem* gc_heap::finalizer_work;
 BOOL gc_heap::proceed_with_gc_p = FALSE;
 GCSpinLock gc_heap::gc_lock;
 
-#ifdef BGC_SERVO_TUNING
-uint64_t gc_heap::total_loh_a_last_bgc = 0;
-#endif //BGC_SERVO_TUNING
+#ifdef BACKGROUND_GC
+uint64_t gc_heap::total_uoh_a_last_bgc = 0;
+#endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
 region_free_list gc_heap::global_regions_to_decommit[count_free_region_kinds];
@@ -2851,6 +2856,7 @@ BOOL gc_heap::should_expand_in_full_gc = FALSE;
 #ifdef DYNAMIC_HEAP_COUNT
 int gc_heap::dynamic_adaptation_mode = dynamic_adaptation_default;
 gc_heap::dynamic_heap_count_data_t SVR::gc_heap::dynamic_heap_count_data;
+size_t gc_heap::current_total_soh_stable_size = 0;
 uint64_t gc_heap::last_suspended_end_time = 0;
 size_t gc_heap::gc_index_full_gc_end = 0;
 
@@ -3527,10 +3533,9 @@ sorted_table::delete_sorted_table()
 {
     if (slots != (bk*)(this+1))
     {
-        delete slots;
+        delete[] slots;
     }
     delete_old_slots();
-    delete this;
 }
 void
 sorted_table::delete_old_slots()
@@ -3540,7 +3545,7 @@ sorted_table::delete_old_slots()
     {
         uint8_t* dsl = sl;
         sl = last_slot ((bk*)sl);
-        delete dsl;
+        delete[] dsl;
     }
     old_slots = 0;
 }
@@ -4824,7 +4829,7 @@ public:
 
     CGCDesc *GetSlotMap ()
     {
-        assert (GetMethodTable()->ContainsPointers());
+        assert (GetMethodTable()->ContainsGCPointers());
         return CGCDesc::GetCGCDescFromMT(GetMethodTable());
     }
 
@@ -4888,9 +4893,9 @@ public:
     }
 #endif // FEATURE_STRUCTALIGN
 
-    BOOL ContainsPointers() const
+    BOOL ContainsGCPointers() const
     {
-        return GetMethodTable()->ContainsPointers();
+        return GetMethodTable()->ContainsGCPointers();
     }
 
 #ifdef COLLECTIBLE_CLASS
@@ -4899,10 +4904,10 @@ public:
         return GetMethodTable()->Collectible();
     }
 
-    FORCEINLINE BOOL ContainsPointersOrCollectible() const
+    FORCEINLINE BOOL ContainsGCPointersOrCollectible() const
     {
         MethodTable *pMethodTable = GetMethodTable();
-        return (pMethodTable->ContainsPointers() || pMethodTable->Collectible());
+        return (pMethodTable->ContainsGCPointers() || pMethodTable->Collectible());
     }
 #endif //COLLECTIBLE_CLASS
 
@@ -5655,8 +5660,7 @@ void* virtual_alloc (size_t size, bool use_large_pages_p, uint16_t numa_node)
 
     if ((gc_heap::reserved_memory_limit - gc_heap::reserved_memory) < requested_size)
     {
-        gc_heap::reserved_memory_limit =
-            GCScan::AskForMoreReservedMemory (gc_heap::reserved_memory_limit, requested_size);
+        gc_heap::reserved_memory_limit = gc_heap::reserved_memory_limit + requested_size;
         if ((gc_heap::reserved_memory_limit - gc_heap::reserved_memory) < requested_size)
         {
             return 0;
@@ -5989,7 +5993,7 @@ gc_heap::get_segment (size_t size, gc_oh_num oh)
             return 0;
         }
 
-        result = make_heap_segment ((uint8_t*)mem, size, __this, (uoh_p ? max_generation : 0));
+        result = make_heap_segment ((uint8_t*)mem, size, __this, (oh + max_generation));
 
         if (result)
         {
@@ -6015,7 +6019,18 @@ gc_heap::get_segment (size_t size, gc_oh_num oh)
 
             if (gc_heap::grow_brick_card_tables (start, end, size, result, __this, uoh_p) != 0)
             {
-                virtual_free (mem, size);
+                // release_segment needs the flags to decrement the proper bucket
+                size_t flags = 0;
+                if (oh == poh)
+                {
+                    flags = heap_segment_flags_poh;
+                }
+                else if (oh == loh)
+                {
+                    flags = heap_segment_flags_loh;
+                }
+                result->flags |= flags;
+                release_segment (result);
                 return 0;
             }
         }
@@ -6049,7 +6064,19 @@ void gc_heap::release_segment (heap_segment* sg)
 {
     ptrdiff_t delta = 0;
     FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem(sg));
-    virtual_free (sg, (uint8_t*)heap_segment_reserved (sg)-(uint8_t*)sg, sg);
+    size_t reserved_size = (uint8_t*)heap_segment_reserved (sg) - (uint8_t*)sg;
+    reduce_committed_bytes (
+        sg,
+        ((uint8_t*)heap_segment_committed (sg) - (uint8_t*)sg),
+        (int) heap_segment_oh (sg)
+#ifdef MULTIPLE_HEAPS
+        , heap_segment_heap (sg)->heap_number
+#else
+        , -1
+#endif
+        , true
+        );
+    virtual_free (sg, reserved_size, sg);
 }
 
 BOOL gc_heap::set_ro_segment_in_range (heap_segment* seg)
@@ -6966,10 +6993,15 @@ void gc_heap::gc_thread_function ()
             uint32_t wait_time = DECOMMIT_TIME_STEP_MILLISECONDS;
 #ifdef DYNAMIC_HEAP_COUNT
             // background_running_p can only change from false to true during suspension.
-            if (!gc_heap::background_running_p () && dynamic_heap_count_data.should_change_heap_count)
+            if (
+#ifdef BACKGROUND_GC
+                !gc_heap::background_running_p () &&
+#endif
+                dynamic_heap_count_data.should_change_heap_count)
             {
                 assert (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes);
 
+                wait_on_time_out_p = true;
                 dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[dynamic_heap_count_data.sample_index];
                 wait_time = min (wait_time, (uint32_t)(sample.elapsed_between_gcs / 1000 / 3));
                 wait_time = max (wait_time, 1u);
@@ -7000,9 +7032,13 @@ void gc_heap::gc_thread_function ()
 
                 if (gradual_decommit_in_progress_p)
                 {
+#ifdef COMMITTED_BYTES_SHADOW
                     decommit_lock.Enter ();
+#endif //COMMITTED_BYTES_SHADOW
                     gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
+#ifdef COMMITTED_BYTES_SHADOW
                     decommit_lock.Leave ();
+#endif //COMMITTED_BYTES_SHADOW
                 }
                 continue;
             }
@@ -7208,7 +7244,13 @@ void gc_heap::gc_thread_function ()
             // check if we should do some decommitting
             if (gradual_decommit_in_progress_p)
             {
+#ifdef COMMITTED_BYTES_SHADOW
+                decommit_lock.Enter ();
+#endif //COMMITTED_BYTES_SHADOW
                 gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
+#ifdef COMMITTED_BYTES_SHADOW
+                decommit_lock.Leave ();
+#endif //COMMITTED_BYTES_SHADOW
             }
         }
         else
@@ -7232,23 +7274,16 @@ void gc_heap::gc_thread_function ()
 
 bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number)
 {
-#if defined(MULTIPLE_HEAPS) && !defined(FEATURE_NATIVEAOT)
-    // Currently there is no way for us to specific the numa node to allocate on via hosting interfaces to
-    // a host. This will need to be added later.
-#if !defined(FEATURE_CORECLR) && !defined(BUILD_AS_STANDALONE)
-    if (!CLRMemoryHosted())
-#endif
+#ifdef MULTIPLE_HEAPS
+    if (GCToOSInterface::CanEnableGCNumaAware())
     {
-        if (GCToOSInterface::CanEnableGCNumaAware())
-        {
-            uint16_t numa_node = heap_select::find_numa_node_from_heap_no(h_number);
-            if (GCToOSInterface::VirtualCommit (addr, size, numa_node))
-                return true;
-        }
+        uint16_t numa_node = heap_select::find_numa_node_from_heap_no(h_number);
+        if (GCToOSInterface::VirtualCommit (addr, size, numa_node))
+            return true;
     }
-#else //MULTIPLE_HEAPS && !FEATURE_NATIVEAOT
+#else //MULTIPLE_HEAPS
     UNREFERENCED_PARAMETER(h_number);
-#endif //MULTIPLE_HEAPS && !FEATURE_NATIVEAOT
+#endif //MULTIPLE_HEAPS
 
     //numa aware not enabled, or call failed --> fallback to VirtualCommit()
     return GCToOSInterface::VirtualCommit(addr, size);
@@ -7270,13 +7305,19 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
 
     assert(0 <= bucket && bucket < recorded_committed_bucket_counts);
     assert(bucket < total_oh_count || h_number == -1);
+#ifdef USE_REGIONS
     assert(bucket != recorded_committed_free_bucket);
+#endif //USE_REGIONS
 
     dprintf(3, ("commit-accounting:  commit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
+    bool should_count =
+#ifdef USE_REGIONS
+        true;
+#else
+        (bucket != recorded_committed_ignored_bucket);
+#endif //USE_REGIONS
 
-#ifndef COMMITTED_BYTES_SHADOW
-    if (heap_hard_limit)
-#endif //!COMMITTED_BYTES_SHADOW
+    if (should_count)
     {
         check_commit_cs.Enter();
         bool exceeded_p = false;
@@ -7299,20 +7340,19 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
                 exceeded_p = true;
             }
         }
-#ifdef COMMITTED_BYTES_SHADOW
+
         if (!heap_hard_limit) {
             exceeded_p = false;
         }
-#endif //COMMITTED_BYTES_SHADOW
 
         if (!exceeded_p)
         {
-#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
+#if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
             if ((h_number != -1) && (bucket < total_oh_count))
             {
                 g_heaps[h_number]->committed_by_oh_per_heap[bucket] += size;
             }
-#endif // _DEBUG && MULTIPLE_HEAPS
+#endif // MULTIPLE_HEAPS && _DEBUG
             committed_by_oh[bucket] += size;
             current_total_committed += size;
             if (h_number < 0)
@@ -7337,17 +7377,17 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
                               virtual_alloc_commit_for_heap (address, size, h_number)) :
                               GCToOSInterface::VirtualCommit(address, size));
 
-    if (!commit_succeeded_p && heap_hard_limit)
+    if (!commit_succeeded_p && should_count)
     {
         check_commit_cs.Enter();
         committed_by_oh[bucket] -= size;
-#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
+#if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
         if ((h_number != -1) && (bucket < total_oh_count))
         {
             assert (g_heaps[h_number]->committed_by_oh_per_heap[bucket] >= size);
             g_heaps[h_number]->committed_by_oh_per_heap[bucket] -= size;
         }
-#endif // _DEBUG && MULTIPLE_HEAPS
+#endif // MULTIPLE_HEAPS && _DEBUG
         dprintf (1, ("commit failed, updating %zd to %zd",
                 current_total_committed, (current_total_committed - size)));
         current_total_committed -= size;
@@ -7360,6 +7400,39 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
         check_commit_cs.Leave();
     }
     return commit_succeeded_p;
+}
+
+void gc_heap::reduce_committed_bytes (void* address, size_t size, int bucket, int h_number, bool decommit_succeeded_p)
+{
+    assert(0 <= bucket && bucket < recorded_committed_bucket_counts);
+    assert(bucket < total_oh_count || h_number == -1);
+
+    dprintf(3, ("commit-accounting:  decommit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
+
+#ifndef USE_REGIONS
+    if (bucket != recorded_committed_ignored_bucket)
+#endif
+    if (decommit_succeeded_p)
+    {
+        check_commit_cs.Enter();
+        assert (committed_by_oh[bucket] >= size);
+        committed_by_oh[bucket] -= size;
+#if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
+        if ((h_number != -1) && (bucket < total_oh_count))
+        {
+            assert (g_heaps[h_number]->committed_by_oh_per_heap[bucket] >= size);
+            g_heaps[h_number]->committed_by_oh_per_heap[bucket] -= size;
+        }
+#endif // MULTIPLE_HEAPS && _DEBUG
+        assert (current_total_committed >= size);
+        current_total_committed -= size;
+        if (bucket == recorded_committed_bookkeeping_bucket)
+        {
+            assert (current_total_committed_bookkeeping >= size);
+            current_total_committed_bookkeeping -= size;
+        }
+        check_commit_cs.Leave();
+    }
 }
 
 bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_number)
@@ -7375,37 +7448,9 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
     assert (heap_hard_limit == 0);
 #endif //!HOST_64BIT
 
-    assert(0 <= bucket && bucket < recorded_committed_bucket_counts);
-    assert(bucket < total_oh_count || h_number == -1);
-
     bool decommit_succeeded_p = ((bucket != recorded_committed_bookkeeping_bucket) && use_large_pages_p) ? true : GCToOSInterface::VirtualDecommit (address, size);
 
-    dprintf(3, ("commit-accounting:  decommit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
-
-    if (decommit_succeeded_p)
-#ifndef COMMITTED_BYTES_SHADOW
-    if (heap_hard_limit)
-#endif //!COMMITTED_BYTES_SHADOW
-    {
-        check_commit_cs.Enter();
-        assert (committed_by_oh[bucket] >= size);
-        committed_by_oh[bucket] -= size;
-#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
-        if ((h_number != -1) && (bucket < total_oh_count))
-        {
-            assert (g_heaps[h_number]->committed_by_oh_per_heap[bucket] >= size);
-            g_heaps[h_number]->committed_by_oh_per_heap[bucket] -= size;
-        }
-#endif // _DEBUG && MULTIPLE_HEAPS
-        assert (current_total_committed >= size);
-        current_total_committed -= size;
-        if (bucket == recorded_committed_bookkeeping_bucket)
-        {
-            assert (current_total_committed_bookkeeping >= size);
-            current_total_committed_bookkeeping -= size;
-        }
-        check_commit_cs.Leave();
-    }
+    reduce_committed_bytes (address, size, bucket, h_number, decommit_succeeded_p);
 
     return decommit_succeeded_p;
 }
@@ -9029,8 +9074,21 @@ void destroy_card_table (uint32_t* c_table)
 {
 //  delete (uint32_t*)&card_table_refcount(c_table);
 
-    GCToOSInterface::VirtualRelease (&card_table_refcount(c_table), card_table_size(c_table));
+    size_t size = card_table_size(c_table);
+    gc_heap::destroy_card_table_helper (c_table);
+    GCToOSInterface::VirtualRelease (&card_table_refcount(c_table), size);
     dprintf (2, ("Table Virtual Free : %zx", (size_t)&card_table_refcount(c_table)));
+}
+
+void gc_heap::destroy_card_table_helper (uint32_t* c_table)
+{
+    uint8_t* lowest = card_table_lowest_address (c_table);
+    uint8_t* highest = card_table_highest_address (c_table);
+    get_card_table_element_layout(lowest, highest, card_table_element_layout);
+    size_t result = card_table_element_layout[seg_mapping_table_element + 1];
+    gc_heap::reduce_committed_bytes (&card_table_refcount(c_table), result, recorded_committed_bookkeeping_bucket, -1, true);
+
+    // If we don't put the mark array committed in the ignored bucket, then this is where to account for the decommit of it
 }
 
 void gc_heap::get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t sizes[total_bookkeeping_elements])
@@ -11497,14 +11555,14 @@ inline size_t my_get_size (Object* ob)
 
 #define size(i) my_get_size (header(i))
 
-#define contain_pointers(i) header(i)->ContainsPointers()
+#define contain_pointers(i) header(i)->ContainsGCPointers()
 #ifdef COLLECTIBLE_CLASS
-#define contain_pointers_or_collectible(i) header(i)->ContainsPointersOrCollectible()
+#define contain_pointers_or_collectible(i) header(i)->ContainsGCPointersOrCollectible()
 
 #define get_class_object(i) GCToEEInterface::GetLoaderAllocatorObjectForGC((Object *)i)
 #define is_collectible(i) method_table(i)->Collectible()
 #else //COLLECTIBLE_CLASS
-#define contain_pointers_or_collectible(i) header(i)->ContainsPointers()
+#define contain_pointers_or_collectible(i) header(i)->ContainsGCPointers()
 #endif //COLLECTIBLE_CLASS
 
 #ifdef BACKGROUND_GC
@@ -11756,9 +11814,6 @@ void gc_heap::return_free_region (heap_segment* region)
 {
     gc_oh_num oh = heap_segment_oh (region);
     dprintf(3, ("commit-accounting:  from %d to free [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
-#ifndef COMMITTED_BYTES_SHADOW
-    if (heap_hard_limit)
-#endif //!COMMITTED_BYTES_SHADOW
     {
         size_t committed = heap_segment_committed (region) - get_region_start (region);
         if (committed > 0)
@@ -11767,10 +11822,10 @@ void gc_heap::return_free_region (heap_segment* region)
             assert (committed_by_oh[oh] >= committed);
             committed_by_oh[oh] -= committed;
             committed_by_oh[recorded_committed_free_bucket] += committed;
-#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
+#if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
             assert (committed_by_oh_per_heap[oh] >= committed);
             committed_by_oh_per_heap[oh] -= committed;
-#endif // _DEBUG && MULTIPLE_HEAPS
+#endif // MULTIPLE_HEAPS && _DEBUG
             check_commit_cs.Leave();
         }
     }
@@ -11853,9 +11908,6 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
 
         gc_oh_num oh = gen_to_oh (gen_number);
         dprintf(3, ("commit-accounting:  from free to %d [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
-#ifndef COMMITTED_BYTES_SHADOW
-        if (heap_hard_limit)
-#endif //!COMMITTED_BYTES_SHADOW
         {
             size_t committed = heap_segment_committed (region) - get_region_start (region);
             if (committed > 0)
@@ -11864,9 +11916,9 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
                 committed_by_oh[oh] += committed;
                 assert (committed_by_oh[recorded_committed_free_bucket] >= committed);
                 committed_by_oh[recorded_committed_free_bucket] -= committed;
-#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
+#if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
                 committed_by_oh_per_heap[oh] += committed;
-#endif // _DEBUG && MULTIPLE_HEAPS
+#endif // MULTIPLE_HEAPS && _DEBUG
                 check_commit_cs.Leave();
             }
         }
@@ -14107,13 +14159,10 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     int number_of_heaps = 1;
 #endif //MULTIPLE_HEAPS
 
-#ifndef COMMITTED_BYTES_SHADOW
-    if (heap_hard_limit)
-#endif //!COMMITTED_BYTES_SHADOW
-    {
-        check_commit_cs.Initialize();
-    }
+    check_commit_cs.Initialize();
+#ifdef COMMITTED_BYTES_SHADOW
     decommit_lock.Initialize();
+#endif //COMMITTED_BYTES_SHADOW
 
 #ifdef USE_REGIONS
     if (regions_range)
@@ -14729,7 +14778,7 @@ gc_heap::init_gc_heap (int h_number)
 #ifdef MULTIPLE_HEAPS
 #ifdef _DEBUG
     memset (committed_by_oh_per_heap, 0, sizeof (committed_by_oh_per_heap));
-#endif
+#endif //_DEBUG
 
     g_heaps [h_number] = this;
 
@@ -15039,10 +15088,13 @@ gc_heap::init_gc_heap (int h_number)
     make_mark_stack(arr);
 
 #ifdef BACKGROUND_GC
+    for (int i = uoh_start_generation; i < total_generation_count; i++)
+    {
+        uoh_a_no_bgc[i - uoh_start_generation] = 0;
+        uoh_a_bgc_marking[i - uoh_start_generation] = 0;
+        uoh_a_bgc_planning[i - uoh_start_generation] = 0;
+    }
 #ifdef BGC_SERVO_TUNING
-    loh_a_no_bgc = 0;
-    loh_a_bgc_marking = 0;
-    loh_a_bgc_planning = 0;
     bgc_maxgen_end_fl_size = 0;
 #endif //BGC_SERVO_TUNING
     freeable_soh_segment = 0;
@@ -15186,14 +15238,12 @@ gc_heap::destroy_semi_shared()
 //#endif //BACKGROUND_GC
 
     if (g_mark_list)
-        delete g_mark_list;
-
-    if (seg_mapping_table)
-        delete seg_mapping_table;
+        delete[] g_mark_list;
 
 #ifdef FEATURE_BASICFREEZE
     //destroy the segment map
     seg_table->delete_sorted_table();
+    delete[] (char*)seg_table;
 #endif //FEATURE_BASICFREEZE
 }
 
@@ -15250,7 +15300,7 @@ void gc_heap::shutdown_gc()
 
 #ifdef MULTIPLE_HEAPS
     //delete the heaps array
-    delete g_heaps;
+    delete[] g_heaps;
     destroy_thread_support();
     n_heaps = 0;
 #endif //MULTIPLE_HEAPS
@@ -18424,6 +18474,31 @@ bool gc_heap::should_retry_other_heap (int gen_number, size_t size)
     }
 }
 
+#ifdef BACKGROUND_GC
+void gc_heap::bgc_record_uoh_allocation(int gen_number, size_t size)
+{
+    assert((gen_number >= uoh_start_generation) && (gen_number < total_generation_count));
+
+    if (gc_heap::background_running_p())
+    {
+        background_uoh_alloc_count++;
+
+        if (current_c_gc_state == c_gc_state_planning)
+        {
+            uoh_a_bgc_planning[gen_number - uoh_start_generation] += size;
+        }
+        else
+        {
+            uoh_a_bgc_marking[gen_number - uoh_start_generation] += size;
+        }
+    }
+    else
+    {
+        uoh_a_no_bgc[gen_number - uoh_start_generation] += size;
+    }
+}
+#endif //BACKGROUND_GC
+
 allocation_state gc_heap::allocate_uoh (int gen_number,
                                           size_t size,
                                           alloc_context* acontext,
@@ -18446,26 +18521,12 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
 #endif //RECORD_LOH_STATE
 
 #ifdef BACKGROUND_GC
+    bgc_record_uoh_allocation(gen_number, size);
+
     if (gc_heap::background_running_p())
     {
-#ifdef BGC_SERVO_TUNING
-        bool planning_p = (current_c_gc_state == c_gc_state_planning);
-#endif //BGC_SERVO_TUNING
-
-        background_uoh_alloc_count++;
-        //if ((background_loh_alloc_count % bgc_alloc_spin_count_loh) == 0)
+        //if ((background_uoh_alloc_count % bgc_alloc_spin_count_uoh) == 0)
         {
-#ifdef BGC_SERVO_TUNING
-            if (planning_p)
-            {
-                loh_a_bgc_planning += size;
-            }
-            else
-            {
-                loh_a_bgc_marking += size;
-            }
-#endif //BGC_SERVO_TUNING
-
             int spin_for_allocation = (gen_number == loh_generation) ?
                 bgc_loh_allocate_spin() :
                 bgc_poh_allocate_spin();
@@ -18491,12 +18552,6 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
             }
         }
     }
-#ifdef BGC_SERVO_TUNING
-    else
-    {
-        loh_a_no_bgc += size;
-    }
-#endif //BGC_SERVO_TUNING
 #endif //BACKGROUND_GC
 
     gc_reason gr = reason_oos_loh;
@@ -20954,14 +21009,14 @@ size_t gc_heap::get_total_allocated_since_last_gc()
     {
         gc_heap* hp = gc_heap::g_heaps[i];
 #else //MULTIPLE_HEAPS
-        {
-            gc_heap* hp = pGenGCHeap;
+    {
+        gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-            total_allocated_size += hp->allocated_since_last_gc[0] + hp->allocated_since_last_gc[1];
-            hp->allocated_since_last_gc[0] = 0;
-            hp->allocated_since_last_gc[1] = 0;
-        }
-        return total_allocated_size;
+        total_allocated_size += hp->allocated_since_last_gc[0] + hp->allocated_since_last_gc[1];
+        hp->allocated_since_last_gc[0] = 0;
+        hp->allocated_since_last_gc[1] = 0;
+    }
+    return total_allocated_size;
 }
 
 // Gets what's allocated on both SOH, LOH, etc that hasn't been collected.
@@ -22023,23 +22078,49 @@ void gc_heap::update_end_gc_time_per_heap()
 #ifdef DYNAMIC_HEAP_COUNT
     if ((heap_number == 0) && (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes))
     {
+        size_t desired_per_heap = dd_desired_allocation (dynamic_data_of (0));
         if (settings.gc_index > 1)
         {
+            size_t gc_index = VolatileLoadWithoutBarrier (&settings.gc_index);
             dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[dynamic_heap_count_data.sample_index];
             sample.elapsed_between_gcs = end_gc_time - last_suspended_end_time;
             sample.gc_pause_time = dd_gc_elapsed_time (dynamic_data_of (0));
-            sample.msl_wait_time = get_msl_wait_time ();
+            size_t soh_msl_wait_time, uoh_msl_wait_time;
+            get_msl_wait_time (&soh_msl_wait_time, &uoh_msl_wait_time);
+            sample.msl_wait_time = soh_msl_wait_time + uoh_msl_wait_time;
+            sample.gc_index = gc_index;
             // could cache this - we will get it again soon in do_post_gc
             sample.gc_survived_size = get_total_promoted ();
 
-            dprintf (6666, ("sample#%d: this GC end %I64d - last sus end %I64d = %I64d, this GC pause %I64d, msl wait %I64d",
-                dynamic_heap_count_data.sample_index, end_gc_time, last_suspended_end_time, sample.elapsed_between_gcs, sample.gc_pause_time, sample.msl_wait_time));
+            // We check to see if we want to adjust the budget here for DATAS.
+            size_t desired_per_heap_datas = desired_per_heap;
+            float tcp = (sample.elapsed_between_gcs ?
+                (((float)sample.msl_wait_time / n_heaps + sample.gc_pause_time) * 100.0f / (float)sample.elapsed_between_gcs) : 0.0f);
+            size_t total_soh_stable_size = get_total_soh_stable_size();
+            desired_per_heap_datas = dynamic_heap_count_data.compute_gen0_budget_per_heap (total_soh_stable_size, tcp, desired_per_heap);
+            dprintf (6666, ("gen0 new_alloc %Id (%.3fmb), from datas: %Id (%.3fmb)",
+                desired_per_heap, mb (desired_per_heap), desired_per_heap_datas, mb (desired_per_heap_datas)));
+            dprintf (6666, ("budget DATAS %Id, previous %Id", desired_per_heap_datas, desired_per_heap));
 
-            GCEventFireHeapCountSample_V1 (
-                (uint64_t)VolatileLoadWithoutBarrier (&settings.gc_index),
-                sample.elapsed_between_gcs,
-                sample.gc_pause_time,
-                sample.msl_wait_time);
+            sample.gen0_budget_per_heap = (int)desired_per_heap_datas;
+            if (desired_per_heap_datas != desired_per_heap)
+            {
+                dprintf (6666, ("adjusted budget for DATAS, assigning to all heaps"));
+                assign_new_budget (0, desired_per_heap_datas);
+            }
+
+            dprintf (6666, ("sample#%d: %d heaps, this GC end %I64d - last sus end %I64d = %I64d, this GC pause %.3fms, msl wait %I64dus, tcp %.3f, surv %zd, gc speed %.3fmb/ms (%.3fkb/ms/heap)",
+                dynamic_heap_count_data.sample_index, n_heaps, end_gc_time, last_suspended_end_time, sample.elapsed_between_gcs,
+                (sample.gc_pause_time / 1000.0), sample.msl_wait_time, tcp, sample.gc_survived_size,
+                (sample.gc_pause_time ? (sample.gc_survived_size / 1000.0 / sample.gc_pause_time) : 0),
+                (sample.gc_pause_time ? ((float)sample.gc_survived_size / sample.gc_pause_time / n_heaps) : 0)));
+
+            GCEventFireSizeAdaptationSample_V1 (
+                (uint64_t)gc_index,
+                (uint32_t)sample.elapsed_between_gcs,
+                (uint32_t)sample.gc_pause_time,
+                (uint32_t)soh_msl_wait_time, (uint32_t)uoh_msl_wait_time,
+                (uint64_t)total_soh_stable_size, (uint32_t)sample.gen0_budget_per_heap);
 
             dynamic_heap_count_data.sample_index = (dynamic_heap_count_data.sample_index + 1) % dynamic_heap_count_data_t::sample_size;
             (dynamic_heap_count_data.current_samples_count)++;
@@ -22060,6 +22141,17 @@ void gc_heap::update_end_gc_time_per_heap()
             }
 
             calculate_new_heap_count ();
+        }
+        else
+        {
+            // For DATAS we can't just take the BCS because it's likely very large and that could totally make the max heap size larger. We just take the
+            // min budget.
+            size_t min_desired = dd_min_size (dynamic_data_of (0));
+            if (min_desired != desired_per_heap)
+            {
+                dprintf (6666, ("use the min budget for DATAS, assigning to all heaps"));
+                assign_new_budget (0, min_desired);
+            }
         }
 
         last_suspended_end_time = end_gc_time;
@@ -22527,14 +22619,6 @@ void gc_heap::gc1()
                 limit = total_generation_count-1;
             }
 
-            size_t total_max_gen_size = 0;
-            for (int i = 0; i < gc_heap::n_heaps; i++)
-            {
-                gc_heap* hp = gc_heap::g_heaps[i];
-                dynamic_data* dd = hp->dynamic_data_of (max_generation);
-                total_max_gen_size += dd_current_size (dd) + dd_desired_allocation (dd);
-            }
-
             for (int gen = 0; gen <= limit; gen++)
             {
                 size_t total_desired = 0;
@@ -22569,18 +22653,6 @@ void gc_heap::gc1()
 
                 if (gen == 0)
                 {
-#ifdef DYNAMIC_HEAP_COUNT
-                    if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
-                    {
-                        size_t new_allocation_datas = dynamic_heap_count_data.compute_gen0_new_allocation (total_max_gen_size);
-                        new_allocation_datas = Align (new_allocation_datas, get_alignment_constant (gen <= max_generation));
-                        dprintf (6666, ("gen0 new_alloc %Id (%.3fmb), from datas: %Id (%.3fmb)",
-                            desired_per_heap, ((double)desired_per_heap / 1000.0 / 1000.0),
-                            new_allocation_datas, ((double)new_allocation_datas / 1000.0 / 1000.0)));
-                        desired_per_heap = min (desired_per_heap, new_allocation_datas);
-                    }
-#endif //DYNAMIC_HEAP_COUNT
-
                     // to avoid spikes in mem usage due to short terms fluctuations in survivorship,
                     // apply some smoothing.
                     size_t desired_per_heap_before_smoothing = desired_per_heap;
@@ -22607,9 +22679,10 @@ void gc_heap::gc1()
                         }
                     }
 #ifdef HOST_64BIT
+                    size_t desired_per_heap_before_trim = desired_per_heap;
                     desired_per_heap = joined_youngest_desired (desired_per_heap);
 
-                    dprintf (6666, ("final gen0 new_alloc: total desired: %Id (%.3fmb/heap), before smooth %zd -> after smooth %zd -> after joined %zd",
+                    dprintf (6666, ("final gen0 bcs: total desired: %Id (%.3fmb/heap), before smooth %zd -> after smooth %zd -> after joined %zd",
                         total_desired, ((double)(total_desired / n_heaps)/ 1000.0 / 1000.0),
                         desired_per_heap_before_smoothing, desired_per_heap_after_smoothing, desired_per_heap));
 #endif // HOST_64BIT
@@ -22660,6 +22733,7 @@ void gc_heap::gc1()
                 // compute max of gen0_must_clear_bricks over all heaps
                 max_gen0_must_clear_bricks = max(max_gen0_must_clear_bricks, hp->gen0_must_clear_bricks);
             }
+            verify_committed_bytes_per_heap ();
 #ifdef USE_REGIONS
             initGCShadow();
             distribute_free_regions();
@@ -22704,6 +22778,10 @@ void gc_heap::gc1()
 #endif //USE_REGIONS
             }
 
+#ifdef DYNAMIC_HEAP_COUNT
+            update_total_soh_stable_size();
+#endif //DYNAMIC_HEAP_COUNT
+
             fire_pevents();
             update_end_ngc_time();
             pm_full_gc_init_or_clear();
@@ -22730,6 +22808,7 @@ void gc_heap::gc1()
     if (!(settings.concurrent))
     {
         rearrange_uoh_segments();
+        verify_committed_bytes_per_heap ();
 #ifdef USE_REGIONS
         initGCShadow();
         distribute_free_regions();
@@ -22772,6 +22851,59 @@ void gc_heap::gc1()
 }
 
 #ifdef DYNAMIC_HEAP_COUNT
+size_t gc_heap::get_total_soh_stable_size()
+{
+    if (current_total_soh_stable_size)
+    {
+        return current_total_soh_stable_size;
+    }
+    else
+    {
+        size_t total_stable_size = 0;
+        for (int i = 0; i < gc_heap::n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+            total_stable_size += hp->generation_size (max_generation - 1) / 2;
+        }
+
+        return total_stable_size;
+    }
+}
+
+void gc_heap::update_total_soh_stable_size()
+{
+    if ((dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && (settings.condemned_generation == max_generation))
+    {
+        current_total_soh_stable_size = 0;
+        for (int i = 0; i < gc_heap::n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            dynamic_data* dd = hp->dynamic_data_of (max_generation);
+            current_total_soh_stable_size += dd_current_size (dd) + dd_desired_allocation (dd);
+            dprintf (6666, ("current size is %.3fmb, budget %.3fmb, total -> %.3fmb", mb (dd_current_size (dd)), mb (dd_desired_allocation (dd)), mb (current_total_soh_stable_size)));
+        }
+    }
+}
+
+void gc_heap::assign_new_budget (int gen_number, size_t desired_per_heap)
+{
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps[i];
+        dynamic_data* dd = hp->dynamic_data_of (gen_number);
+        dd_desired_allocation (dd) = desired_per_heap;
+        dd_gc_new_allocation (dd) = desired_per_heap;
+        dd_new_allocation (dd) = desired_per_heap;
+        if (gen_number == 0)
+        {
+            hp->fgn_last_alloc = desired_per_heap;
+        }
+    }
+
+    gc_data_global.final_youngest_desired = desired_per_heap;
+}
+
 bool gc_heap::prepare_rethread_fl_items()
 {
     if (!min_fl_list)
@@ -24244,9 +24376,6 @@ size_t gc_heap::get_promoted_bytes()
 
     dprintf (3, ("h%d getting surv", heap_number));
     size_t promoted = 0;
-#ifdef _MSC_VER
-#pragma loop(no_vector)
-#endif
     for (size_t i = 0; i < region_count; i++)
     {
         if (survived_per_region[i] > 0)
@@ -24391,22 +24520,16 @@ heap_segment* gc_heap::unlink_first_rw_region (int gen_idx)
     assert (!heap_segment_read_only_p (region));
     dprintf (REGIONS_LOG, ("unlink_first_rw_region on heap: %d gen: %d region: %p", heap_number, gen_idx, heap_segment_mem (region)));
 
-#if defined(_DEBUG) && defined(HOST_64BIT)
-#ifndef COMMITTED_BYTES_SHADOW
-    if (heap_hard_limit)
-#endif //!COMMITTED_BYTES_SHADOW
+    int oh = heap_segment_oh (region);
+    dprintf(3, ("commit-accounting:  from %d to temp [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), this->heap_number));
+#ifdef _DEBUG
+    size_t committed = heap_segment_committed (region) - get_region_start (region);
+    if (committed > 0)
     {
-        int old_oh = heap_segment_oh (region);
-        int old_heap = heap_segment_heap (region)->heap_number;
-        dprintf(3, ("commit-accounting:  from %d to temp [%p, %p) for heap %d", old_oh, get_region_start (region), heap_segment_committed (region), old_heap));
-
-        size_t committed = heap_segment_committed (region) - get_region_start (region);
-        check_commit_cs.Enter();
-        assert (g_heaps[old_heap]->committed_by_oh_per_heap[old_oh] >= committed);
-        g_heaps[old_heap]->committed_by_oh_per_heap[old_oh] -= committed;
-        check_commit_cs.Leave();
+        assert (this->committed_by_oh_per_heap[oh] >= committed);
+        this->committed_by_oh_per_heap[oh] -= committed;
     }
-#endif // _DEBUG && HOST_64BIT
+#endif //_DEBUG
 
     set_heap_for_contained_basic_regions (region, nullptr);
 
@@ -24434,22 +24557,13 @@ void gc_heap::thread_rw_region_front (int gen_idx, heap_segment* region)
     }
     dprintf (REGIONS_LOG, ("thread_rw_region_front on heap: %d gen: %d region: %p", heap_number, gen_idx, heap_segment_mem (region)));
 
-#if defined(_DEBUG) && defined(HOST_64BIT)
-#ifndef COMMITTED_BYTES_SHADOW
-    if (heap_hard_limit)
-#endif //!COMMITTED_BYTES_SHADOW
-    {
-        int new_oh = gen_to_oh (gen_idx);
-        int new_heap = this->heap_number;
-        dprintf(3, ("commit-accounting:  from temp to %d [%p, %p) for heap %d", new_oh, get_region_start (region), heap_segment_committed (region), new_heap));
-
-        size_t committed = heap_segment_committed (region) - get_region_start (region);
-        check_commit_cs.Enter();
-        assert (heap_segment_heap (region) == nullptr);
-        g_heaps[new_heap]->committed_by_oh_per_heap[new_oh] += committed;
-        check_commit_cs.Leave();
-    }
-#endif // _DEBUG && HOST_64BIT
+    int oh = heap_segment_oh (region);
+    dprintf(3, ("commit-accounting:  from temp to %d [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), this->heap_number));
+#ifdef _DEBUG
+    size_t committed = heap_segment_committed (region) - get_region_start (region);
+    assert (heap_segment_heap (region) == nullptr);
+    this->committed_by_oh_per_heap[oh] += committed;
+#endif //_DEBUG
 
     set_heap_for_contained_basic_regions (region, this);
 }
@@ -24582,6 +24696,14 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
                 assert (start_region);
                 dprintf (3, ("making sure heap %d gen %d has at least one region by adding region %zx", start_region));
                 heap_segment_next (start_region) = nullptr;
+
+                assert (heap_segment_heap (start_region) == nullptr && hp != nullptr);
+                int oh = heap_segment_oh (start_region);
+                size_t committed = heap_segment_committed (start_region) - get_region_start (start_region);
+                dprintf(3, ("commit-accounting:  from temp to %d [%p, %p) for heap %d", oh, get_region_start (start_region), heap_segment_committed (start_region), hp->heap_number));
+#ifdef _DEBUG
+                g_heaps[hp->heap_number]->committed_by_oh_per_heap[oh] += committed;
+#endif //_DEBUG
                 set_heap_for_contained_basic_regions (start_region, hp);
                 max_survived = max (max_survived, heap_segment_survived (start_region));
                 hp->thread_start_region (gen, start_region);
@@ -24708,7 +24830,6 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
         for (int i = 0; i < n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
-
             hp->verify_regions (gen_idx, true, true);
         }
 #ifdef TRACE_GC
@@ -25209,7 +25330,7 @@ float mean (float* arr, int size)
 int max_times_to_print_tcp = 0;
 
 // Return the slope, and the average values in the avg arg.
-float slope (float* y, int n, float* avg)
+float gc_heap::dynamic_heap_count_data_t::slope (float* y, int n, float* avg)
 {
     assert (n > 0);
 
@@ -25250,7 +25371,7 @@ float slope (float* y, int n, float* avg)
     return (numerator / denominator);
 }
 
-int gc_heap::calculate_new_heap_count ()
+void gc_heap::calculate_new_heap_count ()
 {
     assert (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes);
 
@@ -25262,17 +25383,17 @@ int gc_heap::calculate_new_heap_count ()
         (dynamic_heap_count_data.current_gen2_samples_count < (dynamic_heap_count_data.processed_gen2_samples_count + dynamic_heap_count_data_t::sample_size)))
     {
         dprintf (6666, ("not enough GCs, skipping"));
-        return n_heaps;
+        return;
     }
 
     bool process_eph_samples_p = (dynamic_heap_count_data.current_samples_count >= (dynamic_heap_count_data.processed_samples_count + dynamic_heap_count_data_t::sample_size));
     bool process_gen2_samples_p = (dynamic_heap_count_data.current_gen2_samples_count >= (dynamic_heap_count_data.processed_gen2_samples_count + dynamic_heap_count_data_t::sample_size));
 
     size_t current_gc_index = VolatileLoadWithoutBarrier (&settings.gc_index);
-    float median_gen2_tcp_percent = 0.0f;
+    float median_gen2_tcp = 0.0f;
     if (dynamic_heap_count_data.current_gen2_samples_count >= (dynamic_heap_count_data.processed_gen2_samples_count + dynamic_heap_count_data_t::sample_size))
     {
-        median_gen2_tcp_percent = dynamic_heap_count_data.get_median_gen2_gc_percent ();
+        median_gen2_tcp = dynamic_heap_count_data.get_median_gen2_gc_percent ();
     }
 
     // If there was a blocking gen2 GC, the overhead would be very large and most likely we would not pick it. So we
@@ -25281,12 +25402,14 @@ int gc_heap::calculate_new_heap_count ()
     for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
     {
         dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
+        assert (sample.elapsed_between_gcs > 0);
         throughput_cost_percents[i] = (sample.elapsed_between_gcs ? (((float)sample.msl_wait_time / n_heaps + sample.gc_pause_time) * 100.0f / (float)sample.elapsed_between_gcs) : 0.0f);
         assert (throughput_cost_percents[i] >= 0.0);
         if (throughput_cost_percents[i] > 100.0)
             throughput_cost_percents[i] = 100.0;
-        dprintf (6666, ("sample %d: msl %I64d / %d + pause %I64d / elapsed %I64d = throughput_cost_percent: %.3f", i,
-            sample.msl_wait_time, n_heaps, sample.gc_pause_time, sample.elapsed_between_gcs, throughput_cost_percents[i]));
+        dprintf (6666, ("sample %d in GC#%Id msl %I64d / %d + pause %I64d / elapsed %I64d = tcp: %.3f, surv %zd, gc speed %zd/ms", i,
+            sample.gc_index, sample.msl_wait_time, n_heaps, sample.gc_pause_time, sample.elapsed_between_gcs, throughput_cost_percents[i],
+            sample.gc_survived_size, (sample.gc_pause_time ? (sample.gc_survived_size * 1000 / sample.gc_pause_time) : 0)));
     }
 
     float median_throughput_cost_percent = median_of_3 (throughput_cost_percents[0], throughput_cost_percents[1], throughput_cost_percents[2]);
@@ -25328,80 +25451,12 @@ int gc_heap::calculate_new_heap_count ()
         median_throughput_cost_percent = min_tcp;
     }
 
-    // apply exponential smoothing and use 1/3 for the smoothing factor
-    const float smoothing = 3;
-    float smoothed_median_throughput_cost_percent = dynamic_heap_count_data.smoothed_median_throughput_cost_percent;
-    if (smoothed_median_throughput_cost_percent != 0.0f)
-    {
-        // average it with the previous value
-        smoothed_median_throughput_cost_percent = median_throughput_cost_percent / smoothing + (smoothed_median_throughput_cost_percent / smoothing) * (smoothing - 1);
-    }
-    else
-    {
-        smoothed_median_throughput_cost_percent = median_throughput_cost_percent;
-    }
-
-    dprintf (6666, ("median tcp: %.3f, smoothed tcp: %.3f, avg tcp: %.3f, gen2 tcp %.3f(%.3f, %.3f, %.3f)",
-        median_throughput_cost_percent, smoothed_median_throughput_cost_percent, avg_throughput_cost_percent, median_gen2_tcp_percent,
+    dprintf (6666, ("median tcp: %.3f, avg tcp: %.3f, gen2 tcp %.3f(%.3f, %.3f, %.3f)",
+        median_throughput_cost_percent, avg_throughput_cost_percent, median_gen2_tcp,
         dynamic_heap_count_data.gen2_samples[0].gc_percent, dynamic_heap_count_data.gen2_samples[1].gc_percent, dynamic_heap_count_data.gen2_samples[2].gc_percent));
 
-    //
-    // I'm keeping the old logic for now just to handle gen2.
-    //
-    size_t heap_size = 0;
-    for (int i = 0; i < n_heaps; i++)
-    {
-        gc_heap* hp = g_heaps[i];
-
-        for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
-        {
-            dynamic_data* dd = hp->dynamic_data_of (gen_idx);
-
-            // estimate the size of each generation as the live data size plus the budget
-            heap_size += dd_current_size (dd) + dd_desired_allocation (dd);
-            dprintf (3, ("h%d g%d current: %zd desired allocation: %zd", i, gen_idx, dd_promoted_size (dd), dd_desired_allocation (dd)));
-        }
-    }
-
-    // estimate the space cost of adding a heap as the min gen0 budget
-    size_t heap_space_cost_per_heap = dd_min_size (g_heaps[0]->dynamic_data_of (0));
-
-    // compute the % space cost of adding a heap
-    float percent_heap_space_cost_per_heap = heap_space_cost_per_heap * 100.0f / heap_size;
-
-    // compute reasonable step sizes for the heap count
-    //
-    // on the way up, we essentially multiply the heap count by 1.5, so we go 1, 2, 3, 5, 8 ...
-    // we don't go all the way to the number of CPUs, but stay 1 or 2 short
-    int step_up = (n_heaps + 1) / 2;
     int extra_heaps = (n_max_heaps >= 16) + (n_max_heaps >= 64);
     int actual_n_max_heaps = n_max_heaps - extra_heaps;
-    int max_growth = max ((n_max_heaps / 4), (1 + (actual_n_max_heaps > 3)));
-
-    step_up = min (step_up, (actual_n_max_heaps - n_heaps));
-
-    // on the way down, we essentially divide the heap count by 1.5
-    int step_down = (n_heaps + 1) / 3;
-
-    // estimate the potential time benefit of going up a step
-    float tcp_reduction_per_step_up = smoothed_median_throughput_cost_percent * step_up / (n_heaps + step_up);
-
-    // estimate the potential time cost of going down a step
-    float tcp_increase_per_step_down = smoothed_median_throughput_cost_percent * step_down / (n_heaps - step_down);
-
-    // estimate the potential space cost of going up a step
-    float scp_increase_per_step_up = percent_heap_space_cost_per_heap * step_up;
-
-    // estimate the potential space saving of going down a step
-    float scp_decrease_per_step_down = percent_heap_space_cost_per_heap * step_down;
-
-    dprintf (6666, ("[CHP] u %d, d %d | space cost %Id / heap %Id(%.2fmb) = scp %.3f (u: %.3f, d: %.3f) | stcp %.3f, u * %.1f = %.3f, d * %.1f = %.3f",
-        step_up, step_down,
-        heap_space_cost_per_heap, heap_size, ((float)heap_size / (float)1000 / (float)1000), percent_heap_space_cost_per_heap,
-        scp_increase_per_step_up, scp_decrease_per_step_down,
-        smoothed_median_throughput_cost_percent,
-        ((float)step_up / (float)(n_heaps + step_up)), tcp_reduction_per_step_up,
-        ((float)step_down / (float)(n_heaps - step_down)), tcp_increase_per_step_down));
 
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
     // quick hack for initial testing
@@ -25417,357 +25472,165 @@ int gc_heap::calculate_new_heap_count ()
 #else //STRESS_DYNAMIC_HEAP_COUNT
     int new_n_heaps = n_heaps;
 
-    // target_tcp should be configurable.
-    float target_tcp = 5.0;
-    float target_gen2_tcp = 10.0;
-    float log_base = (float)1.11;
-
-    dynamic_heap_count_data.add_to_recorded_tcp (median_throughput_cost_percent);
-
-    // This is the average of whatever is in the recorded tcp buffer.
-    float avg_recorded_tcp = 0.0;
-
-    size_t num_gcs_since_last_change = current_gc_index - dynamic_heap_count_data.last_changed_gc_index;
+    float target_tcp = dynamic_heap_count_data.target_tcp;
+    float target_gen2_tcp = dynamic_heap_count_data.target_gen2_tcp;
 
     if (process_eph_samples_p)
     {
-        dynamic_heap_count_data.last_processed_stcp = smoothed_median_throughput_cost_percent;
+        dynamic_heap_count_data.add_to_recorded_tcp (median_throughput_cost_percent);
 
-        if ((median_throughput_cost_percent > 10.0f) || (smoothed_median_throughput_cost_percent > target_tcp))
+        float tcp_to_consider = 0.0f;
+        int agg_factor = 0;
+        size_t total_soh_stable_size = 0;
+        int max_heap_count_datas = 0;
+        int min_heap_count_datas = 0;
+        dynamic_heap_count_data_t::adjust_metric adj_metric = dynamic_heap_count_data_t::adjust_metric::not_adjusted;
+
+        // For diagnostic purpose. need to init these
+        dynamic_heap_count_data_t::decide_change_condition change_decision = (dynamic_heap_count_data_t::decide_change_condition)0;
+        int recorded_tcp_count = 0;
+        float recorded_tcp_slope = 0.0f;
+        size_t num_gcs_since_last_change = 0;
+        float current_around_target_accumulation = 0.0f;
+        dynamic_heap_count_data_t::decide_adjustment_reason adj_reason = (dynamic_heap_count_data_t::decide_adjustment_reason)0;
+        int hc_change_freq_factor = 0;
+        dynamic_heap_count_data_t::hc_change_freq_reason hc_freq_reason = (dynamic_heap_count_data_t::hc_change_freq_reason)0;
+
+        if (dynamic_heap_count_data.should_change (median_throughput_cost_percent, &tcp_to_consider, current_gc_index,
+                                                   &change_decision, &recorded_tcp_count, &recorded_tcp_slope, &num_gcs_since_last_change, &current_around_target_accumulation))
         {
-            // If median is high but stcp is lower than target, and if this situation continues, stcp will quickly be above target anyway; otherwise
-            // we treat it as an outlier.
-            if (smoothed_median_throughput_cost_percent >= (target_tcp + 1.0))
+            total_soh_stable_size = get_total_soh_stable_size();
+            size_t total_bcd = dynamic_heap_count_data.compute_total_gen0_budget (total_soh_stable_size);
+            max_heap_count_datas = (int)(total_bcd / dynamic_heap_count_data.min_gen0_new_allocation);
+            min_heap_count_datas = (int)(total_bcd / dynamic_heap_count_data.max_gen0_new_allocation);
+            int max_heap_count_growth_step = dynamic_heap_count_data.get_max_growth (n_heaps);
+            int max_heap_count_growth_datas = max_heap_count_datas - n_heaps;
+            if (max_heap_count_growth_datas < 0)
             {
-                float step_up_float = (float)(1 + actual_n_max_heaps * log_with_base ((smoothed_median_throughput_cost_percent - target_tcp), log_base) / 100.0);
-                int step_up_int = (int)step_up_float;
+                max_heap_count_growth_datas = 0;
+            }
+            int max_heap_count_growth_core = actual_n_max_heaps - n_heaps;
+            int max_heap_count_growth = min (max_heap_count_growth_step, min (max_heap_count_growth_datas, max_heap_count_growth_core));
 
-                dprintf (6666, ("[CHP0] inc %d(%.3f), last inc %d, %Id GCs elapsed, last stcp %.3f",
-                    step_up_int, step_up_float, (int)dynamic_heap_count_data.last_changed_count,
-                    num_gcs_since_last_change, dynamic_heap_count_data.last_changed_stcp));
+            float distance = tcp_to_consider - target_tcp;
 
-                // Don't adjust if we just adjusted last time we checked, unless we are in an extreme situation.
-                if ((smoothed_median_throughput_cost_percent < 20.0f) &&
-                    (avg_throughput_cost_percent < 20.0f) &&
-                    (num_gcs_since_last_change < (2 * dynamic_heap_count_data_t::sample_size)))
+            dprintf (6666, ("median tcp %.3f, recent tcp %.3f - target %.1f = %.3f", median_throughput_cost_percent, tcp_to_consider, target_tcp, distance));
+
+            float diff_pct = distance / target_tcp;
+            // Different for above and below target to avoid oscillation.
+            float hc_change_factor = (float)((diff_pct > 0.0) ? 1.5 : 3.0);
+            float change_float = diff_pct / hc_change_factor * (float)n_heaps;
+            float change_float_rounded = (float)round(change_float);
+            int change_int = (int)change_float_rounded;
+            dprintf (6666, ("diff pct %.3f / %.1f * %d = %d (%.3f), max hc allowed by datas %d | by core %d, max growth per step %d, max growth by datas %d | by core %d",
+                diff_pct, hc_change_factor, n_heaps, change_int, ((float)change_int / n_heaps), max_heap_count_datas, actual_n_max_heaps,
+                max_heap_count_growth_step, max_heap_count_growth_datas, max_heap_count_growth_core));
+
+            if (change_int > 0)
+            {
+                agg_factor = dynamic_heap_count_data.get_aggressiveness (change_int);
+                if (agg_factor > 1)
                 {
-                    dprintf (6666, ("[CHP0] we just adjusted %Id GCs ago, skipping", num_gcs_since_last_change));
-                }
-                else
-                {
-                    if (step_up_int)
-                    {
-                        if (dynamic_heap_count_data.dec_failure_count)
-                        {
-                            dprintf (6666, ("[CHP0] intending to grow, reset dec failure count (was %d)", dynamic_heap_count_data.dec_failure_count));
-                            dynamic_heap_count_data.dec_failure_count = 0;
-                        }
-
-                        if (((int)dynamic_heap_count_data.last_changed_count > 0) && (dynamic_heap_count_data.last_changed_gc_index > 0.0) &&
-                            (num_gcs_since_last_change <= (3 * dynamic_heap_count_data_t::sample_size)))
-                        {
-                            dprintf (6666, ("[CHP0-0] just grew %d GCs ago, no change", num_gcs_since_last_change));
-                            step_up_int = 0;
-                        }
-                        else
-                        {
-                            // If the calculation tells us to grow, we should check to see if the slope has been coming down rapidly, if so there's no reason to grow.
-                            int above_target_tcp_count = dynamic_heap_count_data.rearrange_recorded_tcp ();
-                            float above_target_tcp_slope = slope (dynamic_heap_count_data.recorded_tcp_rearranged, above_target_tcp_count, &avg_recorded_tcp);
-                            float diff_pct = (target_tcp - avg_recorded_tcp) / target_tcp;
-                            float adjusted_target_tcp = dynamic_heap_count_data.get_range_upper (target_tcp);
-
-                            dprintf (6666, ("[CHP0] slope of last %d samples is %.3f. avg %.3f (%.3f%%), current tcp %.3f, adjusted target is %.3f, failure count is %d",
-                                above_target_tcp_count, above_target_tcp_slope, avg_recorded_tcp, (diff_pct * 100.0),
-                                median_throughput_cost_percent, adjusted_target_tcp, dynamic_heap_count_data.inc_failure_count));
-
-                            if (dynamic_heap_count_data.is_tcp_in_range (diff_pct, above_target_tcp_slope))
-                            {
-                                step_up_int = 0;
-                                dprintf (6666, ("[CHP0-1] slope %.3f and already close to target %.3f (%.3f%%), no change", above_target_tcp_slope, avg_recorded_tcp, (diff_pct * 100.0)));
-                            }
-                            else
-                            {
-                                if (above_target_tcp_slope < 0.0)
-                                {
-                                    // If we are already trending down and the tcp is small enough, just wait.
-                                    if ((median_throughput_cost_percent < adjusted_target_tcp) || (avg_recorded_tcp < adjusted_target_tcp))
-                                    {
-                                        step_up_int = 0;
-                                        dprintf (6666, ("[CHP0-2] trending down, slope is %.3f, tcp is %.3f, avg is %.3f, already below adjusted target %.3f, no change",
-                                            above_target_tcp_slope, median_throughput_cost_percent, avg_recorded_tcp, adjusted_target_tcp));
-                                    }
-                                }
-                                else
-                                {
-                                    // We are trending up, but we have too few samples and the avg is already small enough.
-                                    if ((above_target_tcp_count <= dynamic_heap_count_data.inc_recheck_threshold) && (avg_recorded_tcp < adjusted_target_tcp))
-                                    {
-                                        step_up_int = 0;
-                                        dprintf (6666, ("[CHP0-3] trending up, only %d samples, slope is %.3f, avg is %.3f already below adjusted target %.3f, no change",
-                                            above_target_tcp_count, above_target_tcp_slope, avg_recorded_tcp, adjusted_target_tcp));
-                                    }
-                                }
-                            }
-                        }
-
-                        // If we still decided to grow, check if we need to grow aggressively.
-                        if (step_up_int)
-                        {
-                            if (((int)dynamic_heap_count_data.last_changed_count > 0) && (dynamic_heap_count_data.last_changed_gc_index > 0.0))
-                            {
-                                if (num_gcs_since_last_change > (16 * dynamic_heap_count_data_t::sample_size))
-                                {
-                                    dynamic_heap_count_data.inc_failure_count = 0;
-                                    dprintf (6666, ("[CHP0-4] grew %d GCs ago, too far in the past, set aggressive factor to 0, grow from %d -> %d more heaps",
-                                        num_gcs_since_last_change, dynamic_heap_count_data.inc_failure_count, step_up_int, (step_up_int * (dynamic_heap_count_data.inc_failure_count + 1))));
-                                }
-                                else
-                                {
-                                    (dynamic_heap_count_data.inc_failure_count)++;
-                                    dprintf (6666, ("[CHP0-4] grew %d GCs ago, aggressive factor is %d, grow more aggressively from %d -> %d more heaps",
-                                        num_gcs_since_last_change, dynamic_heap_count_data.inc_failure_count, step_up_int, (step_up_int * (dynamic_heap_count_data.inc_failure_count + 1))));
-                                }
-                                step_up_int *= dynamic_heap_count_data.inc_failure_count + 1;
-                            }
-                        }
-                    }
-
-                    step_up_int = min (step_up_int, max_growth);
-
-                    new_n_heaps = n_heaps + step_up_int;
-                    new_n_heaps = min (new_n_heaps, actual_n_max_heaps);
-
-                    // If we are going to grow to be very close to max heap, it's better to just grow to it.
-                    if ((new_n_heaps < actual_n_max_heaps) && dynamic_heap_count_data.is_close_to_max (new_n_heaps, actual_n_max_heaps))
-                    {
-                        dprintf (6666, ("[CHP0-5] %d is close to max heaps %d, grow to max", new_n_heaps, actual_n_max_heaps));
-                        new_n_heaps = actual_n_max_heaps;
-                    }
-
-                    if (new_n_heaps > n_heaps)
-                    {
-                        dynamic_heap_count_data.last_changed_gc_index = current_gc_index;
-                        dynamic_heap_count_data.last_changed_count = step_up_float;
-                        dynamic_heap_count_data.last_changed_stcp = smoothed_median_throughput_cost_percent;
-                    }
-
-                    dprintf (6666, ("[CHP0] tcp %.3f, stcp %.3f -> (%d -> %.3f) -> %d + %d = %d -> %d",
-                        median_throughput_cost_percent, smoothed_median_throughput_cost_percent,
-                        actual_n_max_heaps, step_up_float, step_up_int, n_heaps, (n_heaps + step_up_int), new_n_heaps));
+                    change_int *= agg_factor;
+                    dprintf (6666, ("agg factor is %d, change by %d heaps", agg_factor, change_int));
                 }
             }
+
+            if (change_int)
+            {
+                adj_metric = dynamic_heap_count_data.should_change_hc (max_heap_count_datas, min_heap_count_datas,
+                                                                       max_heap_count_growth, change_int, current_gc_index,
+                                                                       &adj_reason, &hc_change_freq_factor, &hc_freq_reason);
+
+                // If we decide to change budget, we let the next GC calculate the right budget, ie, we delay changing by one GC which is acceptable.
+                if (adj_metric != dynamic_heap_count_data_t::adjust_metric::adjust_hc)
+                {
+                    change_int = 0;
+                }
+
+                if (adj_metric != dynamic_heap_count_data_t::adjust_metric::not_adjusted)
+                {
+                    if (adj_metric == dynamic_heap_count_data_t::adjust_metric::adjust_hc)
+                    {
+                        new_n_heaps = n_heaps + change_int;
+                    }
+
+                    dynamic_heap_count_data.record_adjustment (adj_metric, distance, change_int, current_gc_index);
+                }
+            }
+
+            // We always need to reset these since we already made decisions based on them.
+            dynamic_heap_count_data.reset_accumulation();
+            dprintf (6666, ("changing HC or budget %d -> %d at GC#%Id", n_heaps, new_n_heaps, current_gc_index));
+
+            dprintf (6666, ("total max gen %.3fmb, total bcd %.3fmb, diff %% %.3f-> +%d hc (%%%.3f)",
+                mb (total_soh_stable_size), mb (total_bcd), diff_pct, change_int, (change_int * 100.0 / n_heaps)));
         }
-        else
-        {
-            // When we are below target, we accumulate the distance to target and only adjust when we've accumulated enough in this state. Note that
-            // this can include tcp's that are slightly above target, as long as it's not high enough for us to adjust the heap count. If we are just
-            // oscillating around target, this makes those tcp's cancel each other out.
-            if (dynamic_heap_count_data.below_target_accumulation == 0)
-            {
-                dynamic_heap_count_data.first_below_target_gc_index = current_gc_index;
-                dynamic_heap_count_data.init_recorded_tcp ();
-                dynamic_heap_count_data.add_to_recorded_tcp (median_throughput_cost_percent);
-            }
-            dprintf (6666, ("[CHP1] last time adjusted %s by %d at GC#%Id (%Id GCs since), stcp was %.3f, now stcp is %.3f",
-                ((dynamic_heap_count_data.last_changed_count > 0.0) ? "up" : "down"), (int)dynamic_heap_count_data.last_changed_count,
-                dynamic_heap_count_data.last_changed_gc_index, num_gcs_since_last_change,
-                dynamic_heap_count_data.last_changed_stcp, smoothed_median_throughput_cost_percent));
 
-            float below_target_diff = target_tcp - median_throughput_cost_percent;
-            dynamic_heap_count_data.below_target_accumulation += below_target_diff;
-
-            dprintf (6666, ("[CHP1] below target for the past %Id GCs, accumulated %.3f, min (10%% of max is %.2f, 20%% of hc is %.2f)",
-                (current_gc_index - dynamic_heap_count_data.first_below_target_gc_index), dynamic_heap_count_data.below_target_accumulation,
-                (actual_n_max_heaps * 0.1), (n_heaps * 0.2)));
-
-            if (dynamic_heap_count_data.below_target_accumulation >= dynamic_heap_count_data.below_target_threshold)
-            {
-                int below_target_tcp_count = dynamic_heap_count_data.rearrange_recorded_tcp ();
-                float below_target_tcp_slope = slope (dynamic_heap_count_data.recorded_tcp_rearranged, below_target_tcp_count, &avg_recorded_tcp);
-                float diff_pct = (target_tcp - smoothed_median_throughput_cost_percent) / target_tcp;
-                int step_down_int = (int)(diff_pct / 2.0 * n_heaps);
-                if ((step_down_int == 0) && dynamic_heap_count_data.is_tcp_far_below (diff_pct))
-                {
-                    dprintf (6666, ("[CHP1] we are far below target, reduce by 1 heap"));
-                    step_down_int = 1;
-                }
-
-                dprintf (6666, ("[CHP1] observed %d tcp's <= or ~ target, avg %.3f, slope %.3f, stcp %.3f%% below target, shrink by %.3f%% * %d = %d heaps",
-                    below_target_tcp_count, avg_recorded_tcp, below_target_tcp_slope, (diff_pct * 100.0), (diff_pct * 50.0), n_heaps, step_down_int));
-
-                bool shrink_p = false;
-                if (dynamic_heap_count_data.is_tcp_in_range (diff_pct, below_target_tcp_slope))
-                {
-                    step_down_int = 0;
-                    dprintf (6666, ("[CHP1-0] slope %.3f is flat and stcp is already close to target %.3f (%.3f%%), no change",
-                        below_target_tcp_slope, smoothed_median_throughput_cost_percent, (diff_pct * 100.0)));
-                }
-                else
-                {
-                    // If we adjusted last time and it was unsuccessful, we need to inc our failure count.
-                    // If we have a non zero failure count, we don't want to adjust for a while if we continue to be in that same situation.
-                    bool last_dec_p = (dynamic_heap_count_data.last_changed_gc_index > 0) && (dynamic_heap_count_data.last_changed_count < 0.0);
-                    float last_dec_tcp_diff_pct = (last_dec_p ?
-                        ((smoothed_median_throughput_cost_percent - dynamic_heap_count_data.last_changed_stcp) / dynamic_heap_count_data.last_changed_stcp) : 0.0f);
-                    bool stable_p = last_dec_p && ((last_dec_tcp_diff_pct <= 0.2) && (last_dec_tcp_diff_pct >= -0.2));
-                    dprintf (6666, ("[CHP1] since last adjustment stcp changed %.3f->%.3f = %.3f%%, %s, dec_failure_count is %d",
-                        dynamic_heap_count_data.last_changed_stcp, smoothed_median_throughput_cost_percent, (last_dec_tcp_diff_pct * 100.0),
-                        (stable_p ? "stable" : "not stable"), dynamic_heap_count_data.dec_failure_count));
-
-                    bool check_dec_p = true;
-
-                    if (stable_p)
-                    {
-                        if (dynamic_heap_count_data.dec_failure_count)
-                        {
-                            (dynamic_heap_count_data.dec_failure_count)++;
-                        }
-                        else
-                        {
-                            dynamic_heap_count_data.dec_failure_count = 1;
-                        }
-
-                        if (dynamic_heap_count_data.dec_failure_count <= dynamic_heap_count_data.dec_failure_recheck_threshold)
-                        {
-                            check_dec_p = false;
-                            dprintf (6666, ("[CHP1-1] dec was still unsuccessful, <= %d, no change", dynamic_heap_count_data.dec_failure_recheck_threshold));
-                        }
-                    }
-
-                    if (check_dec_p)
-                    {
-                        dynamic_heap_count_data.dec_failure_count = 0;
-
-                        if (below_target_tcp_slope <= 0.0)
-                        {
-                            shrink_p = true;
-                        }
-                        else
-                        {
-                            // It's trending upwards, but if takes too many samples to get to target, we do want to shrink.
-                            int num_samples_to_goal = (int)((target_tcp + below_target_tcp_slope - median_throughput_cost_percent) / below_target_tcp_slope);
-                            bool far_below_goal_p = (num_samples_to_goal > (3 * dynamic_heap_count_data_t::sample_size));
-                            dprintf (6666, ("[CHP1] it'll take ((%.3f + %.3f - %.3f) / %.3f = %d) samples to get to target, %s",
-                                target_tcp, below_target_tcp_slope, median_throughput_cost_percent, below_target_tcp_slope,
-                                num_samples_to_goal, (far_below_goal_p ? "shrink" : "no change")));
-
-                            if (far_below_goal_p)
-                            {
-                                // We could be in a situation where the slope changes directions but since we only compute one number, we take another look at
-                                // the samples to make a better assessment by looking at the highest tcps and if their average is close to target, we don't shrink.
-                                //
-                                // TODO - we only check this when the slope is going up but since this includes the situation where the slope changes directions
-                                // we should really be checking this regardless of the slope to handle that.
-                                float highest_avg_tcp = 0.0;
-                                int highest_count = dynamic_heap_count_data.highest_avg_recorded_tcp (below_target_tcp_count, avg_recorded_tcp, &highest_avg_tcp);
-                                float highest_count_pct = (float)highest_count / (float)below_target_tcp_count;
-
-                                shrink_p = (highest_count_pct < 0.3) || (highest_avg_tcp < (target_tcp * 0.8));
-                                dprintf (6666, ("[CHP1-2] %d samples were above avg (%.3f%%), their avg is %.3f (%s)",
-                                    highest_count, (highest_count_pct * 100.0), highest_avg_tcp, (shrink_p ? "shrink" : "no change")));
-                            }
-                        }
-                    }
-                }
-
-                if (shrink_p && step_down_int && (new_n_heaps > step_down_int))
-                {
-                    if (step_down_int == 1)
-                    {
-                        if (dynamic_heap_count_data.should_dec_by_one())
-                        {
-                            dprintf (6666, ("[CHP1-3] shrink by one heap"));
-                        }
-                        else
-                        {
-                            step_down_int = 0;
-                            dprintf (6666, ("[CHP1-3] don't shrink just yet if it's just one heap"));
-                        }
-                    }
-                    else
-                    {
-                        dynamic_heap_count_data.reset_dec_by_one();
-                        dprintf (6666, ("[CHP1-3] shrink by %d heap(s), reset dec by one", step_down_int));
-                    }
-
-                    new_n_heaps -= step_down_int;
-                    dprintf (6666, ("[CHP1] shrink by %d heaps -> %d", step_down_int, new_n_heaps));
-                }
-
-                // Always reinit the buffer as we want to look at the more recent history.
-                dynamic_heap_count_data.init_recorded_tcp ();
-                dynamic_heap_count_data.below_target_accumulation = 0;
-            }
-
-            if (new_n_heaps < n_heaps)
-            {
-                dynamic_heap_count_data.last_changed_gc_index = current_gc_index;
-                dynamic_heap_count_data.last_changed_count = (float)(new_n_heaps - n_heaps);
-                dynamic_heap_count_data.last_changed_stcp = smoothed_median_throughput_cost_percent;
-                dprintf (6666, ("[CHP1] setting last changed gc index to %Id, count to %.3f, stcp to %.3f",
-                    dynamic_heap_count_data.last_changed_gc_index, dynamic_heap_count_data.last_changed_count, dynamic_heap_count_data.last_changed_stcp));
-
-                if (dynamic_heap_count_data.inc_failure_count)
-                {
-                    dprintf (6666, ("[CHP1] shrink, reset inc failure count (was %d)", dynamic_heap_count_data.inc_failure_count));
-                    dynamic_heap_count_data.inc_failure_count = 0;
-                }
-            }
-        }
+        GCEventFireSizeAdaptationTuning_V1 (
+            (uint16_t)new_n_heaps,
+            (uint16_t)max_heap_count_datas,
+            (uint16_t)min_heap_count_datas,
+            (uint64_t)current_gc_index,
+            (uint64_t)total_soh_stable_size,
+            (float)median_throughput_cost_percent,
+            (float)tcp_to_consider,
+            (float)current_around_target_accumulation,
+            (uint16_t)recorded_tcp_count,
+            (float)recorded_tcp_slope,
+            (uint32_t)num_gcs_since_last_change,
+            (uint8_t)agg_factor,
+            (uint16_t)change_decision,
+            (uint16_t)adj_reason,
+            (uint16_t)hc_change_freq_factor,
+            (uint16_t)hc_freq_reason,
+            (uint8_t)adj_metric);
     }
+
+    size_t num_gen2s_since_last_change = 0;
 
     if ((new_n_heaps == n_heaps) && !process_eph_samples_p && process_gen2_samples_p)
     {
-        // The gen2 samples only serve as a backstop so this is quite crude.
-        if (median_gen2_tcp_percent > target_gen2_tcp)
+        num_gen2s_since_last_change = dynamic_heap_count_data.current_gen2_samples_count - dynamic_heap_count_data.gen2_last_changed_sample_count;
+        // If we have already been processing eph samples, we don't need to process gen2.
+        if ((dynamic_heap_count_data.current_samples_count / dynamic_heap_count_data.current_gen2_samples_count) < 10)
         {
-            float step_up_percent = log_with_base ((median_gen2_tcp_percent - target_gen2_tcp + log_base), log_base);
-            float step_up_float = (float)(step_up_percent / 100.0 * actual_n_max_heaps);
-            new_n_heaps += (int)step_up_float;
-            new_n_heaps = min (new_n_heaps, actual_n_max_heaps);
-            dprintf (6666, ("[CHP2-0] gen2 tcp: %.3f, inc by %.3f%% = %d, %d -> %d", median_gen2_tcp_percent, step_up_percent, (int)step_up_float, n_heaps, new_n_heaps));
+            int step_up = (n_heaps + 1) / 2;
+            int max_growth = max ((n_max_heaps / 4), (1 + (actual_n_max_heaps > 3)));
+            step_up = min (step_up, (actual_n_max_heaps - n_heaps));
 
-            if ((new_n_heaps < actual_n_max_heaps) && dynamic_heap_count_data.is_close_to_max (new_n_heaps, actual_n_max_heaps))
+            int step_down = (n_heaps + 1) / 3;
+
+            // The gen2 samples only serve as a backstop so this is quite crude.
+            if (median_gen2_tcp > target_gen2_tcp)
             {
-                dprintf (6666, ("[CHP2-1] %d is close to max heaps %d, grow to max", new_n_heaps, actual_n_max_heaps));
-                new_n_heaps = actual_n_max_heaps;
+                new_n_heaps += step_up;
+                new_n_heaps = min (new_n_heaps, actual_n_max_heaps);
+                dprintf (6666, ("[CHP2-0] gen2 tcp: %.3f, inc by %d + %d = %d", median_gen2_tcp, step_up, n_heaps, new_n_heaps));
+
+                if ((new_n_heaps < actual_n_max_heaps) && dynamic_heap_count_data.is_close_to_max (new_n_heaps, actual_n_max_heaps))
+                {
+                    dprintf (6666, ("[CHP2-1] %d is close to max heaps %d, grow to max", new_n_heaps, actual_n_max_heaps));
+                    new_n_heaps = actual_n_max_heaps;
+                }
             }
-        }
-        else if ((dynamic_heap_count_data.last_processed_stcp < 1.0) &&
-                    (median_gen2_tcp_percent < (target_gen2_tcp / 2)) &&
-                    (scp_decrease_per_step_down - tcp_increase_per_step_down >= 1.0f))
-        {
-            new_n_heaps -= step_down;
-            dprintf (6666, ("[CHP3-0] last eph stcp: %.3f, gen2 tcp: %.3f, dec by %d, %d -> %d",
-                dynamic_heap_count_data.last_processed_stcp, median_gen2_tcp_percent, step_down, n_heaps, new_n_heaps));
+            else if ((median_gen2_tcp < (target_gen2_tcp / 2)) && (num_gen2s_since_last_change > 30))
+            {
+                new_n_heaps -= step_down;
+                dprintf (6666, ("[CHP3-0] last gen2 sample count when changed: %Id, gen2 tcp: %.3f, dec by %d, %d -> %d",
+                    dynamic_heap_count_data.gen2_last_changed_sample_count, median_gen2_tcp, step_down, n_heaps, new_n_heaps));
+            }
+
+            if (new_n_heaps != n_heaps)
+            {
+                dynamic_heap_count_data.gen2_last_changed_sample_count = dynamic_heap_count_data.current_gen2_samples_count;
+            }
         }
     }
 
     assert (new_n_heaps >= 1);
     assert (new_n_heaps <= actual_n_max_heaps);
-
 #endif //STRESS_DYNAMIC_HEAP_COUNT
-
-    // store data used for decision to emit in ETW event
-    dynamic_heap_count_data.median_throughput_cost_percent = median_throughput_cost_percent;
-    dynamic_heap_count_data.smoothed_median_throughput_cost_percent = smoothed_median_throughput_cost_percent;
-    dynamic_heap_count_data.percent_heap_space_cost_per_heap = percent_heap_space_cost_per_heap;
-    dynamic_heap_count_data.tcp_reduction_per_step_up = tcp_reduction_per_step_up;
-    dynamic_heap_count_data.tcp_increase_per_step_down = tcp_increase_per_step_down;
-    dynamic_heap_count_data.scp_increase_per_step_up = scp_increase_per_step_up;
-    dynamic_heap_count_data.scp_decrease_per_step_down = scp_decrease_per_step_down;
-
-    GCEventFireHeapCountTuning_V1 (
-        (uint16_t)dynamic_heap_count_data.new_n_heaps,
-        (uint64_t)VolatileLoadWithoutBarrier (&settings.gc_index),
-        dynamic_heap_count_data.median_throughput_cost_percent,
-        dynamic_heap_count_data.smoothed_median_throughput_cost_percent,
-        dynamic_heap_count_data.tcp_reduction_per_step_up,
-        dynamic_heap_count_data.tcp_increase_per_step_down,
-        dynamic_heap_count_data.scp_increase_per_step_up,
-        dynamic_heap_count_data.scp_decrease_per_step_down
-    );
 
     if (process_eph_samples_p)
     {
@@ -25777,6 +25640,19 @@ int gc_heap::calculate_new_heap_count ()
 
     if (process_gen2_samples_p)
     {
+        dynamic_heap_count_data_t::gen2_sample* gen2_samples = dynamic_heap_count_data.gen2_samples;
+        GCEventFireSizeAdaptationFullGCTuning_V1 (
+            (uint16_t)dynamic_heap_count_data.new_n_heaps,
+            (uint64_t)current_gc_index,
+            (float)median_gen2_tcp,
+            (uint32_t)num_gen2s_since_last_change,
+            (uint32_t)(current_gc_index - gen2_samples[0].gc_index),
+            (float)gen2_samples[0].gc_percent,
+            (uint32_t)(current_gc_index - gen2_samples[1].gc_index),
+            (float)gen2_samples[1].gc_percent,
+            (uint32_t)(current_gc_index - gen2_samples[2].gc_index),
+            (float)gen2_samples[2].gc_percent);
+
         dprintf (6666, ("processed gen2 samples, updating processed %Id -> %Id", dynamic_heap_count_data.processed_gen2_samples_count, dynamic_heap_count_data.current_gen2_samples_count));
         dynamic_heap_count_data.processed_gen2_samples_count = dynamic_heap_count_data.current_gen2_samples_count;
     }
@@ -25787,13 +25663,7 @@ int gc_heap::calculate_new_heap_count ()
             VolatileLoadWithoutBarrier (&settings.gc_index), n_heaps, new_n_heaps, ((n_heaps < new_n_heaps) ? "INC" : "DEC")));
         dynamic_heap_count_data.heap_count_to_change_to = new_n_heaps;
         dynamic_heap_count_data.should_change_heap_count = true;
-        dynamic_heap_count_data.init_recorded_tcp ();
-        dynamic_heap_count_data.below_target_accumulation = 0;
-        dynamic_heap_count_data.first_below_target_gc_index = current_gc_index;
-        dprintf (6666, ("CHANGING HC, resetting tcp index, below target"));
     }
-
-    return new_n_heaps;
 }
 
 void gc_heap::check_heap_count ()
@@ -25815,8 +25685,6 @@ void gc_heap::check_heap_count ()
             // background GC is running - reset the new heap count
             dynamic_heap_count_data.new_n_heaps = n_heaps;
             dprintf (6666, ("can't change heap count! BGC in progress"));
-
-            GCToEEInterface::RestartEE(TRUE);
         }
 #endif //BACKGROUND_GC
     }
@@ -25833,15 +25701,14 @@ void gc_heap::check_heap_count ()
 
     if (dynamic_heap_count_data.new_n_heaps == n_heaps)
     {
-        dynamic_heap_count_data.last_changed_gc_index = 0;
-        dynamic_heap_count_data.last_changed_count = 0.0;
-
         dynamic_heap_count_data.processed_samples_count = dynamic_heap_count_data.current_samples_count;
         dynamic_heap_count_data.processed_gen2_samples_count = dynamic_heap_count_data.current_gen2_samples_count;
         dynamic_heap_count_data.should_change_heap_count = false;
 
         dprintf (6666, ("heap count stays the same %d, no work to do, set processed sample count to %Id",
             dynamic_heap_count_data.new_n_heaps, dynamic_heap_count_data.current_samples_count));
+
+        GCToEEInterface::RestartEE(TRUE);
 
         return;
     }
@@ -25885,8 +25752,6 @@ void gc_heap::check_heap_count ()
 
     GCToEEInterface::RestartEE(TRUE);
     dprintf (9999, ("h0 restarted EE"));
-
-    dynamic_heap_count_data.smoothed_median_throughput_cost_percent = 0.0;
 
     dprintf (6666, ("h0 finished changing, set should change to false!\n"));
     dynamic_heap_count_data.should_change_heap_count = false;
@@ -26143,6 +26008,20 @@ bool gc_heap::change_heap_count (int new_n_heaps)
 
                     for (heap_segment* region = start_region; region != nullptr; region = heap_segment_next(region))
                     {
+                        assert ((hp != nullptr) && (hpd != nullptr) && (hp != hpd));
+
+                        int oh = heap_segment_oh (region);
+                        size_t committed = heap_segment_committed (region) - get_region_start (region);
+                        if (committed > 0)
+                        {
+                            dprintf(3, ("commit-accounting:  from %d to %d [%p, %p) for heap %d to heap %d", oh, oh, get_region_start (region), heap_segment_committed (region), i, dest_heap_number));
+#ifdef _DEBUG
+                            assert (hp->committed_by_oh_per_heap[oh] >= committed);
+                            hp->committed_by_oh_per_heap[oh] -= committed;
+                            hpd->committed_by_oh_per_heap[oh] += committed;
+#endif // _DEBUG
+                        }
+
                         set_heap_for_contained_basic_regions (region, hpd);
                     }
                     if (tail_ro_region != nullptr)
@@ -26364,29 +26243,29 @@ bool gc_heap::change_heap_count (int new_n_heaps)
     if (heap_number == 0)
     {
         change_heap_count_time = GetHighPrecisionTimeStamp() - start_time;
+        dprintf (6666, ("changing HC took %I64dus", change_heap_count_time));
     }
 
     return true;
 }
 
-size_t gc_heap::get_msl_wait_time()
+void gc_heap::get_msl_wait_time (size_t* soh_msl_wait_time, size_t* uoh_msl_wait_time)
 {
     assert (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes);
 
-    size_t msl_wait_since_pause = 0;
+    *soh_msl_wait_time = 0;
+    *uoh_msl_wait_time = 0;
 
     for (int i = 0; i < n_heaps; i++)
     {
         gc_heap* hp = g_heaps[i];
 
-        msl_wait_since_pause += hp->more_space_lock_soh.msl_wait_time;
+        soh_msl_wait_time += hp->more_space_lock_soh.msl_wait_time;
         hp->more_space_lock_soh.msl_wait_time = 0;
 
-        msl_wait_since_pause += hp->more_space_lock_uoh.msl_wait_time;
+        uoh_msl_wait_time += hp->more_space_lock_uoh.msl_wait_time;
         hp->more_space_lock_uoh.msl_wait_time = 0;
     }
-
-    return msl_wait_since_pause;
 }
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
@@ -26804,7 +26683,7 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
 #ifndef COLLECTIBLE_CLASS
 #define go_through_object_cl(mt,o,size,parm,exp)                            \
 {                                                                           \
-    if (header(o)->ContainsPointers())                                      \
+    if (header(o)->ContainsGCPointers())                                      \
     {                                                                       \
         go_through_object_nostart(mt,o,size,parm,exp);                      \
     }                                                                       \
@@ -26818,7 +26697,7 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
         uint8_t** parm = &class_obj;                                           \
         do {exp} while (false);                                             \
     }                                                                       \
-    if (header(o)->ContainsPointers())                                      \
+    if (header(o)->ContainsGCPointers())                                      \
     {                                                                       \
         go_through_object_nostart(mt,o,size,parm,exp);                      \
     }                                                                       \
@@ -28949,7 +28828,7 @@ recheck:
             mark* tmp = new (nothrow) mark [new_size];
             if (tmp)
             {
-                delete mark_stack_array;
+                delete[] mark_stack_array;
                 mark_stack_array = tmp;
                 mark_stack_array_length = new_size;
             }
@@ -29966,7 +29845,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
 #endif //MULTIPLE_HEAPS
     {
 #ifdef FEATURE_EVENT_TRACE
-        record_mark_time (gc_time_info[time_plan - 1], current_mark_time, last_mark_time);
+        record_mark_time (gc_time_info[time_mark_long_weak], current_mark_time, last_mark_time);
         gc_time_info[time_plan] = last_mark_time;
 #endif //FEATURE_EVENT_TRACE
 
@@ -30933,10 +30812,7 @@ retry:
                 else
                 {
                     if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg), true) &&
-                        // We are overestimating here by padding with 2 loh_padding_obj_size objects which we shouldn't need
-                        // to do if it's at the end of the region. However, grow_heap_segment is already overestimating by
-                        // a lot more - it would be worth fixing when we are in extreme low memory situations.
-                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + 2* AlignQword (loh_padding_obj_size)))))
+                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + AlignQword (loh_padding_obj_size)))))
                     {
                         dprintf (1235, ("growing seg from %p to %p\n", heap_segment_committed (seg),
                                          (generation_allocation_pointer (gen) + size)));
@@ -33799,7 +33675,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
                 if (!loh_pinned_queue_decay)
                 {
-                    delete loh_pinned_queue;
+                    delete[] loh_pinned_queue;
                     loh_pinned_queue = 0;
                 }
             }
@@ -33964,26 +33840,12 @@ void gc_heap::plan_phase (int condemned_gen_number)
             if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
             {
-#ifdef FEATURE_EVENT_TRACE
-                if (informational_event_enabled_p)
-                {
-                    uint64_t current_time = GetHighPrecisionTimeStamp();
-                    gc_time_info[time_compact] = current_time - gc_time_info[time_compact];
-                }
-#endif //FEATURE_EVENT_TRACE
-
 #ifdef MULTIPLE_HEAPS
                 for (int i = 0; i < n_heaps; i++)
                 {
-#ifdef USE_REGIONS
-                    g_heaps [i]->rearrange_uoh_segments();
-#endif //USE_REGIONS
                     g_heaps [i]->rearrange_heap_segments (TRUE);
                 }
 #else //MULTIPLE_HEAPS
-#ifdef USE_REGIONS
-                rearrange_uoh_segments();
-#endif //USE_REGIONS
                 rearrange_heap_segments (TRUE);
 #endif //MULTIPLE_HEAPS
 
@@ -34018,69 +33880,16 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_EVENT_TRACE
-                if (informational_event_enabled_p && (condemned_gen_number < (max_generation -1)))
+                if (informational_event_enabled_p)
                 {
                     uint64_t current_time = GetHighPrecisionTimeStamp();
                     gc_time_info[time_compact] = current_time - gc_time_info[time_compact];
                 }
 #endif //FEATURE_EVENT_TRACE
 
-#if defined(_DEBUG) && defined(USE_REGIONS)
-                if (heap_hard_limit)
-                {
-                    size_t committed = 0;
-                    for (int i = 0; i < total_generation_count; i++)
-                    {
-                        int oh = i - max_generation;
-#ifdef MULTIPLE_HEAPS
-                        for (int hn = 0; hn < gc_heap::n_heaps; hn++)
-                        {
-                            gc_heap* hp = gc_heap::g_heaps[hn];
-#else
-                        {
-                            gc_heap* hp = pGenGCHeap;
-#endif // MULTIPLE_HEAPS
-                            heap_segment* region = generation_start_segment (hp->generation_of (i));
-                            while (region)
-                            {
-                                if (!heap_segment_read_only_p (region))
-                                {
-                                    committed += heap_segment_committed (region) - get_region_start (region);
-                                }
-                                region = heap_segment_next (region);
-                            }
-#ifdef BACKGROUND_GC
-                            if (oh == soh)
-                            {
-                                heap_segment* freeable = hp->freeable_soh_segment;
-                                while (freeable)
-                                {
-                                    committed += (heap_segment_committed (freeable) - get_region_start (freeable));
-                                    freeable = heap_segment_next (freeable);
-                                }
-                            }
-                            else
-                            {
-                                heap_segment* freeable = hp->freeable_uoh_segment;
-                                while (freeable)
-                                {
-                                    if (heap_segment_oh (freeable) == oh)
-                                    {
-                                        committed += (heap_segment_committed (freeable) - get_region_start (freeable));
-                                    }
-                                    freeable = heap_segment_next (freeable);
-                                }
-                            }
-#endif //BACKGROUND_GC
-                        }
-                        if (i >= max_generation)
-                        {
-                            assert (committed_by_oh[oh] == committed);
-                            committed = 0;
-                        }
-                    }
-                }
-#endif // _DEBUG && USE_REGIONS
+#if defined(_DEBUG)
+            verify_committed_bytes ();
+#endif // _DEBUG
 
 #ifdef MULTIPLE_HEAPS
                 //join all threads to make sure they are synchronized
@@ -37858,7 +37667,7 @@ BOOL gc_heap::commit_mark_array_by_range (uint8_t* begin, uint8_t* end, uint32_t
                             size));
 #endif //SIMPLE_DPRINTF
 
-    if (virtual_commit (commit_start, size, recorded_committed_bookkeeping_bucket))
+    if (virtual_commit (commit_start, size, recorded_committed_mark_array_bucket))
     {
         // We can only verify the mark array is cleared from begin to end, the first and the last
         // page aren't necessarily all cleared 'cause they could be used by other segments or
@@ -38083,7 +37892,7 @@ void gc_heap::decommit_mark_array_by_seg (heap_segment* seg)
 
         if (decommit_start < decommit_end)
         {
-            if (!virtual_decommit (decommit_start, size, recorded_committed_bookkeeping_bucket))
+            if (!virtual_decommit (decommit_start, size, recorded_committed_mark_array_bucket))
             {
                 dprintf (GC_TABLE_LOG, ("decommit on %p for %zd bytes failed",
                                         decommit_start, size));
@@ -40638,7 +40447,7 @@ void gc_heap::bgc_tuning::record_and_adjust_bgc_end()
 
     calculate_tuning (max_generation, true);
 
-    if (total_loh_a_last_bgc > 0)
+    if (total_uoh_a_last_bgc > 0)
     {
         calculate_tuning (loh_generation, true);
     }
@@ -43639,29 +43448,34 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
             new_allocation = linear_allocation_model (allocation_fraction, new_allocation,
                                                       dd_desired_allocation (dd), time_since_previous_collection_secs);
 
-            if (gen_number == 0)
+#ifdef DYNAMIC_HEAP_COUNT
+            if (dynamic_adaptation_mode != dynamic_adaptation_to_application_sizes)
+#endif //DYNAMIC_HEAP_COUNT
             {
-                if (pass == 0)
+                if (gen_number == 0)
                 {
-                    size_t free_space = generation_free_list_space (generation_of (gen_number));
-                    // DTREVIEW - is min_gc_size really a good choice?
-                    // on 64-bit this will almost always be true.
-                    dprintf (GTC_LOG, ("frag: %zd, min: %zd", free_space, min_gc_size));
-                    if (free_space > min_gc_size)
+                    if (pass == 0)
                     {
-                        settings.gen0_reduction_count = 2;
+                        size_t free_space = generation_free_list_space (generation_of (gen_number));
+                        // DTREVIEW - is min_gc_size really a good choice?
+                        // on 64-bit this will almost always be true.
+                        dprintf (GTC_LOG, ("frag: %zd, min: %zd", free_space, min_gc_size));
+                        if (free_space > min_gc_size)
+                        {
+                            settings.gen0_reduction_count = 2;
+                        }
+                        else
+                        {
+                            if (settings.gen0_reduction_count > 0)
+                                settings.gen0_reduction_count--;
+                        }
                     }
-                    else
+                    if (settings.gen0_reduction_count > 0)
                     {
-                        if (settings.gen0_reduction_count > 0)
-                            settings.gen0_reduction_count--;
+                        dprintf (2, ("Reducing new allocation based on fragmentation"));
+                        new_allocation = min (new_allocation,
+                                              max (min_gc_size, (max_size/3)));
                     }
-                }
-                if (settings.gen0_reduction_count > 0)
-                {
-                    dprintf (2, ("Reducing new allocation based on fragmentation"));
-                    new_allocation = min (new_allocation,
-                                          max (min_gc_size, (max_size/3)));
                 }
             }
         }
@@ -44177,11 +43991,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #ifdef HOST_64BIT
                 max(min(min(soh_segment_size/32, dd_max_size (dd0)), (generation_size (max_generation) / 10)), (size_t)desired_allocation);
 #else
-#ifdef FEATURE_CORECLR
                 desired_allocation;
-#else
-                dd_max_size (dd0);
-#endif //FEATURE_CORECLR
 #endif // HOST_64BIT
 
     uint8_t *decommit_target = heap_segment_allocated (ephemeral_heap_segment) + slack_space;
@@ -45835,9 +45645,6 @@ void gc_heap::background_sweep()
     concurrent_print_time_delta ("Sw");
     dprintf (2, ("---- (GC%zu)Background Sweep Phase ----", VolatileLoad(&settings.gc_index)));
 
-    //block concurrent allocation for large objects
-    dprintf (3, ("lh state: planning"));
-
     for (int i = 0; i <= max_generation; i++)
     {
         generation* gen_to_reset = generation_of (i);
@@ -45886,6 +45693,9 @@ void gc_heap::background_sweep()
     sweep_ro_segments();
 #endif //FEATURE_BASICFREEZE
 
+    dprintf (3, ("lh state: planning"));
+
+    // Multiple threads may reach here.  This conditional partially avoids multiple volatile writes.
     if (current_c_gc_state != c_gc_state_planning)
     {
         current_c_gc_state = c_gc_state_planning;
@@ -45916,9 +45726,7 @@ void gc_heap::background_sweep()
 
     if (heap_number == 0)
     {
-#ifdef BGC_SERVO_TUNING
-        get_and_reset_loh_alloc_info();
-#endif //BGC_SERVO_TUNING
+        get_and_reset_uoh_alloc_info();
         uint64_t suspended_end_ts = GetHighPrecisionTimeStamp();
         last_bgc_info[last_bgc_info_index].pause_durations[1] = (size_t)(suspended_end_ts - suspended_start_time);
         total_suspended_time += last_bgc_info[last_bgc_info_index].pause_durations[1];
@@ -46247,6 +46055,7 @@ void gc_heap::background_sweep()
             concurrent_print_time_delta ("Swe SOH");
             FIRE_EVENT(BGC1stSweepEnd, 0);
 
+            //block concurrent allocation for UOH objects
             enter_spin_lock (&more_space_lock_uoh);
             add_saved_spinlock_info (true, me_acquire, mt_bgc_uoh_sweep, msl_entered);
 
@@ -46302,6 +46111,15 @@ void gc_heap::background_sweep()
     // be accurate.
     compute_new_dynamic_data (max_generation);
 
+    // We also need to adjust size_before for UOH allocations that occurred during sweeping.
+    gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
+    for (int i = uoh_start_generation; i < total_generation_count; i++)
+    {
+        assert(uoh_a_bgc_marking[i - uoh_start_generation] == 0);
+        assert(uoh_a_no_bgc[i - uoh_start_generation] == 0);
+        current_gc_data_per_heap->gen_data[i].size_before += uoh_a_bgc_planning[i - uoh_start_generation];
+    }
+
 #ifdef DOUBLY_LINKED_FL
     current_bgc_state = bgc_not_in_process;
 
@@ -46322,6 +46140,10 @@ void gc_heap::background_sweep()
         // look into eliminating it - check to make sure things that use
         // this state can live with per heap state like should_check_bgc_mark.
         current_c_gc_state = c_gc_state_free;
+
+#ifdef DYNAMIC_HEAP_COUNT
+        update_total_soh_stable_size();
+#endif //DYNAMIC_HEAP_COUNT
 
 #ifdef BGC_SERVO_TUNING
         if (bgc_tuning::enable_fl_tuning)
@@ -47586,9 +47408,52 @@ gc_heap::verify_free_lists ()
     }
 }
 
-void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail, size_t* p_total_committed)
+void gc_heap::verify_committed_bytes_per_heap()
 {
+    size_t committed_bookkeeping = 0; // unused
+    for (int oh = soh; oh < total_oh_count; oh++)
+    {
+#ifdef MULTIPLE_HEAPS
+        assert (committed_by_oh_per_heap[oh] == compute_committed_bytes_per_heap (oh, committed_bookkeeping));
+#else
+        assert (committed_by_oh[oh] == compute_committed_bytes_per_heap (oh, committed_bookkeeping));
+#endif //MULTIPLE_HEAPS
+    }
+}
+
+void gc_heap::verify_committed_bytes()
+{
+    size_t total_committed = 0;
+    size_t committed_decommit; // unused
+    size_t committed_free; // unused
+    size_t committed_bookkeeping = 0;
+    size_t new_current_total_committed;
+    size_t new_current_total_committed_bookkeeping;
+    size_t new_committed_by_oh[recorded_committed_bucket_counts];
+    compute_committed_bytes(total_committed, committed_decommit, committed_free,
+                            committed_bookkeeping, new_current_total_committed, new_current_total_committed_bookkeeping,
+                            new_committed_by_oh);
+#ifdef MULTIPLE_HEAPS
+    for (int h = 0; h < n_heaps; h++)
+    {
+        for (int oh = soh; oh < total_oh_count; oh++)
+        {
+            assert (g_heaps[h]->committed_by_oh_per_heap[oh] == g_heaps[h]->committed_by_oh_per_heap_refresh[oh]);
+        }
+    }
+    for (int i = 0; i < recorded_committed_bucket_counts; i++)
+    {
+        assert (new_committed_by_oh[i] == committed_by_oh[i]);
+    }
+#endif //MULTIPLE_HEAPS
+    assert (new_current_total_committed_bookkeeping == current_total_committed_bookkeeping);
+    assert (new_current_total_committed == current_total_committed);
+}
+
 #ifdef USE_REGIONS
+void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail)
+{
+#ifdef _DEBUG
     // For the given generation, verify that
     //
     // 1) it has at least one region.
@@ -47605,13 +47470,6 @@ void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num, bool can_
 
     while (seg_in_gen)
     {
-        if (p_total_committed)
-        {
-            if (!heap_segment_read_only_p (seg_in_gen))
-            {
-                *p_total_committed += (heap_segment_committed (seg_in_gen) - get_region_start (seg_in_gen));
-            }
-        }
         if (can_verify_gen_num)
         {
             if (heap_segment_gen_num (seg_in_gen) != min (gen_number, (int)max_generation))
@@ -47664,7 +47522,7 @@ void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num, bool can_
             prev_region_in_gen, heap_segment_mem (prev_region_in_gen)));
         FATAL_GC_ERROR();
     }
-#endif //USE_REGIONS
+#endif // _DEBUG
 }
 
 inline bool is_user_alloc_gen (int gen_number)
@@ -47674,61 +47532,22 @@ inline bool is_user_alloc_gen (int gen_number)
 
 void gc_heap::verify_regions (bool can_verify_gen_num, bool concurrent_p)
 {
-#ifdef USE_REGIONS
-    size_t total_committed = 0;
+#ifdef _DEBUG
     for (int i = 0; i < total_generation_count; i++)
     {
         bool can_verify_tail = (concurrent_p ? !is_user_alloc_gen (i) : true);
-        verify_regions (i, can_verify_gen_num, can_verify_tail, &total_committed);
+        verify_regions (i, can_verify_gen_num, can_verify_tail);
 
         if (can_verify_gen_num &&
             can_verify_tail &&
-            (i >= max_generation) &&
-            heap_hard_limit)
+            (i >= max_generation))
         {
-            int oh = i - max_generation;
-#ifdef BACKGROUND_GC
-            if (oh == soh)
-            {
-                heap_segment* freeable = freeable_soh_segment;
-                while (freeable)
-                {
-                    total_committed += (heap_segment_committed (freeable) - get_region_start (freeable));
-                    freeable = heap_segment_next (freeable);
-                }
-            }
-            else
-            {
-                heap_segment* freeable = freeable_uoh_segment;
-                while (freeable)
-                {
-                    if (heap_segment_oh (freeable) == oh)
-                    {
-                        total_committed += (heap_segment_committed (freeable) - get_region_start (freeable));
-                    }
-                    freeable = heap_segment_next (freeable);
-                }
-            }
-#endif //BACKGROUND_GC
-#ifdef MULTIPLE_HEAPS
-#ifdef _DEBUG
-            size_t total_accounted = committed_by_oh_per_heap[i - max_generation];
-#else // _DEBUG
-            size_t total_accounted = total_committed;
-#endif // _DEBUG
-#else // MULTIPLE_HEAPS
-            size_t total_accounted = committed_by_oh[i - max_generation];
-#endif // MULTIPLE_HEAPS
-            if (total_committed != total_accounted)
-            {
-                FATAL_GC_ERROR();
-            }
-            dprintf(3, ("commit-accounting:  checkpoint for %d for heap %d", oh, heap_number));
-            total_committed = 0;
+            verify_committed_bytes_per_heap ();
         }
     }
-#endif //USE_REGIONS
+#endif // _DEBUG
 }
+#endif // USE_REGIONS
 
 BOOL gc_heap::check_need_card (uint8_t* child_obj, int gen_num_for_cards,
                                uint8_t* low, uint8_t* high)
@@ -47849,6 +47668,7 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
 
     //verify that the generation structures makes sense
     {
+#ifdef _DEBUG
 #ifdef USE_REGIONS
         verify_regions (true, settings.concurrent);
 #else //USE_REGIONS
@@ -47875,6 +47695,7 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
             gen_num--;
         }
 #endif //USE_REGIONS
+#endif //_DEBUG
     }
 
     size_t          total_objects_verified = 0;
@@ -48833,13 +48654,17 @@ HRESULT GCHeap::Initialize()
             // This needs to be different from our initial heap count so we can make sure we wait for
             // the idle threads correctly in gc_thread_function.
             gc_heap::dynamic_heap_count_data.last_n_heaps = 0;
+
+            int target_tcp = (int)GCConfig::GetGCDTargetTCP();
+            if (target_tcp > 0)
+            {
+                gc_heap::dynamic_heap_count_data.target_tcp = (float)target_tcp;
+            }
             // This should be adjusted based on the target tcp. See comments in gcpriv.h
-            gc_heap::dynamic_heap_count_data.below_target_threshold = 10.0;
-            gc_heap::dynamic_heap_count_data.inc_recheck_threshold = 5;
-            gc_heap::dynamic_heap_count_data.dec_failure_recheck_threshold = 5;
+            gc_heap::dynamic_heap_count_data.around_target_threshold = 10.0;
             // This should really be set as part of computing static data and should take conserve_mem_setting into consideration.
-            gc_heap::dynamic_heap_count_data.max_gen0_new_allocation = min (dd_max_size (gc_heap::g_heaps[0]->dynamic_data_of (0)), (size_t)(64 * 1024 * 1024));
-            gc_heap::dynamic_heap_count_data.min_gen0_new_allocation = dd_min_size (gc_heap::g_heaps[0]->dynamic_data_of (0));
+            gc_heap::dynamic_heap_count_data.max_gen0_new_allocation = Align (min (dd_max_size (gc_heap::g_heaps[0]->dynamic_data_of (0)), (size_t)(64 * 1024 * 1024)), get_alignment_constant (TRUE));
+            gc_heap::dynamic_heap_count_data.min_gen0_new_allocation = Align (dd_min_size (gc_heap::g_heaps[0]->dynamic_data_of (0)), get_alignment_constant (TRUE));
 
             dprintf (6666, ("datas max gen0 budget %Id, min %Id",
                 gc_heap::dynamic_heap_count_data.max_gen0_new_allocation, gc_heap::dynamic_heap_count_data.min_gen0_new_allocation));
@@ -49482,7 +49307,29 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
     }
     Interlocked::Decrement(&OneAtATime);
 #endif // !MULTIPLE_HEAPS
-    if (IsConcurrentGCEnabled())
+
+    if (g_pConfig->GetGCStressLevel() & EEConfig::GCSTRESS_INSTR_JIT)
+    {
+        // When GCSTRESS_INSTR_JIT is set we see lots of GCs - on every GC-eligible instruction.
+        // We do not want all these GC to be gen2 because:
+        // - doing only or mostly gen2 is very expensive in this mode
+        // - doing only or mostly gen2 prevents coverage of generation-aware behaviors
+        // - the main value of this stress mode is to catch stack scanning issues at various/rare locations
+        //    in the code and gen2 is not needed for that.
+
+        int rgen = StressRNG(100);
+
+        // gen0:gen1:gen2 distribution: 90:8:2
+        if (rgen >= 98)
+            rgen = 2;
+        else if (rgen >= 90)
+            rgen = 1;
+        else
+            rgen = 0;
+
+        GarbageCollectTry (rgen, FALSE, collection_gcstress);
+    }
+    else if (IsConcurrentGCEnabled())
     {
         int rgen = StressRNG(10);
 
@@ -49491,7 +49338,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
             rgen = 2;
         else if (rgen >= 4)
             rgen = 1;
-    else
+        else
             rgen = 0;
 
         GarbageCollectTry (rgen, FALSE, collection_gcstress);
@@ -50271,17 +50118,16 @@ void gc_heap::check_and_adjust_bgc_tuning (int gen_number, size_t physical_size,
         }
     }
 }
+#endif //BGC_SERVO_TUNING
 
-void gc_heap::get_and_reset_loh_alloc_info()
+#ifdef BACKGROUND_GC
+void gc_heap::get_and_reset_uoh_alloc_info()
 {
-    if (!bgc_tuning::enable_fl_tuning)
-        return;
+    total_uoh_a_last_bgc = 0;
 
-    total_loh_a_last_bgc = 0;
-
-    uint64_t total_loh_a_no_bgc = 0;
-    uint64_t total_loh_a_bgc_marking = 0;
-    uint64_t total_loh_a_bgc_planning = 0;
+    uint64_t total_uoh_a_no_bgc = 0;
+    uint64_t total_uoh_a_bgc_marking = 0;
+    uint64_t total_uoh_a_bgc_planning = 0;
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < gc_heap::n_heaps; i++)
     {
@@ -50290,21 +50136,33 @@ void gc_heap::get_and_reset_loh_alloc_info()
     {
         gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-        total_loh_a_no_bgc += hp->loh_a_no_bgc;
-        hp->loh_a_no_bgc = 0;
-        total_loh_a_bgc_marking += hp->loh_a_bgc_marking;
-        hp->loh_a_bgc_marking = 0;
-        total_loh_a_bgc_planning += hp->loh_a_bgc_planning;
-        hp->loh_a_bgc_planning = 0;
+
+        // We need to adjust size_before for UOH allocations that occurred during marking
+        // before we lose the values here.
+        gc_history_per_heap* current_gc_data_per_heap = hp->get_gc_data_per_heap();
+        // loh/poh_a_bgc_planning should be the same as they were when init_records set size_before.
+        for (int i = uoh_start_generation; i < total_generation_count; i++)
+        {
+            current_gc_data_per_heap->gen_data[i].size_before += hp->uoh_a_bgc_marking[i - uoh_start_generation];
+
+            total_uoh_a_no_bgc += hp->uoh_a_no_bgc[i - uoh_start_generation];
+            hp->uoh_a_no_bgc[i - uoh_start_generation] = 0;
+
+            total_uoh_a_bgc_marking += hp->uoh_a_bgc_marking[i - uoh_start_generation];
+            hp->uoh_a_bgc_marking[i - uoh_start_generation] = 0;
+
+            total_uoh_a_bgc_planning += hp->uoh_a_bgc_planning[i - uoh_start_generation];
+            hp->uoh_a_bgc_planning[i - uoh_start_generation] = 0;
+        }
     }
     dprintf (2, ("LOH alloc: outside bgc: %zd; bm: %zd; bp: %zd",
-        total_loh_a_no_bgc,
-        total_loh_a_bgc_marking,
-        total_loh_a_bgc_planning));
+        total_uoh_a_no_bgc,
+        total_uoh_a_bgc_marking,
+        total_uoh_a_bgc_planning));
 
-    total_loh_a_last_bgc = total_loh_a_no_bgc + total_loh_a_bgc_marking + total_loh_a_bgc_planning;
+    total_uoh_a_last_bgc = total_uoh_a_no_bgc + total_uoh_a_bgc_marking + total_uoh_a_bgc_planning;
 }
-#endif //BGC_SERVO_TUNING
+#endif //BACKGROUND_GC
 
 bool gc_heap::is_pm_ratio_exceeded()
 {
@@ -51496,7 +51354,7 @@ bool CFinalize::Initialize()
 
 CFinalize::~CFinalize()
 {
-    delete m_Array;
+    delete[] m_Array;
 }
 
 size_t CFinalize::GetPromotedCount ()
@@ -52885,7 +52743,35 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
     return true;
 }
 
+size_t gc_heap::compute_committed_bytes_per_heap(int oh, size_t& committed_bookkeeping)
+{
 #ifdef USE_REGIONS
+    int start_generation = (oh == 0) ? 0 : oh + max_generation;
+#else
+    int start_generation = oh + max_generation;
+#endif
+    int end_generation = oh + max_generation;
+
+    size_t total_committed_per_heap = 0;
+    for (int gen = start_generation; gen <= end_generation; gen++)
+    {
+        accumulate_committed_bytes (generation_start_segment (generation_of (gen)), total_committed_per_heap, committed_bookkeeping);
+    }
+
+#ifdef BACKGROUND_GC
+    if (oh == soh)
+    {
+        accumulate_committed_bytes (freeable_soh_segment, total_committed_per_heap, committed_bookkeeping);
+    }
+    else
+#endif //BACKGROUND_GC
+    {
+        accumulate_committed_bytes (freeable_uoh_segment, total_committed_per_heap, committed_bookkeeping, (gc_oh_num)oh);
+    }
+
+    return total_committed_per_heap;
+}
+
 void gc_heap::compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free,
                                       size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping,
                                       size_t* new_committed_by_oh)
@@ -52893,8 +52779,6 @@ void gc_heap::compute_committed_bytes(size_t& total_committed, size_t& committed
     // Accounting for the bytes committed for the regions
     for (int oh = soh; oh < total_oh_count; oh++)
     {
-        int start_generation = (oh == 0) ? 0 : oh + max_generation;
-        int end_generation = oh + max_generation;
         size_t total_committed_per_oh = 0;
 #ifdef MULTIPLE_HEAPS
         for (int h = 0; h < n_heaps; h++)
@@ -52904,31 +52788,17 @@ void gc_heap::compute_committed_bytes(size_t& total_committed, size_t& committed
         {
             gc_heap* heap = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-            size_t total_committed_per_heap = 0;
-            for (int gen = start_generation; gen <= end_generation; gen++)
-            {
-                heap->accumulate_committed_bytes ( generation_start_segment (heap->generation_of (gen)), total_committed_per_heap, committed_bookkeeping);
-            }
-
-#ifdef BACKGROUND_GC
-            if (oh == soh)
-            {
-                heap->accumulate_committed_bytes (heap->freeable_soh_segment, total_committed_per_heap, committed_bookkeeping);
-            }
-            else
-#endif //BACKGROUND_GC
-            {
-                heap->accumulate_committed_bytes (heap->freeable_uoh_segment, total_committed_per_heap, committed_bookkeeping, (gc_oh_num)oh);
-            }
+            size_t total_committed_per_heap = heap->compute_committed_bytes_per_heap (oh, committed_bookkeeping);
 #if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
             heap->committed_by_oh_per_heap_refresh[oh] = total_committed_per_heap;
-#endif //MULTIPLE_HEAPS && _DEBUG
+#endif // MULTIPLE_HEAPS && _DEBUG
             total_committed_per_oh += total_committed_per_heap;
         }
         new_committed_by_oh[oh] = total_committed_per_oh;
         total_committed += total_committed_per_oh;
     }
 
+#ifdef USE_REGIONS
     // Accounting for the bytes committed for the free lists
     size_t committed_old_free = 0;
     committed_free = 0;
@@ -52989,10 +52859,25 @@ void gc_heap::compute_committed_bytes(size_t& total_committed, size_t& committed
 
     new_current_total_committed_bookkeeping = committed_bookkeeping;
     new_committed_by_oh[recorded_committed_bookkeeping_bucket] = committed_bookkeeping;
+#else
+    new_committed_by_oh[recorded_committed_ignored_bucket] = committed_free = 0;
+
+    uint32_t* ct = &g_gc_card_table[card_word (gcard_of (g_gc_lowest_address))];
+    while (ct)
+    {
+        uint8_t* lowest = card_table_lowest_address (ct);
+        uint8_t* highest = card_table_highest_address (ct);
+        get_card_table_element_layout(lowest, highest, card_table_element_layout);
+        size_t result = card_table_element_layout[seg_mapping_table_element + 1];
+        committed_bookkeeping += result;
+        ct = card_table_next (ct);
+    }
+    // If we don't put the mark array committed in the ignored bucket, calculate the committed memory for mark array here
+    new_committed_by_oh[recorded_committed_bookkeeping_bucket] = new_current_total_committed_bookkeeping = committed_bookkeeping;
+#endif //USE_REGIONS
     total_committed += committed_bookkeeping;
     new_current_total_committed = total_committed;
 }
-#endif //USE_REGIONS
 
 int gc_heap::refresh_memory_limit()
 {
@@ -53004,20 +52889,6 @@ int gc_heap::refresh_memory_limit()
     }
 
     GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
-
-#ifdef USE_REGIONS
-    decommit_lock.Enter();
-    size_t total_committed = 0;
-    size_t committed_decommit; // unused
-    size_t committed_free; // unused
-    size_t committed_bookkeeping = 0;
-    size_t new_current_total_committed;
-    size_t new_current_total_committed_bookkeeping;
-    size_t new_committed_by_oh[recorded_committed_bucket_counts];
-    compute_committed_bytes(total_committed, committed_decommit, committed_free,
-                            committed_bookkeeping, new_current_total_committed, new_current_total_committed_bookkeeping,
-                            new_committed_by_oh);
-#endif //USE_REGIONS
 
     uint32_t nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 #ifdef MULTIPLE_HEAPS
@@ -53052,7 +52923,7 @@ int gc_heap::refresh_memory_limit()
     size_t new_current_total_committed = 0;
 #endif //USE_REGIONS
 
-    if (succeed && !compute_memory_settings(false, nhp, nhp_from_config, seg_size_from_config, new_current_total_committed))
+    if (succeed && !compute_memory_settings(false, nhp, nhp_from_config, seg_size_from_config, current_total_committed))
     {
         succeed = false;
         status = refresh_hard_limit_too_low;
@@ -53068,58 +52939,19 @@ int gc_heap::refresh_memory_limit()
         heap_hard_limit_oh[poh] = old_heap_hard_limit_poh;
         hard_limit_config_p = old_hard_limit_config_p;
     }
+#ifdef COMMITTED_BYTES_SHADOW
     else
-#ifndef COMMITTED_BYTES_SHADOW
-    if (!old_heap_hard_limit && heap_hard_limit)
-#endif //COMMITTED_BYTES_SHADOW
     {
-#ifdef USE_REGIONS
-        check_commit_cs.Initialize();
-#ifdef COMMITTED_BYTES_SHADOW
-        assert (new_current_total_committed == current_total_committed);
-        assert (new_current_total_committed_bookkeeping == current_total_committed_bookkeeping);
-#else
-        current_total_committed = new_current_total_committed;
-        current_total_committed_bookkeeping = new_current_total_committed_bookkeeping;
-#endif
-        for (int i = 0; i < recorded_committed_bucket_counts; i++)
-        {
-#ifdef COMMITTED_BYTES_SHADOW
-            assert (new_committed_by_oh[i] == committed_by_oh[i]);
-#else
-            committed_by_oh[i] = new_committed_by_oh[i];
-#endif
-        }
-#ifdef MULTIPLE_HEAPS
-#ifdef _DEBUG
-        for (int h = 0; h < n_heaps; h++)
-        {
-            for (int oh = soh; oh < total_oh_count; oh++)
-            {
-#ifdef COMMITTED_BYTES_SHADOW
-                assert (g_heaps[h]->committed_by_oh_per_heap[oh] == g_heaps[h]->committed_by_oh_per_heap_refresh[oh]);
-#else
-                g_heaps[h]->committed_by_oh_per_heap[oh] = g_heaps[h]->committed_by_oh_per_heap_refresh[oh];
-#endif
-            }
-        }
-#endif //_DEBUG
-#endif //MULTIPLE_HEAPS
-#else
-        assert (!"NYI - Segments");
-#endif //USE_REGIONS
+        decommit_lock.Enter();
+        verify_committed_bytes ();
+        decommit_lock.Leave();
     }
+#endif //COMMITTED_BYTES_SHADOW
 
-
-#ifdef USE_REGIONS
-    decommit_lock.Leave();
-#endif
     GCToEEInterface::RestartEE(TRUE);
 
     return (int)status;
 }
-
-#ifdef USE_REGIONS
 
 void gc_heap::accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh)
 {
@@ -53128,12 +52960,20 @@ void gc_heap::accumulate_committed_bytes(heap_segment* seg, size_t& committed_by
     {
         if ((oh == unknown) || (heap_segment_oh (seg) == oh))
         {
+            uint8_t* start;
+#ifdef USE_REGIONS
             mark_array_committed_bytes += get_mark_array_size (seg);
-            committed_bytes += (heap_segment_committed (seg) - get_region_start (seg));
+            start = get_region_start (seg);
+#else
+            start = (uint8_t*)seg;
+#endif
+            committed_bytes += (heap_segment_committed (seg) - start);
         }
         seg = heap_segment_next_rw (seg);
     }
 }
+
+#ifdef USE_REGIONS
 
 size_t gc_heap::get_mark_array_size (heap_segment* seg)
 {

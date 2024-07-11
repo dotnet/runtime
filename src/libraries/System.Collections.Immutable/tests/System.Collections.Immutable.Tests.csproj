@@ -5,12 +5,6 @@
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <XunitShowProgress>true</XunitShowProgress>
-    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
-    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
-  </PropertyGroup>
-
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
@@ -69,9 +63,6 @@
     <Compile Include="$(CommonTestPath)System\Collections\DebugView.Tests.cs" Link="Common\System\Collections\DebugView.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs" Link="Common\System\Collections\TestingTypes.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
     <ProjectReference Include="..\src\System.Collections.Immutable.csproj" SkipUseReferenceAssembly="true" />
@@ -91,6 +82,10 @@
     <Compile Include="ImmutableSortedSetBuilderDebuggerProxyTest.cs" />
     <Compile Include="ImmutableSortedSetBuilderTest.nonnetstandard.cs" />
     <Compile Include="ImmutableSortedDictionaryTest.nonnetstandard.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="Frozen\FrozenDictionaryAlternateLookupTests.cs" />
+    <Compile Include="Frozen\FrozenSetAlternateLookupTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Collections.Immutable.csproj" />

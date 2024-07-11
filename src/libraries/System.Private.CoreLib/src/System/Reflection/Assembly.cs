@@ -217,13 +217,36 @@ namespace System.Reflection
             return type.Module?.Assembly;
         }
 
-        // internal test hook
-        private static bool s_forceNullEntryPoint;
+        private static object? s_overriddenEntryAssembly;
+
+        /// <summary>
+        /// Sets the application's entry assembly to the provided assembly object.
+        /// </summary>
+        /// <param name="assembly">
+        /// Assembly object that represents the application's new entry assembly.
+        /// </param>
+        /// <remarks>
+        /// The assembly passed to this function has to be a runtime defined Assembly
+        /// type object. Otherwise, an exception will be thrown.
+        /// </remarks>
+        public static void SetEntryAssembly(Assembly? assembly)
+        {
+            if (assembly is null)
+            {
+                s_overriddenEntryAssembly = string.Empty;
+                return;
+            }
+
+            if (assembly is not RuntimeAssembly)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
+
+            s_overriddenEntryAssembly = assembly;
+        }
 
         public static Assembly? GetEntryAssembly()
         {
-            if (s_forceNullEntryPoint)
-                return null;
+            if (s_overriddenEntryAssembly is not null)
+                return s_overriddenEntryAssembly as Assembly;
 
             return GetEntryAssemblyInternal();
         }
@@ -385,6 +408,7 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
+        [Obsolete(Obsoletions.LoadFromHashAlgorithmMessage, DiagnosticId = Obsoletions.LoadFromHashAlgorithmDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Assembly LoadFrom(string assemblyFile, byte[]? hashValue, AssemblyHashAlgorithm hashAlgorithm)
         {
             throw new NotSupportedException(SR.NotSupported_AssemblyLoadFromHash);

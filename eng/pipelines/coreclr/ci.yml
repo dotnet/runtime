@@ -173,16 +173,6 @@ extends:
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       #
-      # Formatting
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
-          platforms:
-          - linux_x64
-          - windows_x64
-
-      #
       # PAL Tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
