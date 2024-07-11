@@ -223,12 +223,14 @@ static void PrintReplayCsvRow(
 // 3    : there were missing values in method context
 int __cdecl main(int argc, char* argv[])
 {
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX)
     if (0 != PAL_Initialize(argc, argv))
     {
         fprintf(stderr, "Error: Fail to PAL_Initialize\n");
         return (int)SpmiResult::GeneralFailure;
     }
+#elif defined(TARGET_WINDOWS)
+    SetErrorMode(SEM_NOGPFAULTERRORBOX);
 #endif // TARGET_UNIX
 
     Logger::Initialize();
