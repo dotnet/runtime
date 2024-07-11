@@ -701,7 +701,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
-				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
 				public virtual void RUCVirtualMethod () { }
 			}
 
@@ -739,7 +739,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualOnAnnotatedInterface.Interface.RUCVirtualMethod--")]
-				[ExpectedWarning ("IL2112", "--RUCOnVirtualOnAnnotatedInterface.Interface.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualOnAnnotatedInterface.Interface.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
 				void RUCVirtualMethod () { }
 			}
 
@@ -777,7 +777,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Interface.RUCVirtualMethod--")]
-				[ExpectedWarning ("IL2112", "--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Interface.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Interface.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
 				void RUCVirtualMethod () { }
 			}
 
@@ -820,7 +820,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[RequiresUnreferencedCode ("--AnnotatedBase.VirtualMethodWithRequires--")]
 				[RequiresDynamicCode ("--AnnotatedBase.VirtualMethodWithRequires--")]
 				[RequiresAssemblyFiles ("--AnnotatedBase.VirtualMethodWithRequires--")]
-				[ExpectedWarning ("IL2112", "--AnnotatedBase.VirtualMethodWithRequires--")]
+				[ExpectedWarning ("IL2112", "--AnnotatedBase.VirtualMethodWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
 				public virtual void VirtualMethodWithRequires () { }
 			}
 
