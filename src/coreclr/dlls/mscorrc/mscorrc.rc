@@ -402,6 +402,7 @@ BEGIN
     IDS_EE_CANNOT_COERCE_BYREF_VARIANT      "Object cannot be coerced to the original type of the ByRef VARIANT it was obtained from."
     IDS_EE_WRAPPER_MUST_HAVE_DEF_CONS       "The new wrapper type must have an empty constructor."
     IDS_EE_INVALID_STD_DISPID_NAME          "Standard DISPID member name is formed incorrectly.  The name must be in the following format: [DISPID=XXX]."
+    IDS_EE_NO_IDISPATCH_ON_TARGET           "COM target does not implement IDispatch."
     IDS_EE_NON_STD_NAME_WITH_STD_DISPID     "All named parameters must be specified as [DISPID=XXX] when invoking on a standard members specified as [DISPID=XXX}."
     IDS_EE_INVOKE_NEW_ENUM_INVALID_RETURN   "Variant returned from an Invoke call with a DISPID of -4 does not contain a valid IUnknown pointer."
     IDS_EE_COM_OBJECT_RELEASE_RACE          "COM object that has been separated from its underlying RCW cannot be used. The COM object was released while it was still in use on another thread."
@@ -411,6 +412,7 @@ BEGIN
     IDS_EE_CANNOTCASTSAME                   "[A]%1 cannot be cast to [B]%2. %3. %4."
     IDS_EE_INVALID_VT_FOR_CUSTOM_MARHALER   "Type of the VARIANT specified for a parameter with a custom marshaler is not supported by the custom marshaler."
     IDS_EE_BAD_COMEXTENDS_CLASS             "Types extending from COM objects should override all methods of an interface implemented by the base COM class."
+    IDS_EE_INTERFACE_NOT_DISPATCH_BASED     "The interface does not support late bound calls since it does not derive from IDispatch."
     IDS_EE_MARSHAL_UNMAPPABLE_CHAR          "Cannot marshal: Encountered unmappable character."
 
     IDS_EE_NOCUSTOMMARSHALER                "A call to GetInstance() for custom marshaler '%1' returned null, which is not allowed."
