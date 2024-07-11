@@ -244,7 +244,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <!-- Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
            This is required only for 64-bit binaries.
       -->
-      <LinkerArg Include="-Wl,-z,max-page-size=16384" Condition=" '$(_linuxLibcFlavor)' == 'bionic' " />
+      <LinkerArg Include="-Wl,-z,max-page-size=16384" Condition=" '$(_linuxLibcFlavor)' == 'bionic' and '$(NativeLib)' == 'Shared' and ('$(_targetArchitecture)' == 'x64' or '$(_targetArchitecture)' == 'arm64')" />
     </ItemGroup>
 
     <Exec Command="clang --version" Condition="'$(_IsApplePlatform)' == 'true'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
