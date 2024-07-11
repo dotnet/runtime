@@ -114,8 +114,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			interface InterfaceImpl : Interface {
 				[ExpectedWarning ("IL2046")]
-				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
-				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
+				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104627")]
+				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104627")]
 				void Interface.Method() {}
 			}
 
@@ -139,8 +139,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			interface InterfaceImpl : Interface {
 				[ExpectedWarning ("IL2046")]
-				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
-				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
+				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104627")]
+				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104627")]
 				[RequiresUnreferencedCode (nameof (Method))]
 				void Interface.Method() {}
 			}
@@ -164,8 +164,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			interface InterfaceImpl : Interface {
 				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
-				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
+				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104627")]
+				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104627")]
 				void Interface.Method (Type t) {}
 			}
 
@@ -188,8 +188,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			interface InterfaceImpl : Interface {
 				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
-				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
+				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104627")]
+				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104627")]
 				void Interface.Method ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
 			}
 
