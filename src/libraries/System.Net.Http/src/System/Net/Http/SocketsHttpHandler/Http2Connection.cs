@@ -72,6 +72,8 @@ namespace System.Net.Http
         // _shutdown above is true, and requests in flight have been (or are being) failed.
         private Exception? _abortException;
 
+        private Http2ProtocolErrorCode? _goAwayErrorCode;
+
         private const int MaxStreamId = int.MaxValue;
 
         // Temporary workaround for request burst handling on connection start.
@@ -410,14 +412,10 @@ namespace System.Net.Http
                     _incomingBuffer.Commit(bytesRead);
                     if (bytesRead == 0)
                     {
-                        if (_incomingBuffer.ActiveLength == 0)
-                        {
-                            ThrowMissingFrame();
-                        }
-                        else
-                        {
-                            ThrowPrematureEOF(FrameHeader.Size);
-                        }
+                        HttpIOException exception = _incomingBuffer.ActiveLength == 0 ?
+                            ThrowMissingFrame() : ThrowPrematureEOF(FrameHeader.Size);
+                        throw _goAwayErrorCode is not null ?
+                            new HttpProtocolException((long)_goAwayErrorCode, exception.Message, exception) : exception;
                     }
                 }
                 while (_incomingBuffer.ActiveLength < FrameHeader.Size);
@@ -449,7 +447,7 @@ namespace System.Net.Http
 
                     int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
                     _incomingBuffer.Commit(bytesRead);
-                    if (bytesRead == 0) ThrowPrematureEOF(frameHeader.PayloadLength);
+                    if (bytesRead == 0) throw ThrowPrematureEOF(frameHeader.PayloadLength);
                 }
                 while (_incomingBuffer.ActiveLength < frameHeader.PayloadLength);
             }
@@ -457,11 +455,11 @@ namespace System.Net.Http
             // Return the read frame header.
             return frameHeader;
 
-            void ThrowPrematureEOF(int requiredBytes) =>
-                throw new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
+            HttpIOException ThrowPrematureEOF(int requiredBytes) =>
+                new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
 
-            void ThrowMissingFrame() =>
-                throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_missing_frame);
+            HttpIOException ThrowMissingFrame() =>
+                new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_missing_frame);
         }
 
         private async Task ProcessIncomingFramesAsync()
@@ -1070,6 +1068,7 @@ namespace System.Net.Http
 
             Debug.Assert(lastStreamId >= 0);
             Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode, SR.net_http_http2_connection_close);
+            _goAwayErrorCode = errorCode;
 
             // There is no point sending more PING frames for RTT estimation:
             _rttEstimator.OnGoAwayReceived();

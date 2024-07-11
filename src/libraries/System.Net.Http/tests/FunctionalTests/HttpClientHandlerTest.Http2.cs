@@ -1052,6 +1052,39 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task GoAwayFrame_RequestServerDisconnects_ThrowsHttpProtocolExceptionWithProperErrorCode()
+        {
+            _output.WriteLine("Started!");
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                // Client starts an HTTP/2 request and awaits response headers
+                using HttpClient client = CreateHttpClient();
+                HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                _output.WriteLine("After response header read");
+                // Client reads from response stream
+                using Stream responseStream = await response.Content.ReadAsStreamAsync();
+                Memory<byte> buffer = new byte[1024];
+                HttpProtocolException exception = await Assert.ThrowsAsync<HttpProtocolException>(() => responseStream.ReadAsync(buffer).AsTask());
+                Assert.Equal(ProtocolErrors.ENHANCE_YOUR_CALM, (ProtocolErrors) exception.ErrorCode);
+                Assert.IsType<HttpIOException>(exception.InnerException);
+                Assert.Contains("ended prematurely while waiting", exception.Message);
+
+            },
+            async server =>
+            {
+                // Server returns response headers
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                int streamId = await connection.ReadRequestHeaderAsync();
+                await connection.SendDefaultResponseHeadersAsync(streamId);
+                _output.WriteLine("Server sent response headers!");
+                // Server sends GOAWAY frame
+                await connection.SendGoAway(streamId, ProtocolErrors.ENHANCE_YOUR_CALM);
+                _output.WriteLine("Server sent GOAWAY!");
+                connection.ShutdownSend();
+            }).WaitAsync(TimeSpan.FromSeconds(10));
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
         public async Task GoAwayFrame_UnprocessedStreamFirstRequestFinishedFirst_RequestRestarted()
         {
             // This test case is similar to GoAwayFrame_UnprocessedStreamFirstRequestWaitsUntilSecondFinishes_RequestRestarted
