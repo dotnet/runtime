@@ -1640,6 +1640,32 @@ public:
 
     bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const;
 
+    bool OperIsConvertMaskToVector() const
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+#else
+        return false;
+#endif // FEATURE_HW_INTRINSICS
+    }
+
+    bool OperIsConvertVectorToMask() const
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+#else
+        return false;
+#endif // FEATURE_HW_INTRINSICS
+    }
+
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
     {
@@ -6498,28 +6524,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsCreateScalarUnsafe() const;
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
-
-    bool OperIsConvertMaskToVector() const
-    {
-#if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_EVEX_ConvertMaskToVector;
-#elif defined(TARGET_ARM64)
-        return GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector;
-#else
-        return false;
-#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
-    }
-
-    bool OperIsConvertVectorToMask() const
-    {
-#if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_EVEX_ConvertVectorToMask;
-#elif defined(TARGET_ARM64)
-        return GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask;
-#else
-        return false;
-#endif
-    }
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
