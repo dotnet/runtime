@@ -158,7 +158,7 @@ namespace System.Net
     {
         private const string ActivitySourceName = "Experimental.System.Net.NameResolution";
         private const string ActivityName = ActivitySourceName + ".DnsLookup";
-        private static readonly ActivitySource s_activitySource = new(ActivitySourceName);
+        private static readonly ActivitySource s_activitySource = new ActivitySource(ActivitySourceName);
 
         // _startingTimestamp == 0 means NameResolutionTelemetry and NameResolutionMetrics are both disabled.
         private readonly long _startingTimestamp;
