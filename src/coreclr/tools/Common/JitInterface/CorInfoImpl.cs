@@ -1250,8 +1250,6 @@ namespace Internal.JitInterface
 
         private CORINFO_CLASS_STRUCT_* getTypeDefinition(CORINFO_CLASS_STRUCT_* type)
         {
-            Debug.Assert(HandleToObject(type).HasInstantiation);
-            
             return ObjectToHandle(HandleToObject(type).GetTypeDefinition());
         }
 
