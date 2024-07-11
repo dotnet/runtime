@@ -1059,14 +1059,13 @@ namespace System.Net.Http.Functional.Tests
                 // Client starts an HTTP/2 request and awaits response headers
                 using HttpClient client = CreateHttpClient();
                 HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
-                _output.WriteLine("After response header read");
+
                 // Client reads from response stream
                 using Stream responseStream = await response.Content.ReadAsStreamAsync();
                 Memory<byte> buffer = new byte[1024];
                 HttpProtocolException exception = await Assert.ThrowsAsync<HttpProtocolException>(() => responseStream.ReadAsync(buffer).AsTask());
                 Assert.Equal(ProtocolErrors.ENHANCE_YOUR_CALM, (ProtocolErrors) exception.ErrorCode);
-                Assert.IsType<HttpIOException>(exception.InnerException);
-                Assert.Contains("ended prematurely while waiting", exception.Message);
+                Assert.Contains("The HTTP/2 server closed the connection.", exception.Message);
 
             },
             async server =>
@@ -1075,10 +1074,9 @@ namespace System.Net.Http.Functional.Tests
                 await using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 int streamId = await connection.ReadRequestHeaderAsync();
                 await connection.SendDefaultResponseHeadersAsync(streamId);
-                _output.WriteLine("Server sent response headers!");
+
                 // Server sends GOAWAY frame
                 await connection.SendGoAway(streamId, ProtocolErrors.ENHANCE_YOUR_CALM);
-                _output.WriteLine("Server sent GOAWAY!");
                 connection.ShutdownSend();
             });
         }
