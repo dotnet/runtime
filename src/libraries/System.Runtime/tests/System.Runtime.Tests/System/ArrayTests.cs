@@ -1599,6 +1599,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/104197")]
         public static unsafe void Copy_CompatiblePointers()
         {
             // Can copy between compatible pointers

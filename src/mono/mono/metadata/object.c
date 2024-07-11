@@ -6529,7 +6529,7 @@ mono_value_box_handle (MonoClass *klass, gpointer value, MonoError *error)
 
 	error_init (error);
 
-	g_assert (m_class_is_valuetype (klass) || mono_class_is_pointer (klass));
+	g_assert (m_class_is_valuetype (klass));
 	g_assert (value != NULL);
 	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
 		char *full_name = mono_type_get_full_name (klass);
