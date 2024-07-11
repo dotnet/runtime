@@ -10463,7 +10463,15 @@ void Compiler::fgValueNumberBlocks(BasicBlock* block, BlockSet& visitedBlocks)
             return BasicBlockVisit::Continue;
         });
 
-        // TODO: Postprocess to refine phis of block.
+        // Re-value number all the PhiDefs in block
+        //
+        for (Statement* stmt = block->firstStmt(); (stmt != nullptr) && stmt->IsPhiDefnStmt(); stmt = stmt->GetNextStmt())
+        {
+            GenTreeLclVar* const newSsaDef = stmt->GetRootNode()->AsLclVar();
+            fgValueNumberPhiDef(newSsaDef, block);
+        }
+
+        // TODO: Propagate those new VNs to their uses
         //
     }
 }
@@ -10478,89 +10486,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     for (; (stmt != nullptr) && stmt->IsPhiDefnStmt(); stmt = stmt->GetNextStmt())
     {
         GenTreeLclVar* newSsaDef = stmt->GetRootNode()->AsLclVar();
-        GenTreePhi*    phiNode   = newSsaDef->AsLclVar()->Data()->AsPhi();
-        ValueNumPair   phiVNP;
-        ValueNumPair   sameVNP;
-
-        for (GenTreePhi::Use& use : phiNode->Uses())
-        {
-            GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
-            if (!vnState->IsReachableThroughPred(blk, phiArg->gtPredBB))
-            {
-                JITDUMP("  Phi arg [%06u] is unnecessary; path through pred " FMT_BB " cannot be taken\n",
-                        dspTreeID(phiArg), phiArg->gtPredBB->bbNum);
-
-                if ((use.GetNext() != nullptr) || (phiVNP.GetLiberal() != ValueNumStore::NoVN))
-                {
-                    continue;
-                }
-
-                assert(!vnState->IsReachable(blk));
-                JITDUMP("  ..but no other path can, so we are using it anyway\n");
-            }
-
-            ValueNum     phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
-            ValueNumPair phiArgVNP      = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
-
-            phiArg->gtVNPair = phiArgVNP;
-
-            if (phiVNP.GetLiberal() == ValueNumStore::NoVN)
-            {
-                // This is the first PHI argument
-                phiVNP  = ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN);
-                sameVNP = phiArgVNP;
-            }
-            else
-            {
-                phiVNP = vnStore->VNPairForFuncNoFolding(newSsaDef->TypeGet(), VNF_Phi,
-                                                         ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN), phiVNP);
-
-                if ((sameVNP.GetLiberal() != phiArgVNP.GetLiberal()) ||
-                    (sameVNP.GetConservative() != phiArgVNP.GetConservative()))
-                {
-                    // If this argument's VNs are different from "same" then change "same" to NoVN.
-                    // Note that this means that if any argument's VN is NoVN then the final result
-                    // will also be NoVN, which is what we want.
-                    sameVNP.SetBoth(ValueNumStore::NoVN);
-                }
-            }
-        }
-
-        // We should have visited at least one phi arg in the loop above
-        assert(phiVNP.GetLiberal() != ValueNumStore::NoVN);
-        assert(phiVNP.GetConservative() != ValueNumStore::NoVN);
-
-        ValueNumPair newSsaDefVNP;
-
-        if (sameVNP.BothDefined())
-        {
-            // If all the args of the phi had the same value(s, liberal and conservative), then there wasn't really
-            // a reason to have the phi -- just pass on that value.
-            newSsaDefVNP = sameVNP;
-        }
-        else
-        {
-            // They were not the same; we need to create a phi definition.
-            ValueNum lclNumVN = ValueNum(newSsaDef->GetLclNum());
-            ValueNum ssaNumVN = ValueNum(newSsaDef->GetSsaNum());
-
-            newSsaDefVNP = vnStore->VNPairForFunc(newSsaDef->TypeGet(), VNF_PhiDef, ValueNumPair(lclNumVN, lclNumVN),
-                                                  ValueNumPair(ssaNumVN, ssaNumVN), phiVNP);
-        }
-
-        LclSsaVarDsc* newSsaDefDsc = lvaGetDesc(newSsaDef)->GetPerSsaData(newSsaDef->GetSsaNum());
-        newSsaDefDsc->m_vnPair     = newSsaDefVNP;
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("SSA PHI definition: set VN of local %d/%d to ", newSsaDef->GetLclNum(), newSsaDef->GetSsaNum());
-            vnpPrint(newSsaDefVNP, 1);
-            printf(" %s.\n", sameVNP.BothDefined() ? "(all same)" : "");
-        }
-#endif // DEBUG
-
-        newSsaDef->gtVNPair = vnStore->VNPForVoid();
-        phiNode->gtVNPair   = newSsaDefVNP;
+        fgValueNumberPhiDef(newSsaDef, blk);
     }
 
     // Now do the same for each MemoryKind.
@@ -10705,6 +10631,93 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     }
 
     compCurBB = nullptr;
+}
+
+void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk)
+{
+    GenTreePhi*    phiNode   = newSsaDef->AsLclVar()->Data()->AsPhi();
+    ValueNumPair   phiVNP;
+    ValueNumPair   sameVNP;
+    
+    for (GenTreePhi::Use& use : phiNode->Uses())
+    {
+        GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
+        if (!vnState->IsReachableThroughPred(blk, phiArg->gtPredBB))
+        {
+            JITDUMP("  Phi arg [%06u] is unnecessary; path through pred " FMT_BB " cannot be taken\n",
+                dspTreeID(phiArg), phiArg->gtPredBB->bbNum);
+            
+            if ((use.GetNext() != nullptr) || (phiVNP.GetLiberal() != ValueNumStore::NoVN))
+            {
+                continue;
+            }
+            
+            // assert(!vnState->IsReachable(blk));
+            JITDUMP("  ..but no other path can, so we are using it anyway\n");
+        }
+        
+        ValueNum     phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
+        ValueNumPair phiArgVNP      = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
+        
+        phiArg->gtVNPair = phiArgVNP;
+        
+        if (phiVNP.GetLiberal() == ValueNumStore::NoVN)
+        {
+            // This is the first PHI argument
+            phiVNP  = ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN);
+            sameVNP = phiArgVNP;
+        }
+        else
+        {
+            phiVNP = vnStore->VNPairForFuncNoFolding(newSsaDef->TypeGet(), VNF_Phi,
+                ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN), phiVNP);
+            
+            if ((sameVNP.GetLiberal() != phiArgVNP.GetLiberal()) ||
+                (sameVNP.GetConservative() != phiArgVNP.GetConservative()))
+            {
+                // If this argument's VNs are different from "same" then change "same" to NoVN.
+                // Note that this means that if any argument's VN is NoVN then the final result
+                // will also be NoVN, which is what we want.
+                sameVNP.SetBoth(ValueNumStore::NoVN);
+            }
+        }
+    }
+    
+    // We should have visited at least one phi arg in the loop above
+    assert(phiVNP.GetLiberal() != ValueNumStore::NoVN);
+    assert(phiVNP.GetConservative() != ValueNumStore::NoVN);
+    
+    ValueNumPair newSsaDefVNP;
+    
+    if (sameVNP.BothDefined())
+    {
+        // If all the args of the phi had the same value(s, liberal and conservative), then there wasn't really
+        // a reason to have the phi -- just pass on that value.
+        newSsaDefVNP = sameVNP;
+    }
+    else
+    {
+        // They were not the same; we need to create a phi definition.
+        ValueNum lclNumVN = ValueNum(newSsaDef->GetLclNum());
+        ValueNum ssaNumVN = ValueNum(newSsaDef->GetSsaNum());
+        
+        newSsaDefVNP = vnStore->VNPairForFunc(newSsaDef->TypeGet(), VNF_PhiDef, ValueNumPair(lclNumVN, lclNumVN),
+            ValueNumPair(ssaNumVN, ssaNumVN), phiVNP);
+    }
+    
+    LclSsaVarDsc* newSsaDefDsc = lvaGetDesc(newSsaDef)->GetPerSsaData(newSsaDef->GetSsaNum());
+    newSsaDefDsc->m_vnPair     = newSsaDefVNP;
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("SSA PHI definition: set VN of local %d/%d to ", newSsaDef->GetLclNum(), newSsaDef->GetSsaNum());
+        vnpPrint(newSsaDefVNP, 1);
+        printf(" %s.\n", sameVNP.BothDefined() ? "(all same)" : "");
+    }
+#endif // DEBUG
+    
+    newSsaDef->gtVNPair = vnStore->VNPForVoid();
+    phiNode->gtVNPair   = newSsaDefVNP;
 }
 
 ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind            memoryKind,

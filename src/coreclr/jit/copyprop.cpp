@@ -166,6 +166,8 @@ bool Compiler::optCopyProp(
     ValueNum   lclDefVN    = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
 
+    JITDUMP("Considering [%06u] with VN " FMT_VN "\n", dspTreeID(tree), lclDefVN);
+
     for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
         unsigned newLclNum = iter->GetKey();
@@ -182,6 +184,7 @@ bool Compiler::optCopyProp(
         // Likewise, nothing to do if the most recent def is not available.
         if (newLclSsaDef == nullptr)
         {
+            JITDUMP("... missing def for [%06u]\n", dspTreeID(newLclDef.GetDefNode()));
             continue;
         }
 
@@ -190,6 +193,7 @@ bool Compiler::optCopyProp(
 
         if (newLclDefVN != lclDefVN)
         {
+            JITDUMP("... [%06u] VN mismatch " FMT_VN "\n", dspTreeID(newLclDef.GetDefNode()), newLclDefVN);
             continue;
         }
 
@@ -198,11 +202,13 @@ bool Compiler::optCopyProp(
         LclVarDsc* const newLclVarDsc = lvaGetDesc(newLclNum);
         if (varDsc->lvDoNotEnregister != newLclVarDsc->lvDoNotEnregister)
         {
+            JITDUMP("... [%06u] DNER mismatch\n", dspTreeID(newLclDef.GetDefNode()));
             continue;
         }
 
         if (optCopyProp_LclVarScore(varDsc, newLclVarDsc, true) <= 0)
         {
+            JITDUMP("... [%06u] score not good\n", dspTreeID(newLclDef.GetDefNode()));
             continue;
         }
 
@@ -227,6 +233,7 @@ bool Compiler::optCopyProp(
         // after Liveness, SSA and VN.
         if ((newLclNum != info.compThisArg) && !VarSetOps::IsMember(this, compCurLife, newLclVarDsc->lvVarIndex))
         {
+            JITDUMP("... [%06u] liveness not good\n", dspTreeID(newLclDef.GetDefNode()));
             continue;
         }
 
@@ -239,6 +246,7 @@ bool Compiler::optCopyProp(
         var_types oldLclType = tree->OperIs(GT_LCL_VAR) ? tree->TypeGet() : varDsc->TypeGet();
         if (newLclType != oldLclType)
         {
+            JITDUMP("... [%06u] type mismatch\n", dspTreeID(newLclDef.GetDefNode()));
             continue;
         }
 
@@ -334,12 +342,6 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
     else if (lclNode->HasSsaName())
     {
         unsigned ssaNum = lclNode->GetSsaNum();
-        if ((defNode != nullptr) && defNode->IsPhiDefn())
-        {
-            // TODO-CQ: design better heuristics for propagation and remove this.
-            ssaNum = SsaConfig::RESERVED_SSA_NUM;
-        }
-
         pushDef(lclNum, ssaNum);
     }
 }
