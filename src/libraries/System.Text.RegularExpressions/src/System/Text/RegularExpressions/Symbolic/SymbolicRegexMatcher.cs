@@ -437,8 +437,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         if (_containsAnyAnchor &&
                             _nullabilityArray[reversalStartState.DfaStateId] > 0 &&
                             DefaultNullabilityHandler.IsNullableAt<DfaStateHandler>(
-                                this, in reversalStartState, DefaultInputReader.GetPositionId(this, input, i),
-                                DfaStateHandler.GetStateFlags(this, in reversalStartState)))
+                                this, in reversalStartState, DefaultInputReader.GetPositionId(this, input, i)))
                         {
                             initialLastStart = i;
                         }
@@ -771,7 +770,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If the state is nullable for the next character, meaning it accepts the empty string,
                     // we found a potential end state.
-                    if (TNullabilityHandler.IsNullableAt<DfaStateHandler>(this, in state, positionId, DfaStateHandler.GetStateFlags(this, in state)))
+                    if (TNullabilityHandler.IsNullableAt<DfaStateHandler>(this, in state, positionId))
                     {
                         endPos = pos;
 
@@ -783,7 +782,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // If there is more input available try to transition with the next character.
-                    if (pos >= length || !DfaStateHandler.TryTakeTransition(this, ref state, positionId))
+                    if (pos >= length || !DfaStateHandler.TryTakeTransition(this, ref state.DfaStateId, positionId))
                     {
                         return false;
                     }
@@ -824,8 +823,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Loop through each character in the input, transitioning from state to state for each.
                 while (true)
                 {
-                    StateFlags flags = NfaStateHandler.GetStateFlags(this, in state);
-
                     // Dead end here means the set is empty
                     if (state.NfaState!.NfaStateSet.Count == 0)
                     {
@@ -836,7 +833,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If the state is nullable for the next character, meaning it accepts the empty string,
                     // we found a potential end state.
-                    if (TNullabilityHandler.IsNullableAt<NfaStateHandler>(this, in state, positionId, flags))
+                    if (TNullabilityHandler.IsNullableAt<NfaStateHandler>(this, in state, positionId))
                     {
                         endPos = pos;
 
@@ -938,8 +935,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If the state accepts the empty string, we found a valid starting position.  Record it and keep going,
                     // since we're looking for the earliest one to occur within bounds.
-                    if (_nullabilityArray[state.DfaStateId] > 0 &&
-                        TNullabilityHandler.IsNullableAt<DfaStateHandler>(this, in state, positionId, DfaStateHandler.GetStateFlags(this, in state)))
+                    if (_nullabilityArray[state.DfaStateId] != 0 &&
+                        TNullabilityHandler.IsNullableAt<DfaStateHandler>(this, in state, positionId))
                     {
                         lastStart = pos;
                     }
@@ -953,7 +950,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // Try to transition with the next character, the one before the current position.
-                    if (!DfaStateHandler.TryTakeTransition(this, ref state, positionId))
+                    if (!DfaStateHandler.TryTakeTransition(this, ref state.DfaStateId, positionId))
                     {
                         // Return false to indicate the search didn't finish.
                         return false;
@@ -985,7 +982,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If the state accepts the empty string, we found a valid starting position.  Record it and keep going,
                     // since we're looking for the earliest one to occur within bounds.
-                    if (TNullabilityHandler.IsNullableAt<NfaStateHandler>(this, in state, positionId, NfaStateHandler.GetStateFlags(this, in state)))
+                    if (TNullabilityHandler.IsNullableAt<NfaStateHandler>(this, in state, positionId))
                     {
                         lastStart = pos;
                     }
@@ -1274,6 +1271,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private interface IStateHandler
         {
             public static abstract bool IsNullableFor(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, uint nextCharKind);
+            public static abstract StateFlags GetStateFlags(SymbolicRegexMatcher<TSet> matcher, in CurrentState state);
         }
 
         /// <summary>An <see cref="IStateHandler"/> for operating over <see cref="CurrentState"/> instances configured as DFA states.</summary>
@@ -1285,29 +1283,28 @@ namespace System.Text.RegularExpressions.Symbolic
 
             /// <summary>Take the transition to the next DFA state.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool TryTakeTransition(SymbolicRegexMatcher<TSet> matcher, ref CurrentState state, int mintermId)
+            public static bool TryTakeTransition(SymbolicRegexMatcher<TSet> matcher, ref int dfaStateId, int mintermId)
             {
-                Debug.Assert(state.DfaStateId > 0, $"Expected non-zero {nameof(state.DfaStateId)}.");
-                Debug.Assert(state.NfaState is null, $"Expected null {nameof(state.NfaState)}.");
+                Debug.Assert(dfaStateId > 0, $"Expected non-zero {nameof(dfaStateId)}.");
 
                 // Use the mintermId for the character being read to look up which state to transition to.
                 // If that state has already been materialized, move to it, and we're done. If that state
                 // hasn't been materialized, try to create it; if we can, move to it, and we're done.
-                int dfaOffset = matcher.DeltaOffset(state.DfaStateId, mintermId);
+                int dfaOffset = matcher.DeltaOffset(dfaStateId, mintermId);
                 int nextStateId = matcher._dfaDelta[dfaOffset];
                 if (nextStateId > 0)
                 {
                     // There was an existing DFA transition to some state. Move to it and
                     // return that we're still operating as a DFA and can keep going.
-                    state.DfaStateId = nextStateId;
+                    dfaStateId = nextStateId;
                     return true;
                 }
 
-                if (matcher.TryCreateNewTransition(matcher.GetState(state.DfaStateId), mintermId, dfaOffset, checkThreshold: true, out MatchingState<TSet>? nextState))
+                if (matcher.TryCreateNewTransition(matcher.GetState(dfaStateId), mintermId, dfaOffset, checkThreshold: true, out MatchingState<TSet>? nextState))
                 {
                     // We were able to create a new DFA transition to some state. Move to it and
                     // return that we're still operating as a DFA and can keep going.
-                    state.DfaStateId = nextState.Id;
+                    dfaStateId = nextState.Id;
                     return true;
                 }
 
@@ -1657,7 +1654,7 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             /// <summary>Gets whether the specified position is nullable.</summary>
             public static abstract bool IsNullableAt<TStateHandler>(
-                SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
+                SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId)
                 where TStateHandler : struct, IStateHandler;
         }
 
@@ -1666,10 +1663,14 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             /// <summary>Gets whether the specified position is nullable.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
-                where TStateHandler : struct, IStateHandler =>
+            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId)
+                where TStateHandler : struct, IStateHandler
+            {
+                var flags = TStateHandler.GetStateFlags(matcher, in state);
+                return
                 flags.IsNullable() ||
                 (flags.CanBeNullable() && TStateHandler.IsNullableFor(matcher, in state, matcher.GetPositionKind(positionId)));
+            }
         }
 
         /// <summary>Nullability handler for patterns without any anchors.</summary>
@@ -1677,11 +1678,11 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             /// <summary>Gets whether the specified position is nullable.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
+            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId)
                 where TStateHandler : struct, IStateHandler
             {
                 Debug.Assert(!matcher._pattern._info.ContainsSomeAnchor);
-                return flags.IsNullable();
+                return TStateHandler.GetStateFlags(matcher, in state).IsNullable();
             }
         }
 
