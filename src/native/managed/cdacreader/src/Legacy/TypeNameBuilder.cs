@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Helpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -88,12 +89,12 @@ internal struct TypeNameBuilder
             else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
             {
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandle(modulePointer);
-                MetadataReader reader = tnb.Target.Contracts.Metadata.GetMetadataReader(module);
-                MetadataCursor cursor = reader.GetCursor(genericParamToken);
+                EcmaMetadataReader reader = tnb.Target.Contracts.Metadata.GetMetadata(module).EcmaMetadataReader;
+                EcmaMetadataCursor cursor = reader.GetCursor(genericParamToken);
                 if (format.HasFlag(TypeNameFormat.FormatGenericParam))
                 {
                     uint owner = reader.GetColumnAsToken(cursor, MetadataColumnIndex.GenericParam_Owner);
-                    if (MetadataReader.TokenToTable(owner) == MetadataTable.TypeDef)
+                    if (EcmaMetadataReader.TokenToTable(owner) == MetadataTable.TypeDef)
                     {
                         tnb.TypeString.Append('!');
                     }
@@ -143,44 +144,27 @@ internal struct TypeNameBuilder
                 MethodTableHandle methodTable = typeHandle.AsMethodTable;
                 uint typeDefToken = typeSystemContract.GetTypeDefToken(methodTable);
                 Contracts.ModuleHandle moduleHandle = tnb.Target.Contracts.Loader.GetModuleHandle(typeSystemContract.GetModule(methodTable));
-                if (MetadataReader.RidFromToken(typeDefToken) == 0)
+                if (EcmaMetadataReader.RidFromToken(typeDefToken) == 0)
                 {
                     tnb.AddName("(dynamicClass)");
                 }
                 else
                 {
-                    MetadataReader reader = tnb.Target.Contracts.Metadata.GetMetadataReader(moduleHandle);
+                    EcmaMetadataReader reader = tnb.Target.Contracts.Metadata.GetMetadata(moduleHandle).EcmaMetadataReader;
                     AppendNestedTypeDef(ref tnb, reader, typeDefToken, format);
                 }
 
                 // Append instantiation
 
-
                 if (format.HasFlag(TypeNameFormat.FormatNamespace) || format.HasFlag(TypeNameFormat.FormatAssembly))
                 {
-                    TargetPointer instantiationPointer;
-                    uint instantiationLength = typeSystemContract.GetInstantiation(methodTable, out instantiationPointer);
+                    ReadOnlySpan<MethodTableHandle> instantiationSpan = typeSystemContract.GetInstantiation(methodTable);
 
-                    if ((instantiationLength > 0) && (!typeSystemContract.IsGenericTypeDefinition(methodTable) || toString))
+                    if ((instantiationSpan.Length > 0) && (!typeSystemContract.IsGenericTypeDefinition(methodTable) || toString))
                     {
                         if (instantiation.Length == 0)
                         {
-                            Span<TargetPointer> targetPointerSpan = stackalloc TargetPointer[4];
-                            Span<MethodTableHandle> instantiationSpan = stackalloc MethodTableHandle[4];
-                            if (instantiationLength > targetPointerSpan.Length)
-                            {
-                                targetPointerSpan = new TargetPointer[instantiationLength];
-                                instantiationSpan = new MethodTableHandle[instantiationLength];
-                            }
-                            targetPointerSpan = targetPointerSpan.Slice(0, (int)instantiationLength);
-                            instantiationSpan = instantiationSpan.Slice(0, (int)instantiationLength);
-
-                            tnb.Target.ReadPointers(instantiationPointer, targetPointerSpan);
-
-                            for (int i = 0; i < instantiationLength; i++)
-                            {
-                                instantiationSpan[i] = new MethodTableHandle(targetPointerSpan[i]);
-                            }
+                            instantiation = instantiationSpan;
                         }
                         AppendInst(ref tnb, instantiation, format);
                     }
@@ -192,8 +176,8 @@ internal struct TypeNameBuilder
 
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandle(modulePtr);
                 // NOTE: The DAC variant of assembly name generation is different than the runtime version. The DAC variant is simpler, and only uses SimpleName
-                MetadataReader mr = tnb.Target.Contracts.Metadata.GetMetadataReader(module);
-                MetadataCursor cursor = mr.GetCursor(0x20000001);
+                EcmaMetadataReader mr = tnb.Target.Contracts.Metadata.GetMetadata(module).EcmaMetadataReader;
+                EcmaMetadataCursor cursor = mr.GetCursor(0x20000001);
                 string assemblySimpleName = mr.GetColumnAsUtf8String(cursor, MetadataColumnIndex.Assembly_Name);
 
                 tnb.AddAssemblySpec(assemblySimpleName);
@@ -344,16 +328,16 @@ internal struct TypeNameBuilder
         }
     }
 
-    private static void AppendNestedTypeDef(ref TypeNameBuilder tnb, MetadataReader reader, uint typeDefToken, TypeNameFormat format)
+    private static void AppendNestedTypeDef(ref TypeNameBuilder tnb, EcmaMetadataReader reader, uint typeDefToken, TypeNameFormat format)
     {
-        MetadataCursor cursor = reader.GetCursor(typeDefToken);
+        EcmaMetadataCursor cursor = reader.GetCursor(typeDefToken);
         System.Reflection.TypeAttributes typeDefAttributes = (System.Reflection.TypeAttributes)reader.GetColumnAsConstant(cursor, MetadataColumnIndex.TypeDef_Flags);
         if ((int)(typeDefAttributes & System.Reflection.TypeAttributes.VisibilityMask) >= (int)System.Reflection.TypeAttributes.NestedPublic)
         {
             uint currentTypeDefToken = typeDefToken;
             List<uint> nestedTokens = new();
-            MetadataCursor nestedTypesCursor = reader.GetCursor(MetadataReader.CreateToken(MetadataTable.NestedClass, 1));
-            while (reader.TryFindRowFromCursor(nestedTypesCursor, MetadataColumnIndex.NestedClass_NestedClass, currentTypeDefToken, out MetadataCursor foundNestedClassRecord))
+            EcmaMetadataCursor nestedTypesCursor = reader.GetCursor(EcmaMetadataReader.CreateToken(MetadataTable.NestedClass, 1));
+            while (reader.TryFindRowFromCursor(nestedTypesCursor, MetadataColumnIndex.NestedClass_NestedClass, currentTypeDefToken, out EcmaMetadataCursor foundNestedClassRecord))
             {
                 currentTypeDefToken = reader.GetColumnAsToken(foundNestedClassRecord, MetadataColumnIndex.NestedClass_EnclosingClass);
                 nestedTokens.Add(currentTypeDefToken);
@@ -367,9 +351,9 @@ internal struct TypeNameBuilder
         AppendTypeDef(ref tnb, reader, typeDefToken, format);
     }
 
-    private static void AppendTypeDef(ref TypeNameBuilder tnb, MetadataReader reader, uint typeDefToken, TypeNameFormat format)
+    private static void AppendTypeDef(ref TypeNameBuilder tnb, EcmaMetadataReader reader, uint typeDefToken, TypeNameFormat format)
     {
-        MetadataCursor cursor = reader.GetCursor(typeDefToken);
+        EcmaMetadataCursor cursor = reader.GetCursor(typeDefToken);
         string? typeNamespace = null;
         if (format.HasFlag(TypeNameFormat.FormatNamespace))
         {

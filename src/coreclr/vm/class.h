@@ -1803,6 +1803,7 @@ protected:
 
 template<> struct cdac_offsets<EEClass>
 {
+    static constexpr size_t InternalCorElementType = offsetof(EEClass, m_NormType);
     static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
     static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
     static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
@@ -1996,7 +1997,12 @@ public:
                                       BOOL fForStubAsIL
     );
 
+    template<typename T> friend struct ::cdac_offsets;
+};
 
+template<> struct cdac_offsets<ArrayClass>
+{
+    static constexpr size_t Rank = offsetof(ArrayClass, m_rank);
 };
 
 inline EEClassLayoutInfo *EEClass::GetLayoutInfo()

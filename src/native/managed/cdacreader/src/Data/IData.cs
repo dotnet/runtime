@@ -7,3 +7,8 @@ internal interface IData<TSelf> where TSelf : IData<TSelf>
 {
     static abstract TSelf Create(Target target, TargetPointer address);
 }
+
+internal interface IData<TSelf, TKey> where TSelf : IData<TSelf, TKey>
+{
+    static abstract TSelf Create(Target target, TKey address);
+}

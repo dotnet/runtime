@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Microsoft.Diagnostics.DataContractReader.Data;
@@ -34,6 +35,18 @@ public readonly struct TargetNUInt
 {
     public readonly ulong Value;
     public TargetNUInt(ulong value) => Value = value;
+}
+
+public readonly struct TargetSpan
+{
+    public TargetSpan(TargetPointer address, ulong size)
+    {
+        Address = address;
+        Size = size;
+    }
+
+    public TargetPointer Address { get; }
+    public ulong Size { get; }
 }
 
 /// <summary>
@@ -406,6 +419,7 @@ public sealed unsafe class Target
     {
         private readonly Target _target;
         private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
+        private readonly Dictionary<Type, object> _customKeyReadDataByAddress = [];
 
         public DataCache(Target target)
         {
@@ -426,6 +440,22 @@ public sealed unsafe class Target
             return result!;
         }
 
+        public TValue GetOrAdd<TKey, TValue>(TKey key) where TValue : IData<TValue, TKey> where TKey : notnull, IEquatable<TKey>
+        {
+            if (TryGet(key, out TValue? result))
+                return result!;
+
+            Dictionary<(TKey, Type), object?> dictionary = (Dictionary<(TKey, Type), object?>)_customKeyReadDataByAddress[typeof(TKey)];
+
+            TValue constructed = TValue.Create(_target, key);
+            if (dictionary.TryAdd((key, typeof(TValue)), constructed))
+                return constructed;
+
+            bool found = TryGet(key, out result);
+            Debug.Assert(found);
+            return result!;
+        }
+
         public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
         {
             data = default;
@@ -433,6 +463,29 @@ public sealed unsafe class Target
                 return false;
 
             if (dataObj is T dataMaybe)
+            {
+                data = dataMaybe;
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool TryGet<TKey, TValue>(TKey key, [NotNullWhen(true)] out TValue? data) where TValue : IData<TValue, TKey> where TKey : notnull, IEquatable<TKey>
+        {
+            data = default;
+
+            if (!_customKeyReadDataByAddress.TryGetValue(typeof(TKey), out var dictionaryObject))
+            {
+                dictionaryObject = new Dictionary<(TKey, Type), TValue>();
+                _customKeyReadDataByAddress.Add(typeof(TKey), dictionaryObject);
+            }
+            Dictionary<(TKey, Type), object?> dictionary = (Dictionary<(TKey, Type), object?>)dictionaryObject;
+
+            if (!dictionary.TryGetValue((key, typeof(TValue)), out object? dataObj))
+                return false;
+
+            if (dataObj is TValue dataMaybe)
             {
                 data = dataMaybe;
                 return true;

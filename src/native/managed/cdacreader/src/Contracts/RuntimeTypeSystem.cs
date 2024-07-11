@@ -17,19 +17,37 @@ internal readonly struct MethodTableHandle
     internal TargetPointer Address { get; }
 }
 
+internal readonly struct TypeDescHandle
+{
+    internal TypeDescHandle(TargetPointer address)
+    {
+        Address = address;
+    }
+
+    internal TargetPointer Address { get; }
+}
+
 internal readonly struct TypeHandle
 {
     private readonly MethodTableHandle? _mtHandle;
+    private readonly TypeDescHandle? _typeDescHandle;
 
     internal TypeHandle(MethodTableHandle mtHandle)
     {
         _mtHandle = mtHandle;
     }
 
+    internal TypeHandle(TypeDescHandle typeDescHandle)
+    {
+        _typeDescHandle = typeDescHandle;
+    }
+
     public static implicit operator TypeHandle(MethodTableHandle mtHandle) => new TypeHandle(mtHandle);
 
     public MethodTableHandle AsMethodTable => _mtHandle!.Value;
     public bool IsMethodTable => _mtHandle.HasValue;
+    public TypeDescHandle AsTypeDesc => _typeDescHandle!.Value;
+    public bool IsTypeDesc => _typeDescHandle.HasValue;
     public bool IsNull => !_mtHandle.HasValue;
 }
 
@@ -111,12 +129,15 @@ internal interface IRuntimeTypeSystem : IContract
     // or for its generic type definition if it is a generic instantiation
     public virtual uint GetTypeDefTypeAttributes(MethodTableHandle methodTable) => throw new NotImplementedException();
 
-    public virtual uint GetInstantiation(MethodTableHandle methodTable, out TargetPointer instantiation) => throw new NotImplementedException();
+    public virtual ReadOnlySpan<MethodTableHandle> GetInstantiation(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual bool IsGenericTypeDefinition(MethodTableHandle methodTable) => throw new NotImplementedException();
     #endregion MethodTable inspection APIs
 
     #region TypeHandle inspection APIs
+    public virtual TypeHandle TypeHandleFromAddress(TargetPointer address) => throw new NotImplementedException();
     public virtual bool HasTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
+
+    // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.

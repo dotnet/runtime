@@ -15,9 +15,24 @@ public sealed class EEClass : IData<EEClass>
         MethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset);
         NumMethods = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumMethods)].Offset);
         CorTypeAttr = target.Read<uint>(address + (ulong)type.Fields[nameof(CorTypeAttr)].Offset);
+        InternalCorElementType = target.Read<byte>(address + (ulong)type.Fields[nameof(InternalCorElementType)].Offset);
     }
 
     public TargetPointer MethodTable { get; init; }
     public ushort NumMethods { get; init; }
     public uint CorTypeAttr { get; init; }
+    public byte InternalCorElementType { get; init; }
+}
+
+public sealed class ArrayClass : IData<ArrayClass>
+{
+    static ArrayClass IData<ArrayClass>.Create(Target target, TargetPointer address) => new ArrayClass(target, address);
+    public ArrayClass(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ArrayClass);
+
+        Rank = target.Read<byte>(address + (ulong)type.Fields[nameof(Rank)].Offset);
+    }
+
+    public byte Rank { get; init; }
 }

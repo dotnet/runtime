@@ -293,9 +293,16 @@ struct GenericsDictInfo
 
     // Number of type parameters (NOT including those of superclasses).
     WORD   m_wNumTyPars;
+    template<typename T> friend struct ::cdac_offsets;
 };  // struct GenericsDictInfo
 typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 
+template<>
+struct cdac_offsets<GenericsDictInfo>
+{
+    static constexpr size_t NumDicts = offsetof(GenericsDictInfo, m_wNumDicts);
+    static constexpr size_t NumTyPars = offsetof(GenericsDictInfo, m_wNumTyPars);
+};
 
 // These various statics structures exist directly before the MethodTableAuxiliaryData
 
@@ -3904,6 +3911,7 @@ template<> struct cdac_offsets<MethodTable>
     static constexpr size_t ParentMethodTable = offsetof(MethodTable, m_pParentMethodTable);
     static constexpr size_t NumInterfaces = offsetof(MethodTable, m_wNumInterfaces);
     static constexpr size_t NumVirtuals = offsetof(MethodTable, m_wNumVirtuals);
+    static constexpr size_t PerInstInfo = offsetof(MethodTable, m_pPerInstInfo);
 };
 
 #ifndef CROSSBITNESS_COMPILE

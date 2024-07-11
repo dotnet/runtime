@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata.Ecma335;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -27,6 +28,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         internal TargetPointer ParentMethodTable { get; }
         internal TargetPointer Module { get; }
         internal TargetPointer EEClassOrCanonMT { get; }
+        internal TargetPointer PerInstInfo { get; }
         internal MethodTable(Data.MethodTable data)
         {
             Flags = new MethodTableFlags
@@ -40,6 +42,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             EEClassOrCanonMT = data.EEClassOrCanonMT;
             Module = data.Module;
             ParentMethodTable = data.ParentMethodTable;
+            PerInstInfo = data.PerInstInfo;
         }
     }
 
@@ -154,4 +157,191 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.IsDynamicStatics;
 
+    public ReadOnlySpan<MethodTableHandle> GetInstantiation(MethodTableHandle methodTableHandle)
+    {
+        MethodTable methodTable = _methodTables[methodTableHandle.Address];
+        if (!methodTable.Flags.HasInstantiation)
+            return default;
+
+        TargetPointer perInstInfo = methodTable.PerInstInfo;
+        var typeInfo = _target.GetTypeInfo(DataType.pointer);
+        uint? size = typeInfo.Size;
+        TargetPointer genericsDictInfo = _target.ReadPointer(perInstInfo - size!.Value);
+
+        TargetPointer dictionaryPointer = _target.ReadPointer(perInstInfo);
+
+        int numberOfGenericArgs = _target.ProcessedData.GetOrAdd<GenericsDictInfo>(genericsDictInfo).NumTyPars;
+        MethodTableArray instantiation = _target.ProcessedData.GetOrAdd<(TargetPointer, int), MethodTableArray>
+            ((dictionaryPointer, numberOfGenericArgs));
+
+        return instantiation.Types.AsSpan();
+    }
+
+    public bool IsGenericTypeDefinition(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.IsGenericTypeDefinition;
+
+    TypeHandle IRuntimeTypeSystem.TypeHandleFromAddress(TargetPointer address)
+    {
+        return TypeHandleFromAddress(address);
+    }
+
+    private static TypeHandle TypeHandleFromAddress(TargetPointer address)
+    {
+        if (address == 0)
+            return default;
+
+        if (((ulong)address & 2) == (ulong)2)
+        {
+            return new TypeHandle(new TypeDescHandle(address - 2));
+        }
+        else
+        {
+            return new TypeHandle(new MethodTableHandle(address));
+        }
+    }
+
+    public bool HasTypeParam(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable)
+        {
+            MethodTable methodTable = _methodTables[typeHandle.AsMethodTable.Address];
+            return methodTable.Flags.IsArray;
+        }
+        else if (typeHandle.IsTypeDesc)
+        {
+            var typeDesc = _target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.AsTypeDesc.Address);
+            CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+            switch (elemType)
+            {
+                case CorElementType.ValueType:
+                case CorElementType.Byref:
+                case CorElementType.Ptr:
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    public CorElementType GetSignatureCorElementType(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable)
+        {
+            MethodTable methodTable = _methodTables[typeHandle.AsMethodTable.Address];
+
+            switch (methodTable.Flags.GetFlag(WFLAGS_HIGH.Category_Mask))
+            {
+                case WFLAGS_HIGH.Category_Array:
+                    return CorElementType.Array;
+                case WFLAGS_HIGH.Category_Array | WFLAGS_HIGH.Category_IfArrayThenSzArray:
+                    return CorElementType.SzArray;
+                case WFLAGS_HIGH.Category_ValueType:
+                case WFLAGS_HIGH.Category_Nullable:
+                case WFLAGS_HIGH.Category_PrimitiveValueType:
+                    return CorElementType.ValueType;
+                case WFLAGS_HIGH.Category_TruePrimitive:
+                    return (CorElementType)GetClassData(typeHandle.AsMethodTable).InternalCorElementType;
+                default:
+                    return CorElementType.Class;
+            }
+        }
+        else if (typeHandle.IsTypeDesc)
+        {
+            var typeDesc = _target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.AsTypeDesc.Address);
+            return (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+        }
+        return default(CorElementType);
+    }
+
+    // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
+    public bool IsArray(TypeHandle typeHandle, out uint rank)
+    {
+        if (typeHandle.IsMethodTable)
+        {
+            MethodTable methodTable = _methodTables[typeHandle.AsMethodTable.Address];
+
+            switch (methodTable.Flags.GetFlag(WFLAGS_HIGH.Category_Mask))
+            {
+                case WFLAGS_HIGH.Category_Array:
+                    TargetPointer clsPtr = GetClassPointer(typeHandle.AsMethodTable);
+                    rank = _target.ProcessedData.GetOrAdd<Data.ArrayClass>(clsPtr).Rank;
+                    return true;
+
+                case WFLAGS_HIGH.Category_Array | WFLAGS_HIGH.Category_IfArrayThenSzArray:
+                    rank = 1;
+                    return true;
+            }
+        }
+
+        rank = 0;
+        return false;
+    }
+
+    public TypeHandle GetTypeParam(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable)
+        {
+            MethodTable methodTable = _methodTables[typeHandle.AsMethodTable.Address];
+            if (!methodTable.Flags.IsArray)
+                throw new ArgumentException(nameof(typeHandle));
+
+            return TypeHandleFromAddress(methodTable.PerInstInfo);
+        }
+        else if (typeHandle.IsTypeDesc)
+        {
+            var typeDesc = _target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.AsTypeDesc.Address);
+            CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+            switch (elemType)
+            {
+                case CorElementType.ValueType:
+                case CorElementType.Byref:
+                case CorElementType.Ptr:
+                    ParamTypeDesc paramTypeDesc = _target.ProcessedData.GetOrAdd<ParamTypeDesc>(typeHandle.AsTypeDesc.Address);
+                    return TypeHandleFromAddress(paramTypeDesc.TypeArg);
+            }
+        }
+        throw new ArgumentException(nameof(typeHandle));
+    }
+
+    public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)
+    {
+        module = TargetPointer.Null;
+        token = 0;
+
+        if (!typeHandle.IsTypeDesc)
+            return false;
+
+        var typeDesc = _target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.AsTypeDesc.Address);
+        CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+        switch (elemType)
+        {
+            case CorElementType.MVar:
+            case CorElementType.Var:
+                TypeVarTypeDesc typeVarTypeDesc = _target.ProcessedData.GetOrAdd<TypeVarTypeDesc>(typeHandle.AsTypeDesc.Address);
+                module = typeVarTypeDesc.Module;
+                token = typeVarTypeDesc.Token;
+                return true;
+        }
+        return false;
+    }
+
+    public bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv)
+    {
+        retAndArgTypes = default;
+        callConv = default;
+
+        if (!typeHandle.IsTypeDesc)
+            return false;
+
+        var typeDesc = _target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.AsTypeDesc.Address);
+        CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+        if (elemType != CorElementType.FnPtr)
+            return false;
+
+        FnPtrTypeDesc fnPtrTypeDesc = _target.ProcessedData.GetOrAdd<FnPtrTypeDesc>(typeHandle.AsTypeDesc.Address);
+
+        TypeHandleArray retAndArgTypesArray = _target.ProcessedData.GetOrAdd<(TargetPointer, int), TypeHandleArray>
+            ((fnPtrTypeDesc.RetAndArgTypes, checked((int)fnPtrTypeDesc.NumArgs + 1)));
+        retAndArgTypes = retAndArgTypesArray.Types;
+        callConv = (byte)fnPtrTypeDesc.CallConv;
+        return true;
+    }
 }
