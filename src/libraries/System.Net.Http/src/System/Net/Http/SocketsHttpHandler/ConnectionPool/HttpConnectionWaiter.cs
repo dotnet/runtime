@@ -30,14 +30,14 @@ namespace System.Net.Http
 
             long startingTimestamp = Stopwatch.GetTimestamp();
 
-            using Activity? waitForConnectionActivity = ConnectionSetupDiagnostics.StartWaitForConnectionActivity(pool.OriginAuthority);
+            using Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(pool.OriginAuthority);
             try
             {
                 return await WaitWithCancellationAsync(async, requestCancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (waitForConnectionActivity is not null)
             {
-                ConnectionSetupDiagnostics.ReportError(waitForConnectionActivity, ex);
+                ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, ex);
                 throw;
             }
             finally

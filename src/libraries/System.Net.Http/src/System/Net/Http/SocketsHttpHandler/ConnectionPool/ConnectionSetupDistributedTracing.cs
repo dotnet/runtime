@@ -8,7 +8,7 @@ using System.Threading;
 namespace System.Net.Http
 {
     // Implements distributed tracing logic for managing the "HTTP connection_setup" and "HTTP wait_for_connection" Activities.
-    internal static class ConnectionSetupDiagnostics
+    internal static class ConnectionSetupDistributedTracing
     {
         private static readonly ActivitySource s_connectionsActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionsNamespace);
 

@@ -85,7 +85,7 @@ namespace System.Net.Http
                 }
 
                 long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
-                Activity? waitForConnectionActivity = ConnectionSetupDiagnostics.StartWaitForConnectionActivity(authority);
+                Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(authority);
 
                 if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out HttpConnectionWaiter<Http3Connection?>? http3ConnectionWaiter))
                 {
@@ -95,7 +95,7 @@ namespace System.Net.Http
                     }
                     catch (Exception ex)
                     {
-                        ConnectionSetupDiagnostics.ReportError(waitForConnectionActivity, ex);
+                        ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, ex);
                         waitForConnectionActivity?.Stop();
                         throw;
                     }
@@ -260,7 +260,7 @@ namespace System.Net.Http
             {
                 if (TryGetHttp3Authority(queueItem.Request, out authority, out Exception? reasonException))
                 {
-                    connectionSetupActivity = ConnectionSetupDiagnostics.StartConnectionSetupActivity(isSecure: true, authority);
+                    connectionSetupActivity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(isSecure: true, authority);
                     // If the authority was sent as an option through alt-svc then include alt-used header.
                     connection = new Http3Connection(this, authority, includeAltUsedHeader: _http3Authority == authority);
                     QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(queueItem.Request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, connection.StreamCapacityCallback, cts.Token).ConfigureAwait(false);
@@ -269,7 +269,7 @@ namespace System.Net.Http
                         await quicConnection.DisposeAsync().ConfigureAwait(false);
                         throw new HttpRequestException(HttpRequestError.ConnectionError, "QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnConnectionFailure);
                     }
-                    if (connectionSetupActivity is not null) ConnectionSetupDiagnostics.StopConnectionSetupActivity(connectionSetupActivity, null, quicConnection.RemoteEndPoint);
+                    if (connectionSetupActivity is not null) ConnectionSetupDistributedTracing.StopConnectionSetupActivity(connectionSetupActivity, null, quicConnection.RemoteEndPoint);
                     connection.InitQuicConnection(quicConnection, connectionSetupActivity);
                 }
                 else if (reasonException is not null)
@@ -283,7 +283,7 @@ namespace System.Net.Http
                     CreateConnectTimeoutException(oce) :
                     e;
 
-                if (connectionSetupActivity is not null) ConnectionSetupDiagnostics.StopConnectionSetupActivity(connectionSetupActivity, connectionException, null);
+                if (connectionSetupActivity is not null) ConnectionSetupDistributedTracing.StopConnectionSetupActivity(connectionSetupActivity, connectionException, null);
 
                 // If the connection hasn't been initialized with QuicConnection, get rid of it.
                 connection?.Dispose();

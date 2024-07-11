@@ -271,11 +271,11 @@ namespace System.Net.Http
                 // Since quicStream will stay `null`, the code below will throw appropriate exception to retry the request.
                 catch (ObjectDisposedException e)
                 {
-                    ConnectionSetupDiagnostics.ReportError(waitForConnectionActivity, e);
+                    ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, e);
                 }
                 catch (QuicException e) when (e.QuicError != QuicError.OperationAborted)
                 {
-                    ConnectionSetupDiagnostics.ReportError(waitForConnectionActivity, e);
+                    ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, e);
                 }
                 finally
                 {
@@ -312,7 +312,7 @@ namespace System.Net.Http
                 }
 
                 Debug.Assert(waitForConnectionActivity?.IsStopped != false);
-                if (ConnectionSetupActivity is not null) ConnectionSetupDiagnostics.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
+                if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
                 Task<HttpResponseMessage> responseTask = requestStream.SendAsync(cancellationToken);

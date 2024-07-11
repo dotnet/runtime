@@ -572,7 +572,7 @@ namespace System.Net.Http
             Exception? exception = null;
             TransportContext? transportContext = null;
 
-            Activity? activity = ConnectionSetupDiagnostics.StartConnectionSetupActivity(IsSecure, OriginAuthority);
+            Activity? activity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, OriginAuthority);
 
             try
             {
@@ -648,7 +648,7 @@ namespace System.Net.Http
             {
                 if (activity is not null)
                 {
-                    ConnectionSetupDiagnostics.StopConnectionSetupActivity(activity, exception, remoteEndPoint);
+                    ConnectionSetupDistributedTracing.StopConnectionSetupActivity(activity, exception, remoteEndPoint);
                 }
             }
 
