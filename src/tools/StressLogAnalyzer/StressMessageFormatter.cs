@@ -239,6 +239,18 @@ internal sealed class StressMessageFormatter
                         specifier = "p";
                     }
                 }
+                else if (operand == 'I')
+                {
+                    if (formatString.AsSpan()[startIndex..(startIndex + 1)] is "64")
+                    {
+                        specifier = "I64" + formatString[startIndex + 2];
+                        startIndex += 3;
+                    }
+                    else
+                    {
+                        specifier = "I" + formatString[startIndex++];
+                    }
+                }
                 else
                 {
                     specifier = operand.ToString();
