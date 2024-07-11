@@ -181,10 +181,10 @@
    .macro TRASH_PRESERVED_REGISTERS_STORAGE regdisplayReg
 
 #if _DEBUG
-        lu12i.w  $a3, -283939 // 0xbaadd
+        lu12i.w  $a3, 0xbaadd
         ori  $a3, $a3, 0xeed
-        lu32i.d  $a3, -139539 // 0xddeed
-        lu52i.d  $a3, $a3, -1110 // 0xbaa
+        lu32i.d  $a3, 0xddeed
+        lu52i.d  $a3, $a3, 0xbaa
         ld.d  $t3, \regdisplayReg, OFFSETOF__REGDISPLAY__pR23
         st.d  $a3, $t3, 0
         ld.d  $t3, \regdisplayReg, OFFSETOF__REGDISPLAY__pR24
