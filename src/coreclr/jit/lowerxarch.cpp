@@ -3233,7 +3233,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
         // Next, determine if the target architecture supports BlendVariable
         NamedIntrinsic blendVariableId = NI_Illegal;
 
-        bool isOp1CvtMaskToVector = op1->AsHWIntrinsic()->OperIsConvertMaskToVector();
+        bool isOp1CvtMaskToVector = op1->OperIsConvertMaskToVector();
 
         if ((simdSize == 64) || isOp1CvtMaskToVector)
         {

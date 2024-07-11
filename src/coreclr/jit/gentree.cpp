@@ -30652,7 +30652,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 case NI_Vector256_ToVector512:
                 {
-                    assert(retType == TYP_SIMD32);
+                    assert(retType == TYP_SIMD64);
                     assert(cnsNode->gtType == TYP_SIMD32);
                     cnsNode->AsVecCon()->gtSimd64Val.v256[1] = {};
 
