@@ -156,24 +156,6 @@ CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(GCHandle)
 
-// Loader
-
-CDAC_TYPE_BEGIN(Module)
-CDAC_TYPE_INDETERMINATE(Module)
-CDAC_TYPE_FIELD(Module, /*pointer*/, Assembly, cdac_offsets<Module>::Assembly)
-CDAC_TYPE_FIELD(Module, /*pointer*/, Base, cdac_offsets<Module>::Base)
-CDAC_TYPE_FIELD(Module, /*pointer*/, Flags, cdac_offsets<Module>::Flags)
-CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_offsets<Module>::LoaderAllocator)
-CDAC_TYPE_FIELD(Module, /*pointer*/, ThunkHeap, cdac_offsets<Module>::ThunkHeap)
-
-CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_offsets<Module>::FieldDefToDescMap)
-CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_offsets<Module>::ManifestModuleReferencesMap)
-CDAC_TYPE_FIELD(Module, /*pointer*/, MemberRefToDescMap, cdac_offsets<Module>::MemberRefToDescMap)
-CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToDescMap, cdac_offsets<Module>::MethodDefToDescMap)
-CDAC_TYPE_FIELD(Module, /*pointer*/, TypeDefToMethodTableMap, cdac_offsets<Module>::TypeDefToMethodTableMap)
-CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_offsets<Module>::TypeRefToMethodTableMap)
-CDAC_TYPE_END(Module)
-
 // Metadata
 
 CDAC_TYPE_BEGIN(MethodTable)

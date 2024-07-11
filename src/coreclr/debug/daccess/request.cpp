@@ -1706,62 +1706,13 @@ ClrDataAccess::GetModule(CLRDATA_ADDRESS addr, IXCLRDataModule **mod)
 }
 
 HRESULT
-ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData* moduleData)
+ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *ModuleData)
 {
-    if (addr == 0 || moduleData == NULL)
+    if (addr == 0 || ModuleData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
 
-    if (m_cdacSos != NULL)
-    {
-        hr = m_cdacSos->GetModuleData(addr, moduleData);
-        if (FAILED(hr))
-        {
-            hr = GetModuleDataImpl(addr, moduleData);
-        }
-#ifdef _DEBUG
-        else
-        {
-            DacpModuleData moduleDataLocal;
-            HRESULT hrLocal = GetModuleDataImpl(addr, &moduleDataLocal);
-            _ASSERTE(hr == hrLocal);
-            _ASSERTE(moduleData->Address == moduleDataLocal.Address);
-            _ASSERTE(moduleData->PEAssembly == moduleDataLocal.PEAssembly);
-            _ASSERTE(moduleData->ilBase == moduleDataLocal.ilBase);
-            _ASSERTE(moduleData->metadataStart == moduleDataLocal.metadataStart);
-            _ASSERTE(moduleData->metadataSize == moduleDataLocal.metadataSize);
-            _ASSERTE(moduleData->Assembly == moduleDataLocal.Assembly);
-            _ASSERTE(moduleData->bIsReflection == moduleDataLocal.bIsReflection);
-            _ASSERTE(moduleData->bIsPEFile == moduleDataLocal.bIsPEFile);
-            _ASSERTE(moduleData->dwBaseClassIndex == moduleDataLocal.dwBaseClassIndex);
-            _ASSERTE(moduleData->dwModuleID == moduleDataLocal.dwModuleID);
-            _ASSERTE(moduleData->dwTransientFlags == moduleDataLocal.dwTransientFlags);
-            _ASSERTE(moduleData->TypeDefToMethodTableMap == moduleDataLocal.TypeDefToMethodTableMap);
-            _ASSERTE(moduleData->TypeRefToMethodTableMap == moduleDataLocal.TypeRefToMethodTableMap);
-            _ASSERTE(moduleData->MethodDefToDescMap == moduleDataLocal.MethodDefToDescMap);
-            _ASSERTE(moduleData->FieldDefToDescMap == moduleDataLocal.FieldDefToDescMap);
-            _ASSERTE(moduleData->MemberRefToDescMap == moduleDataLocal.MemberRefToDescMap);
-            _ASSERTE(moduleData->FileReferencesMap == moduleDataLocal.FileReferencesMap);
-            _ASSERTE(moduleData->ManifestModuleReferencesMap == moduleDataLocal.ManifestModuleReferencesMap);
-            _ASSERTE(moduleData->LoaderAllocator == moduleDataLocal.LoaderAllocator);
-            _ASSERTE(moduleData->ThunkHeap == moduleDataLocal.ThunkHeap);
-            _ASSERTE(moduleData->dwModuleIndex == moduleDataLocal.dwModuleIndex);
-        }
-#endif
-    }
-    else
-    {
-        hr = GetModuleDataImpl(addr, moduleData);
-    }
-
-    SOSDacLeave();
-    return hr;
-}
-
-HRESULT
-ClrDataAccess::GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *ModuleData)
-{
     Module* pModule = PTR_Module(TO_TADDR(addr));
 
     ZeroMemory(ModuleData,sizeof(DacpModuleData));
@@ -1770,7 +1721,7 @@ ClrDataAccess::GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *Mo
     COUNT_T metadataSize = 0;
     if (!pModule->IsReflectionEmit())
     {
-        ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->m_baseAddress));
+        ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedLayout()->GetBase()));
     }
 
     ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
@@ -1803,7 +1754,8 @@ ClrDataAccess::GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *Mo
     }
     EX_END_CATCH(SwallowAllExceptions)
 
-    return S_OK;
+    SOSDacLeave();
+    return hr;
 }
 
 HRESULT
@@ -2280,11 +2232,12 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
     SOSDacEnter();
 
     PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
+    PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // More fields later?
-    if (!pModule->IsReflectionEmit())
+    if (!pPEAssembly->IsReflectionEmit())
     {
-        *base = TO_CDADDR(dac_cast<TADDR>(pModule->m_baseAddress));
+        *base = TO_CDADDR(dac_cast<TADDR>(pPEAssembly->GetLoadedLayout()->GetBase()));
     }
     else
     {

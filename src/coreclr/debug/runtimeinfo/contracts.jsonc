@@ -10,7 +10,6 @@
 // so to conditionally include contracts, put additional contracts in a separate file
 {
   "Exception": 1,
-  "Loader": 1,
   "RuntimeTypeSystem": 1,
   "Thread": 1
 }
