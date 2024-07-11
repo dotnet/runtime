@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net8.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum)</TargetFrameworks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <!-- TODO: Enable validation after the .NET 9 package release -->
@@ -12,7 +12,8 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn);CA1822;IDE0060</NoWarn>
 
-    <FunctioningBinaryFormatter Condition="'$(TargetFramework)' == 'net8.0'">true</FunctioningBinaryFormatter>
+    <FunctioningBinaryFormatter Condition="'$(TargetFramework)' == '$(NetCoreAppMinimum)'">true</FunctioningBinaryFormatter>
+    <FunctioningBinaryFormatter Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</FunctioningBinaryFormatter>
     <!-- The GenerateNuspec target fails if this property is keyed off of FunctioningBinaryFormatter, so keep it logically in sync --> 
     <IncludeBuildOutput Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking Condition="'$(FunctioningBinaryFormatter)' != 'true'">true</SuppressDependenciesWhenPacking>

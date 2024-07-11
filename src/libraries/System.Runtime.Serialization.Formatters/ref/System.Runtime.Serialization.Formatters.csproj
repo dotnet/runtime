@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.cs" />
