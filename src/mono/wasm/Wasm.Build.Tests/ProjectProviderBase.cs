@@ -46,8 +46,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         EnsureProjectDirIsSet();
         var dotnetFiles = FindAndAssertDotnetFiles(assertOptions);
 
-        Console.WriteLine($"MF: IsFingerprintingSupported: {IsFingerprintingSupported}, UseWebcil: {BuildTestBase.UseWebcil}");
-
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.dll" },
                                    expectToExist: IsFingerprintingSupported ? false : !BuildTestBase.UseWebcil);
