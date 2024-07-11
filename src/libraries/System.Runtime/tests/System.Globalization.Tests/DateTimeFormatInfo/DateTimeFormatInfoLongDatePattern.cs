@@ -27,8 +27,8 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> LongDatePattern_Get_TestData_ICU()
         {
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "dddd, MMMM d, yyyy", "en-US" };
-            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat,  "dddd d MMMM yyyy", "fr-FR" };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").DateTimeFormat, "dddd, MMMM d, yyyy" };
+            yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat,  "dddd d MMMM yyyy" };
         }
 
         public static IEnumerable<object[]> LongDatePattern_Get_TestData_HybridGlobalization()
@@ -226,10 +226,9 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(LongDatePattern_Get_TestData_ICU))]
-        public void LongDatePattern_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string expected, string cultureName)
+        public void LongDatePattern_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string expected)
         {
-            var result = format.LongDatePattern;
-            Assert.True(expected == result, $"Failed for {cultureName}, Expected: \"{expected}\", Actual: \"{result}\"");
+            Assert.Equal(expected, format.LongDatePattern);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]

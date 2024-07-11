@@ -10,8 +10,8 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> AbbreviatedMonthGenitiveNames_Get_TestData_ICU()
         {
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" }, "en-US" };
-            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, new string[] { "janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc.", "" }, "fr-FR" };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" } };
+            yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat, new string[] { "janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc.", "" } };
         }
         public static IEnumerable<object[]> AbbreviatedMonthGenitiveNames_Get_TestData_HybridGlobalization()
         {
@@ -216,12 +216,9 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(AbbreviatedMonthGenitiveNames_Get_TestData_ICU))]
-        public void AbbreviatedMonthGenitiveNames_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string[] expected, string cultureName)
+        public void AbbreviatedMonthGenitiveNames_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string[] expected)
         {
-            var actual = format.AbbreviatedMonthGenitiveNames;
-            Assert.True(actual.Length == expected.Length, $"Length comparison failed for culture: {cultureName}. Expected: {expected.Length}, Actual: {actual.Length}");
-            for (int i = 0; i < actual.Length; i++)
-                Assert.True(expected[i] == actual[i], $"Failed for culture: {cultureName} on index: {i}. Expected: {expected[i]}, Actual: {actual[i]}");
+            Assert.Equal(expected, format.AbbreviatedMonthGenitiveNames);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]

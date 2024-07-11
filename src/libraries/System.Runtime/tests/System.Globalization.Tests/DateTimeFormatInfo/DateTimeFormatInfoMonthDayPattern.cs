@@ -28,8 +28,8 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> MonthDayPattern_Get_TestData_ICU()
         {
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "MMMM d", "en-US" };
-            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat,  "d MMMM", "fr-FR" };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").DateTimeFormat, "MMMM d" };
+            yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat,  "d MMMM" };
         }
 
         public static IEnumerable<object[]> MonthDayPattern_Get_TestData_HybridGlobalization()
@@ -224,10 +224,9 @@ namespace System.Globalization.Tests
         
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(MonthDayPattern_Get_TestData_ICU))]
-        public void MonthDayPattern_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string expected, string cultureName)
+        public void MonthDayPattern_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string expected)
         {
-            var result = format.MonthDayPattern;
-            Assert.True(expected == result, $"Failed for {cultureName}, Expected: \"{expected}\", Actual: \"{result}\"");
+            Assert.Equal(expected, format.MonthDayPattern);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]

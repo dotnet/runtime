@@ -10,8 +10,8 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> ShortDatePattern_Get_TestData_ICU()
         {
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "M/d/yyyy", "en-US" };
-            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "dd/MM/yyyy", "fr-FR" };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").DateTimeFormat, "M/d/yyyy" };
+            yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat, "dd/MM/yyyy" };
         }
 
         public static IEnumerable<object[]> ShortDatePattern_Get_TestData_HybridGlobalization()
@@ -207,10 +207,9 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(ShortDatePattern_Get_TestData_ICU))]
-        public void ShortDatePattern_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string expected, string cultureName)
+        public void ShortDatePattern_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string expected)
         {
-            var result = format.ShortDatePattern;
-            Assert.True(expected == result, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {result}");
+            Assert.Equal(expected, format.ShortDatePattern);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]

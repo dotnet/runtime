@@ -30,8 +30,8 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> MonthNames_Get_TestData_ICU()
         {
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, new string[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "" }, "en-US" };
-            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, new string[] { "janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre", "" }, "fr-FR" };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").DateTimeFormat, new string[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "" } };
+            yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat, new string[] { "janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre", "" } };
         }
 
         public static IEnumerable<object[]> MonthNames_Get_TestData_HybridGlobalization()
@@ -235,14 +235,9 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(MonthNames_Get_TestData_ICU))]
-        public void MonthNames_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string[] expected, string cultureName)
+        public void MonthNames_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string[] expected)
         {
-            var actual = format.MonthNames;
-            Assert.True(expected.Length == actual.Length, $"Expected '{expected.Length}' but got '{actual.Length}' for {cultureName}");
-            for (int i = 0; i < actual.Length; i++)
-            {
-                Assert.True(actual[i] == expected[i], $"Expected '{expected[i]}' but got '{actual[i]}' at position {i} for {cultureName}");
-            }
+            Assert.Equal(expected, format.MonthNames);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
