@@ -261,6 +261,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ItemGroup>
       <_WasmFingerprintPatterns Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
+      <_WasmFingerprintPatterns Include="DllFiles" Pattern="*.dll" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DatFiles" Pattern="*.dat" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="Pdb" Pattern="*.pdb" Expression="#[.{fingerprint}]!" />
     </ItemGroup>
