@@ -10,7 +10,7 @@ using System.Numerics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal record struct StressLogData(
+public record struct StressLogData(
     uint LoggedFacilities,
     uint Level,
     uint MaxSizePerThread,
@@ -20,7 +20,7 @@ internal record struct StressLogData(
     ulong StartTimestamp,
     TargetPointer Logs);
 
-internal record struct ThreadStressLogData(
+public record struct ThreadStressLogData(
     TargetPointer NextPointer,
     ulong ThreadId,
     bool WriteHasWrapped,
@@ -29,13 +29,13 @@ internal record struct ThreadStressLogData(
     TargetPointer ChunkListTail,
     TargetPointer CurrentWriteChunk);
 
-internal record struct StressMsgData(
+public record struct StressMsgData(
     uint Facility,
     TargetPointer FormatString,
     ulong Timestamp,
     IReadOnlyList<TargetPointer> Args);
 
-internal interface IStressLog : IContract
+public interface IStressLog : IContract
 {
     static string IContract.Name { get; } = nameof(StressLog);
     static IContract IContract.Create(Target target, int version)

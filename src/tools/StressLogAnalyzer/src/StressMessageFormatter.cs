@@ -10,7 +10,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace StressLogAnalyzer;
 
-internal sealed class StressMessageFormatter
+public sealed class StressMessageFormatter
 {
     private record struct PaddingFormat(int Width, char FormatChar);
 
@@ -23,7 +23,7 @@ internal sealed class StressMessageFormatter
     {
         _target = target;
 
-        _formatActions = new(StringComparer.OrdinalIgnoreCase)
+        _formatActions = new()
         {
             { "pM", FormatMethodDesc },
             { "pT", FormatMethodTable },
@@ -31,28 +31,30 @@ internal sealed class StressMessageFormatter
             { "pK", FormatStackTrace },
             { "s", FormatAsciiString },
             { "hs", FormatAsciiString },
-            // "S" is omitted because it is the only specifier that only differs in case from another specifier that we support.
-            // We'll normalize it to "ls" before we look up in the table.
+            { "S", FormatUtf16String },
             { "ls", FormatUtf16String },
             { "p", FormatHexWithPrefix },
             { "d", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<long>(ptr, 'd', paddingFormat)) },
             { "i", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<long>(ptr, 'd', paddingFormat)) },
             { "u", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'd', paddingFormat)) },
             { "x", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'x', paddingFormat)) },
+            { "X", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'X', paddingFormat)) },
             { "lld", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<long>(ptr, 'd', paddingFormat)) },
             { "lli", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<long>(ptr, 'd', paddingFormat)) },
             { "llu", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'd', paddingFormat)) },
             { "llx", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'x', paddingFormat)) },
+            { "llX", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'X', paddingFormat)) },
             { "zd", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<long>(ptr, 'd', paddingFormat)) },
             { "zi", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<long>(ptr, 'd', paddingFormat)) },
             { "zu", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'd', paddingFormat)) },
             { "zx", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'x', paddingFormat)) },
+            { "zX", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'X', paddingFormat)) },
             { "I64u", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'd', paddingFormat)) },
             { "Ix", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'x', paddingFormat)) },
             { "I64p", FormatHexWithPrefix },
         };
 
-        _alternateActions = new(StringComparer.OrdinalIgnoreCase)
+        _alternateActions = new()
         {
             { "X", FormatHexWithPrefix },
             { "x", FormatHexWithPrefix },
@@ -134,32 +136,32 @@ internal sealed class StressMessageFormatter
         }
     }
 
-    private string ReadZeroTerminatedString<T>(TargetPointer pointer, int maxLength)
+    private unsafe string ReadZeroTerminatedString<T>(TargetPointer pointer, int maxLength)
         where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         StringBuilder sb = new();
         for (T ch = _target.Read<T>(pointer);
             ch != T.Zero;
-            ch = _target.Read<T>(pointer = new TargetPointer((ulong)pointer + 1)))
+            ch = _target.Read<T>(pointer = new TargetPointer((ulong)pointer + (ulong)sizeof(T))))
         {
             if (sb.Length > maxLength)
             {
                 break;
             }
-            sb.Append(ch);
+
+            // char implements INumberBase<char> explicitly, so we need to call the helper method to use CreateChecked.
+            sb.Append(MakeTruncatingHelper<char>(ch));
         }
         return sb.ToString();
+
+        static U MakeTruncatingHelper<U>(T value) where U : INumberBase<U> => U.CreateChecked(value);
     }
 
     public string GetFormattedMessage(StressMsgData stressMsg)
     {
         Debug.Assert(stressMsg.FormatString != TargetPointer.Null);
-        uint pointerSize = _target.GetTypeInfo(DataType.pointer).Size!.Value;
         TargetPointer nextCharPtr = stressMsg.FormatString;
         string formatString = ReadZeroTerminatedString<byte>(stressMsg.FormatString, maxLength: 256);
-        // Normalize '%S' to '%ls' to allow us to use case-insensitive compare for all of the other formats
-        // we support.
-        formatString = formatString.Replace("%S", "%ls", StringComparison.Ordinal);
         int currentArg = 0;
         int startIndex = 0;
         StringBuilder sb = new();
@@ -215,7 +217,12 @@ internal sealed class StressMessageFormatter
                 // Check for width specifiers to form the format specifier we'll look up in the table.
                 if (operand == 'l')
                 {
-                    if (formatString[startIndex++] != 'l')
+                    char nextChar = formatString[startIndex++];
+                    if (nextChar == 's')
+                    {
+                        specifier = "ls";
+                    }
+                    else if (nextChar != 'l')
                     {
                         throw new InvalidOperationException("Unsupported format width specifier 'l'");
                     }
@@ -230,7 +237,8 @@ internal sealed class StressMessageFormatter
                 }
                 else if (operand == 'p')
                 {
-                    if (formatString[startIndex] is 'M' or 'T' or 'V' or 'K')
+                    if (startIndex < formatString.Length
+                        && formatString[startIndex] is 'M' or 'T' or 'V' or 'K')
                     {
                         specifier = "p" + formatString[startIndex++];
                     }
@@ -241,7 +249,8 @@ internal sealed class StressMessageFormatter
                 }
                 else if (operand == 'I')
                 {
-                    if (formatString.AsSpan()[startIndex..(startIndex + 1)] is "64")
+                    if (formatString.Length - startIndex >= 3
+                        && formatString.AsSpan()[startIndex..(startIndex + 2)].SequenceEqual("64"))
                     {
                         specifier = "I64" + formatString[startIndex + 2];
                         startIndex += 3;
