@@ -1656,7 +1656,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     assert(!tgtPrefOp1);
                     assert(!tgtPrefOp2);
-                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2->AsHWIntrinsic()->Op(2), predMask);
+                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2->AsHWIntrinsic()->Op(2));
                 }
                 else if (tgtPrefOp2)
                 {
