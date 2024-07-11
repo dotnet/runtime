@@ -1906,10 +1906,6 @@ CEEInfo::getHeapClassSize(
     _ASSERTE(pMT);
     _ASSERTE(!pMT->HasComponentSize());
 
-#ifdef FEATURE_READYTORUN_COMPILER
-    _ASSERTE(!IsReadyToRunCompilation() || pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble());
-#endif
-
     // Add OBJECT_SIZE to account for method table pointer.
     //
     if (pMT->IsValueType())
