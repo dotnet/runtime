@@ -909,54 +909,61 @@ namespace System
         // Returns an unsigned byte array containing the GUID.
         public byte[] ToByteArray()
         {
-            var g = new byte[16];
+            byte[] array = new byte[16];
+
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(g, in this);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetArrayDataReference(array), this);
             }
             else
             {
                 // slower path for BigEndian
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
-                MemoryMarshal.TryWrite(g, in guid);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetArrayDataReference(array), guid);
             }
-            return g;
+
+            return array;
         }
 
 
         // Returns an unsigned byte array containing the GUID.
         public byte[] ToByteArray(bool bigEndian)
         {
-            var g = new byte[16];
+            byte[] array = new byte[16];
+
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(g, in this);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetArrayDataReference(array), this);
             }
             else
             {
                 // slower path for Reverse
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
-                MemoryMarshal.TryWrite(g, in guid);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetArrayDataReference(array), guid);
             }
-            return g;
+
+            return array;
         }
 
         // Returns whether bytes are successfully written to given span.
         public bool TryWriteBytes(Span<byte> destination)
         {
             if (destination.Length < 16)
+            {
                 return false;
+            }
 
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(destination, in this);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), this);
             }
             else
             {
                 // slower path for BigEndian
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
-                MemoryMarshal.TryWrite(destination, in guid);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), guid);
             }
+
             return true;
         }
 
@@ -971,14 +978,15 @@ namespace System
 
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(destination, in this);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), this);
             }
             else
             {
                 // slower path for Reverse
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
-                MemoryMarshal.TryWrite(destination, in guid);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), guid);
             }
+
             bytesWritten = 16;
             return true;
         }
@@ -1085,7 +1093,7 @@ namespace System
             if (value._k != _k)
             {
                 return GetResult(_k, value._k);
-            }
+                }
 
             return 0;
         }
