@@ -632,8 +632,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic());
                             for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                             {
-                                GetEmitter()->emitInsSve_R_R_I(insEmbMask, emitSize, reg1, reg2, helper.ImmValue(), embOpt,
-                                                               sopt);
+                                GetEmitter()->emitInsSve_R_R_I(insEmbMask, emitSize, reg1, reg2, helper.ImmValue(),
+                                                               embOpt, sopt);
                             }
                         }
                         else
