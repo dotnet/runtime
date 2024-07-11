@@ -6,6 +6,7 @@
 
 #include "StackFrameIterator.h"
 #include "slist.h" // DefaultSListTraits
+#include "xoshiro128plusplus.h"
 
 struct gc_alloc_context;
 class RuntimeInstance;
@@ -142,6 +143,8 @@ struct RuntimeThreadLocals
 #endif //FEATURE_SUSPEND_REDIRECTION
 
     uint32_t                m_uRand;                                // current per-thread random number
+    // TODO: replace m_uRand with m_rng
+    sxoshiro128pp           m_rng;                                  // random number generator
 };
 
 struct ReversePInvokeFrame

@@ -201,6 +201,8 @@ void Thread::SetRandomSeed(uint32_t seed)
 #ifndef FEATURE_GC_STRESS
     ASSERT(!IsStateSet(TSF_IsRandSeedSet));
 #endif
+
+    m_rng.InitSeed(seed);
     m_uRand = seed;
     SetState(TSF_IsRandSeedSet);
 }
@@ -1346,7 +1348,7 @@ int Thread::ComputeGeometricRandom()
     const double maxValue = 0xFFFFFFFF;
 
     // compute a random sample from the Geometric distribution
-    double probability = (maxValue - (double)NextRand()) / maxValue;
+    double probability = (maxValue - (double)m_rng.next()) / maxValue;
     int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
     return threshold;
 }
