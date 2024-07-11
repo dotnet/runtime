@@ -339,8 +339,10 @@ public class LibraryBuilderTask : AppBuilderTask
         buildOptions.LinkerArguments.Add($"--soname={libraryName}");
 
         // Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
-        // This is required only for 64-bit binaries, but there's not much harm if it is also done for 32-bit ones.
-        buildOptions.LinkerArguments.Add($"-z,max-page-size=16384");
+        // This is required only for 64-bit binaries.
+        if (string.CompareOrdinal ("android-arm64", RuntimeIdentifier) == 0 || string.CompareOrdinal ("android-x64", RuntimeIdentifier) == 0) {
+            buildOptions.LinkerArguments.Add($"-z,max-page-size=16384");
+        }
         buildOptions.LinkerArguments.AddRange(linkerArgs);
         buildOptions.NativeLibraryPaths.AddRange(libs);
         buildOptions.Sources.AddRange(sources);
