@@ -10,18 +10,17 @@ namespace System.Net.Http
     // Implements distributed tracing logic for managing the "HTTP connection_setup" and "HTTP wait_for_connection" Activities.
     internal static class ConnectionSetupDiagnostics
     {
-        private static readonly ActivitySource s_connectionSetupActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionNamespace);
-        private static readonly ActivitySource s_waitForConnectionActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.WaitForConnectionNamespace);
+        private static readonly ActivitySource s_connectionsActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionsNamespace);
 
         public static Activity? StartConnectionSetupActivity(bool isSecure, HttpAuthority authority)
         {
             Activity? activity = null;
-            if (s_connectionSetupActivitySource.HasListeners())
+            if (s_connectionsActivitySource.HasListeners())
             {
                 // Connection activities should be new roots and not parented under whatever
                 // request happens to be in progress when the connection is started.
                 Activity.Current = null;
-                activity = s_connectionSetupActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ConnectionSetupActivityName);
+                activity = s_connectionsActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ConnectionSetupActivityName);
             }
 
             if (activity is not null)
@@ -72,7 +71,7 @@ namespace System.Net.Http
 
         public static Activity? StartWaitForConnectionActivity(HttpAuthority authority)
         {
-            Activity? activity = s_waitForConnectionActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.WaitForConnectionActivityName);
+            Activity? activity = s_connectionsActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.WaitForConnectionActivityName);
             if (activity is not null)
             {
                 activity.DisplayName = $"HTTP wait_for_connection {authority.HostValue}:{authority.Port}";
