@@ -1904,18 +1904,11 @@ CEEInfo::getHeapClassSize(
     TypeHandle VMClsHnd(clsHnd);
     MethodTable* pMT = VMClsHnd.GetMethodTable();
     _ASSERTE(pMT);
+    _ASSERTE(!pMT->IsValueType());
     _ASSERTE(!pMT->HasComponentSize());
 
     // Add OBJECT_SIZE to account for method table pointer.
-    //
-    if (pMT->IsValueType())
-    {
-        result = VMClsHnd.GetSize() + OBJECT_SIZE;
-    }
-    else
-    {
-        result = pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
-    }
+    result = pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
