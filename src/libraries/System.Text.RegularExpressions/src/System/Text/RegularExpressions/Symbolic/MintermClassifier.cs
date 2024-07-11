@@ -104,7 +104,9 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             else
             {
-                int[] lookup = _intLookup!;
+                Debug.Assert(_intLookup is not null);
+
+                int[] lookup = _intLookup;
                 return (uint)c < (uint)lookup.Length ? lookup[c] : 0;
             }
         }
