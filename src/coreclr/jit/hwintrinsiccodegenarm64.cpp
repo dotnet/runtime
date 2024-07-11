@@ -650,6 +650,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         switch (intrinEmbMask.id)
                         {
                             case NI_Sve_CreateBreakPropagateMask:
+                                assert(targetReg != maskReg);
                                 if (targetReg != embMaskOp2Reg)
                                 {
                                     assert(targetReg != embMaskOp1Reg);
