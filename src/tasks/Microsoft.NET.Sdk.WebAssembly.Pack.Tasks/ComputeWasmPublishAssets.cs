@@ -642,7 +642,7 @@ public class ComputeWasmPublishAssets : Task
         var resolvedFilesToPublish = ResolvedFilesToPublish.ToList();
         if (AssetsComputingHelper.TryGetAssetFilename(CustomIcuCandidate, out string customIcuCandidateFilename))
         {
-            var customIcuCandidate = AssetsComputingHelper.GetCustomIcuAsset(CustomIcuCandidate);
+            var customIcuCandidate = AssetsComputingHelper.GetCustomIcuAsset(CustomIcuCandidate, IsFingerprintingEnabled);
             resolvedFilesToPublish.Add(customIcuCandidate);
         }
 

@@ -243,6 +243,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       OutputPath="$(OutputPath)"
       EnableThreads="$(_WasmEnableThreads)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
+      IsFingerprintingEnabled="$(_WasmFingerprintAssets)"
     >
       <Output TaskParameter="AssetCandidates" ItemName="_BuildAssetsCandidates" />
       <Output TaskParameter="FilesToRemove" ItemName="_WasmBuildFilesToRemove" />

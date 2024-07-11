@@ -87,17 +87,21 @@
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
       <_TestUsingWorkloadsValues Include="true;false" />
       <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
+      <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
 
       <!-- now make the cartesian product of true and false values for two categories -->
       <_TestUsingCrossProductValuesTemp Include="@(_TestUsingWorkloadsValues)">
         <Workloads>%(_TestUsingWorkloadsValues.Identity)</Workloads>
       </_TestUsingCrossProductValuesTemp>
-      <_TestUsingCrossProductValues Include="@(_TestUsingCrossProductValuesTemp)">
+      <_TestUsingCrossProductValuesTemp2 Include="@(_TestUsingCrossProductValuesTemp)">
         <Webcil>%(_TestUsingWebcilValues.Identity)</Webcil>
+      </_TestUsingCrossProductValuesTemp2>
+      <_TestUsingCrossProductValues Include="@(_TestUsingCrossProductValuesTemp2)">
+        <Fingerprinting>%(_TestUsingFingerprintingValues.Identity)</Fingerprinting>
       </_TestUsingCrossProductValues>
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);TestUsingWebcil=%(_TestUsingCrossProductValues.Webcil)</AdditionalProperties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);TestUsingWebcil=%(_TestUsingCrossProductValues.Webcil);TestUsingFingerprinting=%(_TestUsingCrossProductValues.Fingerprinting)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>
     </ItemGroup>

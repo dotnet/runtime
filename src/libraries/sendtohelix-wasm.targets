@@ -13,6 +13,7 @@
     <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(TestUsingWebcil)' == 'false'">$(WorkItemPrefix)NoWebcil-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(TestUsingFingerprinting)' == 'false'">$(WorkItemPrefix)NoFingerprint-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmEnableThreads)' != 'true'">$(WorkItemPrefix)ST-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmEnableThreads)' == 'true'">$(WorkItemPrefix)MT-</WorkItemPrefix>
   </PropertyGroup>

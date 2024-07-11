@@ -53,6 +53,8 @@ public class ComputeWasmBuildAssets : Task
 
     public bool EmitSourceMap { get; set; }
 
+    public bool IsFingerprintingEnabled { get; set; }
+
     [Output]
     public ITaskItem[] AssetCandidates { get; set; }
 
@@ -112,7 +114,7 @@ public class ComputeWasmBuildAssets : Task
                     continue;
                 }
 
-                string relativePath = AssetsComputingHelper.GetCandidateRelativePath(candidate);
+                string relativePath = AssetsComputingHelper.GetCandidateRelativePath(candidate, IsFingerprintingEnabled);
                 candidate.SetMetadata("RelativePath", relativePath);
 
                 // Workaround for https://github.com/dotnet/aspnetcore/issues/37574.

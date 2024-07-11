@@ -92,7 +92,7 @@ public class AssetsComputingHelper
         return monoPackageIds.Contains(packageId, StringComparer.Ordinal);
     }
 
-    public static string GetCandidateRelativePath(ITaskItem candidate)
+    public static string GetCandidateRelativePath(ITaskItem candidate, bool isFingerprintingEnabled)
     {
         const string optionalFingerprint = "#[.{fingerprint}]?";
         const string requiredFingerprint = "#[.{fingerprint}]!";
@@ -109,20 +109,30 @@ public class AssetsComputingHelper
             subPath = destinationSubPath.Substring(fileName.Length + extension.Length);
         }
 
-        string relativePath = (fileName, extension) switch {
-            ("dotnet", ".js") => string.Concat(fileName, optionalFingerprint, extension),
-            ("dotnet.runtime", ".js") => string.Concat(fileName, requiredFingerprint, extension),
-            ("dotnet.native", ".js") => string.Concat(fileName, requiredFingerprint, extension),
-            ("dotnet.worker", ".js") => string.Concat(fileName, requiredFingerprint, extension),
-            _ => string.Concat(fileName, extension)
-        };
+        string relativePath;
+        if (isFingerprintingEnabled)
+        {
+            relativePath = (fileName, extension) switch
+            {
+                ("dotnet", ".js") => string.Concat(fileName, optionalFingerprint, extension),
+                ("dotnet.runtime", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.native", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.worker", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                _ => string.Concat(fileName, extension)
+            };
+        }
+        else
+        {
+            relativePath = string.Concat(fileName, extension);
+        }
+
         return $"_framework/{subPath}{relativePath}";
     }
 
-    public static ITaskItem GetCustomIcuAsset(ITaskItem candidate)
+    public static ITaskItem GetCustomIcuAsset(ITaskItem candidate, bool isFingerprintingEnabled)
     {
         var customIcuCandidate = new TaskItem(candidate);
-        var relativePath = GetCandidateRelativePath(customIcuCandidate);
+        var relativePath = GetCandidateRelativePath(customIcuCandidate, isFingerprintingEnabled);
         customIcuCandidate.SetMetadata("RelativePath", relativePath);
         customIcuCandidate.SetMetadata("AssetTraitName", "BlazorWebAssemblyResource");
         customIcuCandidate.SetMetadata("AssetTraitValue", "native");

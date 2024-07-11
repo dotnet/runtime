@@ -112,6 +112,9 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WEBCIL=$(TestUsingWebcil)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WEBCIL=$(TestUsingWebcil)" />
 
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_FINGERPRINTING=$(TestUsingFingerprinting)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_FINGERPRINTING=$(TestUsingFingerprinting)" />
+
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
 

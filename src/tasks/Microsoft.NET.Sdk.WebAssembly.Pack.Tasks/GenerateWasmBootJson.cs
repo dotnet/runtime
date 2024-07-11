@@ -430,8 +430,12 @@ public class GenerateWasmBootJson : Task
 
     private void MapFingerprintedAsset(ResourcesData resources, string resourceRoute, string resourceName)
     {
-        if (IsFingerprintingEnabled && !IsTargeting90OrLater())
+        if (!IsFingerprintingEnabled || !IsTargeting90OrLater())
             return;
+
+        Console.WriteLine($"MF Should not be reached!");
+        if (!IsFingerprintingEnabled)
+            throw new NotSupportedException("MF Should not be reached!");
 
         resources.fingerprinting[resourceRoute] = resourceName;
     }
