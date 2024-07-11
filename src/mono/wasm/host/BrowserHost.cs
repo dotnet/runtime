@@ -61,6 +61,12 @@ internal sealed class BrowserHost
                 envVars[kvp.Key] = kvp.Value;
         }
 
+        foreach (DictionaryEntry de in Environment.GetEnvironmentVariables())
+        {
+            if (de.Key is not null && de.Value is not null)
+                envVars[(string)de.Key] = (string)de.Value;
+        }
+
         var runArgsJson = new RunArgumentsJson(applicationArguments: _args.AppArgs,
                                                runtimeArguments: _args.CommonConfig.RuntimeArguments,
                                                environmentVariables: envVars,
