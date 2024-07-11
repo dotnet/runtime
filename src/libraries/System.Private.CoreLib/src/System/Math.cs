@@ -510,14 +510,21 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (int Quotient, int Remainder) DivRem(int left, int right, DivisionRounding rounding)
         {
-            return rounding switch
+            switch (rounding)
             {
-                DivisionRounding.Truncate => DivRem(left, right),
-                DivisionRounding.Floor => DivRemFloor(left, right),
-                DivisionRounding.Ceiling => DivRemCeiling(left, right),
-                DivisionRounding.AwayFromZero => DivRemAwayFromZero(left, right),
-                DivisionRounding.Euclidean => DivRemEuclidean(left, right),
-                _ => throw new ArgumentOutOfRangeException(nameof(rounding)),
+                case DivisionRounding.Truncate:
+                    return DivRem(left, right);
+                case DivisionRounding.Floor:
+                    return DivRemFloor(left, right);
+                case DivisionRounding.Ceiling:
+                    return DivRemCeiling(left, right);
+                case DivisionRounding.AwayFromZero:
+                    return DivRemAwayFromZero(left, right);
+                case DivisionRounding.Euclidean:
+                    return DivRemEuclidean(left, right);
+                default:
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(rounding);
+                    return default;
             };
         }
 
