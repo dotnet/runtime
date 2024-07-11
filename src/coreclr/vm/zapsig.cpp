@@ -599,7 +599,7 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
 
         if(pAssembly == NULL)
         {
-            Assembly *pParentAssembly = fromModule->GetAssembly();
+            DomainAssembly *pParentAssembly = fromModule->GetDomainAssembly();
             if (nativeImage != NULL)
             {
                 pAssembly = nativeImage->LoadManifestAssembly(index, pParentAssembly);

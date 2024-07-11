@@ -1615,6 +1615,12 @@ TypeHandle ClassLoader::LookupTypeDefOrRefInModule(ModuleBase *pModule, mdToken 
     RETURN(typeHandle);
 }
 
+DomainAssembly *ClassLoader::GetDomainAssembly()
+{
+    WRAPPER_NO_CONTRACT;
+    return GetAssembly()->GetDomainAssembly();
+}
+
 #ifndef DACCESS_COMPILE
 
 //
@@ -1952,17 +1958,17 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                                                         className);
                         GCX_COOP();
                         ASSEMBLYREF asmRef = NULL;
-                        Assembly* pAssembly = NULL;
+                        DomainAssembly *pDomainAssembly = NULL;
                         GCPROTECT_BEGIN(asmRef);
 
-                        pAssembly = pDomain->RaiseTypeResolveEventThrowing(
-                            pModule->GetAssembly(),
+                        pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(
+                            pModule->GetAssembly()->GetDomainAssembly(),
                             pszFullName, &asmRef);
 
                         if (asmRef != NULL)
                         {
-                            _ASSERTE(pAssembly != NULL);
-                            if (pAssembly->GetLoaderAllocator()->IsCollectible())
+                            _ASSERTE(pDomainAssembly != NULL);
+                            if (pDomainAssembly->GetAssembly()->GetLoaderAllocator()->IsCollectible())
                             {
                                 if (!pModule->GetLoaderAllocator()->IsCollectible())
                                 {
@@ -1970,12 +1976,14 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                                     COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
                                 }
 
-                                pModule->GetLoaderAllocator()->EnsureReference(pAssembly->GetLoaderAllocator());
+                                pModule->GetLoaderAllocator()->EnsureReference(pDomainAssembly->GetAssembly()->GetLoaderAllocator());
                             }
                         }
                         GCPROTECT_END();
-                        if (pAssembly != NULL)
+                        if (pDomainAssembly != NULL)
                         {
+                            Assembly *pAssembly = pDomainAssembly->GetAssembly();
+
                             NameHandle name(nameSpace, className);
                             name.SetTypeToken(pModule, typeDef);
                             name.SetTokenNotToLoad(tdAllAssemblies);

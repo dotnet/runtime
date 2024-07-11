@@ -63,6 +63,10 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
         {
             pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
         }
+        if (pRefAssembly)
+        {
+            pParentAssembly = pRefAssembly->GetDomainAssembly();
+        }
     }
 
     AssemblySpec spec;
@@ -89,8 +93,8 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
     spec.Init(ssName.GetUTF8(), &asmInfo,
         pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
 
-    if (pRefAssembly != NULL)
-        spec.SetParentAssembly(pRefAssembly);
+    if (pParentAssembly != NULL)
+        spec.SetParentAssembly(pParentAssembly);
 
     // Have we been passed the reference to the binder against which this load should be triggered?
     // If so, then use it to set the fallback load context binder.
@@ -134,7 +138,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
 
     // Set the caller's assembly to be CoreLib
-    Assembly *pCallersAssembly = SystemDomain::System()->SystemAssembly();
+    DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
 
     // Initialize the AssemblySpec
     AssemblySpec spec;
@@ -646,9 +650,9 @@ extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAs
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
 
-    pAssembly->GetPEAssembly()->GetResource(pNameUTF8, length,
+    pAssembly->GetResource(pNameUTF8, length,
                            &pbInMemoryResource, NULL, NULL,
-                           NULL, pAssembly->GetAssembly());
+                           NULL, FALSE);
 
     END_QCALL;
 
@@ -675,12 +679,12 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
 
-    Assembly * pReferencedAssembly = NULL;
+    DomainAssembly * pReferencedAssembly = NULL;
     LPCSTR pFileName = NULL;
     DWORD dwLocation = 0;
 
-    if (pAssembly->GetPEAssembly()->GetResource(pNameUTF8, NULL, NULL, &pReferencedAssembly, &pFileName,
-                              &dwLocation, pAssembly->GetAssembly()))
+    if (pAssembly->GetResource(pNameUTF8, NULL, NULL, &pReferencedAssembly, &pFileName,
+                              &dwLocation, FALSE))
     {
         if (pFileName)
             retFileName.Set(pFileName);
@@ -688,7 +692,7 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
         GCX_COOP();
 
         if (pReferencedAssembly)
-            retAssembly.Set(pReferencedAssembly->GetExposedObject());
+            retAssembly.Set(pReferencedAssembly->GetExposedAssemblyObject());
 
         rv = dwLocation;
     }

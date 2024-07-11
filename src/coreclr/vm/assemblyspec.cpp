@@ -148,7 +148,7 @@ AssemblySpecHash::~AssemblySpecHash()
 
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
-                                  Assembly *pStaticParent)
+                                  DomainAssembly *pStaticParent)
 {
     CONTRACTL
     {
@@ -325,12 +325,12 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     CONTRACTL_END;
 
     AssemblyBinder *pParentAssemblyBinder = NULL;
-    Assembly *pParentAssembly = GetParentAssembly();
+    DomainAssembly *pParentDomainAssembly = GetParentAssembly();
 
-    if(pParentAssembly != NULL)
+    if(pParentDomainAssembly != NULL)
     {
         // Get the PEAssembly associated with the parent's domain assembly
-        PEAssembly *pParentPEAssembly = pParentAssembly->GetPEAssembly();
+        PEAssembly *pParentPEAssembly = pParentDomainAssembly->GetPEAssembly();
         pParentAssemblyBinder = pParentPEAssembly->GetAssemblyBinder();
     }
 
@@ -1121,7 +1121,7 @@ BOOL AssemblySpecBindingCache::CompareSpecs(UPTR u1, UPTR u2)
     return a1->CompareEx(a2);
 }
 
-Assembly * AssemblySpec::GetParentAssembly()
+DomainAssembly * AssemblySpec::GetParentAssembly()
 {
     LIMITED_METHOD_CONTRACT;
     return m_pParentAssembly;

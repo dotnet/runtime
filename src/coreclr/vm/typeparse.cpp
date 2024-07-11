@@ -26,7 +26,7 @@ static TypeHandle GetTypeHelper(LPCWSTR szTypeName, Assembly* pRequestingAssembl
 
     if (pRequestingAssembly != NULL)
     {
-        objRequestingAssembly = pRequestingAssembly->GetExposedObject();
+        objRequestingAssembly = pRequestingAssembly->GetDomainAssembly()->GetExposedAssemblyObject();
     }
 
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);

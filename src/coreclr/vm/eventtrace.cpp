@@ -5517,7 +5517,7 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
            (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart))
         {
-            Module* pModule = pAssembly->GetModule();
+            Module* pModule = pAssembly->GetDomainAssembly()->GetModule();
             ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
         }
 

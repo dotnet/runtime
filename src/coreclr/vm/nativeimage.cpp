@@ -261,7 +261,7 @@ NativeImage *NativeImage::Open(
 #endif
 
 #ifndef DACCESS_COMPILE
-Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid, Assembly *pParentAssembly)
+Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid, DomainAssembly *pParentAssembly)
 {
     STANDARD_VM_CONTRACT;
 

@@ -290,6 +290,15 @@ public:
         return m_pLoaderAllocator;
     }
 
+// ------------------------------------------------------------
+// Resource access
+// ------------------------------------------------------------
+
+    BOOL GetResource(LPCSTR szName, DWORD* cbResource,
+        PBYTE* pbInMemoryResource, DomainAssembly** pAssemblyRef,
+        LPCSTR* szFileName, DWORD* dwLocation,
+        BOOL fSkipRaiseResolveEvent);
+
  private:
     // ------------------------------------------------------------
     // Loader API

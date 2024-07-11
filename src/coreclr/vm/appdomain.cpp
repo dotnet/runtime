@@ -3946,7 +3946,7 @@ void AppDomain::ExceptionUnwind(Frame *pFrame)
 
 #ifndef DACCESS_COMPILE
 
-Assembly* AppDomain::RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef)
+DomainAssembly* AppDomain::RaiseTypeResolveEventThrowing(DomainAssembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef)
 {
     CONTRACTL
     {
@@ -3959,7 +3959,7 @@ Assembly* AppDomain::RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR s
 
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    Assembly* pResolvedAssembly = NULL;
+    DomainAssembly* pResolvedAssembly = NULL;
     _ASSERTE(strcmp(szName, g_AppDomainClassName));
 
     GCX_COOP();
@@ -3974,7 +3974,7 @@ Assembly* AppDomain::RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR s
     GCPROTECT_BEGIN(gc);
 
     if (pAssembly != NULL)
-        gc.AssemblyRef = pAssembly->GetExposedObject();
+        gc.AssemblyRef = pAssembly->GetExposedAssemblyObject();
 
     MethodDescCallSite onTypeResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_TYPE_RESOLVE);
 
@@ -3988,7 +3988,7 @@ Assembly* AppDomain::RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR s
 
     if (ResultingAssemblyRef != NULL)
     {
-        pResolvedAssembly = ResultingAssemblyRef->GetAssembly();
+        pResolvedAssembly = ResultingAssemblyRef->GetDomainAssembly();
 
         if (pResultingAssemblyRef)
             *pResultingAssemblyRef = ResultingAssemblyRef;
@@ -4006,7 +4006,7 @@ Assembly* AppDomain::RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR s
 }
 
 
-Assembly* AppDomain::RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szName)
+Assembly* AppDomain::RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR szName)
 {
     CONTRACT(Assembly*)
     {
@@ -4032,7 +4032,7 @@ Assembly* AppDomain::RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szNam
     GCPROTECT_BEGIN(gc);
 
     if (pAssembly != NULL)
-        gc.AssemblyRef=pAssembly->GetExposedObject();
+        gc.AssemblyRef=pAssembly->GetExposedAssemblyObject();
 
     MethodDescCallSite onResourceResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_RESOURCE_RESOLVE);
     gc.str = StringObject::NewString(szName);
@@ -4095,7 +4095,7 @@ AppDomain::RaiseAssemblyResolveEvent(
     {
         if (pSpec->GetParentAssembly() != NULL)
         {
-            gc.AssemblyRef=pSpec->GetParentAssembly()->GetExposedObject();
+            gc.AssemblyRef=pSpec->GetParentAssembly()->GetExposedAssemblyObject();
         }
 
         MethodDescCallSite onAssemblyResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_RESOLVE);

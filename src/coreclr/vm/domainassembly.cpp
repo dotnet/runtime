@@ -815,6 +815,42 @@ void DomainAssembly::DeliverSyncEvents()
 #endif // DEBUGGING_SUPPORTED
 }
 
+/*
+  // The enum for dwLocation from managed code:
+    public enum ResourceLocation
+    {
+        Embedded = 1,
+        ContainedInAnotherAssembly = 2,
+        ContainedInManifestFile = 4
+    }
+*/
+
+BOOL DomainAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
+                                 PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
+                                 LPCSTR *szFileName, DWORD *dwLocation,
+                                 BOOL fSkipRaiseResolveEvent)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        THROWS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    return GetPEAssembly()->GetResource( szName,
+                                   cbResource,
+                                   pbInMemoryResource,
+                                   pAssemblyRef,
+                                   szFileName,
+                                   dwLocation,
+                                   fSkipRaiseResolveEvent,
+                                   this,
+                                   AppDomain::GetCurrentDomain() );
+}
+
+
 DWORD DomainAssembly::ComputeDebuggingConfig()
 {
     CONTRACTL

@@ -497,16 +497,16 @@ PEAssembly* PEAssembly::LoadAssembly(mdAssemblyRef kAssemblyRef)
 
     AssemblySpec spec;
 
-    spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(this)->GetAssembly());
+    spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(this));
 
     RETURN GetAppDomain()->BindAssemblySpec(&spec, TRUE);
 }
 
-// dwLocation maps to System.Reflection.ResourceLocation
+
 BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
-                             PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
+                             PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
                              LPCSTR *szFileName, DWORD *dwLocation,
-                             Assembly* pAssembly)
+                             BOOL fSkipRaiseResolveEvent, DomainAssembly* pDomainAssembly, AppDomain* pAppDomain)
 {
     CONTRACTL
     {
@@ -523,6 +523,7 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     DWORD              dwResourceFlags;
     DWORD              dwOffset;
     mdManifestResource mdResource;
+    Assembly*          pAssembly = NULL;
     PEAssembly*        pPEAssembly = NULL;
     IMDInternalImport* pImport = GetMDImport();
     if (SUCCEEDED(pImport->FindManifestResourceByName(szName, &mdResource)))
@@ -537,12 +538,16 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     }
     else
     {
-        AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
-        DomainAssembly* pParentAssembly = pAppDomain->FindAssembly(this);
-        pAssembly = pAppDomain->RaiseResourceResolveEvent(pParentAssembly->GetAssembly(), szName);
+        if (fSkipRaiseResolveEvent || pAppDomain == NULL)
+            return FALSE;
+
+        DomainAssembly* pParentAssembly = GetAppDomain()->FindAssembly(this);
+        pAssembly = pAppDomain->RaiseResourceResolveEvent(pParentAssembly, szName);
         if (pAssembly == NULL)
             return FALSE;
-        pPEAssembly = pAssembly->GetPEAssembly();
+
+        pDomainAssembly = pAssembly->GetDomainAssembly();
+        pPEAssembly = pDomainAssembly->GetPEAssembly();
 
         if (FAILED(pAssembly->GetMDImport()->FindManifestResourceByName(
             szName,
@@ -554,11 +559,11 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
         if (dwLocation != 0)
         {
             if (pAssemblyRef != NULL)
-                *pAssemblyRef = pAssembly;
+                *pAssemblyRef = pDomainAssembly;
 
             *dwLocation = *dwLocation | 2; // ResourceLocation.containedInAnotherAssembly
         }
-        IfFailThrow(pAssembly->GetMDImport()->GetManifestResourceProps(
+        IfFailThrow(pPEAssembly->GetMDImport()->GetManifestResourceProps(
             mdResource,
             NULL,           //&szName,
             &mdLinkRef,
@@ -570,27 +575,27 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     switch(TypeFromToken(mdLinkRef)) {
     case mdtAssemblyRef:
         {
-            if (pAssembly == NULL)
+            if (pDomainAssembly == NULL)
                 return FALSE;
 
             AssemblySpec spec;
-            spec.InitializeSpec(mdLinkRef, GetMDImport(), pAssembly);
-            DomainAssembly* pDomainAssembly = spec.LoadDomainAssembly(FILE_LOADED);
+            spec.InitializeSpec(mdLinkRef, GetMDImport(), pDomainAssembly);
+            pDomainAssembly = spec.LoadDomainAssembly(FILE_LOADED);
 
             if (dwLocation) {
                 if (pAssemblyRef)
-                    *pAssemblyRef = pDomainAssembly->GetAssembly();
+                    *pAssemblyRef = pDomainAssembly;
 
                 *dwLocation = *dwLocation | 2; // ResourceLocation.containedInAnotherAssembly
             }
 
-            return GetResource(szName,
-                                cbResource,
-                                pbInMemoryResource,
-                                pAssemblyRef,
-                                szFileName,
-                                dwLocation,
-                                pDomainAssembly->GetAssembly());
+            return pDomainAssembly->GetResource(szName,
+                                                cbResource,
+                                                pbInMemoryResource,
+                                                pAssemblyRef,
+                                                szFileName,
+                                                dwLocation,
+                                                fSkipRaiseResolveEvent);
         }
 
     case mdtFile:
