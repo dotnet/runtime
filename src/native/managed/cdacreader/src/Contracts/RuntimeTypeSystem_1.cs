@@ -15,6 +15,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 {
     private readonly Target _target;
     private readonly TargetPointer _freeObjectMethodTablePointer;
+    private readonly ulong _methodDescAlignment;
 
     // TODO(cdac): we mutate this dictionary - copies of the RuntimeTypeSystem_1 struct share this instance.
     // If we need to invalidate our view of memory, we should clear this dictionary.
@@ -46,6 +47,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             ParentMethodTable = data.ParentMethodTable;
             PerInstInfo = data.PerInstInfo;
         }
+
+        // this MethodTable is a canonical MethodTable if it's EEClassOrCanonMT is an EEClass
+        internal bool IsCanonMT => GetEEClassOrCanonMTBits(EEClassOrCanonMT) == EEClassOrCanonMTBits.EEClass;
     }
 
     // Low order bit of EEClassOrCanonMT.
@@ -68,18 +72,27 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         ValidMask = 2,
     }
 
+    [Flags]
+    internal enum MethodDescFlags : ushort
+    {
+        HasNonVtableSlot = 0x0008,
+    }
+
     internal struct MethodDesc
     {
 
     }
 
-    internal RuntimeTypeSystem_1(Target target, TargetPointer freeObjectMethodTablePointer)
+    internal RuntimeTypeSystem_1(Target target, TargetPointer freeObjectMethodTablePointer, ulong methodDescAlignment)
     {
         _target = target;
         _freeObjectMethodTablePointer = freeObjectMethodTablePointer;
+        _methodDescAlignment = methodDescAlignment;
     }
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
+
+    internal ulong MethodDescAlignment => _methodDescAlignment;
 
     public TypeHandle GetTypeHandle(TargetPointer typeHandlePointer)
     {
@@ -422,6 +435,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 TypeHandles[i] = rts.GetTypeHandle(target.ReadPointer(retAndArgs + (ulong)target.PointerSize * (ulong)i));
             }
         }
+
+    internal ushort GetNumVtableSlots(TypeHandleHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return 0;
+        MethodTable methodTable = _methodTables[typeHandleHandle.Address];
+        ushort numNonVirtualSlots = methodTable.IsCanonMT ? GetClassData(typeHandle).NumNonVirtualSlots : (ushort)0;
+        return checked((ushort)(methodTable.NumVirtuals + numNonVirtualSlots));
     }
 
     public MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer)
@@ -442,10 +463,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 #endif
 
-        // Otherwse, get ready to validate
-        NonValidated.MethodDesc nonvalidatedMethodDesc = NonValidated.GetMethodDescData(_target, methodDescPointer);
-
-        if (!ValidateMethodDescPointer(nonvalidatedMethodDesc))
+        if (!ValidateMethodDescPointer(methodDescPointer))
         {
             throw new InvalidOperationException("Invalid method desc pointer");
         }

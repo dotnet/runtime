@@ -1915,6 +1915,8 @@ public:
 template<> struct cdac_offsets<MethodDesc>
 {
     static const size_t ChunkIndex = offsetof(MethodDesc, m_chunkIndex);
+    static const size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
+    static const size_t Flags = offsetof(MethodDesc, m_wFlags);
 };
 
 #ifndef DACCESS_COMPILE
@@ -2335,6 +2337,17 @@ private:
     UINT16               m_flagsAndTokenRange;
 
     // Followed by array of method descs...
+
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<>
+struct cdac_offsets<MethodDescChunk>
+{
+    static constexpr size_t MethodTable = offsetof(MethodDescChunk, m_methodTable);
+    static constexpr size_t Next = offsetof(MethodDescChunk, m_next);
+    static constexpr size_t Size = offsetof(MethodDescChunk, m_size);
+    static constexpr size_t Count = offsetof(MethodDescChunk, m_count);
 };
 
 inline int MethodDesc::GetMethodDescChunkIndex() const

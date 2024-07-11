@@ -72,9 +72,10 @@ internal interface IRuntimeTypeSystem : IContract
     {
         TargetPointer targetPointer = target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable);
         TargetPointer freeObjectMethodTable = target.ReadPointer(targetPointer);
+        ulong methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
         return version switch
         {
-            1 => new RuntimeTypeSystem_1(target, freeObjectMethodTable),
+            1 => new RuntimeTypeSystem_1(target, freeObjectMethodTable, methodDescAlignment),
             _ => default(RuntimeTypeSystem),
         };
     }

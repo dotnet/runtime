@@ -38,4 +38,5 @@ public enum DataType
     FnPtrTypeDesc,
     DynamicMetadata,
     MethodDesc,
+    MethodDescChunk,
 }
