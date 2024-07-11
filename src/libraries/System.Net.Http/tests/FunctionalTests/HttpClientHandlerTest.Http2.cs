@@ -1054,7 +1054,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task GoAwayFrame_RequestServerDisconnects_ThrowsHttpProtocolExceptionWithProperErrorCode()
         {
-            _output.WriteLine("Started!");
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 // Client starts an HTTP/2 request and awaits response headers
@@ -1073,7 +1072,7 @@ namespace System.Net.Http.Functional.Tests
             async server =>
             {
                 // Server returns response headers
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                await using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 int streamId = await connection.ReadRequestHeaderAsync();
                 await connection.SendDefaultResponseHeadersAsync(streamId);
                 _output.WriteLine("Server sent response headers!");
@@ -1081,7 +1080,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendGoAway(streamId, ProtocolErrors.ENHANCE_YOUR_CALM);
                 _output.WriteLine("Server sent GOAWAY!");
                 connection.ShutdownSend();
-            }).WaitAsync(TimeSpan.FromSeconds(10));
+            });
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
