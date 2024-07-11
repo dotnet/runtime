@@ -2852,6 +2852,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 						break;
 					}
 				}
+				/* else fallthru */
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_ARRAY:
