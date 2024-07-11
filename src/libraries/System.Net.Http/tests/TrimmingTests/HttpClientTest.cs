@@ -16,10 +16,13 @@ class Program
 
     static async Task<int> Main(string[] args)
     {
-        using var client = new HttpClient();
-        using var response = await client.GetAsync("https://www.microsoft.com");            
-        var result = await response.Content.ReadAsStringAsync();
-        Console.WriteLine(result);
+        if (Environment.GetEnvironmentVariable("Never") == "Ever")
+        {
+            using var client = new HttpClient();
+            using var response = await client.GetAsync("https://www.microsoft.com");            
+            var result = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(result);
+        }
 
         const string quicDll = "System.Net.Quic.dll";
         var quicDllExists = File.Exists(Path.Combine(AppContext.BaseDirectory, quicDll));
