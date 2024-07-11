@@ -4175,7 +4175,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svcls[_s8]_z(svbool_t pg, svint8_t op)
         ///   CLS Ztied.B, Pg/M, Zop.B
         /// </summary>
-        public static unsafe Vector<byte> LeadingSignCount(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<byte> LeadingSignCount(Vector<sbyte> value){ throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16_t svcls[_s16]_m(svuint16_t inactive, svbool_t pg, svint16_t op)
@@ -7142,120 +7142,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat32_t svscale[_f32]_z(svbool_t pg, svfloat32_t op1, svint32_t op2)
         /// </summary>
         public static unsafe Vector<float> Scale(Vector<float> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
-
-
-        //  Non-truncating store
-
-        // <summary>
-        // void svst1_scatter_[s64]offset[_f64](svbool_t pg, float64_t *base, svint64_t offsets, svfloat64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
-        public static unsafe void Scatter(Vector<double> mask, double* address, Vector<long> indicies, Vector<double> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter[_u64base_f64](svbool_t pg, svuint64_t bases, svfloat64_t data)
-        //   ST1D Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
-        public static unsafe void Scatter(Vector<double> mask, Vector<ulong> addresses, Vector<double> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter_[u64]offset[_f64](svbool_t pg, float64_t *base, svuint64_t offsets, svfloat64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
-        public static unsafe void Scatter(Vector<double> mask, double* address, Vector<ulong> indicies, Vector<double> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter_[s32]offset[_s32](svbool_t pg, int32_t *base, svint32_t offsets, svint32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
-        // </summary>
-        public static unsafe void Scatter(Vector<int> mask, int* address, Vector<int> indicies, Vector<int> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter[_u32base_s32](svbool_t pg, svuint32_t bases, svint32_t data)
-        //   ST1W Zdata.S, Pg, [Zbases.S, #0]
-        // </summary>
-        // Removed as per #103297
-        // public static unsafe void Scatter(Vector<int> mask, Vector<uint> addresses, Vector<int> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter_[u32]offset[_s32](svbool_t pg, int32_t *base, svuint32_t offsets, svint32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
-        // </summary>
-        public static unsafe void Scatter(Vector<int> mask, int* address, Vector<uint> indicies, Vector<int> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter_[s64]offset[_s64](svbool_t pg, int64_t *base, svint64_t offsets, svint64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
-        public static unsafe void Scatter(Vector<long> mask, long* address, Vector<long> indicies, Vector<long> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
-        //   ST1D Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
-        public static unsafe void Scatter(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter_[u64]offset[_s64](svbool_t pg, int64_t *base, svuint64_t offsets, svint64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
-        public static unsafe void Scatter(Vector<long> mask, long* address, Vector<ulong> indicies, Vector<long> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter_[s32]offset[_f32](svbool_t pg, float32_t *base, svint32_t offsets, svfloat32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
-        // </summary>
-        public static unsafe void Scatter(Vector<float> mask, float* address, Vector<int> indicies, Vector<float> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter[_u32base_f32](svbool_t pg, svuint32_t bases, svfloat32_t data)
-        //   ST1W Zdata.S, Pg, [Zbases.S, #0]
-        // </summary>
-        // Removed as per #103297
-        // public static unsafe void Scatter(Vector<float> mask, Vector<uint> addresses, Vector<float> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter_[u32]offset[_f32](svbool_t pg, float32_t *base, svuint32_t offsets, svfloat32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
-        // </summary>
-        public static unsafe void Scatter(Vector<float> mask, float* address, Vector<uint> indicies, Vector<float> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter_[s32]offset[_u32](svbool_t pg, uint32_t *base, svint32_t offsets, svuint32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
-        // </summary>
-        public static unsafe void Scatter(Vector<uint> mask, uint* address, Vector<int> indicies, Vector<uint> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter[_u32base_u32](svbool_t pg, svuint32_t bases, svuint32_t data)
-        //   ST1W Zdata.S, Pg, [Zbases.S, #0]
-        // </summary>
-        // Removed as per #103297
-        // public static unsafe void Scatter(Vector<uint> mask, Vector<uint> addresses, Vector<uint> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter_[u32]offset[_u32](svbool_t pg, uint32_t *base, svuint32_t offsets, svuint32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
-        // </summary>
-        public static unsafe void Scatter(Vector<uint> mask, uint* address, Vector<uint> indicies, Vector<uint> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter_[s64]offset[_u64](svbool_t pg, uint64_t *base, svint64_t offsets, svuint64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
-        public static unsafe void Scatter(Vector<ulong> mask, ulong* address, Vector<long> indicies, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
-        //   ST1D Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
-        public static unsafe void Scatter(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1_scatter_[u64]offset[_u64](svbool_t pg, uint64_t *base, svuint64_t offsets, svuint64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
-        public static unsafe void Scatter(Vector<ulong> mask, ulong* address, Vector<ulong> indicies, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
         ///  Logical shift left

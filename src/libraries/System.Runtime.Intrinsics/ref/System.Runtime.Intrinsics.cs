@@ -5386,25 +5386,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<double> Scale(System.Numerics.Vector<double> left, System.Numerics.Vector<long> right) { throw null; }
         public static System.Numerics.Vector<float> Scale(System.Numerics.Vector<float> left, System.Numerics.Vector<int> right) { throw null; }
 
-        public static unsafe void Scatter(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<long> indicies, System.Numerics.Vector<double> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<double> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<double> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<ulong> indicies, System.Numerics.Vector<double> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<int> indicies, System.Numerics.Vector<int> data) { throw null; }
-        // public static unsafe void Scatter(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses, System.Numerics.Vector<int> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<uint> indicies, System.Numerics.Vector<int> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> indicies, System.Numerics.Vector<long> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<long> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<ulong> indicies, System.Numerics.Vector<long> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<int> indicies, System.Numerics.Vector<float> data) { throw null; }
-        // public static unsafe void Scatter(System.Numerics.Vector<float> mask, System.Numerics.Vector<uint> addresses, System.Numerics.Vector<float> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<uint> indicies, System.Numerics.Vector<float> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<int> indicies, System.Numerics.Vector<uint> data) { throw null; }
-        // public static unsafe void Scatter(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses, System.Numerics.Vector<uint> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> indicies, System.Numerics.Vector<uint> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<long> indicies, System.Numerics.Vector<ulong> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<ulong> data) { throw null; }
-        public static unsafe void Scatter(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<ulong> indicies, System.Numerics.Vector<ulong> data) { throw null; }
-
         public static System.Numerics.Vector<byte> ShiftLeftLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<byte> ShiftLeftLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<short> ShiftLeftLogical(System.Numerics.Vector<short> left, System.Numerics.Vector<ushort> right) { throw null; }

@@ -26845,10 +26845,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
                 addr = Op(2);
                 break;
 
-            case NI_Sve_Scatter:
-                addr = Op(2);
-                break;
-
 #endif // TARGET_ARM64
 
             default:
@@ -26890,11 +26886,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
 
     if (addr != nullptr)
     {
-#ifdef TARGET_ARM64
-        assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_Scatter))));
-#else
         assert(varTypeIsI(addr));
-#endif
         return true;
     }
 
