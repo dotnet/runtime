@@ -8071,7 +8071,10 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // Add the thread local variables like alloc_context, etc.
     //
 
-    m_pRuntimeThreadLocals.EnumMem();
+    if (m_pRuntimeThreadLocals.IsValid())
+    {
+        m_pRuntimeThreadLocals.EnumMem();
+    }
 
     //
     // Try and do a stack trace and save information
