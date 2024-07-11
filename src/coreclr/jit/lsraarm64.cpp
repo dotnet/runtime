@@ -1526,10 +1526,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // is not allocated the same register as the target.
     const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
-    bool tgtPrefOp1        = false;
-    bool tgtPrefOp2        = false;
-    bool tgtPrefEmbOp2OfOp2   = false;
-    bool delayFreeMultiple = false;
+    bool tgtPrefOp1         = false;
+    bool tgtPrefOp2         = false;
+    bool tgtPrefEmbOp2OfOp2 = false;
+    bool delayFreeMultiple  = false;
     if (intrin.op1 != nullptr)
     {
         bool simdRegToSimdRegMove = false;
