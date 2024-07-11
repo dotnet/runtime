@@ -379,10 +379,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Optimize processing for the common case of no Z anchor and <= 255 minterms. Specialize each call with different generic method arguments.
                 matchEnd = (_findOpts is not null, _containsAnyAnchor) switch
                 {
-                    (true, true) =>   FindEndPositionOptimized<AcceleratedStateHandler, DefaultOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
-                    (true, false) =>  FindEndPositionOptimized<NoAnchorAcceleratedStateHandler, NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
-                    (false, false) => FindEndPositionOptimized<NoAcceleratedStateHandler, NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
-                    (false, true) =>  FindEndPositionOptimized<NoAcceleratedStateHandler, DefaultOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (true, true) =>   FindEndPositionOptimized<RegexFindOpsAcceleratedStateHandler, DefaultDfaNoZAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (true, false) =>  FindEndPositionOptimized<NoAnchorRegexFindOpsAcceleratedStateHandler, NoAnchorDfaOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (false, false) => FindEndPositionOptimized<NoOptimizationsAcceleratedStateHandler, NoAnchorDfaOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (false, true) =>  FindEndPositionOptimized<NoOptimizationsAcceleratedStateHandler, DefaultDfaNoZAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                 };
             }
             else
@@ -489,7 +489,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private int FindEndPositionOptimized<TAcceleratedStateHandler, TOptimizedNullabilityHandler>(
             ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, PerThreadData perThreadData)
             where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
-            where TOptimizedNullabilityHandler : struct, IOptimizedNullabilityHandler
+            where TOptimizedNullabilityHandler : struct, IDfaNoZAnchorOptimizedNullabilityHandler
         {
             // Initial state candidate. (This is not used in the common DFA case and could potentially be removed in the future.)
             int initialStatePosCandidate = pos;
@@ -632,7 +632,7 @@ namespace System.Text.RegularExpressions.Symbolic
             ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
             long timeoutOccursAt, ref int posRef, ref int currentStateIdRef, ref int endPosRef)
             where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
-            where TOptimizedNullabilityHandler : struct, IOptimizedNullabilityHandler
+            where TOptimizedNullabilityHandler : struct, IDfaNoZAnchorOptimizedNullabilityHandler
         {
             // Initial check for input end lifted out of the subsequent hot-path loop.
             if (posRef == input.Length)
@@ -1642,11 +1642,43 @@ namespace System.Text.RegularExpressions.Symbolic
                     -1;
         }
 
+        /// <summary>Represents a handler used to determine the next possible starting position.</summary>
         private interface IInitialStateHandler
         {
-            public static abstract bool TryFindNextStartingPosition(
-                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input,
-                ref CurrentState state, ref int pos);
+            /// <summary>Gets the next viable starting position.</summary>
+            /// <returns>true if a viable starting position was found; false if no further possible match exists.</returns>
+            public static abstract bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos);
+        }
+
+        /// <summary>Provides an initial state handler for when there are no initial state optimizations to apply.</summary>
+        private readonly struct NoOptimizationsInitialStateHandler : IInitialStateHandler
+        {
+            /// <summary>Returns true. No optimizations are known to be able to skip states, thus every position is a viable starting position.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos) =>
+                true;
+        }
+
+        /// <summary>Provides a handler that uses the matcher's <see cref="RegexFindOptimizations"/> to optimize searching for the next viable starting state.</summary>
+        private readonly struct InitialStateFindOptimizationsHandler : IInitialStateHandler
+        {
+            /// <summary>Gets the next viable starting position.</summary>
+            /// <returns>true if a viable starting position was found; false if no further possible match exists.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos)
+            {
+                // Find the first position that matches with some likely character.
+                if (matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
+                {
+                    // Update the starting state based on where TryFindNextStartingPosition moved us to.
+                    // As with the initial starting state, if it's a dead end, no match exists.
+                    state = new CurrentState(matcher._dotstarredInitialStates[matcher.GetCharKind(input, pos - 1)]);
+                    return true;
+                }
+
+                // No match exists
+                return false;
+            }
         }
 
         /// <summary>
@@ -1659,29 +1691,15 @@ namespace System.Text.RegularExpressions.Symbolic
                 byte[] lookup, ref int currentStateId, ref int pos, int initialStateId);
         }
 
-        private readonly struct NoAnchorAcceleratedStateHandler : IAcceleratedStateHandler
+        private readonly struct NoOptimizationsAcceleratedStateHandler : IAcceleratedStateHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool TryFindNextStartingPosition(
-                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, byte[] lookup, ref int currentStateId, ref int pos, int initialStateId)
-            {
-                if (currentStateId != initialStateId)
-                {
-                    return false;
-                }
-
-                if (!matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
-                {
-                    // No match exists
-                    currentStateId = matcher._deadStateId;
-                    pos = input.Length;
-                }
-
-                return true;
-            }
+                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, byte[] lookup, ref int currentStateId, ref int pos, int initialStateId) =>
+                false;
         }
 
-        private readonly struct AcceleratedStateHandler : IAcceleratedStateHandler
+        private readonly struct RegexFindOpsAcceleratedStateHandler : IAcceleratedStateHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher,
@@ -1708,41 +1726,25 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private readonly struct NoAcceleratedStateHandler : IAcceleratedStateHandler
+        private readonly struct NoAnchorRegexFindOpsAcceleratedStateHandler : IAcceleratedStateHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool TryFindNextStartingPosition(
-                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, byte[] lookup, ref int currentStateId, ref int pos, int initialStateId) =>
-                false;
-        }
-
-        /// <summary>No-op handler for when there are no initial state optimizations to apply.</summary>
-        private readonly struct NoOptimizationsInitialStateHandler : IInitialStateHandler
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos) =>
-                true; // the current position is a possible starting position
-        }
-
-        /// <summary>
-        /// Handler for when a <see cref="RegexFindOptimizations"/> instance is available.
-        /// </summary>
-        private readonly struct InitialStateFindOptimizationsHandler : IInitialStateHandler
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos)
+                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, byte[] lookup, ref int currentStateId, ref int pos, int initialStateId)
             {
-                // Find the first position that matches with some likely character.
-                if (matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
+                if (currentStateId != initialStateId)
                 {
-                    // Update the starting state based on where TryFindNextStartingPosition moved us to.
-                    // As with the initial starting state, if it's a dead end, no match exists.
-                    state = new CurrentState(matcher._dotstarredInitialStates[matcher.GetCharKind(input, pos - 1)]);
-                    return true;
+                    return false;
                 }
 
-                // No match exists
-                return false;
+                if (!matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
+                {
+                    // No match exists
+                    currentStateId = matcher._deadStateId;
+                    pos = input.Length;
+                }
+
+                return true;
             }
         }
 
@@ -1780,7 +1782,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Represents a handler for evaluating nullability of states and for use in DFAs for patterns that do not contain \Z anchors.</summary>
-        private interface IOptimizedNullabilityHandler
+        private interface IDfaNoZAnchorOptimizedNullabilityHandler
         {
             /// <summary>Gets whether the specified position is nullable.</summary>
             public static abstract bool IsNullable(
@@ -1789,7 +1791,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Optimized nullability handler that works regardless of what additional anchors may exist in a pattern.</summary>
-        private readonly struct DefaultOptimizedNullabilityHandler : IOptimizedNullabilityHandler
+        private readonly struct DefaultDfaNoZAnchorOptimizedNullabilityHandler : IDfaNoZAnchorOptimizedNullabilityHandler
         {
             /// <summary>Gets whether the specified position is nullable.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1809,7 +1811,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Optimized nullability handler for when a pattern has no anchors at all.</summary>
-        private readonly struct NoAnchorOptimizedNullabilityHandler : IOptimizedNullabilityHandler
+        private readonly struct NoAnchorDfaOptimizedNullabilityHandler : IDfaNoZAnchorOptimizedNullabilityHandler
         {
             /// <summary>Gets whether the specified position is nullable.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
