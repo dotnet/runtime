@@ -146,9 +146,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NetCoreAppNativeLibrary Include="icuuc" Condition="'$(_IsiOSLikePlatform)' == 'true' and '$(InvariantGlobalization)' != 'true' and '$(HybridGlobalization)' != 'true'" />
     </ItemGroup>
 
-    <!-- zlib-ng's libz.a is installed in the aotsdk folder but needs to be consumed as a NetCoreAppNativeLibrary, so it needs to change location to be detected properly when escaping it. -->
-    <Copy SourceFiles="$(IlcSdkPath)libz.a" DestinationFolder="$(IlcFrameworkNativePath)" />
-
     <ItemGroup>
       <DirectPInvoke Include="@(NetCoreAppNativeLibrary->'lib%(Identity)')" />
       <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary->'%(Identity)')">
