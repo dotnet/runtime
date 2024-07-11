@@ -12,8 +12,7 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn);CA1822;IDE0060</NoWarn>
 
-    <FunctioningBinaryFormatter Condition="'$(TargetFramework)' == '$(NetCoreAppMinimum)'">true</FunctioningBinaryFormatter>
-    <FunctioningBinaryFormatter Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</FunctioningBinaryFormatter>
+    <FunctioningBinaryFormatter Condition="'$(TargetFramework)' == '$(NetCoreAppMinimum)' and '$(DotNetBuildSourceOnly)' != 'true'">true</FunctioningBinaryFormatter>
     <!-- The GenerateNuspec target fails if this property is keyed off of FunctioningBinaryFormatter, so keep it logically in sync --> 
     <IncludeBuildOutput Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking Condition="'$(FunctioningBinaryFormatter)' != 'true'">true</SuppressDependenciesWhenPacking>
