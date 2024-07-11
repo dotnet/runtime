@@ -85,7 +85,7 @@ namespace System.Diagnostics.Metrics.Tests
         [Fact]
         public void CpuTime()
         {
-            using InstrumentRecorder<double> instrumentRecorder = new("dotnet.cpu.time");
+            using InstrumentRecorder<double> instrumentRecorder = new("dotnet.process.cpu.time");
 
             instrumentRecorder.RecordObservableInstruments();
 
@@ -128,7 +128,7 @@ namespace System.Diagnostics.Metrics.Tests
         public void ExceptionsCount()
         {
             // We inject an exception into the MeterListener callback here, so we can test that we don't recursively record exceptions.
-            using InstrumentRecorder<long> instrumentRecorder = new("dotnet.exceptions.count", injectException: true);
+            using InstrumentRecorder<long> instrumentRecorder = new("dotnet.exceptions", injectException: true);
 
             try
             {
@@ -167,12 +167,12 @@ namespace System.Diagnostics.Metrics.Tests
 
         public static IEnumerable<object[]> LongMeasurements => new List<object[]>
         {
-            new object[] { "dotnet.gc.objects.size", s_longGreaterThanZero, null },
+            new object[] { "dotnet.process.memory.working_set", s_longGreaterThanZero, null },
             new object[] { "dotnet.assemblies.count", s_longGreaterThanZero, null },
-            new object[] { "dotnet.cpu.count", s_longGreaterThanZero, null },
+            new object[] { "dotnet.process.cpu.count", s_longGreaterThanZero, null },
 #if NET
-            new object[] { "dotnet.gc.memory.total_allocated", s_longGreaterThanZero, null },
-            new object[] { "dotnet.gc.memory.committed", s_longGreaterThanZero, s_forceGc },
+            new object[] { "dotnet.gc.heap.total_allocated", s_longGreaterThanZero, null },
+            new object[] { "dotnet.gc.last_collection.memory.committed_size", s_longGreaterThanZero, s_forceGc },
             new object[] { "dotnet.gc.pause.time", s_doubleGreaterThanZero, s_forceGc },
             new object[] { "dotnet.jit.compiled_il.size", s_longGreaterThanZero, null },
             new object[] { "dotnet.jit.compiled_method.count", s_longGreaterThanZero, null },
@@ -186,11 +186,10 @@ namespace System.Diagnostics.Metrics.Tests
         };
 
 #if NET
-        [Fact]
-        public void HeapSize() => EnsureAllHeapTags("dotnet.gc.heap.size");
-
-        [Fact]
-        public void FragmentationSize() => EnsureAllHeapTags("dotnet.gc.heap.fragmentation");
+        [Theory]
+        [InlineData("dotnet.gc.last_collection.heap.size")]
+        [InlineData("dotnet.gc.last_collection.heap.fragmentation.size")]
+        public void HeapTags(string metricName) => EnsureAllHeapTags(metricName);
 
         private void EnsureAllHeapTags(string metricName)
         {
