@@ -430,7 +430,7 @@ public class GenerateWasmBootJson : Task
 
     private void MapFingerprintedAsset(ResourcesData resources, string resourceRoute, string resourceName)
     {
-        if (!IsTargeting90OrLater())
+        if (IsFingerprintingEnabled && !IsTargeting90OrLater())
             return;
 
         resources.fingerprinting[resourceRoute] = resourceName;
