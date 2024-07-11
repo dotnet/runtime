@@ -202,36 +202,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 """;
 
             await VerifyAgainstBaselineUsingFile("BindConfiguration.generated.txt", GetSource(), extType: ExtensionClassType.OptionsBuilder);
-        }
-
-        [Fact]
-        public async Task BindConfigurationWithConfigureActions()
-        {
-            string GetSource(string? configureActions = null) => $$"""
-                using System.Collections.Generic;
-                using Microsoft.Extensions.Configuration;
-                using Microsoft.Extensions.DependencyInjection;
-                using Microsoft.Extensions.Options;
-
-                public class Program
-                {
-                    public static void Main()
-                    {
-                        var services = new ServiceCollection();
-                        OptionsBuilder<MyClass> optionsBuilder = new(services, Options.DefaultName);
-                        optionsBuilder.BindConfiguration(""{{configureActions}});
-                    }
-
-                    public class MyClass
-                    {
-                        public string MyString { get; set; }
-                        public int MyInt { get; set; }
-                        public List<int> MyList { get; set; }
-                    }
-                }
-                """;
-
-            await VerifyAgainstBaselineUsingFile("BindConfigurationWithConfigureActions.generated.txt", GetSource(@", _ => { }"), extType: ExtensionClassType.OptionsBuilder);
+            await VerifyAgainstBaselineUsingFile("BindConfiguration.generated.txt", GetSource(@", _ => { }"), extType: ExtensionClassType.OptionsBuilder);
         }
         #endregion OptionsBuilder<T> extensions.
     }

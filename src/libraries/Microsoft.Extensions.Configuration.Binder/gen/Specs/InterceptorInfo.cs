@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
@@ -172,56 +170,33 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             Debug.Assert(BinderInvocation.IsBindingOperation(invocation));
 
-            if (invocation.Syntax is not InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccessExprSyntax } invocationExpressionSyntax)
+            if (invocation.Syntax is not InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccessExprSyntax })
             {
                 const string InvalidInvocationErrMsg = "The invocation should have been validated upstream when selecting invocations to emit interceptors for.";
                 throw new ArgumentException(InvalidInvocationErrMsg, nameof(invocation));
             }
 
-            if (ConfigurationBindingGenerator.InterceptorVersion == 0)
-            {
-                SyntaxTree operationSyntaxTree = invocation.Syntax.SyntaxTree;
-                TextSpan memberNameSpan = memberAccessExprSyntax.Name.Span;
-                FileLinePositionSpan linePosSpan = operationSyntaxTree.GetLineSpan(memberNameSpan);
+            SyntaxTree operationSyntaxTree = invocation.Syntax.SyntaxTree;
+            TextSpan memberNameSpan = memberAccessExprSyntax.Name.Span;
+            FileLinePositionSpan linePosSpan = operationSyntaxTree.GetLineSpan(memberNameSpan);
 
-                Interceptor = interceptor;
-                LineNumber = linePosSpan.StartLinePosition.Line + 1;
-                CharacterNumber = linePosSpan.StartLinePosition.Character + 1;
-                FilePath = GetInterceptorFilePath();
+            Interceptor = interceptor;
+            LineNumber = linePosSpan.StartLinePosition.Line + 1;
+            CharacterNumber = linePosSpan.StartLinePosition.Character + 1;
+            FilePath = GetInterceptorFilePath();
 
-                // Use the same logic used by the interceptors API for resolving the source mapped value of a path.
-                // https://github.com/dotnet/roslyn/blob/f290437fcc75dad50a38c09e0977cce13a64f5ba/src/Compilers/CSharp/Portable/Compilation/CSharpCompilation.cs#L1063-L1064
-                string GetInterceptorFilePath()
-                {
-                    SourceReferenceResolver? sourceReferenceResolver = invocation.SemanticModel?.Compilation.Options.SourceReferenceResolver;
-                    return sourceReferenceResolver?.NormalizePath(operationSyntaxTree.FilePath, baseFilePath: null) ?? operationSyntaxTree.FilePath;
-                }
-            }
-            else
+            // Use the same logic used by the interceptors API for resolving the source mapped value of a path.
+            // https://github.com/dotnet/roslyn/blob/f290437fcc75dad50a38c09e0977cce13a64f5ba/src/Compilers/CSharp/Portable/Compilation/CSharpCompilation.cs#L1063-L1064
+            string GetInterceptorFilePath()
             {
-                Debug.Assert(ConfigurationBindingGenerator.InterceptorVersion == 1);
-                Interceptor = interceptor;
-                InterceptableLocation = ConfigurationBindingGenerator.GetInterceptableLocationFunc(invocation.SemanticModel, invocationExpressionSyntax, default(CancellationToken));
+                SourceReferenceResolver? sourceReferenceResolver = invocation.SemanticModel?.Compilation.Options.SourceReferenceResolver;
+                return sourceReferenceResolver?.NormalizePath(operationSyntaxTree.FilePath, baseFilePath: null) ?? operationSyntaxTree.FilePath;
             }
         }
 
         public MethodsToGen Interceptor { get; }
-
-        // Used with v0 interceptor approach:
         public string FilePath { get; }
         public int LineNumber { get; }
         public int CharacterNumber { get; }
-
-        // Used with v1 interceptor approach:
-        private object? InterceptableLocation { get; }
-
-        public string InterceptableLocationGetDisplayLocation() => InterceptableLocation is null ? "" :
-            (string)ConfigurationBindingGenerator.InterceptableLocationVersionGetDisplayLocation.Invoke(InterceptableLocation, parameters: null);
-
-        public string InterceptableLocationData => InterceptableLocation is null ? "" :
-            (string)ConfigurationBindingGenerator.InterceptableLocationDataGetter.Invoke(InterceptableLocation, parameters: null);
-
-        public int InterceptableLocationVersion => InterceptableLocation is null ? 0 :
-            (int)ConfigurationBindingGenerator.InterceptableLocationVersionGetter.Invoke(InterceptableLocation, parameters: null);
     }
 }

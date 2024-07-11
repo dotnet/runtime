@@ -72,28 +72,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitInterceptsLocationAttrDecl()
             {
                 _writer.WriteLine();
-
-                string arguments = ConfigurationBindingGenerator.InterceptorVersion == 0 ?
-                    "string filePath, int line, int column" :
-                    "int version, string data";
-
                 _writer.WriteLine($$"""
-                namespace System.Runtime.CompilerServices
-                {
-                    using System;
-                    using System.CodeDom.Compiler;
-
-                    {{Expression.GeneratedCodeAnnotation}}
-                    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-                    file sealed class InterceptsLocationAttribute : Attribute
+                    namespace System.Runtime.CompilerServices
                     {
-                        public InterceptsLocationAttribute({{arguments}})
+                        using System;
+                        using System.CodeDom.Compiler;
+
+                        {{Expression.GeneratedCodeAnnotation}}
+                        [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+                        file sealed class InterceptsLocationAttribute : Attribute
                         {
+                            public InterceptsLocationAttribute(string filePath, int line, int column)
+                            {
+                            }
                         }
                     }
-                }
-                """);
-
+                    """);
                 _writer.WriteLine();
             }
 

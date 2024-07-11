@@ -158,19 +158,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitInterceptsLocationAnnotations(IEnumerable<InvocationLocationInfo> infoList)
             {
-                if (ConfigurationBindingGenerator.InterceptorVersion == 0)
+                foreach (InvocationLocationInfo info in infoList)
                 {
-                    foreach (InvocationLocationInfo info in infoList)
-                    {
-                        _writer.WriteLine($@"[{Identifier.InterceptsLocation}(@""{info.FilePath}"", {info.LineNumber}, {info.CharacterNumber})]");
-                    }
-                }
-                else
-                {
-                    foreach (InvocationLocationInfo info in infoList)
-                    {
-                        _writer.WriteLine($@"[{Identifier.InterceptsLocation}({info.InterceptableLocationVersion}, ""{info.InterceptableLocationData}"")] // {info.InterceptableLocationGetDisplayLocation()}");
-                    }
+                    _writer.WriteLine($@"[{Identifier.InterceptsLocation}(@""{info.FilePath}"", {info.LineNumber}, {info.CharacterNumber})]");
                 }
             }
 
