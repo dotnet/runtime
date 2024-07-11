@@ -61,7 +61,7 @@ internal enum MetadataTable
     GenericParam = 0x2a,
     MethodSpec = 0x2b,
     GenericParamConstraint = 0x2c,
-    Count = 0x2c
+    Count = 0x2d
 }
 
 internal class EcmaMetadata

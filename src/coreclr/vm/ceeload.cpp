@@ -344,6 +344,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     m_pAssembly = pAssembly;
     m_pPEAssembly      = pPEAssembly;
     m_dwTransientFlags = CLASSES_FREED;
+    m_pDynamicMetadata = NULL;
 
     pPEAssembly->AddRef();
 }
@@ -3748,7 +3749,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
     m_pInMemoryWriter = NULL;
     m_sdataSection = NULL;
     m_pCeeFileGen = NULL;
-    m_pDynamicMetadata = NULL;
 }
 
 HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);

@@ -27,7 +27,7 @@ internal sealed class MethodTableArray : IData<MethodTableArray, (TargetPointer 
 
         for (int i = 0; i < key.size; i++)
         {
-            instantiationSpan[i] = new MethodTableHandle(targetPointerSpan[i]);
+            instantiationSpan[i] = target.Contracts.RuntimeTypeSystem.GetMethodTableHandle(targetPointerSpan[i]);
         }
     }
 }

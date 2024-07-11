@@ -164,9 +164,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return default;
 
         TargetPointer perInstInfo = methodTable.PerInstInfo;
-        var typeInfo = _target.GetTypeInfo(DataType.pointer);
-        uint? size = typeInfo.Size;
-        TargetPointer genericsDictInfo = _target.ReadPointer(perInstInfo - size!.Value);
+        TargetPointer genericsDictInfo = perInstInfo - (ulong)_target.PointerSize;
 
         TargetPointer dictionaryPointer = _target.ReadPointer(perInstInfo);
 
@@ -179,12 +177,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsGenericTypeDefinition(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.IsGenericTypeDefinition;
 
-    TypeHandle IRuntimeTypeSystem.TypeHandleFromAddress(TargetPointer address)
-    {
-        return TypeHandleFromAddress(address);
-    }
-
-    private static TypeHandle TypeHandleFromAddress(TargetPointer address)
+    public TypeHandle TypeHandleFromAddress(TargetPointer address)
     {
         if (address == 0)
             return default;
@@ -195,7 +188,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
         else
         {
-            return new TypeHandle(new MethodTableHandle(address));
+            return new TypeHandle(GetMethodTableHandle(address));
         }
     }
 

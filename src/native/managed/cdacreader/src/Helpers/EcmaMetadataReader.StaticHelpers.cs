@@ -35,12 +35,12 @@ internal partial class EcmaMetadataReader
     }
     private static bool TryReadCore<T>(ReadOnlySpan<byte> bytes, out T value) where T : struct, IBinaryInteger<T>, IMinMaxValue<T>
     {
-        return T.TryReadLittleEndian(bytes, IsSigned<T>(), out value);
+        return T.TryReadLittleEndian(bytes.Slice(0, Unsafe.SizeOf<T>()), IsSigned<T>(), out value);
     }
 
     private static T ReadLittleEndian<T>(ReadOnlySpan<byte> bytes) where T : struct, IBinaryInteger<T>, IMinMaxValue<T>
     {
-        if (!T.TryReadLittleEndian(bytes, IsSigned<T>(), out T value))
+        if (!TryReadCore<T>(bytes, out T value))
             throw new ArgumentOutOfRangeException(nameof(value));
         return value;
     }

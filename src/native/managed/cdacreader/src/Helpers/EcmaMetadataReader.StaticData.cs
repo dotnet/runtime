@@ -147,10 +147,10 @@ internal partial class EcmaMetadataReader
 
         columnTypes[(int)MetadataColumnIndex.ImplMap_MappingFlags] = ColumnType.TwoByteConstant;
         columnTypes[(int)MetadataColumnIndex.ImplMap_MemberForwarded] = ColumnType.Token;
-        columnTypes[(int)MetadataColumnIndex.ImplMap_ImportName] = ColumnType.TwoByteConstant;
+        columnTypes[(int)MetadataColumnIndex.ImplMap_ImportName] = ColumnType.Utf8String;
         columnTypes[(int)MetadataColumnIndex.ImplMap_ImportScope] = ColumnType.Token;
 
-        columnTypes[(int)MetadataColumnIndex.FieldRva_Rva] = ColumnType.TwoByteConstant;
+        columnTypes[(int)MetadataColumnIndex.FieldRva_Rva] = ColumnType.FourByteConstant;
         columnTypes[(int)MetadataColumnIndex.FieldRva_Field] = ColumnType.Token;
 
         columnTypes[(int)MetadataColumnIndex.ENCLog_Token] = ColumnType.FourByteConstant;

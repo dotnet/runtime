@@ -238,6 +238,10 @@ internal struct TypeNameBuilder
         {
             TypeString.Append(',');
         }
+        else
+        {
+            FirstInstArg = false;
+        }
 
         TypeString.Append(UseAngleBracketsForGenerics ? '<' : '[');
         PushOpenGenericArgument();
@@ -319,6 +323,8 @@ internal struct TypeNameBuilder
         State = ParseState.AssemSpec;
         if (!string.IsNullOrEmpty(assemblySpec))
         {
+            TypeString.Append(", ");
+
             if (InstNesting > 0)
                 EscapeEmbeddedAssemblyName(assemblySpec);
             else

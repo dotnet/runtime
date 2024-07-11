@@ -26,7 +26,7 @@ internal struct EcmaMetadataCursor
     {
         get
         {
-            return TableData.Span.Slice((int)(RowSize * Rid), (int)RowSize);
+            return TableData.Span.Slice((int)(RowSize * (Rid - 1)), (int)RowSize);
         }
     }
 }
@@ -44,7 +44,7 @@ internal partial class EcmaMetadataReader
     {
         columnSize = new int[(int)MetadataColumnIndex.Count];
         columnOffset = new int[(int)MetadataColumnIndex.Count];
-        rowSize = new int[(int)MetadataTable.Count + 1];
+        rowSize = new int[(int)MetadataTable.Count];
         columnTokenDecode = Array.Empty<Func<uint, uint>>();
 
         ReadOnlySpan<byte> image = imageMemory.Span;
@@ -64,7 +64,7 @@ internal partial class EcmaMetadataReader
             throw new ArgumentException(nameof(imageMemory));
         }
 
-        string metadataVersion = Encoding.UTF8.GetString(versionName.Slice(nullTerminatorIndex));
+        string metadataVersion = Encoding.UTF8.GetString(versionName.Slice(0, nullTerminatorIndex));
 
         int currentOffset = 16 + versionSize;
 
@@ -120,7 +120,7 @@ internal partial class EcmaMetadataReader
         int[] tableRowCounts = new int[(int)MetadataTable.Count];
         bool[] isSorted = new bool[(int)MetadataTable.Count];
         int currentTablesOffset = 24;
-        for (int i = 0; i < tables.Length; i++)
+        for (int i = 0; i < (int)MetadataTable.Count; i++)
         {
             if ((validTables & ((ulong)1 << i)) != 0)
             {
@@ -156,7 +156,7 @@ internal partial class EcmaMetadataReader
 
         // Init will compute row sizes, which is necessary for actually computing the tableData
 
-        for (int i = 0; i < tables.Length; i++)
+        for (int i = 0; i < (int)MetadataTable.Count; i++)
         {
             checked
             {
@@ -164,7 +164,7 @@ internal partial class EcmaMetadataReader
                 {
                     int tableSize = checked(rowSize![i] * _ecmaMetadata.Schema.RowCount[i]);
                     tableData[i] = TablesHeap.Slice(currentTablesOffset, tableSize);
-                    currentTablesOffset += AlignUp(tableSize, 4);
+                    currentTablesOffset += tableSize;
                 }
             }
         }
@@ -200,7 +200,7 @@ internal partial class EcmaMetadataReader
         columnTokenDecode = Array.Empty<Func<uint, uint>>();
         columnSize = new int[(int)MetadataColumnIndex.Count];
         columnOffset = new int[(int)MetadataColumnIndex.Count];
-        rowSize = new int[(int)MetadataTable.Count + 1];
+        rowSize = new int[(int)MetadataTable.Count];
 
         _ecmaMetadata = ecmaMetadata;
         Init();
@@ -232,10 +232,12 @@ internal partial class EcmaMetadataReader
             for (int i = 0; i < (int)MetadataColumnIndex.Count; i++)
             {
                 MetadataColumnIndex column = (MetadataColumnIndex)i;
-                if (currentTable != ColumnTable(column))
+                MetadataTable newColumnTable = ColumnTable(column);
+                if (currentTable != newColumnTable)
                 {
                     if (prevColumn.HasValue)
-                        rowSize[(int)ColumnTable(prevColumn.Value)] = ComputeColumnEnd(prevColumn.Value);
+                        rowSize[(int)currentTable] = ComputeColumnEnd(prevColumn.Value);
+                    currentTable = newColumnTable;
                     columnOffset[i] = 0;
                 }
                 else
@@ -359,6 +361,7 @@ internal partial class EcmaMetadataReader
                 {
                     return true;
                 }
+                foundRow.Rid += 1;
             }
         }
         return false;

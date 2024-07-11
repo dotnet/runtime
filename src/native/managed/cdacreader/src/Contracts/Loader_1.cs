@@ -77,7 +77,7 @@ internal readonly struct Loader_1 : ILoader
     TargetPointer ILoader.GetReadWriteSavedMetadataAddress(ModuleHandle handle, out ulong size)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        TargetPointer result = module.DynamicMetadata + (ulong)_target.GetTypeInfo(DataType.pointer)!.Size!.Value;
+        TargetPointer result = module.DynamicMetadata + (ulong)_target.PointerSize;
         size = _target.Read<uint>(module.DynamicMetadata);
         return result;
     }

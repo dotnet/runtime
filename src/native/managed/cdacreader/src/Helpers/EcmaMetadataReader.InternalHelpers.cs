@@ -32,9 +32,6 @@ internal partial class EcmaMetadataReader
 
     private bool TryReadTableEntry(ReadOnlySpan<byte> bytes, MetadataColumnIndex column, out uint value)
     {
-        if (ColumnOffset(column) == 0)
-            throw new ArgumentOutOfRangeException(nameof(column));
-
         int size = ColumnSize(column);
         ReadOnlySpan<byte> singleColumn = bytes.Slice(ColumnOffset(column), size);
         if (size == 2)

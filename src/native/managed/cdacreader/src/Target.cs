@@ -261,6 +261,8 @@ public sealed unsafe class Target
         return DataType.Unknown;
     }
 
+    public int PointerSize => _config.PointerSize;
+
     public T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         if (!TryRead(address, _config.IsLittleEndian, _reader, out T value))
@@ -447,10 +449,10 @@ public sealed unsafe class Target
             if (TryGet(key, out TValue? result))
                 return result!;
 
-            Dictionary<(TKey, Type), object?> dictionary = (Dictionary<(TKey, Type), object?>)_customKeyReadDataByAddress[typeof(TKey)];
+            Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)_customKeyReadDataByAddress[typeof(Tuple<TKey, TValue>)];
 
             TValue constructed = TValue.Create(_target, key);
-            if (dictionary.TryAdd((key, typeof(TValue)), constructed))
+            if (dictionary.TryAdd(key, constructed))
                 return constructed;
 
             bool found = TryGet(key, out result);
@@ -475,25 +477,13 @@ public sealed unsafe class Target
 
         public bool TryGet<TKey, TValue>(TKey key, [NotNullWhen(true)] out TValue? data) where TValue : IData<TValue, TKey> where TKey : notnull, IEquatable<TKey>
         {
-            data = default;
-
-            if (!_customKeyReadDataByAddress.TryGetValue(typeof(TKey), out var dictionaryObject))
+            if (!_customKeyReadDataByAddress.TryGetValue(typeof(Tuple<TKey, TValue>), out var dictionaryObject))
             {
-                dictionaryObject = new Dictionary<(TKey, Type), TValue>();
-                _customKeyReadDataByAddress.Add(typeof(TKey), dictionaryObject);
+                dictionaryObject = new Dictionary<TKey, TValue>();
+                _customKeyReadDataByAddress.Add(typeof(Tuple<TKey, TValue>), dictionaryObject);
             }
-            Dictionary<(TKey, Type), object?> dictionary = (Dictionary<(TKey, Type), object?>)dictionaryObject;
-
-            if (!dictionary.TryGetValue((key, typeof(TValue)), out object? dataObj))
-                return false;
-
-            if (dataObj is TValue dataMaybe)
-            {
-                data = dataMaybe;
-                return true;
-            }
-
-            return false;
+            Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)dictionaryObject;
+            return dictionary.TryGetValue(key, out data);
         }
     }
 
