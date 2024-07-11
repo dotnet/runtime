@@ -198,92 +198,70 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void ReadMaximumArcOid(AsnEncodingRules ruleSet)
+        public static void ReadVeryLongOid(AsnEncodingRules ruleSet)
         {
-            const int MaxArcs = 64;
-            // MaxArcs content bytes (all 0x7F) (which includes one for failure), plus one for the tag
-            // plus one for the encoded length.
-            byte[] input = new byte[MaxArcs + 2];
-            input.AsSpan().Fill(0x7F);
-            input[0] = 0x06;
-            // The first two arcs are encoded in the first sub-identifier, so MaxArcs - 1.
-            input[1] = MaxArcs - 1;
+            byte[] inputData = new byte[100000];
+            // 06 83 02 00 00 (OBJECT IDENTIFIER, 65536 bytes).
+            inputData[0] = 0x06;
+            inputData[1] = 0x83;
+            inputData[2] = 0x01;
+            inputData[3] = 0x00;
+            inputData[4] = 0x00;
+            // and the rest are all zero.
 
-            string decoded = AsnDecoder.ReadObjectIdentifier(input, ruleSet, out int consumed);
-            Assert.Equal(input.Length - 1, consumed);
+            // The first byte produces "0.0". Each of the remaining 65535 bytes produce
+            // another ".0".
+            const int ExpectedLength = 65536 * 2 + 1;
+            StringBuilder builder = new StringBuilder(ExpectedLength);
+            builder.Append('0');
 
-            StringBuilder expected = new StringBuilder(4 * MaxArcs);
-            expected.Append("2.47");
-
-            for (int i = 2; i < MaxArcs; i++)
+            for (int i = 0; i <= ushort.MaxValue; i++)
             {
-                expected.Append(".127");
+                builder.Append('.');
+                builder.Append(0);
             }
 
-            Assert.Equal(expected.ToString(), decoded);
+            AsnReader reader = new AsnReader(inputData, ruleSet);
+            string oidString = reader.ReadObjectIdentifier();
 
-            input[1] = MaxArcs;
-            AsnContentException ex = Assert.Throws<AsnContentException>(
-                () => AsnDecoder.ReadObjectIdentifier(input, ruleSet, out _));
-            Assert.Contains("OID", ex.Message);
+            Assert.Equal(ExpectedLength, oidString.Length);
+            Assert.Equal(builder.ToString(), oidString);
         }
 
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void ReadMaximumInitialSubIdentifier(AsnEncodingRules ruleSet)
+        public static void ReadVeryLongOidArc(AsnEncodingRules ruleSet)
         {
-            // First sub-identifier is 2^128 - 1, second is 1
-            byte[] valid =
-            {
-                0x06, 0x14, 0x83, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0x01,
-            };
+            byte[] inputData = new byte[255];
+            // 06 81 93 (OBJECT IDENTIFIER, 147 bytes).
+            inputData[0] = 0x06;
+            inputData[1] = 0x81;
+            inputData[2] = 0x93;
 
-            // First sub-identifier is 2^128, second is 1
-            byte[] invalid =
-            {
-                0x06, 0x14, 0x84, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
-                0x80, 0x80, 0x80, 0x80, 0x00, 0x01,
-            };
+            // With 147 bytes we get 147*7 = 1029 value bits.
+            // The smallest legal number to encode would have a top byte of 0x81,
+            // leaving 1022 bits remaining.  If they're all zero then we have 2^1022.
+            //
+            // Since it's our first sub-identifier it's really encoding "2.(2^1022 - 80)".
+            inputData[3] = 0x81;
+            // Leave the last byte as 0.
+            new Span<byte>(inputData, 4, 145).Fill(0x80);
 
-            string oid = AsnDecoder.ReadObjectIdentifier(valid, ruleSet, out int consumed);
-            Assert.Equal(valid.Length, consumed);
-            Assert.Equal("2.340282366920938463463374607431768211375.1", oid);
+            const string ExpectedOid =
+                "2." +
+                "449423283715578976932326297697256183404494244735576643183575" +
+                "202894331689513752407831771193306018840052800284699678483394" +
+                "146974422036041556232118576598685310944419733562163713190755" +
+                "549003115235298632707380212514422095376705856157203684782776" +
+                "352068092908376276711465745599868114846199290762088390824060" +
+                "56034224";
 
-            AsnContentException ex = Assert.Throws<AsnContentException>(
-                () => AsnDecoder.ReadObjectIdentifier(invalid, ruleSet, out _));
-            Assert.Contains("OID", ex.Message);
-        }
+            AsnReader reader = new AsnReader(inputData, ruleSet);
 
-        [Theory]
-        [InlineData(AsnEncodingRules.BER)]
-        [InlineData(AsnEncodingRules.CER)]
-        [InlineData(AsnEncodingRules.DER)]
-        public static void ReadMaximumNonInitialSubIdentifier(AsnEncodingRules ruleSet)
-        {
-            // First sub-identifier is 1, second is 2^128 - 1
-            byte[] valid =
-            {
-                0x06, 0x14, 0x01, 0x83, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F,
-            };
-
-            // First sub-identifier is 1, second is 2^128
-            byte[] invalid = new byte[]
-            {
-                0x06, 0x14, 0x01, 0x84, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
-                0x80, 0x80, 0x80, 0x80, 0x80, 0x00,
-            };
-
-            string oid = AsnDecoder.ReadObjectIdentifier(valid, ruleSet, out int consumed);
-            Assert.Equal(valid.Length, consumed);
-            Assert.Equal("0.1.340282366920938463463374607431768211455", oid);
-
-            AsnContentException ex = Assert.Throws<AsnContentException>(
-                () => AsnDecoder.ReadObjectIdentifier(invalid, ruleSet, out _));
-            Assert.Contains("OID", ex.Message);
+            string oidString = reader.ReadObjectIdentifier();
+            Assert.Equal(ExpectedOid, oidString);
         }
     }
 }
