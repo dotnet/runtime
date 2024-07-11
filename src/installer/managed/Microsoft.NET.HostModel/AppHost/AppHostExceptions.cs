@@ -86,4 +86,32 @@ namespace Microsoft.NET.HostModel.AppHost
             LongName = name;
         }
     }
+
+    /// <summary>
+    /// App-relative .NET path is an absolute path
+    /// </summary>
+    public sealed class AppRelativePathRootedException : AppHostUpdateException
+    {
+        public string Path { get; }
+
+        internal AppRelativePathRootedException(string path)
+            : base($"The app-relative .NET path should not be an absolute path. Path: {path}")
+        {
+            Path = path;
+        }
+    }
+
+    /// <summary>
+    /// App-relative .NET path is too long to be embedded in the apphost
+    /// </summary>
+    public sealed class AppRelativePathTooLongException : AppHostUpdateException
+    {
+        public string Path { get; }
+
+        internal AppRelativePathTooLongException(string path)
+            : base($"The app-relative .NET path is too long (must be less than 509 bytes). Path: {path}")
+        {
+            Path = path;
+        }
+    }
 }

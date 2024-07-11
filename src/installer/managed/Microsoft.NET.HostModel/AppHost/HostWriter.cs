@@ -72,20 +72,9 @@ namespace Microsoft.NET.HostModel.AppHost
                 throw new AppNameTooLongException(appBinaryFilePath);
             }
 
-            byte[] searchOptionsBytes = null;
-            if (dotNetSearchOptions != null)
-            {
-                byte[] bytes = dotNetSearchOptions.AppRelativeDotNet != null
-                    ? Encoding.UTF8.GetBytes(dotNetSearchOptions.AppRelativeDotNet)
-                    : [];
-
-                // <search_location> 0 <app_relative_dotnet_root>
-                searchOptionsBytes = new byte[bytes.Length + 2];
-                searchOptionsBytes[0] = (byte)dotNetSearchOptions.Location;
-                searchOptionsBytes[1] = 0;
-                if (bytes.Length > 0)
-                    bytes.CopyTo(searchOptionsBytes, 2);
-            }
+            byte[] searchOptionsBytes = dotNetSearchOptions != null
+                ? GetSearchOptionBytes(dotNetSearchOptions)
+                : null;
 
             bool appHostIsPEImage = false;
 
@@ -282,6 +271,29 @@ namespace Microsoft.NET.HostModel.AppHost
             bundleHeaderOffset = headerOffset;
 
             return headerOffset != 0;
+        }
+
+        private static byte[] GetSearchOptionBytes(DotNetSearchOptions searchOptions)
+        {
+            if (Path.IsPathRooted(searchOptions.AppRelativeDotNet))
+                throw new AppRelativePathRootedException(searchOptions.AppRelativeDotNet);
+
+            byte[] pathBytes = searchOptions.AppRelativeDotNet != null
+                ? Encoding.UTF8.GetBytes(searchOptions.AppRelativeDotNet)
+                : [];
+
+            if (pathBytes.Length + 3 > 512)
+                throw new AppRelativePathTooLongException(searchOptions.AppRelativeDotNet);
+
+            // <search_location> 0 <app_relative_dotnet_root> 0
+            byte[] searchOptionsBytes = new byte[pathBytes.Length + 3];
+            searchOptionsBytes[0] = (byte)searchOptions.Location;
+            searchOptionsBytes[1] = 0;
+            searchOptionsBytes[searchOptionsBytes.Length - 1] = 0;
+            if (pathBytes.Length > 0)
+                pathBytes.CopyTo(searchOptionsBytes, 2);
+
+            return searchOptionsBytes;
         }
 
         [LibraryImport("libc", SetLastError = true)]
