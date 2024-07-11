@@ -491,8 +491,7 @@ namespace System.Text.RegularExpressions.Symbolic
             where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
             where TOptimizedNullabilityHandler : struct, IDfaNoZAnchorOptimizedNullabilityHandler
         {
-            // Initial state candidate. (This is not used in the common DFA case and could potentially be removed in the future.)
-            int initialStatePosCandidate = pos;
+            // Initial state candidate.
             var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind(input, pos - 1)]);
             int endPos = NoMatchExists;
             int lengthMinus1 = input.Length - 1;
@@ -516,7 +515,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     innerLoopLength = _checkTimeout && input.Length - pos > NfaCharsPerTimeoutCheck ? pos + NfaCharsPerTimeoutCheck : input.Length;
                     done = FindEndPositionDeltasNFA<NfaStateHandler, DefaultNullabilityHandler>(
                         input, innerLoopLength, mode, timeoutOccursAt, ref pos,
-                        ref currentState, ref endPos, ref initialStatePosCandidate, ref initialStatePosCandidate);
+                        ref currentState, ref endPos);
                 }
 
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
@@ -560,12 +559,9 @@ namespace System.Text.RegularExpressions.Symbolic
             where TFindOptimizationsHandler : struct, IInitialStateHandler
             where TNullabilityHandler : struct, INullabilityHandler
         {
-            int initialStatePosCandidate = pos;
-
             var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind(input, pos - 1)]);
 
             int endPos = NoMatchExists;
-            int endStateId = -1;
 
             while (true)
             {
@@ -583,7 +579,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     const int DfaCharsPerTimeoutCheck = 25_000;
                     innerLoopLength = _checkTimeout && input.Length - pos > DfaCharsPerTimeoutCheck ? pos + DfaCharsPerTimeoutCheck : input.Length;
                     done = FindEndPositionDeltasDFA<DfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(
-                        input, innerLoopLength, mode, timeoutOccursAt, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePosCandidate);
+                        input, innerLoopLength, mode, timeoutOccursAt, ref pos, ref currentState, ref endPos);
                 }
                 else
                 {
@@ -591,7 +587,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     const int NfaCharsPerTimeoutCheck = 1_000;
                     innerLoopLength = _checkTimeout && input.Length - pos > NfaCharsPerTimeoutCheck ? pos + NfaCharsPerTimeoutCheck : input.Length;
                     done = FindEndPositionDeltasNFA<NfaStateHandler, TNullabilityHandler>(
-                        input, innerLoopLength, mode, timeoutOccursAt, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePosCandidate);
+                        input, innerLoopLength, mode, timeoutOccursAt, ref pos, ref currentState, ref endPos);
                 }
 
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
@@ -747,12 +743,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <see cref="NfaStateHandler"/>.
         /// </remarks>
         /// <returns>
-        /// A positive value if iteration completed because it reached a deadend state or nullable state and the call is an isMatch.
-        /// 0 if iteration completed because we reached an initial state.
-        /// A negative value if iteration completed because we ran out of input or we failed to transition.
+        /// true if all input has been explored and there's no further work to be done; false if there's more input to explore and/or
+        /// we need to transition from DFA mode to NFA mode.
         /// </returns>
         private bool FindEndPositionDeltasDFA<TStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, int length, RegexRunnerMode mode,
-            long timeoutOccursAt, ref int posRef, ref CurrentState state, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
+            long timeoutOccursAt, ref int posRef, ref CurrentState state, ref int endPosRef)
             where TStateHandler : struct, IStateHandler
             where TFindOptimizationsHandler : struct, IInitialStateHandler
             where TNullabilityHandler : struct, INullabilityHandler
@@ -760,8 +755,6 @@ namespace System.Text.RegularExpressions.Symbolic
             // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
             int pos = posRef;
             int endPos = endPosRef;
-            int initialStatePos = initialStatePosRef;
-            int initialStatePosCandidate = initialStatePosCandidateRef;
 
             int deadStateId = _deadStateId;
             int initialStateId = _initialStateId;
@@ -776,13 +769,10 @@ namespace System.Text.RegularExpressions.Symbolic
                         return true;
                     }
 
-                    if (dfaStateId == initialStateId)
+                    if (dfaStateId == initialStateId &&
+                        !TFindOptimizationsHandler.TryFindNextStartingPosition(this, input, ref state.DfaStateId, ref pos))
                     {
-                        if (!TFindOptimizationsHandler.TryFindNextStartingPosition(this, input, ref state.DfaStateId, ref pos))
-                        {
-                            return true;
-                        }
-                        initialStatePosCandidate = pos;
+                        return true;
                     }
 
                     int positionId = DefaultInputReader.GetPositionId(this, input, pos);
@@ -792,8 +782,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, TStateHandler.GetStateFlags(this, in state)))
                     {
                         endPos = pos;
-
-                        initialStatePos = initialStatePosCandidate;
 
                         // A match is known to exist.  If that's all we need to know, we're done.
                         if (mode == RegexRunnerMode.ExistenceRequired)
@@ -817,8 +805,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Write back the local copies of the ref values.
                 posRef = pos;
                 endPosRef = endPos;
-                initialStatePosRef = initialStatePos;
-                initialStatePosCandidateRef = initialStatePosCandidate;
             }
         }
 
@@ -841,15 +827,13 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </returns>
         private bool FindEndPositionDeltasNFA<TStateHandler, TNullabilityHandler>(
                 ReadOnlySpan<char> input, int length, RegexRunnerMode mode, long timeoutOccursAt,
-                ref int posRef, ref CurrentState state, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
+                ref int posRef, ref CurrentState state, ref int endPosRef)
             where TStateHandler : struct, IStateHandler
             where TNullabilityHandler : struct, INullabilityHandler
         {
             // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
             int pos = posRef;
             int endPos = endPosRef;
-            int initialStatePos = initialStatePosRef;
-            int initialStatePosCandidate = initialStatePosCandidateRef;
             try
             {
                 // Loop through each character in the input, transitioning from state to state for each.
@@ -870,7 +854,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, flags))
                     {
                         endPos = pos;
-                        initialStatePos = initialStatePosCandidate;
 
                         // A match is known to exist.  If that's all we need to know, we're done.
                         if (mode == RegexRunnerMode.ExistenceRequired)
@@ -894,8 +877,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Write back the local copies of the ref values.
                 posRef = pos;
                 endPosRef = endPos;
-                initialStatePosRef = initialStatePos;
-                initialStatePosCandidateRef = initialStatePosCandidate;
             }
         }
 
