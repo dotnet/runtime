@@ -71,7 +71,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     NfaMatchingState states = new();
                     // Here one could also consider previous characters for example for \b, \B, and ^ anchors
                     // and initialize inputSoFar accordingly
-                    states.InitializeFrom(this, _initialStates[GetCharKind<DefaultInputReader>([], -1)]);
+                    states.InitializeFrom(this, _initialStates[GetCharKind([], -1)]);
                     CurrentState statesWrapper = new(states);
 
                     // Used for end suffixes
