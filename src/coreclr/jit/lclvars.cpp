@@ -3068,6 +3068,12 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
 //    *do not* mark the local address-exposed and treat the call much like a local store node throughout
 //    the compilation.
 //
+//    TODO-ADDR-Bug: currently, we rely on these locals not being present in call argument lists,
+//    outside of the buffer address argument itself, as liveness - currently - treats the location node
+//    associated with the address itself as the definition point, and call arguments can be reordered
+//    rather arbitrarily. We should fix liveness to treat the call as the definition point instead and
+//    enable this optimization for "!lvIsTemp" locals.
+//
 void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
