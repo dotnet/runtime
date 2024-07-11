@@ -737,10 +737,6 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     jmp         eax // continue on into the method
 NESTED_END ResolveWorkerAsmStub, _TEXT
 
-#ifdef FEATURE_STUBS_AS_IL
-// ==========================================================================
-// void SinglecastDelegateInvokeStub();
-//
 LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
 
     test        ecx, ecx
@@ -756,7 +752,6 @@ LOCAL_LABEL(NullObject):
     jmp         C_FUNC(JIT_InternalThrow)
 
 LEAF_END SinglecastDelegateInvokeStub, _TEXT
-#endif // FEATURE_STUBS_AS_IL
 
 // =======================================================================================
 // void ResolveWorkerChainLookupAsmStub();
