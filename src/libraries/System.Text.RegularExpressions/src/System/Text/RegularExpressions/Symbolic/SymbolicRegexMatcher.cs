@@ -650,7 +650,7 @@ namespace System.Text.RegularExpressions.Symbolic
             int currStateId = currentStateIdRef;
             int endPos = endPosRef;
 
-            byte[] mtlookup = _mintermClassifier.ByteLookup!;
+            byte[] minterms = _mintermClassifier.ByteLookup!;
             int deadStateId = _deadStateId;
             int initialStateId = _initialStateId;
             try
@@ -664,7 +664,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         return true;
                     }
 
-                    if (TAcceleratedStateHandler.TryFindNextStartingPosition(this, input, mtlookup, ref currStateId, ref pos, initialStateId))
+                    if (TAcceleratedStateHandler.TryFindNextStartingPosition(this, input, minterms, ref currStateId, ref pos, initialStateId))
                     {
                         if (pos == input.Length)
                         {
@@ -680,8 +680,11 @@ namespace System.Text.RegularExpressions.Symbolic
                         }
                     }
 
+                    // Get the next character.
+                    char c = input[pos];
+
                     // If the state is nullable for the next character, we found a potential end state.
-                    if (TOptimizedNullabilityHandler.IsNullable(this, _nullabilityArray, currStateId, mtlookup, input, pos))
+                    if (TOptimizedNullabilityHandler.IsNullable(this, _nullabilityArray[currStateId], c, mintermsLookup))
                     {
                         endPos = pos;
 
@@ -694,7 +697,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If there is more input available try to transition with the next character.
                     // Note: the order here is important so the transition itself gets taken
-                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, GetMintermId(mtlookup, input, pos), timeoutOccursAt) ||
+                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, GetMintermId(minterms, c), timeoutOccursAt) ||
                         pos >= lengthMinus1)
                     {
                         if (pos + 1 < input.Length)
@@ -1149,15 +1152,12 @@ namespace System.Text.RegularExpressions.Symbolic
             return default;
         }
 
-        /// <summary>Look up the min term ID for the character at the specified position in the input.</summary>
+        /// <summary>Look up the min term ID for the character.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetMintermId(byte[] mintermLookup, ReadOnlySpan<char> input, int pos)
-        {
-            Debug.Assert(pos >= 0 && pos < input.Length);
-
-            char c = input[pos];
-            return c < (uint)mintermLookup.Length ? mintermLookup[c] : 0;
-        }
+        private static int GetMintermId(byte[] mintermLookup, char c) =>
+            c < (uint)mintermLookup.Length ?
+                mintermLookup[c] :
+                0;
 
         /// <summary>Stores additional data for tracking capture start and end positions.</summary>
         /// <remarks>The NFA simulation based third phase has one of these for each current state in the current set of live states.</remarks>
@@ -1713,7 +1713,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 if (matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
                 {
-                    currentStateId = matcher._dotstarredInitialStates[matcher._positionKinds[GetMintermId(lookup, input, pos - 1) + 1]].Id;
+                    currentStateId = matcher._dotstarredInitialStates[matcher._positionKinds[GetMintermId(lookup, input[pos - 1]) + 1]].Id;
                 }
                 else
                 {
@@ -1785,9 +1785,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private interface IDfaNoZAnchorOptimizedNullabilityHandler
         {
             /// <summary>Gets whether the specified position is nullable.</summary>
-            public static abstract bool IsNullable(
-                SymbolicRegexMatcher<TSet> matcher, byte[] nullabilityArray, int currStateId,
-                byte[] lookup, ReadOnlySpan<char> input, int pos);
+            public static abstract bool IsNullable(SymbolicRegexMatcher<TSet> matcher, byte stateNullability, char c, byte[] lookup);
         }
 
         /// <summary>Optimized nullability handler that works regardless of what additional anchors may exist in a pattern.</summary>
@@ -1795,19 +1793,9 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             /// <summary>Gets whether the specified position is nullable.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsNullable(SymbolicRegexMatcher<TSet> matcher, byte[] nullabilityArray, int currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
-            {
-                Debug.Assert(pos >= 0 && pos < input.Length, "input end should not be handled here");
-                Debug.Assert(currStateId < nullabilityArray.Length, "nullabilityArray grown but the reference is not up to date");
-
-                if (nullabilityArray[currStateId] > 0)
-                {
-                    char c = input[pos];
-                    return matcher.IsNullableWithContext(currStateId, c < (uint)lookup.Length ? lookup[c] : 0);
-                }
-
-                return false;
-            }
+            public static bool IsNullable(SymbolicRegexMatcher<TSet> matcher, byte stateNullability, char c, byte[] lookup) =>
+                stateNullability != 0 &&
+                matcher.IsNullableWithContext(stateNullability, c < (uint)lookup.Length ? lookup[c] : 0);
         }
 
         /// <summary>Optimized nullability handler for when a pattern has no anchors at all.</summary>
@@ -1815,13 +1803,10 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             /// <summary>Gets whether the specified position is nullable.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsNullable(SymbolicRegexMatcher<TSet> matcher, byte[] nullabilityArray, int currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
+            public static bool IsNullable(SymbolicRegexMatcher<TSet> matcher, byte stateNullability, char c, byte[] lookup)
             {
-                Debug.Assert(pos >= 0 && pos < input.Length, "input end should not be handled here");
-                Debug.Assert(currStateId < nullabilityArray.Length, "nullabilityArray grown but the reference is not up to date");
                 Debug.Assert(!matcher._pattern._info.ContainsSomeAnchor);
-
-                return nullabilityArray[currStateId] > 0;
+                return stateNullability != 0;
             }
         }
     }

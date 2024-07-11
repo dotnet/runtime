@@ -120,8 +120,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Pre-computed hot-loop version of nullability check
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool IsNullableWithContext(int stateId, int mintermId) =>
-            (_nullabilityArray[stateId] & (1 << (int)GetPositionKind(mintermId))) > 0;
+        private bool IsNullableWithContext(byte stateNullability, int mintermId) =>
+            (stateNullability & (1 << (int)GetPositionKind(mintermId))) != 0;
 
         /// <summary>Returns the span from <see cref="_dfaDelta"/> that may contain transitions for the given state</summary>
         private Span<int> GetDeltasFor(MatchingState<TSet> state)
