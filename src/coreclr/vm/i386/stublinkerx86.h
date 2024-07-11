@@ -374,16 +374,6 @@ class StubLinkerCPU : public StubLinker
                                            BOOL bShouldProfile);
 #endif // FEATURE_COMINTEROP && TARGET_X86
 
-#ifndef FEATURE_STUBS_AS_IL
-
-#ifdef TARGET_X86
-        //===========================================================================
-        // Emits code for Delegate.Invoke() any delegate type
-        VOID EmitDelegateInvoke();
-#endif // TARGET_X86
-
-#endif // !FEATURE_STUBS_AS_IL
-
         //===========================================================================
         // Emits code to adjust for a static delegate target.
         VOID EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);

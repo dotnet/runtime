@@ -915,6 +915,23 @@ _ProfileTailcallNaked@4 proc public
     retn    4
 _ProfileTailcallNaked@4 endp
 
+_SinglecastDelegateInvokeStub@0 proc public
+
+    test    ecx, ecx
+    jz      NullObject
+
+
+    mov     eax, [ecx + DelegateObject___methodPtr]
+    mov     ecx, [ecx + DelegateObject___target]  ; replace "this" pointer
+
+    jmp     eax
+
+NullObject:
+    mov     ecx, CORINFO_NullReferenceException_ASM
+    jmp     @JIT_InternalThrow@4
+
+_SinglecastDelegateInvokeStub@0 endp
+
 ;==========================================================================
 ; Invoked for vararg forward P/Invoke calls as a stub.
 ; Except for secret return buffer, arguments come on the stack so EDX is available as scratch.

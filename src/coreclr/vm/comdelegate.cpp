@@ -1894,28 +1894,7 @@ PCODE COMDelegate::TheDelegateInvokeStub()
     }
     CONTRACT_END;
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-    static PCODE s_pInvokeStub;
-
-    if (s_pInvokeStub == NULL)
-    {
-        CPUSTUBLINKER sl;
-        sl.EmitDelegateInvoke();
-        // Process-wide singleton stub that never unloads
-        Stub *pCandidate = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_MULTICAST);
-
-        if (InterlockedCompareExchangeT<PCODE>(&s_pInvokeStub, pCandidate->GetEntryPoint(), NULL) != NULL)
-        {
-            // if we are here someone managed to set the stub before us so we release the current
-            ExecutableWriterHolder<Stub> candidateWriterHolder(pCandidate, sizeof(Stub));
-            candidateWriterHolder.GetRW()->DecRef();
-        }
-    }
-
-    RETURN s_pInvokeStub;
-#else
     RETURN GetEEFuncEntryPoint(SinglecastDelegateInvokeStub);
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 }
 
 // Get the cpu stub for a delegate invoke.

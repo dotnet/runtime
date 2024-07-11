@@ -3585,47 +3585,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
 
 #if !defined(FEATURE_STUBS_AS_IL)
-
-#ifdef TARGET_X86
-//===========================================================================
-// Emits code for MulticastDelegate.Invoke()
-VOID StubLinkerCPU::EmitDelegateInvoke()
-{
-    STANDARD_VM_CONTRACT;
-
-    CodeLabel *pNullLabel = NewCodeLabel();
-
-    // test THISREG, THISREG
-    X86EmitR2ROp(0x85, THIS_kREG, THIS_kREG);
-
-    // jz null
-    X86EmitCondJump(pNullLabel, X86CondCode::kJZ);
-
-    // mov SCRATCHREG, [THISREG + Delegate.FP]  ; Save target stub in register
-    X86EmitIndexRegLoad(SCRATCH_REGISTER_X86REG, THIS_kREG, DelegateObject::GetOffsetOfMethodPtr());
-
-    // mov THISREG, [THISREG + Delegate.OR]  ; replace "this" pointer
-    X86EmitIndexRegLoad(THIS_kREG, THIS_kREG, DelegateObject::GetOffsetOfTarget());
-
-    // jmp SCRATCHREG
-    Emit16(0xe0ff | (SCRATCH_REGISTER_X86REG<<8));
-
-    // Do a null throw
-    EmitLabel(pNullLabel);
-
-    // mov ECX, CORINFO_NullReferenceException
-    Emit8(0xb8+kECX);
-    Emit32(CORINFO_NullReferenceException);
-
-    X86EmitCall(NewExternalCodeLabel(GetEEFuncEntryPoint(JIT_InternalThrowFromHelper)), 0);
-
-    X86EmitReturn(0);
-}
-#endif // TARGET_X86
-
-#endif // !FEATURE_STUBS_AS_IL
-
-#if !defined(FEATURE_STUBS_AS_IL)
 //===========================================================================
 // Emits code to break into debugger
 VOID StubLinkerCPU::EmitDebugBreak()

@@ -34,9 +34,7 @@ class BaseDomain;
 // CPU-dependent functions
 Stub * GenerateInitPInvokeFrameHelper();
 
-#ifdef FEATURE_STUBS_AS_IL
 EXTERN_C void SinglecastDelegateInvokeStub();
-#endif // FEATURE_STUBS_AS_IL
 
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 

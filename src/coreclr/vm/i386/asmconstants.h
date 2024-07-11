@@ -283,7 +283,6 @@ ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCallerReturnAddress == offsetof(Inlin
 #define               InlinedCallFrame__m_pCalleeSavedFP 0x14
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCalleeSavedFP == offsetof(InlinedCallFrame, m_pCalleeSavedFP));
 
-#ifdef FEATURE_STUBS_AS_IL
 // DelegateObject from src/vm/object.h
 #define DelegateObject___target             0x04    // offset 0 is m_pMethTab of base class Object
 #define DelegateObject___methodBase         0x08
@@ -298,8 +297,6 @@ ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtr        == offsetof(DelegateObje
 ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtrAux     == offsetof(DelegateObject, _methodPtrAux));
 ASMCONSTANTS_C_ASSERT(DelegateObject___invocationList   == offsetof(DelegateObject, _invocationList));
 ASMCONSTANTS_C_ASSERT(DelegateObject___invocationCount  == offsetof(DelegateObject, _invocationCount));
-
-#endif
 
 // ResolveCacheElem from src/vm/virtualcallstub.h
 #define ResolveCacheElem__pMT               0x00

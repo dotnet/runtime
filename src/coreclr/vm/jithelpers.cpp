@@ -3923,19 +3923,6 @@ HCIMPL1(void, JIT_InternalThrow, unsigned exceptNum)
 }
 HCIMPLEND
 
-/*********************************************************************/
-HCIMPL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_NOPOLL(Frame::FRAME_ATTR_CAPTURE_DEPTH_2|Frame::FRAME_ATTR_EXACT_DEPTH);
-    COMPlusThrow(MapCorInfoExceptionToRuntimeExceptionKind(exceptNum));
-    HELPER_METHOD_FRAME_END();
-    return NULL;
-}
-HCIMPLEND
-
 #ifndef STATUS_STACK_BUFFER_OVERRUN  // Not defined yet in CESDK includes
 # define STATUS_STACK_BUFFER_OVERRUN      ((NTSTATUS)0xC0000409L)
 #endif
