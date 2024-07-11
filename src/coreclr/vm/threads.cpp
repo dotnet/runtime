@@ -8068,6 +8068,12 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
 
     //
+    // Add the thread local variables like alloc_context, etc.
+    //
+
+    m_pRuntimeThreadLocals.EnumMem();
+
+    //
     // Try and do a stack trace and save information
     // for each part of the stack.  This is very vulnerable
     // to memory problems so ignore all exceptions here.
