@@ -334,6 +334,30 @@ internal unsafe partial interface ISOSDacInterface
     int GetFailedAssemblyDisplayName(ulong assembly, uint count, char* name, uint* pNeeded);
 };
 
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+internal struct DacpExceptionObjectData
+{
+    public ulong Message;
+    public ulong InnerException;
+    public ulong StackTrace;
+    public ulong WatsonBuckets;
+    public ulong StackTraceString;
+    public ulong RemoteStackTraceString;
+    public int HResult;
+    public int XCode;
+}
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
+
+[GeneratedComInterface]
+[Guid("A16026EC-96F4-40BA-87FB-5575986FB7AF")]
+internal unsafe partial interface ISOSDacInterface2
+{
+    [PreserveSig]
+    int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data);
+    [PreserveSig]
+    int IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy);
+}
+
 [GeneratedComInterface]
 [Guid("4eca42d8-7e7b-4c8a-a116-7bfbf6929267")]
 internal partial interface ISOSDacInterface9

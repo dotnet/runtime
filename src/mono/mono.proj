@@ -314,11 +314,22 @@ JS_ENGINES = [NODE_JS]
       <WasiSdkVersion>%(_VersionLines.Identity)</WasiSdkVersion>
       <WasiSdkUrl>https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-linux.tar.gz</WasiSdkUrl>
       <WasiSdkUrl Condition="'$(HostOS)' == 'osx'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-macos.tar.gz</WasiSdkUrl>
-      <WasiSdkUrl Condition="'$(HostOS)' == 'windows'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0.m-mingw.tar.gz</WasiSdkUrl>
+      <WasiSdkUrl Condition="'$(HostOS)' == 'windows'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0.m-mingw64.tar.gz</WasiSdkUrl>
     </PropertyGroup>
 
     <RemoveDir Directories="$(WASI_SDK_PATH)" />
-    <Exec Command="curl -L -o wasi-sdk-$(WasiSdkVersion).0.tar.gz $(WasiSdkUrl) &amp;&amp; mkdir -p $(WASI_SDK_PATH) &amp;&amp; tar --strip-components=1 -xzf wasi-sdk-$(WasiSdkVersion).0.tar.gz -C $(WASI_SDK_PATH) &amp;&amp; cp $(WasiLocalPath)/wasi-sdk-version.txt $(WASI_SDK_PATH)/wasi-sdk-version.txt"
+    <Exec Command="curl -L -o wasi-sdk-$(WasiSdkVersion).0.tar.gz $(WasiSdkUrl) &amp;&amp; mkdir -p $(WASI_SDK_PATH) &amp;&amp; tar --strip-components=1 -xzf wasi-sdk-$(WasiSdkVersion).0.tar.gz -C $(WASI_SDK_PATH) &amp;&amp; cp $(WasiLocalPath)/wasi-sdk-version.txt $(WASI_SDK_PATH)wasi-sdk-version.txt"
+          Condition="'$(HostOS)' != 'windows'"
+          WorkingDirectory="$(ArtifactsObjDir)"
+          IgnoreStandardErrorWarningFormat="true" />
+
+    <!--
+    Temporary WASI-SDK 22 workaround #2: The version of `wasm-component-ld` that
+    ships with WASI-SDK 22 contains a
+    [bug](https://github.com/bytecodealliance/wasm-component-ld/issues/22) which
+    has been fixed in a v0.5.3 of that utility, so we upgrade it here.
+    -->
+    <Exec Command="curl -L -o wasm-component-ld-v0.5.4-x86_64-linux.tar.gz https://github.com/bytecodealliance/wasm-component-ld/releases/download/v0.5.4/wasm-component-ld-v0.5.4-x86_64-linux.tar.gz &amp;&amp; mkdir -p $(WASI_SDK_PATH)wasm-component &amp;&amp; tar --strip-components=1 -xzf wasm-component-ld-v0.5.4-x86_64-linux.tar.gz -C $(WASI_SDK_PATH)wasm-component &amp;&amp; cp $(WASI_SDK_PATH)wasm-component/wasm-component-ld $(WASI_SDK_PATH)bin/wasm-component-ld"
           Condition="'$(HostOS)' != 'windows'"
           WorkingDirectory="$(ArtifactsObjDir)"
           IgnoreStandardErrorWarningFormat="true" />
@@ -327,10 +338,15 @@ JS_ENGINES = [NODE_JS]
           Condition="'$(HostOS)' == 'windows'"
           WorkingDirectory="$(ArtifactsObjDir)"
           IgnoreStandardErrorWarningFormat="true" />
+
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)/wasi/wasi-sdk/share/wasi-sysroot/include/wasm32-wasi-threads/pthread.h"
+          DestinationFiles="$(MSBuildThisFileDirectory)/wasi/wasi-sdk/share/wasi-sysroot/include/wasm32-wasip2/pthread.h"
+          />
+
   </Target>
 
   <Target Name="ValidateWasiSdk" Condition="'$(SkipMonoCrossJitConfigure)' != 'true'">
-    <ReadLinesFromFile File="$(WASI_SDK_PATH)/wasi-sdk-version.txt">
+    <ReadLinesFromFile File="$(WASI_SDK_PATH)wasi-sdk-version.txt">
       <Output TaskParameter="Lines" ItemName="_ActualVersionLines" />
     </ReadLinesFromFile>
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)/wasi/wasi-sdk-version.txt">
@@ -722,7 +738,6 @@ JS_ENGINES = [NODE_JS]
 
     <PropertyGroup>
       <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)').Replace('\', '/'))</EMSDK_PATH>
-      <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
       <_EmsdkEnvScriptPath>$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))</_EmsdkEnvScriptPath>
 
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoCMakeConfigureCommand>
