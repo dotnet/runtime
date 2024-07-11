@@ -4206,15 +4206,15 @@ index_of_class (MonoClass *needle, MonoClass **haystack, int haystack_size) {
 }
 
 static void
-build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_size, int *buf_count, MonoClass *current) {
-	if (!m_class_is_interfaces_inited (current)) {
+build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_size, int *buf_count) {
+	if (!m_class_is_interfaces_inited (klass)) {
 		ERROR_DECL (error);
-		mono_class_setup_interfaces (current, error);
+		mono_class_setup_interfaces (klass, error);
 		return_if_nok (error);
 	}
-	guint c = m_class_get_interface_count (current);
+	guint c = m_class_get_interface_count (klass);
 	if (c) {
-		MonoClass **ifaces = m_class_get_interfaces (current);
+		MonoClass **ifaces = m_class_get_interfaces (klass);
 		for (guint i = 0; i < c; i++) {
 			MonoClass *iface = ifaces [i];
 			// Avoid adding duplicates or recursing into them.
@@ -4227,7 +4227,7 @@ build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_si
 				(*buf_count) += 1;
 			}
 
-			build_variance_search_table_inner (klass, buf, buf_size, buf_count, iface);
+			build_variance_search_table_inner (iface, buf, buf_size, buf_count);
 		}
 	}
 }
@@ -4240,7 +4240,7 @@ build_variance_search_table (MonoClass *klass) {
 	MonoClass **buf = g_alloca (buf_size * sizeof(MonoClass *));
 	MonoClass **result = NULL;
 	memset (buf, 0, buf_size * sizeof(MonoClass *));
-	build_variance_search_table_inner (klass, buf, buf_size, &buf_count, klass);
+	build_variance_search_table_inner (klass, buf, buf_size, &buf_count);
 
 	if (buf_count) {
 		guint bytes = buf_count * sizeof(MonoClass *);
