@@ -4324,10 +4324,20 @@ interface ICorProfilerInfo15 : ICorProfilerInfo14
      * EnumerateGCHeapObjects is a method that iterates over each object in the GC heap.
      * For each object, it invokes the provided callback function which should return a bool
      * indicating whether or not enumeration should continue.
-     * The runtime must be suspended in order to enumerate objects on the GC heap.
-     * If the profiler requested runtime suspension through SuspendRuntime and proceeds to
-     * invoke EnumerateGCHeapObjects, it is the responsibility of the profiler to not
-     * resume the runtime before EnumerateGCHeapObjects completes.
+     * Enumerating the GC heap requires suspending the runtime. The profiler may accomplish this
+     * by starting from a state where the runtime is not suspended and by doing one of:
+     *
+     * From the same thread,
+     * Invoking ICorProfilerInfo10::SuspendRuntime()
+     * ...
+     * Invoking ICorProfilerInfo15::EnumerateGCHeapObjects()
+     * ...
+     * Invoking ICorProfilerInfo10::ResumeRuntime()
+     *
+     * or
+     *
+     * Invoke ICorProfilerInfo15::EnumerateGCHeapObjects() on its own, and leverage its
+     * built-in runtime suspension logic.
      *
      * Parameters:
      * - callback: A function pointer to the callback function that will be invoked for each object in the GC heap.
