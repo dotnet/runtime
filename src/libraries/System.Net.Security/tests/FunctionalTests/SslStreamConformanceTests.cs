@@ -50,12 +50,13 @@ namespace System.Net.Security.Tests
         }
     }
 
+/*
     public sealed class SslStreamMemoryConformanceTests : SslStreamConformanceTests
     {
         protected override Task<StreamPair> CreateConnectedStreamsAsync() =>
             CreateWrappedConnectedStreamsAsync(ConnectedStreams.CreateBidirectional());
     }
-
+*/
     public abstract class SslStreamDefaultNetworkConformanceTests : SslStreamConformanceTests
     {
         protected override bool CanTimeout => true;

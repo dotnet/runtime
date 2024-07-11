@@ -120,11 +120,15 @@ namespace System.Net.Security.Tests
 
                     await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
+                    Console.WriteLine("HANDSGHAKLE DONE ####################################");
+
                     Assert.Equal(expected, client.NegotiatedApplicationProtocol);
                     Assert.Equal(expected, server.NegotiatedApplicationProtocol);
 
                     await TestHelper.PingPong(client, server);
+                    Console.WriteLine("PING PIONG DONE ####################################");
                     await TestHelper.PingPong(server, client);
+                    Console.WriteLine("PING PONG  DONE ####################################");
 
                     Assert.Equal(expected, client.NegotiatedApplicationProtocol);
                     Assert.Equal(expected, server.NegotiatedApplicationProtocol);

@@ -228,12 +228,40 @@ namespace System.Net.Security
                 {
                         Console.WriteLine("PAL Called dectrypt with {0} bytes!!!!", buffer.Length);
                         //securityContext._waiter!.Reset();
-                        unsafe
+                       // unsafe
+                      //  {
+                        if (buffer.Length == 0)
                         {
-                            Debug.Assert(buffer.Length > 0);
+                            // received EOF.
 
-                            fixed (byte* ptr = buffer)
+
+                        }
+                            Debug.Assert(buffer.Length > 0);
+                            count = securityContext.Decrypt(buffer);
+
+
+                            //TlsFrameHelper.TlsFrameInfo info;
+                            TlsFrameHeader header = default;
+                            TlsFrameHelper.TryGetFrameHeader(buffer, ref header);
+                            if (header.Type == TlsContentType.Alert)
                             {
+                                Console.WriteLine("DecryptMessage GOT ALLTER!!!!!");
+                                //securityContext.Decrypt(Span<byte>.Empty);
+                            }
+
+                            if (GetAvailableDecryptedBytes(securityContext) == 0 && securityContext.Tcs == null)
+                            {
+                                  securityContext.StartDecrypt(int.MaxValue);
+                                  //securityContext.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+                                  Console.WriteLine("ALlocated new DECRYPT task {0} and styarted read count {1}", securityContext.Tcs!.Task.GetHashCode(), count);
+                            }
+                            return new SecurityStatusPal(count > 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinuePendig);
+
+                          //  fixed (byte* ptr = buffer)
+                         //   {
+
+/* OK ASYNC
+
                                 //securityContext._readWaiter!.Reset();
         //                        lock (securityContext)
                                 {
@@ -252,9 +280,10 @@ namespace System.Net.Security
                                         Console.WriteLine("ALlocated new task {0} and styarted read", securityContext.Tcs.Task.GetHashCode());
                                     }
                                     return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePendig);
-                                }
-                            }
-                        }
+*/
+                 //               }
+                      //      }
+                     //   }
                 }
 
                 securityContext.Write(buffer);
@@ -354,9 +383,18 @@ namespace System.Net.Security
             return context.Tcs?.Task;
         }
 
-        public static Task<SecurityStatusPalErrorCode>? GetDecryptTask(SafeDeleteSslContext securityContext, int length)
+        public static Task<SecurityStatusPalErrorCode>? GetDecryptTask(SafeDeleteSslContext securityContext, int _)
         {
-            return securityContext.UseNwFramework ? securityContext!.StartDecrypt(length) : null;
+            if (!securityContext.UseNwFramework )
+            {
+                return null;
+            }
+            lock (securityContext)
+            {
+                return securityContext.BytesReadyFromConnection > 0 ?
+                            Task.FromResult<SecurityStatusPalErrorCode>(SecurityStatusPalErrorCode.OK) :
+                            securityContext.Tcs?.Task;
+            }
         }
 
         public static void GetPendingWriteData(SafeDeleteSslContext context, ref ProtocolToken token)

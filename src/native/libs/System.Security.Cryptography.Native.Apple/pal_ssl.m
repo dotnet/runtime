@@ -87,7 +87,7 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
         {
             void * ptr;
            [num getValue:&ptr]; 
-           printf("%s:%d:Got number %p WRITING %zu to connection\n", __func__, __LINE__, ptr, message_length);
+           printf("%s:%d:Got number %p WRITING %zu to connection framer %p \n", __func__, __LINE__, ptr, message_length, (void*)framer);
 
            size_t size = message_length;
 
@@ -146,6 +146,7 @@ static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer) 
         NSNumber* num = nw_framer_options_copy_object_value(framer_options, "GCHANDLE");
         assert(num != NULL);
 
+        nw_retain(framer);
         [num getValue:&gcHandle];
         printf("Got number %zu _statusFunc %p\n", gcHandle, (void*)_statusFunc);
         (_statusFunc)(gcHandle, PAL_NwStatusUpdates_FramerStart, 0, 0);
@@ -212,27 +213,41 @@ int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_fram
         return -1;
     }
 
-     uint8_t * b2 = malloc((size_t)dataLength);
-     memcpy(b2, buffer, dataLength);
+    dispatch_data_t data;
+     uint8_t * b2 = NULL;
+    if (dataLength > 0)
+    {
+         b2 = malloc((size_t)dataLength);
+         memcpy(b2, buffer, dataLength);
 
-    dispatch_data_t data = dispatch_data_create(b2, (size_t)dataLength, _inputQueue, nil);
+    //dispatch_data_t data = dispatch_data_create(b2, (size_t)dataLength, _inputQueue, nil);
+        data = dispatch_data_create(b2, (size_t)dataLength, _tlsQueue, nil);
+    nw_framer_message_set_value(message, "DATA", b2, NULL);
+    }
+    else
+    {
+        data = NULL;
+    }
+
+
 
 printf("%s:%d: caleld with mesage %p\n", __func__, __LINE__,  (void*)b2);
     if (data == NULL || message == NULL)
     {
-        printf("%s:%d: WTF !!!!!!!!!!!!!!!!!!!!! %p %p on %p %llu %d\n", __func__, __LINE__, (void*)data, (void*)message, (void*) connection,  GetThreadId(), c);
+        printf("%s:%d: WTF !!!!!!!!!!!!!!!!!!!!! %p %p on %p %llu c= %d\n", __func__, __LINE__, (void*)data, (void*)message, (void*) connection,  GetThreadId(), c);
     }
     nw_framer_async(framer, ^(void) 
 //    dispatch_sync(_tlsQueue, ^(void) 
     {
-        nw_framer_deliver_input(framer, b2, (size_t)dataLength, message, TRUE);
-        printf("%s:%d:  nw_framer_deliver_input is DONE!!! %d %p\n", __func__, __LINE__, dataLength, (void*) connection);
+        nw_framer_deliver_input(framer, b2, (size_t)dataLength, message, dataLength > 0 ? FALSE : TRUE);
+        //nw_framer_deliver_input_no_copy(framer, (size_t)dataLength, message, TRUE);
+        printf("%s:%d:  nw_framer_deliver_input is DONE!!! %d %pc=%d\n", __func__, __LINE__, dataLength, (void*) connection, c);
         //nw_framer_schedule_wakeup(framer, 1);
         dispatch_semaphore_signal(sem);
     });
 
     dispatch_semaphore_wait(sem,  DISPATCH_TIME_FOREVER);
-    printf("%s:%d done %p %llu %d!!!!\n", __func__, __LINE__, (void*) connection,  GetThreadId(), c);
+    printf("%s:%d done %p %llu c= %d!!!!\n", __func__, __LINE__, (void*) connection,  GetThreadId(), c);
     fflush(stdout);
 
     return 0;
@@ -362,7 +377,7 @@ int32_t AppleCryptoNative_NwSendToConnection(nw_connection_t connection,  size_t
     
     dispatch_data_t data = dispatch_data_create(buffer, (size_t)length, _inputQueue, ^{ printf("%s:%d: dispatch destructor called!!!\n", __func__, __LINE__);});
 
-    nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, TRUE, ^(nw_error_t  error) {
+    nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, FALSE, ^(nw_error_t  error) {
         printf("%s:%d: nw_connection_send completion send called!!! %p\n", __func__, __LINE__, (void*)connection);
 
         if (error != NULL)
@@ -391,7 +406,7 @@ int32_t AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_
          printf("%s:%d: WTF!!!!!!!!!!!!!!!!!!! %p, %d\n", __func__, __LINE__,  (void*)buffer, length);
         return -1;
      }
-    nw_connection_receive(connection, 1, length, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t error) {
+    nw_connection_receive(connection, 1, 65536, ^(dispatch_data_t content, nw_content_context_t context, bool is_complete, nw_error_t error) {
         int errorCode  = error ? nw_error_get_error_code(error) : 0;
         printf("%s:%d: received data!!!!!??? error %p context %p content %p %d buffer %p\n", __func__, __LINE__, (void*)error, (void*)context, (void*)content, is_complete, (void*)buffer);
 
@@ -403,14 +418,8 @@ int32_t AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_
             return;
         }
 
-        if (content == NULL)
+        if (content != NULL)
         {
-             printf("%s:%d: NO CONTENT ???? %p\n", __func__, __LINE__, (void*)connection);
-             return;
-        }
-
-        {
-
             printf("%s:%d: got %zu byes of data\n", __func__, __LINE__, dispatch_data_get_size(content));
             fflush(stdout);
         // TBD can we get buffer from .NET????
@@ -435,6 +444,12 @@ int32_t AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_
             (_statusFunc)(gcHandle, PAL_NwStatusUpdates_ConnectionReadFinished, contig_size, (size_t)contig_buf);
              dispatch_release(tmp);
          }
+
+         if (is_complete || content == NULL)
+         {
+             printf("%s:%d: NO CONTENT or EOF ???? %p %d\n", __func__, __LINE__, (void*)connection, is_complete);
+             (_statusFunc)(gcHandle, PAL_NwStatusUpdates_ConnectionReadFinished, 0, 0);
+         }
          printf("%s:%d: call to status callback  dobae %p\n", __func__, __LINE__, (void*)connection);
          fflush(stdout);
     });
@@ -442,7 +457,27 @@ int32_t AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_
     return  0;
 }
 
-int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName)
+static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol palProtocolId)
+{
+    switch (palProtocolId)
+    {
+        case PAL_SslProtocol_Tls13:
+            return tls_protocol_version_TLSv13;
+        case PAL_SslProtocol_Tls12:
+            return tls_protocol_version_TLSv12;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        case PAL_SslProtocol_Tls11:
+            return tls_protocol_version_TLSv11;
+        case PAL_SslProtocol_Tls10:
+            return tls_protocol_version_TLSv10;
+        default:
+            return (tls_protocol_version_t)0;
+#pragma clang diagnostic pop
+    }
+}
+
+int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
 {
     printf("%s:%d: called with %p %zu\n", __func__, __LINE__, (void*)connection, gcHandle);
     nw_protocol_options_t tlsOptions = nw_tls_create_options();
@@ -452,6 +487,18 @@ int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcH
         printf("%s:%d: setting TARGETNAME >%s< *%zd)\n", __func__, __LINE__, targetName, strlen(targetName));
         sec_protocol_options_set_tls_server_name(sec_options, targetName);
     }
+
+    tls_protocol_version_t version = PalSslProtocolToTlsProtocolVersion(minTlsProtocol);
+    if ((int)version!= 0)
+    {
+        sec_protocol_options_set_min_tls_protocol_version(sec_options, version);
+    }
+    version = PalSslProtocolToTlsProtocolVersion(maxTlsProtocol);
+    if ((int)version!= 0)
+    {
+        sec_protocol_options_set_max_tls_protocol_version(sec_options, version);
+    }
+
 
     //sec_protocol_options_set_max_tls_protocol_version(sec_options, tls_protocol_version_TLSv12);
 
@@ -479,7 +526,7 @@ int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcH
     return 0;
 }
 
-int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut)
+int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, uint32_t* alpnLength)
 {
 
     nw_protocol_metadata_t meta = nw_connection_copy_protocol_metadata(connection, _tlsDefinition);
@@ -488,6 +535,18 @@ int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_Ss
     {
         sec_protocol_metadata_t secMeta = nw_tls_copy_sec_protocol_metadata(meta);
         printf("%s:%d: SEC META= %p\n", __func__, __LINE__, (void*)secMeta);
+
+        const char* alpn = sec_protocol_metadata_get_negotiated_protocol(secMeta);
+        if (alpn != NULL)
+        {
+            *negotiatedAlpn = alpn;
+            *alpnLength= (uint32_t)strlen(alpn);
+        }
+        else
+        {
+            *negotiatedAlpn= NULL;
+            *alpnLength = 0;
+        }
 
         tls_protocol_version_t version = sec_protocol_metadata_get_negotiated_tls_protocol_version(secMeta);
         switch (version)

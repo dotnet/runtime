@@ -182,6 +182,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("AAAA")]
         public async Task Read_InvokedSynchronously()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();

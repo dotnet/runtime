@@ -553,7 +553,7 @@ namespace System
         private static bool GetTls10Support()
         {
             // on macOS and Android TLS 1.0 is supported.
-            if (IsApplePlatform || IsAndroid)
+            if (IsAndroid)
             {
                 return true;
             }
@@ -564,7 +564,7 @@ namespace System
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
 
-            return OpenSslGetTlsSupport(SslProtocols.Tls);
+            return IsOpenSslSupported && OpenSslGetTlsSupport(SslProtocols.Tls);
         }
 
         private static bool GetTls11Support()

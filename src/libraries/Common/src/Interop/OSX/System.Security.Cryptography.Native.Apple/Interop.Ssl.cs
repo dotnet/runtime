@@ -164,7 +164,7 @@ internal static partial class Interop
 
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSetTlsOptions", StringMarshalling = StringMarshalling.Utf8)]
-        internal static unsafe partial int NwSetTlsOptions(SafeSslHandle sslHandle, nint gcHandle, string targetName);
+        internal static unsafe partial int NwSetTlsOptions(SafeSslHandle sslHandle, nint gcHandle, string targetName, SslProtocols minTlsVersion, SslProtocols maxTlsVersion);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwProcessInputData")]
         internal static unsafe partial int NwProcessInputData(SafeSslHandle sslHandle, IntPtr framer, void* ptr, int length);
@@ -176,7 +176,7 @@ internal static partial class Interop
         internal static unsafe partial int NwReadFromConnection(SafeSslHandle sslHandle, nint gcHandle, void* ptr, int length);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwGetConnectionInfo")]
-        internal static unsafe partial int NwGetConnectionInfo(SafeSslHandle sslHandle, out SslProtocols protocol, out TlsCipherSuite cipherSuite);
+        internal static unsafe partial int NwGetConnectionInfo(SafeSslHandle sslHandle, out SslProtocols protocol, out TlsCipherSuite cipherSuite, ref IntPtr negotiatedAlpn, ref int alpnLength);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCopyCertChain")]
         internal static partial int NwCopyCertChain( SafeSslHandle sslHandle, out SafeCFArrayHandle certificiates, out int count);

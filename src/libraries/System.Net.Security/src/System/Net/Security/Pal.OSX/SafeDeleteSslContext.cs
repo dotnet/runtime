@@ -24,6 +24,8 @@ namespace System.Net
         // mapped from OSX error codes
         private const int OSStatus_writErr = -20;
         private const int OSStatus_readErr = -19;
+
+        private const int OSStatus_eofErr = - 39;
         private const int OSStatus_noErr = 0;
         private const int OSStatus_errSSLWouldBlock = -9803;
 
@@ -38,6 +40,7 @@ namespace System.Net
         private  ManualResetEventSlim? _writeWaiter;
         private int _writeStatus;
         public ManualResetEventSlim? _readWaiter;
+        private int _readStatus;
         public IntPtr _framer;
         public SecurityStatusPalErrorCode state = SecurityStatusPalErrorCode.ContinueNeeded;
         public bool handshakeStarted;
@@ -97,7 +100,19 @@ namespace System.Net
 
                 if (UseNwFramework)
                 {
-                    osStatus = Interop.AppleCrypto.NwSetTlsOptions(_sslContext, GCHandle.ToIntPtr(gcHandle), sslAuthenticationOptions.TargetHost);
+                    SslProtocols minProtocolId = SslProtocols.None;
+                    SslProtocols maxProtocolId = SslProtocols.None;
+
+                    if (sslAuthenticationOptions.EnabledSslProtocols != SslProtocols.None)
+                    {
+                        //(minProtocolId, maxProtocolId) = GetMinMaxProtocols(sslAuthenticationOptions.EnabledSslProtocols);
+                    }
+
+
+
+                    osStatus = Interop.AppleCrypto.NwSetTlsOptions(_sslContext, GCHandle.ToIntPtr(gcHandle),
+                                    sslAuthenticationOptions.TargetHost,
+                                    minProtocolId, maxProtocolId);
                     if (osStatus != 0)
                     {
                         throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
@@ -334,7 +349,7 @@ namespace System.Net
                         //context._waiter!.Set();
                         bool result = context.Tcs!.TrySetResult(SecurityStatusPalErrorCode.OK);
                         Console.WriteLine("FramerStatusUpdate TLS handshake completed : notification with {0}", result);
-                        //context.Tcs = null;
+                        context.Tcs = null;
                         context._handshakeDone = true;
                         break;
                     case PAL_NwStatusUpdates.HandshakeFailed:
@@ -347,7 +362,7 @@ namespace System.Net
                         if (context.Tcs != null)
                         {
                             context.Tcs.TrySetException(Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus));
-                            //context.Tcs = null;
+                            context.Tcs = null;
                         }
                         else
                         {
@@ -362,24 +377,56 @@ namespace System.Net
                         context._handshakeDone = true;
                         context._writeStatus = OSStatus_errSecUserCanceled;
                         context._writeWaiter?.Set();
+                        context._readStatus = OSStatus_errSecUserCanceled;
+                        context._readWaiter?.Set();
                         Console.WriteLine("FramerStatusUpdate  ALL DONE!!!");
                         break;
                     case PAL_NwStatusUpdates.ConnectionReadFinished:
                         Span<byte> data = new Span<byte>((void*)data2, data1.ToInt32());
-                        Console.WriteLine("ConnectionReadFinished with {0} and {1} bytes ready",  data1.ToInt32(), context._inputBuffer.ActiveLength);
+                        Console.WriteLine("ConnectionReadFinished with {0} bytes and {1} bytes ready {2}",  data1.ToInt32(), context._inputBuffer.ActiveLength, context.Tcs?.Task.GetHashCode());
                         //ontext._inputBuffer.EnsureAvailableSpace(data1.ToInt32());
 
 
                         //lock (context)
                         //{
                     // We are using the input buffer in reverse way here
-                            context.Write(data);
-                            Console.WriteLine("ConnectionReadFinished with {0} and {1} bytes ready",  data1.ToInt32(), context._inputBuffer.ActiveLength);
-                            Console.WriteLine("ConnectionReadFinished Tsc = {0} {1}", context.Tcs, context.Tcs?.Task.GetHashCode());
 
-                            Debug.Assert(context.Tcs != null);
-                            context.Tcs?.TrySetResult(SecurityStatusPalErrorCode.OK);
+
+                            //Console.WriteLine("ConnectionReadFinished with {0} and {1} bytes readyi Tsc = {2} status = {3}",  data1.ToInt32(), context._inputBuffer.ActiveLength, context.Tcs?.Task.GetHashCode(), context._readStatus);
+                            //Console.WriteLine("ConnectionReadFinished Tsc = {0} {1}", context.Tcs, context.Tcs?.Task.GetHashCode());
+
+
+//                            context._readStatus = data1 > 0 ? OSStatus_noErr : OSStatus_eofErr;
+
+                            //Debug.Assert(context.Tcs != null);
+                            lock (context)
+                            {
+                                if (data1 > 0)
+                                {
+                                    context.Write(data);
+                                    context._readStatus = OSStatus_noErr;
+                                }
+                                else
+                                {
+                                    context._readStatus = OSStatus_eofErr;
+                                }
+
+                                context.Tcs?.TrySetResult(SecurityStatusPalErrorCode.OK);
+                            //    context.Tcs = null;
+                                context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+            // We can get zero byte reands and Aplle crypto does not really like zero buffers:w!
+                            }
+
+                            if (data1 > 0)
+                            {
+                                // schedule next read unless we got EOF
+                                Interop.AppleCrypto.NwReadFromConnection(context.SslContext, GCHandle.ToIntPtr(context.gcHandle), null, int.MaxValue);
+
+                            }
+
+                            //context._readStatus = data1 > 0 ? OSStatus_noErr : OSStatus_eofErr;
                             context._readWaiter!.Set();
+                            //context.StartDecrypt(1);
                         //}
                         break;
                     case PAL_NwStatusUpdates.ConnectionWriteFinished:
@@ -409,7 +456,9 @@ namespace System.Net
 
             GCHandle gcHandle = GCHandle.FromIntPtr(connection);
 
-    Console.WriteLine("WriteToConnection called with 0x{0:x} allocated {1} ?????", connection, gcHandle.IsAllocated);
+
+
+    //if (context.UseNwFramework) Console.WriteLine("WriteToConnection called with 0x{0:x} allocated {1} ?????", connection, gcHandle.IsAllocated);
             SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
             if (context == null || context._disposed)
             {
@@ -427,44 +476,53 @@ if (context.UseNwFramework)
             // but if we were to pool the buffers we would have a potential use-after-free issue.
             try
             {
-                lock (context)
+                ulong length = (ulong)*dataLength;
+                Debug.Assert(length <= int.MaxValue);
+
+                int toWrite = (int)length;
+                var inputBuffer = new ReadOnlySpan<byte>(data, toWrite);
+
+                if (context.UseNwFramework)
                 {
-                    ulong length = (ulong)*dataLength;
-                    Debug.Assert(length <= int.MaxValue);
-
-                    int toWrite = (int)length;
-                    var inputBuffer = new ReadOnlySpan<byte>(data, toWrite);
-
-                    context._outputBuffer.EnsureAvailableSpace(toWrite);
-                    inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
-                    context._outputBuffer.Commit(toWrite);
-                    // Since we can enqueue everything, no need to re-assign *dataLength.
-
-                    if (context.UseNwFramework)
-                    {
-Console.WriteLine("WriteToConnection OUT2 called for {0} wioyj {1} bytes, available {2} in HandShake {3}", context, (ulong)*dataLength, context._outputBuffer.AvailableLength, context._handshakeDone);
-                        //context._waiter!.Set();
-                        if (!context._handshakeDone)
+                        lock (context._writeWaiter!)
                         {
+                            context._outputBuffer.EnsureAvailableSpace(toWrite);
+                            inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
+                            context._outputBuffer.Commit(toWrite);
+
+
+                             if (!context._handshakeDone)
+                            {
 //Console.WriteLine("WriteToConnection1: setting result {0} on {1} new one is {2}", SecurityStatusPalErrorCode.ContinueNeeded, Tcs!.Task.GetHashCode(), context.Tcs.Task.GetHashCode());
 
-                            // get new TCS before signalling completion to avoild race condition
-                            var Tcs = context.Tcs;
-                            context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+                                // get new TCS before signalling completion to avoild race condition
+                                var Tcs = context.Tcs;
+                                context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
 
                     //    context._waiter!.Set();
-                            Tcs!.TrySetResult(SecurityStatusPalErrorCode.ContinuePendig);
+                                Tcs!.TrySetResult(SecurityStatusPalErrorCode.ContinuePendig);
 
-                            Console.WriteLine("WriteToConnection2: setting result {0} on {1} new one is {2}", SecurityStatusPalErrorCode.ContinueNeeded, Tcs!.Task.GetHashCode(), context.Tcs.Task.GetHashCode());
+                                Console.WriteLine("WriteToConnection2: setting result {0} on {1} new one is {2}", SecurityStatusPalErrorCode.ContinueNeeded, Tcs!.Task.GetHashCode(), context.Tcs.Task.GetHashCode());
+                            }
+                            else
+                            {
+                                Console.WriteLine("WriteToConnection: Waking up {0}", context._writeWaiter!.GetHashCode());
+                                //context._writeWaiter!.Set();
+                            }
                         }
-                        else
-                        {
-                             Console.WriteLine("WriteToConnection: Waking up {0}", context._writeWaiter!.GetHashCode());
-                             context._writeWaiter!.Set();
-                        }
-                    }
-                    return OSStatus_noErr;
+                        context._writeWaiter!.Set();
                 }
+                else
+                {
+                    lock (context)
+                    {
+                        context._outputBuffer.EnsureAvailableSpace(toWrite);
+                        inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
+                        context._outputBuffer.Commit(toWrite);
+                    }
+                }
+
+                return OSStatus_noErr;
             }
             catch (Exception e)
             {
@@ -518,15 +576,24 @@ Console.WriteLine("WriteToConnection OUT2 called for {0} wioyj {1} bytes, availa
             }
         }
 
-        internal void Write(ReadOnlySpan<byte> buf)
+        internal int Write(ReadOnlySpan<byte> buf)
         {
             lock (this)
             {
+                if (_disposed)
+                {
+                    return -1;
+                }
+
                 _inputBuffer.EnsureAvailableSpace(buf.Length);
                 buf.CopyTo(_inputBuffer.AvailableSpan);
                 _inputBuffer.Commit(buf.Length);
 
-                //Console.WriteLine("++Write {0} bytes, {1} total {2} buffer available", buf.Length, _inputBuffer.ActiveLength, _inputBuffer.AvailableLength);
+                //return 0;
+
+                Console.WriteLine("++Write {0} bytes, {1} total {2} buffer available", buf.Length, _inputBuffer.ActiveLength, _inputBuffer.AvailableLength);
+
+                return 0;
             }
         }
 
@@ -543,12 +610,58 @@ Console.WriteLine("WriteToConnection OUT2 called for {0} wioyj {1} bytes, availa
 
                 //Console.WriteLine("READ >>>{0}<<<", System.Text.Encoding.UTF8.GetString(buf.Slice(length)));
 
-               // Console.WriteLine("______Read {0} bytes, {1} remaining", length, _inputBuffer.ActiveLength);
+                Console.WriteLine("______Read {0} bytes, {1} remaining", length, _inputBuffer.ActiveLength);
                 return length;
             }
         }
 
-        internal unsafe void Encrypt(void* buffer, int bufferLength, ref ProtocolToken token)
+        internal unsafe int Decrypt(Span<byte> buffer)
+        {
+            if (buffer.Length == 0)
+            {
+                Interop.AppleCrypto.NwProcessInputData(SslContext, _framer, null, 0);
+                Console.WriteLine("CLOSING!!!!!! {0} {1}",  SslContext.DangerousGetHandle(), _framer);
+                return 0;
+            }
+
+            _readWaiter!.Reset();
+            Debug.Assert(buffer.Length > 0);
+            Debug.Assert(_framer != IntPtr.Zero);
+            //if (buffer.Length > 0)
+            //{
+                // We could decrypt just as much as we need. But the existing tests do make assumptions about decrypting more and being able to operate with that.
+                //StartDecrypt(int.MaxValue);
+                Console.WriteLine("Dectrypt calling NwProcessInputData!!!! 0x{0:x}", SslContext.DangerousGetHandle());
+                fixed (byte* ptr = buffer)
+                {
+                    Interop.AppleCrypto.NwProcessInputData(SslContext, _framer, ptr, buffer.Length);
+                }
+                Console.WriteLine("Dectrypt NwProcessInputData 1  is done 0x{0:x} wait????!!!!!", SslContext.DangerousGetHandle());
+                //StartDecrypt(int.MaxValue);
+                //_readWaiter.Wait();
+                Console.WriteLine("Dectrypt NwProcessInputData 2 is done 0x{0:x}!!!!!", SslContext.DangerousGetHandle());
+                //_readWaiter.Wait();
+
+
+
+
+                //token.SetPayload(_outputBuffer.ActiveSpan);
+                //_outputBuffer.Discard(_outputBuffer.ActiveLength);
+Console.WriteLine("Decrypt DONE Decrypted {0} bytes {1} remaining status is {2}", 0, _inputBuffer.ActiveLength, _readStatus);
+
+/*
+                int length = Read(buffer);
+                Console.WriteLine("Decrypt DONE Decrypted {0} bytes {1} remaining status is {2}", length, _inputBuffer.ActiveLength, _readStatus);
+                if (length > 0)
+                {
+                    Console.WriteLine(new StackTrace(true));
+                }
+                */
+                return 0;
+                //token.Status = _readStatus == OSStatus_noErr ? new SecurityStatusPal(SecurityStatusPalErrorCode.OK) : new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+        }
+
+        internal unsafe void Encrypt(void*  buffer, int bufferLength, ref ProtocolToken token)
         {
             _writeWaiter!.Reset();
             Interop.AppleCrypto.NwSendToConnection(SslContext, GCHandle.ToIntPtr(gcHandle), buffer, bufferLength);
@@ -569,12 +682,26 @@ Console.WriteLine("WriteToConnection OUT2 called for {0} wioyj {1} bytes, availa
             }
         }
 
-        internal int BytesReadyFromConnection => _inputBuffer.ActiveLength;
+        internal int BytesReadyFromConnection {
+            get {
+                lock (this)
+                {
+                    Console.WriteLine("BytesReadyFromConnection {0} {1}", _inputBuffer.ActiveLength, _readStatus);
+                    if (_inputBuffer.ActiveLength > 0)
+                    {
+                        return  _inputBuffer.ActiveLength;
+                    }
+
+                    return _readStatus == OSStatus_eofErr ? -1 : 0;
+                }
+            }
+        }
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
         internal void ReadPendingWrites(ref ProtocolToken token)
         {
-            //lock (_sslContext)
+            object lockObject = UseNwFramework ? _writeWaiter! : _sslContext;
+            lock (lockObject)
             {
                 if (_outputBuffer.ActiveLength == 0)
                 {
@@ -620,12 +747,23 @@ Console.WriteLine("WriteToConnection OUT2 called for {0} wioyj {1} bytes, availa
             SslProtocols.Tls12
         };
 
-        private static void SetProtocols(SafeSslHandle sslContext, SslProtocols protocols)
+        private static (SslProtocols, SslProtocols) GetMinMaxProtocols(SslProtocols protocols)
         {
-            (int minIndex, int maxIndex) = protocols.ValidateContiguous(s_orderedSslProtocols);
+             (int minIndex, int maxIndex) = protocols.ValidateContiguous(s_orderedSslProtocols);
             SslProtocols minProtocolId = s_orderedSslProtocols[minIndex];
             SslProtocols maxProtocolId = s_orderedSslProtocols[maxIndex];
 
+            return (minProtocolId, maxProtocolId);
+        }
+
+        private static void SetProtocols(SafeSslHandle sslContext, SslProtocols protocols)
+        {
+            /*
+            (int minIndex, int maxIndex) = protocols.ValidateContiguous(s_orderedSslProtocols);
+            SslProtocols minProtocolId = s_orderedSslProtocols[minIndex];
+            SslProtocols maxProtocolId = s_orderedSslProtocols[maxIndex];
+*/
+            (SslProtocols minProtocolId, SslProtocols maxProtocolId) = GetMinMaxProtocols(protocols);
             // Set the min and max.
             Interop.AppleCrypto.SslSetMinProtocolVersion(sslContext, minProtocolId);
             Interop.AppleCrypto.SslSetMaxProtocolVersion(sslContext, maxProtocolId);
@@ -664,10 +802,14 @@ Console.WriteLine("WriteToConnection OUT2 called for {0} wioyj {1} bytes, availa
         {
             //Debug.Assert(size > 0);
 
-            Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+            if (Tcs == null)
+            {
+                Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
             // We can get zero byte reands and Aplle crypto does not really like zero buffers:w!
-            Interop.AppleCrypto.NwReadFromConnection(SslContext, GCHandle.ToIntPtr(gcHandle), null, size < 0 ? size : int.MaxValue);
-            Console.WriteLine("ALlocated new task {0} and styarted read", Tcs.Task.GetHashCode());
+                Interop.AppleCrypto.NwReadFromConnection(SslContext, GCHandle.ToIntPtr(gcHandle), null, size < 0 ? size : int.MaxValue);
+                Console.WriteLine("ALlocated new tDECRYPT ask {0} and styarted read", Tcs.Task.GetHashCode());
+            }
+
 
             return Tcs.Task;
         }

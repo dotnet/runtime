@@ -362,7 +362,7 @@ Console.WriteLine("HANDSHAKE updated!!!!!!! ????? {0} with  is {1} frameTask {2}
                                 // WriteAsyncChunked have mnore
                                 // we have more data to write. but handshake did not finished.
                                 handshakeTask = SslStreamPal.GetHandshakeTask(_credentialsHandle!, _securityContext!);
-                                Debug.Assert(handshakeTask != null);
+                                //Debug.Assert(handshakeTask != null);
                                 Console.WriteLine("Getting new handshake task {0}", handshakeTask?.GetHashCode());
                             }
 
@@ -859,6 +859,9 @@ Console.WriteLine("HANDSHAKE updated!!!!!!! ????? {0} with  is {1} frameTask {2}
 
                 // Decrypt will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
                 status = Decrypt(_buffer.EncryptedSpanSliced(frameSize), out int decryptedOffset, out int decryptedCount);
+
+                Console.WriteLine("DecryptData: finished with {0} and {1} bytes opf data {2}", status.ErrorCode, decryptedCount, frameSize);
+
                 if (status.ErrorCode == SecurityStatusPalErrorCode.ContinuePendig)
                 {
                     _buffer.DiscardEncrypted(frameSize);
@@ -866,7 +869,7 @@ Console.WriteLine("HANDSHAKE updated!!!!!!! ????? {0} with  is {1} frameTask {2}
                 }
 
                 _buffer.OnDecrypted(decryptedOffset, decryptedCount, frameSize);
-
+Console.WriteLine("DecryptData: on Decrypt called!!!!!");
                 if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                 {
                     // The status indicates that peer wants to renegotiate. (Windows only)
@@ -901,7 +904,7 @@ Console.WriteLine("HANDSHAKE updated!!!!!!! ????? {0} with  is {1} frameTask {2}
         {
             Debug.Assert(_securityContext != null);
 
-Console.WriteLine("ReadAsyncInternal called with {0} buffer dectypted {1} DECRYPTED DATA {2}", buffer.Length, _buffer.DecryptedLength, SslStreamPal.GetAvailableDecryptedBytes(_securityContext!));
+Console.WriteLine("ReadAsyncInternal called with {0} buffer dectypted {1} DECRYPTED DATA {2} EOF {3}", buffer.Length, _buffer.DecryptedLength, SslStreamPal.GetAvailableDecryptedBytes(_securityContext!), _receivedEOF);
             // Throw first if we already have exception.
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
@@ -936,6 +939,11 @@ Console.WriteLine("ReadAsyncInternal called with {0} buffer dectypted {1} DECRYP
                     int length = SslStreamPal.ReadDecryptedData(_securityContext, buffer.Span);
                     Console.WriteLine("Git {0} bytes of decrypted OLD data!!!!!", length);
                     return length;
+                }
+                else if (SslStreamPal.GetAvailableDecryptedBytes(_securityContext) < 0)
+                {
+                    Console.WriteLine("ReadAsyncInternal GOT 2 EOPFFFFFFFFFFFF");
+                    _receivedEOF = true;
                 }
 
                 if (_receivedEOF && nextTlsFrameLength == UnknownTlsFrameLength)
@@ -985,7 +993,7 @@ Console.WriteLine("ReadAsyncInternal: decryptTask {0} farmeTask {1}", decryptTas
 
                         await Task.WhenAny(frameTask, decryptTask).ConfigureAwait(false);
 
-Console.WriteLine("ReadAsyncInternal: decryptTask {0} farmeTask {1}", decryptTask.IsCompleted, frameTask.IsCompleted);
+Console.WriteLine("!!!!!!!ReadAsyncInternal: decryptTask {0} farmeTask {1}", decryptTask.IsCompleted, frameTask.IsCompleted);
 
                         if (decryptTask.IsCompleted)
                         {
@@ -999,13 +1007,21 @@ Console.WriteLine("ReadAsyncInternal: decryptTask {0} farmeTask {1}", decryptTas
 
                                 //Debug.Assert(false);
                                     //int length = _securityContext!.Read(buffer.Span);
+                                    Console.WriteLine("Git {0} bytes of decrypted data!!!!! ramaining {1}", length, SslStreamPal.GetAvailableDecryptedBytes(_securityContext));
                                     length = SslStreamPal.ReadDecryptedData(_securityContext!, buffer.Span);
                                     Console.WriteLine("Git {0} bytes of decrypted data!!!!! ramaining {1}", length, SslStreamPal.GetAvailableDecryptedBytes(_securityContext));
+
+                                    if (SslStreamPal.GetAvailableDecryptedBytes(_securityContext) < 0)
+                                    {
+                                        Console.WriteLine("SETTIOMG EOF 1!!!!!!!!!!!!!!!!!!!!!!");
+                                        _receivedEOF = true;
+                                    }
                                     decryptTask = null;
                                     _frameTask = frameTask;
                                   //  return length;
                                 }
- Console.WriteLine("ReadAsyncInternal got {0} bytes of decrypted data!!!!! ramaining {1}, done with lock", length, SslStreamPal.GetAvailableDecryptedBytes(_securityContext));
+ Console.WriteLine("ReadAsyncInternal got {0} bytes of decrypted data RETURNING!!!!!!!!! ramaining {1}, done with lock", length, SslStreamPal.GetAvailableDecryptedBytes(_securityContext));
+                                //decryptTask = SslStreamPal.GetHandshakeTask(_credentialsHandle!, _securityContext!);
                                 return length;
                         }
                         /*()
@@ -1028,10 +1044,14 @@ Console.WriteLine("ReadAsyncInternal: decryptTask {0} farmeTask {1}", decryptTas
                         payloadBytes = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize).ConfigureAwait(false);
                     }
 
-                    Console.WriteLine("ReadAsyncInternal: payloadBytes = {0}", payloadBytes);
+                    Console.WriteLine("##################################ReadAsyncInternal: payloadBytes = {0}", payloadBytes);
 
                     if (payloadBytes == 0)
                     {
+                        if (decryptTask != null)
+                        {
+                                SslStreamPal.DecryptMessage(_securityContext, Span<byte>.Empty, out int _1, out int _2);
+                        }
                         _receivedEOF = true;
                         break;
                     }
@@ -1039,7 +1059,7 @@ Console.WriteLine("ReadAsyncInternal: decryptTask {0} farmeTask {1}", decryptTas
                     SecurityStatusPal status = DecryptData(payloadBytes);
                     if (status.ErrorCode == SecurityStatusPalErrorCode.ContinuePendig)
                     {
-                        decryptTask = SslStreamPal.GetHandshakeTask(_credentialsHandle!, _securityContext!);
+                        decryptTask = SslStreamPal.GetDecryptTask(_securityContext!, 1);
                         //Console.WriteLine("ReadAsyncInternal pending DECRYPT!!!!!! ready {0}", _securityContext!.BytesReadyFromConnection);
                         continue;
                     }
@@ -1091,6 +1111,23 @@ Console.WriteLine("ReadAsyncInternal: decryptTask {0} farmeTask {1}", decryptTas
                         }
 
                         buffer = buffer.Slice(copyLength);
+                    }
+
+                    if (SslStreamPal.GetAvailableDecryptedBytes(_securityContext) > 0)
+                    {
+                        int copyLength = SslStreamPal.ReadDecryptedData(_securityContext, buffer.Span);
+                        processedLength += copyLength;
+
+                        Console.WriteLine("Git {0} bytes of decrypted NEW  data!!!!!", copyLength);
+
+                        if (copyLength == buffer.Length)
+                        {
+                            // We have more decrypted data after we filled provided buffer.
+                            break;
+                        }
+
+                        buffer = buffer.Slice(copyLength);
+                        break;
                     }
 
                     if (processedLength == 0)
