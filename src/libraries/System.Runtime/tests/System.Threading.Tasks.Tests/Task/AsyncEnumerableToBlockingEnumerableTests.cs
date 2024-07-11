@@ -70,7 +70,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void AsyncEnumerableWithDelays()
         {
             var source = new InstrumentedAsyncEnumerable<int>(CreateSourceEnumerable());
@@ -105,7 +104,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void AsyncEnumerableWithException()
         {
             var source = new InstrumentedAsyncEnumerable<int>(CreateSourceEnumerable());
@@ -134,7 +132,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void AsyncEnumerableWithCancellation()
         {
             var source = new InstrumentedAsyncEnumerable<string>(CreateSourceEnumerable());

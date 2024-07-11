@@ -295,7 +295,6 @@ namespace TaskCoverage
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99500", TestPlatforms.Browser)]
         public static void CancellationTokenRegitration()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -313,7 +312,6 @@ namespace TaskCoverage
         /// verify that the taskawaiter.UnsafeOnCompleted is invoked
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99500", TestPlatforms.Browser)]
         public static void TaskAwaiter()
         {
             ManualResetEvent mre = new ManualResetEvent(false);

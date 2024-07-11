@@ -90,7 +90,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void RunSemaphoreSlimTest1_WaitAsync_NegativeCases()
         {
             // Invalid timeout

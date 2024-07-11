@@ -1076,7 +1076,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void TestNoDeadlockOnContinueWith()
         {
             Debug.WriteLine("TestNoDeadlockOnContinueWith:  shouldn't deadlock if it passes.");
@@ -1256,7 +1255,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void LongContinuationChain_Await_DoesNotStackOverflow()
         {
             const int DiveDepth = 12_000;
