@@ -65,18 +65,18 @@ if [[ "$__TargetOS" == browser ]]; then
     source "$EMSDK_PATH"/emsdk_env.sh
     export CLR_CC=$(which emcc)
 elif [[ "$__TargetOS" == wasi ]]; then
-    if [[ -z "$WASI_SDK22_PATH" ]]; then
+    if [[ -z "$WASI_SDK_PATH" ]]; then
         if [[ -d "$__RepoRootDir"/src/mono/wasi/wasi-sdk ]]; then
-            export WASI_SDK22_PATH="$__RepoRootDir"/src/mono/wasi/wasi-sdk
+            export WASI_SDK_PATH="$__RepoRootDir"/src/mono/wasi/wasi-sdk
         else
-            echo "Error: You need to set the WASI_SDK22_PATH environment variable pointing to the WASI SDK root."
+            echo "Error: You need to set the WASI_SDK_PATH environment variable pointing to the WASI SDK root."
             exit 1
         fi
     fi
-    export WASI_SDK22_PATH="${WASI_SDK22_PATH%/}/"
-    export CLR_CC="$WASI_SDK22_PATH"bin/clang
+    export WASI_SDK_PATH="${WASI_SDK_PATH%/}/"
+    export CLR_CC="$WASI_SDK_PATH"bin/clang
     export TARGET_BUILD_ARCH=wasm
-    __CMakeArgs="-DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK22_PATH -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK22_PATH}share/cmake/wasi-sdk.cmake $__CMakeArgs"
+    __CMakeArgs="-DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake $__CMakeArgs"
 elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
     # nothing to do here
     true

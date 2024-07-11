@@ -60,20 +60,19 @@ if /i "%__Arch%" == "wasm" (
         set __UseEmcmake=1
     )
     if /i "%__Os%" == "wasi" (
-        set "__repoRoot=!__repoRoot:\=/!"
-        if "%WASI_SDK22_PATH%" == "" (
+        if "%WASI_SDK_PATH%" == "" (
             if not exist "%__repoRoot%\src\mono\wasi\wasi-sdk" (
-                echo Error: Should set WASI_SDK22_PATH environment variable pointing to WASI SDK root.
+                echo Error: Should set WASI_SDK_PATH environment variable pointing to WASI SDK root.
                 exit /B 1
             )
 
-            set "WASI_SDK22_PATH=%__repoRoot%\src\mono\wasi\wasi-sdk"
+            set "WASI_SDK_PATH=%__repoRoot%\src\mono\wasi\wasi-sdk"
         )
         :: replace backslash with forward slash and append last slash
-        set "WASI_SDK22_PATH=!WASI_SDK22_PATH:\=/!"
-        if not "!WASI_SDK22_PATH:~-1!" == "/" set "WASI_SDK22_PATH=!WASI_SDK22_PATH!/"
+        set "WASI_SDK_PATH=!WASI_SDK_PATH:\=/!"
+        if not "!WASI_SDK_PATH:~-1!" == "/" set "WASI_SDK_PATH=!WASI_SDK_PATH!/"
         set __CmakeGenerator=Ninja
-        set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm "-DWASI_SDK_PREFIX=!WASI_SDK22_PATH!" "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK22_PATH!share/cmake/wasi-sdk.cmake" "-DCMAKE_SYSROOT=!WASI_SDK22_PATH!share/wasi-sysroot"
+        set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm "-DWASI_SDK_PREFIX=!WASI_SDK_PATH!" "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk.cmake" "-DCMAKE_SYSROOT=!WASI_SDK_PATH!/share/wasi-sysroot"
     )
 ) else (
     set __ExtraCmakeParams=%__ExtraCmakeParams%  "-DCMAKE_SYSTEM_VERSION=10.0"
