@@ -180,7 +180,7 @@ namespace System.Data
         DateTimeOffset = 34,
 
         /// <summary>
-        /// A Json Value.
+        /// A JSON value.
         /// </summary>
         Json = 35,
     }
