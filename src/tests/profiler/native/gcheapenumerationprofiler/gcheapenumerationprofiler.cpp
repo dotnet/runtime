@@ -164,6 +164,23 @@ static BOOL STDMETHODCALLTYPE heap_walk_fn(ObjectID object, void* callbackState)
         state->customGcHeapObjectTypeCount->fetch_add(1, std::memory_order_relaxed);
     }
 
+    bool isArrayClass = state->instance->pCorProfilerInfo->IsArrayClass(classId, NULL, NULL, NULL) == S_OK;
+    String stringClass = reinterpret_cast<const WCHAR*>(u"System.String");
+    bool isStringClass = classIdName == stringClass;
+    if (!isArrayClass && !isStringClass)
+    {
+        // Validate that the class fields can be extracted from non-array, non-string objects
+        // For simplicity, check that the call didn't error
+        ULONG pcFieldOffset = 0;
+        hr = state->instance->pCorProfilerInfo->GetClassLayout(classId, NULL, 0, &pcFieldOffset, NULL);
+        if (FAILED(hr))
+        {
+            printf("Error: failed to get class fields for class ID 0x%p. hr=0x%x\n", (void *)classId, hr);
+            state->instance->IncrementFailures();
+            return FALSE;
+        }
+    }
+
     return TRUE;
 }
 
