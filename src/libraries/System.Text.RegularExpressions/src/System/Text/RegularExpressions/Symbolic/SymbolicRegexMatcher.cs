@@ -664,7 +664,8 @@ namespace System.Text.RegularExpressions.Symbolic
                         return true;
                     }
 
-                    if (TAcceleratedStateHandler.TryFindNextStartingPosition(this, input, minterms, ref currStateId, ref pos, initialStateId))
+                    if (currStateId == initialStateId &&
+                        TAcceleratedStateHandler.TryFindNextStartingPosition(this, input, ref currStateId, ref pos, minterms))
                     {
                         if (pos == input.Length)
                         {
@@ -777,7 +778,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     if (dfaStateId == initialStateId)
                     {
-                        if (!TFindOptimizationsHandler.TryFindNextStartingPosition(this, input, ref state, ref pos))
+                        if (!TFindOptimizationsHandler.TryFindNextStartingPosition(this, input, ref state.DfaStateId, ref pos))
                         {
                             return true;
                         }
@@ -792,7 +793,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         endPos = pos;
 
-                        // endStateId = TStateHandler.ExtractNullableCoreStateId(this, in state, input, pos);
                         initialStatePos = initialStatePosCandidate;
 
                         // A match is known to exist.  If that's all we need to know, we're done.
@@ -1647,7 +1647,8 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             /// <summary>Gets the next viable starting position.</summary>
             /// <returns>true if a viable starting position was found; false if no further possible match exists.</returns>
-            public static abstract bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos);
+            public static abstract bool TryFindNextStartingPosition(
+                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref int currentStateId, ref int pos);
         }
 
         /// <summary>Provides an initial state handler for when there are no initial state optimizations to apply.</summary>
@@ -1655,7 +1656,8 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             /// <summary>Returns true. No optimizations are known to be able to skip states, thus every position is a viable starting position.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos) =>
+            public static bool TryFindNextStartingPosition(
+                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref int currentStateId, ref int pos) =>
                 true;
         }
 
@@ -1665,14 +1667,15 @@ namespace System.Text.RegularExpressions.Symbolic
             /// <summary>Gets the next viable starting position.</summary>
             /// <returns>true if a viable starting position was found; false if no further possible match exists.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos)
+            public static bool TryFindNextStartingPosition(
+                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref int currentStateId, ref int pos)
             {
                 // Find the first position that matches with some likely character.
                 if (matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
                 {
                     // Update the starting state based on where TryFindNextStartingPosition moved us to.
                     // As with the initial starting state, if it's a dead end, no match exists.
-                    state = new CurrentState(matcher._dotstarredInitialStates[matcher.GetCharKind(input, pos - 1)]);
+                    currentStateId = matcher._dotstarredInitialStates[matcher.GetCharKind(input, pos - 1)].Id;
                     return true;
                 }
 
@@ -1687,30 +1690,23 @@ namespace System.Text.RegularExpressions.Symbolic
         private interface IAcceleratedStateHandler
         {
             public static abstract bool TryFindNextStartingPosition(
-                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input,
-                byte[] lookup, ref int currentStateId, ref int pos, int initialStateId);
+                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref int currentStateId, ref int pos, byte[] lookup);
         }
 
         private readonly struct NoOptimizationsAcceleratedStateHandler : IAcceleratedStateHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool TryFindNextStartingPosition(
-                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, byte[] lookup, ref int currentStateId, ref int pos, int initialStateId) =>
+                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref int currentStateId, ref int pos, byte[] lookup) =>
                 false;
         }
 
         private readonly struct RegexFindOpsAcceleratedStateHandler : IAcceleratedStateHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher,
-                ReadOnlySpan<char> input,
-                byte[] lookup, ref int currentStateId, ref int pos, int initialStateId)
+            public static bool TryFindNextStartingPosition(
+                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref int currentStateId, ref int pos, byte[] lookup)
             {
-                if (currentStateId != initialStateId)
-                {
-                    return false;
-                }
-
                 if (matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
                 {
                     currentStateId = matcher._dotstarredInitialStates[matcher._positionKinds[GetMintermId(lookup, input[pos - 1]) + 1]].Id;
@@ -1730,13 +1726,8 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool TryFindNextStartingPosition(
-                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, byte[] lookup, ref int currentStateId, ref int pos, int initialStateId)
+                SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref int currentStateId, ref int pos, byte[] lookup)
             {
-                if (currentStateId != initialStateId)
-                {
-                    return false;
-                }
-
                 if (!matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
                 {
                     // No match exists
