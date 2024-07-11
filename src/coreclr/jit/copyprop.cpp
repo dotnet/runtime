@@ -161,12 +161,24 @@ bool Compiler::optCopyProp(
     assert((tree->gtFlags & GTF_VAR_DEF) == 0);
     assert(tree->GetLclNum() == lclNum);
 
-    bool       madeChanges = false;
-    LclVarDsc* varDsc      = lvaGetDesc(lclNum);
-    ValueNum   lclDefVN    = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
+    bool                madeChanges = false;
+    LclVarDsc* const    varDsc      = lvaGetDesc(lclNum);
+    LclSsaVarDsc* const varSsaDsc   = varDsc->GetPerSsaData(tree->GetSsaNum());
+    GenTree* const      varDefTree  = varSsaDsc->GetDefNode();
+    BasicBlock* const   varDefBlock = varSsaDsc->GetBlock();
+    ValueNum const      lclDefVN    = varSsaDsc->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
 
-    JITDUMP("Considering [%06u] with VN " FMT_VN "\n", dspTreeID(tree), lclDefVN);
+    // See if this local is a candidate for phi dev equivalence checks
+    //
+    bool const varDefTreeIsPhiDef             = (varDefTree != nullptr) && varDefTree->IsPhiDefn();
+    bool       varDefTreeIsPhiDefAtCycleEntry = false;
+
+    if (varDefTreeIsPhiDef)
+    {
+        FlowGraphNaturalLoop* const loop = m_blockToLoop->GetLoop(varDefBlock);
+        varDefTreeIsPhiDefAtCycleEntry   = (loop != nullptr) && (loop->GetHeader() == varDefBlock);
+    }
 
     for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
@@ -184,7 +196,6 @@ bool Compiler::optCopyProp(
         // Likewise, nothing to do if the most recent def is not available.
         if (newLclSsaDef == nullptr)
         {
-            JITDUMP("... missing def for [%06u]\n", dspTreeID(newLclDef.GetDefNode()));
             continue;
         }
 
@@ -193,8 +204,15 @@ bool Compiler::optCopyProp(
 
         if (newLclDefVN != lclDefVN)
         {
-            JITDUMP("... [%06u] VN mismatch " FMT_VN "\n", dspTreeID(newLclDef.GetDefNode()), newLclDefVN);
-            continue;
+            bool arePhiDefsEquivalent =
+                varDefTreeIsPhiDefAtCycleEntry && vnStore->AreVNsEquivalent(lclDefVN, newLclDefVN);
+            if (!arePhiDefsEquivalent)
+            {
+                continue;
+            }
+
+            JITDUMP("orig [%06] copy [%06u] VNs proved equivalent\n", dspTreeID(tree),
+                    dspTreeID(newLclDef.GetDefNode()));
         }
 
         // It may not be profitable to propagate a 'doNotEnregister' lclVar to an existing use of an
@@ -202,13 +220,11 @@ bool Compiler::optCopyProp(
         LclVarDsc* const newLclVarDsc = lvaGetDesc(newLclNum);
         if (varDsc->lvDoNotEnregister != newLclVarDsc->lvDoNotEnregister)
         {
-            JITDUMP("... [%06u] DNER mismatch\n", dspTreeID(newLclDef.GetDefNode()));
             continue;
         }
 
         if (optCopyProp_LclVarScore(varDsc, newLclVarDsc, true) <= 0)
         {
-            JITDUMP("... [%06u] score not good\n", dspTreeID(newLclDef.GetDefNode()));
             continue;
         }
 
@@ -233,7 +249,6 @@ bool Compiler::optCopyProp(
         // after Liveness, SSA and VN.
         if ((newLclNum != info.compThisArg) && !VarSetOps::IsMember(this, compCurLife, newLclVarDsc->lvVarIndex))
         {
-            JITDUMP("... [%06u] liveness not good\n", dspTreeID(newLclDef.GetDefNode()));
             continue;
         }
 
@@ -246,7 +261,6 @@ bool Compiler::optCopyProp(
         var_types oldLclType = tree->OperIs(GT_LCL_VAR) ? tree->TypeGet() : varDsc->TypeGet();
         if (newLclType != oldLclType)
         {
-            JITDUMP("... [%06u] type mismatch\n", dspTreeID(newLclDef.GetDefNode()));
             continue;
         }
 

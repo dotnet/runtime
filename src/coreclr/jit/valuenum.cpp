@@ -6770,6 +6770,138 @@ const char* ValueNumStore::VNRelationString(VN_RELATION_KIND vrk)
 }
 #endif
 
+bool ValueNumStore::IsVNPhiDef(ValueNum vn)
+{
+    VNFuncApp funcAttr;
+    if (!GetVNFunc(vn, &funcAttr))
+    {
+        return false;
+    }
+
+    return funcAttr.m_func == VNF_PhiDef;
+}
+//------------------------------------------------------------------------
+// AreVNsEquivalent: returns true iff VNs represent the same value
+//
+// Arguments:
+//    vn1 - first value number to consider
+//    vn2 - second value number ot consider
+//
+// Notes:
+//    Normally if vn1 != vn2 then we cannot say if the two values
+//    are equivalent or different. PhiDef VNs don't represent the
+//    phi def values in this way, and can be proven equivalent even
+//    for different value numbers.
+//
+bool ValueNumStore::AreVNsEquivalent(ValueNum vn1, ValueNum vn2)
+{
+    if (vn1 == vn2)
+    {
+        return true;
+    }
+
+    VNFuncApp funcAttr1;
+    if (!GetVNFunc(vn1, &funcAttr1))
+    {
+        return false;
+    }
+
+    if (funcAttr1.m_func != VNF_PhiDef)
+    {
+        return false;
+    }
+
+    VNFuncApp funcAttr2;
+    if (!GetVNFunc(vn2, &funcAttr2))
+    {
+        return false;
+    }
+
+    if (funcAttr2.m_func != VNF_PhiDef)
+    {
+        return false;
+    }
+
+    // We have two PhiDefs. They may be equivalent, if
+    // they come from Phis in the same block.
+    //
+    const unsigned lclNum1    = unsigned(funcAttr1.m_args[0]);
+    const unsigned ssaDefNum1 = unsigned(funcAttr1.m_args[1]);
+
+    LclVarDsc* const    varDsc1      = m_pComp->lvaGetDesc(lclNum1);
+    LclSsaVarDsc* const varSsaDsc1   = varDsc1->GetPerSsaData(ssaDefNum1);
+    GenTree* const      varDefTree1  = varSsaDsc1->GetDefNode();
+    BasicBlock* const   varDefBlock1 = varSsaDsc1->GetBlock();
+
+    const unsigned lclNum2    = unsigned(funcAttr2.m_args[0]);
+    const unsigned ssaDefNum2 = unsigned(funcAttr2.m_args[1]);
+
+    LclVarDsc* const    varDsc2      = m_pComp->lvaGetDesc(lclNum2);
+    LclSsaVarDsc* const varSsaDsc2   = varDsc2->GetPerSsaData(ssaDefNum2);
+    GenTree* const      varDefTree2  = varSsaDsc2->GetDefNode();
+    BasicBlock* const   varDefBlock2 = varSsaDsc2->GetBlock();
+
+    if (varDefBlock1 != varDefBlock2)
+    {
+        return false;
+    }
+
+    if ((varDefTree1 == nullptr) || (varDefTree2 == nullptr))
+    {
+        return false;
+    }
+
+    // PhiDefs are from same block. Walk the phi args
+    //
+    GenTreePhi* const       treePhi1  = varDefTree1->AsLclVar()->Data()->AsPhi();
+    GenTreePhi* const       treePhi2  = varDefTree2->AsLclVar()->Data()->AsPhi();
+    GenTreePhi::UseIterator treeIter1 = treePhi1->Uses().begin();
+    GenTreePhi::UseIterator treeEnd1  = treePhi1->Uses().end();
+    GenTreePhi::UseIterator treeIter2 = treePhi2->Uses().begin();
+    GenTreePhi::UseIterator treeEnd2  = treePhi2->Uses().end();
+
+    bool phiArgsAreEquivalent = true;
+
+    for (; (treeIter1 != treeEnd1) && (treeIter2 != treeEnd2); ++treeIter1, ++treeIter2)
+    {
+        GenTreePhiArg* const treePhiArg1 = treeIter1->GetNode()->AsPhiArg();
+        GenTreePhiArg* const treePhiArg2 = treeIter2->GetNode()->AsPhiArg();
+
+        assert(treePhiArg1->gtPredBB == treePhiArg2->gtPredBB);
+
+        ValueNum treePhiArgVN1 = treePhiArg1->gtVNPair.GetConservative();
+        ValueNum treePhiArgVN2 = treePhiArg2->gtVNPair.GetConservative();
+
+        // If the PhiArg VNs differ, the phis are not equivalent.
+        // (Note we don't recurse into AreVNsEquivalent as we can't
+        // handle possible cycles in the SSA graph).
+        //
+        if (treePhiArgVN1 != treePhiArgVN2)
+        {
+            phiArgsAreEquivalent = false;
+            break;
+        }
+
+        // If we failed to find meaningful VNs, the phis are not equivalent
+        //
+        if (treePhiArgVN1 == ValueNumStore::NoVN)
+        {
+            phiArgsAreEquivalent = false;
+            break;
+        }
+    }
+
+    // If we didn't verify all phi args we have failed to prove equivalence
+    //
+    if (phiArgsAreEquivalent)
+    {
+        phiArgsAreEquivalent &= (treeIter1 == treeEnd1);
+        phiArgsAreEquivalent &= (treeIter2 == treeEnd2);
+    }
+
+    return phiArgsAreEquivalent;
+}
+
 bool ValueNumStore::IsVNRelop(ValueNum vn)
 {
     VNFuncApp funcAttr;
@@ -10465,7 +10597,8 @@ void Compiler::fgValueNumberBlocks(BasicBlock* block, BlockSet& visitedBlocks)
 
         // Re-value number all the PhiDefs in block
         //
-        for (Statement* stmt = block->firstStmt(); (stmt != nullptr) && stmt->IsPhiDefnStmt(); stmt = stmt->GetNextStmt())
+        for (Statement* stmt = block->firstStmt(); (stmt != nullptr) && stmt->IsPhiDefnStmt();
+             stmt            = stmt->GetNextStmt())
         {
             GenTreeLclVar* const newSsaDef = stmt->GetRootNode()->AsLclVar();
             fgValueNumberPhiDef(newSsaDef, block);
@@ -10635,32 +10768,32 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 
 void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk)
 {
-    GenTreePhi*    phiNode   = newSsaDef->AsLclVar()->Data()->AsPhi();
-    ValueNumPair   phiVNP;
-    ValueNumPair   sameVNP;
-    
+    GenTreePhi*  phiNode = newSsaDef->AsLclVar()->Data()->AsPhi();
+    ValueNumPair phiVNP;
+    ValueNumPair sameVNP;
+
     for (GenTreePhi::Use& use : phiNode->Uses())
     {
         GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
         if (!vnState->IsReachableThroughPred(blk, phiArg->gtPredBB))
         {
             JITDUMP("  Phi arg [%06u] is unnecessary; path through pred " FMT_BB " cannot be taken\n",
-                dspTreeID(phiArg), phiArg->gtPredBB->bbNum);
-            
+                    dspTreeID(phiArg), phiArg->gtPredBB->bbNum);
+
             if ((use.GetNext() != nullptr) || (phiVNP.GetLiberal() != ValueNumStore::NoVN))
             {
                 continue;
             }
-            
+
             // assert(!vnState->IsReachable(blk));
             JITDUMP("  ..but no other path can, so we are using it anyway\n");
         }
-        
+
         ValueNum     phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
         ValueNumPair phiArgVNP      = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
-        
+
         phiArg->gtVNPair = phiArgVNP;
-        
+
         if (phiVNP.GetLiberal() == ValueNumStore::NoVN)
         {
             // This is the first PHI argument
@@ -10670,8 +10803,8 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk)
         else
         {
             phiVNP = vnStore->VNPairForFuncNoFolding(newSsaDef->TypeGet(), VNF_Phi,
-                ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN), phiVNP);
-            
+                                                     ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN), phiVNP);
+
             if ((sameVNP.GetLiberal() != phiArgVNP.GetLiberal()) ||
                 (sameVNP.GetConservative() != phiArgVNP.GetConservative()))
             {
@@ -10682,13 +10815,13 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk)
             }
         }
     }
-    
+
     // We should have visited at least one phi arg in the loop above
     assert(phiVNP.GetLiberal() != ValueNumStore::NoVN);
     assert(phiVNP.GetConservative() != ValueNumStore::NoVN);
-    
+
     ValueNumPair newSsaDefVNP;
-    
+
     if (sameVNP.BothDefined())
     {
         // If all the args of the phi had the same value(s, liberal and conservative), then there wasn't really
@@ -10700,11 +10833,11 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk)
         // They were not the same; we need to create a phi definition.
         ValueNum lclNumVN = ValueNum(newSsaDef->GetLclNum());
         ValueNum ssaNumVN = ValueNum(newSsaDef->GetSsaNum());
-        
+
         newSsaDefVNP = vnStore->VNPairForFunc(newSsaDef->TypeGet(), VNF_PhiDef, ValueNumPair(lclNumVN, lclNumVN),
-            ValueNumPair(ssaNumVN, ssaNumVN), phiVNP);
+                                              ValueNumPair(ssaNumVN, ssaNumVN), phiVNP);
     }
-    
+
     LclSsaVarDsc* newSsaDefDsc = lvaGetDesc(newSsaDef)->GetPerSsaData(newSsaDef->GetSsaNum());
     newSsaDefDsc->m_vnPair     = newSsaDefVNP;
 #ifdef DEBUG
@@ -10715,7 +10848,7 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk)
         printf(" %s.\n", sameVNP.BothDefined() ? "(all same)" : "");
     }
 #endif // DEBUG
-    
+
     newSsaDef->gtVNPair = vnStore->VNPForVoid();
     phiNode->gtVNPair   = newSsaDefVNP;
 }
