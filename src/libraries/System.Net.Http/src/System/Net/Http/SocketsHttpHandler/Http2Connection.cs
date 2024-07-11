@@ -418,11 +418,11 @@ namespace System.Net.Http
                         }
                         else if (_incomingBuffer.ActiveLength == 0)
                         {
-                            ThrowMissingFrameException();
+                            ThrowMissingFrame();
                         }
                         else
                         {
-                            ThrowPrematureEOFException(FrameHeader.Size);
+                            ThrowPrematureEOF(FrameHeader.Size);
                         }
                     }
                 }
@@ -455,7 +455,7 @@ namespace System.Net.Http
 
                     int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
                     _incomingBuffer.Commit(bytesRead);
-                    if (bytesRead == 0) ThrowPrematureEOFException(frameHeader.PayloadLength);
+                    if (bytesRead == 0) ThrowPrematureEOF(frameHeader.PayloadLength);
                 }
                 while (_incomingBuffer.ActiveLength < frameHeader.PayloadLength);
             }
@@ -463,10 +463,10 @@ namespace System.Net.Http
             // Return the read frame header.
             return frameHeader;
 
-            void ThrowPrematureEOFException(int requiredBytes) =>
+            void ThrowPrematureEOF(int requiredBytes) =>
                 throw new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
 
-            void ThrowMissingFrameException() =>
+            void ThrowMissingFrame() =>
                 throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_missing_frame);
         }
 
