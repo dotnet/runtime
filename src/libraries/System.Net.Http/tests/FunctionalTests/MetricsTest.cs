@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -71,13 +72,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
 
-        private static void VerifyPeerAddress(KeyValuePair<string, object?>[] tags)
+        private static void VerifyPeerAddress(KeyValuePair<string, object?>[] tags, IPAddress[] validPeerAddresses = null)
         {
             string ipString = (string)tags.Single(t => t.Key == "network.peer.address").Value;
+            validPeerAddresses ??= [IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback, IPAddress.IPv6Loopback];
             IPAddress ip = IPAddress.Parse(ipString);
-            Assert.True(ip.Equals(IPAddress.Loopback.MapToIPv6()) ||
-                    ip.Equals(IPAddress.Loopback) ||
-                    ip.Equals(IPAddress.IPv6Loopback));
+            Assert.Contains(ip, validPeerAddresses);
         }
 
 
@@ -126,24 +126,24 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(method, tags.Single(t => t.Key == "http.request.method").Value);
         }
 
-        protected static void VerifyOpenConnections(string actualName, object measurement, KeyValuePair<string, object?>[] tags, long expectedValue, Uri uri, Version? protocolVersion, string state)
+        protected static void VerifyOpenConnections(string actualName, object measurement, KeyValuePair<string, object?>[] tags, long expectedValue, Uri uri, Version? protocolVersion, string state, IPAddress[] validPeerAddresses = null)
         {
             Assert.Equal(InstrumentNames.OpenConnections, actualName);
             Assert.Equal(expectedValue, Assert.IsType<long>(measurement));
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifyTag(tags, "http.connection.state", state);
-            VerifyPeerAddress(tags);
+            VerifyPeerAddress(tags, validPeerAddresses);
         }
 
-        protected static void VerifyConnectionDuration(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion)
+        protected static void VerifyConnectionDuration(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion, IPAddress[] validPeerAddresses = null)
         {
             Assert.Equal(InstrumentNames.ConnectionDuration, instrumentName);
             double value = Assert.IsType<double>(measurement);
             Assert.InRange(value, double.Epsilon, 60);
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
-            VerifyPeerAddress(tags);
+            VerifyPeerAddress(tags, validPeerAddresses);
         }
 
         protected static void VerifyTimeInQueue(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion, string method = "GET")
@@ -360,6 +360,37 @@ namespace System.Net.Http.Functional.Tests
             {
                 await server.AcceptConnectionSendResponseAndCloseAsync(statusCode);
             });
+        }
+
+        [OuterLoop("Uses external server.")]
+        [ConditionalFact]
+        public async Task ExternalServer_DurationMetrics_Recorded()
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                throw new SkipTestException("No remote HTTP/3 server available for testing.");
+            }
+
+            using HttpMessageInvoker client = CreateHttpMessageInvoker();
+            using InstrumentRecorder<double> requestDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+            using InstrumentRecorder<double> connectionDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.ConnectionDuration);
+            using InstrumentRecorder<long> openConnectionsRecorder = SetupInstrumentRecorder<long>(InstrumentNames.OpenConnections);
+
+            Uri uri = UseVersion == HttpVersion.Version11
+                ? Test.Common.Configuration.Http.RemoteHttp11Server.EchoUri
+                : Test.Common.Configuration.Http.RemoteHttp2Server.EchoUri;
+            IPAddress[] addresses = await Dns.GetHostAddressesAsync(uri.Host);
+            addresses = addresses.Union(addresses.Select(a => a.MapToIPv6())).ToArray();
+
+            using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+            using HttpResponseMessage response = await SendAsync(client, request);
+            client.Dispose();
+            
+            VerifyRequestDuration(Assert.Single(requestDurationRecorder.GetMeasurements()), uri, UseVersion, 200, "GET");
+            Measurement<double> cd = Assert.Single(connectionDurationRecorder.GetMeasurements());
+            VerifyConnectionDuration(InstrumentNames.ConnectionDuration, cd.Value, cd.Tags.ToArray(), uri, UseVersion, addresses);
+            Measurement<long> oc = openConnectionsRecorder.GetMeasurements().First();
+            VerifyOpenConnections(InstrumentNames.OpenConnections, oc.Value, oc.Tags.ToArray(), 1, uri, UseVersion, "idle", addresses);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

@@ -110,7 +110,7 @@ namespace System.Net.Http.Metrics
 
             if (response is not null)
             {
-                tags.Add("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
+                tags.Add("http.response.status_code", DiagnosticsHelper.GetBoxedInteger((int)response.StatusCode));
                 tags.Add("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
             }
 
@@ -140,11 +140,7 @@ namespace System.Net.Http.Metrics
             {
                 tags.Add("url.scheme", requestUri.Scheme);
                 tags.Add("server.address", requestUri.Host);
-                // Add port tag when not the default value for the current scheme
-                if (!requestUri.IsDefaultPort)
-                {
-                    tags.Add("server.port", requestUri.Port);
-                }
+                tags.Add("server.port", DiagnosticsHelper.GetBoxedInteger(requestUri.Port));
             }
             tags.Add(DiagnosticsHelper.GetMethodTag(request.Method, out _));
 
