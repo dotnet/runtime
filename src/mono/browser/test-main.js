@@ -367,6 +367,11 @@ async function run() {
             try {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
+
+                setInterval(() => {
+                    console.log(`test-main.js interval at ${new Date().toISOString()} linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
+                }, 1000);
+
                 const result = await App.runtime.runMain(main_assembly_name, app_args);
                 console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result} and linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
                 mono_exit(result);
