@@ -133,7 +133,7 @@ void PromotionLiveness::ComputeUseDefSets()
                 {
                     for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                     {
-                        MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef);
+                        MarkUseDef(lcl, bb.VarUse, bb.VarDef);
                     }
                 }
                 else
@@ -143,7 +143,7 @@ void PromotionLiveness::ComputeUseDefSets()
                         // Skip liveness updates/marking for defs; they may be conditionally executed.
                         if ((lcl->gtFlags & GTF_VAR_DEF) == 0)
                         {
-                            MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef);
+                            MarkUseDef(lcl, bb.VarUse, bb.VarDef);
                         }
                     }
                 }
@@ -155,7 +155,7 @@ void PromotionLiveness::ComputeUseDefSets()
             {
                 for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                 {
-                    MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef);
+                    MarkUseDef(lcl, bb.VarUse, bb.VarDef);
                 }
             }
         }
@@ -179,12 +179,11 @@ void PromotionLiveness::ComputeUseDefSets()
 //   Mark use/def information for a single appearence of a local.
 //
 // Parameters:
-//   stmt   - Statement containing the local
 //   lcl    - The local node
 //   useSet - The use set to mark in.
 //   defSet - The def set to mark in.
 //
-void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet)
+void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet)
 {
     AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
     if (agg == nullptr)
@@ -199,8 +198,17 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
     unsigned  baseIndex  = m_structLclToTrackedIndex[lcl->GetLclNum()];
     var_types accessType = lcl->TypeGet();
 
-    if ((accessType == TYP_STRUCT) || lcl->OperIs(GT_LCL_ADDR))
+    if (accessType == TYP_STRUCT)
     {
+        if (lcl->OperIs(GT_LCL_ADDR))
+        {
+            // For LCL_ADDR this is a retbuf and we expect it to be a def. We
+            // don't know the exact size here so we cannot mark anything as
+            // being fully defined, thus we can just return.
+            assert(isDef);
+            return;
+        }
+
         if (lcl->OperIsScalarLocal())
         {
             // Mark remainder and all fields.
@@ -212,7 +220,7 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
         else
         {
             unsigned offs  = lcl->GetLclOffs();
-            unsigned size  = GetSizeOfStructLocal(stmt, lcl);
+            unsigned size  = lcl->GetLayout(m_compiler)->GetSize();
             size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(reps, offs);
 
             if ((ssize_t)index < 0)
@@ -254,30 +262,6 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
             MarkIndex(baseIndex + 1 + (unsigned)index, isUse, isDef, useSet, defSet);
         }
     }
-}
-
-//------------------------------------------------------------------------
-// GetSizeOfStructLocal:
-//   Get the size of a struct local (either a TYP_STRUCT typed local, or a
-//   GT_LCL_ADDR retbuf definition).
-//
-// Parameters:
-//   stmt   - Statement containing the local
-//   lcl    - The local node
-//
-unsigned PromotionLiveness::GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarCommon* lcl)
-{
-    if (lcl->OperIs(GT_LCL_ADDR))
-    {
-        // Retbuf definition. Find the definition size from the
-        // containing call.
-        Compiler::FindLinkData data = m_compiler->gtFindLink(stmt, lcl);
-        assert((data.parent != nullptr) && data.parent->IsCall() &&
-               (m_compiler->gtCallGetDefinedRetBufLclAddr(data.parent->AsCall()) == lcl));
-        return m_compiler->typGetObjLayout(data.parent->AsCall()->gtRetClsHnd)->GetSize();
-    }
-
-    return lcl->GetLayout(m_compiler)->GetSize();
 }
 
 //------------------------------------------------------------------------
@@ -446,7 +430,7 @@ void PromotionLiveness::FillInLiveness()
             {
                 for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr; cur = cur->gtPrev)
                 {
-                    FillInLiveness(life, volatileVars, stmt, cur->AsLclVarCommon());
+                    FillInLiveness(life, volatileVars, cur->AsLclVarCommon());
                 }
             }
             else
@@ -456,7 +440,7 @@ void PromotionLiveness::FillInLiveness()
                     // Skip liveness updates/marking for defs; they may be conditionally executed.
                     if ((cur->gtFlags & GTF_VAR_DEF) == 0)
                     {
-                        FillInLiveness(life, volatileVars, stmt, cur->AsLclVarCommon());
+                        FillInLiveness(life, volatileVars, cur->AsLclVarCommon());
                     }
                 }
             }
@@ -478,10 +462,9 @@ void PromotionLiveness::FillInLiveness()
 // Parameters:
 //   life         - The current life set. Will be read and updated depending on 'lcl'.
 //   volatileVars - Bit vector of variables that are live always.
-//   stmt         - Statement containing the local
 //   lcl          - The IR node to process liveness for and to mark with liveness information.
 //
-void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statement* stmt, GenTreeLclVarCommon* lcl)
+void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTreeLclVarCommon* lcl)
 {
     AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
     if (agg == nullptr)
@@ -495,7 +478,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
     unsigned  baseIndex  = m_structLclToTrackedIndex[lcl->GetLclNum()];
     var_types accessType = lcl->TypeGet();
 
-    if ((accessType == TYP_STRUCT) || lcl->OperIs(GT_LCL_ADDR))
+    if (accessType == TYP_STRUCT)
     {
         // We need an external bit set to represent dying fields/remainder on a struct use.
         BitVecTraits aggTraits(1 + (unsigned)agg->Replacements.size(), m_compiler);
@@ -527,7 +510,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
         else
         {
             unsigned offs  = lcl->GetLclOffs();
-            unsigned size  = GetSizeOfStructLocal(stmt, lcl);
+            unsigned size  = lcl->GetLayout(m_compiler)->GetSize();
             size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, offs);
 
             if ((ssize_t)index < 0)
@@ -591,6 +574,25 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
     }
     else
     {
+        if (lcl->OperIs(GT_LCL_ADDR))
+        {
+            // Retbuf -- these are definitions but we do not know of how much.
+            // We never treat them as killing anything, but we do store liveness information for them.
+            BitVecTraits aggTraits(1 + (unsigned)agg->Replacements.size(), m_compiler);
+            BitVec       aggDeaths(BitVecOps::MakeEmpty(&aggTraits));
+            // Copy preexisting liveness information.
+            for (size_t i = 0; i <= agg->Replacements.size(); i++)
+            {
+                unsigned varIndex = baseIndex + (unsigned)i;
+                if (!BitVecOps::IsMember(m_bvTraits, life, varIndex))
+                {
+                    BitVecOps::AddElemD(&aggTraits, aggDeaths, (unsigned)i);
+                }
+            }
+            m_aggDeaths.Set(lcl, aggDeaths);
+            return;
+        }
+
         unsigned offs  = lcl->GetLclOffs();
         size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, offs);
         if ((ssize_t)index < 0)
