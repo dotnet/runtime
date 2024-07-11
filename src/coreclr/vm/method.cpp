@@ -2011,7 +2011,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     }
     CONTRACTL_END
 
-    if (IsGenericMethodDefinition() || ContainsGenericVariables())
+    if (ContainsGenericVariables())
     {
         COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR);
     }
