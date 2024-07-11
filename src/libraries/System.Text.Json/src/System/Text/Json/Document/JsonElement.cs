@@ -92,7 +92,7 @@ namespace System.Text.Json
         /// <returns></returns>
         /// <returns>The number of properties contained within the current object value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.Array"/>.
+        ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.Object"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
