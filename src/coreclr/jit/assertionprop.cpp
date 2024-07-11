@@ -6682,7 +6682,7 @@ PhaseStatus Compiler::optAssertionPropMain()
         fgRemoveRestOfBlock = false;
 
         // Walk the statement trees in this basic block
-        Statement* stmt = block->firstStmt();
+        Statement* stmt = block->FirstNonPhiDef(); //firstStmt();
         while (stmt != nullptr)
         {
             // Propagation tells us to remove the rest of the block. Remove it.
