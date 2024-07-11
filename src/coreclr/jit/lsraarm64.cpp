@@ -1636,7 +1636,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                             predMask = RBM_LOWMASK.GetPredicateRegSet();
                         }
 
-                        // Special-case
+                        // Special-case, CreateBreakPropagateMask's op2 is the RMW node.
                         if (intrinEmb.id == NI_Sve_CreateBreakPropagateMask)
                         {
                             assert(embOp2Node->isRMWHWIntrinsic(compiler));
@@ -1953,7 +1953,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             switch (intrinEmb.id)
             {
-                // Special-case
+                // Special-case, CreateBreakPropagateMask's op2 is the RMW node.
                 case NI_Sve_CreateBreakPropagateMask:
                     assert(tgtPrefEmbOp2OfOp2);
                     tgtPrefUse = BuildUse(embOp2Node->Op(2));
