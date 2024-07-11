@@ -2490,6 +2490,15 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// impGetGenericTypeDefinition: gets the generic type definition from a 'typeof' expression.
+//
+// Arguments:
+//    type - The 'GenTree' node to inspect.
+//
+// Notes:
+//    If successful, this method will call 'impPopStack()' before returning.
+//
 GenTree* Compiler::impGetGenericTypeDefinition(GenTree* type)
 {
     // This intrinsic requires the first arg to be some `typeof()` expression,
