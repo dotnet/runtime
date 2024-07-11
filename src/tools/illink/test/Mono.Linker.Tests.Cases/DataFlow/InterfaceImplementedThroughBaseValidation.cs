@@ -37,7 +37,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public void Method () {}
 			}
 
-			[ExpectedWarning ("IL2046", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
+			[ExpectedWarning ("IL2046")]
 			class Derived : Base, Interface {}
 
 			[ExpectedWarning ("IL2026")]
@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public void Method () {}
 			}
 
-			[ExpectedWarning ("IL2046", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
+			[ExpectedWarning ("IL2046")]
 			class Derived : Base, Interface {}
 
 			public static void Test () {
@@ -77,7 +77,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public void Method (Type t) {}
 			}
 
-			[ExpectedWarning ("IL2092", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
+			[ExpectedWarning ("IL2092")]
 			class Derived : Base, Interface {}
 
 			public static void Test () {
@@ -96,7 +96,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public void Method ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
 			}
 
-			[ExpectedWarning ("IL2092", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
+			[ExpectedWarning ("IL2092")]
 			class Derived : Base, Interface {}
 
 			public static void Test () {
@@ -114,6 +114,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			interface InterfaceImpl : Interface {
 				[ExpectedWarning ("IL2046")]
+				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
+				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
 				void Interface.Method() {}
 			}
 
@@ -137,6 +139,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			interface InterfaceImpl : Interface {
 				[ExpectedWarning ("IL2046")]
+				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
+				[ExpectedWarning ("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
 				[RequiresUnreferencedCode (nameof (Method))]
 				void Interface.Method() {}
 			}
@@ -160,6 +164,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			interface InterfaceImpl : Interface {
 				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
+				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
 				void Interface.Method (Type t) {}
 			}
 
@@ -182,6 +188,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			interface InterfaceImpl : Interface {
 				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
+				[ExpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104746")]
 				void Interface.Method ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
 			}
 
