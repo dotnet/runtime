@@ -4890,7 +4890,14 @@ public:
     void ClearIsVarArgs() { m_isVarArgs = false; }
     bool IsAbiInformationDetermined() const { return m_abiInformationDetermined; }
     bool IsNewAbiInformationDetermined() const { return m_newAbiInformationDetermined; }
-    bool AreArgsComplete() const { return m_argsComplete; }
+
+    // TODO-Remove: Workaround for bad codegen in MSVC versions < 19.41, see
+    // https://github.com/dotnet/runtime/pull/104370#issuecomment-2222910359
+#ifdef _MSC_VER
+    __declspec(noinline)
+#endif
+        bool AreArgsComplete() const { return m_argsComplete; }
+
     bool HasRegArgs() const { return m_hasRegArgs; }
     bool HasStackArgs() const { return m_hasStackArgs; }
     bool NeedsTemps() const { return m_needsTemps; }
