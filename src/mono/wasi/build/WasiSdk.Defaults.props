@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists($(WASI_SDK_PATH)/VERSION)">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'wasi-sdk'))</WASI_SDK_PATH>
     <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
     <WasiSysRoot>$([MSBuild]::NormalizeDirectory($(WASI_SDK_PATH), 'share', 'wasi-sysroot'))</WasiSysRoot>
     <WasiClang>$(WASI_SDK_PATH)bin/clang</WasiClang>

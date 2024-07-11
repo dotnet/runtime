@@ -101,7 +101,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <_ToolchainMissingErrorMessage Condition="'$(WASI_SDK_PATH)' == '' or !Exists($(WASI_SDK_PATH)/VERSION)">Could not find wasi-sdk. Install wasi-sdk and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>
+      <_ToolchainMissingErrorMessage Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')">Could not find wasi-sdk. Install wasi-sdk and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>
       <_ToolchainMissingErrorMessage Condition="'$(_ToolchainMissingErrorMessage)' == '' and '$(_ToolchainMissingPaths)' != ''">Using WASI_SDK_PATH=$(WASI_SDK_PATH), cannot find $(_ToolchainMissingPaths) .</_ToolchainMissingErrorMessage>
       <_IsToolchainMissing Condition="'$(_ToolchainMissingErrorMessage)' != ''">true</_IsToolchainMissing>
     </PropertyGroup>
