@@ -59,6 +59,10 @@ SearchPathWrapper(
     _Out_opt_ LPWSTR * lpFilePart
     );
 
+DWORD WINAPI GetTempPathWrapper(
+    SString& lpBuffer
+    );
+
 DWORD
 GetModuleFileNameWrapper(
     _In_opt_ HMODULE hModule,

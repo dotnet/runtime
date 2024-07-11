@@ -205,7 +205,7 @@ int createdump_main(const int argc, const char* argv[])
     ArrayHolder<char> tmpPath = new char[MAX_LONGPATH];
     if (options.DumpPathTemplate == nullptr)
     {
-        if (GetTempPathWrapper(MAX_LONGPATH, tmpPath) == 0)
+        if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
         {
             printf_error("GetTempPath failed\n");
             return -1;
