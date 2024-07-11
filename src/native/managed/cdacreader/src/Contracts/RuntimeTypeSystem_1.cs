@@ -170,7 +170,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         TargetPointer dictionaryPointer = _target.ReadPointer(perInstInfo);
 
-        int numberOfGenericArgs = _target.ProcessedData.GetOrAdd<GenericsDictInfo>(genericsDictInfo).NumTyPars;
+        int numberOfGenericArgs = _target.ProcessedData.GetOrAdd<GenericsDictInfo>(genericsDictInfo).NumTypeArgs;
         MethodTableArray instantiation = _target.ProcessedData.GetOrAdd<(TargetPointer, int), MethodTableArray>
             ((dictionaryPointer, numberOfGenericArgs));
 

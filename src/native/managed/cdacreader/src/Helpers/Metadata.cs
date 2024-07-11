@@ -2,8 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Net;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using static System.Net.Mime.MediaTypeNames;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts;
+namespace Microsoft.Diagnostics.DataContractReader.Helpers;
 
 internal enum MetadataTable
 {
@@ -56,39 +64,6 @@ internal enum MetadataTable
     Count = 0x2c
 }
 
-internal struct EcmaMetadataSchema
-{
-    public EcmaMetadataSchema(string metadataVersion, bool largeStringHeap, bool largeBlobHeap, bool largeGuidHeap, int[] rowCount, bool[] isSorted, bool variableSizedColumnsAre4BytesLong)
-    {
-        MetadataVersion = metadataVersion;
-        LargeStringHeap = largeStringHeap;
-        LargeBlobHeap = largeBlobHeap;
-        LargeGuidHeap = largeGuidHeap;
-
-        _rowCount = rowCount;
-        _isSorted = isSorted;
-
-        VariableSizedColumnsAreAll4BytesLong = variableSizedColumnsAre4BytesLong;
-    }
-
-    public readonly string MetadataVersion;
-
-    public readonly bool LargeStringHeap;
-    public readonly bool LargeBlobHeap;
-    public readonly bool LargeGuidHeap;
-
-    // Table data, these structures hold MetadataTable.Count entries
-    private readonly int[] _rowCount;
-    public readonly ReadOnlySpan<int> RowCount => _rowCount;
-
-    private readonly bool[] _isSorted;
-    public readonly ReadOnlySpan<bool> IsSorted => _isSorted;
-
-    // In certain scenarios the size of the tables is forced to be the maximum size
-    // Otherwise the size of columns should be computed based on RowSize/the various heap flags
-    public readonly bool VariableSizedColumnsAreAll4BytesLong;
-}
-
 internal class EcmaMetadata
 {
     public EcmaMetadata(EcmaMetadataSchema schema,
@@ -115,7 +90,6 @@ internal class EcmaMetadata
     public ReadOnlyMemory<byte> BlobHeap { get; init; }
     public ReadOnlyMemory<byte> GuidHeap { get; init; }
 
-    // This isn't technically part of the contract, but it is here to reduce the complexity of using this contract
     private Microsoft.Diagnostics.DataContractReader.Helpers.EcmaMetadataReader? _ecmaMetadataReader;
     public Microsoft.Diagnostics.DataContractReader.Helpers.EcmaMetadataReader EcmaMetadataReader
     {
@@ -293,31 +267,74 @@ internal enum MetadataColumnIndex
     Count
 }
 
-internal interface IMetadata : IContract
+internal class Metadata
 {
-    static string IContract.Name => nameof(Metadata);
-    static IContract IContract.Create(Target target, int version)
+    private readonly Target _target;
+    private readonly Dictionary<ulong, EcmaMetadata> _metadata = [];
+
+    public Metadata(Target target)
     {
-        return version switch
+        _target = target;
+    }
+
+    public virtual EcmaMetadata GetMetadata(Contracts.ModuleHandle module)
+    {
+        if (_metadata.TryGetValue(module.Address, out EcmaMetadata? result))
+            return result;
+
+        AvailableMetadataType metadataType = _target.Contracts.Loader.GetAvailableMetadataType(module);
+
+        if (metadataType == AvailableMetadataType.ReadOnly)
         {
-            _ => default(Metadata),
-        };
+            if (this.MetadataProvider != null)
+                result = this.MetadataProvider(module);
+            if (result == null)
+            {
+                TargetPointer address = _target.Contracts.Loader.GetMetadataAddress(module, out ulong size);
+                byte[] data = new byte[size];
+                _target.ReadBuffer(address, data);
+                result = (new Helpers.EcmaMetadataReader(new ReadOnlyMemory<byte>(data))).UnderlyingMetadata;
+            }
+        }
+        else if (metadataType == AvailableMetadataType.ReadWriteSavedCopy)
+        {
+            TargetPointer address = _target.Contracts.Loader.GetReadWriteSavedMetadataAddress(module, out ulong size);
+            byte[] data = new byte[size];
+            _target.ReadBuffer(address, data);
+            result = (new Helpers.EcmaMetadataReader(new ReadOnlyMemory<byte>(data))).UnderlyingMetadata;
+        }
+        else
+        {
+            var targetEcmaMetadata = _target.Contracts.Loader.GetReadWriteMetadata(module);
+            result = new EcmaMetadata(targetEcmaMetadata.Schema,
+                GetReadOnlyMemoryFromTargetSpans(targetEcmaMetadata.Tables),
+                GetReadOnlyMemoryFromTargetSpan(targetEcmaMetadata.StringHeap),
+                GetReadOnlyMemoryFromTargetSpan(targetEcmaMetadata.UserStringHeap),
+                GetReadOnlyMemoryFromTargetSpan(targetEcmaMetadata.BlobHeap),
+                GetReadOnlyMemoryFromTargetSpan(targetEcmaMetadata.GuidHeap));
+
+            ReadOnlyMemory<byte> GetReadOnlyMemoryFromTargetSpan(TargetSpan span)
+            {
+                if (span.Size == 0)
+                    return default;
+                byte[] data = new byte[span.Size];
+                _target.ReadBuffer(span.Address, data);
+                return new ReadOnlyMemory<byte>(data);
+            }
+            ReadOnlyMemory<byte>[] GetReadOnlyMemoryFromTargetSpans(ReadOnlySpan<TargetSpan> spans)
+            {
+                ReadOnlyMemory<byte>[] memories = new ReadOnlyMemory<byte>[spans.Length];
+                for (int i = 0; i < spans.Length; i++)
+                {
+                    memories[i] = GetReadOnlyMemoryFromTargetSpan(spans[i]);
+                }
+                return memories;
+            }
+        }
+
+        _metadata.Add(module.Address, result);
+        return result;
     }
 
-    public virtual EcmaMetadata GetMetadata(ModuleHandle module) => throw new NotImplementedException();
-
-    // Allow users to provide metadata from outside the contract system. Used to enable supporting scenarios where the metadata is not in a
-    // dump file, or the contract api user wishes to provide a memory mapped metadata instead of reading it from the target process.
-    public virtual void RegisterMetadataProvider(Func<ModuleHandle, EcmaMetadata> provider) => throw new NotImplementedException();
-
-    // Helper api intended for users of RegisterMetadataProvider, not officially part of the documented contract, but placed here in the code for greater visibility
-    public EcmaMetadata ProduceEcmaMetadataFromMemory(ReadOnlyMemory<byte> image)
-    {
-        return (new Helpers.EcmaMetadataReader(image)).UnderlyingMetadata;
-    }
-}
-
-internal readonly struct Metadata : IMetadata
-{
-    // Everything throws NotImplementedException
+    public Func<Contracts.ModuleHandle, EcmaMetadata>? MetadataProvider;
 }

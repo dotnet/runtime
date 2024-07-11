@@ -1588,6 +1588,15 @@ private:
 
     PTR_Assembly           *m_NativeMetadataAssemblyRefMap;
 
+    // Buffer of Metadata storage for dynamic modules. May be NULL. This provides a reasonable way for
+    // the debugger to get metadata of dynamic modules from out of process.
+    // A dynamic module will eagerly serialize its metadata to this buffer.
+    // This points at a uint32_t array.
+    // The first uint32_t is the number of bytes in the saved metadata
+    // Starting at the address of the second uint32_t value is the saved metadata itself
+protected:
+    TADDR m_pDynamicMetadata;
+
 public:
 #if !defined(DACCESS_COMPILE)
     PTR_Assembly GetNativeMetadataAssemblyRefFromCache(DWORD rid)
@@ -1617,6 +1626,7 @@ struct cdac_offsets<Module>
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
     static constexpr size_t ThunkHeap = offsetof(Module, m_pThunkHeap);
+    static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
 
     // Lookup map pointers
     static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap) + offsetof(LookupMap<PTR_FieldDesc>, pTable);
@@ -1647,11 +1657,6 @@ private:
     // Simple Critical Section used for basic leaf-lock operatons.
     CrstExplicitInit        m_CrstLeafLock;
 
-    // Buffer of Metadata storage for dynamic modules. May be NULL. This provides a reasonable way for
-    // the debugger to get metadata of dynamic modules from out of process.
-    // A dynamic module will eagerly serialize its metadata to this buffer.
-    PTR_SBuffer m_pDynamicMetadata;
-
 #if !defined DACCESS_COMPILE
     ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly);
 #endif // !DACCESS_COMPILE
@@ -1660,7 +1665,7 @@ public:
 
 #ifdef DACCESS_COMPILE
     // Accessor to expose m_pDynamicMetadata to debugger.
-    PTR_SBuffer GetDynamicMetadataBuffer() const;
+    TADDR GetDynamicMetadataBuffer() const;
 #endif
 
 #if !defined DACCESS_COMPILE

@@ -3806,7 +3806,7 @@ void ReflectionModule::Destruct()
 
     Module::Destruct();
 
-    delete m_pDynamicMetadata;
+    delete (uint32_t*)m_pDynamicMetadata;
     m_pDynamicMetadata = NULL;
 
     m_CrstLeafLock.Destroy();
@@ -3923,7 +3923,8 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     IfFailThrow(hr);
 
     // Operate on local data, and then persist it into the module once we know it's valid.
-    NewHolder<SBuffer> pBuffer(new SBuffer());
+    int sizeInInts = (numBytes / sizeof(int32_t)) + 2;
+    NewArrayHolder<uint32_t> pBuffer(new uint32_t[sizeInInts]);
     _ASSERTE(pBuffer != NULL); // allocation would throw first
 
     // ReflectionModule is still in a consistent state, and now we're just operating on local data to
@@ -3931,9 +3932,9 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     // recently generated classes.
 
     // Caller ensures serialization that guarantees that the metadata doesn't grow underneath us.
-    BYTE * pRawData = pBuffer->OpenRawBuffer(numBytes);
+    BYTE * pRawData = (BYTE*)&pBuffer[1];
     hr = pEmitter->SaveToMemory(pRawData, numBytes);
-    pBuffer->CloseRawBuffer();
+    pBuffer[0] = numBytes;
 
     IfFailThrow(hr);
 
@@ -3941,9 +3942,9 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     {
         CrstHolder ch(&m_CrstLeafLock);
 
-        delete m_pDynamicMetadata;
+        delete (uint32_t*)m_pDynamicMetadata;
 
-        m_pDynamicMetadata = pBuffer.Extract();
+        m_pDynamicMetadata = (TADDR)pBuffer.Extract();
     }
 
     //
@@ -3965,7 +3966,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
 // Notes:
 //    Only used by the debugger, so only accessible via DAC.
 //    The buffer is updated via code:ReflectionModule.CaptureModuleMetaDataToMemory
-PTR_SBuffer ReflectionModule::GetDynamicMetadataBuffer() const
+TADDR ReflectionModule::GetDynamicMetadataBuffer() const
 {
     SUPPORTS_DAC;
 

@@ -89,7 +89,7 @@ internal struct TypeNameBuilder
             else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
             {
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandle(modulePointer);
-                EcmaMetadataReader reader = tnb.Target.Contracts.Metadata.GetMetadata(module).EcmaMetadataReader;
+                EcmaMetadataReader reader = tnb.Target.Metadata.GetMetadata(module).EcmaMetadataReader;
                 EcmaMetadataCursor cursor = reader.GetCursor(genericParamToken);
                 if (format.HasFlag(TypeNameFormat.FormatGenericParam))
                 {
@@ -150,7 +150,7 @@ internal struct TypeNameBuilder
                 }
                 else
                 {
-                    EcmaMetadataReader reader = tnb.Target.Contracts.Metadata.GetMetadata(moduleHandle).EcmaMetadataReader;
+                    EcmaMetadataReader reader = tnb.Target.Metadata.GetMetadata(moduleHandle).EcmaMetadataReader;
                     AppendNestedTypeDef(ref tnb, reader, typeDefToken, format);
                 }
 
@@ -176,7 +176,7 @@ internal struct TypeNameBuilder
 
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandle(modulePtr);
                 // NOTE: The DAC variant of assembly name generation is different than the runtime version. The DAC variant is simpler, and only uses SimpleName
-                EcmaMetadataReader mr = tnb.Target.Contracts.Metadata.GetMetadata(module).EcmaMetadataReader;
+                EcmaMetadataReader mr = tnb.Target.Metadata.GetMetadata(module).EcmaMetadataReader;
                 EcmaMetadataCursor cursor = mr.GetCursor(0x20000001);
                 string assemblySimpleName = mr.GetColumnAsUtf8String(cursor, MetadataColumnIndex.Assembly_Name);
 

@@ -300,8 +300,7 @@ typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 template<>
 struct cdac_offsets<GenericsDictInfo>
 {
-    static constexpr size_t NumDicts = offsetof(GenericsDictInfo, m_wNumDicts);
-    static constexpr size_t NumTyPars = offsetof(GenericsDictInfo, m_wNumTyPars);
+    static constexpr size_t NumTypeArgs = offsetof(GenericsDictInfo, m_wNumTyPars);
 };
 
 // These various statics structures exist directly before the MethodTableAuxiliaryData

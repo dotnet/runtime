@@ -1935,7 +1935,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
 
             if (mtName != NULL)
             {
-                _ASSERTE(0 == wcsncmp(pNeeded, (WCHAR *)pwszNameLocal, count));
+                _ASSERTE(0 == wcsncmp(mtName, (WCHAR *)pwszNameLocal, count));
             }
             if (pNeeded != NULL)
             {
@@ -1950,11 +1950,13 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
     }
 
     SOSDacLeave();
+    return hr;
 }
 
 HRESULT
 ClrDataAccess::GetMethodTableNameImpl(CLRDATA_ADDRESS mt, unsigned int count, _Inout_updates_z_(count) WCHAR *mtName, unsigned int *pNeeded)
 {
+    HRESULT hr = S_OK;
     PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL free = FALSE;
 
