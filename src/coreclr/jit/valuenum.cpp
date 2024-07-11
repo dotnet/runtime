@@ -10375,38 +10375,15 @@ PhaseStatus Compiler::fgValueNumber()
     // SSA has already computed a post-order taking EH successors into account.
     // Visiting that in reverse will ensure we visit a block's predecessors
     // before itself whenever possible.
+    //
+    EnsureBasicBlockEpoch();
+    BlockSet     visitedBlocks(BlockSetOps::MakeEmpty(this));
     BasicBlock** postOrder      = m_dfsTree->GetPostOrder();
     unsigned     postOrderCount = m_dfsTree->GetPostOrderCount();
     for (unsigned i = postOrderCount; i != 0; i--)
     {
-        BasicBlock* block = postOrder[i - 1];
-        JITDUMP("Visiting " FMT_BB "\n", block->bbNum);
-
-        if (block != fgFirstBB)
-        {
-            bool anyPredReachable = false;
-            for (FlowEdge* pred = BlockPredsWithEH(block); pred != nullptr; pred = pred->getNextPredEdge())
-            {
-                BasicBlock* predBlock = pred->getSourceBlock();
-                if (!vs.IsReachableThroughPred(block, predBlock))
-                {
-                    JITDUMP("  Unreachable through pred " FMT_BB "\n", predBlock->bbNum);
-                    continue;
-                }
-
-                JITDUMP("  Reachable through pred " FMT_BB "\n", predBlock->bbNum);
-                anyPredReachable = true;
-                break;
-            }
-
-            if (!anyPredReachable)
-            {
-                JITDUMP("  " FMT_BB " was proven unreachable\n", block->bbNum);
-                vs.SetUnreachable(block);
-            }
-        }
-
-        fgValueNumberBlock(block);
+        BasicBlock* const block = postOrder[i - 1];
+        fgValueNumberBlocks(block, visitedBlocks);
     }
 
 #ifdef DEBUG
@@ -10417,6 +10394,78 @@ PhaseStatus Compiler::fgValueNumber()
     fgVNPassesCompleted++;
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgValueNumberBlocks: Run value numbering for a block or blocks in a loop
+//
+// Arguments:
+//   block -- block to value number (may already have been numbered)
+//   visitedBlocks -- blocks that have already had VNs assigned
+//
+// Notes:
+//
+//   Within the overall reverse post order, we want to ensure we visit all blocks in
+//   a loop before any possible loop block successors. So if we visit a loop
+//   header, we switch to visiting the loop blocks in RPO, and once we finish
+//   that visitation, we try and refine loop header PHIs.
+//
+void Compiler::fgValueNumberBlocks(BasicBlock* block, BlockSet& visitedBlocks)
+{
+    // Because we're not following the strict RPO, we may have already visisted this block.
+    //
+    if (BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
+    {
+        return;
+    }
+
+    JITDUMP("Visiting " FMT_BB "\n", block->bbNum);
+
+    if (block != fgFirstBB)
+    {
+        bool anyPredReachable = false;
+        for (FlowEdge* pred = BlockPredsWithEH(block); pred != nullptr; pred = pred->getNextPredEdge())
+        {
+            BasicBlock* predBlock = pred->getSourceBlock();
+            if (!vnState->IsReachableThroughPred(block, predBlock))
+            {
+                JITDUMP("  Unreachable through pred " FMT_BB "\n", predBlock->bbNum);
+                continue;
+            }
+
+            JITDUMP("  Reachable through pred " FMT_BB "\n", predBlock->bbNum);
+            anyPredReachable = true;
+            break;
+        }
+
+        if (!anyPredReachable)
+        {
+            JITDUMP("  " FMT_BB " was proven unreachable\n", block->bbNum);
+            vnState->SetUnreachable(block);
+        }
+    }
+
+    fgValueNumberBlock(block);
+
+    // Mark block as visited
+    //
+    BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+
+    // Is block the head of a loop?
+    //
+    FlowGraphNaturalLoop* const loop = m_blockToLoop->GetLoop(block);
+    if ((loop != nullptr) && (block == loop->GetHeader()))
+    {
+        // Yes. Visit all other loop blocks using the within-loop RPO.
+        //
+        loop->VisitLoopBlocksReversePostOrder([&](BasicBlock* block) {
+            fgValueNumberBlocks(block, visitedBlocks);
+            return BasicBlockVisit::Continue;
+        });
+
+        // TODO: Postprocess to refine phis of block.
+        //
+    }
 }
 
 void Compiler::fgValueNumberBlock(BasicBlock* blk)
