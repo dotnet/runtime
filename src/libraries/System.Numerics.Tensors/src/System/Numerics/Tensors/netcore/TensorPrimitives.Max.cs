@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -52,7 +51,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Max<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where T : INumber<T> =>
-            InvokeSpanSpanIntoSpan<T, MaxOperator<T>>(x, y, destination);
+            InvokeSpanSpanIntoSpan<T, MaxPropagateNaNOperator<T>>(x, y, destination);
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -75,10 +74,84 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Max<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where T : INumber<T> =>
-            InvokeSpanScalarIntoSpan<T, MaxOperator<T>>(x, y, destination);
+            InvokeSpanScalarIntoSpan<T, MaxPropagateNaNOperator<T>>(x, y, destination);
+
+        /// <summary>T.Max(x, y) (but NaNs may not be propagated)</summary>
+        internal readonly struct MaxOperator<T> : IAggregationOperator<T> where T : INumber<T>
+        {
+            public static bool Vectorizable => true;
+
+            public static T Invoke(T x, T y)
+            {
+                if (typeof(T) == typeof(Half) || typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                {
+                    return x == y ?
+                        (IsNegative(x) ? y : x) :
+                        (y > x ? y : x);
+                }
+
+                return T.Max(x, y);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
+            {
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                {
+                    if (AdvSimd.IsSupported && typeof(T) == typeof(float))
+                    {
+                        return AdvSimd.Max(x.AsSingle(), y.AsSingle()).As<float, T>();
+                    }
+
+                    if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(double))
+                    {
+                        return AdvSimd.Arm64.Max(x.AsDouble(), y.AsDouble()).As<double, T>();
+                    }
+
+                    return
+                        Vector128.ConditionalSelect(Vector128.Equals(x, y),
+                            Vector128.ConditionalSelect(IsNegative(x), y, x),
+                            Vector128.Max(x, y));
+                }
+
+                return Vector128.Max(x, y);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
+            {
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                {
+                    return
+                        Vector256.ConditionalSelect(Vector256.Equals(x, y),
+                            Vector256.ConditionalSelect(IsNegative(x), y, x),
+                            Vector256.Max(x, y));
+                }
+
+                return Vector256.Max(x, y);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
+            {
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                {
+                    return
+                        Vector512.ConditionalSelect(Vector512.Equals(x, y),
+                            Vector512.ConditionalSelect(IsNegative(x), y, x),
+                            Vector512.Max(x, y));
+                }
+
+                return Vector512.Max(x, y);
+            }
+
+            public static T Invoke(Vector128<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
+            public static T Invoke(Vector256<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
+            public static T Invoke(Vector512<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
+        }
 
         /// <summary>Max(x, y)</summary>
-        internal readonly struct MaxOperator<T> : IAggregationOperator<T>
+        internal readonly struct MaxPropagateNaNOperator<T> : IBinaryOperator<T>
              where T : INumber<T>
         {
             public static bool Vectorizable => true;
@@ -89,16 +162,27 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
-#if !NET9_0_OR_GREATER
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return Vector128.ConditionalSelect(
-                        Vector128.LessThan(y, x) | IsNaN(x) | (Vector128.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
+                    if (AdvSimd.IsSupported && typeof(T) == typeof(float))
+                    {
+                        return AdvSimd.Max(x.AsSingle(), y.AsSingle()).As<float, T>();
+                    }
+
+                    if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(double))
+                    {
+                        return AdvSimd.Arm64.Max(x.AsDouble(), y.AsDouble()).As<double, T>();
+                    }
+
+                    return
+                        Vector128.ConditionalSelect(Vector128.Equals(x, x),
+                            Vector128.ConditionalSelect(Vector128.Equals(y, y),
+                                Vector128.ConditionalSelect(Vector128.Equals(x, y),
+                                    Vector128.ConditionalSelect(IsNegative(x), y, x),
+                                    Vector128.Max(x, y)),
+                                y),
+                            x);
                 }
-#endif
 
                 return Vector128.Max(x, y);
             }
@@ -106,16 +190,17 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
-#if !NET9_0_OR_GREATER
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return Vector256.ConditionalSelect(
-                        Vector256.LessThan(y, x) | IsNaN(x) | (Vector256.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
+                    return
+                        Vector256.ConditionalSelect(Vector256.Equals(x, x),
+                            Vector256.ConditionalSelect(Vector256.Equals(y, y),
+                                Vector256.ConditionalSelect(Vector256.Equals(x, y),
+                                    Vector256.ConditionalSelect(IsNegative(x), y, x),
+                                    Vector256.Max(x, y)),
+                                y),
+                            x);
                 }
-#endif
 
                 return Vector256.Max(x, y);
             }
@@ -123,86 +208,26 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
-#if !NET9_0_OR_GREATER
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return Vector512.ConditionalSelect(
-                        Vector512.LessThan(y, x) | IsNaN(x) | (Vector512.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
+                    return
+                        Vector512.ConditionalSelect(Vector512.Equals(x, x),
+                            Vector512.ConditionalSelect(Vector512.Equals(y, y),
+                                Vector512.ConditionalSelect(Vector512.Equals(x, y),
+                                    Vector512.ConditionalSelect(IsNegative(x), y, x),
+                                    Vector512.Max(x, y)),
+                                y),
+                            x);
                 }
-#endif
 
                 return Vector512.Max(x, y);
             }
-
-            public static T Invoke(Vector128<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
-            public static T Invoke(Vector256<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
-            public static T Invoke(Vector512<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is NaN.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<T> IsNaN<T>(Vector128<T> vector)
-        {
-#if NET9_0_OR_GREATER
-            return Vector128.IsNaN(vector);
-#else
-            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-            {
-                return ~Vector128.Equals(vector, vector);
-            }
-            return Vector128<T>.Zero;
-#endif
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is NaN.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<T> IsNaN<T>(Vector256<T> vector)
-        {
-#if NET9_0_OR_GREATER
-            return Vector256.IsNaN(vector);
-#else
-            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-            {
-                return ~Vector256.Equals(vector, vector);
-            }
-            return Vector256<T>.Zero;
-#endif
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is NaN.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<T> IsNaN<T>(Vector512<T> vector)
-        {
-#if NET9_0_OR_GREATER
-            return Vector512.IsNaN(vector);
-#else
-            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-            {
-                return ~Vector512.Equals(vector, vector);
-            }
-            return Vector512<T>.Zero;
-#endif
         }
 
         /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<T> IsNegative<T>(Vector128<T> vector)
         {
-#if NET9_0_OR_GREATER
-            return Vector128.IsNegative(vector);
-#else
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
-            {
-                return Vector128<T>.Zero;
-            }
-
             if (typeof(T) == typeof(float))
             {
                 return Vector128.LessThan(vector.AsInt32(), Vector128<int>.Zero).As<int, T>();
@@ -214,25 +239,12 @@ namespace System.Numerics.Tensors
             }
 
             return Vector128.LessThan(vector, Vector128<T>.Zero);
-#endif
         }
 
         /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<T> IsNegative<T>(Vector256<T> vector)
         {
-#if NET9_0_OR_GREATER
-            return Vector256.IsNegative(vector);
-#else
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
-            {
-                return Vector256<T>.Zero;
-            }
-
             if (typeof(T) == typeof(float))
             {
                 return Vector256.LessThan(vector.AsInt32(), Vector256<int>.Zero).As<int, T>();
@@ -244,25 +256,12 @@ namespace System.Numerics.Tensors
             }
 
             return Vector256.LessThan(vector, Vector256<T>.Zero);
-#endif
         }
 
         /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<T> IsNegative<T>(Vector512<T> vector)
         {
-#if NET9_0_OR_GREATER
-            return Vector512.IsNegative(vector);
-#else
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
-            {
-                return Vector512<T>.Zero;
-            }
-
             if (typeof(T) == typeof(float))
             {
                 return Vector512.LessThan(vector.AsInt32(), Vector512<int>.Zero).As<int, T>();
@@ -274,104 +273,13 @@ namespace System.Numerics.Tensors
             }
 
             return Vector512.LessThan(vector, Vector512<T>.Zero);
-#endif
         }
 
-        /// <summary>Gets whether each specified <see cref="float"/> is positive.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<T> IsPositive<T>(Vector128<T> vector)
-        {
-#if NET9_0_OR_GREATER
-            return Vector128.IsPositive(vector);
-#else
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
-            {
-                return Vector128<T>.AllBitsSet;
-            }
-
-            if (typeof(T) == typeof(float))
-            {
-                return Vector128.GreaterThanOrEqual(vector.AsInt32(), Vector128<int>.Zero).As<int, T>();
-            }
-
-            if (typeof(T) == typeof(double))
-            {
-                return Vector128.GreaterThanOrEqual(vector.AsInt64(), Vector128<long>.Zero).As<long, T>();
-            }
-
-            return Vector128.GreaterThanOrEqual(vector, Vector128<T>.Zero);
-#endif
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is positive.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<T> IsPositive<T>(Vector256<T> vector)
-        {
-#if NET9_0_OR_GREATER
-            return Vector256.IsPositive(vector);
-#else
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
-            {
-                return Vector256<T>.AllBitsSet;
-            }
-
-            if (typeof(T) == typeof(float))
-            {
-                return Vector256.GreaterThanOrEqual(vector.AsInt32(), Vector256<int>.Zero).As<int, T>();
-            }
-
-            if (typeof(T) == typeof(double))
-            {
-                return Vector256.GreaterThanOrEqual(vector.AsInt64(), Vector256<long>.Zero).As<long, T>();
-            }
-
-            return Vector256.GreaterThanOrEqual(vector, Vector256<T>.Zero);
-#endif
-        }
-
-        /// <summary>Gets whether each specified <see cref="float"/> is positive.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<T> IsPositive<T>(Vector512<T> vector)
-        {
-#if NET9_0_OR_GREATER
-            return Vector512.IsPositive(vector);
-#else
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
-            {
-                return Vector512<T>.AllBitsSet;
-            }
-
-            if (typeof(T) == typeof(float))
-            {
-                return Vector512.GreaterThanOrEqual(vector.AsInt32(), Vector512<int>.Zero).As<int, T>();
-            }
-
-            if (typeof(T) == typeof(double))
-            {
-                return Vector512.GreaterThanOrEqual(vector.AsInt64(), Vector512<long>.Zero).As<long, T>();
-            }
-
-            return Vector512.GreaterThanOrEqual(vector, Vector512<T>.Zero);
-#endif
-        }
-
-            /// <remarks>
-            /// This is the same as <see cref="Aggregate{T, TTransformOperator, TAggregationOperator}(ReadOnlySpan{T})"/>
-            /// with an identity transform, except it early exits on NaN.
-            /// </remarks>
-            private static T MinMaxCore<T, TMinMaxOperator>(ReadOnlySpan<T> x)
+        /// <remarks>
+        /// This is the same as <see cref="Aggregate{T, TTransformOperator, TAggregationOperator}(ReadOnlySpan{T})"/>
+        /// with an identity transform, except it early exits on NaN.
+        /// </remarks>
+        private static T MinMaxCore<T, TMinMaxOperator>(ReadOnlySpan<T> x)
             where T : INumberBase<T>
             where TMinMaxOperator : struct, IAggregationOperator<T>
         {
@@ -398,7 +306,7 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
                     // Check for NaNs
-                    nanMask = IsNaN(result);
+                    nanMask = ~Vector512.Equals(result, result);
                     if (nanMask != Vector512<T>.Zero)
                     {
                         return result.GetElement(IndexOfFirstMatch(nanMask));
@@ -529,7 +437,7 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
                     // Check for NaNs
-                    nanMask = IsNaN(result);
+                    nanMask = ~Vector128.Equals(result, result);
                     if (nanMask != Vector128<T>.Zero)
                     {
                         return result.GetElement(IndexOfFirstMatch(nanMask));
@@ -548,7 +456,7 @@ namespace System.Numerics.Tensors
                     if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
                         // Check for NaNs
-                        nanMask = IsNaN(current);
+                        nanMask = ~Vector128.Equals(current, current);
                         if (nanMask != Vector128<T>.Zero)
                         {
                             return current.GetElement(IndexOfFirstMatch(nanMask));
@@ -567,7 +475,7 @@ namespace System.Numerics.Tensors
                     if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
                         // Check for NaNs
-                        nanMask = IsNaN(current);
+                        nanMask = ~Vector128.Equals(current, current);
                         if (nanMask != Vector128<T>.Zero)
                         {
                             return current.GetElement(IndexOfFirstMatch(nanMask));

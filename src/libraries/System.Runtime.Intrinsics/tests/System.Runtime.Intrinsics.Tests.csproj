@@ -13,7 +13,7 @@
     <Compile Include="Vectors\Vector256Tests.cs" />
     <Compile Include="Vectors\Vector512Tests.cs" />
     <Compile Include="Vectors\Vector64Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\GenericMathTestMemberData.cs" Link="Common\System\GenericMathTestMemberData.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Intrinsics\VectorTestMemberData.cs" Link="Common\System\Runtime\Intrinsics\VectorTestMemberData.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />

@@ -238,8 +238,6 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> BitwiseOr<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<System.Double> Ceiling(System.Numerics.Vector<System.Double> value) { throw null; }
         public static System.Numerics.Vector<System.Single> Ceiling(System.Numerics.Vector<System.Single> value) { throw null; }
-        public static System.Numerics.Vector<T> Clamp<T>(System.Numerics.Vector<T> value, System.Numerics.Vector<T> min, System.Numerics.Vector<T> max) { throw null; }
-        public static System.Numerics.Vector<T> ClampNative<T>(System.Numerics.Vector<T> value, System.Numerics.Vector<T> min, System.Numerics.Vector<T> max) { throw null; }
         public static System.Numerics.Vector<System.Single> ConditionalSelect(System.Numerics.Vector<System.Int32> condition, System.Numerics.Vector<System.Single> left, System.Numerics.Vector<System.Single> right) { throw null; }
         public static System.Numerics.Vector<System.Double> ConditionalSelect(System.Numerics.Vector<System.Int64> condition, System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }
         public static System.Numerics.Vector<T> ConditionalSelect<T>(System.Numerics.Vector<T> condition, System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -261,12 +259,9 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.UInt64> ConvertToUInt64(System.Numerics.Vector<System.Double> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.UInt64> ConvertToUInt64Native(System.Numerics.Vector<System.Double> value) { throw null; }
-        public static System.Numerics.Vector<T> CopySign<T>(System.Numerics.Vector<T> value, System.Numerics.Vector<T> sign) { throw null; }
         public static System.Numerics.Vector<T> Create<T>(T value) { throw null; }
         public static System.Numerics.Vector<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Numerics.Vector<T> CreateSequence<T>(T start, T step) { throw null; }
-        public static System.Numerics.Vector<double> DegreesToRadians(System.Numerics.Vector<double> degrees) { throw null; }
-        public static System.Numerics.Vector<float> DegreesToRadians(System.Numerics.Vector<float> degrees) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, T right) { throw null; }
         public static T Dot<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -277,8 +272,6 @@ namespace System.Numerics
         public static bool EqualsAll<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static bool EqualsAny<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Equals<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<double> Exp(System.Numerics.Vector<double> vector) { throw null; }
-        public static System.Numerics.Vector<float> Exp(System.Numerics.Vector<float> vector) { throw null; }
         public static System.Numerics.Vector<System.Double> Floor(System.Numerics.Vector<System.Double> value) { throw null; }
         public static System.Numerics.Vector<System.Single> Floor(System.Numerics.Vector<System.Single> value) { throw null; }
         public static System.Numerics.Vector<double> FusedMultiplyAdd(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, System.Numerics.Vector<double> addend) { throw null; }
@@ -298,15 +291,6 @@ namespace System.Numerics
         public static bool GreaterThanOrEqualAny<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> GreaterThanOrEqual<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> GreaterThan<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<double> Hypot(System.Numerics.Vector<double> x, System.Numerics.Vector<double> y) { throw null; }
-        public static System.Numerics.Vector<float> Hypot(System.Numerics.Vector<float> x, System.Numerics.Vector<float> y) { throw null; }
-        public static System.Numerics.Vector<T> IsNaN<T>(System.Numerics.Vector<T> vector) { throw null; }
-        public static System.Numerics.Vector<T> IsNegative<T>(System.Numerics.Vector<T> vector) { throw null; }
-        public static System.Numerics.Vector<T> IsPositive<T>(System.Numerics.Vector<T> vector) { throw null; }
-        public static System.Numerics.Vector<T> IsPositiveInfinity<T>(System.Numerics.Vector<T> vector) { throw null; }
-        public static System.Numerics.Vector<T> IsZero<T>(System.Numerics.Vector<T> vector) { throw null; }
-        public static System.Numerics.Vector<double> Lerp(System.Numerics.Vector<double> x, System.Numerics.Vector<double> y, System.Numerics.Vector<double> amount) { throw null; }
-        public static System.Numerics.Vector<float> Lerp(System.Numerics.Vector<float> x, System.Numerics.Vector<float> y, System.Numerics.Vector<float> amount) { throw null; }
         public static System.Numerics.Vector<System.Int64> LessThan(System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }
         public static System.Numerics.Vector<System.Int32> LessThan(System.Numerics.Vector<System.Int32> left, System.Numerics.Vector<System.Int32> right) { throw null; }
         public static System.Numerics.Vector<System.Int64> LessThan(System.Numerics.Vector<System.Int64> left, System.Numerics.Vector<System.Int64> right) { throw null; }
@@ -332,20 +316,8 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
-        public static System.Numerics.Vector<double> Log(System.Numerics.Vector<double> vector) { throw null; }
-        public static System.Numerics.Vector<float> Log(System.Numerics.Vector<float> vector) { throw null; }
-        public static System.Numerics.Vector<double> Log2(System.Numerics.Vector<double> vector) { throw null; }
-        public static System.Numerics.Vector<float> Log2(System.Numerics.Vector<float> vector) { throw null; }
         public static System.Numerics.Vector<T> Max<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<T> MaxMagnitude<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<T> MaxMagnitudeNumber<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<T> MaxNative<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<T> MaxNumber<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Min<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<T> MinMagnitude<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<T> MinMagnitudeNumber<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<T> MinNative<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-        public static System.Numerics.Vector<T> MinNumber<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(System.Numerics.Vector<T> left, T right) { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(T left, System.Numerics.Vector<T> right) { throw null; }
@@ -364,12 +336,6 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.UInt32> Narrow(System.Numerics.Vector<System.UInt64> low, System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Negate<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<T> OnesComplement<T>(System.Numerics.Vector<T> value) { throw null; }
-        public static System.Numerics.Vector<double> RadiansToDegrees(System.Numerics.Vector<double> radians) { throw null; }
-        public static System.Numerics.Vector<float> RadiansToDegrees(System.Numerics.Vector<float> radians) { throw null; }
-        public static System.Numerics.Vector<double> Round(System.Numerics.Vector<double> vector) { throw null; }
-        public static System.Numerics.Vector<float> Round(System.Numerics.Vector<float> vector) { throw null; }
-        public static System.Numerics.Vector<double> Round(System.Numerics.Vector<double> vector, System.MidpointRounding mode) { throw null; }
-        public static System.Numerics.Vector<float> Round(System.Numerics.Vector<float> vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector<System.Byte> ShiftLeft(System.Numerics.Vector<System.Byte> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<System.Int16> ShiftLeft(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<System.Int32> ShiftLeft(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
@@ -421,8 +387,6 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Subtract<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static T Sum<T>(System.Numerics.Vector<T> value) { throw null; }
         public static T ToScalar<T>(this System.Numerics.Vector<T> vector) { throw null; }
-        public static System.Numerics.Vector<double> Truncate(System.Numerics.Vector<double> vector) { throw null; }
-        public static System.Numerics.Vector<float> Truncate(System.Numerics.Vector<float> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void Widen(System.Numerics.Vector<System.Byte> source, out System.Numerics.Vector<System.UInt16> low, out System.Numerics.Vector<System.UInt16> high) { throw null; }
         public static void Widen(System.Numerics.Vector<System.Int16> source, out System.Numerics.Vector<System.Int32> low, out System.Numerics.Vector<System.Int32> high) { throw null; }
@@ -466,15 +430,7 @@ namespace System.Numerics
         public Vector2(float value) { throw null; }
         public Vector2(float x, float y) { throw null; }
         public Vector2(System.ReadOnlySpan<float> values) { throw null; }
-        public static System.Numerics.Vector2 E { get { throw null; } }
-        public static System.Numerics.Vector2 Epsilon { get { throw null; } }
-        public static System.Numerics.Vector2 NaN { get { throw null; } }
-        public static System.Numerics.Vector2 NegativeInfinity { get { throw null; } }
-        public static System.Numerics.Vector2 NegativeZero { get { throw null; } }
         public static System.Numerics.Vector2 One { get { throw null; } }
-        public static System.Numerics.Vector2 Pi { get { throw null; } }
-        public static System.Numerics.Vector2 PositiveInfinity { get { throw null; } }
-        public static System.Numerics.Vector2 Tau { get { throw null; } }
         public static System.Numerics.Vector2 UnitX { get { throw null; } }
         public static System.Numerics.Vector2 UnitY { get { throw null; } }
         public float this[int index] { readonly get { throw null; } set { throw null; } }
@@ -482,8 +438,6 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Abs(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Add(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 Clamp(System.Numerics.Vector2 value1, System.Numerics.Vector2 min, System.Numerics.Vector2 max) { throw null; }
-        public static System.Numerics.Vector2 ClampNative(System.Numerics.Vector2 value1, System.Numerics.Vector2 min, System.Numerics.Vector2 max) { throw null; }
-        public static System.Numerics.Vector2 CopySign(System.Numerics.Vector2 value, System.Numerics.Vector2 sign) { throw null; }
         public static System.Numerics.Vector2 Create(float value) { throw null; }
         public static System.Numerics.Vector2 Create(float x, float y) { throw null; }
         public static System.Numerics.Vector2 Create(System.ReadOnlySpan<float> values) { throw null; }
@@ -491,7 +445,6 @@ namespace System.Numerics
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
-        public static System.Numerics.Vector2 DegreesToRadians(System.Numerics.Vector2 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static System.Numerics.Vector2 Divide(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
@@ -499,26 +452,13 @@ namespace System.Numerics
         public static float Dot(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector2 other) { throw null; }
         public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public static System.Numerics.Vector2 Exp(System.Numerics.Vector2 vector) { throw null; }
         public static System.Numerics.Vector2 FusedMultiplyAdd(System.Numerics.Vector2 left, System.Numerics.Vector2 right, System.Numerics.Vector2 addend) { throw null; }
         public override readonly int GetHashCode() { throw null; }
-        public static System.Numerics.Vector2 Hypot(System.Numerics.Vector2 x, System.Numerics.Vector2 y) { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
         public static System.Numerics.Vector2 Lerp(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2, float amount) { throw null; }
-        public static System.Numerics.Vector2 Lerp(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2, System.Numerics.Vector2 amount) { throw null; }
-        public static System.Numerics.Vector2 Log(System.Numerics.Vector2 vector) { throw null; }
-        public static System.Numerics.Vector2 Log2(System.Numerics.Vector2 vector) { throw null; }
         public static System.Numerics.Vector2 Max(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
-        public static System.Numerics.Vector2 MaxMagnitude(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
-        public static System.Numerics.Vector2 MaxMagnitudeNumber(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
-        public static System.Numerics.Vector2 MaxNative(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
-        public static System.Numerics.Vector2 MaxNumber(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static System.Numerics.Vector2 Min(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
-        public static System.Numerics.Vector2 MinMagnitude(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
-        public static System.Numerics.Vector2 MinMagnitudeNumber(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
-        public static System.Numerics.Vector2 MinNative(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
-        public static System.Numerics.Vector2 MinNumber(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static System.Numerics.Vector2 Multiply(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 Multiply(System.Numerics.Vector2 left, float right) { throw null; }
         public static System.Numerics.Vector2 Multiply(float left, System.Numerics.Vector2 right) { throw null; }
@@ -535,9 +475,6 @@ namespace System.Numerics
         public static System.Numerics.Vector2 operator *(float left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 operator -(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 operator -(System.Numerics.Vector2 value) { throw null; }
-        public static System.Numerics.Vector2 RadiansToDegrees(System.Numerics.Vector2 radians) { throw null; }
-        public static System.Numerics.Vector2 Round(System.Numerics.Vector2 vector) { throw null; }
-        public static System.Numerics.Vector2 Round(System.Numerics.Vector2 vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector2 Reflect(System.Numerics.Vector2 vector, System.Numerics.Vector2 normal) { throw null; }
         public static System.Numerics.Vector2 SquareRoot(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Subtract(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
@@ -549,7 +486,6 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector2 TransformNormal(System.Numerics.Vector2 normal, System.Numerics.Matrix3x2 matrix) { throw null; }
         public static System.Numerics.Vector2 TransformNormal(System.Numerics.Vector2 normal, System.Numerics.Matrix4x4 matrix) { throw null; }
-        public static System.Numerics.Vector2 Truncate(System.Numerics.Vector2 vector) { throw null; }
     }
     public partial struct Vector3 : System.IEquatable<System.Numerics.Vector3>, System.IFormattable
     {
@@ -560,15 +496,7 @@ namespace System.Numerics
         public Vector3(float value) { throw null; }
         public Vector3(float x, float y, float z) { throw null; }
         public Vector3(System.ReadOnlySpan<float> values) { throw null; }
-        public static System.Numerics.Vector3 E { get { throw null; } }
-        public static System.Numerics.Vector3 Epsilon { get { throw null; } }
-        public static System.Numerics.Vector3 NaN { get { throw null; } }
-        public static System.Numerics.Vector3 NegativeInfinity { get { throw null; } }
-        public static System.Numerics.Vector3 NegativeZero { get { throw null; } }
         public static System.Numerics.Vector3 One { get { throw null; } }
-        public static System.Numerics.Vector3 Pi { get { throw null; } }
-        public static System.Numerics.Vector3 PositiveInfinity { get { throw null; } }
-        public static System.Numerics.Vector3 Tau { get { throw null; } }
         public static System.Numerics.Vector3 UnitX { get { throw null; } }
         public static System.Numerics.Vector3 UnitY { get { throw null; } }
         public static System.Numerics.Vector3 UnitZ { get { throw null; } }
@@ -577,8 +505,6 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Abs(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Add(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 Clamp(System.Numerics.Vector3 value1, System.Numerics.Vector3 min, System.Numerics.Vector3 max) { throw null; }
-        public static System.Numerics.Vector3 ClampNative(System.Numerics.Vector3 value1, System.Numerics.Vector3 min, System.Numerics.Vector3 max) { throw null; }
-        public static System.Numerics.Vector3 CopySign(System.Numerics.Vector3 value, System.Numerics.Vector3 sign) { throw null; }
         public static System.Numerics.Vector3 Create(float value) { throw null; }
         public static System.Numerics.Vector3 Create(System.Numerics.Vector2 vector, float z) { throw null; }
         public static System.Numerics.Vector3 Create(float x, float y, float z) { throw null; }
@@ -588,7 +514,6 @@ namespace System.Numerics
         public readonly void CopyTo(System.Span<float> destination) { }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector3 Cross(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
-        public static System.Numerics.Vector3 DegreesToRadians(System.Numerics.Vector3 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static System.Numerics.Vector3 Divide(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
@@ -596,26 +521,13 @@ namespace System.Numerics
         public static float Dot(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector3 other) { throw null; }
         public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public static System.Numerics.Vector3 Exp(System.Numerics.Vector3 vector) { throw null; }
         public static System.Numerics.Vector3 FusedMultiplyAdd(System.Numerics.Vector3 left, System.Numerics.Vector3 right, System.Numerics.Vector3 addend) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
-        public static System.Numerics.Vector3 Hypot(System.Numerics.Vector3 x, System.Numerics.Vector3 y) { throw null; }
         public static System.Numerics.Vector3 Lerp(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2, float amount) { throw null; }
-        public static System.Numerics.Vector3 Lerp(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2, System.Numerics.Vector3 amount) { throw null; }
-        public static System.Numerics.Vector3 Log(System.Numerics.Vector3 vector) { throw null; }
-        public static System.Numerics.Vector3 Log2(System.Numerics.Vector3 vector) { throw null; }
         public static System.Numerics.Vector3 Max(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
-        public static System.Numerics.Vector3 MaxMagnitude(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
-        public static System.Numerics.Vector3 MaxMagnitudeNumber(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
-        public static System.Numerics.Vector3 MaxNative(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
-        public static System.Numerics.Vector3 MaxNumber(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static System.Numerics.Vector3 Min(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
-        public static System.Numerics.Vector3 MinMagnitude(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
-        public static System.Numerics.Vector3 MinMagnitudeNumber(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
-        public static System.Numerics.Vector3 MinNative(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
-        public static System.Numerics.Vector3 MinNumber(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static System.Numerics.Vector3 Multiply(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 Multiply(System.Numerics.Vector3 left, float right) { throw null; }
         public static System.Numerics.Vector3 Multiply(float left, System.Numerics.Vector3 right) { throw null; }
@@ -632,10 +544,7 @@ namespace System.Numerics
         public static System.Numerics.Vector3 operator *(float left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 operator -(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 operator -(System.Numerics.Vector3 value) { throw null; }
-        public static System.Numerics.Vector3 RadiansToDegrees(System.Numerics.Vector3 radians) { throw null; }
         public static System.Numerics.Vector3 Reflect(System.Numerics.Vector3 vector, System.Numerics.Vector3 normal) { throw null; }
-        public static System.Numerics.Vector3 Round(System.Numerics.Vector3 vector) { throw null; }
-        public static System.Numerics.Vector3 Round(System.Numerics.Vector3 vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector3 SquareRoot(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Subtract(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public override readonly string ToString() { throw null; }
@@ -644,7 +553,6 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector3 TransformNormal(System.Numerics.Vector3 normal, System.Numerics.Matrix4x4 matrix) { throw null; }
-        public static System.Numerics.Vector3 Truncate(System.Numerics.Vector3 vector) { throw null; }
     }
     public partial struct Vector4 : System.IEquatable<System.Numerics.Vector4>, System.IFormattable
     {
@@ -657,15 +565,7 @@ namespace System.Numerics
         public Vector4(float value) { throw null; }
         public Vector4(float x, float y, float z, float w) { throw null; }
         public Vector4(System.ReadOnlySpan<float> values) { throw null; }
-        public static System.Numerics.Vector4 E { get { throw null; } }
-        public static System.Numerics.Vector4 Epsilon { get { throw null; } }
-        public static System.Numerics.Vector4 NaN { get { throw null; } }
-        public static System.Numerics.Vector4 NegativeInfinity { get { throw null; } }
-        public static System.Numerics.Vector4 NegativeZero { get { throw null; } }
         public static System.Numerics.Vector4 One { get { throw null; } }
-        public static System.Numerics.Vector4 Pi { get { throw null; } }
-        public static System.Numerics.Vector4 PositiveInfinity { get { throw null; } }
-        public static System.Numerics.Vector4 Tau { get { throw null; } }
         public static System.Numerics.Vector4 UnitW { get { throw null; } }
         public static System.Numerics.Vector4 UnitX { get { throw null; } }
         public static System.Numerics.Vector4 UnitY { get { throw null; } }
@@ -675,8 +575,6 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Abs(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Add(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 Clamp(System.Numerics.Vector4 value1, System.Numerics.Vector4 min, System.Numerics.Vector4 max) { throw null; }
-        public static System.Numerics.Vector4 ClampNative(System.Numerics.Vector4 value1, System.Numerics.Vector4 min, System.Numerics.Vector4 max) { throw null; }
-        public static System.Numerics.Vector4 CopySign(System.Numerics.Vector4 value, System.Numerics.Vector4 sign) { throw null; }
         public static System.Numerics.Vector4 Create(float value) { throw null; }
         public static System.Numerics.Vector4 Create(System.Numerics.Vector2 vector, float z, float w) { throw null; }
         public static System.Numerics.Vector4 Create(System.Numerics.Vector3 vector, float w) { throw null; }
@@ -686,7 +584,6 @@ namespace System.Numerics
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
-        public static System.Numerics.Vector4 DegreesToRadians(System.Numerics.Vector4 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 Divide(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
@@ -694,26 +591,13 @@ namespace System.Numerics
         public static float Dot(System.Numerics.Vector4 vector1, System.Numerics.Vector4 vector2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector4 other) { throw null; }
         public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public static System.Numerics.Vector4 Exp(System.Numerics.Vector4 vector) { throw null; }
         public static System.Numerics.Vector4 FusedMultiplyAdd(System.Numerics.Vector4 left, System.Numerics.Vector4 right, System.Numerics.Vector4 addend) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
-        public static System.Numerics.Vector4 Hypot(System.Numerics.Vector4 x, System.Numerics.Vector4 y) { throw null; }
         public static System.Numerics.Vector4 Lerp(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2, float amount) { throw null; }
-        public static System.Numerics.Vector4 Lerp(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2, System.Numerics.Vector4 amount) { throw null; }
-        public static System.Numerics.Vector4 Log(System.Numerics.Vector4 vector) { throw null; }
-        public static System.Numerics.Vector4 Log2(System.Numerics.Vector4 vector) { throw null; }
         public static System.Numerics.Vector4 Max(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
-        public static System.Numerics.Vector4 MaxMagnitude(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
-        public static System.Numerics.Vector4 MaxMagnitudeNumber(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
-        public static System.Numerics.Vector4 MaxNative(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
-        public static System.Numerics.Vector4 MaxNumber(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 Min(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
-        public static System.Numerics.Vector4 MinMagnitude(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
-        public static System.Numerics.Vector4 MinMagnitudeNumber(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
-        public static System.Numerics.Vector4 MinNative(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
-        public static System.Numerics.Vector4 MinNumber(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 Multiply(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 Multiply(System.Numerics.Vector4 left, float right) { throw null; }
         public static System.Numerics.Vector4 Multiply(float left, System.Numerics.Vector4 right) { throw null; }
@@ -730,9 +614,6 @@ namespace System.Numerics
         public static System.Numerics.Vector4 operator *(float left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 operator -(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 operator -(System.Numerics.Vector4 value) { throw null; }
-        public static System.Numerics.Vector4 RadiansToDegrees(System.Numerics.Vector4 radians) { throw null; }
-        public static System.Numerics.Vector4 Round(System.Numerics.Vector4 vector) { throw null; }
-        public static System.Numerics.Vector4 Round(System.Numerics.Vector4 vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector4 SquareRoot(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Subtract(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public override readonly string ToString() { throw null; }
@@ -744,7 +625,6 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector3 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector4 vector, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector4 value, System.Numerics.Quaternion rotation) { throw null; }
-        public static System.Numerics.Vector4 Truncate(System.Numerics.Vector4 vector) { throw null; }
     }
     public readonly partial struct Vector<T> : System.IEquatable<System.Numerics.Vector<T>>, System.IFormattable
     {

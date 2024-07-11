@@ -159,7 +159,55 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.HypotDouble), MemberType = typeof(GenericMathTestMemberData))]
+        [InlineData(double.NaN,              double.NaN,              double.NaN,              0.0)]
+        [InlineData(double.NaN,              0.0f,                    double.NaN,              0.0)]
+        [InlineData(double.NaN,              1.0f,                    double.NaN,              0.0)]
+        [InlineData(double.NaN,              2.7182818284590452,      double.NaN,              0.0)]
+        [InlineData(double.NaN,              10.0,                    double.NaN,              0.0)]
+        [InlineData(0.0,                     0.0,                     0.0,                     0.0)]
+        [InlineData(0.0,                     1.0,                     1.0,                     0.0)]
+        [InlineData(0.0,                     1.5707963267948966,      1.5707963267948966,      0.0)]
+        [InlineData(0.0,                     2.0,                     2.0,                     0.0)]
+        [InlineData(0.0,                     2.7182818284590452,      2.7182818284590452,      0.0)]
+        [InlineData(0.0,                     3.0,                     3.0,                     0.0)]
+        [InlineData(0.0,                     10.0,                    10.0,                    0.0)]
+        [InlineData(1.0,                     1.0,                     1.4142135623730950,      CrossPlatformMachineEpsilon * 10)]
+        [InlineData(1.0,                     1e+10,                   1e+10,                   0.0)] // dotnet/runtime#75651
+        [InlineData(1.0,                     1e+20,                   1e+20,                   0.0)] // dotnet/runtime#75651
+        [InlineData(2.7182818284590452,      0.31830988618379067,     2.7368553638387594,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (1 / pi)
+        [InlineData(2.7182818284590452,      0.43429448190325183,     2.7527563996732919,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (log10(e))
+        [InlineData(2.7182818284590452,      0.63661977236758134,     2.7918346715914253,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (2 / pi)
+        [InlineData(2.7182818284590452,      0.69314718055994531,     2.8052645352709344,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (ln(2))
+        [InlineData(2.7182818284590452,      0.70710678118654752,     2.8087463571726533,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (1 / sqrt(2))
+        [InlineData(2.7182818284590452,      0.78539816339744831,     2.8294710413783590,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (pi / 4)
+        [InlineData(2.7182818284590452,      1.0,                     2.8963867315900082,      CrossPlatformMachineEpsilon * 10)]   // x: (e)
+        [InlineData(2.7182818284590452,      1.1283791670955126,      2.9431778138036127,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (2 / sqrt(pi))
+        [InlineData(2.7182818284590452,      1.4142135623730950,      3.0641566701020120,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (sqrt(2))
+        [InlineData(2.7182818284590452,      1.4426950408889634,      3.0774055761202907,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (log2(e))
+        [InlineData(2.7182818284590452,      1.5707963267948966,      3.1394995141268918,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (pi / 2)
+        [InlineData(2.7182818284590452,      2.3025850929940457,      3.5624365551415857,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (ln(10))
+        [InlineData(2.7182818284590452,      2.7182818284590452,      3.8442310281591168,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (e)
+        [InlineData(2.7182818284590452,      3.1415926535897932,      4.1543544023133136,      CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (pi)
+        [InlineData(10.0,                    0.31830988618379067,     10.005064776584025,      CrossPlatformMachineEpsilon * 100)]  //          y: (1 / pi)
+        [InlineData(10.0,                    0.43429448190325183,     10.009426142242702,      CrossPlatformMachineEpsilon * 100)]  //          y: (log10(e))
+        [InlineData(10.0,                    0.63661977236758134,     10.020243746265325,      CrossPlatformMachineEpsilon * 100)]  //          y: (2 / pi)
+        [InlineData(10.0,                    0.69314718055994531,     10.023993865417028,      CrossPlatformMachineEpsilon * 100)]  //          y: (ln(2))
+        [InlineData(10.0,                    0.70710678118654752,     10.024968827881711,      CrossPlatformMachineEpsilon * 100)]  //          y: (1 / sqrt(2))
+        [InlineData(10.0,                    0.78539816339744831,     10.030795096853892,      CrossPlatformMachineEpsilon * 100)]  //          y: (pi / 4)
+        [InlineData(10.0,                    1.0,                     10.049875621120890,      CrossPlatformMachineEpsilon * 100)]  //
+        [InlineData(10.0,                    1.1283791670955126,      10.063460614755501,      CrossPlatformMachineEpsilon * 100)]  //          y: (2 / sqrt(pi))
+        [InlineData(10.0,                    1.4142135623730950,      10.099504938362078,      CrossPlatformMachineEpsilon * 100)]  //          y: (sqrt(2))
+        [InlineData(10.0,                    1.4426950408889634,      10.103532500121213,      CrossPlatformMachineEpsilon * 100)]  //          y: (log2(e))
+        [InlineData(10.0,                    1.5707963267948966,      10.122618292728040,      CrossPlatformMachineEpsilon * 100)]  //          y: (pi / 2)
+        [InlineData(10.0,                    2.3025850929940457,      10.261671311754163,      CrossPlatformMachineEpsilon * 100)]  //          y: (ln(10))
+        [InlineData(10.0,                    2.7182818284590452,      10.362869105558106,      CrossPlatformMachineEpsilon * 100)]  //          y: (e)
+        [InlineData(10.0,                    3.1415926535897932,      10.481870272097884,      CrossPlatformMachineEpsilon * 100)]  //          y: (pi)
+        [InlineData(double.PositiveInfinity, double.NaN,              double.PositiveInfinity, 0.0)]
+        [InlineData(double.PositiveInfinity, 0.0,                     double.PositiveInfinity, 0.0)]
+        [InlineData(double.PositiveInfinity, 1.0,                     double.PositiveInfinity, 0.0)]
+        [InlineData(double.PositiveInfinity, 2.7182818284590452,      double.PositiveInfinity, 0.0)]
+        [InlineData(double.PositiveInfinity, 10.0,                    double.PositiveInfinity, 0.0)]
+        [InlineData(double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity, 0.0)]
         public static void Hypot(double x, double y, double expectedResult, double allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, double.Hypot(-x, -y), allowedVariance);
@@ -193,7 +241,19 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNaNDouble), MemberType = typeof(GenericMathTestMemberData))]
+        [InlineData(double.NegativeInfinity, false)]    // Negative Infinity
+        [InlineData(double.MinValue, false)]            // Min Negative Normal
+        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
+        [InlineData(-double.Epsilon, false)]            // Max Negative Subnormal (Negative Epsilon)
+        [InlineData(-0.0, false)]                       // Negative Zero
+        [InlineData(double.NaN, true)]                  // NaN
+        [InlineData(0.0, false)]                        // Positive Zero
+        [InlineData(double.Epsilon, false)]             // Min Positive Subnormal (Positive Epsilon)
+        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
+        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
+        [InlineData(double.MaxValue, false)]            // Max Positive Normal
+        [InlineData(double.PositiveInfinity, false)]    // Positive Infinity
         public static void IsNaN(double d, bool expected)
         {
             Assert.Equal(expected, double.IsNaN(d));
@@ -219,7 +279,19 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveInfinityDouble), MemberType = typeof(GenericMathTestMemberData))]
+        [InlineData(double.NegativeInfinity, false)]    // Negative Infinity
+        [InlineData(double.MinValue, false)]            // Min Negative Normal
+        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
+        [InlineData(-double.Epsilon, false)]            // Max Negative Subnormal (Negative Epsilon)
+        [InlineData(-0.0, false)]                       // Negative Zero
+        [InlineData(double.NaN, false)]                 // NaN
+        [InlineData(0.0, false)]                        // Positive Zero
+        [InlineData(double.Epsilon, false)]             // Min Positive Subnormal (Positive Epsilon)
+        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
+        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
+        [InlineData(double.MaxValue, false)]            // Max Positive Normal
+        [InlineData(double.PositiveInfinity, true)]     // Positive Infinity
         public static void IsPositiveInfinity(double d, bool expected)
         {
             Assert.Equal(expected, double.IsPositiveInfinity(d));
@@ -863,7 +935,19 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNegativeDouble), MemberType = typeof(GenericMathTestMemberData))]
+        [InlineData(double.NegativeInfinity, true)]     // Negative Infinity
+        [InlineData(double.MinValue, true)]             // Min Negative Normal
+        [InlineData(-2.2250738585072014E-308, true)]    // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308, true)]    // Min Negative Subnormal
+        [InlineData(-4.94065645841247E-324, true)]      // Max Negative Subnormal
+        [InlineData(-0.0, true)]                        // Negative Zero
+        [InlineData(double.NaN, true)]                  // NaN
+        [InlineData(0.0, false)]                        // Positive Zero
+        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
+        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
+        [InlineData(double.MaxValue, false)]            // Max Positive Normal
+        [InlineData(double.PositiveInfinity, false)]    // Positive Infinity
         public static void IsNegative(double d, bool expected)
         {
             Assert.Equal(expected, double.IsNegative(d));
@@ -976,28 +1060,92 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MaxValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MaxValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, 0.0)]
+        [InlineData(0.0, -0.0, 0.0)]
+        [InlineData(2.0, -3.0, -3.0)]
+        [InlineData(-3.0, 2.0, -3.0)]
+        [InlineData(3.0, -2.0, 3.0)]
+        [InlineData(-2.0, 3.0, 3.0)]
         public static void MaxMagnitudeNumberTest(double x, double y, double expectedResult)
         {
             AssertExtensions.Equal(expectedResult, double.MaxMagnitudeNumber(x, y), 0.0);
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.MaxNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MaxValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MaxValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, 0.0)]
+        [InlineData(0.0, -0.0, 0.0)]
+        [InlineData(2.0, -3.0, 2.0)]
+        [InlineData(-3.0, 2.0, 2.0)]
+        [InlineData(3.0, -2.0, 3.0)]
+        [InlineData(-2.0, 3.0, 3.0)]
         public static void MaxNumberTest(double x, double y, double expectedResult)
         {
             AssertExtensions.Equal(expectedResult, double.MaxNumber(x, y), 0.0);
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MinValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, -0.0)]
+        [InlineData(0.0, -0.0, -0.0)]
+        [InlineData(2.0, -3.0, 2.0)]
+        [InlineData(-3.0, 2.0, 2.0)]
+        [InlineData(3.0, -2.0, -2.0)]
+        [InlineData(-2.0, 3.0, -2.0)]
         public static void MinMagnitudeNumberTest(double x, double y, double expectedResult)
         {
             AssertExtensions.Equal(expectedResult, double.MinMagnitudeNumber(x, y), 0.0);
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.MinNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
+        [InlineData(double.MaxValue, double.MinValue, double.MinValue)]
+        [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, 1.0)]
+        [InlineData(1.0, double.NaN, 1.0)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity, double.NaN, double.NegativeInfinity)]
+        [InlineData(double.NaN, double.PositiveInfinity, double.PositiveInfinity)]
+        [InlineData(double.NaN, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(-0.0, 0.0, -0.0)]
+        [InlineData(0.0, -0.0, -0.0)]
+        [InlineData(2.0, -3.0, -3.0)]
+        [InlineData(-3.0, 2.0, -3.0)]
+        [InlineData(3.0, -2.0, -2.0)]
+        [InlineData(-2.0, 3.0, -2.0)]
         public static void MinNumberTest(double x, double y, double expectedResult)
         {
             AssertExtensions.Equal(expectedResult, double.MinNumber(x, y), 0.0);
@@ -1514,7 +1662,37 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.LerpDouble), MemberType = typeof(GenericMathTestMemberData))]
+        [InlineData(double.NegativeInfinity,    double.NegativeInfinity,    0.5,    double.NegativeInfinity)]
+        [InlineData(double.NegativeInfinity,    double.NaN,                 0.5,    double.NaN)]
+        [InlineData(double.NegativeInfinity,    double.PositiveInfinity,    0.5,    double.NaN)]
+        [InlineData(double.NegativeInfinity,    0.0,                        0.5,    double.NegativeInfinity)]
+        [InlineData(double.NegativeInfinity,    1.0,                        0.5,    double.NegativeInfinity)]
+        [InlineData(double.NaN,                 double.NegativeInfinity,    0.5,    double.NaN)]
+        [InlineData(double.NaN,                 double.NaN,                 0.5,    double.NaN)]
+        [InlineData(double.NaN,                 double.PositiveInfinity,    0.5,    double.NaN)]
+        [InlineData(double.NaN,                 0.0,                        0.5,    double.NaN)]
+        [InlineData(double.NaN,                 1.0,                        0.5,    double.NaN)]
+        [InlineData(double.PositiveInfinity,    double.NegativeInfinity,    0.5,    double.NaN)]
+        [InlineData(double.PositiveInfinity,    double.NaN,                 0.5,    double.NaN)]
+        [InlineData(double.PositiveInfinity,    double.PositiveInfinity,    0.5,    double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity,    0.0,                        0.5,    double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity,    1.0,                        0.5,    double.PositiveInfinity)]
+        [InlineData(1.0,                        3.0,                        0.0,    1.0)]
+        [InlineData(1.0,                        3.0,                        0.5,    2.0)]
+        [InlineData(1.0,                        3.0,                        1.0,    3.0)]
+        [InlineData(1.0,                        3.0,                        2.0,    5.0)]
+        [InlineData(2.0,                        4.0,                        0.0,    2.0)]
+        [InlineData(2.0,                        4.0,                        0.5,    3.0)]
+        [InlineData(2.0,                        4.0,                        1.0,    4.0)]
+        [InlineData(2.0,                        4.0,                        2.0,    6.0)]
+        [InlineData(3.0,                        1.0,                        0.0,    3.0)]
+        [InlineData(3.0,                        1.0,                        0.5,    2.0)]
+        [InlineData(3.0,                        1.0,                        1.0,    1.0)]
+        [InlineData(3.0,                        1.0,                        2.0,   -1.0)]
+        [InlineData(4.0,                        2.0,                        0.0,    4.0)]
+        [InlineData(4.0,                        2.0,                        0.5,    3.0)]
+        [InlineData(4.0,                        2.0,                        1.0,    2.0)]
+        [InlineData(4.0,                        2.0,                        2.0,    0.0)]
         public static void LerpTest(double value1, double value2, double amount, double expectedResult)
         {
             AssertExtensions.Equal(+expectedResult, double.Lerp(+value1, +value2, amount), 0);
@@ -1522,7 +1700,29 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.DegreesToRadiansDouble), MemberType = typeof(GenericMathTestMemberData))]
+        [InlineData(double.NaN,               double.NaN,               0.0)]
+        [InlineData(0.0,                      0.0,                      0.0)]
+        [InlineData(0.31830988618379067,      0.005555555555555556,     CrossPlatformMachineEpsilon)]       // value:  (1 / pi)
+        [InlineData(0.43429448190325183,      0.007579868632454674,     CrossPlatformMachineEpsilon)]       // value:  (log10(e))
+        [InlineData(0.5,                      0.008726646259971648,     CrossPlatformMachineEpsilon)]
+        [InlineData(0.63661977236758134,      0.011111111111111112,     CrossPlatformMachineEpsilon)]       // value:  (2 / pi)
+        [InlineData(0.69314718055994531,      0.01209770050168668,      CrossPlatformMachineEpsilon)]       // value:  (ln(2))
+        [InlineData(0.70710678118654752,      0.012341341494884351,     CrossPlatformMachineEpsilon)]       // value:  (1 / sqrt(2))
+        [InlineData(0.78539816339744831,      0.013707783890401885,     CrossPlatformMachineEpsilon)]       // value:  (pi / 4)
+        [InlineData(1.0,                      0.017453292519943295,     CrossPlatformMachineEpsilon)]
+        [InlineData(1.1283791670955126,       0.019693931676727953,     CrossPlatformMachineEpsilon)]       // value:  (2 / sqrt(pi))
+        [InlineData(1.4142135623730950,       0.024682682989768702,     CrossPlatformMachineEpsilon)]       // value:  (sqrt(2))
+        [InlineData(1.4426950408889634,       0.02517977856570663,      CrossPlatformMachineEpsilon)]       // value:  (log2(e))
+        [InlineData(1.5,                      0.02617993877991494,      CrossPlatformMachineEpsilon)]
+        [InlineData(1.5707963267948966,       0.02741556778080377,      CrossPlatformMachineEpsilon)]       // value:  (pi / 2)
+        [InlineData(2.0,                      0.03490658503988659,      CrossPlatformMachineEpsilon)]
+        [InlineData(2.3025850929940457,       0.040187691180085916,     CrossPlatformMachineEpsilon)]       // value:  (ln(10))
+        [InlineData(2.5,                      0.04363323129985824,      CrossPlatformMachineEpsilon)]
+        [InlineData(2.7182818284590452,       0.047442967903742035,     CrossPlatformMachineEpsilon)]       // value:  (e)
+        [InlineData(3.0,                      0.05235987755982988,      CrossPlatformMachineEpsilon)]
+        [InlineData(3.1415926535897932,       0.05483113556160754,      CrossPlatformMachineEpsilon)]       // value:  (pi)
+        [InlineData(3.5,                      0.061086523819801536,     CrossPlatformMachineEpsilon)]
+        [InlineData(double.PositiveInfinity,  double.PositiveInfinity,  0.0)]
         public static void DegreesToRadiansTest(double value, double expectedResult, double allowedVariance)
         {
             AssertExtensions.Equal(-expectedResult, double.DegreesToRadians(-value), allowedVariance);
@@ -1530,7 +1730,29 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.RadiansToDegreesDouble), MemberType = typeof(GenericMathTestMemberData))]
+        [InlineData(double.NaN,               double.NaN,               0.0)]
+        [InlineData(0.0,                      0.0,                      0.0)]
+        [InlineData(0.0055555555555555567,    0.3183098861837906,       CrossPlatformMachineEpsilon)]       // expected:  (1 / pi)
+        [InlineData(0.0075798686324546743,    0.4342944819032518,       CrossPlatformMachineEpsilon)]       // expected:  (log10(e))
+        [InlineData(0.008726646259971648,     0.5,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.0111111111111111124,    0.6366197723675813,       CrossPlatformMachineEpsilon)]       // expected:  (2 / pi)
+        [InlineData(0.0120977005016866801,    0.6931471805599453,       CrossPlatformMachineEpsilon)]       // expected:  (ln(2))
+        [InlineData(0.0123413414948843512,    0.7071067811865475,       CrossPlatformMachineEpsilon)]       // expected:  (1 / sqrt(2))
+        [InlineData(0.0137077838904018851,    0.7853981633974483,       CrossPlatformMachineEpsilon)]       // expected:  (pi / 4)
+        [InlineData(0.017453292519943295,     1.0,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.019693931676727953,     1.1283791670955126,       CrossPlatformMachineEpsilon)]       // expected:  (2 / sqrt(pi))
+        [InlineData(0.024682682989768702,     1.4142135623730950,       CrossPlatformMachineEpsilon)]       // expected:  (sqrt(2))
+        [InlineData(0.025179778565706630,     1.4426950408889634,       CrossPlatformMachineEpsilon)]       // expected:  (log2(e))
+        [InlineData(0.026179938779914940,     1.5,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.027415567780803770,     1.5707963267948966,       CrossPlatformMachineEpsilon)]       // expected:  (pi / 2)
+        [InlineData(0.034906585039886590,     2.0,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.040187691180085916,     2.3025850929940457,       CrossPlatformMachineEpsilon)]       // expected:  (ln(10))
+        [InlineData(0.043633231299858240,     2.5,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.047442967903742035,     2.7182818284590452,       CrossPlatformMachineEpsilon)]       // expected:  (e)
+        [InlineData(0.052359877559829880,     3.0,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.054831135561607540,     3.1415926535897932,       CrossPlatformMachineEpsilon)]       // expected:  (pi)
+        [InlineData(0.061086523819801536,     3.5,                      CrossPlatformMachineEpsilon)]
+        [InlineData(double.PositiveInfinity,  double.PositiveInfinity,  0.0)]
         public static void RadiansToDegreesTest(double value, double expectedResult, double allowedVariance)
         {
             AssertExtensions.Equal(-expectedResult, double.RadiansToDegrees(-value), allowedVariance);

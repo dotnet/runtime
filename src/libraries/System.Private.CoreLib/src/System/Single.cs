@@ -857,7 +857,7 @@ namespace System
         public static int ILogB(float x) => MathF.ILogB(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
-        public static float Lerp(float value1, float value2, float amount) => MultiplyAddEstimate(value1, 1.0f - amount, value2 * amount);
+        public static float Lerp(float value1, float value2, float amount) => (value1 * (1.0f - amount)) + (value2 * amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         [Intrinsic]

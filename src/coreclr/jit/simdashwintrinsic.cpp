@@ -447,8 +447,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     switch (intrinsic)
     {
         case NI_VectorT_ConvertToInt32Native:
-        case NI_VectorT_MaxNative:
-        case NI_VectorT_MinNative:
         {
             if (BlockNonDeterministicIntrinsics(mustExpand))
             {
@@ -910,31 +908,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdFloorNode(retType, op1, simdBaseJitType, simdSize);
                 }
 
-                case NI_VectorT_IsNaN:
-                {
-                    return gtNewSimdIsNaNNode(retType, op1, simdBaseJitType, simdSize);
-                }
-
-                case NI_VectorT_IsNegative:
-                {
-                    return gtNewSimdIsNegativeNode(retType, op1, simdBaseJitType, simdSize);
-                }
-
-                case NI_VectorT_IsPositive:
-                {
-                    return gtNewSimdIsPositiveNode(retType, op1, simdBaseJitType, simdSize);
-                }
-
-                case NI_VectorT_IsPositiveInfinity:
-                {
-                    return gtNewSimdIsPositiveInfinityNode(retType, op1, simdBaseJitType, simdSize);
-                }
-
-                case NI_VectorT_IsZero:
-                {
-                    return gtNewSimdIsZeroNode(retType, op1, simdBaseJitType, simdSize);
-                }
-
                 case NI_VectorT_LoadUnsafe:
                 {
                     if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
@@ -1370,19 +1343,9 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
-                case NI_VectorT_MaxNative:
-                {
-                    return gtNewSimdMaxNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
-                }
-
                 case NI_VectorT_Min:
                 {
                     return gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize);
-                }
-
-                case NI_VectorT_MinNative:
-                {
-                    return gtNewSimdMinNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
                 case NI_VectorT_op_Multiply:

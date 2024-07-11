@@ -468,17 +468,8 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Ceiling(TSelf)" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.Ceiling(Vector256<T> vector) => Vector256.Ceiling(vector);
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.Clamp(Vector256<T> value, Vector256<T> min, Vector256<T> max) => Vector256.Clamp(value, min, max);
-
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.ClampNative(Vector256<T> value, Vector256<T> min, Vector256<T> max) => Vector256.ClampNative(value, min, max);
-
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ConditionalSelect(TSelf, TSelf, TSelf)" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.ConditionalSelect(Vector256<T> condition, Vector256<T> left, Vector256<T> right) => Vector256.ConditionalSelect(condition, left, right);
-
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.CopySign(Vector256<T> value, Vector256<T> sign) => Vector256.CopySign(value, sign);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, T[])" />
         static void ISimdVector<Vector256<T>, T>.CopyTo(Vector256<T> vector, T[] destination) => vector.CopyTo(destination);
@@ -587,32 +578,8 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.Max(Vector256<T> left, Vector256<T> right) => Vector256.Max(left, right);
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.MaxMagnitude(Vector256<T> left, Vector256<T> right) => Vector256.MaxMagnitude(left, right);
-
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.MaxMagnitudeNumber(Vector256<T> left, Vector256<T> right) => Vector256.MaxMagnitudeNumber(left, right);
-
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.MaxNative(Vector256<T> left, Vector256<T> right) => Vector256.MaxNative(left, right);
-
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.MaxNumber(Vector256<T> left, Vector256<T> right) => Vector256.MaxNumber(left, right);
-
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.Min(Vector256<T> left, Vector256<T> right) => Vector256.Min(left, right);
-
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.MinMagnitude(Vector256<T> left, Vector256<T> right) => Vector256.MinMagnitude(left, right);
-
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.MinMagnitudeNumber(Vector256<T> left, Vector256<T> right) => Vector256.MinMagnitudeNumber(left, right);
-
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.MinNative(Vector256<T> left, Vector256<T> right) => Vector256.MinNative(left, right);
-
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.MinNumber(Vector256<T> left, Vector256<T> right) => Vector256.MinNumber(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, T)" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.Multiply(Vector256<T> left, Vector256<T> right) => left * right;
@@ -620,17 +587,11 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, TSelf)" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.Multiply(Vector256<T> left, T right) => left * right;
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.MultiplyAddEstimate(Vector256<T> left, Vector256<T> right, Vector256<T> addend) => Vector256.MultiplyAddEstimate(left, right, addend);
-
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Negate(TSelf)" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.Negate(Vector256<T> vector) => -vector;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.OnesComplement(Vector256<T> vector) => ~vector;
-
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Round(TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.Round(Vector256<T> vector) => Vector256.Round(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftLeft(TSelf, int)" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.ShiftLeft(Vector256<T> vector, int shiftCount) => vector << shiftCount;
@@ -670,9 +631,6 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ToScalar(TSelf)" />
         static T ISimdVector<Vector256<T>, T>.ToScalar(Vector256<T> vector) => vector.ToScalar();
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Truncate(TSelf)" />
-        static Vector256<T> ISimdVector<Vector256<T>, T>.Truncate(Vector256<T> vector) => Vector256.Truncate(vector);
-
         /// <inheritdoc cref="ISimdVector{TSelf, T}.TryCopyTo(TSelf, Span{T})" />
         static bool ISimdVector<Vector256<T>, T>.TryCopyTo(Vector256<T> vector, Span<T> destination) => vector.TryCopyTo(destination);
 
@@ -695,15 +653,5 @@ namespace System.Runtime.Intrinsics
             uint mask = vector.ExtractMostSignificantBits();
             return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
         }
-
-        static Vector256<T> ISimdVector<Vector256<T>, T>.IsNaN(Vector256<T> vector) => Vector256.IsNaN(vector);
-
-        static Vector256<T> ISimdVector<Vector256<T>, T>.IsNegative(Vector256<T> vector) => Vector256.IsNegative(vector);
-
-        static Vector256<T> ISimdVector<Vector256<T>, T>.IsPositive(Vector256<T> vector) => Vector256.IsPositive(vector);
-
-        static Vector256<T> ISimdVector<Vector256<T>, T>.IsPositiveInfinity(Vector256<T> vector) => Vector256.IsPositiveInfinity(vector);
-
-        static Vector256<T> ISimdVector<Vector256<T>, T>.IsZero(Vector256<T> vector) => Vector256.IsZero(vector);
     }
 }

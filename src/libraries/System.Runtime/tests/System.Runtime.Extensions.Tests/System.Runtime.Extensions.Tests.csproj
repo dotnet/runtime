@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
@@ -86,7 +86,6 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'" Link="Common\Interop\Unix\System.Native\Interop.GetHostName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
-    <Compile Include="$(CommonTestPath)System\GenericMathTestMemberData.cs" Link="Common\System\GenericMathTestMemberData.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs" Link="Common\System\ShouldNotBeInvokedException.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs" Link="Common\System\Security\Cryptography\ByteUtils.cs" />
