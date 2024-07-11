@@ -19,42 +19,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class DiagnosticsTestBase : HttpClientHandlerTestBase
-    {
-        protected DiagnosticsTestBase(ITestOutputHelper output) : base(output)
-        {
-        }
-
-        protected static void VerifyTag<T>(IEnumerable<KeyValuePair<string, object?>> tags, string name, T value)
-        {
-            if (value is null)
-            {
-                Assert.DoesNotContain(tags, t => t.Key == name);
-            }
-            else
-            {
-                object? actualValue = tags.Single(t => t.Key == name).Value;
-                Assert.Equal(value, (T)actualValue);
-            }
-        }
-
-
-        protected static void VerifySchemeHostPortTags(IEnumerable<KeyValuePair<string, object?>> tags, Uri uri)
-        {
-            VerifyTag(tags, "url.scheme", uri.Scheme);
-            VerifyTag(tags, "server.address", uri.Host);
-            VerifyTag(tags, "server.port", uri.Port);
-        }
-
-        protected static string? GetVersionString(Version? version) => version == null ? null : version.Major switch
-        {
-            1 => "1.1",
-            2 => "2",
-            _ => "3"
-        };
-    }
-
-    public abstract class HttpMetricsTestBase : DiagnosticsTestBase
+    public abstract class HttpMetricsTestBase : HttpClientHandlerTestBase
     {
         protected static class InstrumentNames
         {
@@ -70,6 +35,17 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
+        protected static void VerifyTag<T>(KeyValuePair<string, object?>[] tags, string name, T value)
+        {
+            if (value is null)
+            {
+                Assert.DoesNotContain(tags, t => t.Key == name);
+            }
+            else
+            {
+                Assert.Equal(value, (T)tags.Single(t => t.Key == name).Value);
+            }
+        }
 
         private static void VerifyPeerAddress(KeyValuePair<string, object?>[] tags)
         {
@@ -80,6 +56,19 @@ namespace System.Net.Http.Functional.Tests
                     ip.Equals(IPAddress.IPv6Loopback));
         }
 
+        private static void VerifySchemeHostPortTags(KeyValuePair<string, object?>[] tags, Uri uri)
+        {
+            VerifyTag(tags, "url.scheme", uri.Scheme);
+            VerifyTag(tags, "server.address", uri.Host);
+            VerifyTag(tags, "server.port", uri.Port);
+        }
+
+        private static string? GetVersionString(Version? version) => version == null ? null : version.Major switch
+        {
+            1 => "1.1",
+            2 => "2",
+            _ => "3"
+        };
 
         protected static void VerifyRequestDuration(Measurement<double> measurement,
             Uri uri,

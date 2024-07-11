@@ -53,19 +53,20 @@ namespace System.Net.Http
                    s_diagnosticListener.IsEnabled();
         }
 
-        private static Activity? StartActivity(HttpRequestMessage request)
+        private static Activity? CreateActivity(HttpRequestMessage requestMessage)
         {
             Activity? activity = null;
             if (s_activitySource.HasListeners())
             {
-                activity = s_activitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ActivityName, ActivityKind.Client);
+                activity = s_activitySource.CreateActivity(DiagnosticsHandlerLoggingStrings.ActivityName, ActivityKind.Client);
             }
 
-            if (activity is null &&
-                (Activity.Current is not null ||
-                s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request)))
+            if (activity is null)
             {
-                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName).Start();
+                if (Activity.Current is not null || s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, requestMessage))
+                {
+                    activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+                }
             }
 
             return activity;
@@ -108,30 +109,12 @@ namespace System.Net.Http
             DiagnosticListener diagnosticListener = s_diagnosticListener;
 
             Guid loggingRequestId = Guid.Empty;
-            Activity? activity = StartActivity(request);
+            Activity? activity = CreateActivity(request);
 
+            // Start activity anyway if it was created.
             if (activity is not null)
             {
-                // https://github.com/open-telemetry/semantic-conventions/blob/release/v1.23.x/docs/http/http-spans.md#name
-                activity.DisplayName = HttpMethod.GetKnownMethod(request.Method.Method)?.Method ?? "HTTP";
-
-                if (activity.IsAllDataRequested)
-                {
-                    // Add standard tags known before sending the request.
-                    KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method, out bool isUnknownMethod);
-                    activity.SetTag(methodTag.Key, methodTag.Value);
-                    if (isUnknownMethod)
-                    {
-                        activity.SetTag("http.request.method_original", request.Method.Method);
-                    }
-
-                    if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
-                    {
-                        activity.SetTag("server.address", requestUri.Host);
-                        activity.SetTag("server.port", requestUri.Port);
-                        activity.SetTag("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
-                    }
-                }
+                activity.Start();
 
                 // Only send start event to users who subscribed for it.
                 if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
@@ -158,7 +141,6 @@ namespace System.Net.Http
             }
 
             HttpResponseMessage? response = null;
-            Exception? exception = null;
             TaskStatus taskStatus = TaskStatus.RanToCompletion;
             try
             {
@@ -177,7 +159,6 @@ namespace System.Net.Http
             catch (Exception ex)
             {
                 taskStatus = TaskStatus.Faulted;
-                exception = ex;
 
                 if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionEventName))
                 {
@@ -194,25 +175,6 @@ namespace System.Net.Http
                 if (activity is not null)
                 {
                     activity.SetEndTime(DateTime.UtcNow);
-
-                    if (activity.IsAllDataRequested)
-                    {
-                        // Add standard tags known at request completion.
-                        if (response is not null)
-                        {
-                            activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
-                            activity.SetTag("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
-                        }
-
-                        if (DiagnosticsHelper.TryGetErrorType(response, exception, out string? errorType))
-                        {
-                            activity.SetTag("error.type", errorType);
-
-                            // The presence of error.type indicates that the conditions for setting Error status are also met.
-                            // https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/docs/http/http-spans.md#status
-                            activity.SetStatus(ActivityStatusCode.Error);
-                        }
-                    }
 
                     // Only send stop event to users who subscribed for it.
                     if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStopName))

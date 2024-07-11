@@ -183,8 +183,6 @@
              Link="ProductionCode\System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\WarningHeaderValue.cs"
              Link="ProductionCode\System\Net\Http\Headers\WarningHeaderValue.cs" />
-    <Compile Include="..\..\src\System\Net\Http\DiagnosticsHelper.cs"
-             Link="ProductionCode\System\Net\Http\DiagnosticsHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpClient.cs"
              Link="ProductionCode\System\Net\Http\HttpClient.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpHandlerDefaults.cs"
@@ -255,7 +253,6 @@
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="ProductionCode\System\Net\Http\HttpHandlerDefaults.cs" />
-    <Compile Include="DiagnosticsHelperTest.cs" />
     <Compile Include="DigestAuthenticationTests.cs" />
     <Compile Include="Fakes\HttpClientHandler.cs" />
     <Compile Include="Fakes\HttpTelemetry.cs" />

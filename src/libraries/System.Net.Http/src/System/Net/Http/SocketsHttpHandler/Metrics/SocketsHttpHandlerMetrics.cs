@@ -47,7 +47,7 @@ namespace System.Net.Http.Metrics
                     tags.Add("server.port", pool.OriginAuthority.Port);
                 }
 
-                tags.Add(DiagnosticsHelper.GetMethodTag(request.Method, out _));
+                tags.Add(MetricsHandler.GetMethodTag(request.Method));
 
                 RequestsQueueDuration.Record(duration.TotalSeconds, tags);
             }
