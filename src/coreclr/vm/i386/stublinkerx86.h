@@ -379,12 +379,6 @@ class StubLinkerCPU : public StubLinker
         VOID EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
 
-#ifndef FEATURE_STUBS_AS_IL
-        //===========================================================================
-        // Emits code to break into debugger
-        VOID EmitDebugBreak();
-#endif // !FEATURE_STUBS_AS_IL
-
 #if defined(_DEBUG) && !defined(TARGET_UNIX)
         //===========================================================================
         // Emits code to log JITHelper access

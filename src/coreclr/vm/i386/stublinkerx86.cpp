@@ -3585,15 +3585,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
 
 #if !defined(FEATURE_STUBS_AS_IL)
-//===========================================================================
-// Emits code to break into debugger
-VOID StubLinkerCPU::EmitDebugBreak()
-{
-    STANDARD_VM_CONTRACT;
-
-    // int3
-    Emit8(0xCC);
-}
 
 #if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
