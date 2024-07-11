@@ -25,6 +25,16 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
+            DssParms parms = DssParms.Decode(algId.Parameters.Value, AsnEncodingRules.BER);
+
+            ret = new DSAParameters
+            {
+                P = parms.P.ToByteArray(isUnsigned: true, isBigEndian: true),
+                Q = parms.Q.ToByteArray(isUnsigned: true, isBigEndian: true),
+            };
+
+            ret.G = parms.G.ExportKeyParameter(ret.P.Length);
+
             BigInteger x;
 
             try
@@ -47,33 +57,6 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            DssParms parms = DssParms.Decode(algId.Parameters.Value, AsnEncodingRules.BER);
-
-            // Sanity checks from FIPS 186-4 4.1/4.2.  Since FIPS 186-5 withdrew DSA/DSS
-            // these will never change again.
-            //
-            // This technically allows a non-standard combination of 1024-bit P and 256-bit Q,
-            // but that will get filtered out by the underlying provider.
-            // These checks just prevent obviously bad data from wasting work on reinterpretation.
-            if (parms.P.Sign < 0 ||
-                parms.Q.Sign < 0 ||
-                !IsValidPLength(parms.P.GetBitLength()) ||
-                !IsValidQLength(parms.Q.GetBitLength()) ||
-                parms.G <= 1 ||
-                parms.G >= parms.P ||
-                x <= 1 ||
-                x >= parms.Q)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
-
-            ret = new DSAParameters
-            {
-                P = parms.P.ToByteArray(isUnsigned: true, isBigEndian: true),
-                Q = parms.Q.ToByteArray(isUnsigned: true, isBigEndian: true),
-            };
-
-            ret.G = parms.G.ExportKeyParameter(ret.P.Length);
             ret.X = x.ExportKeyParameter(ret.Q.Length);
 
             // The public key is not contained within the format, calculate it.
@@ -86,11 +69,6 @@ namespace System.Security.Cryptography
             in AlgorithmIdentifierAsn algId,
             out DSAParameters ret)
         {
-            if (!algId.Parameters.HasValue)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
-
             BigInteger y;
 
             try
@@ -110,25 +88,12 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            DssParms parms = DssParms.Decode(algId.Parameters.Value, AsnEncodingRules.BER);
-
-            // Sanity checks from FIPS 186-4 4.1/4.2.  Since FIPS 186-5 withdrew DSA/DSS
-            // these will never change again.
-            //
-            // This technically allows a non-standard combination of 1024-bit P and 256-bit Q,
-            // but that will get filtered out by the underlying provider.
-            // These checks just prevent obviously bad data from wasting work on reinterpretation.
-            if (parms.P.Sign < 0 ||
-                parms.Q.Sign < 0 ||
-                !IsValidPLength(parms.P.GetBitLength()) ||
-                !IsValidQLength(parms.Q.GetBitLength()) ||
-                parms.G <= 1 ||
-                parms.G >= parms.P ||
-                y <= 1 ||
-                y >= parms.P)
+            if (!algId.Parameters.HasValue)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
+
+            DssParms parms = DssParms.Decode(algId.Parameters.Value, AsnEncodingRules.BER);
 
             ret = new DSAParameters
             {
@@ -138,25 +103,6 @@ namespace System.Security.Cryptography
 
             ret.G = parms.G.ExportKeyParameter(ret.P.Length);
             ret.Y = y.ExportKeyParameter(ret.P.Length);
-        }
-
-        private static bool IsValidPLength(long pBitLength)
-        {
-            return pBitLength switch
-            {
-                // FIPS 186-3/186-4
-                1024 or 2048 or 3072 => true,
-                // FIPS 186-1/186-2
-                >= 512 and < 1024 => pBitLength % 64 == 0,
-                _ => false,
-            };
-        }
-
-        private static bool IsValidQLength(long qBitLength)
-        {
-            // FIPS 186-1/186-2 only allows 160
-            // FIPS 186-3/186-4 allow 160/224/256
-            return qBitLength is 160 or 224 or 256;
         }
 
         internal static void ReadSubjectPublicKeyInfo(
