@@ -89,7 +89,6 @@ namespace System.Text.Json
         /// <summary>
         ///   Get the number of properties contained within the current object value.
         /// </summary>
-        /// <returns></returns>
         /// <returns>The number of properties contained within the current object value.</returns>
         /// <exception cref="InvalidOperationException">
         ///   This value's <see cref="ValueKind"/> is not <see cref="JsonValueKind.Object"/>.
