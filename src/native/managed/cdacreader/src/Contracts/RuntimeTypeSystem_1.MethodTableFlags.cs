@@ -85,7 +85,6 @@ internal partial struct RuntimeTypeSystem_1
         public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
         public bool IsString => HasComponentSize && !IsArray && ComponentSizeBits == 2;
         public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
-        public bool IfArrayThenSzArray => GetFlag(WFLAGS_HIGH.Category_IfArrayThenSzArray) != 0;
         public bool IsStringOrArray => HasComponentSize;
         public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);

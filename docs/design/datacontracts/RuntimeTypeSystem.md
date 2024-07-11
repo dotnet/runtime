@@ -4,16 +4,63 @@ This contract is for exploring the properties of the runtime types of values on 
 
 ## APIs of contract
 
-A `MethodTable` is the runtime representation of the type information about a value.  Given a `TargetPointer` address, the `RuntimeTypeSystem` contract provides a `MethodTableHandle` for querying the `MethodTable`.
+A `MethodTable` is the runtime representation of the type information about a value which is represented as a TypeHandle.
+Given a `TargetPointer` address, the `RuntimeTypeSystem` contract provides a `MethodTableHandle` for querying the `MethodTable`.
+Some other apis are available while using `TypeHandle` which is provided similarly to a MethodTable
+
 
 ``` csharp
 struct MethodTableHandle
 {
     // no public properties or constructors
 
-    internal TargetPointer Address { get; }
+    public TargetPointer Address { get; }
+}
+
+struct TypeHandle
+{
+}
+
+
+internal enum CorElementType
+{
+    Void = 1,
+    Boolean = 2,
+    Char = 3,
+    I1 = 4,
+    U1 = 5,
+    I2 = 6,
+    U2 = 7,
+    I4 = 8,
+    U4 = 9,
+    I8 = 0xa,
+    U8 = 0xb,
+    R4 = 0xc,
+    R8 = 0xd,
+    String = 0xe,
+    Ptr = 0xf,
+    Byref = 0x10,
+    ValueType = 0x11,
+    Class = 0x12,
+    Var = 0x13,
+    Array = 0x14,
+    GenericInst = 0x15,
+    TypedByRef = 0x16,
+    I = 0x18,
+    U = 0x19,
+    FnPtr = 0x1b,
+    Object = 0x1c,
+    SzArray = 0x1d,
+    MVar = 0x1e,
+    CModReqd = 0x1f,
+    CModOpt = 0x20,
+    Internal = 0x21,
+    Sentinel = 0x41,
 }
 ```
+
+A `TypeHandle` is the runtime representation of the type information about a value.  This can be constructed from either a `MethodTableHandle` or 
+struct TypeHandle
 
 ``` csharp
     #region MethodTable inspection APIs
@@ -43,7 +90,24 @@ struct MethodTableHandle
     // Returns the ECMA 335 TypeDef table Flags value (a bitmask of TypeAttributes) for this type,
     // or for its generic type definition if it is a generic instantiation
     public virtual uint GetTypeDefTypeAttributes(MethodTableHandle methodTable);
+    public virtual ReadOnlySpan<MethodTableHandle> GetInstantiation(MethodTableHandle methodTable);
+    public virtual bool IsGenericTypeDefinition(MethodTableHandle methodTable);
+
     #endregion MethodTable inspection APIs
+
+    #region TypeHandle inspection APIs
+    public virtual TypeHandle TypeHandleFromAddress(TargetPointer address);
+    public virtual bool HasTypeParam(TypeHandle typeHandle);
+    // Element type of the type. NOTE: this drops the CorElementType.GenericInst for generics, and CorElementType.String is returned as CorElementType.Class
+    public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
+
+    // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
+    public virtual bool IsArray(TypeHandle typeHandle, out uint rank);
+    public virtual TypeHandle GetTypeParam(TypeHandle typeHandle);
+    public virtual bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
+    public virtual bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
+
+    #endregion TypeHandle inspection APIs
 ```
 
 ## Version 1
@@ -60,6 +124,7 @@ internal partial struct RuntimeTypeSystem_1
     {
         GenericsMask = 0x00000030,
         GenericsMask_NonGeneric = 0x00000000,   // no instantiation
+        GenericsMask_TypicalInstantiation = 0x00000030,   // the type instantiated at its formal parameters, e.g. List<T>
 
         StringArrayValues = GenericsMask_NonGeneric,
     }
@@ -69,9 +134,15 @@ internal partial struct RuntimeTypeSystem_1
     internal enum WFLAGS_HIGH : uint
     {
         Category_Mask = 0x000F0000,
+        Category_ElementType_Mask = 0x000E0000,
+        Category_IfArrayThenSzArray = 0x00020000,
         Category_Array = 0x00080000,
-        Category_Array_Mask = 0x000C0000,
+        Category_ValueType = 0x00040000,
+        Category_Nullable = 0x00050000,
+        Category_PrimitiveValueType = 0x00060000,
+        Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
+        Category_Array_Mask = 0x000C0000,
         ContainsGCPointers = 0x01000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                        // otherwise the lower bits are used for WFLAGS_LOW
@@ -118,6 +189,7 @@ internal partial struct RuntimeTypeSystem_1
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+        public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
     }
 
     [Flags]
@@ -141,6 +213,7 @@ internal struct MethodTable_1
     internal TargetPointer ParentMethodTable { get; }
     internal TargetPointer Module { get; }
     internal TargetPointer EEClassOrCanonMT { get; }
+    internal TargetPointer PerInstInfo { get; }
     internal MethodTable_1(Data.MethodTable data)
     {
         Flags = new RuntimeTypeSystem_1.MethodTableFlags
@@ -154,12 +227,39 @@ internal struct MethodTable_1
         EEClassOrCanonMT = data.EEClassOrCanonMT;
         Module = data.Module;
         ParentMethodTable = data.ParentMethodTable;
+        PerInstInfo = data.PerInstInfo;
     }
 }
 ```
 
+Internally the contract depends on a `TypeDescHandle` structure that represents the address of something that implements the TypeDesc data descriptor.
+
+Internally the contract depends on the `TypeHandle` structure being capable of holding a TypeDescHandle or a MethodTableHandle.
+```csharp
+struct TypeHandle
+{
+    internal TypeHandle(TypeDescHandle typeDescHandle);
+    internal TypeHandle(MethodTableHandle methodTableHandle);
+    internal bool IsMethodTable { get; }
+    internal MethodTableHandle AsMethodTable { get; }
+    internal bool IsTypeDesc { get; }
+    internal TypeDescHandle AsTypeDesc { get; }
+}
+```
+
 The contract depends on the global pointer value `FreeObjectMethodTablePointer`.
-The contract additionally depends on the `EEClass` data descriptor.
+The contract additionally depends on these data descriptors
+
+| Data Descriptor Name |
+| --- |
+| `EEClass` |
+| `ArraayClass` |
+| `TypeDesc` |
+| `ParamTypeDesc` |
+| `TypeVarTypeDesc` |
+| `FnPtrTypeDesc` |
+| `GenericsDictInfo` |
+
 
 ```csharp
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;
@@ -221,4 +321,194 @@ The contract additionally depends on the `EEClass` data descriptor.
     public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).CorTypeAttr;
 
     public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.IsDynamicStatics;
+
+    public ReadOnlySpan<MethodTableHandle> GetInstantiation(MethodTableHandle methodTableHandle)
+    {
+        MethodTable_1 methodTable = _methodTables[methodTableHandle.Address];
+        if (!methodTable.Flags.HasInstantiation)
+            return default;
+
+        TargetPointer perInstInfo = methodTable.PerInstInfo;
+        TargetPointer genericsDictInfo = perInstInfo - (ulong)_target.PointerSize;
+        TargetPointer dictionaryPointer = _target.ReadPointer(perInstInfo);
+
+        int NumTypeArgs = // Read NumTypeArgs from genericsDictInfo using GenericsDictInfo contract
+        MethodTableHandle[] instantiation = new MethodTableHandle[NumTypeArgs];
+        for (int i = 0; i < NumTypeArgs; i++)
+            instantiation[i] = GetMethodTableHandle(_target.ReadPointer(dictionaryPointer + _target.PointerSize * i));
+
+        return instantiation;
+    }
+
+    public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.IsGenericTypeDefinition;
+
+    public TypeHandle TypeHandleFromAddress(TargetPointer address)
+    {
+        // validate that address points to something that looks like a TypeHandle.
+
+        if (address & 2 == 2)
+        {
+            return new TypeHandle(new TypeDescHandle(address - 2));
+        }
+        else
+        {
+            return new TypeHandle(new MethodTableHandle(address));
+        }
+    }
+
+    public bool HasTypeParam(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable)
+        {
+            MethodTable methodTable = _methodTables[typeHandle.AsMethodTable.Address];
+            return methodTable.Flags.IsArray;
+        }
+        else if (typeHandle.IsTypeDesc)
+        {
+            int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.AsTypeDesc.Address
+            CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+            switch (elemType)
+            {
+                case CorElementType.ValueType:
+                case CorElementType.Byref:
+                case CorElementType.Ptr:
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    public CorElementType GetSignatureCorElementType(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable)
+        {
+            MethodTable methodTable = _methodTables[typeHandle.AsMethodTable.Address];
+
+            switch (methodTable.Flags.GetFlag(WFLAGS_HIGH.Category_Mask))
+            {
+                case WFLAGS_HIGH.Category_Array:
+                    return CorElementType.Array;
+                case WFLAGS_HIGH.Category_Array | WFLAGS_HIGH.Category_IfArrayThenSzArray:
+                    return CorElementType.SzArray;
+                case WFLAGS_HIGH.Category_ValueType:
+                case WFLAGS_HIGH.Category_Nullable:
+                case WFLAGS_HIGH.Category_PrimitiveValueType:
+                    return CorElementType.ValueType;
+                case WFLAGS_HIGH.Category_TruePrimitive:
+                    return (CorElementType)GetClassData(typeHandle.AsMethodTable).InternalCorElementType;
+                default:
+                    return CorElementType.Class;
+            }
+        }
+        else if (typeHandle.IsTypeDesc)
+        {
+            int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.AsTypeDesc.Address
+            return (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+        }
+        return default(CorElementType);
+    }
+
+    // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
+    public bool IsArray(TypeHandle typeHandle, out uint rank)
+    {
+        if (typeHandle.IsMethodTable)
+        {
+            MethodTable methodTable = _methodTables[typeHandle.AsMethodTable.Address];
+
+            switch (methodTable.Flags.GetFlag(WFLAGS_HIGH.Category_Mask))
+            {
+                case WFLAGS_HIGH.Category_Array:
+                    TargetPointer clsPtr = GetClassPointer(typeHandle.AsMethodTable);
+                    rank = // Read Rank field from ArrayClass contract using address clsPtr
+                    return true;
+
+                case WFLAGS_HIGH.Category_Array | WFLAGS_HIGH.Category_IfArrayThenSzArray:
+                    rank = 1;
+                    return true;
+            }
+        }
+
+        rank = 0;
+        return false;
+    }
+
+    public TypeHandle GetTypeParam(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable)
+        {
+            MethodTable methodTable = _methodTables[typeHandle.AsMethodTable.Address];
+
+            // Validate that this is an array
+            if (!methodTable.Flags.IsArray)
+                throw new ArgumentException(nameof(typeHandle));
+
+            return TypeHandleFromAddress(methodTable.PerInstInfo);
+        }
+        else if (typeHandle.IsTypeDesc)
+        {
+            int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.AsTypeDesc.Address
+            CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+
+            switch (elemType)
+            {
+                case CorElementType.ValueType:
+                case CorElementType.Byref:
+                case CorElementType.Ptr:
+                    TargetPointer typeArgPointer = // Read TypeArg field from ParamTypeDesc contract using address typeHandle.AsTypeDesc.Address
+                    return TypeHandleFromAddress(typeArgPointer);
+            }
+        }
+        throw new ArgumentException(nameof(typeHandle));
+    }
+
+    public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)
+    {
+        module = TargetPointer.Null;
+        token = 0;
+
+        if (!typeHandle.IsTypeDesc)
+            return false;
+
+        int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.AsTypeDesc.Address
+        CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+
+        switch (elemType)
+        {
+            case CorElementType.MVar:
+            case CorElementType.Var:
+                TypeVarTypeDesc typeVarTypeDesc = _target.ProcessedData.GetOrAdd<TypeVarTypeDesc>(typeHandle.AsTypeDesc.Address);
+                module = // Read Module field from TypeVarTypeDesc contract using address typeHandle.AsTypeDesc.Address
+                token = // Read Module field from TypeVarTypeDesc contract using address typeHandle.AsTypeDesc.Address
+                return true;
+        }
+        return false;
+    }
+
+    public bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv)
+    {
+        retAndArgTypes = default;
+        callConv = default;
+
+        if (!typeHandle.IsTypeDesc)
+            return false;
+
+        int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.AsTypeDesc.Address
+        CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+
+        if (elemType != CorElementType.FnPtr)
+            return false;
+
+        int NumArgs = // Read NumArgs field from FnPtrTypeDesc contract using address typeHandle.AsTypeDesc.Address
+        TargetPointer RetAndArgTypes = // Read NumArgs field from FnPtrTypeDesc contract using address typeHandle.AsTypeDesc.Address
+
+        MethodTableHandle[] retAndArgTypesArray = new TypeHandle[NumTypeArgs + 1];
+        for (int i = 0; i <= NumTypeArgs; i++)
+            retAndArgTypesArray[i] = TypeHandleFromAddress(_target.ReadPointer(RetAndArgTypes + _target.PointerSize * i));
+
+        TypeHandleArray retAndArgTypesArray = _target.ProcessedData.GetOrAdd<(TargetPointer, int), TypeHandleArray>
+            ((fnPtrTypeDesc.RetAndArgTypes, checked((int)fnPtrTypeDesc.NumArgs + 1)));
+        retAndArgTypes = retAndArgTypesArray;
+        callConv = (byte) // Read CallConv field from FnPtrTypeDesc contract using address typeHandle.AsTypeDesc.Address, and then ignore all but the low 8 bits.
+        return true;
+    }
 ```
