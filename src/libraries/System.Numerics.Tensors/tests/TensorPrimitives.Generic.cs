@@ -522,14 +522,8 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Hypot, T.Hypot);
             yield return Create(TensorPrimitives.Ieee754Remainder, T.Ieee754Remainder);
             yield return Create(TensorPrimitives.Log, T.Log);
-            yield return Create(TensorPrimitives.Max, T.Max);
             yield return Create(TensorPrimitives.MaxNumber, T.MaxNumber);
-            yield return Create(TensorPrimitives.MaxMagnitude, T.MaxMagnitude);
-            yield return Create(TensorPrimitives.MaxMagnitudeNumber, T.MaxMagnitudeNumber);
-            yield return Create(TensorPrimitives.Min, T.Min);
             yield return Create(TensorPrimitives.MinNumber, T.MinNumber);
-            yield return Create(TensorPrimitives.MinMagnitude, T.MinMagnitude);
-            yield return Create(TensorPrimitives.MinMagnitudeNumber, T.MinMagnitudeNumber);
             yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f));
 
             static object[] Create(SpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
@@ -662,13 +656,11 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.Log, T.Log);
             yield return Create(TensorPrimitives.Max, T.Max);
-            yield return Create(TensorPrimitives.MaxNumber, T.MaxNumber);
             yield return Create(TensorPrimitives.MaxMagnitude, T.MaxMagnitude);
-            yield return Create(TensorPrimitives.MaxMagnitudeNumber, T.MaxMagnitudeNumber);
+            yield return Create(TensorPrimitives.MaxNumber, T.MaxNumber);
             yield return Create(TensorPrimitives.Min, T.Min);
-            yield return Create(TensorPrimitives.MinNumber, T.MinNumber);
             yield return Create(TensorPrimitives.MinMagnitude, T.MinMagnitude);
-            yield return Create(TensorPrimitives.MinMagnitudeNumber, T.MinMagnitudeNumber);
+            yield return Create(TensorPrimitives.MinNumber, T.MinNumber);
 
             static object[] Create(SpanScalarDestinationDelegate<T, T, T> tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
                 => new object[] { tensorPrimitivesMethod, expectedMethod, tolerance };
@@ -1849,13 +1841,11 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.BitwiseAnd, (x, y) => x & y);
             yield return Create(TensorPrimitives.BitwiseOr, (x, y) => x | y);
             yield return Create(TensorPrimitives.Max, T.Max);
-            yield return Create(TensorPrimitives.MaxNumber, T.MaxNumber);
             yield return Create(TensorPrimitives.MaxMagnitude, T.MaxMagnitude);
-            yield return Create(TensorPrimitives.MaxMagnitudeNumber, T.MaxMagnitudeNumber);
+            yield return Create(TensorPrimitives.MaxNumber, T.MaxNumber);
             yield return Create(TensorPrimitives.Min, T.Min);
-            yield return Create(TensorPrimitives.MinNumber, T.MinNumber);
             yield return Create(TensorPrimitives.MinMagnitude, T.MinMagnitude);
-            yield return Create(TensorPrimitives.MinMagnitudeNumber, T.MinMagnitudeNumber);
+            yield return Create(TensorPrimitives.MinNumber, T.MinNumber);
             yield return Create(TensorPrimitives.Xor, (x, y) => x ^ y);
 
             static object[] Create(SpanScalarDestinationDelegate<T, T, T> tensorPrimitivesMethod, Func<T, T, T> expectedMethod)
