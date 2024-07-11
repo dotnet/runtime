@@ -8,12 +8,16 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class MethodDesc : IData<MethodDesc>
 {
     static MethodDesc IData<MethodDesc>.Create(Target target, TargetPointer address) => new MethodDesc(target, address);
-#pragma warning disable IDE0060 // Remove unused parameter
     public MethodDesc(Target target, TargetPointer address)
     {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.MethodDesc);
 
+        ChunkIndex = target.Read<byte>(address + (ulong)type.Fields[nameof(ChunkIndex)].Offset);
+        Slot = target.Read<byte>(address + (ulong)type.Fields[nameof(Slot)].Offset);
+        Flags = target.Read<ushort>(address + (ulong)type.Fields[nameof(Flags)].Offset);
     }
-#pragma warning restore IDE0060
 
     public byte ChunkIndex { get; init; }
+    public byte Slot { get; init; }
+    public ushort Flags { get; init; }
 }

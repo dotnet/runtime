@@ -621,7 +621,7 @@ public:
                 // If it has, then we don't need to do anything
                 return false;
             }
-            
+
             if (isClassInitedByUpdatingStaticPointer)
             {
                 oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal, oldVal);

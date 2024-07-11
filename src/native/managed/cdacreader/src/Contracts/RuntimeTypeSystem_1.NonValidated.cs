@@ -89,22 +89,25 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         internal struct MethodDesc
         {
             public readonly Target _target;
-            public readonly Target.TypeInfo _type;
-            internal TargetPointer Address { get; init; }
-
-            internal MethodDesc(Target target, TargetPointer methodDescPointer)
+            public TargetPointer Address { get; init; }
+            public readonly Data.MethodDesc _desc;
+            public readonly Data.MethodDescChunk _chunk;
+            internal MethodDesc(Target target, TargetPointer methodDescPointer, Data.MethodDesc desc, Data.MethodDescChunk chunk)
             {
                 _target = target;
-                _type = target.GetTypeInfo(DataType.pointer /*DataType.MethodDesc*/); // TODO
+                _desc = desc;
+                _chunk = chunk;
                 Address = methodDescPointer;
             }
 
-#pragma warning disable CA1822 // Mark members as static
-            internal TargetPointer MethodTable => TargetPointer.Null; // TODO
-            internal ushort Slot => (ushort)0xffffu; // TODO
-            internal bool HasNonVtableSlot => false; // TODO
-#pragma warning restore CA1822 // Mark members as static
+            private bool HasFlag(MethodDescFlags flag) => (_desc.Flags & (ushort)flag) != 0;
+
+            internal byte ChunkIndex => _desc.ChunkIndex;
+            internal TargetPointer MethodTable => _chunk.MethodTable;
+            internal ushort Slot => _desc.Slot;
+            internal bool HasNonVtableSlot => HasFlag(MethodDescFlags.HasNonVtableSlot);
         }
+
         internal static MethodTable GetMethodTableData(Target target, TargetPointer methodTablePointer)
         {
             return new MethodTable(target, methodTablePointer);
@@ -115,10 +118,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return new EEClass(target, eeClassPointer);
         }
 
-        internal static MethodDesc GetMethodDescData(Target target, TargetPointer methodDescPointer)
-        {
-            return new MethodDesc(target, methodDescPointer);
-        }
     }
 
     /// <summary>
@@ -218,10 +217,36 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
-    private bool ValidateMethodDescPointer(NonValidated.MethodDesc umd)
+    private TargetPointer GetMethodDescChunkPointerMayThrow(TargetPointer methodDescPointer, Data.MethodDesc umd)
+    {
+        ulong? methodDescSize = _target.GetTypeInfo(DataType.MethodDesc).Size;
+        if (!methodDescSize.HasValue)
+        {
+            throw new InvalidOperationException("Target has no definite MethodDesc size");
+        }
+        ulong chunkAddress = (ulong)methodDescPointer - methodDescSize.Value - umd.ChunkIndex * MethodDescAlignment;
+        return new TargetPointer(chunkAddress);
+    }
+
+    private Data.MethodDescChunk GetMethodDescChunkMayThrow(TargetPointer methodDescPointer, Data.MethodDesc md)
+    {
+        return new Data.MethodDescChunk(_target, GetMethodDescChunkPointerMayThrow(methodDescPointer, md));
+    }
+
+    private NonValidated.MethodDesc GetMethodDescMayThrow(TargetPointer methodDescPointer)
+    {
+        // may throw if the method desc at methodDescPointer is corrupted
+        // we bypass the target data cache here because we don't want to cache non-validated data
+        Data.MethodDesc desc = new Data.MethodDesc(_target, methodDescPointer);
+        Data.MethodDescChunk chunk = GetMethodDescChunkMayThrow(methodDescPointer, desc);
+        return new NonValidated.MethodDesc(_target, methodDescPointer, desc, chunk);
+    }
+
+    private bool ValidateMethodDescPointer(TargetPointer methodDescPointer)
     {
         try
         {
+            NonValidated.MethodDesc umd = GetMethodDescMayThrow(methodDescPointer);
             TargetPointer methodTablePointer = umd.MethodTable;
             if (methodTablePointer == TargetPointer.Null
                 || methodTablePointer == new TargetPointer(0xffffffff_fffffffful)
@@ -231,10 +256,40 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             }
             MethodTableHandle methodTableHandle = GetMethodTableHandle(methodTablePointer);
 
-            if (umd.Slot >= GetNumMethods(methodTableHandle) && !umd.HasNonVtableSlot) // FIXME: request.cpp looks at m_usNumVtableSlots
+            if (umd.Slot >= GetNumVtableSlots(methodTableHandle) && !umd.HasNonVtableSlot)
             {
                 return false;
             }
+            // TODO: request.cpp
+#if false
+            MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(pMD->GetTemporaryEntryPoint(), TRUE);
+
+            if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
+            {
+                retval = FALSE;
+            }
+        }
+
+        if (retval && pMD->HasNativeCode() && !pMD->IsFCall())
+        {
+            PCODE jitCodeAddr = pMD->GetNativeCode();
+
+            MethodDesc *pMDCheck = ExecutionManager::GetCodeMethodDesc(jitCodeAddr);
+            if (pMDCheck)
+            {
+                // Check that the given MethodDesc matches the MethodDesc from
+                // the CodeHeader
+                if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
+                {
+                    retval = FALSE;
+                }
+            }
+            else
+            {
+                retval = FALSE;
+            }
+        }
+#endif
 
         }
         catch (System.Exception)

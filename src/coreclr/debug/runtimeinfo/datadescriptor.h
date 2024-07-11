@@ -211,6 +211,7 @@ CDAC_TYPE_FIELD(EEClass, /*pointer*/, MethodTable, cdac_offsets<EEClass>::Method
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumMethods, cdac_offsets<EEClass>::NumMethods)
 CDAC_TYPE_FIELD(EEClass, /*uint32*/, CorTypeAttr, cdac_offsets<EEClass>::CorTypeAttr)
 CDAC_TYPE_FIELD(EEClass, /*uint8*/, InternalCorElementType, cdac_offsets<EEClass>::InternalCorElementType)
+CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumNonVirtualSlots, cdac_offsets<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_END(EEClass)
 
 CDAC_TYPE_BEGIN(ArrayClass)
@@ -247,12 +248,18 @@ CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, RetAndArgTypes, cdac_offsets<FnPtrTyp
 CDAC_TYPE_END(FnPtrTypeDesc)
 
 CDAC_TYPE_BEGIN(MethodDesc)
-CDAC_TYPE_INDETERMINATE(EEClass)
+CDAC_TYPE_INDETERMINATE(MethodDesc)
 CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, ChunkIndex, cdac_offsets<MethodDesc>::ChunkIndex)
+CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, Slot, cdac_offsets<MethodDesc>::Slot)
+CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags, cdac_offsets<MethodDesc>::Flags)
 CDAC_TYPE_END(MethodDesc)
 
 CDAC_TYPE_BEGIN(MethodDescChunk)
 CDAC_TYPE_SIZE(sizeof(MethodDescChunk))
+CDAC_TYPE_FIELD(MethodDescChunk, /*pointer*/, MethodTable, cdac_offsets<MethodDescChunk>::MethodTable)
+CDAC_TYPE_FIELD(MethodDescChunk, /*pointer*/, Next, cdac_offsets<MethodDescChunk>::Next)
+CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Size, cdac_offsets<MethodDescChunk>::Size)
+CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Count, cdac_offsets<MethodDescChunk>::Count)
 CDAC_TYPE_END(MethodDescChunk)
 
 CDAC_TYPES_END()
