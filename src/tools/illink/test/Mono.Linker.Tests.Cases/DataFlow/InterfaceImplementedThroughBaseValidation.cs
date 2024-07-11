@@ -19,9 +19,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RUCOnBaseMethod.Test ();
 			DAMOnInterfaceMethod.Test ();
 			DAMOnBaseMethod.Test ();
+
+			RUCOnInterfaceWithDIM.Test ();
+			RUCOnDIM.Test ();
+			DAMOnInterfaceWithDIM.Test ();
+			DAMOnDIM.Test ();
 		}
 
-		class RUCOnInterfaceMethod ()
+		class RUCOnInterfaceMethod
 		{
 			interface Interface {
 				[RequiresUnreferencedCode (nameof (Method))]
@@ -29,10 +34,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			class Base {
-				[UnexpectedWarning ("IL2046", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
 				public void Method () {}
 			}
 
+			[ExpectedWarning ("IL2046", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
 			class Derived : Base, Interface {}
 
 			[ExpectedWarning ("IL2026")]
@@ -42,18 +47,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		class RUCOnBaseMethod ()
+		class RUCOnBaseMethod
 		{
 			interface Interface {
 				void Method ();
 			}
 
 			class Base {
-				[UnexpectedWarning ("IL2046", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
 				[RequiresUnreferencedCode (nameof (Method))]
 				public void Method () {}
 			}
 
+			[ExpectedWarning ("IL2046", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
 			class Derived : Base, Interface {}
 
 			public static void Test () {
@@ -62,17 +67,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		class DAMOnInterfaceMethod ()
+		class DAMOnInterfaceMethod
 		{
 			interface Interface {
 				void Method ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t);
 			}
 
 			class Base {
-				[UnexpectedWarning ("IL2092", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
 				public void Method (Type t) {}
 			}
 
+			[ExpectedWarning ("IL2092", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
 			class Derived : Base, Interface {}
 
 			public static void Test () {
@@ -81,21 +86,112 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		class DAMOnBaseMethod ()
+		class DAMOnBaseMethod
 		{
 			interface Interface {
 				void Method (Type t);
 			}
 
 			class Base {
-				[UnexpectedWarning ("IL2092", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
 				public void Method ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
 			}
 
+			[ExpectedWarning ("IL2092", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
 			class Derived : Base, Interface {}
 
 			public static void Test () {
 				Interface i = new Derived ();
+				i.Method (typeof (int));
+			}
+		}
+
+		class RUCOnInterfaceWithDIM
+		{
+			interface Interface {
+				[RequiresUnreferencedCode (nameof (Method))]
+				void Method ();
+			}
+
+			interface InterfaceImpl : Interface {
+				[ExpectedWarning ("IL2046")]
+				void Interface.Method() {}
+			}
+
+			class C : InterfaceImpl {}
+
+			class D : InterfaceImpl {}
+
+			[ExpectedWarning ("IL2026")]
+			public static void Test () {
+				Interface i = new C ();
+				i = new D ();
+				i.Method ();
+			}
+		}
+
+		class RUCOnDIM
+		{
+			interface Interface {
+				void Method ();
+			}
+
+			interface InterfaceImpl : Interface {
+				[ExpectedWarning ("IL2046")]
+				[RequiresUnreferencedCode (nameof (Method))]
+				void Interface.Method() {}
+			}
+
+			class C : InterfaceImpl {}
+
+			class D : InterfaceImpl {}
+
+			public static void Test () {
+				Interface i = new C ();
+				i = new D ();
+				i.Method ();
+			}
+		}
+
+		class DAMOnInterfaceWithDIM
+		{
+			interface Interface {
+				void Method ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t);
+			}
+
+			interface InterfaceImpl : Interface {
+				[ExpectedWarning ("IL2092")]
+				void Interface.Method (Type t) {}
+			}
+
+			class C : InterfaceImpl {}
+
+			class D : InterfaceImpl {}
+
+			public static void Test () {
+				Interface i = new C ();
+				i = new D ();
+				i.Method (typeof (int));
+			}
+		}
+
+		class DAMOnDIM
+		{
+			interface Interface {
+				void Method (Type t);
+			}
+
+			interface InterfaceImpl : Interface {
+				[ExpectedWarning ("IL2092")]
+				void Interface.Method ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+			}
+
+			class C : InterfaceImpl {}
+
+			class D : InterfaceImpl {}
+
+			public static void Test () {
+				Interface i = new C ();
+				i = new D ();
 				i.Method (typeof (int));
 			}
 		}
