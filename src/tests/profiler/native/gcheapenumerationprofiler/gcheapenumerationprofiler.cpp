@@ -26,9 +26,9 @@ HRESULT GCHeapEnumerationProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     constexpr ULONG bufferSize = 1024;
     ULONG envVarLen = 0;
     WCHAR envVar[bufferSize];
-    HRESULT hr = S_OK;
 
-    if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("Set_Monitor_GC_Event_Mask"), bufferSize, &envVarLen, envVar)))
+    HRESULT hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("Set_Monitor_GC_Event_Mask"), bufferSize, &envVarLen, envVar);
+    if (FAILED(hr))
     {
         printf("FAIL: ICorProfilerInfo::GetEnvironmentVariable() failed hr=0x%x", hr);
         IncrementFailures();
@@ -42,7 +42,8 @@ HRESULT GCHeapEnumerationProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
         eventMask |= COR_PRF_MONITOR_GC;
     }
 
-    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(eventMask, COR_PRF_HIGH_MONITOR_NONE)))
+    hr = pCorProfilerInfo->SetEventMask2(eventMask, COR_PRF_HIGH_MONITOR_NONE);
+    if (FAILED(hr))
     {
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
         IncrementFailures();
@@ -198,7 +199,7 @@ HRESULT GCHeapEnumerationProfiler::ValidateEnumerateGCHeapObjects(HRESULT expect
         if (FAILED(expected))
         {
             printf("Encountered exception as expected.\n");
-            _expectedExceptions++;
+            _expectedExceptions.fetch_add(1, std::memory_order_relaxed);
             return S_OK;
         }
 
@@ -235,11 +236,7 @@ extern "C" EXPORT void STDMETHODCALLTYPE EnumerateGCHeapObjectsWithoutProfilerRe
         return;
     }
 
-    HRESULT hr = instance->ValidateEnumerateGCHeapObjects(S_OK);
-    if (FAILED(hr))
-    {
-        instance->IncrementFailures();
-    }
+    instance->ValidateEnumerateGCHeapObjects(S_OK);
 }
 
 extern "C" EXPORT void STDMETHODCALLTYPE EnumerateGCHeapObjectsWithinProfilerRequestedRuntimeSuspension()

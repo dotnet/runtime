@@ -6859,7 +6859,7 @@ HRESULT ProfToEEInterfaceImpl::SuspendRuntime()
     {
         LOG((LF_CORPROF,
              LL_ERROR,
-             "**PROF: ERROR: Returning CORPROF_E_UNSUPPORTED_CALL_SEQUENCE due to illegal asynchronous profiler call\n"));
+             "**PROF: ERROR: Returning CORPROF_E_UNSUPPORTED_CALL_SEQUENCE due to illegal gc-triggers profiler call inside a no-trigger contract\n"));
         return CORPROF_E_UNSUPPORTED_CALL_SEQUENCE;
     }
 
@@ -6898,7 +6898,7 @@ HRESULT ProfToEEInterfaceImpl::ResumeRuntime()
     {
         LOG((LF_CORPROF,
              LL_ERROR,
-             "**PROF: ERROR: Returning CORPROF_E_UNSUPPORTED_CALL_SEQUENCE due to illegal asynchronous profiler call\n"));
+             "**PROF: ERROR: Returning CORPROF_E_UNSUPPORTED_CALL_SEQUENCE due to illegal gc-triggers profiler call inside a no-trigger contract\n"));
         return CORPROF_E_UNSUPPORTED_CALL_SEQUENCE;
     }
 
@@ -7662,7 +7662,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
     {
         LOG((LF_CORPROF,
              LL_ERROR,
-             "**PROF: ERROR: Returning CORPROF_E_UNSUPPORTED_CALL_SEQUENCE due to illegal asynchronous profiler call\n"));
+             "**PROF: ERROR: Returning CORPROF_E_UNSUPPORTED_CALL_SEQUENCE due to illegal gc-triggers profiler call inside a no-trigger contract\n"));
         return CORPROF_E_UNSUPPORTED_CALL_SEQUENCE;
     }
 
