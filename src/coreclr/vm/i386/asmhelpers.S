@@ -737,6 +737,9 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     jmp         eax // continue on into the method
 NESTED_END ResolveWorkerAsmStub, _TEXT
 
+// ==========================================================================
+// void SinglecastDelegateInvokeStub();
+//
 LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
 
     test        ecx, ecx
