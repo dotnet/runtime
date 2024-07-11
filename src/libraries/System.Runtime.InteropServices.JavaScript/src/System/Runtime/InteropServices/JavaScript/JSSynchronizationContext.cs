@@ -294,9 +294,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 // otherwise, we could schedule another round
                 AwaitNewData();
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Environment.FailFast($"JSSynchronizationContext.Pump: Unexpected failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
+                Environment.FailFast($"JSSynchronizationContext.Pump failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {e.StackTrace}");
             }
         }
 

@@ -277,7 +277,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast($"InstallMainSynchronizationContext: Unexpected failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
+                arg_exc.ToJS(ex);
             }
         }
 
