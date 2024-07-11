@@ -1528,6 +1528,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     bool tgtPrefOp1        = false;
     bool tgtPrefOp2        = false;
+    bool tgtPrefHWIntrinsicOfOp2   = false;
     bool delayFreeMultiple = false;
     if (intrin.op1 != nullptr)
     {
@@ -1634,6 +1635,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         {
                             predMask = RBM_LOWMASK.GetPredicateRegSet();
                         }
+
+                        // Special-case
+                        if (intrinEmb.id == NI_Sve_CreateBreakPropagateMask)
+                        {
+                            assert(embOp2Node->isRMWHWIntrinsic(compiler));
+                            assert(!tgtPrefOp1);
+                            assert(!tgtPrefOp2);
+                            assert(!tgtPrefHWIntrinsicOfOp2);
+                            tgtPrefHWIntrinsicOfOp2 = true;
+                        }
                     }
                 }
                 else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
@@ -1641,8 +1652,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                if (tgtPrefOp2)
+                if (tgtPrefHWIntrinsicOfOp2)
                 {
+                    assert(!tgtPrefOp1);
+                    assert(!tgtPrefOp2);
+                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2->AsHWIntrinsic()->Op(2), predMask);
+                }
+                else if (tgtPrefOp2)
+                {
+                    assert(!tgtPrefOp1);
                     srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2, predMask);
                 }
                 else
@@ -1935,7 +1953,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             switch (intrinEmb.id)
             {
+                // Special-case
                 case NI_Sve_CreateBreakPropagateMask:
+                    assert(tgtPrefHWIntrinsicOfOp2);
                     tgtPrefUse = BuildUse(embOp2Node->Op(2));
                     srcCount += 1;
                     srcCount += BuildDelayFreeUses(embOp2Node->Op(1), embOp2Node->Op(2));
