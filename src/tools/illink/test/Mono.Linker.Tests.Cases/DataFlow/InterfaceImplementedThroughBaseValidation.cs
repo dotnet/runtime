@@ -27,6 +27,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			GenericVirtualMethod.Test ();
 			GenericVirtualMethodWithDIM.Test ();
+			GenericVirtualMethodWithStaticDIM.Test ();
 
 			CalledThroughConstraint.Test ();
 			CalledThroughConstraintWithDIM.Test ();
@@ -218,19 +219,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			struct Struct : Interface {
-				[ExpectedWarning ("IL2046", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
-				// NativeAot produces one warning for each call to NoteOverridingMethod.
-				// This is done on each callsite while compiling generic code with constraints.
-				[ExpectedWarning ("IL2046", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
-				[ExpectedWarning ("IL2046", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/97676")]
+				[ExpectedWarning ("IL2046")]
+				[ExpectedWarning ("IL2046", Tool.Analyzer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/104627")]
 				public void Method () {}
 			}
 
 			[ExpectedWarning ("IL2026")]
 			[ExpectedWarning ("IL2026")]
-			[ExpectedWarning ("IL2026")]
 			static void Call<T> (T t) where T : Interface {
-				t.Method ();
 				t.Method ();
 				t.Method ();
 			}
@@ -251,7 +247,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			interface InterfaceImpl : Interface {
 				[ExpectedWarning ("IL2046")]
-				[ExpectedWarning ("IL2046", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/104702")]
+				[ExpectedWarning ("IL2046", Tool.Analyzer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/104702")]
 				static void Interface.Method() {}
 			}
 
@@ -290,9 +286,32 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				i.Method<int> ();
 				i.Method<int> ();
 			}
-		} 
+		}
 
 		class GenericVirtualMethodWithDIM
+		{
+			interface Interface {
+				[RequiresUnreferencedCode (nameof (Method))]
+				void Method<T> ();
+			}
+
+			class Impl : Interface {
+				[ExpectedWarning ("IL2046")]
+				void Interface.Method<T> () {}
+			}
+
+			class Class : Impl {}
+
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL2026")]
+			public static void Test () {
+				Interface i = new Class ();
+				i.Method<int> ();
+				i.Method<int> ();
+			}
+		}
+
+		class GenericVirtualMethodWithStaticDIM
 		{
 			interface Interface {
 				[RequiresUnreferencedCode (nameof (Method))]
@@ -301,7 +320,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			interface Impl : Interface {
 				[ExpectedWarning ("IL2046")]
-				[ExpectedWarning ("IL2046", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/104702")]
+				[ExpectedWarning ("IL2046", Tool.Analyzer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/104702")]
 				static void Interface.Method<T> () {}
 			}
 
