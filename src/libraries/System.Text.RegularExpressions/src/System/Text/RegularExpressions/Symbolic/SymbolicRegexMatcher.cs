@@ -1300,7 +1300,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return true;
                 }
 
-                if (matcher.TryCreateNewTransition(matcher.GetState(dfaStateId), mintermId, dfaOffset, checkThreshold: true, out MatchingState<TSet>? nextState))
+                if (matcher.TryCreateNewTransition(matcher.GetState(dfaStateId), mintermId, dfaOffset, checkThreshold: true, timeoutOccursAt: 0, out MatchingState<TSet>? nextState))
                 {
                     // We were able to create a new DFA transition to some state. Move to it and
                     // return that we're still operating as a DFA and can keep going.
@@ -1313,8 +1313,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             /// <summary>Transition function that only considers DFA state id</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal static bool TryTakeDFATransition(SymbolicRegexMatcher<TSet> matcher, ref int state,
-                int mintermId, long timeoutOccursAt)
+            internal static bool TryTakeDFATransition(SymbolicRegexMatcher<TSet> matcher, ref int state, int mintermId, long timeoutOccursAt)
             {
                 Debug.Assert(state > 0, $"Expected {nameof(state)} {state} > 0");
 
@@ -1330,9 +1329,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return true;
                 }
 
-                if (matcher.TryCreateNewTransition(matcher.GetState(state), mintermId,
-                    matcher.DeltaOffset(state, mintermId),
-                    checkThreshold: true, out MatchingState<TSet>? nextState, timeoutOccursAt))
+                if (matcher.TryCreateNewTransition(matcher.GetState(state), mintermId, matcher.DeltaOffset(state, mintermId), checkThreshold: true, timeoutOccursAt, out MatchingState<TSet>? nextState))
                 {
                     // We were able to create a new DFA transition to some state. Move to it and
                     // return that we're still operating as a DFA and can keep going.
