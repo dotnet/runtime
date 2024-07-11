@@ -1972,7 +1972,7 @@ public:
                       unsigned*             pSize     = nullptr);
 
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
-    GenTreeLclVar* IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr, target_ssize_t* offset);
+    GenTreeLclVar*       IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr);
 
     unsigned IsLclVarUpdateTree(GenTree** otherTree, genTreeOps* updateOper);
 

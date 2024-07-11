@@ -17974,14 +17974,11 @@ GenTreeLclVarCommon* GenTree::IsImplicitByrefParameterValuePreMorph(Compiler* co
 //    compiler - compiler instance
 //    addr     - [out] tree representing the address computation on top of the implicit byref.
 //               Will be the same as the return value if the whole implicit byref is used, for example.
-//    offset   - [out] Offset that "addr" is adding on top of the returned local.
 //
 // Return Value:
 //    Node for the local, or nullptr.
 //
-GenTreeLclVar* GenTree::IsImplicitByrefParameterValuePostMorph(Compiler*       compiler,
-                                                               GenTree**       addr,
-                                                               target_ssize_t* offset)
+GenTreeLclVar* GenTree::IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr)
 {
 #if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) // TODO-LOONGARCH64-CQ: enable this.
 
@@ -17990,10 +17987,13 @@ GenTreeLclVar* GenTree::IsImplicitByrefParameterValuePostMorph(Compiler*       c
         return nullptr;
     }
 
-    *addr = AsIndir()->Addr();
-
+    *addr              = AsIndir()->Addr();
     GenTree* innerAddr = *addr;
-    compiler->gtPeelOffsets(&innerAddr, offset);
+
+    while (innerAddr->OperIs(GT_ADD) && innerAddr->gtGetOp2()->IsCnsIntOrI())
+    {
+        innerAddr = innerAddr->gtGetOp1();
+    }
 
     if (innerAddr->OperIs(GT_LCL_VAR))
     {

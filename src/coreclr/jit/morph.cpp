@@ -3157,15 +3157,13 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
     {
         GenTree*             implicitByRefLclAddr;
-        target_ssize_t       implicitByRefLclOffs;
         GenTreeLclVarCommon* implicitByRefLcl =
-            argx->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr, &implicitByRefLclOffs);
+            argx->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr);
 
         GenTreeLclVarCommon* lcl = implicitByRefLcl;
         if ((lcl == nullptr) && argx->OperIsLocal())
         {
-            lcl                  = argx->AsLclVarCommon();
-            implicitByRefLclOffs = lcl->GetLclOffs();
+            lcl = argx->AsLclVarCommon();
         }
 
         if (lcl != nullptr)
@@ -3191,28 +3189,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             {
                 omitCopy = (varDsc->lvIsLastUseCopyOmissionCandidate || (implicitByRefLcl != nullptr)) &&
                            !varDsc->lvPromoted && !varDsc->lvIsStructField && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
-            }
-
-            // Disallow the argument from potentially aliasing the return
-            // buffer.
-            if (omitCopy)
-            {
-                GenTreeLclVarCommon* retBuffer = gtCallGetDefinedRetBufLclAddr(call);
-                if ((retBuffer != nullptr) && (retBuffer->GetLclNum() == varNum))
-                {
-                    unsigned       retBufferSize  = typGetObjLayout(call->gtRetClsHnd)->GetSize();
-                    target_ssize_t retBufferStart = retBuffer->GetLclOffs();
-                    target_ssize_t retBufferEnd   = retBufferStart + static_cast<target_ssize_t>(retBufferSize);
-
-                    unsigned       argSize        = arg->GetSignatureType() == TYP_STRUCT
-                                                        ? typGetObjLayout(arg->GetSignatureClassHandle())->GetSize()
-                                                        : genTypeSize(arg->GetSignatureType());
-                    target_ssize_t implByrefStart = implicitByRefLclOffs;
-                    target_ssize_t implByrefEnd   = implByrefStart + static_cast<target_ssize_t>(argSize);
-
-                    bool disjoint = (retBufferEnd <= implByrefStart) || (implByrefEnd <= retBufferStart);
-                    omitCopy      = disjoint;
-                }
             }
 
             if (omitCopy)
@@ -3242,7 +3218,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 #endif
 
     JITDUMP("making an outgoing copy for struct arg\n");
-    assert(!call->IsTailCall() || !arg->AbiInfo.PassedByRef);
 
     CORINFO_CLASS_HANDLE copyBlkClass = arg->GetSignatureClassHandle();
     unsigned             tmp          = 0;
