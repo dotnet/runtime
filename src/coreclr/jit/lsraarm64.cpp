@@ -1528,7 +1528,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     bool tgtPrefOp1        = false;
     bool tgtPrefOp2        = false;
-    bool tgtPrefHWIntrinsicOfOp2   = false;
+    bool tgtPrefEmbOp2OfOp2   = false;
     bool delayFreeMultiple = false;
     if (intrin.op1 != nullptr)
     {
@@ -1642,8 +1642,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                             assert(embOp2Node->isRMWHWIntrinsic(compiler));
                             assert(!tgtPrefOp1);
                             assert(!tgtPrefOp2);
-                            assert(!tgtPrefHWIntrinsicOfOp2);
-                            tgtPrefHWIntrinsicOfOp2 = true;
+                            assert(!tgtPrefEmbOp2OfOp2);
+                            tgtPrefEmbOp2OfOp2 = true;
                         }
                     }
                 }
@@ -1652,7 +1652,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                if (tgtPrefHWIntrinsicOfOp2)
+                if (tgtPrefEmbOp2OfOp2)
                 {
                     assert(!tgtPrefOp1);
                     assert(!tgtPrefOp2);
@@ -1955,7 +1955,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 // Special-case
                 case NI_Sve_CreateBreakPropagateMask:
-                    assert(tgtPrefHWIntrinsicOfOp2);
+                    assert(tgtPrefEmbOp2OfOp2);
                     tgtPrefUse = BuildUse(embOp2Node->Op(2));
                     srcCount += 1;
                     srcCount += BuildDelayFreeUses(embOp2Node->Op(1), embOp2Node->Op(2));
