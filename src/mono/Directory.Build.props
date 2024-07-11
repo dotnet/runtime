@@ -32,11 +32,11 @@
     <EMSDK_PATH Condition="Exists('$(ProvisionEmscriptenDir)') and '$(EMSDK_PATH)' == ''">$(ProvisionEmscriptenDir.Replace('\', '/'))</EMSDK_PATH>
   </PropertyGroup>
 
-  <!-- Directory to provision and use WASI sdk if WASI_SDK22_PATH env variable is not set -->
+  <!-- Directory to provision and use WASI sdk if WASI_SDK_PATH env variable is not set -->
   <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
-    <WASI_SDK22_PATH Condition="'$(WASI_SDK22_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi', 'wasi-sdk'))</WASI_SDK22_PATH>
-    <WASI_SDK22_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK22_PATH)').Replace('\', '/'))</WASI_SDK22_PATH>
-    <ShouldProvisionWasiSdk Condition="!Exists($(WASI_SDK22_PATH))">true</ShouldProvisionWasiSdk>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
+    <ShouldProvisionWasiSdk Condition="!Exists($(WASI_SDK_PATH))">true</ShouldProvisionWasiSdk>
   </PropertyGroup>
 
   <PropertyGroup>

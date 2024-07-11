@@ -30,8 +30,8 @@
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' == ''">
     <ArtifactsBinDir>$(RuntimeSrcDir)\artifacts\bin\</ArtifactsBinDir>
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$(RuntimeSrcDir)\src\mono\browser\emsdk\</EMSDK_PATH>
-    <WASI_SDK22_PATH Condition="'$(WASI_SDK22_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(RuntimeSrcDir), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK22_PATH>
-    <WASI_SDK22_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK22_PATH)').Replace('\', '/'))</WASI_SDK22_PATH>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(RuntimeSrcDir), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
 
     <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.$(RuntimeIdentifier)', $(RuntimeConfig)))</MicrosoftNetCoreAppRuntimePackLocationToUse>
 

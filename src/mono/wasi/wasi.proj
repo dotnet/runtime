@@ -19,18 +19,18 @@
     <_WasiCompileRspPath>$(NativeBinDir)src\wasi-compile.rsp</_WasiCompileRspPath>
     <_WasiLinkRspPath>$(NativeBinDir)src\wasi-link.rsp</_WasiLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
-    <WASI_SDK22_PATH Condition="'$(WASI_SDK22_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi-sdk'))</WASI_SDK22_PATH>
-    <WASI_SDK22_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK22_PATH)').Replace('\', '/'))</WASI_SDK22_PATH>
-    <WasiClang>$(WASI_SDK22_PATH)bin/clang</WasiClang>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
+    <WasiClang>$(WASI_SDK_PATH)bin/clang</WasiClang>
     <WasiClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiClang).exe</WasiClang>
-    <WasiLLVMAr>$(WASI_SDK22_PATH)bin/llvm-ar</WasiLLVMAr>
+    <WasiLLVMAr>$(WASI_SDK_PATH)bin/llvm-ar</WasiLLVMAr>
     <WasiLLVMAr Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiLLVMAr).exe</WasiLLVMAr>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'wasi'" Text="Expected TargetOS==wasi, got '$(TargetOS)'"/>
-    <Error Condition="'$(WASI_SDK22_PATH)' == ''" Text="The WASI_SDK22_PATH environment variable should be set pointing to the WASI SDK root dir."/>
+    <Error Condition="'$(WASI_SDK_PATH)' == ''" Text="The WASI_SDK_PATH environment variable should be set pointing to the WASI SDK root dir."/>
   </Target>
 
   <ItemGroup>
@@ -215,10 +215,10 @@
       <CMakeBuildRuntimeConfigureCmd>cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">cmake -G Ninja $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
 
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) --no-warn-unused-cli -DCMAKE_TOOLCHAIN_FILE=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK22_PATH)', 'share/cmake/wasi-sdk.cmake'))&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DWASI_SDK_PREFIX=$(WASI_SDK22_PATH)</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_SYSROOT=$(WASI_SDK22_PATH)share/wasi-sysroot</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK22_PATH)share/wasi-sysroot"</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) --no-warn-unused-cli -DCMAKE_TOOLCHAIN_FILE=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)', 'share/cmake/wasi-sdk.cmake'))&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DWASI_SDK_PREFIX=$(WASI_SDK_PATH)</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_SYSROOT=$(WASI_SDK_PATH)share/wasi-sysroot</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_PATH)share/wasi-sysroot"</CMakeBuildRuntimeConfigureCmd>
 
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_WASICC_FLAGS=&quot;$(CMakeConfigurationWasiFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_LINK_FLAGS=&quot;$(CMakeConfigurationLinkFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
