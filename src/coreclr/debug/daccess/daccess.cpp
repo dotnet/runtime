@@ -5512,7 +5512,6 @@ ClrDataAccess::Initialize(void)
                     // Get SOS interfaces from the cDAC if available.
                     IUnknown* unk = m_cdac.SosInterface();
                     (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
-                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface2), (void**)&m_cdacSos2);
                     (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
                 }
             }
