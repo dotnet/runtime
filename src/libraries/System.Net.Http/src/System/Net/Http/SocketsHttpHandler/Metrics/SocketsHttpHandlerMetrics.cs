@@ -16,18 +16,12 @@ namespace System.Net.Http.Metrics
         public readonly Histogram<double> ConnectionDuration = meter.CreateHistogram<double>(
             name: "http.client.connection.duration",
             unit: "s",
-            description: "The duration of successfully established outbound HTTP connections.",
-            advice: new InstrumentAdvice<double>()
-            {
-                // These values are not based on a standard and may change in the future.
-                HistogramBucketBoundaries = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 30, 60, 120, 300]
-            });
+            description: "The duration of successfully established outbound HTTP connections.");
 
         public readonly Histogram<double> RequestsQueueDuration = meter.CreateHistogram<double>(
             name: "http.client.request.time_in_queue",
             unit: "s",
-            description: "The amount of time requests spent on a queue waiting for an available connection.",
-            advice: DiagnosticsHelper.ShortHistogramAdvice);
+            description: "The amount of time requests spent on a queue waiting for an available connection.");
 
         public void RequestLeftQueue(HttpRequestMessage request, HttpConnectionPool pool, TimeSpan duration, int versionMajor)
         {

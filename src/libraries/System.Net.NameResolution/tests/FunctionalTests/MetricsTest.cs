@@ -42,22 +42,6 @@ namespace System.Net.NameResolution.Tests
         }
 
         [Fact]
-        public static async Task DurationHistogram_HasBucketSizeHints()
-        {
-            await RemoteExecutor.Invoke(async () =>
-            {
-                const string ValidHostName = "localhost";
-
-                using var recorder = new InstrumentRecorder<double>(DnsLookupDuration);
-                recorder.VerifyHistogramBucketBoundaries = b => Assert.True(b.Count > 2);
-
-                await Dns.GetHostEntryAsync(ValidHostName);
-
-                Assert.Equal(1, recorder.MeasurementCount);
-            }).DisposeAsync();
-        }
-
-        [Fact]
         public static async Task ResolveInvalidHostName_MetricsRecorded()
         {
             const string InvalidHostName = $"invalid...example.com...{nameof(ResolveInvalidHostName_MetricsRecorded)}";
@@ -102,9 +86,6 @@ namespace System.Net.NameResolution.Tests
             private readonly MeterListener _meterListener = new();
             private readonly ConcurrentQueue<Measurement<T>> _values = new();
 
-            public Action<IReadOnlyList<T>> VerifyHistogramBucketBoundaries;
-            public int MeasurementCount => _values.Count;
-
             public InstrumentRecorder(string instrumentName)
             {
                 _meterListener.InstrumentPublished = (instrument, listener) =>
@@ -118,17 +99,7 @@ namespace System.Net.NameResolution.Tests
                 _meterListener.Start();
             }
 
-            private void OnMeasurementRecorded(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state)
-            {
-                _values.Enqueue(new Measurement<T>(measurement, tags));
-                if (VerifyHistogramBucketBoundaries is not null)
-                {
-                    Histogram<T> histogram = (Histogram<T>)instrument;
-                    IReadOnlyList<T> boundaries = histogram.Advice.HistogramBucketBoundaries;
-                    Assert.NotNull(boundaries);
-                    VerifyHistogramBucketBoundaries(boundaries);
-                }
-            }
+            private void OnMeasurementRecorded(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state) => _values.Enqueue(new Measurement<T>(measurement, tags));
             public IReadOnlyList<Measurement<T>> GetMeasurements() => _values.ToArray();
             public void Dispose() => _meterListener.Dispose();
         }
