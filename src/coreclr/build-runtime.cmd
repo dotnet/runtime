@@ -361,10 +361,18 @@ if %__BuildNative% EQU 1 (
     echo %__MsgPrefix%Commencing build of native components for %__TargetOS%.%__TargetArch%.%__BuildType%
 
     REM Set the environment for the native build
-    set __VCTargetArch=amd64
-    if /i "%__HostArch%" == "x86" ( set __VCTargetArch=x86 )
-    if /i "%__HostArch%" == "arm64" (
-        if /i "%__ProcessorArch%" == "ARM64" (set __VCTargetArch=arm64) else (set __VCTargetArch=x86_arm64)
+    if /i "%__ProcessorArch%" == "AMD64" (
+        set __VCTargetArch=amd64
+        if /i "%__TargetArch%" == "x86" ( set __VCTargetArch=amd64_x86 )
+        if /i "%__TargetArch%" == "arm64" ( set __VCTargetArch=amd64_arm64 )
+    ) else if /i "%__ProcessorArch%" == "ARM64" (
+        set __VCTargetArch=arm64
+        if /i "%__TargetArch%" == "x64" ( set __VCTargetArch=arm64_amd64 )
+        if /i "%__TargetArch%" == "x86" ( set __VCTargetArch=arm64_x86 )
+    ) else (
+        set __VCTargetArch=x86
+        if /i "%__TargetArch%" == "x64" ( set __VCTargetArch=x86_amd64 )
+        if /i "%__TargetArch%" == "arm64" ( set __VCTargetArch=x86_arm64 )
     )
 
     if NOT DEFINED SkipVCEnvInit (
