@@ -591,8 +591,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (UseVersion == HttpVersion30 && !useTls) return;
 
-            await RunTest(UseVersion.ToString(), TestAsync.ToString(), useTls.ToString());
-            //await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString(), useTls.ToString()).DisposeAsync();
+            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString(), useTls.ToString()).DisposeAsync();
             static async Task RunTest(string useVersion, string testAsync, string useTlsString)
             {
                 bool useTls = bool.Parse(useTlsString);
@@ -692,13 +691,13 @@ namespace System.Net.Http.Functional.Tests
                         // Verify display names and attributes:
                         Assert.Equal(ActivityKind.Internal, wait1.Kind);
                         Assert.Equal(ActivityKind.Internal, conn.Kind);
-                        Assert.Equal($"HTTP wait_for_connection localhost:{uri.Port}", wait1.DisplayName);
-                        Assert.Equal($"HTTP connection_setup localhost:{uri.Port}", conn.DisplayName);
+                        Assert.Equal($"HTTP wait_for_connection {uri.Host}:{uri.Port}", wait1.DisplayName);
+                        Assert.Equal($"HTTP connection_setup {uri.Host}:{uri.Port}", conn.DisplayName);
                         ActivityAssert.HasTag(conn, "network.peer.address",
                             (string a) => a == IPAddress.Loopback.ToString() ||
                             a == IPAddress.Loopback.MapToIPv6().ToString() ||
                             a == IPAddress.IPv6Loopback.ToString());
-                        ActivityAssert.HasTag(conn, "server.address", "localhost");
+                        ActivityAssert.HasTag(conn, "server.address", uri.Host);
                         ActivityAssert.HasTag(conn, "server.port", uri.Port);
                         ActivityAssert.HasTag(conn, "url.scheme", useTls ? "https" : "http");
 
@@ -739,8 +738,9 @@ namespace System.Net.Http.Functional.Tests
             await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString(), failureType).DisposeAsync();
             static async Task RunTest(string useVersion, string testAsync, string failureType)
             {
-                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
-                
+                Version version = Version.Parse(useVersion);
+
+                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);   
                 using HttpClient client = new HttpClient(handler);
 
                 Activity parentActivity = new Activity("parent").Start();
@@ -757,20 +757,23 @@ namespace System.Net.Http.Functional.Tests
                 using ActivityRecorder socketRecorder = new("Experimental.System.Net.Sockets", "Experimental.System.Net.Sockets.Connect") { VerifyParent = false };
 
                 Uri uri;
-                using Socket? notListening = failureType is "socket" ? new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) : null;
+                using Socket? notListening = failureType is "socket"
+                    ? (version == HttpVersion30) ? new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) : new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                    : null;
+
                 if (failureType is "dns")
                 {
-                    uri = new Uri("http://does.not.exist.sorry");
+                    uri = new Uri("https://does.not.exist.sorry");
                 }
                 else
                 {
                     Debug.Assert(notListening is not null);
                     notListening.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                     IPEndPoint ep = (IPEndPoint)notListening.LocalEndPoint;
-                    uri = new Uri($"http://{ep.Address}:{ep.Port}");
+                    uri = new Uri($"https://{ep.Address}:{ep.Port}");
                 }
 
-                using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true);
+                using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, version, exactVersion: true);
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(bool.Parse(testAsync), request));
 
                 Activity req = requestRecorder.VerifyActivityRecordedOnce();
@@ -782,27 +785,38 @@ namespace System.Net.Http.Functional.Tests
 
                 if (failureType == "dns")
                 {
-                    Activity dns = dnsRecorder.VerifyActivityRecordedOnce();
-                    Assert.Same(conn, dns.Parent);
-                    Assert.Equal(ActivityStatusCode.Error, dns.Status);
                     Assert.Equal(ActivityStatusCode.Error, conn.Status);
                     Assert.Equal(ActivityStatusCode.Error, wait.Status);
-                    ActivityAssert.HasTag(dns, "error.type", (string t) => t is "host_not_found" or "timed_out");
+
                     ActivityAssert.HasTag(conn, "error.type", "name_resolution_error");
                     ActivityAssert.HasTag(wait, "error.type", "name_resolution_error");
+
+                    // Whether System.Net.Quic uses System.Net.Dns is an implementation detail.
+                    if (version != HttpVersion30)
+                    {
+                        Activity dns = dnsRecorder.VerifyActivityRecordedOnce();
+                        Assert.Same(conn, dns.Parent);
+                        Assert.Equal(ActivityStatusCode.Error, dns.Status);
+                        ActivityAssert.HasTag(dns, "error.type", (string t) => t is "host_not_found" or "timed_out");
+                    }
                 }
                 else
                 {
                     Debug.Assert(failureType is "socket");
-                    Activity sock = socketRecorder.VerifyActivityRecordedOnce();
-                    Assert.Same(conn, sock.Parent);
-
-                    Assert.Equal(ActivityStatusCode.Error, sock.Status);
+                    
                     Assert.Equal(ActivityStatusCode.Error, conn.Status);
                     Assert.Equal(ActivityStatusCode.Error, wait.Status);
-                    ActivityAssert.HasTag(sock, "error.type", (string t) => t is "connection_refused" or "timed_out");
+                    
                     ActivityAssert.HasTag(conn, "error.type", "connection_error");
                     ActivityAssert.HasTag(wait, "error.type", "connection_error");
+
+                    if (version != HttpVersion30)
+                    {
+                        Activity sock = socketRecorder.VerifyActivityRecordedOnce();
+                        Assert.Same(conn, sock.Parent);
+                        Assert.Equal(ActivityStatusCode.Error, sock.Status);
+                        ActivityAssert.HasTag(sock, "error.type", (string t) => t is "connection_refused" or "timed_out");
+                    }
                 }
             }
         }

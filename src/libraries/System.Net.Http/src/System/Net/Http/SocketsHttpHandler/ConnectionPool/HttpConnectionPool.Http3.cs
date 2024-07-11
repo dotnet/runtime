@@ -75,7 +75,7 @@ namespace System.Net.Http
             // Loop in case we get a 421 and need to send the request to a different authority.
             while (true)
             {
-                if (!TryGetHttp3Authority(request, out _, out Exception? reasonException))
+                if (!TryGetHttp3Authority(request, out HttpAuthority? authority, out Exception? reasonException))
                 {
                     if (reasonException is null)
                     {
@@ -88,7 +88,16 @@ namespace System.Net.Http
 
                 if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out HttpConnectionWaiter<Http3Connection?>? http3ConnectionWaiter))
                 {
-                    connection = await http3ConnectionWaiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                    using Activity? waitForConnectionActivity = ConnectionSetupDiagnostics.StartWaitForConnectionActivity(authority);
+                    try
+                    {
+                        connection = await http3ConnectionWaiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        ConnectionSetupDiagnostics.ReportError(waitForConnectionActivity, ex);
+                        throw;
+                    }
                 }
 
                 // Request cannot be sent over H/3 connection, try downgrade or report failure.
@@ -97,6 +106,9 @@ namespace System.Net.Http
                 {
                     return null;
                 }
+
+                Activity? connectionSetupActivity = connection.ConnectionSetupActivity;
+                if (connectionSetupActivity is not null) ConnectionSetupDiagnostics.AddConnectionLinkToRequestActivity(connectionSetupActivity);
 
                 HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, cancellationToken).ConfigureAwait(false);
 
@@ -245,20 +257,22 @@ namespace System.Net.Http
 
             CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
             waiter.ConnectionCancellationTokenSource = cts;
+            Activity? connectionSetupActivity = null;
             try
             {
                 if (TryGetHttp3Authority(queueItem.Request, out authority, out Exception? reasonException))
                 {
+                    connectionSetupActivity = ConnectionSetupDiagnostics.StartConnectionSetupActivity(isSecure: true, authority);
                     // If the authority was sent as an option through alt-svc then include alt-used header.
                     connection = new Http3Connection(this, authority, includeAltUsedHeader: _http3Authority == authority);
-
                     QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(queueItem.Request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, connection.StreamCapacityCallback, cts.Token).ConfigureAwait(false);
                     if (quicConnection.NegotiatedApplicationProtocol != SslApplicationProtocol.Http3)
                     {
                         await quicConnection.DisposeAsync().ConfigureAwait(false);
                         throw new HttpRequestException(HttpRequestError.ConnectionError, "QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnConnectionFailure);
                     }
-                    connection.InitQuicConnection(quicConnection);
+                    if (connectionSetupActivity is not null) ConnectionSetupDiagnostics.StopConnectionSetupActivity(connectionSetupActivity, null, quicConnection.RemoteEndPoint);
+                    connection.InitQuicConnection(quicConnection, connectionSetupActivity);
                 }
                 else if (reasonException is not null)
                 {
@@ -270,6 +284,9 @@ namespace System.Net.Http
                 connectionException = e is OperationCanceledException oce && oce.CancellationToken == cts.Token && !waiter.CancelledByOriginatingRequestCompletion ?
                     CreateConnectTimeoutException(oce) :
                     e;
+
+                Debug.Assert(connectionSetupActivity?.IsStopped is not true);
+                if (connectionSetupActivity is not null) ConnectionSetupDiagnostics.StopConnectionSetupActivity(connectionSetupActivity, e, null);
 
                 // If the connection hasn't been initialized with QuicConnection, get rid of it.
                 connection?.Dispose();

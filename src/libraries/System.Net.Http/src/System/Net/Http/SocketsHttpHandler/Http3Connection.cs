@@ -89,9 +89,9 @@ namespace System.Net.Http
             }
         }
 
-        public void InitQuicConnection(QuicConnection connection)
+        public void InitQuicConnection(QuicConnection connection, Activity? connectionSetupActivity)
         {
-            MarkConnectionAsEstablished(connectionSetupActivity: null, remoteEndPoint: connection.RemoteEndPoint);
+            MarkConnectionAsEstablished(connectionSetupActivity: connectionSetupActivity, remoteEndPoint: connection.RemoteEndPoint);
 
             _connection = connection;
 
