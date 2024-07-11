@@ -233,10 +233,6 @@ public class ComputeWasmPublishAssets : Task
 
                     ApplyPublishProperties(newDotNetJs);
 
-                    string relativePath = $"_framework/{baseName}.js";
-
-                    newDotNetJs.SetMetadata("RelativePath", relativePath);
-
                     updateMap.Add(asset.ItemSpec, newDotNetJs);
                     newAssets.Add(newDotNetJs);
                     Log.LogMessage(MessageImportance.Low, "Replacing asset '{0}' with AoT version '{1}'", asset.ItemSpec, newDotNetJs.ItemSpec);
