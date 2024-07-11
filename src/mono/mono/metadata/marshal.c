@@ -4231,7 +4231,7 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 			}
 		}
 
-		csig = mono_metadata_signature_dup_new_params (NULL, NULL, get_method_image (method), csig, new_param_count, (MonoType**)new_params->data);
+		csig = mono_metadata_signature_dup_new_params (NULL, m_method_get_mem_manager (method), csig, new_param_count, (MonoType**)new_params->data);
 		g_array_free (new_params, TRUE);
 	}
 

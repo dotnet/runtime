@@ -2565,7 +2565,6 @@ mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
  * mono_metadata_signature_dup_new_params:
  * @param mp The mempool to allocate the new signature from.
  * @param mem_manager The memory manager to allocate the new signature from.
- * @param image The image to allocate the new signature from.
  * @param sig The original method signature.
  * @param num_params The number parameters in the new signature.
  * @param new_params An array of MonoType pointers representing the new parameters.
@@ -2576,13 +2575,13 @@ mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
  * @return the new \c MonoMethodSignature structure.
  */
 MonoMethodSignature*
-mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMemoryManager *mem_manager, MonoImage *image, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params)
+mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMemoryManager *mem_manager, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params)
 {
 	size_t new_sig_size = MONO_SIZEOF_METHOD_SIGNATURE + num_params * sizeof (MonoType*);
 	if (sig->ret)
 		new_sig_size += mono_sizeof_type (sig->ret);
 
-	MonoMethodSignature *res = mono_metadata_signature_allocate_internal (image, mp, mem_manager, new_sig_size);
+	MonoMethodSignature *res = mono_metadata_signature_allocate_internal (NULL, mp, mem_manager, new_sig_size);
 	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
 	res->param_count = GUINT32_TO_UINT16 (num_params);
 
