@@ -9640,12 +9640,10 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
         carg->m_earlyNode       = arg.m_earlyNode != nullptr ? copyNode(arg.m_earlyNode) : nullptr;
         carg->m_lateNode        = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
         carg->m_signatureClsHnd = arg.m_signatureClsHnd;
-        carg->m_tmpNum          = arg.m_tmpNum;
         carg->m_signatureType   = arg.m_signatureType;
         carg->m_wellKnownArg    = arg.m_wellKnownArg;
         carg->m_needTmp         = arg.m_needTmp;
         carg->m_needPlace       = arg.m_needPlace;
-        carg->m_isTmp           = arg.m_isTmp;
         carg->m_processed       = arg.m_processed;
         carg->AbiInfo           = arg.AbiInfo;
         carg->NewAbiInfo        = arg.NewAbiInfo;
@@ -30708,7 +30706,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 case NI_Vector256_ToVector512:
                 {
-                    assert(retType == TYP_SIMD32);
+                    assert(retType == TYP_SIMD64);
                     assert(cnsNode->gtType == TYP_SIMD32);
                     cnsNode->AsVecCon()->gtSimd64Val.v256[1] = {};
 

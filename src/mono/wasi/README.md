@@ -31,10 +31,10 @@ The workload for the time being doesn't include Wasi SDK, which is responsible f
 If you don't need to modify runtime configuration, you can omit this step. In case you get:
 
 ```
-error : Could not find wasi-sdk. Either set $(WASI_SDK22_PATH), or use workloads to get the sdk. SDK is required for building native files.
+error : Could not find wasi-sdk. Either set $(WASI_SDK_PATH), or use workloads to get the sdk. SDK is required for building native files.
 ```
 
-you will need to separately download a WASI SDK from https://github.com/WebAssembly/wasi-sdk and point an environment variable `WASI_SDK22_PATH` to a location where you extract it.
+you will need to separately download a WASI SDK from https://github.com/WebAssembly/wasi-sdk and point an environment variable `WASI_SDK_PATH` to a location where you extract it.
 
 ### Optional build flags
 
