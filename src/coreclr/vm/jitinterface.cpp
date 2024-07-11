@@ -7832,17 +7832,20 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
 
     JIT_TO_EE_TRANSITION();
 
-    TypeHandle constructedHandle(type);
+    TypeHandle th(type);
 
-    _ASSERTE(constructedHandle.HasInstantiation());
+    if (th.IsTypicalTypeDefinition())
+    {
+        th = ClassLoader::LoadTypeDefThrowing(
+            th.GetModule(),
+            th.GetMethodTable()->GetCl(),
+            ClassLoader::ThrowIfNotFound,
+            ClassLoader::PermitUninstDefOrRef);
 
-    TypeHandle definitionHandle = ClassLoader::LoadTypeDefThrowing(
-        constructedHandle.GetModule(),
-        constructedHandle.GetMethodTable()->GetCl(),
-        ClassLoader::ThrowIfNotFound,
-        ClassLoader::PermitUninstDefOrRef);
+        _ASSERTE(th.IsTypicalTypeDefinition());
+    }
 
-    result = CORINFO_CLASS_HANDLE(definitionHandle.AsPtr());
+    result = CORINFO_CLASS_HANDLE(th.AsPtr());
 
     EE_TO_JIT_TRANSITION();    
 
