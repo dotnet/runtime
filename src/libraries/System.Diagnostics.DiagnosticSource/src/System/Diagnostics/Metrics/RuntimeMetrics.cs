@@ -30,31 +30,31 @@ namespace System.Diagnostics.Metrics
                 // in its `OnMeasurementRecorded` callback.
                 if (t_handlingFirstChanceException) return;
                 t_handlingFirstChanceException = true;
-                s_exceptionCount.Add(1, new KeyValuePair<string, object?>("error.type", e.Exception.GetType().Name));
+                s_exceptions.Add(1, new KeyValuePair<string, object?>("error.type", e.Exception.GetType().Name));
                 t_handlingFirstChanceException = false;
             };
         }
 
-        private static readonly ObservableCounter<long> s_gcCollectionsCounter = s_meter.CreateObservableCounter(
+        private static readonly ObservableCounter<long> s_gcCollections = s_meter.CreateObservableCounter(
             "dotnet.gc.collections.count",
             GetGarbageCollectionCounts,
             unit: "{collection}",
             description: "Number of garbage collections that have occurred since the process has started.");
 
-        private static readonly ObservableUpDownCounter<long> s_gcObjectsSize = s_meter.CreateObservableUpDownCounter(
+        private static readonly ObservableUpDownCounter<long> s_processWorkingSet = s_meter.CreateObservableUpDownCounter(
             "dotnet.process.memory.working_set",
             () => Environment.WorkingSet,
             unit: "By",
             description: "The number of bytes of physical memory mapped to the process context.");
 
 #if NET
-        private static readonly ObservableCounter<long> s_gcMemoryTotalAllocated = s_meter.CreateObservableCounter(
+        private static readonly ObservableCounter<long> s_gcHeapTotalAllocated = s_meter.CreateObservableCounter(
             "dotnet.gc.heap.total_allocated",
             () => GC.GetTotalAllocatedBytes(),
             unit: "By",
             description: "The approximate number of bytes allocated on the managed GC heap since the process has started. The returned value does not include any native allocations.");
 
-        private static readonly ObservableUpDownCounter<long> s_gcMemoryCommited = s_meter.CreateObservableUpDownCounter(
+        private static readonly ObservableUpDownCounter<long> s_gcLastCollectionMemoryCommitted = s_meter.CreateObservableUpDownCounter(
             "dotnet.gc.last_collection.memory.committed_size",
             () =>
             {
@@ -67,13 +67,13 @@ namespace System.Diagnostics.Metrics
             unit: "By",
             description: "The amount of committed virtual memory in use by the .NET GC, as observed during the latest garbage collection.");
 
-        private static readonly ObservableUpDownCounter<long> s_gcHeapSize = s_meter.CreateObservableUpDownCounter(
+        private static readonly ObservableUpDownCounter<long> s_gcLastCollectionHeapSize = s_meter.CreateObservableUpDownCounter(
             "dotnet.gc.last_collection.heap.size",
             GetHeapSizes,
             unit: "By",
             description: "The managed GC heap size (including fragmentation), as observed during the latest garbage collection.");
 
-        private static readonly ObservableUpDownCounter<long> s_gcHeapFragmentation = s_meter.CreateObservableUpDownCounter(
+        private static readonly ObservableUpDownCounter<long> s_gcLastCollectionFragmentationSize = s_meter.CreateObservableUpDownCounter(
             "dotnet.gc.last_collection.heap.fragmentation.size",
             GetHeapFragmentation,
             unit: "By",
@@ -134,24 +134,24 @@ namespace System.Diagnostics.Metrics
             description: "The number of timer instances that are currently active. An active timer is registered to tick at some point in the future and has not yet been canceled.");
 #endif
 
-        private static readonly ObservableUpDownCounter<long> s_assemblyCount = s_meter.CreateObservableUpDownCounter(
+        private static readonly ObservableUpDownCounter<long> s_assembliesCount = s_meter.CreateObservableUpDownCounter(
             "dotnet.assemblies.count",
             () => (long)AppDomain.CurrentDomain.GetAssemblies().Length,
             unit: "{assembly}",
             description: "The number of .NET assemblies that are currently loaded.");
 
-        private static readonly Counter<long> s_exceptionCount = s_meter.CreateCounter<long>(
+        private static readonly Counter<long> s_exceptions = s_meter.CreateCounter<long>(
             "dotnet.exceptions",
             unit: "{exception}",
             description: "The number of exceptions that have been thrown in managed code.");
 
-        private static readonly ObservableUpDownCounter<long> s_cpuCount = s_meter.CreateObservableUpDownCounter(
+        private static readonly ObservableUpDownCounter<long> s_processCpuCount = s_meter.CreateObservableUpDownCounter(
             "dotnet.process.cpu.count",
             () => (long)Environment.ProcessorCount,
             unit: "{cpu}",
             description: "The number of processors available to the process.");
 
-        private static readonly ObservableCounter<double> s_cpuTime = s_meter.CreateObservableCounter(
+        private static readonly ObservableCounter<double> s_processCpuTime = s_meter.CreateObservableCounter(
             "dotnet.process.cpu.time",
             GetCpuTime,
             unit: "s",
@@ -159,13 +159,13 @@ namespace System.Diagnostics.Metrics
 
         public static bool IsEnabled()
         {
-            return s_gcCollectionsCounter.Enabled
-                || s_gcObjectsSize.Enabled
+            return s_gcCollections.Enabled
+                || s_processWorkingSet.Enabled
 #if NET
-                || s_gcMemoryTotalAllocated.Enabled
-                || s_gcMemoryCommited.Enabled
-                || s_gcHeapSize.Enabled
-                || s_gcHeapFragmentation.Enabled
+                || s_gcHeapTotalAllocated.Enabled
+                || s_gcLastCollectionMemoryCommitted.Enabled
+                || s_gcLastCollectionHeapSize.Enabled
+                || s_gcLastCollectionFragmentationSize.Enabled
                 || s_gcPauseTime.Enabled
                 || s_jitCompiledSize.Enabled
                 || s_jitCompiledMethodCount.Enabled
@@ -176,10 +176,10 @@ namespace System.Diagnostics.Metrics
                 || s_threadPoolCompletedWorkItems.Enabled
                 || s_threadPoolQueueLength.Enabled
 #endif
-                || s_assemblyCount.Enabled
-                || s_exceptionCount.Enabled
-                || s_cpuCount.Enabled
-                || s_cpuTime.Enabled;
+                || s_assembliesCount.Enabled
+                || s_exceptions.Enabled
+                || s_processCpuCount.Enabled
+                || s_processCpuTime.Enabled;
         }
 
         private static IEnumerable<Measurement<long>> GetGarbageCollectionCounts()
