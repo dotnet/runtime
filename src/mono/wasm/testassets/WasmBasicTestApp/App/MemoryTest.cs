@@ -12,12 +12,12 @@ public partial class MemoryTest
     internal static partial string JoinStringArray(string[] testArray);
 
     [JSExport]
-    internal static void Run()
+    internal static string Run()
     {
         // Allocate a 2GB space (20 int arrays of 100MB, 100MB = 4 * 1024 * 1024 * 25)
         const int arrayCnt = 20;
         int[][] arrayHolder = new int[arrayCnt][];
-        string info = "";
+        string errors = "";
         for (int i = 0; i < arrayCnt; i++)
         {
             try
@@ -26,7 +26,7 @@ public partial class MemoryTest
             }
             catch (Exception ex)
             {
-                info += $"Exception {ex} was thrown on i={i}";
+                errors += $"Exception {ex} was thrown on i={i}";
             }
         }
 
@@ -36,17 +36,14 @@ public partial class MemoryTest
 
         bool correct = AssertJoinCorrect(testArray, response);
         if (!correct)
-            info += $"expected response: {response}, testArray: {string.Join("", testArray)}";
+            errors += $"expected response: {response}, testArray: {string.Join("", testArray)}";
 
         // call a method many times to trigger tier-up optimization
         for (int i = 0; i < 10000; i++)
         {
             AssertJoinCorrect(testArray, response);
         }
-        if (!string.IsNullOrEmpty(info))
-        {
-            throw new Exception($"Something went wrong. info = {info}");
-        }
+        return errors;
     }
 
     private static bool AssertJoinCorrect(string[] testArray, string expected)
