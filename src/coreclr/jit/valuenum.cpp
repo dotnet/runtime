@@ -1645,11 +1645,11 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
         return true;
     }
 
-    if (funcAttr.m_func == VNF_Cast)
+    /*if (funcAttr.m_func == VNF_Cast)
     {
 		// any cast on top of non-null/0 is non-null?
         return IsKnownNonNull(funcAttr.m_args[0]);
-    }
+    }*/
 
     return false;
 }
