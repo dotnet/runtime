@@ -134,9 +134,7 @@ namespace System.Net.Security.Tests
             server.Dispose();
         }
 
-        public static bool IsNotUbuntu1804OnArm => !(PlatformDetection.IsUbuntu1804 && PlatformDetection.IsArmOrArm64Process);
-
-        [ConditionalTheory(nameof(IsNotUbuntu1804OnArm))] // bug in OpenSSL on past-EOL Ubuntu 18.04 ARM
+        [Theory]
         [MemberData(nameof(SslProtocolsData))]
         public Task NoClientCert_DefaultValue_ResumeSucceeds(SslProtocols sslProtocol)
         {
@@ -190,7 +188,7 @@ namespace System.Net.Security.Tests
             return data;
         }
 
-        [ConditionalTheory(nameof(IsNotUbuntu1804OnArm))] // bug in OpenSSL on past-EOL Ubuntu 18.04 ARM
+        [Theory]
         [MemberData(nameof(ClientCertTestData))]
         public Task ClientCert_DefaultValue_ResumeSucceeds(SslProtocols sslProtocol, bool certificateRequired, ClientCertSource certSource)
         {
