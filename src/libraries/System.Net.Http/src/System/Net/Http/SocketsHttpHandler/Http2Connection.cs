@@ -412,10 +412,18 @@ namespace System.Net.Http
                     _incomingBuffer.Commit(bytesRead);
                     if (bytesRead == 0)
                     {
-                        HttpIOException exception = _incomingBuffer.ActiveLength == 0 ?
-                            GetMissingFrameException() : GetPrematureEOFException(FrameHeader.Size);
-                        throw _goAwayErrorCode is not null ?
-                            new HttpProtocolException((long)_goAwayErrorCode, exception.Message, exception) : exception;
+                        if (_goAwayErrorCode is not null)
+                        {
+                            ThrowProtocolError(_goAwayErrorCode.Value, SR.net_http_http2_connection_close);
+                        }
+                        else if (_incomingBuffer.ActiveLength == 0)
+                        {
+                            ThrowMissingFrameException();
+                        }
+                        else
+                        {
+                            ThrowPrematureEOFException(FrameHeader.Size);
+                        }
                     }
                 }
                 while (_incomingBuffer.ActiveLength < FrameHeader.Size);
@@ -447,7 +455,7 @@ namespace System.Net.Http
 
                     int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
                     _incomingBuffer.Commit(bytesRead);
-                    if (bytesRead == 0) throw GetPrematureEOFException(frameHeader.PayloadLength);
+                    if (bytesRead == 0) ThrowPrematureEOFException(frameHeader.PayloadLength);
                 }
                 while (_incomingBuffer.ActiveLength < frameHeader.PayloadLength);
             }
@@ -455,11 +463,11 @@ namespace System.Net.Http
             // Return the read frame header.
             return frameHeader;
 
-            HttpIOException GetPrematureEOFException(int requiredBytes) =>
-                new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
+            void ThrowPrematureEOFException(int requiredBytes) =>
+                throw new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
 
-            HttpIOException GetMissingFrameException() =>
-                new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_missing_frame);
+            void ThrowMissingFrameException() =>
+                throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_missing_frame);
         }
 
         private async Task ProcessIncomingFramesAsync()
