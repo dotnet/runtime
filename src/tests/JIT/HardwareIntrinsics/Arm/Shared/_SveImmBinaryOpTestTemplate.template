@@ -62,6 +62,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 // Validates executing the test inside conditional, with op3 as zero
                 test.ConditionalSelect_ZeroOp();
+
+                // Validates basic functionality fails with an invalid imm, using Unsafe.ReadUnaligned
+                test.RunBasicScenario_UnsafeRead_InvalidImm();
             }
             else
             {
@@ -207,6 +210,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunBasicScenario_UnsafeRead_InvalidImm()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead_InvalidImm));
+
+            bool succeeded = false;
+            try
+            {
+                var result = {Isa}.{Method}(
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray2Ptr),
+                    {InvalidImm}
+                );
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                succeeded = true;
+            }
         }
 
         public void RunBasicScenario_Load()
