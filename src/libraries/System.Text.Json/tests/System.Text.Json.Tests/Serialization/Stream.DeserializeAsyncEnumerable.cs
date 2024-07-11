@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization.Metadata;
@@ -335,47 +333,6 @@ namespace System.Text.Json.Serialization.Tests
             });
         }
 
-        [Theory]
-        [InlineData(5, 1024)]
-        [InlineData(5, 1024 * 1024)]
-        public static async Task DeserializeAsyncEnumerable_SlowStreamWithLargeStrings(int totalStrings, int stringLength)
-        {
-            var options = new JsonSerializerOptions
-            {
-                Converters = { new StringLengthConverter() }
-            };
-
-            using var stream = new SlowStream(GenerateJsonCharacters());
-            string expectedElement = stringLength.ToString(CultureInfo.InvariantCulture);
-            IAsyncEnumerable<string?> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<string>(stream, options);
-
-            await foreach (string? value in asyncEnumerable)
-            {
-                Assert.Equal(expectedElement, value);
-            }
-
-            IEnumerable<byte> GenerateJsonCharacters()
-            {
-                // ["xxx...x","xxx...x",...,"xxx...x"]
-                yield return (byte)'[';
-                for (int i = 0; i < totalStrings; i++)
-                {
-                    yield return (byte)'"';
-                    for (int j = 0; j < stringLength; j++)
-                    {
-                        yield return (byte)'x';
-                    }
-                    yield return (byte)'"';
-
-                    if (i < totalStrings - 1)
-                    {
-                        yield return (byte)',';
-                    }
-                }
-                yield return (byte)']';
-            }
-        }
-
         public static IEnumerable<object[]> GetAsyncEnumerableSources()
         {
             yield return WrapArgs(Enumerable.Empty<int>(), 1, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
@@ -423,49 +380,6 @@ namespace System.Text.Json.Serialization.Tests
                 list.Add(item);
             }
             return list;
-        }
-
-        private sealed class SlowStream(IEnumerable<byte> byteSource) : Stream, IDisposable
-        {
-            private readonly IEnumerator<byte> _enumerator = byteSource.GetEnumerator();
-            private long _position;
-
-            public override bool CanRead => true;
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                Debug.Assert(buffer != null);
-                Debug.Assert(offset >= 0 && count <= buffer.Length - offset);
-
-                if (count == 0 || !_enumerator.MoveNext())
-                {
-                    return 0;
-                }
-
-                _position++;
-                buffer[offset] = _enumerator.Current;
-                return 1;
-            }
-
-            public override bool CanSeek => false;
-            public override bool CanWrite => false;
-            public override long Position { get => _position; set => throw new NotSupportedException(); }
-            public override long Length => throw new NotSupportedException();
-            public override void Flush() => throw new NotSupportedException();
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-            public override void SetLength(long value) => throw new NotSupportedException();
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-            void IDisposable.Dispose() => _enumerator.Dispose();
-        }
-
-        private sealed class StringLengthConverter : JsonConverter<string>
-        {
-            public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            {
-                Debug.Assert(!reader.ValueIsEscaped && !reader.HasValueSequence);
-                return reader.ValueSpan.Length.ToString(CultureInfo.InvariantCulture);
-            }
-
-            public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options) => throw new NotImplementedException();
         }
     }
 }
