@@ -433,12 +433,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (spcActualFilename is null)
             throw new XunitException($"Could not find an assembly named System.Private.CoreLib.* in {bootJsonPath}");
 
+        // This needs to be in balance with how actual filename returned from GetDotNetFilesExpectedSet are ordered (alphabeticaly).
         var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
+            .Union(bootJson.resources.wasmNative.Keys)
             .Union(bootJson.resources.jsModuleRuntime.Keys)
             .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
             .Union(bootJson.resources.jsModuleGlobalization?.Keys ?? Enumerable.Empty<string>())
             .Union(bootJson.resources.wasmSymbols?.Keys ?? Enumerable.Empty<string>())
-            .Union(bootJson.resources.wasmNative.Keys)
             .ToArray();
 
         var expectedEntries = new SortedDictionary<string, Action<string>>();
@@ -473,14 +474,15 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             };
         }
         // FIXME: maybe use custom code so the details can show up in the log
-        bootJsonEntries = bootJsonEntries.Order().ToArray();
+        bootJsonEntries = bootJsonEntries.ToArray();
         if (bootJsonEntries.Length != expectedEntries.Count)
         {
             throw new XunitException($"In {bootJsonPath}{Environment.NewLine}" +
                                         $"  Expected: {string.Join(", ", expectedEntries.Keys.ToArray())}{Environment.NewLine}" +
                                         $"  Actual  : {string.Join(", ", bootJsonEntries)}");
         }
-        Assert.Collection(bootJsonEntries.Order(), expectedEntries.Values.ToArray());
+
+        Assert.Collection(bootJsonEntries, expectedEntries.Values.ToArray());
 
         return bootJson;
     }
