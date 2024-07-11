@@ -3,7 +3,7 @@
   <PropertyGroup>
 
     <!--
-      The real implementation of this library is built for NetCoreAppMinimum,
+      The real implementation of this library is built for net8.0,
       the NetCoreAppCurrent build has a non-functional copy of BinaryFormatter.
       The NetCoreAppCurrent build is only included in the shared runtime,
       and should always lose to the package for unification; so it is pinned
