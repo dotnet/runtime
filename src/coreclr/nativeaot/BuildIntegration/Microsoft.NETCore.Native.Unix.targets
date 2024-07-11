@@ -130,13 +130,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibFileExt)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibFileExt)" />
       <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
-      <NativeLibrary Condition="'$(UseSystemZlib)' != 'true'" Include="$(IlcSdkPath)libz.a" />
     </ItemGroup>
 
     <ItemGroup>
       <NetCoreAppNativeLibrary Include="System.Native" />
       <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true' and '$(InvariantGlobalization)' != 'true'" />
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
+      <NetCoreAppNativeLibrary Condition="'$(UseSystemZlib)' != 'true'" Include="'z'" /> <!-- zlib must be added after System.IO.Compression.Native, order matters. -->
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" Condition="!$(_targetOS.StartsWith('tvos')) and '$(_linuxLibcFlavor)' != 'bionic'" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(_IsApplePlatform)' == 'true'" />
       <!-- Not compliant for iOS-like platforms -->
@@ -145,6 +145,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NetCoreAppNativeLibrary Include="icui18n" Condition="'$(_IsiOSLikePlatform)' == 'true' and '$(InvariantGlobalization)' != 'true' and '$(HybridGlobalization)' != 'true'" />
       <NetCoreAppNativeLibrary Include="icuuc" Condition="'$(_IsiOSLikePlatform)' == 'true' and '$(InvariantGlobalization)' != 'true' and '$(HybridGlobalization)' != 'true'" />
     </ItemGroup>
+
+    <!-- zlib-ng's libz.a is installed in the aotsdk folder but needs to be consumed as a NetCoreAppNativeLibrary, so it needs to change location to be detected properly when escaping it. -->
+    <Copy SourceFiles="$(IlcSdkPath)libz.a" DestinationFolder="$(IlcFrameworkNativePath)" />
 
     <ItemGroup>
       <DirectPInvoke Include="@(NetCoreAppNativeLibrary->'lib%(Identity)')" />
