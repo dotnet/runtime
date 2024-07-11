@@ -920,12 +920,13 @@ namespace System.Text.RegularExpressions.Symbolic
         /// lazily building out the graph as needed.
         /// </summary>
         private bool FindStartPositionDeltasDFA<TInputReader, TNullabilityHandler>(
-            ReadOnlySpan<char> input, ref int i, int startThreshold, ref CurrentState state, ref int lastStart)
+            ReadOnlySpan<char> input, ref int i, int startThreshold, ref CurrentState stateRef, ref int lastStart)
             where TInputReader : struct, IInputReader
             where TNullabilityHandler : struct, INullabilityHandler
         {
             // To avoid frequent reads/writes to ref values, make and operate on local copies, which we then copy back once before returning.
             int pos = i;
+            CurrentState state = stateRef;
             try
             {
                 // Loop backwards through each character in the input, transitioning from state to state for each.
@@ -963,6 +964,7 @@ namespace System.Text.RegularExpressions.Symbolic
             finally
             {
                 // Write back the local copies of the ref values.
+                stateRef = state;
                 i = pos;
             }
         }
