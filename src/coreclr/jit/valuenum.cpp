@@ -10601,10 +10601,10 @@ void Compiler::fgValueNumberBlocks(BasicBlock* block, BlockSet& visitedBlocks)
              stmt            = stmt->GetNextStmt())
         {
             GenTreeLclVar* const newSsaDef = stmt->GetRootNode()->AsLclVar();
-            fgValueNumberPhiDef(newSsaDef, block);
+            fgValueNumberPhiDef(newSsaDef, block, /* isUpdate */ true);
         }
 
-        // TODO: Propagate those new VNs to their uses
+        // TODO: Propagate those new VNs to their uses?
         //
     }
 }
@@ -10766,7 +10766,16 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     compCurBB = nullptr;
 }
 
-void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk)
+//------------------------------------------------------------------------
+// fgValueNumberRegisterConstFieldSeq: If a VN'd integer constant has a
+// field sequence we want to keep track of, then register it in the side table.
+//
+// Arguments:
+//   newSsaDef - lcl var node representing a phi definition
+//   blk - block with the phi
+//   isUpdate - true if the phi has already been numbered and this is a renumbering
+//
+void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bool isUpdate)
 {
     GenTreePhi*  phiNode = newSsaDef->AsLclVar()->Data()->AsPhi();
     ValueNumPair phiVNP;
@@ -10785,12 +10794,21 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk)
                 continue;
             }
 
-            // assert(!vnState->IsReachable(blk));
+            assert(!vnState->IsReachable(blk) || isUpdate);
             JITDUMP("  ..but no other path can, so we are using it anyway\n");
         }
 
         ValueNum     phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
         ValueNumPair phiArgVNP      = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
+
+        if (isUpdate && (phiArgVNP != phiArg->gtVNPair))
+        {
+            JITDUMP("Updating phi arg [%06u] VN from ", dspTreeID(phiArg));
+            JITDUMPEXEC(vnpPrint(phiArg->gtVNPair, 0));
+            JITDUMP(" to ");
+            JITDUMPEXEC(vnpPrint(phiArgVNP, 0));
+            JITDUMP("\n");
+        }
 
         phiArg->gtVNPair = phiArgVNP;
 
@@ -10839,7 +10857,18 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk)
     }
 
     LclSsaVarDsc* newSsaDefDsc = lvaGetDesc(newSsaDef)->GetPerSsaData(newSsaDef->GetSsaNum());
-    newSsaDefDsc->m_vnPair     = newSsaDefVNP;
+
+#ifdef DEBUG
+    if (isUpdate)
+    {
+        assert(!newSsaDefDsc->m_updated);
+        newSsaDefDsc->m_origVNPair = newSsaDefDsc->m_vnPair;
+        newSsaDefDsc->m_updated    = true;
+    }
+#endif
+
+    newSsaDefDsc->m_vnPair = newSsaDefVNP;
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -10850,7 +10879,8 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk)
 #endif // DEBUG
 
     newSsaDef->gtVNPair = vnStore->VNPForVoid();
-    phiNode->gtVNPair   = newSsaDefVNP;
+
+    phiNode->gtVNPair = newSsaDefVNP;
 }
 
 ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind            memoryKind,

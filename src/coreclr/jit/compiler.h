@@ -311,6 +311,13 @@ public:
     }
 
     ValueNumPair m_vnPair;
+
+#ifdef DEBUG
+    // True if this ssa def VN was updated
+    bool m_updated = false;
+    // Originally assigned VN
+    ValueNumPair m_origVNPair;
+#endif
 };
 
 // This class stores information associated with a memory SSA definition.
@@ -5708,7 +5715,7 @@ public:
     void fgValueNumberBlock(BasicBlock* blk);
 
     // Value number a phi definition
-    void fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* block);
+    void fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* block, bool isUpdate = false);
 
     // Requires that "entryBlock" is the header block of "loop" and that "loop" is the
     // innermost loop of which "entryBlock" is the entry.  Returns the value number that should be
