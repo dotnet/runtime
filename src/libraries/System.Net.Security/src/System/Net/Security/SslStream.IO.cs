@@ -139,7 +139,7 @@ namespace System.Net.Security
             using Activity? activity = s_activitySource.StartActivity(ActivityName);
             if (activity is not null)
             {
-                activity.DisplayName = IsServer ? "TLS server" : $"TLS client {TargetHostName}";
+                activity.DisplayName = IsServer ? "TLS server handshake" : $"TLS client handshake {TargetHostName}";
                 if (activity.IsAllDataRequested && !IsServer)
                 {
                     activity.SetTag("server.address", TargetHostName);
