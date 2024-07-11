@@ -68,7 +68,7 @@ namespace System.Text.Json.Schema
             JsonPropertyInfo? propertyInfo = null,
             JsonConverter? customConverter = null,
             JsonNumberHandling? customNumberHandling = null,
-            JsonTypeInfo? parentPolymorphicTypeInfo = null,
+            Type? parentPolymorphicType = null,
             bool parentPolymorphicTypeContainsTypesWithoutDiscriminator = false,
             bool parentPolymorphicTypeIsNonNullable = false,
             KeyValuePair<string, JsonSchema>? typeDiscriminator = null,
@@ -90,7 +90,7 @@ namespace System.Text.Json.Schema
                 return CompleteSchema(ref state, schema);
             }
 
-            if (parentPolymorphicTypeInfo is null && typeInfo.PolymorphismOptions is { DerivedTypes.Count: > 0 } polyOptions)
+            if (parentPolymorphicType is null && typeInfo.PolymorphismOptions is { DerivedTypes.Count: > 0 } polyOptions)
             {
                 // This is the base type of a polymorphic type hierarchy. The schema for this type
                 // will include an "anyOf" property with the schemas for all derived types.
@@ -133,7 +133,7 @@ namespace System.Text.Json.Schema
                     JsonSchema derivedSchema = MapJsonSchemaCore(
                         ref state,
                         derivedTypeInfo,
-                        parentPolymorphicTypeInfo: typeInfo,
+                        parentPolymorphicType: typeInfo.Type,
                         typeDiscriminator: derivedTypeDiscriminator,
                         parentPolymorphicTypeContainsTypesWithoutDiscriminator: containsTypesWithoutDiscriminator,
                         parentPolymorphicTypeIsNonNullable: propertyInfo is { IsGetNullable: false, IsSetNullable: false },
@@ -372,7 +372,7 @@ namespace System.Text.Json.Schema
                 if (state.ExporterOptions.TransformSchemaNode != null)
                 {
                     // Prime the schema for invocation by the JsonNode transformer.
-                    schema.ExporterContext = state.CreateContext(typeInfo, propertyInfo, parentPolymorphicTypeInfo);
+                    schema.ExporterContext = state.CreateContext(typeInfo, propertyInfo);
                 }
 
                 return schema;
@@ -454,9 +454,9 @@ namespace System.Text.Json.Schema
                 _generationStack.RemoveAt(_generationStack.Count - 1);
             }
 
-            public JsonSchemaExporterContext CreateContext(JsonTypeInfo typeInfo, JsonPropertyInfo? propertyInfo, JsonTypeInfo? baseTypeInfo)
+            public JsonSchemaExporterContext CreateContext(JsonTypeInfo typeInfo, JsonPropertyInfo? propertyInfo)
             {
-                return new JsonSchemaExporterContext(typeInfo, propertyInfo, baseTypeInfo, _currentPath.ToArray());
+                return new JsonSchemaExporterContext(typeInfo, propertyInfo, _currentPath.ToArray());
             }
 
             private static string FormatJsonPointer(List<string> currentPathList, int depth)
