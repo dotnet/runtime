@@ -80,8 +80,8 @@ namespace Microsoft.NET.HostModel.AppHost
     {
         public string LongName { get; }
 
-        internal AppNameTooLongException(string name)
-            : base($"The name of the app is too long (must be less than 1024 bytes). Name: {name}")
+        internal AppNameTooLongException(string name, int maxSize)
+            : base($"The name of the app is too long (must be less than {maxSize} bytes when encoded in UTF-8). Name: {name}")
         {
             LongName = name;
         }
@@ -108,8 +108,8 @@ namespace Microsoft.NET.HostModel.AppHost
     {
         public string Path { get; }
 
-        internal AppRelativePathTooLongException(string path)
-            : base($"The app-relative .NET path is too long (must be less than 509 bytes). Path: {path}")
+        internal AppRelativePathTooLongException(string path, int maxSize)
+            : base($"The app-relative .NET path is too long (must be less than {maxSize} bytes when encoded in UTF-8). Path: {path}")
         {
             Path = path;
         }

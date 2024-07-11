@@ -13,7 +13,7 @@
 namespace fxr_resolver
 {
     // Keep in sync with DotNetRootOptions.SearchLocation in HostWriter.cs
-    enum search_location : char
+    enum search_location : uint8_t
     {
         search_location_default = 0,
         search_location_app_local = 1 << 0,             // Next to the app

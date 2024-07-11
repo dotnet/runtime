@@ -22,11 +22,18 @@ namespace Microsoft.NET.HostModel.AppHost
         private const string AppBinaryPathPlaceholder = "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2";
         private static readonly byte[] AppBinaryPathPlaceholderSearchValue = Encoding.UTF8.GetBytes(AppBinaryPathPlaceholder);
 
+        // See placeholder array in corehost.cpp
+        private const int MaxAppBinaryPathSizeInBytes = 1024;
+
         /// <summary>
         /// Value embedded in default apphost executable for configuration of how it will search for the .NET install
         /// </summary>
         private const string DotNetSearchPlaceholder = "\0\019ff3e9c3602ae8e841925bb461a0adb064a1f1903667a5e0d87e8f608f425ac";
-        private static readonly byte[] DotNetSearchPlaceholderValue = Encoding.UTF8.GetBytes(DotNetSearchPlaceholder);
+        private static readonly byte[] DotNetSearchPlaceholderSearchValue = Encoding.UTF8.GetBytes(DotNetSearchPlaceholder);
+
+        // See placeholder array in hostfxr_resolver.cpp
+        private const int MaxDotNetSearchSizeInBytes = 512;
+        private const int MaxAppRelativeDotNetSizeInBytes = MaxDotNetSearchSizeInBytes - 3; // -2 for search location + null, -1 for null terminator
 
         public class DotNetSearchOptions
         {
@@ -67,9 +74,9 @@ namespace Microsoft.NET.HostModel.AppHost
             DotNetSearchOptions dotNetSearchOptions = null)
         {
             byte[] appPathBytes = Encoding.UTF8.GetBytes(appBinaryFilePath);
-            if (appPathBytes.Length > 1024)
+            if (appPathBytes.Length > MaxAppBinaryPathSizeInBytes)
             {
-                throw new AppNameTooLongException(appBinaryFilePath);
+                throw new AppNameTooLongException(appBinaryFilePath, MaxAppBinaryPathSizeInBytes);
             }
 
             byte[] searchOptionsBytes = dotNetSearchOptions != null
@@ -86,7 +93,7 @@ namespace Microsoft.NET.HostModel.AppHost
                 // Update the .NET search configuration
                 if (searchOptionsBytes != null)
                 {
-                    BinaryUtils.SearchAndReplace(accessor, DotNetSearchPlaceholderValue, searchOptionsBytes);
+                    BinaryUtils.SearchAndReplace(accessor, DotNetSearchPlaceholderSearchValue, searchOptionsBytes);
                 }
 
                 appHostIsPEImage = PEUtils.IsPEImage(accessor);
@@ -282,11 +289,11 @@ namespace Microsoft.NET.HostModel.AppHost
                 ? Encoding.UTF8.GetBytes(searchOptions.AppRelativeDotNet)
                 : [];
 
-            if (pathBytes.Length + 3 > 512)
-                throw new AppRelativePathTooLongException(searchOptions.AppRelativeDotNet);
+            if (pathBytes.Length > MaxAppRelativeDotNetSizeInBytes)
+                throw new AppRelativePathTooLongException(searchOptions.AppRelativeDotNet, MaxAppRelativeDotNetSizeInBytes);
 
             // <search_location> 0 <app_relative_dotnet_root> 0
-            byte[] searchOptionsBytes = new byte[pathBytes.Length + 3];
+            byte[] searchOptionsBytes = new byte[pathBytes.Length + 3]; // +2 for search location + null, +2 for null terminator
             searchOptionsBytes[0] = (byte)searchOptions.Location;
             searchOptionsBytes[1] = 0;
             searchOptionsBytes[searchOptionsBytes.Length - 1] = 0;
