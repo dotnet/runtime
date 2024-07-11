@@ -50,6 +50,10 @@ namespace
 
         return false;
     }
+
+    // The default is defined as app-local, environment variables, and global install locations
+    const fxr_resolver::search_location s_default_search = static_cast<fxr_resolver::search_location>(
+        fxr_resolver::search_location_app_local | fxr_resolver::search_location_environment_variable | fxr_resolver::search_location_global);
 }
 
 bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path)
@@ -60,14 +64,13 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
 bool fxr_resolver::try_get_path(
     const pal::string_t& root_path,
     search_location search,
-    /*opt*/ pal::string_t* embedded_dotnet_root,
+    /*opt*/ pal::string_t* app_relative_dotnet_root,
     /*out*/ pal::string_t* out_dotnet_root,
     /*out*/ pal::string_t* out_fxr_path)
 {
 #if defined(FEATURE_APPHOST) || defined(FEATURE_LIBHOST)
-    // The default is defined as app-local, environment variables, and global install locations
     if (search == search_location_default)
-        search = static_cast<search_location>(search_location_app_local | search_location_environment_variable | search_location_global);
+        search = s_default_search;
 
     // For apphost and libhost, root_path is expected to be a directory.
     // For libhost, it may be empty if app-local search is not desired (e.g. com/ijw/winrt hosts, nethost when no assembly path is specified)
@@ -87,16 +90,16 @@ bool fxr_resolver::try_get_path(
     //   - Global installs:
     //      - self-registered install location
     //      - default install location
-    bool search_app_relative = (search & search_location_app_relative) != 0 && embedded_dotnet_root != nullptr && !embedded_dotnet_root->empty();
+    bool search_app_relative = (search & search_location_app_relative) != 0 && app_relative_dotnet_root != nullptr && !app_relative_dotnet_root->empty();
     bool search_env = (search & search_location_environment_variable) != 0;
     bool search_global = (search & search_location_global) != 0;
     pal::string_t default_install_location;
     pal::string_t dotnet_root_env_var_name;
-    if (search_app_relative && pal::realpath(embedded_dotnet_root))
+    if (search_app_relative && pal::realpath(app_relative_dotnet_root))
     {
-        trace::info(_X("Using app-relative location [%s] as runtime location."), embedded_dotnet_root->c_str());
-        out_dotnet_root->assign(*embedded_dotnet_root);
-        if (file_exists_in_dir(*embedded_dotnet_root, LIBFXR_NAME, out_fxr_path))
+        trace::info(_X("Using app-relative location [%s] as runtime location."), app_relative_dotnet_root->c_str());
+        out_dotnet_root->assign(*app_relative_dotnet_root);
+        if (file_exists_in_dir(*app_relative_dotnet_root, LIBFXR_NAME, out_fxr_path))
         {
             trace::info(_X("Resolved fxr [%s]..."), out_fxr_path->c_str());
             return true;
@@ -134,7 +137,7 @@ bool fxr_resolver::try_get_path(
             trace::verbose(_X("  app-local: [%s]"), root_path.c_str());
 
         if (search_app_relative)
-            trace::verbose(_X("  app-relative: [%s]"), embedded_dotnet_root->c_str());
+            trace::verbose(_X("  app-relative: [%s]"), app_relative_dotnet_root->c_str());
 
         if (search_env)
             trace::verbose(_X("  environment variable: [%s]"), dotnet_root_env_var_name.c_str());
@@ -159,13 +162,38 @@ bool fxr_resolver::try_get_path(
 
     pal::string_t host_path;
     pal::get_own_executable_path(&host_path);
+
+    pal::string_t location = _X("Not found");
+    if (search != s_default_search)
+    {
+        location.append(_X(" - search options: ["));
+        if (search_app_local)
+            location.append(_X(" app_local"));
+
+        if (search_app_relative)
+            location.append(_X(" app_relative"));
+
+        if (search_env)
+            location.append(_X(" environment_variable"));
+
+        if (search_global)
+            location.append(_X(" global"));
+
+        location.append(_X(" ]"));
+        if (search_app_relative)
+        {
+            location.append(_X(", app-relative path: "));
+            location.append(app_relative_dotnet_root->c_str());
+        }
+    }
+
     trace::error(
         MISSING_RUNTIME_ERROR_FORMAT,
         INSTALL_NET_ERROR_MESSAGE,
         host_path.c_str(),
         get_current_arch_name(),
         _STRINGIFY(HOST_VERSION),
-        _X("Not found"),
+        location.c_str(),
         get_download_url().c_str(),
         _STRINGIFY(HOST_VERSION));
     return false;
