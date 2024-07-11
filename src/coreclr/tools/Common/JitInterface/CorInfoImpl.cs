@@ -3456,23 +3456,8 @@ namespace Internal.JitInterface
 
         private void getFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_FPSTRUCT_LOWERING lowering)
         {
-            TypeDesc typeDesc = HandleToObject(structHnd);
-            var target = _compilation.TypeSystemContext.Target;
-            FpStructInRegistersInfo info;
-            if (target.Architecture is TargetArchitecture.RiscV64)
-            {
-                info = RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(typeDesc);
-            }
-            else if (target.Architecture is TargetArchitecture.LoongArch64)
-            {
-                info = LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(typeDesc);
-            }
-            else
-            {
-                Debug.Assert(false, "Unsupported architecture for getFpStructInRegistersInfo");
-                return;
-            }
-
+            FpStructInRegistersInfo info = RiscVLoongArch64FpStruct.GetFpStructInRegistersInfo(
+                HandleToObject(structHnd), _compilation.TypeSystemContext.Target.Architecture);
             if (info.flags != FpStruct.UseIntCallConv)
             {
                 lowering = new CORINFO_FPSTRUCT_LOWERING {
