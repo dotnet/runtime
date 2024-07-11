@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -301,11 +302,11 @@ namespace Internal.IL.Stubs
 
         private struct OverlappingFieldTracker
         {
-            private bool[] _usedBytes;
+            private BitArray _usedBytes;
 
             public OverlappingFieldTracker(MetadataType type)
             {
-                _usedBytes = new bool[type.InstanceFieldSize.AsInt];
+                _usedBytes = new BitArray(type.InstanceFieldSize.AsInt);
             }
 
             public bool TrackField(FieldDesc field)

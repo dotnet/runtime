@@ -436,7 +436,7 @@ namespace Internal.TypeSystem
 
                 cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target);
                 offsets[fieldOrdinal] = new FieldAndOffset(field, cumulativeInstanceFieldPos + offsetBias);
-                cumulativeInstanceFieldPos = checked(cumulativeInstanceFieldPos + fieldSizeAndAlignment.Size);
+                cumulativeInstanceFieldPos = LayoutInt.AddThrowing(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Size, type);
 
                 fieldOrdinal++;
             }
