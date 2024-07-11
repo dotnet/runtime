@@ -26,6 +26,8 @@ namespace System.Diagnostics.Metrics
         {
             AppDomain.CurrentDomain.FirstChanceException += (source, e) =>
             {
+                // Avoid recursion if the listener itself throws an exception while recording the measurement
+                // in its `OnMeasurementRecorded` callback.
                 if (t_handlingFirstChanceException) return;
                 t_handlingFirstChanceException = true;
                 s_exceptionCount.Add(1, new KeyValuePair<string, object?>("error.type", e.Exception.GetType().Name));
