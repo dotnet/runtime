@@ -2216,6 +2216,55 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> CreateBreakBeforePropagateMask(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) => CreateBreakBeforePropagateMask(mask, left, right);
 
 
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateBreakPropagateMask(Vector<sbyte> totalMask, Vector<sbyte> fromMask) => CreateBreakPropagateMask(totalMask, fromMask);
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<short> CreateBreakPropagateMask(Vector<short> totalMask, Vector<short> fromMask) => CreateBreakPropagateMask(totalMask, fromMask);
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<int> CreateBreakPropagateMask(Vector<int> totalMask, Vector<int> fromMask) => CreateBreakPropagateMask(totalMask, fromMask);
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<long> CreateBreakPropagateMask(Vector<long> totalMask, Vector<long> fromMask) => CreateBreakPropagateMask(totalMask, fromMask);
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<byte> CreateBreakPropagateMask(Vector<byte> totalMask, Vector<byte> fromMask) => CreateBreakPropagateMask(totalMask, fromMask);
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<ushort> CreateBreakPropagateMask(Vector<ushort> totalMask, Vector<ushort> fromMask) => CreateBreakPropagateMask(totalMask, fromMask);
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<uint> CreateBreakPropagateMask(Vector<uint> totalMask, Vector<uint> fromMask) => CreateBreakPropagateMask(totalMask, fromMask);
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<ulong> CreateBreakPropagateMask(Vector<ulong> totalMask, Vector<ulong> fromMask) => CreateBreakPropagateMask(totalMask, fromMask);
+
+
         /// Set all predicate elements to false
 
         /// <summary>

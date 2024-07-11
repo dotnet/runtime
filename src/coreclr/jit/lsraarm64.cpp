@@ -1933,15 +1933,26 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
             }
 
-            tgtPrefUse = BuildUse(embOp2Node->Op(1));
-            srcCount += 1;
-
-            for (size_t argNum = 2; argNum <= numArgs; argNum++)
+            switch (intrinEmb.id)
             {
-                srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), embOp2Node->Op(1));
-            }
+                case NI_Sve_CreateBreakPropagateMask:
+                    tgtPrefUse = BuildUse(embOp2Node->Op(2));
+                    srcCount += 1;
+                    srcCount += BuildDelayFreeUses(embOp2Node->Op(1), embOp2Node->Op(2));
+                    srcCount += BuildDelayFreeUses(intrin.op3, embOp2Node->Op(2));
+                    break;
 
-            srcCount += BuildDelayFreeUses(intrin.op3, embOp2Node->Op(1));
+                default:
+                    tgtPrefUse = BuildUse(embOp2Node->Op(1));
+                    srcCount += 1;
+                    for (size_t argNum = 2; argNum <= numArgs; argNum++)
+                    {
+                        srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), embOp2Node->Op(1));
+                    }
+
+                    srcCount += BuildDelayFreeUses(intrin.op3, embOp2Node->Op(1));
+                    break;
+            }
         }
     }
     else if (intrin.op2 != nullptr)

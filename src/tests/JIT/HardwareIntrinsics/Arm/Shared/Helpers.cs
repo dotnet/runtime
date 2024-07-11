@@ -7962,6 +7962,26 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static T[] CreateBreakPropagateMask<T>(T[] op1, T[] op2) where T : IBinaryInteger<T>
+        {
+            var count = op1.Length;
+            var result = new T[count];
+
+            // embedded true mask
+            var mask = new T[count];
+            for (var i = 0; i < count; i++)
+            {
+                mask[i] = T.One;
+            }
+
+            if (LastActive(mask, op1) != T.Zero)
+            {
+                Array.Copy(op2, result, count);
+            }
+
+            return result;
+        }
+
         private static byte ConditionalExtract(byte[] op1, byte op2, byte[] op3, bool after)
         {
             int last = LastActiveElement(op1);
