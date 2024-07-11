@@ -514,7 +514,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // NFA fallback check, assume \Z and full nullability for NFA since it's already extremely rare to get here and it's not worth special-casing.
                     const int NfaCharsPerTimeoutCheck = 1_000;
                     innerLoopLength = _checkTimeout && input.Length - pos > NfaCharsPerTimeoutCheck ? pos + NfaCharsPerTimeoutCheck : input.Length;
-                    done = FindEndPositionDeltasNFA<NfaStateHandler, NoOptimizationsInitialStateHandler, DefaultNullabilityHandler>(
+                    done = FindEndPositionDeltasNFA<NfaStateHandler, DefaultNullabilityHandler>(
                         input, innerLoopLength, mode, timeoutOccursAt, ref pos,
                         ref currentState, ref endPos, ref initialStatePosCandidate, ref initialStatePosCandidate);
                 }
@@ -590,7 +590,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // NFA fallback check, assume \Z and full nullability for NFA since it's already extremely rare to get here.
                     const int NfaCharsPerTimeoutCheck = 1_000;
                     innerLoopLength = _checkTimeout && input.Length - pos > NfaCharsPerTimeoutCheck ? pos + NfaCharsPerTimeoutCheck : input.Length;
-                    done = FindEndPositionDeltasNFA<NfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(
+                    done = FindEndPositionDeltasNFA<NfaStateHandler, TNullabilityHandler>(
                         input, innerLoopLength, mode, timeoutOccursAt, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePosCandidate);
                 }
 
@@ -836,11 +836,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// 0 if iteration completed because we reached an initial state.
         /// A negative value if iteration completed because we ran out of input or we failed to transition.
         /// </returns>
-        private bool FindEndPositionDeltasNFA<TStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(
+        private bool FindEndPositionDeltasNFA<TStateHandler, TNullabilityHandler>(
                 ReadOnlySpan<char> input, int length, RegexRunnerMode mode, long timeoutOccursAt,
                 ref int posRef, ref CurrentState state, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
             where TStateHandler : struct, IStateHandler
-            where TFindOptimizationsHandler : struct, IInitialStateHandler
             where TNullabilityHandler : struct, INullabilityHandler
         {
             // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
