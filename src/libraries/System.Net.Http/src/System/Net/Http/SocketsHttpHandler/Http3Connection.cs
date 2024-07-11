@@ -241,7 +241,7 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, Activity? waitForConnectionActivity, CancellationToken cancellationToken)
         {
             // Allocate an active request
             QuicStream? quicStream = null;
@@ -269,10 +269,17 @@ namespace System.Net.Http
                 }
                 // Swallow any exceptions caused by the connection being closed locally or even disposed due to a race.
                 // Since quicStream will stay `null`, the code below will throw appropriate exception to retry the request.
-                catch (ObjectDisposedException) { }
-                catch (QuicException e) when (e.QuicError != QuicError.OperationAborted) { }
+                catch (ObjectDisposedException e)
+                {
+                    ConnectionSetupDiagnostics.ReportError(waitForConnectionActivity, e);
+                }
+                catch (QuicException e) when (e.QuicError != QuicError.OperationAborted)
+                {
+                    ConnectionSetupDiagnostics.ReportError(waitForConnectionActivity, e);
+                }
                 finally
                 {
+                    waitForConnectionActivity?.Stop();
                     if (queueStartingTimestamp != 0)
                     {
                         TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
@@ -304,6 +311,8 @@ namespace System.Net.Http
                     throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
+                Debug.Assert(waitForConnectionActivity?.IsStopped != false);
+                if (ConnectionSetupActivity is not null) ConnectionSetupDiagnostics.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
                 Task<HttpResponseMessage> responseTask = requestStream.SendAsync(cancellationToken);

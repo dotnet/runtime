@@ -85,10 +85,10 @@ namespace System.Net.Http
                 }
 
                 long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
+                Activity? waitForConnectionActivity = ConnectionSetupDiagnostics.StartWaitForConnectionActivity(authority);
 
                 if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out HttpConnectionWaiter<Http3Connection?>? http3ConnectionWaiter))
                 {
-                    using Activity? waitForConnectionActivity = ConnectionSetupDiagnostics.StartWaitForConnectionActivity(authority);
                     try
                     {
                         connection = await http3ConnectionWaiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
@@ -96,6 +96,7 @@ namespace System.Net.Http
                     catch (Exception ex)
                     {
                         ConnectionSetupDiagnostics.ReportError(waitForConnectionActivity, ex);
+                        waitForConnectionActivity?.Stop();
                         throw;
                     }
                 }
@@ -107,10 +108,7 @@ namespace System.Net.Http
                     return null;
                 }
 
-                Activity? connectionSetupActivity = connection.ConnectionSetupActivity;
-                if (connectionSetupActivity is not null) ConnectionSetupDiagnostics.AddConnectionLinkToRequestActivity(connectionSetupActivity);
-
-                HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, cancellationToken).ConfigureAwait(false);
+                HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, waitForConnectionActivity, cancellationToken).ConfigureAwait(false);
 
                 // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
                 // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
@@ -285,8 +283,7 @@ namespace System.Net.Http
                     CreateConnectTimeoutException(oce) :
                     e;
 
-                Debug.Assert(connectionSetupActivity?.IsStopped is not true);
-                if (connectionSetupActivity is not null) ConnectionSetupDiagnostics.StopConnectionSetupActivity(connectionSetupActivity, e, null);
+                if (connectionSetupActivity is not null) ConnectionSetupDiagnostics.StopConnectionSetupActivity(connectionSetupActivity, connectionException, null);
 
                 // If the connection hasn't been initialized with QuicConnection, get rid of it.
                 connection?.Dispose();

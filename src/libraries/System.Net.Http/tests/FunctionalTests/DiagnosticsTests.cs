@@ -706,7 +706,7 @@ namespace System.Net.Http.Functional.Tests
                         requestRecorder.VerifyActivityRecorded(2);
                         Activity req2 = requestRecorder.LastFinishedActivity;
                         Assert.NotSame(req1, req2);
-                        waitForConnectionRecorder.VerifyActivityRecorded(1);
+                        waitForConnectionRecorder.VerifyActivityRecorded(version == HttpVersion30 ? 2 : 1);
                         connectionSetupRecorder.VerifyActivityRecorded(1);
 
                         // The second request should also have a link to the shared connection.
