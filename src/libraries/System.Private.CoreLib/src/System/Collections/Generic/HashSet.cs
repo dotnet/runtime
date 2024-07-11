@@ -879,26 +879,25 @@ namespace System.Collections.Generic
             }
 
             // The empty set is a subset of any set, and a set is a subset of itself.
-            // Set is always a subset of itself.
+            // Set is always a subset of itself
             if (Count == 0 || other == this)
             {
                 return true;
             }
 
-            if (other is ICollection<T> otherAsCollection)
+            // Faster if other has unique elements according to this equality comparer; so check
+            // that other is a hashset using the same equality comparer.
+            if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
             {
-                // If this has more elements then it can't be a subset.
-                if (Count > otherAsCollection.Count)
+                // if this has more elements then it can't be a subset
+                if (Count > otherAsSet.Count)
                 {
                     return false;
                 }
 
-                // Faster if other has unique elements according to this equality comparer; so check
-                // that other is a hashset using the same equality comparer.
-                if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
-                {
-                    return IsSubsetOfHashSetWithSameComparer(otherAsSet);
-                }
+                // already checked that we're using same equality comparer. simply check that
+                // each element in this is contained in other.
+                return IsSubsetOfHashSetWithSameComparer(otherAsSet);
             }
 
             (int uniqueCount, int unfoundCount) = CheckUniqueAndUnfoundElements(other, returnIfUnfound: false);
@@ -923,8 +922,8 @@ namespace System.Collections.Generic
 
             if (other is ICollection<T> otherAsCollection)
             {
-                // No set is a proper subset of a set with less or equal number of elements.
-                if (otherAsCollection.Count <= Count)
+                // No set is a proper subset of an empty set.
+                if (otherAsCollection.Count == 0)
                 {
                     return false;
                 }
@@ -932,13 +931,17 @@ namespace System.Collections.Generic
                 // The empty set is a proper subset of anything but the empty set.
                 if (Count == 0)
                 {
-                    // Based on check above, other is not empty when Count == 0.
-                    return true;
+                    return otherAsCollection.Count > 0;
                 }
 
                 // Faster if other is a hashset (and we're using same equality comparer).
                 if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
                 {
+                    if (Count >= otherAsSet.Count)
+                    {
+                        return false;
+                    }
+
                     // This has strictly less than number of items in other, so the following
                     // check suffices for proper subset.
                     return IsSubsetOfHashSetWithSameComparer(otherAsSet);
@@ -1085,38 +1088,33 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            if (other is ICollection<T> otherAsCollection)
+            // Faster if other is a hashset and we're using same equality comparer.
+            if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
             {
-                // If this is empty, they are equal iff other is empty.
-                if (Count == 0)
-                {
-                    return otherAsCollection.Count == 0;
-                }
-
-                // Faster if other is a hashset and we're using same equality comparer.
-                if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
-                {
-                    // Attempt to return early: since both contain unique elements, if they have
-                    // different counts, then they can't be equal.
-                    if (Count != otherAsSet.Count)
-                    {
-                        return false;
-                    }
-
-                    // Already confirmed that the sets have the same number of distinct elements, so if
-                    // one is a subset of the other then they must be equal.
-                    return IsSubsetOfHashSetWithSameComparer(otherAsSet);
-                }
-
-                // Can't be equal if other set contains fewer elements than this.
-                if (Count > otherAsCollection.Count)
+                // Attempt to return early: since both contain unique elements, if they have
+                // different counts, then they can't be equal.
+                if (Count != otherAsSet.Count)
                 {
                     return false;
                 }
-            }
 
-            (int uniqueCount, int unfoundCount) = CheckUniqueAndUnfoundElements(other, returnIfUnfound: true);
-            return uniqueCount == Count && unfoundCount == 0;
+                // Already confirmed that the sets have the same number of distinct elements, so if
+                // one is a subset of the other then they must be equal.
+                return IsSubsetOfHashSetWithSameComparer(otherAsSet);
+            }
+            else
+            {
+                // If this count is 0 but other contains at least one element, they can't be equal.
+                if (Count == 0 &&
+                    other is ICollection<T> otherAsCollection &&
+                    otherAsCollection.Count > 0)
+                {
+                    return false;
+                }
+
+                (int uniqueCount, int unfoundCount) = CheckUniqueAndUnfoundElements(other, returnIfUnfound: true);
+                return uniqueCount == Count && unfoundCount == 0;
+            }
         }
 
         public void CopyTo(T[] array) => CopyTo(array, 0, Count);
