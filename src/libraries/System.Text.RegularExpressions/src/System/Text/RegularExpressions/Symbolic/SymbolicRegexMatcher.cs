@@ -335,7 +335,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private uint GetCharKind(ReadOnlySpan<char> input, int i) =>
             !_pattern._info.ContainsSomeAnchor ?
                 CharKind.General : // The previous character kind is irrelevant when anchors are not used.
-                GetPositionKind(FullInputReader.GetPositionId(this, input, i));
+                GetPositionKind(DefaultInputReader.GetPositionId(this, input, i));
 
         private void CheckTimeout(long timeoutOccursAt)
         {
@@ -379,18 +379,18 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Optimize processing for the common case of no Z anchor and <= 255 minterms. Specialize each call with different generic method arguments.
                 matchEnd = (_findOpts is not null, _containsAnyAnchor) switch
                 {
-                    (true, true) =>   FindEndPositionOptimized<AcceleratedStateHandler, AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (true, true) =>   FindEndPositionOptimized<AcceleratedStateHandler, DefaultOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                     (true, false) =>  FindEndPositionOptimized<NoAnchorAcceleratedStateHandler, NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                     (false, false) => FindEndPositionOptimized<NoAcceleratedStateHandler, NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
-                    (false, true) =>  FindEndPositionOptimized<NoAcceleratedStateHandler, AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (false, true) =>  FindEndPositionOptimized<NoAcceleratedStateHandler, DefaultOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
                 };
             }
             else
             {
                 // Fallback for Z anchor or over 255 minterms
                 matchEnd = _findOpts is not null ?
-                    FindEndPositionFallback<InitialStateFindOptimizationsHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData) :
-                    FindEndPositionFallback<NoOptimizationsInitialStateHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData);
+                    FindEndPositionFallback<InitialStateFindOptimizationsHandler, DefaultNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData) :
+                    FindEndPositionFallback<NoOptimizationsInitialStateHandler, DefaultNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData);
             }
 
             // If there wasn't a match, we're done.
@@ -436,8 +436,8 @@ namespace System.Text.RegularExpressions.Symbolic
                         // reversal may already be nullable here in the case of anchors
                         if (_containsAnyAnchor &&
                             _nullabilityArray[reversalStartState.DfaStateId] > 0 &&
-                            FullNullabilityHandler.IsNullableAt<DfaStateHandler>(
-                                this, in reversalStartState, FullInputReader.GetPositionId(this, input, i),
+                            DefaultNullabilityHandler.IsNullableAt<DfaStateHandler>(
+                                this, in reversalStartState, DefaultInputReader.GetPositionId(this, input, i),
                                 DfaStateHandler.GetStateFlags(this, in reversalStartState)))
                         {
                             initialLastStart = i;
@@ -448,10 +448,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         // Call FindStartPosition with generic method arguments based on the presence of anchors. This is purely an optimization;
                         // the (true, true) case is functionally complete whereas the (false, false) case is the most optimized.
-                        (true, true) =>   FindStartPosition<FullInputReader, FullNullabilityHandler>(reversalStartState, initialLastStart, input, i, startat, perThreadData),
-                        (true, false) =>  FindStartPosition<FullInputReader, NoAnchorsNullabilityHandler>(reversalStartState, initialLastStart, input, i, startat, perThreadData),
-                        (false, true) =>  FindStartPosition<NoZAnchorInputReader, FullNullabilityHandler>(reversalStartState, initialLastStart, input, i, startat, perThreadData),
-                        (false, false) => FindStartPosition<NoZAnchorInputReader, NoAnchorsNullabilityHandler>(reversalStartState, initialLastStart, input, i, startat, perThreadData),
+                        (true, true) =>   FindStartPosition<DefaultInputReader, DefaultNullabilityHandler>(reversalStartState, initialLastStart, input, i, startat, perThreadData),
+                        (true, false) =>  FindStartPosition<DefaultInputReader, NoAnchorsNullabilityHandler>(reversalStartState, initialLastStart, input, i, startat, perThreadData),
+                        (false, true) =>  FindStartPosition<NoZAnchorOptimizedInputReader, DefaultNullabilityHandler>(reversalStartState, initialLastStart, input, i, startat, perThreadData),
+                        (false, false) => FindStartPosition<NoZAnchorOptimizedInputReader, NoAnchorsNullabilityHandler>(reversalStartState, initialLastStart, input, i, startat, perThreadData),
                     };
                     break;
 
@@ -477,8 +477,8 @@ namespace System.Text.RegularExpressions.Symbolic
             else
             {
                 Registers endRegisters = _containsAnyAnchor ?
-                    FindSubcaptures<FullInputReader>(input, matchStart, matchEnd, perThreadData) :
-                    FindSubcaptures<NoZAnchorInputReader>(input, matchStart, matchEnd, perThreadData);
+                    FindSubcaptures<DefaultInputReader>(input, matchStart, matchEnd, perThreadData) :
+                    FindSubcaptures<NoZAnchorOptimizedInputReader>(input, matchStart, matchEnd, perThreadData);
                 return new SymbolicMatch(matchStart, matchEnd - matchStart, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
             }
         }
@@ -514,7 +514,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // NFA fallback check, assume \Z and full nullability for NFA since it's already extremely rare to get here and it's not worth special-casing.
                     const int NfaCharsPerTimeoutCheck = 1_000;
                     innerLoopLength = _checkTimeout && input.Length - pos > NfaCharsPerTimeoutCheck ? pos + NfaCharsPerTimeoutCheck : input.Length;
-                    done = FindEndPositionDeltasNFA<NfaStateHandler, NoOptimizationsInitialStateHandler, FullNullabilityHandler>(
+                    done = FindEndPositionDeltasNFA<NfaStateHandler, NoOptimizationsInitialStateHandler, DefaultNullabilityHandler>(
                         input, innerLoopLength, mode, timeoutOccursAt, ref pos,
                         ref currentState, ref endPos, ref initialStatePosCandidate, ref initialStatePosCandidate);
                 }
@@ -781,7 +781,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         initialStatePosCandidate = pos;
                     }
 
-                    int positionId = FullInputReader.GetPositionId(this, input, pos);
+                    int positionId = DefaultInputReader.GetPositionId(this, input, pos);
 
                     // If the state is nullable for the next character, meaning it accepts the empty string,
                     // we found a potential end state.
@@ -861,7 +861,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         return true;
                     }
 
-                    int positionId = FullInputReader.GetPositionId(this, input, pos);
+                    int positionId = DefaultInputReader.GetPositionId(this, input, pos);
 
                     // If the state is nullable for the next character, meaning it accepts the empty string,
                     // we found a potential end state.
@@ -1596,28 +1596,28 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>
         /// Interface for mapping positions in the input to position IDs, which capture all the information necessary to
-        /// both take transitions and decide nullability. For positions of valid characters that are handled normally,
-        /// these IDs coincide with minterm IDs (i.e. indices to <see cref="_minterms"/>). Positions outside the bounds
-        /// of the input are mapped to -1. Optionally, an end-of-line as the very last character in the input may be
-        /// mapped to _minterms.Length for supporting the \Z anchor.
+        /// both take transitions and decide nullability.
         /// </summary>
         private interface IInputReader
         {
+            /// <summary>Gets the position ID for the specified character in the input.</summary>
+            /// <remarks>
+            /// For positions of valid characters that are handled normally, these IDs coincide with minterm IDs (i.e. indices to <see cref="_minterms"/>).
+            /// Positions outside the bounds of the input are mapped to -1. Optionally, an end-of-line as the very last character in the input may be
+            /// mapped to _minterms.Length for supporting the \Z anchor. The <paramref name="input"/> and <paramref name="pos"/> parameters are specified
+            /// separately, rather than <code>input[pos]</code> being passed in as a single <see cref="char"/>, because some inputs need to act differently
+            /// based on the position itself.
+            /// </remarks>
             public static abstract int GetPositionId(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, int pos);
         }
 
-        /// <summary>This reader omits the special handling of \n for the \Z anchor.</summary>
-        private readonly struct NoZAnchorInputReader : IInputReader
+        /// <summary>Provides an input reader that includes full handling of an \n as the last character of input for the \Z anchor.</summary>
+        private readonly struct DefaultInputReader : IInputReader
         {
-            public static int GetPositionId(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, int pos) =>
-                (uint)pos < (uint)input.Length ?
-                    matcher._mintermClassifier.GetMintermID(input[pos]) :
-                    -1;
-        }
-
-        /// <summary>This reader includes full handling of an \n as the last character of input for the \Z anchor.</summary>
-        private readonly struct FullInputReader : IInputReader
-        {
+            /// <summary>
+            /// Gets the minterm ID of the specified character, -1 if the position isn't within the input, or <see cref="_minterms"/>.Length
+            /// for a \n at the very end of the input.
+            /// </summary>
             public static int GetPositionId(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, int pos)
             {
                 if ((uint)pos < (uint)input.Length)
@@ -1631,6 +1631,16 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 return -1;
             }
+        }
+
+        /// <summary>Provides an optimized input reader that doesn't provide special-handling of \n at the end of the input for the \Z anchor.</summary>
+        private readonly struct NoZAnchorOptimizedInputReader : IInputReader
+        {
+            /// <summary>Gets the minterm ID of the specified character, or -1 if the position isn't within the input.</summary>
+            public static int GetPositionId(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, int pos) =>
+                (uint)pos < (uint)input.Length ?
+                    matcher._mintermClassifier.GetMintermID(input[pos]) :
+                    -1;
         }
 
         private interface IInitialStateHandler
@@ -1737,27 +1747,30 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        /// <summary>Interface for evaluating nullability of states.</summary>
+        /// <summary>Represents a handler for evaluating nullability of states.</summary>
         private interface INullabilityHandler
         {
+            /// <summary>Gets whether the specified position is nullable.</summary>
             public static abstract bool IsNullableAt<TStateHandler>(
                 SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
                 where TStateHandler : struct, IStateHandler;
         }
 
-        /// <summary>This nullability handler interface can be used in DFAs for patterns that do not contain \Z.</summary>
-        private interface IOptimizedNullabilityHandler
+        /// <summary>Nullability handler that will work for any pattern.</summary>
+        private readonly struct DefaultNullabilityHandler : INullabilityHandler
         {
-            public static abstract bool IsNullable(
-                SymbolicRegexMatcher<TSet> matcher, byte[] nullabilityArray, int currStateId,
-                byte[] lookup, ReadOnlySpan<char> input, int pos);
+            /// <summary>Gets whether the specified position is nullable.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
+                where TStateHandler : struct, IStateHandler =>
+                flags.IsNullable() ||
+                (flags.CanBeNullable() && TStateHandler.IsNullableFor(matcher, in state, matcher.GetPositionKind(positionId)));
         }
 
-        /// <summary>
-        /// Specialized nullability handler for patterns without any anchors.
-        /// </summary>
+        /// <summary>Nullability handler for patterns without any anchors.</summary>
         private readonly struct NoAnchorsNullabilityHandler : INullabilityHandler
         {
+            /// <summary>Gets whether the specified position is nullable.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
                 where TStateHandler : struct, IStateHandler
@@ -1767,31 +1780,19 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        /// <summary>
-        /// Nullability handler that will work for any pattern.
-        /// </summary>
-        private readonly struct FullNullabilityHandler : INullabilityHandler
+        /// <summary>Represents a handler for evaluating nullability of states and for use in DFAs for patterns that do not contain \Z anchors.</summary>
+        private interface IOptimizedNullabilityHandler
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
-                where TStateHandler : struct, IStateHandler =>
-                flags.IsNullable() ||
-                (flags.CanBeNullable() && TStateHandler.IsNullableFor(matcher, in state, matcher.GetPositionKind(positionId)));
+            /// <summary>Gets whether the specified position is nullable.</summary>
+            public static abstract bool IsNullable(
+                SymbolicRegexMatcher<TSet> matcher, byte[] nullabilityArray, int currStateId,
+                byte[] lookup, ReadOnlySpan<char> input, int pos);
         }
 
-        private readonly struct NoAnchorOptimizedNullabilityHandler : IOptimizedNullabilityHandler
+        /// <summary>Optimized nullability handler that works regardless of what additional anchors may exist in a pattern.</summary>
+        private readonly struct DefaultOptimizedNullabilityHandler : IOptimizedNullabilityHandler
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsNullable(SymbolicRegexMatcher<TSet> matcher, byte[] nullabilityArray, int currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
-            {
-                Debug.Assert(pos >= 0 && pos < input.Length, "input end should not be handled here");
-                Debug.Assert(currStateId < nullabilityArray.Length, "nullabilityArray grown but the reference is not up to date");
-                return nullabilityArray[currStateId] > 0;
-            }
-        }
-
-        private readonly struct AnchorOptimizedNullabilityHandler : IOptimizedNullabilityHandler
-        {
+            /// <summary>Gets whether the specified position is nullable.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsNullable(SymbolicRegexMatcher<TSet> matcher, byte[] nullabilityArray, int currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
             {
@@ -1805,6 +1806,21 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
 
                 return false;
+            }
+        }
+
+        /// <summary>Optimized nullability handler for when a pattern has no anchors at all.</summary>
+        private readonly struct NoAnchorOptimizedNullabilityHandler : IOptimizedNullabilityHandler
+        {
+            /// <summary>Gets whether the specified position is nullable.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsNullable(SymbolicRegexMatcher<TSet> matcher, byte[] nullabilityArray, int currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
+            {
+                Debug.Assert(pos >= 0 && pos < input.Length, "input end should not be handled here");
+                Debug.Assert(currStateId < nullabilityArray.Length, "nullabilityArray grown but the reference is not up to date");
+                Debug.Assert(!matcher._pattern._info.ContainsSomeAnchor);
+
+                return nullabilityArray[currStateId] > 0;
             }
         }
     }
