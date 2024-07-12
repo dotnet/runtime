@@ -349,7 +349,7 @@ JS_ENGINES = [NODE_JS]
     <!-- Temporary in WASI-SDK 22
     TODO https://github.com/dotnet/runtime/issues/104773
     -->
-    <Touch Files="$(WASI_SDK_PATH)/VERSION22PATCHED" />
+    <Touch Files="$(WASI_SDK_PATH)/VERSION22PATCHED" AlwaysCreate="true" />
 
   </Target>
 
