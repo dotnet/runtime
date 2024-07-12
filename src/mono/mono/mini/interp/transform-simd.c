@@ -364,8 +364,19 @@ is_element_type_primitive (MonoType *vector_type)
 static void
 emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMethodSignature *csignature, int vector_size, gboolean allow_void)
 {
-	td->sp -= csignature->param_count;
-	for (int i = 0; i < csignature->param_count; i++)
+	// The implicit this isn't tracked as part of param_count unless
+	// explicit_this is also set, but we shouldn't encounter such
+	// explicit_this cases for the intrinsics
+
+	guint16 param_count = csignature->param_count;
+	
+	if (csignature->hasthis)
+		param_count++;
+
+	g_assert(!csignature->explicit_this);
+
+	td->sp -= param_count;
+	for (int i = 0; i < param_count; i++)
 		td->last_ins->sregs [i] = td->sp [i].var;
 
 	int ret_mt = mono_mint_type (csignature->ret);
